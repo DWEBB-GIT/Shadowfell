@@ -1,7 +1,7 @@
 # Shadowfall acceptance test results
 
-Run: 2026-10-14T19:11:39.652Z  
-Result: **166/166 passed**
+Run: 2026-10-14T19:34:35.390Z  
+Result: **171/171 passed**
 
 
 ## Launch and movement
@@ -10,7 +10,7 @@ Result: **166/166 passed**
 |---|---|---|
 | ✅ | Game loads in a supported desktop browser | title screen, then HUD, from file://index.html |
 | ✅ | No blocking errors occur during startup |  |
-| ✅ | Player can move in all four directions | W 2.00m, S 2.73m, A 2.50m, D 3.50m (real key events) |
+| ✅ | Player can move in all four directions | W 2.00m, S 2.11m, A 2.78m, D 2.50m (real key events) |
 | ✅ | Diagonal movement is normalised | 1s straight 5.00m, 1s diagonal 5.00m |
 | ✅ | Camera follows the player | camera offset after moving: x -0.00, z 10.00 (target 0, 10) |
 | ✅ | Movement is frame-rate independent (extra) | 1s at 24 fps 5.00m, at 144 fps 5.00m |
@@ -50,7 +50,7 @@ Result: **166/166 passed**
 | ✅ | Escape closes the active interface | modal after Esc: null |
 | ✅ | Material can be collected | prompt "Take the grave-iron" |
 | ✅ | Currency can be collected | 8 → 14 coins; purse removed from the world |
-| ✅ | Equipment can be collected | brute drop at (-20.9, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
+| ✅ | Equipment can be collected | brute drop at (-20.9, -45.0), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
 | ✅ | Equipment is not silently swapped (extra) | still equipped: worn_longsword |
 | ✅ | Shrine can restore health | 31 → 100 hp; respawn set to (7.8, 5.2) |
 | ✅ | Contextual prompts update correctly | open road: none; at shrine: "E Rest at the shrine" |
@@ -67,7 +67,7 @@ Result: **166/166 passed**
 | ✅ | Basic attack damage increases | strike 18 → 20 |
 | ✅ | Equipment upgrade improves damage | strike 20 → 25 after dragging it from the bag onto the main-hand slot (panel shows 22–28 +2) |
 | ✅ | Upgraded weapon is shown on the character (extra) | Blender model swapped in the right hand |
-| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 23 coins |
+| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 17 coins |
 | ✅ | Escape closes the bags and character panel (extra) | real Escape key |
 | ✅ | No script errors during progression (extra) |  |
 
@@ -162,7 +162,7 @@ Result: **166/166 passed**
 | ✅ | Dragging an item from the bag onto the character panel equips it | helm on the head slot and on the model; maximum health 106 |
 | ✅ | Dragging it back from the character panel into a bag unequips it | helm now in the satchel's 4th slot; maximum health 100 |
 | ✅ | Items only fit the slots they belong in (extra) | helm dropped on the main-hand slot was refused |
-| ✅ | Each bag opens and closes on its own, and two open bags do not freeze the game | game time advanced 0.22s with both bags and the character panel open; closing the backpack left: Traveller's satchel |
+| ✅ | Each bag opens and closes on its own, and two open bags do not freeze the game | game time advanced 0.30s with both bags and the character panel open; closing the backpack left: Traveller's satchel |
 | ✅ | Dragging an item out of the bag drops it on the ground (RuneScape-style) | helm lies 0.90m from the Warden and is shown in the world |
 | ✅ | A dropped item can be picked up again from the ground | prompt "Pick up Dented watch helm" |
 | ✅ | Dropped items stay on the ground after saving and reloading | [{"uid":1,"id":"watch_helm","count":1,"x":-5.24,"z":27.51}]; satchel still in its bag slot |
@@ -236,6 +236,16 @@ Result: **166/166 passed**
 | ✅ | Level-up shows each stat increase | Might 4 → 6 +2 / Vitality 11 → 13 +2 / Maximum health 106 → 118 +12 / Strike 16–20 → 18–22 +2 |
 | ✅ | The character screen marks what rose at the last level-up | health+12, might+2, vitality+2, strike+2 |
 | ✅ | No script errors (stats and damage) |  |
+
+## Item database
+
+| | Check | Evidence |
+|---|---|---|
+| ✅ | Every item comes from one database with slot, stats, price and icon | 9 items in src/data/items.json, all valid |
+| ✅ | The database check catches a malformed item (extra) | broken_blade: unknown quality shiny; broken_blade: price must be a whole number of coins; broken_blade: a weapon needs damage [min, max] |
+| ✅ | Tooltips show what a merchant would pay, and the item quality | Healing draughtConsumableA small bottle of something bitter and red. Restores 42 health.Sells for 1 coinRight-click to drink |
+| ✅ | Quest items cannot be dropped (extra) | "You keep hold of the Carriage manifest. Someone will want it." |
+| ✅ | No script errors (item database) |  |
 
 ## Build 2: fog and lighting
 

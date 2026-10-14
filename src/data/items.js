@@ -1,11 +1,51 @@
-// Item definitions. Ids are stable: they are written into save files.
+// The item database. Every item is defined in items.json (one entry per id;
+// ids are stable because saves store them). This module loads, checks and
+// exposes it. Fields:
 //
-// kind:  weapon | armor | shield | bag | consumable | material | document
-// slot:  the character slot an equippable item goes into
-// stack: how many fit in one bag slot (1 = does not stack)
-// model: Blender model used for the world object and the generated icon
-// damage: a weapon's [min, max]; stats: attributes, armour, block, haste it adds
+// name, description
+// kind:       weapon | armor | shield | bag | consumable | material | document
+// slot:       the character slot an equippable item goes into
 // armourType: cloth | leather | mail | plate (who may wear it: see archetypes)
+// quality:    poor | common | uncommon | rare | quest (tooltip colour)
+// damage:     a weapon's [min, max]
+// stats:      attributes, armour, block, block rating, haste it adds
+// use:        what using it does, e.g. { heal: 42 }
+// bagSlots:   slots a bag adds
+// stack:      how many fit in one bag slot (1 = does not stack)
+// price:      what a merchant asks; merchants pay CONFIG.shop.sellFraction of it
+// quest:      quest items cannot be sold or dropped
+// model:      Blender model for the world object; icon: model the icon is drawn from
+
+import DB from './items.json';
+
+export const KINDS = ['weapon', 'armor', 'shield', 'bag', 'consumable', 'material', 'document'];
+export const QUALITIES = ['poor', 'common', 'uncommon', 'rare', 'quest'];
+const STAT_KEYS = ['might', 'finesse', 'intellect', 'vitality', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
+
+// Problems with the database, as readable strings (empty when it is sound).
+export function validateItems(items, slots, armourTypes) {
+  const errors = [];
+  for (const [id, d] of Object.entries(items)) {
+    const bad = (msg) => errors.push(`${id}: ${msg}`);
+    if (!/^[a-z0-9_]+$/.test(id)) bad('id must be lower_snake_case');
+    if (!d.name || !d.description) bad('needs a name and a description');
+    if (!KINDS.includes(d.kind)) bad(`unknown kind ${d.kind}`);
+    if (!QUALITIES.includes(d.quality)) bad(`unknown quality ${d.quality}`);
+    if (!Number.isInteger(d.stack) || d.stack < 1) bad('stack must be a whole number of at least 1');
+    if (!Number.isInteger(d.price) || d.price < 0) bad('price must be a whole number of coins');
+    if (!d.model || !d.icon) bad('needs a model and an icon');
+    const equips = ['weapon', 'armor', 'shield'].includes(d.kind);
+    if (equips && !slots.includes(d.slot)) bad(`unknown slot ${d.slot}`);
+    if (!equips && d.slot) bad('only weapons, armour and shields have a slot');
+    if (d.kind === 'armor' && d.slot !== 'mainHand' && !armourTypes.includes(d.armourType)) bad('armour needs an armour type');
+    if (d.kind === 'weapon' && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage[0] <= d.damage[1])) bad('a weapon needs damage [min, max]');
+    if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
+    for (const k of Object.keys(d.stats || {})) if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
+  }
+  return errors;
+}
+
+export const ITEMS = DB.items;
 
 export const EQUIP_SLOTS = [
   { id: 'head', label: 'Head' },
@@ -20,85 +60,10 @@ export const EQUIP_SLOTS = [
 export const BACKPACK_SLOTS = 16;
 export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
 
-export const ITEMS = {
-  worn_longsword: {
-    name: 'Worn longsword',
-    kind: 'weapon',
-    slot: 'mainHand',
-    damage: [12, 16],
-    stack: 1,
-    model: 'worn_sword',
-    description: 'Your own blade. Nicked, honest and in need of a whetstone.',
-  },
-  watchmans_edge: {
-    name: "Watchman's Edge",
-    kind: 'weapon',
-    slot: 'mainHand',
-    damage: [16, 22],
-    stats: { haste: 4 },
-    stack: 1,
-    model: 'watchmans_edge',
-    description: 'A soldier\'s sword in better repair than its last owner. The watch sigil is still legible on the guard.',
-  },
-  travelling_clothes: {
-    name: 'Travelling clothes',
-    kind: 'armor',
-    slot: 'chest',
-    armourType: 'leather',
-    stats: { armour: 20 },
-    stack: 1,
-    model: 'clothes',
-    description: 'Wool and leather, patched at the elbows. Keeps the rain off, mostly.',
-  },
-  watch_helm: {
-    name: 'Dented watch helm',
-    kind: 'armor',
-    slot: 'head',
-    armourType: 'mail',
-    stats: { armour: 10, vitality: 1 },
-    stack: 1,
-    model: 'watch_helm',
-    description: 'An iron cap from the old garrison. Someone took a blow in it and walked away.',
-  },
-  kite_shield: {
-    name: 'Battered kite shield',
-    kind: 'shield',
-    slot: 'offHand',
-    stats: { block: 10 },
-    stack: 1,
-    model: 'kite_shield',
-    description: 'Oak boards under a skin of hide, rimmed in iron. It has turned a good many blows.',
-  },
-  travellers_satchel: {
-    name: "Traveller's satchel",
-    kind: 'bag',
-    bagSlots: 8,
-    stack: 1,
-    model: 'satchel',
-    description: 'A sturdy shoulder bag. Place it in an empty bag slot to carry more.',
-  },
-  healing_draught: {
-    name: 'Healing draught',
-    kind: 'consumable',
-    stack: 5,
-    model: 'draught',
-    description: 'A small bottle of something bitter and red. Restores 42 health.',
-  },
-  grave_iron: {
-    name: 'Grave-iron bar',
-    kind: 'material',
-    stack: 10,
-    model: 'grave_iron',
-    description: 'A short bar of dark iron, cold to the touch and stamped with a smith\'s mark.',
-  },
-  manifest: {
-    name: 'Carriage manifest',
-    kind: 'document',
-    stack: 1,
-    model: 'manifest',
-    description: 'A carter\'s manifest, damp at the edges. The driver\'s name has been scratched out.',
-  },
-};
+export function sellPrice(id, fraction) {
+  const d = ITEMS[id];
+  return d && !d.quest ? Math.floor(d.price * fraction) : 0;
+}
 
 // Loot placed in the world. `reward` is what collecting it grants.
 export const LOOT = [

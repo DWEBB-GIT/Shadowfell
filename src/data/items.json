@@ -1,0 +1,127 @@
+{
+  "items": {
+    "worn_longsword": {
+      "name": "Worn longsword",
+      "kind": "weapon",
+      "slot": "mainHand",
+      "quality": "common",
+      "damage": [
+        12,
+        16
+      ],
+      "stack": 1,
+      "price": 12,
+      "model": "worn_sword",
+      "icon": "worn_sword",
+      "description": "Your own blade. Nicked, honest and in need of a whetstone."
+    },
+    "watchmans_edge": {
+      "name": "Watchman's Edge",
+      "kind": "weapon",
+      "slot": "mainHand",
+      "quality": "uncommon",
+      "damage": [
+        16,
+        22
+      ],
+      "stats": {
+        "haste": 4
+      },
+      "stack": 1,
+      "price": 60,
+      "model": "watchmans_edge",
+      "icon": "watchmans_edge",
+      "description": "A soldier's sword in better repair than its last owner. The watch sigil is still legible on the guard."
+    },
+    "travelling_clothes": {
+      "name": "Travelling clothes",
+      "kind": "armor",
+      "slot": "chest",
+      "armourType": "leather",
+      "quality": "common",
+      "stats": {
+        "armour": 20
+      },
+      "stack": 1,
+      "price": 8,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "Wool and leather, patched at the elbows. Keeps the rain off, mostly."
+    },
+    "watch_helm": {
+      "name": "Dented watch helm",
+      "kind": "armor",
+      "slot": "head",
+      "armourType": "mail",
+      "quality": "common",
+      "stats": {
+        "armour": 10,
+        "vitality": 1
+      },
+      "stack": 1,
+      "price": 25,
+      "model": "watch_helm",
+      "icon": "watch_helm",
+      "description": "An iron cap from the old garrison. Someone took a blow in it and walked away."
+    },
+    "kite_shield": {
+      "name": "Battered kite shield",
+      "kind": "shield",
+      "slot": "offHand",
+      "quality": "common",
+      "stats": {
+        "block": 10
+      },
+      "stack": 1,
+      "price": 20,
+      "model": "kite_shield",
+      "icon": "kite_shield",
+      "description": "Oak boards under a skin of hide, rimmed in iron. It has turned a good many blows."
+    },
+    "travellers_satchel": {
+      "name": "Traveller's satchel",
+      "kind": "bag",
+      "quality": "common",
+      "bagSlots": 8,
+      "stack": 1,
+      "price": 18,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "A sturdy shoulder bag. Place it in an empty bag slot to carry more."
+    },
+    "healing_draught": {
+      "name": "Healing draught",
+      "kind": "consumable",
+      "quality": "common",
+      "use": {
+        "heal": 42
+      },
+      "stack": 5,
+      "price": 6,
+      "model": "draught",
+      "icon": "draught",
+      "description": "A small bottle of something bitter and red. Restores 42 health."
+    },
+    "grave_iron": {
+      "name": "Grave-iron bar",
+      "kind": "material",
+      "quality": "common",
+      "stack": 10,
+      "price": 4,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A short bar of dark iron, cold to the touch and stamped with a smith's mark."
+    },
+    "manifest": {
+      "name": "Carriage manifest",
+      "kind": "document",
+      "quality": "quest",
+      "stack": 1,
+      "price": 0,
+      "quest": true,
+      "model": "manifest",
+      "icon": "manifest",
+      "description": "A carter's manifest, damp at the edges. The driver's name has been scratched out."
+    }
+  }
+}

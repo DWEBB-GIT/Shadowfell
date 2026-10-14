@@ -27,6 +27,7 @@ import { Targeting } from './systems/targeting.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
 import { EXAMINE } from './data/text.js';
+import { ITEMS, EQUIP_SLOTS, validateItems } from './data/items.js';
 
 // Game initialisation and the main loop. Each system owns its own state; this
 // file wires them together and routes input.
@@ -51,6 +52,11 @@ class Game {
     this.scene.add(this.world.group);
 
     this.worldState = new WorldState(this);
+    // the item database is data: refuse to run quietly with a broken entry
+    this.itemErrors = validateItems(ITEMS, EQUIP_SLOTS.map((s) => s.id), Object.keys(CONFIG.armourTypes));
+    for (const e of this.itemErrors) console.error('Item database: ' + e);
+    this.items = ITEMS;
+    this.validateItems = validateItems; // for tests and tools
     this.progression = new Progression(this);
     this.stats = new Stats(this);
     this.random = Math.random; // every combat roll goes through this (tests pin it)

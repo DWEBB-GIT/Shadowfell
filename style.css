@@ -370,3 +370,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .lu-row .up, #char-stats .up { color: #8cbf78; }
 #char-stats .gain { color: #8cbf78; font-size: 11px; margin-left: 4px; }
 #char-stats b { text-align: right; margin-left: 8px; }
+
+/* item quality, WoW colours toned down */
+.tt-name.q-poor { color: #9d9d9d; }
+.tt-name.q-common { color: #f0e4c8; }
+.tt-name.q-uncommon { color: #6cc05a; }
+.tt-name.q-rare { color: #4a8fe0; }
+.tt-name.q-quest { color: #e8c060; }
+.tt-sell { color: #b8a880; font-size: 12px; margin-top: 4px; }

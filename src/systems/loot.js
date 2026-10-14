@@ -54,6 +54,10 @@ export class LootSystem {
     if (player.dead) return null;
     const stack = inventory.get(loc);
     if (!stack) return null;
+    if (ITEMS[stack.id].quest) {
+      events.emit('log', { text: `You keep hold of the ${ITEMS[stack.id].name}. Someone will want it.`, kind: 'muted', throttle: 'inv-refuse' });
+      return null;
+    }
     const taken = inventory.take(loc);
     if (!taken) {
       events.emit('log', { text: 'Empty that bag before dropping it.', kind: 'muted', throttle: 'inv-refuse' });

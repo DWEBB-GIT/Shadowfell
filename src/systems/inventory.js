@@ -344,7 +344,7 @@ export class Inventory {
     if (player.cooldowns.draught > 0) return false;
     this.take(where, 1);
     player.cooldowns.draught = CONFIG.draught.cooldown;
-    const healed = player.heal(CONFIG.draught.heal);
+    const healed = player.heal(ITEMS.healing_draught.use.heal);
     events.emit('damageNumber', { target: player, amount: healed, kind: 'heal' });
     player.rig.play('drink', 0.6, 0.5);
     events.emit('draught', {});

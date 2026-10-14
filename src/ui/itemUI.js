@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, sellPrice } from '../data/items.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -290,7 +290,7 @@ export class ItemUI {
       return;
     }
     const def = ITEMS[stack.id];
-    const lines = [`<div class="tt-name k-${def.kind}">${def.name}</div>`, `<div class="tt-kind">${KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.quality}">${def.name}</div>`, `<div class="tt-kind">${KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);
@@ -305,6 +305,8 @@ export class ItemUI {
     if (def.bagSlots) lines.push(`<div>${def.bagSlots} slots</div>`);
     if (stack.count > 1) lines.push(`<div>${stack.count} carried</div>`);
     lines.push(`<div class="tt-desc">${def.description}</div>`);
+    const sell = sellPrice(stack.id, CONFIG.shop.sellFraction);
+    lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
     const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
     tip.innerHTML = lines.join('');

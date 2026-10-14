@@ -1724,6 +1724,43 @@ async function statsAndDamage(browser) {
   await ctx.close();
 }
 
+async function itemDatabase(browser) {
+  current = 'Item database';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const db = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { errors: g.itemErrors, count: Object.keys(g.items).length, missing: Object.entries(g.items).filter(([, d]) => !(Number.isInteger(d.price) && d.icon && d.quality)).map(([id]) => id) };
+  });
+  record('Every item comes from one database with slot, stats, price and icon', db.errors.length === 0 && db.missing.length === 0 && db.count >= 9, `${db.count} items in src/data/items.json, all valid`);
+  const caught = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const bad = { broken_blade: { name: 'Broken blade', kind: 'weapon', slot: 'mainHand', quality: 'shiny', stack: 1, price: -1, model: 'worn_sword', icon: 'worn_sword', description: 'x' } };
+    return g.validateItems(bad, ['mainHand'], ['cloth']);
+  });
+  record('The database check catches a malformed item (extra)', caught.length >= 3, caught.join('; '));
+
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('bags'));
+  await resumeLoop(page);
+  await page.hover('.islot[data-loc="b:0:0"]');
+  await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
+  const tip = await page.evaluate(() => ({ text: document.getElementById('tooltip').textContent, q: document.querySelector('#tooltip .tt-name').className }));
+  record('Tooltips show what a merchant would pay, and the item quality', /Sells for 1 coin/.test(tip.text) && /q-common/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 140));
+  await pauseLoop(page);
+
+  const quest = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addItem('manifest');
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'manifest');
+    const dropped = g.loot.dropFromInventory(loc);
+    return { dropped: !!dropped, still: g.inventory.count('manifest'), log: document.querySelector('#log li:last-child').textContent };
+  });
+  record('Quest items cannot be dropped (extra)', !quest.dropped && quest.still === 1, `"${quest.log}"`);
+  record('No script errors (item database)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 async function atmosphere(browser) {
   current = 'Build 2: fog and lighting';
   const { ctx, page, errors } = await freshGame(browser);
@@ -1748,7 +1785,7 @@ async function atmosphere(browser) {
 const browser = await launch();
 fs.mkdirSync(path.join(HERE, 'screenshots'), { recursive: true });
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

@@ -38,8 +38,10 @@ export const CONFIG = {
     window: 2.5, // seconds the shield stays up waiting for a hit
   },
   draught: {
-    heal: 42,
-    cooldown: 1.0,
+    cooldown: 1.0, // how much it heals is in the item database
+  },
+  shop: {
+    sellFraction: 0.25, // merchants pay a quarter of their price, as in WoW
   },
   death: {
     coinLossFraction: 0.2,
