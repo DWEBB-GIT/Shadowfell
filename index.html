@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shadowfall — The Fallen Road</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="vignette"></div>
+
+  <div id="hud">
+    <div id="title-area" class="panel">
+      <div class="game-title">SHADOWFALL</div>
+      <div class="region">The Fallen Road</div>
+    </div>
+
+    <div id="char-panel" class="panel">
+      <div class="row"><span class="label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
+      <div class="bar hp"><div id="hp-fill" class="fill"></div><span id="hp-text" class="bar-text"></span></div>
+    </div>
+
+    <div id="target-frame" class="panel" hidden>
+      <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
+      <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
+      <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
+    </div>
+
+    <div id="objective" class="panel">
+      <div class="row"><span class="obj-title">The Missing Delivery</span><span id="objective-state"></span></div>
+      <p id="objective-text"></p>
+    </div>
+
+    <ul id="log"></ul>
+    <div id="prompt" hidden></div>
+    <div id="enemy-bars"></div>
+    <div id="damage-numbers"></div>
+    <div id="toast"></div>
+    <div id="levelup" class="panel" hidden><div id="levelup-title"></div><div id="levelup-list"></div></div>
+    <div id="mute-indicator" hidden>Sound off (M)</div>
+
+    <!-- bottom of the screen: experience, spell bar, menus and bag slots -->
+    <div id="bottom-bar">
+      <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><span id="xp-text" class="bar-text"></span></div>
+      <div id="bar-row">
+        <div id="action-bar" class="panel"></div>
+        <div id="micro-bar" class="panel">
+          <button class="micro" id="btn-character" title="Character (C)"><span class="micro-icon">&#9876;</span><span class="key" data-kbm="C" data-pad="View"></span></button>
+          <button class="micro" id="btn-spellbook" title="Spellbook (P)"><span class="micro-icon">&#10022;</span><span class="key" data-kbm="P" data-pad="&#8593;"></span></button>
+          <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
+          <div class="coins" title="Coins"><span class="coin-dot"></span><b id="stat-coins">0</b></div>
+          <div id="bag-sockets"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WoW-style windows: the bags open above the bag slots, the character on the left -->
+  <div id="bags-window" class="window" hidden>
+    <div id="bags-frames"></div>
+  </div>
+
+  <div id="character-window" class="window panel" hidden>
+    <div class="window-head"><h2>Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
+    <div class="char-body">
+      <div class="equip-col" id="equip-left"></div>
+      <div class="char-figure">
+        <div class="figure-shape"></div>
+        <div id="char-stats"></div>
+      </div>
+      <div class="equip-col" id="equip-right"></div>
+    </div>
+    <div class="window-hint" id="char-hint"></div>
+  </div>
+
+  <div id="spellbook-window" class="window panel" hidden>
+    <div class="window-head"><h2>Spellbook</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
+    <div id="spellbook-list"></div>
+    <div class="window-hint" id="spellbook-hint"></div>
+  </div>
+
+  <div id="tooltip" hidden></div>
+  <div id="drag-ghost" hidden><img alt=""></div>
+
+  <div id="document" class="modal" hidden>
+    <div class="modal-panel panel parchment">
+      <div class="modal-head"><h2 id="document-title"></h2><button class="btn small" data-close>Close (Esc)</button></div>
+      <div id="document-body"></div>
+    </div>
+  </div>
+
+  <div id="death" class="modal dark" hidden>
+    <div class="death-panel">
+      <h1>You have fallen</h1>
+      <p id="death-text"></p>
+      <button id="respawn-btn" class="btn">Return to the last shrine</button>
+    </div>
+  </div>
+
+  <div id="title-screen" class="modal dark" hidden>
+    <div class="title-panel">
+      <h1>SHADOWFALL</h1>
+      <div class="sub">The Fallen Road &middot; first playable</div>
+      <p id="intro-text"></p>
+      <p id="title-note" class="warn" hidden></p>
+      <div class="title-buttons">
+        <button id="continue-btn" class="btn" hidden>Continue</button>
+        <button id="new-btn" class="btn">Begin</button>
+      </div>
+      <div class="controls-wrap">
+        <table class="controls">
+          <tr><th colspan="2">Keyboard and mouse</th></tr>
+          <tr><td>WASD</td><td>Move</td></tr>
+          <tr><td>Mouse</td><td>Aim: attacks go to the enemy nearest your aim</td></tr>
+          <tr><td>Left click</td><td>Strike, or loot a body or drop</td></tr>
+          <tr><td>Right click</td><td>Shield Break</td></tr>
+          <tr><td>Space</td><td>Brace (blocks the next blow)</td></tr>
+          <tr><td>1 &middot; 2 / Q</td><td>Lunge &middot; Healing draught</td></tr>
+          <tr><td>Tab</td><td>Lock on / release</td></tr>
+          <tr><td>E</td><td>Interact / loot everything nearby</td></tr>
+          <tr><td>B &middot; C &middot; P</td><td>Bags &middot; Character &middot; Spellbook</td></tr>
+          <tr><td>K &middot; M &middot; Esc</td><td>Save &middot; Sound &middot; Close / release lock</td></tr>
+        </table>
+        <table class="controls">
+          <tr><th colspan="2">Gamepad</th></tr>
+          <tr><td>Left stick</td><td>Move</td></tr>
+          <tr><td>Right stick</td><td>Aim</td></tr>
+          <tr><td>X / RT</td><td>Strike</td></tr>
+          <tr><td>Y</td><td>Shield Break</td></tr>
+          <tr><td>B</td><td>Brace</td></tr>
+          <tr><td>RB &middot; LB</td><td>Lunge &middot; Healing draught</td></tr>
+          <tr><td>R3 (stick click)</td><td>Lock on / release</td></tr>
+          <tr><td>A</td><td>Interact / loot / confirm</td></tr>
+          <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
+          <tr><td>D-pad up &middot; down</td><td>Spellbook &middot; Save</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading">Lighting the lamps&hellip;</div>
+
+  <script src="dist/shadowfall.js"></script>
+</body>
+</html>
