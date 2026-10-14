@@ -126,6 +126,8 @@ export class World {
       else black.push(entry);
       if (inside || edge > -3) collision.add(x, z, 0.45 * s);
     }
+    // for the minimap
+    this.mapTrees = [...roadPines, ...roadDead, ...bwDead, ...black].map((t) => [t.x, t.z]);
     this._instanced('pine', roadPines);
     this._instanced('dead_tree', roadDead.concat(bwDead));
     this._instanced('black_pine', black);

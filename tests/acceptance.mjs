@@ -91,7 +91,13 @@ const state = (page) => page.evaluate(() => {
     enemies: g.enemies.list.map((e) => ({ id: e.id, hp: e.health, dead: e.dead, x: e.position.x, z: e.position.z, state: e.state })),
     defeated: [...g.worldState.defeated],
     collected: [...g.worldState.collected],
-    stage: g.worldState.objectiveStage,
+    // where the story quest has got to, in the words these checks have always used
+    stage: (() => {
+      const st = g.quests.status('missing_delivery');
+      if (st === 'done') return 'reported';
+      if (st === 'ready') return 'complete';
+      return g.worldState.examined.has('cart') ? 'cartFound' : 'start';
+    })(),
   };
 });
 
@@ -437,7 +443,7 @@ async function exploration(browser) {
   record('Abandoned cart is discoverable', s.prompt === 'Examine the cart', `walking west from the road: prompt "${offRoad}" → "${s.prompt}"`);
   await sim(page, 0.1, { press: ['KeyE'] });
   s = await state(page);
-  const objective1 = await page.textContent('#objective-text');
+  const objective1 = await page.textContent('#objective');
   record('Examining the cart advances the objective (extra)', s.stage === 'cartFound', `"${objective1.slice(0, 60)}…"`);
 
   // manifest
@@ -729,7 +735,7 @@ async function persistence(browser) {
   record('An unlooted body is still there to loot after a reload', corpseLoot.lootable && corpseLoot.gained === 3, `ghoul_cart body lootable: ${corpseLoot.lootable}, +${corpseLoot.gained} coins`);
   const purse = await page.evaluate(() => window.__shadowfall.loot.active.map((l) => l.def.id));
   record('Collected loot does not reappear', !purse.includes('purse_graves') && !purse.includes('manifest'), `loot in world: ${purse.join(', ')}`);
-  record('Manifest progress persists', s.items.includes('manifest') && s.stage === 'complete', `objective: ${await page.textContent('#objective-state')}`);
+  record('Manifest progress persists', s.items.includes('manifest') && s.stage === 'complete', `tracker: ${(await page.textContent('#objective')).trim()}`);
   const respawn = await page.evaluate(() => window.__shadowfall.worldState.respawn);
   record('Shrine state and respawn point persist (extra)', respawn && near(respawn.x, 7.8, 0.01), JSON.stringify(respawn));
 
@@ -1782,9 +1788,16 @@ async function forge(browser) {
     const prompt = g.interaction.current && g.interaction.current.prompt;
     g.interaction.interact();
     g.step(1 / 60);
-    return { prompt, current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, mara: !!g.npcs.byId('mara') };
+    const options = [...document.querySelectorAll('#dlg-options [data-option]')].map((b) => b.dataset.option);
+    return { prompt, talking: g.dialogue.isOpen && !document.getElementById('dialogue-window').hidden, options, mara: !!g.npcs.byId('mara') };
   });
-  record('Mara Venn stands at her forge and talking to her opens her shop beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 6, `prompt "${talk.prompt}", ${talk.stock} items for sale, bags open: ${talk.bags}`);
+  await page.click('#dlg-options [data-option="shop"]');
+  Object.assign(talk, await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.step(1 / 60);
+    return { current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, talking: g.dialogue.isOpen };
+  }));
+  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 6 && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1814,39 +1827,46 @@ async function forge(browser) {
   record('Selling pays a quarter of the price (WoW style)', sell.gloves === 3 && sell.iron === 2, `gloves (14) sell for ${sell.gloves}; 2 grave iron (4 each) for ${sell.iron}`);
   record('Sold items can be bought back for what they fetched (extra)', sell.buyback === 2 && sell.back && sell.backCost === 3 && sell.have === 1, `${sell.buyback} in buy back; gloves back for ${sell.backCost}`);
 
+  // the manifest goes to Mara through the conversation, not the shop
   const handIn = await page.evaluate(() => {
     const g = window.__shadowfall;
     g.inventory.addItem('manifest', 1, { quiet: true });
     g.worldState.examined.add('cart');
     g.worldState.collected.add('manifest');
+    g.events.emit('examined', { id: 'cart' });
     const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'manifest');
     const sold = g.merchant.sell(loc);
-    g.events.emit('objectiveChanged', {});
-    g.hud.items.render();
-    const before = { label: document.getElementById('objective-state').textContent, stage: g.worldState.objectiveStage, button: !document.getElementById('shop-handin').hidden };
+    g.merchant.close();
+    g.npcs.talk(g.npcs.byId('mara'));
+    g.step(1 / 60);
+    const first = document.querySelector('#dlg-options [data-option]');
+    const before = { stage: g.quests.status('missing_delivery'), tracker: document.getElementById('objective').textContent, first: first.dataset.option, firstClass: first.className, mark: g.quests.markerFor('mara') };
     window.__c0 = g.inventory.coins;
     return { sold, before };
   });
-  await page.click('#shop-handin');
+  await page.click('#dlg-options [data-option="quest:missing_delivery"]');
+  const page2 = await page.evaluate(() => ({ head: document.getElementById('dlg-qhead').textContent, options: [...document.querySelectorAll('#dlg-options [data-option]')].map((b) => b.dataset.option) }));
+  await page.click('#dlg-options [data-option="complete"]');
   Object.assign(handIn, await page.evaluate(() => {
     const g = window.__shadowfall;
     g.step(1 / 60);
-    const c0 = window.__c0;
     return {
-      coins: g.inventory.coins - c0, xp: g.progression.xp, level: g.progression.level,
+      coins: g.inventory.coins - window.__c0, xp: g.progression.xp, level: g.progression.level,
       manifest: g.inventory.count('manifest'), flag: g.worldState.flags.has('manifest_delivered'),
-      stage: g.worldState.objectiveStage, label: document.getElementById('objective-state').textContent,
-      button: !document.getElementById('shop-handin').hidden, talk: document.getElementById('shop-talk').textContent,
+      status: g.quests.status('missing_delivery'), mark: g.quests.markerFor('mara'),
+      options: [...document.querySelectorAll('#dlg-options [data-option]')].map((b) => b.dataset.option),
     };
   }));
   record('Quest items cannot be sold', !handIn.sold, 'the manifest stays in the bags');
-  record('With the manifest in hand the objective says to return to Mara', handIn.before.stage === 'complete' && /Mara/.test(handIn.before.label) && handIn.before.button, `"${handIn.before.label}", hand-in button shown`);
-  record('Handing Mara the manifest pays 20 coins and 50 experience and closes the storyline', handIn.coins === 20 && handIn.xp === 50 && handIn.manifest === 0 && handIn.flag && handIn.stage === 'reported' && handIn.label === 'Complete' && !handIn.button, `+${handIn.coins} coins, ${handIn.xp} xp; "${handIn.talk.slice(0, 70)}…"`);
+  record('With the manifest in hand Mara shows a ? and the quest is first in her conversation', handIn.before.stage === 'ready' && handIn.before.mark === 'ready' && /Return to Mara/.test(handIn.before.tracker) && handIn.before.first === 'quest:missing_delivery' && /ready/.test(handIn.before.firstClass) && /Ready to hand in/.test(page2.head) && page2.options.includes('complete'),
+    `tracker: "${handIn.before.tracker.trim()}"; quest page: "${page2.head}"`);
+  record('Handing Mara the manifest pays 20 coins and 50 experience, and she offers the next quests', handIn.coins === 20 && handIn.xp === 50 && handIn.manifest === 0 && handIn.flag && handIn.status === 'done' && handIn.mark === 'available' && handIn.options.includes('quest:bells_at_hallow_cut') && handIn.options.includes('quest:the_hound_den'),
+    `+${handIn.coins} coins, ${handIn.xp} xp; Mara now shows ${handIn.mark === 'available' ? '!' : handIn.mark}; choices: ${handIn.options.join(', ')}`);
 
   await page.evaluate(() => window.__shadowfall.player.placeAt(24, -38));
   await sim(page, 0.2);
-  const away = await page.evaluate(() => ({ current: window.__shadowfall.merchant.current, shown: !document.getElementById('shop-window').hidden }));
-  record('Walking away closes the shop', away.current === null && !away.shown);
+  const away = await page.evaluate(() => ({ talking: window.__shadowfall.dialogue.isOpen, shown: !document.getElementById('dialogue-window').hidden }));
+  record('Walking away ends the conversation', !away.talking && !away.shown);
 
   await page.evaluate(() => window.__shadowfall.manualSave());
   await page.reload();
@@ -1855,13 +1875,13 @@ async function forge(browser) {
   await begin(page, '#continue-btn');
   const saved = await page.evaluate(() => {
     const g = window.__shadowfall;
-    return { flag: g.worldState.flags.has('manifest_delivered'), stage: g.worldState.objectiveStage, label: document.getElementById('objective-state').textContent };
+    return { flag: g.worldState.flags.has('manifest_delivered'), status: g.quests.status('missing_delivery'), mark: g.quests.markerFor('mara') };
   });
-  record('The finished storyline persists through save and reload', saved.flag && saved.stage === 'reported' && saved.label === 'Complete', `"${saved.label}"`);
+  record('The finished quest persists through save and reload', saved.flag && saved.status === 'done' && saved.mark === 'available', `story quest ${saved.status}; Mara shows ${saved.mark === 'available' ? '!' : saved.mark}`);
   record("No script errors (Mara's forge)", errors.length === 0, errors.join(' | '));
   await ctx.close();
 
-  // the gamepad: A on a stock item buys it
+  // the gamepad: A talks, A on "Let me see your wares", A on a stock item buys it
   ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   await ctx.addInitScript(PAD_STUB);
   ({ page, errors } = await openGame(ctx));
@@ -1871,11 +1891,17 @@ async function forge(browser) {
   await setup(page, { x: 16.2, z: -40.5 });
   await page.evaluate(() => (window.__shadowfall.inventory.coins = 20));
   await padSim(page, 0.05, { tap: [PAD.A] }); // talk
+  const talking = await page.evaluate(() => window.__shadowfall.dialogue.isOpen);
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.hud.quests.choice = g.dialogue.page.options.findIndex((o) => o.id === 'shop');
+  });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // wares
   const padOpen = await page.evaluate(() => window.__shadowfall.merchant.current);
   await page.evaluate(() => (window.__shadowfall.hud.items.focus = 'm:healing_draught'));
   await padSim(page, 0.05, { tap: [PAD.A] });
   const pad = await page.evaluate(() => ({ coins: window.__shadowfall.inventory.coins, draughts: window.__shadowfall.inventory.count('healing_draught') }));
-  record('With a gamepad, A talks to Mara and A on an item buys it', padOpen === 'mara_forge' && pad.coins === 14, `${pad.coins} coins left, ${pad.draughts} draughts`);
+  record('With a gamepad, A talks to Mara, picks her wares, and buys', talking && padOpen === 'mara_forge' && pad.coins === 14, `${pad.coins} coins left, ${pad.draughts} draughts`);
   record("No script errors (forge, gamepad)", errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -2168,8 +2194,240 @@ async function atmosphere(browser) {
 // -------------------------------------------------------------------- run
 const browser = await launch();
 fs.mkdirSync(path.join(HERE, 'screenshots'), { recursive: true });
+async function questsAndMap(browser) {
+  current = 'Quests, dialogue, quest log and minimap';
+  let { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const shots = path.join(HERE, '..', 'docs', 'screens');
+  fs.mkdirSync(shots, { recursive: true });
+
+  // a new game starts with the story quest in hand and tracked
+  await setup(page, { x: 16.2, z: -38.8 });
+  await sim(page, 0.1);
+  const start = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const mark = document.querySelector('.npc-mark');
+    return {
+      status: g.quests.status('missing_delivery'), tracked: g.quests.tracked.has('missing_delivery'),
+      tracker: document.getElementById('objective').textContent, mara: g.quests.markerFor('mara'),
+      markText: mark && mark.textContent, markShown: mark && mark.style.display !== 'none', markClass: mark && mark.className,
+    };
+  });
+  record('A new game starts with the story quest in hand, tracked under the map', start.status === 'active' && start.tracked && /Recover the cart's manifest/.test(start.tracker), `tracker: "${start.tracker.trim()}"`);
+  record('Mara shows a grey ? while her quest is in hand', start.mara === 'active' && start.markText === '?' && start.markShown && /active/.test(start.markClass), `${start.markText} (${start.markClass})`);
+
+  // the story quest, done quickly
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.interaction.examine('cart');
+    g.inventory.addItem('manifest', 1, { quiet: true });
+    g.npcs.talk(g.npcs.byId('mara'));
+    g.dialogue.choose('quest:missing_delivery');
+    g.dialogue.choose('complete');
+  });
+  const after = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.step(1 / 60);
+    const mark = document.querySelector('.npc-mark');
+    return { mara: g.quests.markerFor('mara'), markText: mark.textContent, markClass: mark.className, options: g.dialogue.page.options.map((o) => o.id) };
+  });
+  record('Mara shows a gold ! when she has a quest to give', after.mara === 'available' && after.markText === '!' && /available/.test(after.markClass), `${after.markText} (${after.markClass})`);
+
+  // a quest is offered with its objectives and rewards, and accepted by clicking
+  await page.click('#dlg-options [data-option="quest:the_hound_den"]');
+  const offer = await page.evaluate(() => ({
+    head: document.getElementById('dlg-qhead').textContent, text: document.getElementById('dlg-text').textContent,
+    quest: document.getElementById('dlg-quest').textContent, options: [...document.querySelectorAll('#dlg-options [data-option]')].map((b) => b.textContent.trim()),
+  }));
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(shots, 'quest-offer.png') });
+  record('A quest offer shows what to do and what it pays, with Accept and Decline', /New quest/.test(offer.head) && /Barrow Hounds slain: 0\/3/.test(offer.quest) && /25 coins/.test(offer.quest) && /70 experience/.test(offer.quest) && /Healing draught ×2/.test(offer.quest) && offer.options.some((o) => /Accept/.test(o)) && offer.options.some((o) => /Decline/.test(o)),
+    `"${offer.text.slice(0, 60)}…" / ${offer.quest.replace(/\s+/g, ' ').slice(0, 120)}`);
+  await page.click('#dlg-options [data-option="accept"]');
+  const took = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.step(1 / 60);
+    return { status: g.quests.status('the_hound_den'), tracked: g.quests.tracked.has('the_hound_den'), log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | '), tracker: document.getElementById('objective').textContent, back: g.dialogue.view.kind };
+  });
+  record('Accepting puts the quest in the log, tracks it, and returns to the conversation', took.status === 'active' && took.tracked && /Quest accepted: The Hound Den/.test(took.log) && /Barrow Hounds slain: 0\/3/.test(took.tracker) && took.back === 'menu', `tracker: "${took.tracker.trim().replace(/\s+/g, ' ')}"`);
+
+  // the seer's quest waits on the two before it
+  const locked = await page.evaluate(() => ({ seer: window.__shadowfall.quests.status('the_glade_seer'), offered: window.__shadowfall.dialogue.page.options.map((o) => o.id) }));
+  record('A quest that needs others done first is not offered yet', locked.seer === 'locked' && !locked.offered.includes('quest:the_glade_seer'), `The Seer in the Glade: ${locked.seer}`);
+
+  // a dialogue tree
+  const tree = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.choose('node:mara_who');
+    const a = { text: g.dialogue.page.text, replies: g.dialogue.page.options.map((o) => o.text) };
+    g.dialogue.choose('node:mara_watch');
+    const b = g.dialogue.page.text;
+    g.dialogue.choose('menu');
+    return { a, b, back: g.dialogue.view.kind, blackwood: g.dialogue.page.options.some((o) => o.id === 'node:mara_blackwood') };
+  });
+  record('Topics open a small dialogue tree and lead back to the greeting', /Mara Venn. I keep the forge/.test(tree.a.text) && tree.a.replies.includes('What happened to the watch?') && /Gone quiet/.test(tree.b) && tree.back === 'menu', `"${tree.a.text.slice(0, 50)}…" → "${tree.b.slice(0, 40)}…"`);
+  record('Some topics only open up as the story moves on (extra)', tree.blackwood, 'Tell me about the Blackwood: offered once the manifest is delivered');
+
+  // kills count, even ones made before the quest was taken
+  const hounds = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.close();
+    const kill = (id) => g.combat.onEnemyDefeated(g.enemies.byId(id));
+    kill('hound_den_1');
+    kill('hound_den_2');
+    const two = g.quests.objectives('the_hound_den')[1].have;
+    const log = [...document.querySelectorAll('#log li')].map((l) => l.textContent);
+    kill('hound_den_3');
+    g.interaction.examine('hound_den');
+    return { two, log: log.join(' | '), status: g.quests.status('the_hound_den'), mark: g.quests.markerFor('mara'), tracker: document.getElementById('objective').textContent };
+  });
+  record('Kills move the objective on, with a line in the log', hounds.two === 2 && /Barrow Hounds slain: 2\/3/.test(hounds.log), `"${hounds.log.split(' | ').filter((l) => /slain/.test(l)).join('", "')}"`);
+  record('When every objective is met the tracker says to return, and Mara shows a gold ?', hounds.status === 'ready' && hounds.mark === 'ready' && /Return to Mara Venn/.test(hounds.tracker), `tracker: "${hounds.tracker.trim().replace(/\s+/g, ' ')}"`);
+  const bells = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.combat.onEnemyDefeated(g.enemies.byId('brute_hallow'));
+    g.npcs.talk(g.npcs.byId('mara'));
+    g.dialogue.choose('quest:bells_at_hallow_cut');
+    g.dialogue.choose('accept');
+    return { objectives: g.quests.objectives('bells_at_hallow_cut').map((o) => `${o.have}/${o.need}`), status: g.quests.status('bells_at_hallow_cut') };
+  });
+  record('An enemy slain before the quest was taken still counts (enemies do not return)', bells.objectives[1] === '1/1' && bells.status === 'active', `Bells at Hallow Cut: ${bells.objectives.join(', ')}`);
+
+  // hand-in with an item reward
+  const hand = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const d0 = g.inventory.count('healing_draught');
+    const c0 = g.inventory.coins;
+    g.dialogue.choose('quest:the_hound_den');
+    const ok = g.dialogue.choose('complete');
+    return { ok, draughts: g.inventory.count('healing_draught') - d0, coins: g.inventory.coins - c0, status: g.quests.status('the_hound_den') };
+  });
+  record('Handing in pays coins and puts item rewards in the bags', hand.ok && hand.draughts === 2 && hand.coins === 25 && hand.status === 'done', `+${hand.coins} coins, +${hand.draughts} healing draughts`);
+
+  // the quest log: L, tracking, abandoning
+  await page.evaluate(() => window.__shadowfall.dialogue.close());
+  await sim(page, 0.05, { press: ['KeyL'] });
+  await page.evaluate(() => window.__shadowfall.hud.quests.select('bells_at_hallow_cut'));
+  const log1 = await page.evaluate(() => ({ open: !document.getElementById('questlog-window').hidden, rows: [...document.querySelectorAll('.ql-row')].map((r) => r.textContent), detail: document.getElementById('ql-detail').textContent }));
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(shots, 'quest-log.png') });
+  record('L opens the quest log: quests in hand on the left, the chosen one in full on the right', log1.open && log1.rows.length === 1 && /Bells at Hallow Cut/.test(log1.rows[0]) && /Look over the graves/.test(log1.detail) && /Gravebound Brute slain: 1\/1/.test(log1.detail) && /Hand in to Mara Venn/.test(log1.detail), `rows: ${log1.rows.join(', ')}`);
+  await page.click('#ql-detail [data-act="track"]');
+  const untracked = await page.evaluate(() => ({ tracked: window.__shadowfall.quests.tracked.has('bells_at_hallow_cut'), tracker: document.getElementById('objective').hidden }));
+  await page.click('#ql-detail [data-act="abandon"]');
+  const asked = await page.evaluate(() => ({ status: window.__shadowfall.quests.status('bells_at_hallow_cut'), button: document.querySelector('#ql-detail [data-act="abandon"]').textContent }));
+  await page.click('#ql-detail [data-act="abandon"]');
+  const gone = await page.evaluate(() => ({ status: window.__shadowfall.quests.status('bells_at_hallow_cut'), rows: document.querySelectorAll('.ql-row').length }));
+  record('Quests can be untracked, and abandoned after a second click to confirm', !untracked.tracked && untracked.tracker && asked.status === 'active' && /Really/.test(asked.button) && gone.status === 'available' && gone.rows === 0, `untracked (tracker hidden: ${untracked.tracker}); first click: "${asked.button}"; then ${gone.status}`);
+  await sim(page, 0.05, { press: ['KeyL'] });
+  const closed = await page.evaluate(() => document.getElementById('questlog-window').hidden);
+  record('L closes the quest log again', closed);
+
+  // the minimap
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.quests.accept('bells_at_hallow_cut');
+  });
+  const map = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(14, -30);
+    g.step(1 / 60);
+    g.player.facing = Math.PI / 2; // east
+    g.hud.minimap.draw();
+    const c = document.getElementById('minimap');
+    const r = c.getBoundingClientRect();
+    const ctx = c.getContext('2d');
+    const k = c.width / c.clientWidth;
+    const px = (x, y) => [...ctx.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data];
+    // the arrow points east: its white body runs right of the centre, and nothing points north
+    const R = c.clientWidth / 2;
+    const east = px(R + 2, R);
+    const north = px(R, R - 6);
+    const marks = g.hud.minimap.markers();
+    return {
+      box: { right: window.innerWidth - r.right, top: r.top, w: r.width },
+      east, north,
+      mara: marks.find((m) => m.label === 'Mara Venn'),
+      maraMark: g.quests.markerFor('mara'),
+      areas: marks.filter((m) => m.kind === 'area').map((m) => m.label),
+      shrines: marks.filter((m) => m.kind === 'shrine').length,
+    };
+  });
+  const white = (p) => p[0] > 200 && p[1] > 200 && p[2] > 200;
+  record('A round minimap sits in the top-right corner', map.box.right < 30 && map.box.top < 30 && map.box.w > 120, `${map.box.w}px across, ${map.box.right.toFixed(0)}px from the right`);
+  record('The Warden is an arrow pointing the way they face (north up)', white(map.east) && !white(map.north), `facing east: right of centre ${map.east.slice(0, 3)}, above centre ${map.north.slice(0, 3)}`);
+  record('Quest markers on the map: ! and ? on quest givers, and the places objectives point to', map.mara && map.mara.kind === map.maraMark && map.mara.kind === 'active' && map.areas.includes('Hallow Cut') && map.shrines === 2,
+    `Mara: ${map.mara && map.mara.kind}; objective areas: ${map.areas.join(', ')}`);
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(16.5, -38.5);
+    g.player.facing = Math.PI * 0.8;
+    g.npcs.talk(g.npcs.byId('mara'));
+    g._snapCamera();
+    g.step(1 / 60);
+  });
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(shots, 'quest-dialogue-minimap.png') });
+
+  // the gamepad: D-pad right opens the log, X tracks, B closes; in a conversation up/down and A
+  await ctx.close();
+  ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await ctx.addInitScript(PAD_STUB);
+  ({ page, errors } = await openGame(ctx));
+  await pauseLoop(page);
+  await padSim(page, 0.05, { tap: [PAD.A] });
+  await setup(page, { x: 0, z: 20 });
+  await padSim(page, 0.05, { tap: [PAD.RIGHT] });
+  const padLog = await page.evaluate(() => ({ open: window.__shadowfall.hud.quests.logOpen, sel: window.__shadowfall.hud.quests.selected }));
+  await padSim(page, 0.05, { tap: [PAD.X] });
+  const padTrack = await page.evaluate(() => window.__shadowfall.quests.tracked.has('missing_delivery'));
+  await padSim(page, 0.05, { tap: [PAD.B] });
+  const padClosed = await page.evaluate(() => !window.__shadowfall.hud.quests.logOpen);
+  await setup(page, { x: 16.2, z: -40.5 });
+  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.3, { tap: [PAD.DOWN] });
+  const padChoice = await page.evaluate(() => window.__shadowfall.hud.quests.choice);
+  await padSim(page, 0.05, { tap: [PAD.A] });
+  const padNode = await page.evaluate(() => window.__shadowfall.dialogue.view);
+  await padSim(page, 0.05, { tap: [PAD.B] });
+  const padBack = await page.evaluate(() => window.__shadowfall.dialogue.view && window.__shadowfall.dialogue.view.kind);
+  record('With a gamepad: D-pad right opens the log, X tracks, B closes; up/down and A pick in a conversation, B goes back', padLog.open && padLog.sel === 'missing_delivery' && !padTrack && padClosed && padChoice === 1 && padNode.kind === 'node' && padBack === 'menu',
+    `log ${padLog.open ? 'opened' : 'shut'} on ${padLog.sel}; tracked after X: ${padTrack}; picked choice ${padChoice} → ${padNode.kind} ${padNode.id || ''}; B → ${padBack}`);
+  record('No script errors (quests, gamepad)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+
+  // saves: the log persists; old saves start from the story flag; bad ids are refused
+  ({ ctx, page, errors } = await freshGame(browser));
+  await begin(page);
+  const saves = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.quests.done.add('missing_delivery');
+    g.quests.accepted = ['missing_delivery', 'the_hound_den'];
+    g.quests.tracked = new Set(['the_hound_den']);
+    const data = g.save.serialize();
+    const old = JSON.parse(JSON.stringify(data));
+    delete old.quests;
+    old.world.flags = ['manifest_delivered'];
+    const bad = JSON.parse(JSON.stringify(data));
+    bad.quests.accepted.push('slay_the_dragon');
+    g.save.apply(old);
+    const migrated = { done: [...g.quests.done], active: g.quests.active };
+    old.world.flags = [];
+    g.save.apply(old);
+    const fresh = g.quests.active;
+    g.save.apply(data);
+    return { migrated, fresh, restored: g.quests.serialize(), badErrors: g.validateSave(bad), goodErrors: g.validateSave(data) };
+  });
+  record('The quest log is saved and restored', saves.restored.done.includes('missing_delivery') && saves.restored.accepted.includes('the_hound_den') && saves.restored.tracked.join() === 'the_hound_den' && saves.goodErrors.length === 0, JSON.stringify(saves.restored));
+  record('Saves from before the quest log carry on where the story was', saves.migrated.done.includes('missing_delivery') && saves.migrated.active.length === 0 && saves.fresh.join() === 'missing_delivery', `flag set: done ${saves.migrated.done}; no flag: in hand ${saves.fresh}`);
+  record('A save naming a quest that does not exist is refused', saves.badErrors.includes('quest log'), saves.badErrors.join(', '));
+  record('No script errors (quests)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

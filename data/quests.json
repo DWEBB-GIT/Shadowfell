@@ -1,60 +1,71 @@
 {
-  "_about": "Quests. The current stage is the last one whose `when` holds (examined a world point, collected placed loot, or a flag). `giver` lines are what the quest giver says at that stage.",
+  "_about": "Quests, WoW style. A quest is offered by its `giver` once every quest in `requires` is done, and handed in to its `turnIn` npc once every objective is met. Objectives: kill (an enemy type, counted from every one defeated), collect (an item carried; taken on hand-in unless `keep`), examine (a world point). `location` names a world.json location for the minimap. `offer`, `progress` and `complete` are what the giver says at each step.",
   "quests": [
     {
       "id": "missing_delivery",
       "name": "The Missing Delivery",
       "giver": "mara",
-      "stages": [
-        {
-          "id": "start",
-          "label": "In progress",
-          "text": "Mara Venn's iron never reached the old watch post. Follow the Fallen Road and look for some sign of it.",
-          "giver": "Iron's late, and the watch post won't answer its door. Nine bars of grave-iron with my mark on them went up that road. Find out what happened and I'll pay for it. Need kit in the meantime? I've some."
-        },
-        {
-          "id": "cartFound",
-          "when": {
-            "examined": "cart"
-          },
-          "label": "In progress",
-          "text": "A merchant cart lies off the road, missing a wheel. Search it for anything that explains what happened.",
-          "giver": "A cart off the road? Then someone stopped it. Look it over properly. A carter keeps papers."
-        },
-        {
-          "id": "complete",
-          "when": {
-            "collected": "manifest"
-          },
-          "label": "Return to Mara",
-          "style": "found",
-          "text": "You have the manifest. Grave-iron bound for the watch post, a scratched-out name, and a warning about bells. Take it to Mara Venn at her forge by the watch post.",
-          "giver": "That's Hollin's hand, and my mark on the iron. You found the manifest?"
-        },
-        {
-          "id": "reported",
-          "when": {
-            "flag": "manifest_delivered"
-          },
-          "label": "Complete",
-          "style": "done",
-          "text": "Mara has the manifest and paid you for it. The carters turned off north, into the Blackwood.",
-          "giver": "Bells in the ground and a driver nobody will name. I'll be asking questions in the village. Meanwhile, my forge is open."
-        }
+      "turnIn": "mara",
+      "autoAccept": true,
+      "summary": "Mara Venn's iron never reached the old watch post. Follow the Fallen Road and find out what became of it.",
+      "offer": "Iron's late, and the watch post won't answer its door. Nine bars of grave-iron with my mark on them went up that road. Find out what happened and I'll pay for it.",
+      "progress": "Any word of my iron? A cart doesn't vanish. Look it over properly if you find it. A carter keeps papers.",
+      "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
+      "objectives": [
+        { "id": "manifest", "type": "collect", "target": "manifest", "count": 1, "label": "Recover the cart's manifest", "location": "cart" }
       ],
-      "turnIn": {
-        "npc": "mara",
-        "item": "manifest",
-        "atStage": "complete",
-        "action": "Hand over the manifest",
-        "thanks": "Bells at Hallow Cut. I don't like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
-        "setsFlag": "manifest_delivered",
-        "log": "You hand Mara the manifest. She reads it twice."
-      },
-      "reward": {
-        "coins": 20,
-        "xp": 50
-      }
+      "reward": { "coins": 20, "xp": 50 },
+      "setsFlag": "manifest_delivered",
+      "turnInLog": "You hand Mara the manifest. She reads it twice."
+    },
+    {
+      "id": "bells_at_hallow_cut",
+      "name": "Bells at Hallow Cut",
+      "giver": "mara",
+      "turnIn": "mara",
+      "requires": ["missing_delivery"],
+      "summary": "Hollin's manifest warns of bells at Hallow Cut, the old burial ground east of the road. Look over the graves and put down whatever walks there.",
+      "offer": "Graves don't ring. I've buried enough folk to know. Something's walking at Hallow Cut, and big, by the tracks on the road. Go and look at the graves, and if whatever rings those bells can be put down, put it down.",
+      "progress": "Still ringing? Then it's still walking.",
+      "complete": "A brute in grave-chains, carrying a watchman's blade? Then the watch post didn't just stop answering. Someone emptied it. Take this. You've earned it.",
+      "objectives": [
+        { "id": "look", "type": "examine", "target": "hallow_cut", "label": "Look over the graves at Hallow Cut", "location": "hallow_cut" },
+        { "id": "brute", "type": "kill", "target": "brute", "count": 1, "label": "Gravebound Brute slain", "location": "hallow_cut" }
+      ],
+      "reward": { "coins": 30, "xp": 80 }
+    },
+    {
+      "id": "the_hound_den",
+      "name": "The Hound Den",
+      "giver": "mara",
+      "turnIn": "mara",
+      "requires": ["missing_delivery"],
+      "summary": "The carters turned north into the Blackwood, past a den of barrow hounds beside the track. Thin the pack and search the den for any sign of them.",
+      "offer": "The carters turned north into the Blackwood. They'd not have got far. There's a den of barrow hounds by the track, past the shrine at the forest edge. Thin the pack, and tell me if you see any sign of my carters.",
+      "progress": "The hounds hunt in threes. Don't let them get round you.",
+      "complete": "No carters, then. Only bones and a purse. I'd hoped otherwise. The track's safer for it, at least. Take these. You'll want them deeper in.",
+      "objectives": [
+        { "id": "search", "type": "examine", "target": "hound_den", "label": "Search the hound den", "location": "hound_den" },
+        { "id": "hounds", "type": "kill", "target": "hound", "count": 3, "label": "Barrow Hounds slain", "location": "hound_den" }
+      ],
+      "reward": { "coins": 25, "xp": 70, "items": [{ "item": "healing_draught", "count": 2 }] }
+    },
+    {
+      "id": "the_glade_seer",
+      "name": "The Seer in the Glade",
+      "giver": "mara",
+      "turnIn": "mara",
+      "requires": ["bells_at_hallow_cut", "the_hound_den"],
+      "summary": "Someone is calling the dead up out of the Blackwood. Hunters speak of a seer among the standing stones in the far glade, and of archers camped on the way. Go deep and end it.",
+      "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
+      "progress": "The glade is at the end of the track. You'll know the stones.",
+      "complete": "It's quieter. I felt it at the anvil before you came up the track. Here, the best shield I've made this year. Keep it between you and whatever comes next.",
+      "objectives": [
+        { "id": "archers", "type": "kill", "target": "archer", "count": 2, "label": "Hollow Archers slain", "location": "archer_camp" },
+        { "id": "stones", "type": "examine", "target": "seer_stones", "label": "Find the standing stones in the glade", "location": "seer_glade" },
+        { "id": "seer", "type": "kill", "target": "seer", "count": 1, "label": "Blackwood Seer slain", "location": "seer_glade" }
+      ],
+      "reward": { "coins": 50, "xp": 150, "items": [{ "item": "iron_shield", "count": 1 }] }
     }
   ]
 }

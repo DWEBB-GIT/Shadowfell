@@ -27,6 +27,8 @@ import { heightAt } from './world/terrain.js';
 import { Targeting } from './systems/targeting.js';
 import { NpcManager } from './systems/npcs.js';
 import { Merchant } from './systems/merchant.js';
+import { QuestLog } from './systems/quests.js';
+import { Dialogue } from './systems/dialogue.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
 import { EXAMINE } from './data/text.js';
@@ -72,12 +74,14 @@ class Game {
     this.player = new Player(this);
     this.scene.add(this.player.group);
     this.inventory = new Inventory(this);
+    this.quests = new QuestLog(this);
     this.combat = new Combat(this);
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
     this.npcs = new NpcManager(this);
     this.merchant = new Merchant(this);
+    this.dialogue = new Dialogue(this);
     this.loot = new LootSystem(this);
     this.interaction = new Interaction(this);
     this.actionBar = new ActionBar(this);
@@ -168,9 +172,10 @@ class Game {
     this.worldState.reset();
     this.progression.apply({ level: 1, xp: 0 });
     this.inventory.apply(new Inventory(this).serialize());
+    this.dialogue.close();
     this.merchant.close();
     this.merchant.buyback = [];
-    this.merchant.justThanked = null;
+    this.quests.startNew();
     this.region = null; // named again, quietly, from wherever the Warden stands
     this.telegraphs.clear();
     this.hud.numbers.clear();
@@ -352,10 +357,14 @@ class Game {
     if (input.consume('KeyB') || input.consume('KeyI') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
     if (input.consume('KeyC') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
     if (input.consume('KeyP')) hud.togglePanel('spellbook');
+    // D-pad right opens and closes the log (it moves the highlight in the bags)
+    if (input.consume('KeyL') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
     // With a window open the pad drives the window; the world keeps running
-    // and the keyboard and mouse still play, as in WoW.
-    const padMenu = hud.items.anyOpen;
-    if (padMenu) hud.items.gamepad(pad, dt);
+    // and the keyboard and mouse still play, as in WoW. Conversations and the
+    // quest log come first.
+    const padMenu = hud.quests.anyOpen || hud.items.anyOpen;
+    if (hud.quests.anyOpen) hud.quests.gamepad(pad, dt);
+    else if (padMenu) hud.items.gamepad(pad, dt);
     else if (pad.pressed(BUTTONS.UP)) hud.togglePanel('spellbook');
     if (input.consume('KeyK') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
     if (hud.blocksGameplay) return null;
@@ -409,6 +418,7 @@ class Game {
       this.enemies.update(dt);
       this.npcs.update(dt);
       this.merchant.update();
+      this.dialogue.update();
       this.telegraphs.update(dt);
       this.targeting.update(dt, this.rawAim, ABILITIES.strike.range + 1);
       this.interaction.update();

@@ -1,0 +1,47 @@
+{
+  "_about": "What townsfolk say. An npc names its dialogue in npcs.json. `greetings`: the last one whose `when` holds is said on opening. `topics` are extra lines on the first page, shown while their `when` holds; each opens a node. A node says its text and offers replies; a reply opens another node, or with no `node` goes back to the first page. Quests, the shop and Goodbye are added by the game. Conditions: { quest, status } with status not_started, available, active, ready or done; { flag }; { examined }.",
+  "dialogues": [
+    {
+      "id": "mara",
+      "greetings": [
+        { "text": "Mara Venn, smith. If it's iron, I've likely hit it." },
+        { "text": "Any word of my iron? Nine bars, my mark on every one.", "when": { "quest": "missing_delivery", "status": "active" } },
+        { "text": "You've a look about you. Found something on the road?", "when": { "quest": "missing_delivery", "status": "ready" } },
+        { "text": "Back again, Warden? The forge is hot if you need it.", "when": { "quest": "missing_delivery", "status": "done" } },
+        { "text": "The bells have stopped. First quiet night in a month.", "when": { "quest": "the_glade_seer", "status": "done" } }
+      ],
+      "topics": [
+        { "id": "who", "prompt": "Who are you?", "node": "mara_who" },
+        { "id": "grave_iron", "prompt": "What is grave-iron?", "node": "mara_grave_iron" },
+        { "id": "blackwood", "prompt": "Tell me about the Blackwood.", "node": "mara_blackwood", "when": { "quest": "missing_delivery", "status": "done" } }
+      ],
+      "nodes": [
+        {
+          "id": "mara_who",
+          "text": "Mara Venn. I keep the forge for the watch post, or I did, while there was a watch. Now I keep it for whoever pays.",
+          "replies": [{ "text": "What happened to the watch?", "node": "mara_watch" }, { "text": "I see." }]
+        },
+        {
+          "id": "mara_watch",
+          "text": "Gone quiet a fortnight back. Doors barred from the inside, and nobody answers. I've stopped knocking.",
+          "replies": [{ "text": "I'll keep an eye out." }]
+        },
+        {
+          "id": "mara_grave_iron",
+          "text": "Iron smelted from old barrow-nails. It holds an edge against things that ought to stay dead. Bring me any you find and I'll pay fair for it.",
+          "replies": [{ "text": "I'll remember that." }]
+        },
+        {
+          "id": "mara_blackwood",
+          "text": "Black pines, older than the road. The track runs through to a glade where the old stones stand. Hunters went in for the hounds' pelts. Fewer come out each year.",
+          "replies": [{ "text": "Who set the stones?", "node": "mara_stones" }, { "text": "Thank you." }]
+        },
+        {
+          "id": "mara_stones",
+          "text": "Nobody living. My grandmother said they were there before the barrows, and the barrows were there before the road.",
+          "replies": [{ "text": "Thank you." }]
+        }
+      ]
+    }
+  ]
+}

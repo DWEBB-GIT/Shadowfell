@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z.",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -84,6 +84,44 @@
       "position": [4.6, -63],
       "rotation": -90,
       "label": "at the shrine at the forest edge"
+    }
+  ],
+  "locations": [
+    {
+      "id": "cart",
+      "name": "The abandoned cart",
+      "position": [-6.3, -4],
+      "radius": 5
+    },
+    {
+      "id": "hallow_cut",
+      "name": "Hallow Cut",
+      "position": [22.5, -20],
+      "radius": 9
+    },
+    {
+      "id": "watch_post",
+      "name": "The watch post",
+      "position": [24, -46],
+      "radius": 6
+    },
+    {
+      "id": "hound_den",
+      "name": "The hound den",
+      "position": [-15, -80.5],
+      "radius": 7
+    },
+    {
+      "id": "archer_camp",
+      "name": "The archers' camp",
+      "position": [13.6, -91],
+      "radius": 7
+    },
+    {
+      "id": "seer_glade",
+      "name": "The seer's glade",
+      "position": [-6.4, -115],
+      "radius": 8
     }
   ],
   "npcSpawns": [

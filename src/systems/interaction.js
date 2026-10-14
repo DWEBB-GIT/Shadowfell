@@ -53,7 +53,6 @@ export class Interaction {
     worldState.examined.add(id);
     events.emit('log', { text: EXAMINE[id], kind: 'lore' });
     if (first) events.emit('examined', { id });
-    if (id === 'cart') events.emit('objectiveChanged', {});
   }
 
   update() {

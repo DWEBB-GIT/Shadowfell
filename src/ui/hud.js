@@ -5,6 +5,8 @@ import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
 import { ABILITIES, BAR_SLOTS } from '../systems/actionBar.js';
 import { DamageNumbers } from './damageNumbers.js';
+import { QuestUI } from './questUI.js';
+import { Minimap } from './minimap.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -31,9 +33,6 @@ export class Hud {
       xpFill: $('xp-fill'),
       xpText: $('xp-text'),
       coins: $('stat-coins'),
-      objective: $('objective-text'),
-      objectiveState: $('objective-state'),
-      objectiveTitle: $('objective-title'),
       prompt: $('prompt'),
       log: $('log'),
       bars: $('enemy-bars'),
@@ -75,6 +74,8 @@ export class Hud {
     this._buildBar();
     this.items = new ItemUI(game, this);
     this.numbers = new DamageNumbers(game, $('damage-numbers'));
+    this.quests = new QuestUI(game, this);
+    this.minimap = new Minimap(game);
     // the last enemy you fought, shown in the target frame for a while
     this.recentFoe = null;
     this.recentFoeTime = 0;
@@ -151,6 +152,7 @@ export class Hud {
     this._applyKeyLabels();
     this.el.prompt.dataset.text = ''; // redraw the prompt with the right key
     this.items.render();
+    this.quests.render();
   }
 
   _applyKeyLabels() {
@@ -178,10 +180,11 @@ export class Hud {
     this.items.render();
   }
 
-  // Bags, character panel and spellbook; toggles for B / C / P and the pad.
+  // Bags, character panel, spellbook and quest log; toggles for B / C / P / L and the pad.
   togglePanel(which) {
     if (this.modal) return;
-    this.items.toggle(which);
+    if (which === 'quests') this.quests.toggleLog();
+    else this.items.toggle(which);
   }
 
   openDocument(id) {
@@ -218,8 +221,8 @@ export class Hud {
       if (force) this.items.closeAll();
       return true;
     }
-    if (force) this.items.closeAll();
-    return this.items.closeAll();
+    const talk = this.quests.closeAll();
+    return this.items.closeAll() || talk;
   }
 
   // ------------------------------------------------------------- feedback
@@ -268,14 +271,9 @@ export class Hud {
     this.el.mute.hidden = !m;
   }
 
+  // the tracked quests under the minimap
   refreshObjective() {
-    const ws = this.game.worldState;
-    const quest = ws.objectiveQuest;
-    const stage = ws.questStage(quest.id);
-    this.el.objectiveTitle.textContent = quest.name;
-    this.el.objective.textContent = stage.text;
-    this.el.objectiveState.textContent = stage.label;
-    this.el.objectiveState.className = stage.style || '';
+    this.quests.renderTracker();
   }
 
   refreshStats() {
@@ -323,6 +321,8 @@ export class Hud {
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
     this.refreshStats();
     this._refreshSlots();
+    this.quests.updateMarks();
+    this.minimap.draw();
 
     const c = interaction.current;
     const promptText = c && !this.modal ? c.prompt : '';

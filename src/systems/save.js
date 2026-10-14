@@ -1,6 +1,7 @@
 import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
 import { ABILITIES } from './actionBar.js';
+import { DB } from '../data/db.js';
 
 // Versioned save in localStorage. Loaded data is validated before anything is
 // applied; a save that fails validation is preserved under a backup key and
@@ -95,6 +96,12 @@ export function validateSave(data) {
   if (data.bar !== undefined) {
     check(Array.isArray(data.bar) && data.bar.length === 7 && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge'), 'spell bar');
   }
+  // the quest log (saves from before it have none, and start from the story flag)
+  if (data.quests !== undefined) {
+    const q = data.quests;
+    const known = (l) => isStrArray(l) && l.every((id) => DB.quests[id]);
+    check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
+  }
   const w = data.world;
   check(w && typeof w === 'object', 'missing world');
   if (w) {
@@ -134,6 +141,7 @@ export class SaveManager {
       inventory: inventory.serialize(),
       world: worldState.serialize(),
       bar: this.game.actionBar.serialize(),
+      quests: this.game.quests.serialize(),
     };
   }
 
@@ -196,6 +204,7 @@ export class SaveManager {
   apply(data) {
     const { player, progression, inventory, worldState } = this.game;
     worldState.apply(data.world);
+    this.game.quests.apply(data.quests, worldState.flags);
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);

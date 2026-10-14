@@ -30,7 +30,7 @@ problems.push(...validateGameData(raw, { models: MODELS }));
 const count = (f, key) => (raw[f] && Array.isArray(raw[f][key]) ? raw[f][key].length : 0);
 console.log(
   `data: ${count('items.json', 'items')} items, ${count('enemies.json', 'enemies')} enemy types, ${count('loot_tables.json', 'lootTables')} loot tables, ` +
-    `${count('npcs.json', 'npcs')} npcs, ${count('shops.json', 'shops')} shops, ${count('quests.json', 'quests')} quests, ${count('abilities.json', 'abilities')} abilities, ` +
+    `${count('npcs.json', 'npcs')} npcs, ${count('shops.json', 'shops')} shops, ${count('quests.json', 'quests')} quests, ${count('dialogue.json', 'dialogues')} dialogues, ${count('abilities.json', 'abilities')} abilities, ` +
     `${count('world.json', 'enemySpawns')} enemy spawns, ${count('scenery.json', 'props')} props`,
 );
 
@@ -43,7 +43,10 @@ const broken = [
   ['an enemy spawn of an unknown type', (d) => (d['world.json'].enemySpawns[0].enemy = 'dragon'), /unknown enemy type dragon/],
   ['a spawn outside the world', (d) => (d['world.json'].enemySpawns[0].position = [500, 0]), /not \[x, z\] inside the world bounds/],
   ['a prop with a misspelt model', (d) => (d['scenery.json'].props[0].model = 'crat'), /model crat does not exist/],
-  ['a quest stage waiting on an examine point that does not exist', (d) => (d['quests.json'].quests[0].stages[1].when = { examined: 'kart' }), /unknown examine point kart/],
+  ['a quest objective naming an examine point that does not exist', (d) => (d['quests.json'].quests[1].objectives[0].target = 'kart'), /unknown examine point kart/],
+  ['a quest needing more kills than the world has enemies', (d) => (d['quests.json'].quests[2].objectives[1].count = 9), /world only has/],
+  ['quests that require each other', (d) => d['quests.json'].quests[0].requires = ['the_glade_seer'], /loop back/],
+  ['a dialogue reply leading to a missing node', (d) => (d['dialogue.json'].dialogues[0].nodes[0].replies[0].node = 'nowhere'), /unknown node nowhere/],
 ];
 const selfTest = [];
 for (const [what, breakIt, expect] of broken) {

@@ -170,6 +170,22 @@ export class Inventory {
     for (const loc of this.bagLocations()) if (this.get(loc)?.id === id) this._set(loc, null);
   }
 
+  // Take `count` of an item from the bags, smallest stacks first.
+  removeCount(id, count) {
+    let left = count;
+    const locs = this.bagLocations().filter((l) => this.get(l)?.id === id).sort((a, b) => this.get(a).count - this.get(b).count);
+    for (const loc of locs) {
+      if (left <= 0) break;
+      const s = this.get(loc);
+      const n = Math.min(left, s.count);
+      if (n >= s.count) this._set(loc, null);
+      else s.count -= n;
+      left -= n;
+    }
+    this._changed();
+    return count - left;
+  }
+
   // Remove up to `count` from one location; returns the removed stack.
   take(loc, count = Infinity) {
     const s = this.get(loc);

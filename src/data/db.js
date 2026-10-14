@@ -10,8 +10,9 @@
 //   data/loot_tables.json  what enemies drop
 //   data/npcs.json         townsfolk (their shop and quests)
 //   data/shops.json        vendor types and shop stock
-//   data/quests.json       quests: stages, turn-in, reward
-//   data/world.json        regions, roads, shrines, spawns, placed loot
+//   data/quests.json       quests: giver, objectives, turn-in, reward
+//   data/dialogue.json     what townsfolk say: greetings, topics, replies
+//   data/world.json        regions, roads, shrines, locations, spawns, loot
 //   data/scenery.json      props, clearings, lights
 //   data/text.json         intro, documents, examine text
 //
@@ -25,6 +26,7 @@ import lootTables from '../../data/loot_tables.json';
 import npcs from '../../data/npcs.json';
 import shops from '../../data/shops.json';
 import quests from '../../data/quests.json';
+import dialogue from '../../data/dialogue.json';
 import world from '../../data/world.json';
 import scenery from '../../data/scenery.json';
 import text from '../../data/text.json';
@@ -39,6 +41,7 @@ export const RAW = {
   'npcs.json': npcs,
   'shops.json': shops,
   'quests.json': quests,
+  'dialogue.json': dialogue,
   'world.json': world,
   'scenery.json': scenery,
   'text.json': text,
@@ -66,6 +69,8 @@ export const DB = {
   vendorTypes: byId(shops.vendorTypes, 'vendorTypes'),
   shops: byId(shops.shops, 'shops'),
   quests: byId(quests.quests, 'quests'),
+  dialogues: byId(dialogue.dialogues, 'dialogues'),
+  locations: byId(world.locations, 'locations'),
   world,
   scenery,
   text,

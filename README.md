@@ -58,7 +58,9 @@ All content lives in `data/`, one JSON file per part of the game: items, archety
   - Anything sold can be bought back for what it fetched until you leave the game.
   - Quest items cannot be sold or dropped.
   - Walking away closes the shop.
-- **The manifest.** Once you have the manifest, the objective says to return to Mara. Hand it over in her shop for 20 coins and 50 experience; that closes the cart storyline, and she points you north to the Blackwood.
+- **The manifest.** Once you have the manifest, the tracker says to return to Mara, and she shows a gold ?. Talk to her and hand it over for 20 coins and 50 experience; she then has two new quests (a gold !), and a third once both are done.
+- **Quests and talking.** Talking to someone opens a WoW-style conversation: their quests first, then things to ask, their wares, and Goodbye. The quest log is on L (D-pad right on a pad); up to four tracked quests show under the minimap.
+- **The minimap.** Top right, north up. The arrow is you; ! and ? mark quest givers, dashed circles mark where open objectives point, and blue diamonds are shrines. + and − zoom.
 
 ## The Blackwood (second region)
 

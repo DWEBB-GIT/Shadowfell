@@ -83,12 +83,29 @@ kbd {
 }
 .bar.xp .bar-text { font-size: 9px; line-height: 8px; }
 
-#objective { position: absolute; top: 12px; right: 12px; width: 300px; padding: 8px 12px; }
-.obj-title { color: var(--gold); font-size: 14px; letter-spacing: 1px; }
-#objective-state { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-#objective-state.done { color: #a8b878; }
-#objective-state.found { color: #e0b860; }
-#objective-text { margin: 6px 0 0; font-size: 13px; line-height: 1.4; }
+/* tracked quests, under the minimap (click one to open it in the log) */
+#objective { position: absolute; top: 196px; right: 12px; width: 260px; padding: 6px 10px 8px; pointer-events: auto; }
+.tr-quest { cursor: pointer; padding: 3px 0; }
+.tr-quest + .tr-quest { border-top: 1px solid var(--border-dim); }
+.tr-name { color: var(--gold); font-size: 13px; letter-spacing: 0.5px; }
+.tr-tag { font-size: 10px; color: #ffd23c; text-transform: uppercase; letter-spacing: 1px; margin-left: 4px; }
+.tr-ready { color: #ffd23c; font-size: 12px; margin: 2px 0 0 10px; }
+.q-objectives { margin: 2px 0 0; padding: 0 0 0 14px; font-size: 12px; line-height: 1.4; list-style: '- '; }
+.q-objectives li.done { color: #8cbf78; }
+
+/* the minimap: round, north up, top right */
+#minimap-wrap { position: absolute; top: 12px; right: 12px; width: 168px; height: 168px; pointer-events: auto; }
+#minimap { display: block; border-radius: 50%; border: 2px solid var(--border); box-shadow: 0 0 0 2px #000, 0 2px 10px rgba(0,0,0,0.6); box-sizing: content-box; margin: -2px; }
+.mm-north { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--gold); background: var(--panel-solid); border: 1px solid var(--border); border-radius: 8px; padding: 0 5px; line-height: 14px; }
+.mm-zoom { position: absolute; right: -4px; width: 20px; height: 20px; padding: 0; font: bold 14px/18px Georgia, serif; color: var(--text); background: var(--panel-solid); border: 1px solid var(--border); border-radius: 50%; cursor: pointer; }
+#minimap-in { bottom: 18px; }
+#minimap-out { bottom: -4px; }
+
+/* ! and ? over townsfolk */
+#npc-marks { position: absolute; inset: 0; pointer-events: none; }
+.npc-mark { position: absolute; left: 0; top: 0; font: bold 34px/1 Georgia, serif; color: #ffd23c; text-shadow: 0 0 3px #000, 0 0 6px #000, 0 0 12px rgba(255, 190, 40, 0.6); animation: bob 1.6s ease-in-out infinite; }
+.npc-mark.active { color: #b4b4b4; text-shadow: 0 0 3px #000, 0 0 6px #000; }
+@keyframes bob { 50% { margin-top: -5px; } }
 
 #log {
   position: absolute; left: 12px; bottom: 120px; width: 420px; max-width: 40vw;
@@ -384,8 +401,6 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #shop-window { left: 12px; top: 136px; width: 330px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 #shop-window.beside-character { left: 354px; }
 #shop-window .window-head h2 { margin-right: 8px; }
-#shop-talk { font-style: italic; color: #d0b878; font-size: 13px; margin: 4px 0 8px; line-height: 1.35; }
-.quest-btn { display: block; width: 100%; height: auto; padding: 6px; margin-bottom: 8px; color: #f0d080; border-color: #a08040; font-size: 13px; }
 #shop-stock { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .shop-row { display: flex; gap: 6px; align-items: center; }
 .shop-row.poor .shop-price { color: #c05040; }
@@ -399,3 +414,39 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 /* quality borders on bag and equipment slots, as in WoW */
 .islot.filled.q-uncommon { border-color: rgba(108, 192, 90, 0.75); }
 .islot.filled.q-rare { border-color: rgba(74, 143, 224, 0.8); }
+
+/* ------------------------------------------------------------------ conversations and the quest log */
+#dialogue-window { left: 12px; top: 136px; width: 340px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#dlg-text { font-size: 14px; line-height: 1.45; margin: 4px 0 10px; color: #e6dbc0; }
+#dlg-qhead { margin-top: 2px; }
+.q-name { color: var(--gold); font-size: 15px; letter-spacing: 0.5px; }
+.q-state { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+.q-state.ready, .q-state.available { color: #ffd23c; }
+.q-sub { margin: 8px 0 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+.q-rewards { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; }
+.q-reward { display: inline-flex; align-items: center; gap: 5px; }
+.q-item img { width: 26px; height: 26px; border: 1px solid var(--border-dim); background: #0b0908; }
+.q-item.q-uncommon { color: #6fd36f; }
+.q-item.q-rare { color: #5aa0ff; }
+#dlg-options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; border-top: 1px solid var(--border-dim); padding-top: 6px; }
+.dlg-option { display: flex; align-items: center; gap: 8px; text-align: left; padding: 5px 6px; font: inherit; font-size: 14px; color: var(--text); background: none; border: 1px solid transparent; cursor: pointer; }
+.dlg-option:hover, .dlg-option.focus { background: rgba(201, 164, 92, 0.12); border-color: var(--border-dim); }
+.dlg-icon { width: 18px; text-align: center; font: bold 16px Georgia, serif; color: var(--text-dim); }
+.dlg-option.ready .dlg-icon, .dlg-option.available .dlg-icon { color: #ffd23c; }
+.dlg-option.active .dlg-icon { color: #a8a8a8; }
+.dlg-option.ready, .dlg-option.available { color: #f0d890; }
+.dlg-option.accept { color: #b8e090; }
+
+#questlog-window { left: 50%; top: 80px; transform: translateX(-50%); width: 600px; max-width: calc(100vw - 24px); padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.96); }
+.ql-body { display: grid; grid-template-columns: 210px 1fr; gap: 12px; min-height: 240px; }
+#ql-list { display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--border-dim); padding-right: 8px; }
+.ql-row { display: flex; align-items: baseline; gap: 4px; text-align: left; padding: 4px 6px; font: inherit; font-size: 13px; color: var(--text); background: none; border: 1px solid transparent; cursor: pointer; }
+.ql-row:hover { background: rgba(201, 164, 92, 0.08); }
+.ql-row.sel { background: rgba(201, 164, 92, 0.16); border-color: var(--border-dim); }
+.ql-track { width: 10px; font-size: 9px; color: var(--gold); }
+.ql-ready { color: #ffd23c; font-size: 12px; }
+.q-summary { font-size: 13px; line-height: 1.45; margin: 4px 0; }
+.ql-actions { display: flex; gap: 8px; margin-top: 12px; }
+.btn.danger { color: #ff9070; border-color: #a05040; }
+.mark-avail { color: #ffd23c; }
+.small { font-size: 12px; }

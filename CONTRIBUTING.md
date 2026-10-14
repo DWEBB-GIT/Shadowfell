@@ -11,10 +11,11 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | `abilities.json` | Player abilities: name, targeting, description, and the `tuning` numbers each runs on; `globalCooldown` | items (the draught) |
 | `enemies.json` | Enemy types: stats, behaviour (`ranged`, `circle`, `special`, `pack`), `lootTable`, `uniqueDrop`; `leashDistance` | loot tables, items, models |
 | `loot_tables.json` | `always` materials (min to max) and a `gear` chance with weighted entries | items |
-| `npcs.json` | Townsfolk: name, title, model, the shop they keep, the quests they give | shops, quests, models |
+| `npcs.json` | Townsfolk: name, title, model, the shop they keep, their dialogue | shops, dialogue, models |
 | `shops.json` | `vendorTypes` (what kinds of goods each type deals in) and `shops` (a vendor type and its stock) | items |
-| `quests.json` | Quests: ordered `stages` with conditions, a `turnIn`, and a `reward` | npcs, items, placed loot, examine points |
-| `world.json` | Bounds, regions, roads, player start, shrines, and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
+| `quests.json` | Quests: giver, turn-in npc, `requires`, `objectives` (kill, collect, examine), what the giver says, `reward` | npcs, enemy types, items, examine points, locations |
+| `dialogue.json` | What townsfolk say: `greetings` (the last whose `when` holds), `topics`, and `nodes` with `replies` | nodes, quests |
+| `world.json` | Bounds, regions, roads, player start, shrines, named `locations` (quest areas on the map), and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
 | `scenery.json` | Props (with colliders and examine points), clearings kept free of trees, lights | models, examine text |
 | `text.json` | The intro, readable documents, and examine text | |
 
@@ -51,7 +52,9 @@ npm run build       # rebundle dist/shadowfall.js (data is bundled in)
 - a model with no file in `assets/models`;
 - a position outside the world;
 - a shop selling a kind of item its vendor type does not deal in, or selling a quest item;
-- a quest stage waiting on something that cannot happen;
+- a quest objective naming something that does not exist, or needing more kills than the world has enemies;
+- quests whose requirements loop back on themselves;
+- a dialogue reply leading to a node that does not exist;
 - a key repeated in the same object;
 - a wrong type, such as a string where a number belongs.
 
@@ -72,9 +75,11 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
   2. Point an NPC's `shop` at it.
   3. Place the NPC with an `npcSpawns` entry in `world.json`.
 - **A new quest:**
-  1. Add a `quests.json` record whose stages are ordered. The current stage is the last whose `when` holds: `examined`, `collected` or `flag`.
-  2. A `turnIn` names the NPC, the item, the stage it is accepted at, and the flag it sets. One stage must wait for that flag.
-  3. List the quest on its giver in `npcs.json`.
+  1. Add a `quests.json` record with a `giver` and `turnIn` npc, and `requires` for any quests that must be done first.
+  2. Give it `objectives`: `kill` an enemy type (counted from every one defeated, since enemies do not return), `collect` an item (taken on hand-in unless `keep`), or `examine` a world point. Add a `location` so the minimap shows where to go.
+  3. Write what the giver says: `offer`, `progress` and `complete`, plus the `summary` the quest log shows.
+  4. The giver shows a gold ! when it can be taken, a grey ? while it is in hand, and a gold ? when it is ready.
+- **New things for someone to say:** add `topics` and `nodes` to their `dialogue.json` record. A `when` such as `{ "quest": "missing_delivery", "status": "done" }` holds a line back until the story gets there.
 - **A new place:**
   1. Add props to `scenery.json`, with examine text in `text.json`.
   2. Add spawns and placed loot to `world.json`. A new region is a `regions` entry.
@@ -89,3 +94,4 @@ Each file is a list of records with stable ids, which is how Unity ScriptableObj
 - `src/config.js` holds engine tuning, and exposes archetypes, enemies and ability tuning from the data under their long-standing names.
 - `src/world/layout.js` exposes `world.json` and `scenery.json` to the world builder.
 - Systems in `src/systems/` own their state and talk through the event bus. The HUD only displays state and asks systems to act.
+- `src/systems/quests.js` is the quest log: status, objectives, accept, hand in, save. `src/systems/dialogue.js` is the conversation. `src/ui/questUI.js` draws both, the tracker and the ! and ? marks; `src/ui/minimap.js` draws the map.

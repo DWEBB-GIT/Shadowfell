@@ -5,8 +5,7 @@ import { DB } from '../data/db.js';
 // Buying and selling, WoW style. A shop (data/shops.json) sells its stock at
 // the item database's price and buys at CONFIG.shop.sellFraction of it.
 // Anything sold this session can be bought back for what it fetched. Quest
-// items are never sold. The shopkeeper also talks about, and takes the
-// turn-in for, any quest they give (data/quests.json).
+// items are never sold. (Talking and quests are the Dialogue's business.)
 
 export class Merchant {
   constructor(game) {
@@ -110,51 +109,5 @@ export class Merchant {
     events.emit('log', { text: `Bought back: ${itemView(b).name}.`, kind: 'loot' });
     inventory._changed();
     return true;
-  }
-
-  // ------------------------------------------------------------ quests
-  // The quests this shopkeeper gives, as data records.
-  get _quests() {
-    const keeper = this.npc && DB.npcs[this.npc.id];
-    return keeper ? (keeper.quests || []).map((id) => DB.quests[id]) : [];
-  }
-
-  // What the shopkeeper says right now, and whether a quest item can be
-  // handed in: the quest's current stage decides.
-  get dialogue() {
-    const { worldState, inventory } = this.game;
-    for (const q of this._quests) {
-      const stage = worldState.questStage(q.id);
-      const t = q.turnIn;
-      if (t && worldState.flags.has(t.setsFlag) && this.justThanked === q.id) return { text: t.thanks };
-      if (t && stage.id === t.atStage && inventory.count(t.item) > 0) return { text: stage.giver, handIn: { quest: q.id, action: t.action } };
-      if (stage.giver) return { text: stage.giver };
-    }
-    return { text: '' };
-  }
-
-  // Hand over a quest's item for its reward (data/quests.json turnIn).
-  turnIn(questId) {
-    const { worldState, inventory, progression, events } = this.game;
-    const q = DB.quests[questId];
-    const t = q && q.turnIn;
-    if (!t || !this._quests.includes(q)) return false;
-    if (worldState.flags.has(t.setsFlag) || worldState.questStage(q.id).id !== t.atStage || inventory.count(t.item) < 1) return false;
-    inventory.removeAll(t.item);
-    worldState.flags.add(t.setsFlag);
-    this.justThanked = q.id;
-    if (t.log) events.emit('log', { text: t.log, kind: 'lore' });
-    const r = q.reward || {};
-    if (r.coins) inventory.addCoins(r.coins, `from ${DB.npcs[t.npc].name}`);
-    if (r.xp) progression.addXp(r.xp);
-    events.emit('questComplete', { id: q.id });
-    events.emit('objectiveChanged', {});
-    inventory._changed();
-    return true;
-  }
-
-  // (kept for scripts and tests written before quests were data)
-  handInManifest() {
-    return this.turnIn('missing_delivery');
   }
 }

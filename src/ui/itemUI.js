@@ -48,8 +48,6 @@ export class ItemUI {
       shop: $('shop-window'),
       shopName: $('shop-name'),
       shopTitle: $('shop-title'),
-      shopTalk: $('shop-talk'),
-      shopHandIn: $('shop-handin'),
       shopStock: $('shop-stock'),
       shopBuyback: $('shop-buyback'),
       shopCoins: $('shop-coins'),
@@ -120,12 +118,11 @@ export class ItemUI {
     return this.openBags.size > 0 || this.open.character || this.open.spellbook || !!this.game.merchant.current;
   }
 
-  // shop slots: m:<item> buys, y:<n> buys back, q:<quest> hands its item in
+  // shop slots: m:<item> buys, y:<n> buys back
   _shopClick(loc) {
     const m = this.game.merchant;
     if (loc.startsWith('m:')) m.buy(loc.slice(2));
     else if (loc.startsWith('y:')) m.buyBack(+loc.slice(2));
-    else if (loc.startsWith('q:')) m.turnIn(loc.slice(2));
     else return false;
     this.render();
     return true;
@@ -298,12 +295,6 @@ export class ItemUI {
       const def = m.def;
       this.el.shopName.textContent = def.name;
       this.el.shopTitle.textContent = def.title;
-      const talk = m.dialogue;
-      this.el.shopTalk.textContent = talk.text;
-      this.el.shopHandIn.hidden = !talk.handIn;
-      this.el.shopHandIn.textContent = talk.handIn ? talk.handIn.action : '';
-      this.el.shopHandIn.dataset.loc = talk.handIn ? 'q:' + talk.handIn.quest : 'q:';
-      this.el.shopHandIn.classList.toggle('focus', !!talk.handIn && this.focus === 'q:' + talk.handIn.quest && this.hud.padMode);
       this.el.shopStock.innerHTML = m.stock
         .map((id) => {
           const price = m.priceOf(id);
@@ -446,7 +437,7 @@ export class ItemUI {
       this.toggleBag(0);
       return;
     }
-    if (loc.startsWith('m:') || loc.startsWith('y:') || loc.startsWith('q:')) {
+    if (loc.startsWith('m:') || loc.startsWith('y:')) {
       e.preventDefault();
       this._shopClick(loc);
       return;
@@ -536,7 +527,7 @@ export class ItemUI {
     const pick = (prefix) => locs.find((l) => l.startsWith(prefix));
     if (which === 'character' && this.open.character) return 'e:mainHand';
     if (which === 'spellbook' && this.open.spellbook) return pick('k:');
-    if (which === 'shop' && this.game.merchant.current) return pick('q:') || pick('m:');
+    if (which === 'shop' && this.game.merchant.current) return pick('m:');
     return pick('b:') || (this.open.character && 'e:mainHand') || pick('k:') || pick('a:') || null;
   }
 
@@ -594,7 +585,7 @@ export class ItemUI {
     const bar = this.game.actionBar;
     const isSpell = (l) => l && (l.startsWith('a:') || l.startsWith('k:'));
     const hasThing = (l) => (l.startsWith('a:') ? !!bar.slots[+l.slice(2)] : l.startsWith('k:') ? true : !!inv.get(l));
-    const shopLoc = (l) => l && (l.startsWith('m:') || l.startsWith('y:') || l.startsWith('q:'));
+    const shopLoc = (l) => l && (l.startsWith('m:') || l.startsWith('y:'));
     if (pad.pressed(BUTTONS.A) && shopLoc(this.focus) && !this.carry) {
       this._shopClick(this.focus);
     } else if (pad.pressed(BUTTONS.A) && this.focus && !shopLoc(this.focus)) {

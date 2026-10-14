@@ -27,10 +27,15 @@
       <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
     </div>
 
-    <div id="objective" class="panel">
-      <div class="row"><span class="obj-title" id="objective-title">The Missing Delivery</span><span id="objective-state"></span></div>
-      <p id="objective-text"></p>
+    <!-- top right: the minimap, and the tracked quests under it -->
+    <div id="minimap-wrap">
+      <canvas id="minimap"></canvas>
+      <span class="mm-north">N</span>
+      <button id="minimap-in" class="mm-zoom" title="Zoom in">+</button>
+      <button id="minimap-out" class="mm-zoom" title="Zoom out">&minus;</button>
     </div>
+    <div id="objective" class="panel" hidden></div>
+    <div id="npc-marks"></div>
 
     <ul id="log"></ul>
     <div id="prompt" hidden></div>
@@ -48,6 +53,7 @@
         <div id="micro-bar" class="panel">
           <button class="micro" id="btn-character" title="Character (C)"><span class="micro-icon">&#9876;</span><span class="key" data-kbm="C" data-pad="View"></span></button>
           <button class="micro" id="btn-spellbook" title="Spellbook (P)"><span class="micro-icon">&#10022;</span><span class="key" data-kbm="P" data-pad="&#8593;"></span></button>
+          <button class="micro" id="btn-quests" title="Quest log (L)"><span class="micro-icon">!</span><span class="key" data-kbm="L" data-pad="&#8594;"></span></button>
           <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
           <div class="coins" title="Coins"><span class="coin-dot"></span><b id="stat-coins">0</b></div>
           <div id="bag-sockets"></div>
@@ -82,13 +88,27 @@
 
   <div id="shop-window" class="window panel" hidden>
     <div class="window-head"><h2 id="shop-name"></h2><span id="shop-title" class="dim"></span><button class="btn small" id="shop-close">&times;</button></div>
-    <p id="shop-talk"></p>
-    <button id="shop-handin" class="btn islot quest-btn" data-loc="q:" hidden></button>
     <div id="shop-stock"></div>
     <div class="shop-sub dim">Buy back</div>
     <div id="shop-buyback"></div>
     <div class="bag-foot"><span class="coin-dot"></span><b id="shop-coins"></b> coins</div>
     <div class="window-hint" id="shop-hint"></div>
+  </div>
+
+  <!-- WoW-style conversation: greeting, quests, things to ask, the shop -->
+  <div id="dialogue-window" class="window panel" hidden>
+    <div class="window-head"><h2 id="dlg-name"></h2><span id="dlg-title" class="dim"></span><button class="btn small" id="dlg-close">&times;</button></div>
+    <div id="dlg-qhead" hidden></div>
+    <p id="dlg-text"></p>
+    <div id="dlg-quest" hidden></div>
+    <div id="dlg-options"></div>
+    <div class="window-hint" id="dlg-hint"></div>
+  </div>
+
+  <div id="questlog-window" class="window panel" hidden>
+    <div class="window-head"><h2>Quest log</h2><span id="ql-count" class="dim"></span><button class="btn small" id="ql-close">&times;</button></div>
+    <div class="ql-body"><div id="ql-list"></div><div id="ql-detail"></div></div>
+    <div class="window-hint" id="ql-hint"></div>
   </div>
 
   <div id="tooltip" hidden></div>
@@ -130,7 +150,7 @@
           <tr><td>1 &middot; 2 / Q</td><td>Lunge &middot; Healing draught</td></tr>
           <tr><td>Tab</td><td>Lock on / release</td></tr>
           <tr><td>E</td><td>Interact / loot everything nearby</td></tr>
-          <tr><td>B &middot; C &middot; P</td><td>Bags &middot; Character &middot; Spellbook</td></tr>
+          <tr><td>B &middot; C &middot; P &middot; L</td><td>Bags &middot; Character &middot; Spellbook &middot; Quest log</td></tr>
           <tr><td>K &middot; M &middot; Esc</td><td>Save &middot; Sound &middot; Close / release lock</td></tr>
         </table>
         <table class="controls">
@@ -144,7 +164,7 @@
           <tr><td>R3 (stick click)</td><td>Lock on / release</td></tr>
           <tr><td>A</td><td>Interact / loot / confirm</td></tr>
           <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
-          <tr><td>D-pad up &middot; down</td><td>Spellbook &middot; Save</td></tr>
+          <tr><td>D-pad up &middot; down &middot; right</td><td>Spellbook &middot; Save &middot; Quest log</td></tr>
         </table>
       </div>
     </div>

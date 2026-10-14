@@ -92,6 +92,7 @@ export function validateGameData(raw, opts = {}) {
   const shopF = need('shops.json');
   const npcF = need('npcs.json');
   const questF = need('quests.json');
+  const dialF = need('dialogue.json');
   const worldF = need('world.json');
   const sceneF = need('scenery.json');
   const textF = need('text.json');
@@ -111,6 +112,8 @@ export function validateGameData(raw, opts = {}) {
   const placed = indexById(worldF.placedLoot, 'world.json placedLoot', errors);
   const shrines = indexById(worldF.shrines, 'world.json shrines', errors);
   const regions = indexById(worldF.regions, 'world.json regions', errors);
+  const locations = indexById(worldF.locations || [], 'world.json locations', errors);
+  const dialogues = indexById(dialF.dialogues, 'dialogue.json', errors);
   const documents = (textF.documents && typeof textF.documents === 'object') ? textF.documents : {};
   const examine = (textF.examine && typeof textF.examine === 'object') ? textF.examine : {};
 
@@ -206,34 +209,89 @@ export function validateGameData(raw, opts = {}) {
     if (!isStr(n.name)) errors.push(`${w}: needs a name`);
     model(w, n.model);
     if (n.shop) ref(w, 'shop', shops, n.shop);
-    for (const q of n.quests || []) ref(w, 'quest', quests, q);
+    if (n.dialogue !== undefined) ref(w, 'dialogue', dialogues, n.dialogue);
   }
 
   // ---- quests
+  const QUEST_STATUSES = ['not_started', 'available', 'active', 'ready', 'done'];
+  const condition = (where, c) => {
+    if (c === undefined) return;
+    if (!c || typeof c !== 'object') return errors.push(`${where}: a condition must be an object`);
+    const keys = Object.keys(c);
+    if (!keys.length || keys.some((k) => !['quest', 'status', 'flag', 'examined'].includes(k))) errors.push(`${where}: a condition is { quest, status }, { flag } or { examined }`);
+    if (c.quest !== undefined) {
+      ref(where, 'quest', quests, c.quest);
+      if (!QUEST_STATUSES.includes(c.status)) errors.push(`${where}: quest status must be one of ${QUEST_STATUSES.join(', ')}`);
+    }
+    if (c.flag !== undefined && !isStr(c.flag)) errors.push(`${where}: flag must be a name`);
+    if (c.examined !== undefined && !examine[c.examined]) errors.push(`${where}: names unknown examine point ${c.examined}`);
+  };
   for (const [id, q] of Object.entries(quests)) {
     const w = `quests.json ${id}`;
-    if (!isStr(q.name)) errors.push(`${w}: needs a name`);
-    ref(w, 'npc', npcs, q.giver);
-    const stages = indexById(q.stages, w + ' stages', errors, /^[a-z][a-zA-Z0-9]*$/);
-    for (const [sid, s] of Object.entries(stages)) {
-      if (!isStr(s.text) || !isStr(s.label)) errors.push(`${w} stage ${sid}: needs text and a label`);
-      const c = s.when;
-      if (c) {
-        if (c.collected) ref(`${w} stage ${sid}`, 'placed loot', placed, c.collected);
-        if (c.examined && !examine[c.examined]) errors.push(`${w} stage ${sid}: names unknown examine point ${c.examined}`);
-        if (c.flag !== undefined && !isStr(c.flag)) errors.push(`${w} stage ${sid}: flag must be a name`);
+    for (const k of ['name', 'summary', 'progress', 'complete']) if (!isStr(q[k])) errors.push(`${w}: needs ${k}`);
+    if (!q.autoAccept && !isStr(q.offer)) errors.push(`${w}: needs an offer (what the giver says)`);
+    ref(w, 'giver npc', npcs, q.giver);
+    ref(w, 'turn-in npc', npcs, q.turnIn);
+    for (const r of q.requires || []) {
+      ref(w + ' requires', 'quest', quests, r);
+      if (r === id) errors.push(`${w}: cannot require itself`);
+    }
+    const objectives = indexById(q.objectives, w + ' objectives', errors);
+    if (!Object.keys(objectives).length) errors.push(`${w}: needs at least one objective`);
+    for (const [oid, o] of Object.entries(objectives)) {
+      const ow = `${w} objective ${oid}`;
+      if (!isStr(o.label)) errors.push(`${ow}: needs a label`);
+      if (o.type === 'kill') ref(ow, 'enemy type', enemies, o.target);
+      else if (o.type === 'collect') ref(ow, 'item', items, o.target);
+      else if (o.type === 'examine') {
+        if (!examine[o.target]) errors.push(`${ow}: names unknown examine point ${o.target}`);
+      } else errors.push(`${ow}: type must be kill, collect or examine`);
+      if (o.count !== undefined && !(isInt(o.count) && o.count >= 1)) errors.push(`${ow}: count must be a whole number of at least 1`);
+      if (o.type === 'kill' && enemies[o.target]) {
+        const placedCount = Object.values(spawns).filter((s) => s.enemy === o.target).length;
+        if ((o.count || 1) > placedCount) errors.push(`${ow}: needs ${o.count || 1} ${o.target} but the world only has ${placedCount}`);
+      }
+      if (o.location !== undefined) ref(ow, 'location', locations, o.location);
+    }
+    const r = q.reward || {};
+    if (!(isInt(r.coins ?? 0) && isInt(r.xp ?? 0))) errors.push(`${w}: reward coins and xp must be whole numbers`);
+    for (const it of r.items || []) {
+      ref(w + ' reward', 'item', items, it.item);
+      if (!(isInt(it.count ?? 1) && (it.count ?? 1) >= 1)) errors.push(`${w} reward: item count must be a whole number`);
+    }
+    if (q.setsFlag !== undefined && !isStr(q.setsFlag)) errors.push(`${w}: setsFlag must be a name`);
+  }
+  // a quest that requires itself, however far round, can never be offered
+  const seen = {};
+  const loops = (id, path) => {
+    if (path.includes(id)) return true;
+    if (seen[id] !== undefined) return seen[id];
+    return (seen[id] = (quests[id]?.requires || []).some((r) => quests[r] && loops(r, [...path, id])));
+  };
+  for (const id of Object.keys(quests)) if (loops(id, [])) errors.push(`quests.json ${id}: its requirements loop back to it`);
+
+  // ---- dialogue
+  for (const [id, d] of Object.entries(dialogues)) {
+    const w = `dialogue.json ${id}`;
+    const nodes = indexById(d.nodes || [], w + ' nodes', errors);
+    if (!Array.isArray(d.greetings) || !d.greetings.length) errors.push(`${w}: needs at least one greeting`);
+    (d.greetings || []).forEach((g, i) => {
+      if (!isStr(g.text)) errors.push(`${w} greeting #${i + 1}: needs text`);
+      condition(`${w} greeting #${i + 1}`, g.when);
+    });
+    for (const t of Object.values(indexById(d.topics || [], w + ' topics', errors))) {
+      if (!isStr(t.prompt)) errors.push(`${w} topic ${t.id}: needs a prompt`);
+      ref(`${w} topic ${t.id}`, 'node', nodes, t.node);
+      condition(`${w} topic ${t.id}`, t.when);
+    }
+    for (const [nid, n] of Object.entries(nodes)) {
+      if (!isStr(n.text)) errors.push(`${w} node ${nid}: needs text`);
+      if (!Array.isArray(n.replies) || !n.replies.length) errors.push(`${w} node ${nid}: needs at least one reply`);
+      for (const rep of n.replies || []) {
+        if (!isStr(rep.text)) errors.push(`${w} node ${nid}: a reply needs text`);
+        if (rep.node !== undefined) ref(`${w} node ${nid}`, 'node', nodes, rep.node);
       }
     }
-    if (q.stages && q.stages[0] && q.stages[0].when) errors.push(`${w}: the first stage must have no condition`);
-    const t = q.turnIn;
-    if (t) {
-      ref(w + ' turnIn', 'npc', npcs, t.npc);
-      ref(w + ' turnIn', 'item', items, t.item);
-      if (!stages[t.atStage]) errors.push(`${w} turnIn: unknown stage ${t.atStage}`);
-      if (!isStr(t.setsFlag)) errors.push(`${w} turnIn: needs setsFlag`);
-      else if (!Object.values(stages).some((s) => s.when && s.when.flag === t.setsFlag)) errors.push(`${w} turnIn: no stage waits for flag ${t.setsFlag}`);
-    }
-    if (q.reward && !(isInt(q.reward.coins ?? 0) && isInt(q.reward.xp ?? 0))) errors.push(`${w}: reward coins and xp must be whole numbers`);
   }
 
   // ---- the world
@@ -249,6 +307,10 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, s] of Object.entries(shrines)) {
     pos(`world.json shrine ${id}`, s.position);
     if (!isStr(s.label)) errors.push(`world.json shrine ${id}: needs a label (shown on the death screen)`);
+  }
+  for (const [id, l] of Object.entries(locations)) {
+    pos(`world.json location ${id}`, l.position);
+    if (!isStr(l.name) || !(isNum(l.radius) && l.radius > 0)) errors.push(`world.json location ${id}: needs a name and a radius`);
   }
   for (const s of worldF.npcSpawns || []) {
     ref('world.json npcSpawns', 'npc', npcs, s.npc);
