@@ -2,24 +2,29 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { heightAt } from '../world/terrain.js';
 
-// Targeting: soft lock by default, with an optional hard lock.
+// Targeting, WoW style.
 //
-// Soft lock: abilities go to the enemy nearest your aim (the cursor, or the
-// direction of the stick) that is within that ability's range, so you never
-// have to select anything. A faint ring shows who the next blow will go to.
+// Selecting: left-click an enemy (or Tab / R3 to cycle through those near
+// you) to make it your target. A red ring marks it and the HUD shows its
+// frame. Left-clicking a townsperson selects them as a friendly target.
+// Escape clears the target.
 //
-// Hard lock: Tab or R3 locks onto one enemy and keeps the Warden facing it;
-// everything then goes to that enemy. Pressing again releases it. A red ring
-// marks it and the HUD shows its frame.
+// Auto attack: right-click an enemy (RT on a pad, or the Attack ability) to
+// select it and start swinging. The Warden swings at it each time his weapon
+// is ready while it is in reach, until it falls, you pick another target, or
+// you stop (Attack again, or Escape).
 //
-// Ranged and targeted spells use the same rule with their own range; ground
-// spells use the raw aim point instead (see `aimFor`).
+// Abilities go to the selected enemy; with nothing selected they go to the
+// enemy nearest your aim (the cursor, or ahead of you on a pad), which a faint
+// ring shows. Ground spells use the raw aim point (see `aimFor`).
 
 export class Targeting {
   constructor(game) {
     this.game = game;
-    this.current = null; // the hard-locked enemy, or null
-    this.soft = null; // the enemy the soft lock would pick right now
+    this.current = null; // the selected enemy, or null
+    this.friendly = null; // a selected townsperson (Npc), or null
+    this.attacking = false; // auto attack on the selected enemy
+    this.soft = null; // who an ability would go to with nothing selected
     this.marker = this._ring(0xff5a3a, 'TargetMarker');
     this.softMarker = this._ring(0xf0c070, 'SoftTargetMarker');
     this.softMarker.material.opacity = 0.45;
@@ -92,23 +97,63 @@ export class Targeting {
     return t ? t.position.clone() : rawAim;
   }
 
+  // Make an enemy the target. Picking a different one stops auto attack.
   select(enemy) {
-    if (enemy === this.current) return enemy;
-    this.current = enemy && enemy.alive ? enemy : null;
+    const next = enemy && enemy.alive ? enemy : null;
+    if (next) this.friendly = null;
+    if (next === this.current) return next;
+    this.current = next;
+    this.attacking = false;
     this.game.events.emit('targetChanged', { target: this.current });
     return this.current;
   }
 
+  selectFriendly(npc) {
+    this.select(null);
+    this.friendly = npc;
+    this.game.events.emit('targetChanged', { target: null, friendly: npc });
+  }
+
   clear() {
+    this.friendly = null;
     return this.select(null);
   }
 
-  // Tab / R3: lock onto the enemy you are aiming at (or the nearest one in
-  // range); pressing again releases the lock.
-  toggleLock(aim) {
-    if (this.current) return this.clear();
-    const pick = this.softTarget(aim, CONFIG.targeting.range) || this._nearest();
-    return this.select(pick);
+  // Select an enemy and start swinging at it.
+  engage(enemy) {
+    if (!this.select(enemy)) return false;
+    if (!this.attacking) {
+      this.attacking = true;
+      this.game.events.emit('autoAttack', { on: true, target: enemy });
+    }
+    return true;
+  }
+
+  stopAttack() {
+    if (!this.attacking) return;
+    this.attacking = false;
+    this.game.events.emit('autoAttack', { on: false });
+  }
+
+  // The Attack ability: start on the target (or whoever is ahead), or stop.
+  toggleAttack(aim) {
+    if (this.attacking) return this.stopAttack();
+    return this.engage(this.current || this.softTarget(aim, CONFIG.targeting.range) || this._nearest());
+  }
+
+  // Is the target close enough to hit with a swing?
+  get targetInReach() {
+    const t = this.current;
+    return !!t && t.alive && this._dist(t) <= CONFIG.attack.range + t.radius * 0.6;
+  }
+
+  // Tab / R3: the enemy you are aiming at first, then the next nearest each
+  // press, round all those in range.
+  cycle(aim) {
+    const near = this.game.enemies.list.filter((e) => e.alive && this._dist(e) <= CONFIG.targeting.range).sort((a, b) => this._dist(a) - this._dist(b));
+    if (!near.length) return this.select(null);
+    if (!this.current || !near.includes(this.current)) return this.select(this.softTarget(aim, CONFIG.targeting.range) || near[0]);
+    return this.select(near[(near.indexOf(this.current) + 1) % near.length]);
   }
 
   _nearest() {
@@ -122,7 +167,9 @@ export class Targeting {
   // Called each frame with the raw aim, to show the soft-lock ring.
   update(dt, rawAim = null, softRange = 0) {
     const t = this.current;
-    if (t && (!t.alive || this._dist(t) > CONFIG.targeting.dropRange || this.game.player.dead)) this.clear();
+    if (t && (!t.alive || this._dist(t) > CONFIG.targeting.dropRange || this.game.player.dead)) this.select(null);
+    const f = this.friendly;
+    if (f && Math.hypot(f.position.x - this.game.player.position.x, f.position.z - this.game.player.position.z) > CONFIG.targeting.dropRange) this.friendly = null;
     this.soft = !this.current && softRange > 0 ? this.softTarget(rawAim, softRange) : null;
     this._place(this.marker, this.current, dt);
     this._place(this.softMarker, this.soft, dt);

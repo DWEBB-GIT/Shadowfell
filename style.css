@@ -450,3 +450,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .btn.danger { color: #ff9070; border-color: #a05040; }
 .mark-avail { color: #ffd23c; }
 .small { font-size: 12px; }
+
+/* target frame: auto attack on, and friendly (townsfolk) targets */
+#target-frame.attacking #target-label { color: #ff8a60; }
+#target-frame.friendly .bar { display: none; }
+#target-frame.friendly #target-name { color: #a8e08c; }

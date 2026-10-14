@@ -4,10 +4,10 @@
   "abilities": [
     {
       "id": "strike",
-      "name": "Strike",
+      "name": "Attack",
       "target": "enemy",
       "range": 2.4,
-      "desc": "A sword blow at the enemy you are aiming at. Off the global cooldown.",
+      "desc": "Auto attack. Swing at your target each time your weapon is ready, until it falls or you pick another. Right-clicking an enemy starts it too; press again to stop. Off the global cooldown.",
       "tuning": {
         "range": 2.1,
         "coneDegrees": 110,

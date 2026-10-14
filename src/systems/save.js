@@ -1,6 +1,6 @@
 import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
-import { ABILITIES } from './actionBar.js';
+import { ABILITIES, BAR_SLOTS } from './actionBar.js';
 import { DB } from '../data/db.js';
 
 // Versioned save in localStorage. Loaded data is validated before anything is
@@ -94,7 +94,7 @@ export function validateSave(data) {
     validateInventory(inv, check);
   }
   if (data.bar !== undefined) {
-    check(Array.isArray(data.bar) && data.bar.length === 7 && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge'), 'spell bar');
+    check(Array.isArray(data.bar) && (data.bar.length === 7 || data.bar.length === BAR_SLOTS.length) && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge'), 'spell bar');
   }
   // the quest log (saves from before it have none, and start from the story flag)
   if (data.quests !== undefined) {

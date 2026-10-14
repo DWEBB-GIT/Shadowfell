@@ -61,12 +61,25 @@ async function sim(page, seconds, { held = [], press = [], clickAt = null, aimAt
       g.input.mouse.ndcY = p.y;
       g.input.mouse.x = r.left + ((p.x + 1) / 2) * r.width;
       g.input.mouse.y = r.top + ((1 - p.y) / 2) * r.height;
-      if (clickAt) g.input.mouse.clicked = true;
+      // clickAt is one blow: right-click the enemy there (auto attack), and
+      // stop again once the swing has started
+      if (clickAt) g.input.mouse.rightClicked = true;
     }
-    if (rightClick) g.input.mouse.rightClicked = true;
+    // rightClick: Shield Break, which now sits in spell-bar slot 2
+    if (rightClick) g.input.pressed.add('Digit2');
+    let oneSwing = !!clickAt;
+    let cd = g.player.cooldowns.attack;
     const dt = 1 / fps;
     const n = Math.round(seconds * fps);
-    for (let i = 0; i < n; i++) g.step(dt);
+    for (let i = 0; i < n; i++) {
+      g.step(dt);
+      if (oneSwing && g.player.cooldowns.attack > cd) {
+        g.targeting.stopAttack();
+        oneSwing = false;
+      }
+      cd = g.player.cooldowns.attack;
+    }
+    if (oneSwing) g.targeting.stopAttack();
     g.input.held = new Set();
     return n;
   }, { seconds, held, press, clickAt, aimAt, rightClick, fps });
@@ -248,16 +261,26 @@ async function combat(browser) {
     const r = g.renderer.domElement.getBoundingClientRect();
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   });
+  // a left click only selects: no swing
   await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(300);
+  const selected = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { target: g.targeting.current && g.targeting.current.id, attacking: g.targeting.attacking, hp: g.enemies.byId('ghoul_road').health, swung: g.player.cooldowns.attack > 0 || !!g.player.pending };
+  });
+  record('Left click selects an enemy without attacking (WoW style)', selected.target === 'ghoul_road' && !selected.attacking && selected.hp === 48 && !selected.swung, `target ${selected.target}, ghoul at ${selected.hp}/48`);
+  // a right click starts auto attack; stop it after the first swing
+  await page.mouse.click(pt.x, pt.y, { button: 'right' });
   // software WebGL runs slowly, so wait for the swing to start and finish in game time
   await page.waitForFunction(() => window.__shadowfall.player.pending !== null, null, { timeout: 15000 });
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   await page.waitForFunction(() => {
     const p = window.__shadowfall.player;
     return p.cooldowns.attack === 0 && !p.pending;
   }, null, { timeout: 15000 });
   await pauseLoop(page);
   let g = await enemy(page, 'ghoul_road');
-  record('Basic attack damages a nearby enemy', g.hp === 30, `ghoul 1.6m away: 48 → ${g.hp} from a real left click`);
+  record('Basic attack damages a nearby enemy', g.hp === 30, `ghoul 1.6m away: 48 → ${g.hp} from a real right click (auto attack)`);
 
   // a ghoul 6m away must not be hit
   await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
@@ -878,7 +901,7 @@ async function abilities(browser) {
       icons: vis('#action-bar .aslot img').filter((i) => i.src.startsWith('data:image')).length,
     };
   });
-  record('Bottom of the screen has the spell bar, experience bar, bag and menu icons', layout.xp === 1 && layout.slots === 7 && layout.char === 1 && layout.sockets === 4 && layout.barBottom <= layout.h && layout.barTop > layout.h - 140 && layout.xpTop < layout.slotTop,
+  record('Bottom of the screen has the spell bar, experience bar, bag and menu icons', layout.xp === 1 && layout.slots === 6 && layout.char === 1 && layout.sockets === 4 && layout.barBottom <= layout.h && layout.barTop > layout.h - 140 && layout.xpTop < layout.slotTop,
     `${layout.slots} spell-bar slots (${layout.icons} with icons), experience bar above them, character and save buttons, ${layout.sockets} bag slots; bar spans y ${layout.barTop.toFixed(0)}–${layout.barBottom.toFixed(0)} of ${layout.h}`);
 
   // GCD: Shield Break then Lunge is refused until the GCD ends; Strike is unaffected
@@ -889,10 +912,11 @@ async function abilities(browser) {
   await sim(page, 0.05, { press: ['Digit1'] });
   const lungeBlocked = await page.evaluate(() => window.__shadowfall.player.lunge === null && window.__shadowfall.player.cooldowns.lunge === 0);
   const gcdSweep = await page.evaluate(() => parseFloat(document.getElementById('aslot-0').style.getPropertyValue('--gcd')));
-  await sim(page, 0.05, { clickAt: { x: 0, z: 18 } });
+  await placeEnemy(page, 'ghoul_road', 0, 18.4, { frozen: true });
+  await sim(page, 0.05, { clickAt: { x: 0, z: 18.4 } });
   const strikeOk = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike' || window.__shadowfall.player.cooldowns.attack > 0);
   record('Global cooldown is shared by Shield Break and Lunge (WoW-style)', afterSB.gcd > 1.4 && lungeBlocked && gcdSweep > 0, `GCD ${afterSB.gcd.toFixed(2)}s left just after Shield Break; Lunge pressed 0.45s later was refused; Lunge slot shows the GCD sweep (${gcdSweep.toFixed(2)})`);
-  record('Strike stays off the global cooldown', strikeOk, 'left click during the GCD still swings');
+  record('Auto attack stays off the global cooldown', strikeOk, 'right-clicking a ghoul during the GCD still swings');
   await sim(page, 1.2);
   const p0 = (await state(page)).pos;
   await sim(page, 0.05, { press: ['Digit1'], clickAt: { x: 0, z: 10 } });
@@ -1027,15 +1051,17 @@ async function gamepad(browser) {
   record('Left stick moves the Warden, with analogue speed', near(a.z - b.z, 5, 0.15) && c.x - half.x > 1 && c.x - half.x < 2.5,
     `full stick north: ${(a.z - b.z).toFixed(2)}m in 1s; half stick east: ${(c.x - half.x).toFixed(2)}m`);
   const labels = await page.evaluate(() => [document.querySelector('#aslot-0 .key').textContent, document.querySelector('#aslot-4 .key').textContent, document.body.classList.contains('pad')]);
-  record('Button prompts switch to the gamepad', labels[0] === 'RB' && labels[1] === 'X / RT' && labels[2], `spell bar shows ${labels[0]}, ${labels[1]}`);
+  record('Button prompts switch to the gamepad', labels[0] === 'X' && labels[1] === 'LT' && labels[2], `spell bar shows ${labels[0]}, ${labels[1]}`);
 
-  // X strikes towards where the right stick points
+  // RT engages the enemy the right stick points at: auto attack
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 1.6, 0, { frozen: true });
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 48));
-  await padSim(page, 0.5, { tap: [PAD.X], axes: [0, 0, 1, 0] });
+  await padSim(page, 0.5, { tap: [PAD.RT], axes: [0, 0, 1, 0] });
+  const engaged = await page.evaluate(() => ({ target: window.__shadowfall.targeting.current?.id, attacking: window.__shadowfall.targeting.attacking }));
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   let g = await enemy(page, 'ghoul_road');
-  record('X strikes towards the right stick (aim without tab targeting)', g.hp === 30, `ghoul to the east, right stick east: 48 → ${g.hp}`);
+  record('RT targets the enemy the right stick points at and auto attacks it', engaged.target === 'ghoul_road' && engaged.attacking && g.hp === 30, `ghoul to the east, right stick east: targeted ${engaged.target}, 48 → ${g.hp}`);
   await padSim(page, 0.7, { tap: [PAD.Y] });
   g = await enemy(page, 'ghoul_road');
   record('Y uses Shield Break', g.hp === 0, `ghoul ${g.hp}`);
@@ -1049,9 +1075,10 @@ async function gamepad(browser) {
   record('B raises Brace (the defensive button)', padBrace, `braced: ${padBrace}`);
   await padSim(page, 1.6);
   a = (await state(page)).pos;
-  await padSim(page, 0.4, { tap: [PAD.RB], axes: [0, 0, 0, 1] });
+  await page.evaluate(() => window.__shadowfall.targeting.clear());
+  await padSim(page, 0.4, { tap: [PAD.X], axes: [0, 0, 0, 1] });
   b = (await state(page)).pos;
-  record('RB lunges towards the right stick', b.z - a.z > 4, `${(b.z - a.z).toFixed(2)}m south`);
+  record('X (spell-bar slot 1) lunges towards the right stick', b.z - a.z > 4, `${(b.z - a.z).toFixed(2)}m south`);
 
   // menus: Start opens the bags, the d-pad moves a highlight, X equips, A carries, Y drops
   await page.evaluate(() => window.__shadowfall.inventory.addItem('watch_helm', 1, { quiet: true }));
@@ -1222,22 +1249,22 @@ async function spellBar(browser) {
   await setup(page, { x: 0, z: 20 });
   const bar = () => page.evaluate(() => [...window.__shadowfall.actionBar.slots]);
   const b0 = await bar();
-  await dragSlot(page, '#aslot-0', '#aslot-2');
+  await dragSlot(page, '#aslot-0', '#aslot-3');
   await page.waitForTimeout(150);
   const b1 = await bar();
-  const iconMoved = await page.evaluate(() => document.querySelector('#aslot-2').dataset.ability === 'lunge' && document.querySelector('#aslot-0').classList.contains('empty'));
-  record('Spells can be dragged to another slot on the bar', b1[2] === 'lunge' && b1[0] === null && iconMoved, `Lunge moved from slot 1 to slot 3 (bar was ${b0.join(', ')})`);
+  const iconMoved = await page.evaluate(() => document.querySelector('#aslot-3').dataset.ability === 'lunge' && document.querySelector('#aslot-0').classList.contains('empty'));
+  record('Spells can be dragged to another slot on the bar', b1[3] === 'lunge' && b1[0] === null && iconMoved, `Lunge moved from slot 1 to slot 4 (bar was ${b0.map((a) => a || '—').join(', ')})`);
 
   await pauseLoop(page);
-  await sim(page, 0.05, { press: ['Digit3'], clickAt: { x: 0, z: 14 } });
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: 0, z: 14 } });
   const lunged = await page.evaluate(() => window.__shadowfall.player.lunge !== null);
   await sim(page, 2);
   await sim(page, 0.05, { press: ['Digit1'] });
   const nothing = await page.evaluate(() => window.__shadowfall.player.lunge === null && window.__shadowfall.player.cooldowns.gcd === 0);
-  record('A moved spell fires from its new key', lunged && nothing, 'key 3 now lunges; key 1 does nothing');
+  record('A moved spell fires from its new key', lunged && nothing, 'key 4 now lunges; key 1 does nothing');
   await resumeLoop(page);
 
-  await dragSlot(page, '#aslot-2', { x: 640, y: 300 });
+  await dragSlot(page, '#aslot-3', { x: 640, y: 300 });
   await page.waitForTimeout(150);
   const b2 = await bar();
   record('Spells can be removed from the bar by dragging them off it', !b2.includes('lunge'), `bar: ${b2.map((a) => a || '—').join(', ')}`);
@@ -1249,10 +1276,10 @@ async function spellBar(browser) {
   const b3 = await bar();
   record('The spellbook (P) puts removed spells back on the bar', b3[3] === 'lunge', `Lunge dragged from the spellbook to slot 4 (key 4)`);
 
-  await dragSlot(page, '#aslot-6', '#aslot-4');
+  await dragSlot(page, '#aslot-5', '#aslot-4');
   await page.waitForTimeout(150);
   const b4 = await bar();
-  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[6] === 'strike', 'Brace on left click, Strike on Space');
+  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[5] === 'strike', 'Brace on 5, Attack on Space');
 
   // the bar layout is saved
   await page.evaluate(() => window.__shadowfall.manualSave());
@@ -1274,7 +1301,8 @@ async function spellBar(browser) {
   await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden);
   await begin(page, '#continue-btn');
   const bOld = await bar();
-  record('Old saves with Dodge on the bar get Brace instead (extra)', bOld[6] === 'brace', bOld.map((a) => a || '—').join(', '));
+  record('Old saves with Dodge on the bar get Brace instead (extra)', bOld[5] === 'brace', bOld.map((a) => a || '—').join(', '));
+  record('Old bars with Strike and Shield Break on the mouse buttons keep both, on number keys', bOld.length === 6 && bOld.includes('shieldBreak') && bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
 
   // gamepad: d-pad up opens the spellbook; A carries a spell to a slot; Y removes it
   await pauseLoop(page);
@@ -1310,8 +1338,8 @@ async function controls(browser) {
   await begin(page);
   await pauseLoop(page);
   const labels = await page.evaluate(() => [...document.querySelectorAll('#action-bar .aslot .key')].map((k) => k.textContent));
-  const defensive = await page.evaluate(() => document.getElementById('aslot-6').classList.contains('defensive'));
-  record('The spell bar keeps the mouse buttons, with Space as the defensive slot', labels[4] === 'LMB' && labels[5] === 'RMB' && labels[6] === 'Space' && defensive, `slots: ${labels.join(' | ')}`);
+  const defensive = await page.evaluate(() => document.getElementById('aslot-5').classList.contains('defensive'));
+  record('The spell bar is on number keys (the mouse selects and attacks), with Space as the defensive slot', labels.join() === '1,2,3 / Q,4,5,Space' && defensive, `slots: ${labels.join(' | ')}`);
 
   // the camera is fixed: no orbit, WASD is screen-relative
   await setup(page, { x: -6, z: 30 });
@@ -1328,19 +1356,16 @@ async function controls(browser) {
   record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -5, 0.2) && near(b.x - a.x, 0, 0.2),
     `camera holds its isometric offset; W moved (${(b.x - a.x).toFixed(2)}, ${(b.z - a.z).toFixed(2)}), straight up the screen`);
 
-  // soft lock: aim roughly at a ghoul and the strike goes to it
+  // nothing selected: a faint ring shows who an ability would go to
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 1.3, -1.5, { frozen: true });
   await sim(page, 0.05, { aimAt: { x: 0, z: -4 } });
   const softRing = await page.evaluate(() => ({ soft: window.__shadowfall.targeting.soft?.id, ring: window.__shadowfall.targeting.softMarker.visible, lock: window.__shadowfall.targeting.current }));
-  await sim(page, 0.7, { clickAt: { x: 0, z: -4 } });
+  record('With nothing selected, a faint ring marks the enemy an ability would go to', softRing.soft === 'ghoul_road' && softRing.ring && !softRing.lock, 'aimed 40° off the ghoul: it is marked, nothing selected');
+  await sim(page, 0.05, { aimAt: { x: 0, z: 4 } });
+  const behind = await page.evaluate(() => window.__shadowfall.targeting.soft);
   let gh = await enemy(page, 'ghoul_road');
-  record('Soft lock: a strike aimed roughly at an enemy hits it', gh.hp === 30 && softRing.soft === 'ghoul_road' && softRing.ring && !softRing.lock,
-    `aimed 40° off the ghoul: 48 → ${gh.hp}; a faint ring marked it, nothing hard-locked`);
-  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 48));
-  await sim(page, 0.7, { clickAt: { x: 0, z: 4 } });
-  gh = await enemy(page, 'ghoul_road');
-  record('Soft lock does not reach behind you', gh.hp === 48, `aimed the other way: ghoul untouched (${gh.hp})`);
+  record('That fallback does not reach behind you', !behind, 'aimed the other way: no enemy marked');
 
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 5.2, 1.2, { frozen: true });
@@ -1367,21 +1392,21 @@ async function controls(browser) {
   const frame = await page.evaluate(() => ({ vis: !document.getElementById('target-frame').hidden, name: document.getElementById('target-name').textContent, marker: window.__shadowfall.targeting.marker.visible }));
   await sim(page, 0.05, { press: ['Tab'] });
   const t2 = await page.evaluate(() => window.__shadowfall.targeting.current?.id ?? null);
-  record('Tab hard-locks the enemy you aim at; Tab again releases', t1 === 'ghoul_cart' && t2 === null && frame.vis && frame.marker,
-    `locked ${t1} (frame "${frame.name}", red ring), then released`);
+  record('Tab targets the enemy you aim at; Tab again moves to the next', t1 === 'ghoul_cart' && t2 === 'ghoul_road' && frame.vis && frame.marker,
+    `targeted ${t1} (frame "${frame.name}", red ring), then ${t2}`);
 
-  // while locked, the Warden faces the target and blows go to it
-  await sim(page, 0.05, { aimAt: { x: 0, z: 1.6 }, press: ['Tab'] });
+  // auto attacking, the Warden faces the target and blows go to it
   const t3 = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
-  await sim(page, 0.6, { aimAt: { x: -4, z: 0 } });
+  await page.evaluate(() => window.__shadowfall.targeting.engage(window.__shadowfall.targeting.current));
+  await sim(page, 0.55, { aimAt: { x: -4, z: 0 } });
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   const facing = await page.evaluate(() => window.__shadowfall.player.facing);
-  await sim(page, 0.7, { clickAt: { x: -4, z: 0 } });
   gh = await enemy(page, 'ghoul_road');
-  record('A hard lock keeps the Warden facing the target and strikes it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp === 30,
-    `facing ${(facing * 180 / Math.PI).toFixed(0)}° (towards the ghoul); clicked off to the west: ghoul 48 → ${gh.hp}`);
+  record('Auto attack keeps the Warden facing the target and hits it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp === 30,
+    `facing ${(facing * 180 / Math.PI).toFixed(0)}° (towards the ghoul); cursor off to the west: ghoul 48 → ${gh.hp}`);
   await sim(page, 0.05, { press: ['Escape'] });
   const cleared = await page.evaluate(() => window.__shadowfall.targeting.current === null && document.getElementById('target-label').textContent !== 'Locked');
-  record('Escape releases the lock', cleared);
+  record('Escape clears the target', cleared);
   await page.evaluate(() => {
     const g = window.__shadowfall;
     const e = g.enemies.byId('ghoul_cart');
@@ -1392,15 +1417,14 @@ async function controls(browser) {
   await sim(page, 0.05);
   record('A defeated target is let go (extra)', await page.evaluate(() => window.__shadowfall.targeting.current === null));
 
-  // gamepad: R3 locks and releases, X strikes the lock
+  // gamepad: R3 picks a target, RT auto attacks it wherever the stick points
   await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 48; g.player.cooldowns.attack = 0; });
   await padSim(page, 0.05, { tap: [11] });
   const padLock = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
-  await padSim(page, 0.6, { tap: [PAD.X], axes: [0, 0, -1, 0] });
+  await padSim(page, 0.5, { tap: [PAD.RT], axes: [0, 0, -1, 0] });
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   gh = await enemy(page, 'ghoul_road');
-  await padSim(page, 0.05, { tap: [11] });
-  const padRelease = await page.evaluate(() => window.__shadowfall.targeting.current === null);
-  record('R3 locks and releases on a gamepad; X strikes the locked enemy', padLock === 'ghoul_road' && gh.hp === 30 && padRelease, `locked ${padLock}; right stick pushed away, X still hit it (48 → ${gh.hp}); R3 again released`);
+  record('R3 picks a target on a gamepad; RT auto attacks it wherever the stick points', padLock === 'ghoul_road' && gh.hp === 30, `targeted ${padLock}; right stick pushed away, RT still hit it (48 → ${gh.hp})`);
   await page.evaluate(() => window.__shadowfall.hud.setPadMode(false));
 
   // looting: bodies keep their coins; area loot takes everything close by
@@ -1472,9 +1496,11 @@ async function controls(browser) {
   s = await state(page);
   const farLog = await page.evaluate(() => document.querySelector('#log li:last-child').textContent);
   record('Clicking a body out of reach says so', /too far away/i.test(farLog) && s.coins === c1 + 6, `"${farLog}"`);
-  await sim(page, 0.05, { clickAt: { x: 4, z: 18 } });
+  await sim(page, 0.02, { aimAt: { x: 4, z: 18 } });
+  await page.evaluate(() => { const g = window.__shadowfall; g.input.mouse.clicked = true; g.input.mouse.rightClicked = true; });
+  await sim(page, 0.05);
   const struck = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack > 0 || !!window.__shadowfall.player.pending);
-  record('Clicking open ground is the basic attack', struck, 'a click away from any body swings the sword');
+  record('Clicking open ground does nothing: no wasted swing', !struck, 'left and right clicks away from anything: no swing');
 
   // the gamepad's A does the same area loot
   await page.evaluate(() => {
@@ -2426,8 +2452,95 @@ async function questsAndMap(browser) {
   await ctx.close();
 }
 
+async function clickTargeting(browser) {
+  current = 'Click to target and auto attack';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const rightClickOn = (id) => page.evaluate((id) => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId(id) || g.npcs.byId(id);
+    const v = e.position.clone().setY(e.position.y + 1).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    g.input.mouse.x = r.left + ((v.x + 1) / 2) * r.width;
+    g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
+    g.input.mouse.ndcX = v.x;
+    g.input.mouse.ndcY = v.y;
+    g.input.mouse.rightClicked = true;
+  }, id);
+
+  // auto attack keeps swinging until the target falls, then stops
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await placeEnemy(page, 'ghoul_cart', 2.5, 1, { frozen: true });
+  await rightClickOn('ghoul_road');
+  await sim(page, 1.3);
+  const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent }));
+  await sim(page, 1.4);
+  const end = await page.evaluate(() => ({ dead: window.__shadowfall.enemies.byId('ghoul_road').dead, attacking: window.__shadowfall.targeting.attacking, target: window.__shadowfall.targeting.current }));
+  record('Right click starts auto attack, which keeps swinging until the target falls', mid.hp === 12 && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
+    `48 → ${mid.hp} after 1.3s of swings (frame: "${mid.label}"); then it fell and auto attack stopped`);
+
+  // picking another target stops auto attack; Tab cycles; Esc clears
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_cart').health = 48));
+  await rightClickOn('ghoul_cart');
+  await sim(page, 0.05);
+  const before = await page.evaluate(() => window.__shadowfall.targeting.attacking);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_cart', 'ghoul_graves'], park: false });
+  await placeEnemy(page, 'ghoul_graves', -2, -2, { frozen: true });
+  await sim(page, 0.05, { press: ['Tab'] });
+  const afterTab = await page.evaluate(() => ({ target: window.__shadowfall.targeting.current?.id, attacking: window.__shadowfall.targeting.attacking }));
+  await sim(page, 0.05, { press: ['Tab'] });
+  const tab2 = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
+  await sim(page, 0.05, { press: ['Escape'] });
+  const cleared = await page.evaluate(() => window.__shadowfall.targeting.current);
+  record('Picking another target stops auto attack; Tab cycles targets; Esc clears', before && afterTab.target && afterTab.target !== 'ghoul_cart' && !afterTab.attacking && tab2 && tab2 !== afterTab.target && !cleared,
+    `Tab: ghoul_cart → ${afterTab.target} → ${tab2}; Esc cleared it`);
+
+  // Attack on the bar (5) toggles auto attack on the target
+  await page.evaluate(() => window.__shadowfall.targeting.select(window.__shadowfall.enemies.byId('ghoul_cart')));
+  await sim(page, 0.05, { press: ['Digit5'] });
+  const on = await page.evaluate(() => window.__shadowfall.targeting.attacking);
+  await sim(page, 0.05, { press: ['Digit5'] });
+  const off = await page.evaluate(() => window.__shadowfall.targeting.attacking);
+  record('Attack (key 5) turns auto attack on and off', on && !off);
+
+  // abilities go to the target wherever the cursor is
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_graves'] });
+  await placeEnemy(page, 'ghoul_graves', 0, 5.5, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.cooldowns.lunge = 0;
+    g.player.cooldowns.gcd = 0;
+    g.targeting.select(g.enemies.byId('ghoul_graves'));
+  });
+  await sim(page, 0.5, { press: ['Digit1'], aimAt: { x: 0, z: -6 } });
+  const lunge = await page.evaluate(() => ({ z: window.__shadowfall.player.position.z, hp: window.__shadowfall.enemies.byId('ghoul_graves').health }));
+  record('Abilities go to the selected target, not the cursor', lunge.z > 3 && lunge.hp < 48, `cursor north, target south: lunged to z ${lunge.z.toFixed(1)}, ghoul ${lunge.hp}/48`);
+
+  // townsfolk: left click selects, right click talks
+  await setup(page, { x: 16.2, z: -40.5 });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const n = g.npcs.byId('mara');
+    const v = n.position.clone().setY(n.position.y + 1).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    g.input.mouse.x = r.left + ((v.x + 1) / 2) * r.width;
+    g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
+    g.input.mouse.clicked = true;
+  });
+  await sim(page, 0.05);
+  const friend = await page.evaluate(() => ({ f: window.__shadowfall.targeting.friendly?.id, frame: document.getElementById('target-name').textContent, talking: window.__shadowfall.dialogue.isOpen }));
+  await rightClickOn('mara');
+  await sim(page, 0.05);
+  const talking = await page.evaluate(() => window.__shadowfall.dialogue.isOpen);
+  record('Left click selects a townsperson; right click talks to them', friend.f === 'mara' && friend.frame === 'Mara Venn' && !friend.talking && talking, `target frame "${friend.frame}"; right click opened the conversation`);
+  record('No script errors (click targeting)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

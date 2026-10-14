@@ -234,10 +234,10 @@ class Game {
     this.hud.log(`You wake ${dest.label}.${lost ? ` ${lost} coin${lost === 1 ? '' : 's'} gone.` : ''}`, 'lore');
   }
 
-  // A left click over a body or a drop loots it (and everything close by)
-  // instead of swinging. Returns true if the click was used for looting.
-  _clickLoot() {
-    const { input, camera, renderer, enemies, loot, player, events } = this;
+  // What is under the cursor: a body or drop to loot, a living enemy, or a
+  // townsperson. A living enemy wins a close call: fighting comes first.
+  _pickUnderCursor() {
+    const { input, camera, renderer, enemies, loot, npcs } = this;
     const r = renderer.domElement.getBoundingClientRect();
     const mx = input.mouse.x - r.left;
     const my = input.mouse.y - r.top;
@@ -246,24 +246,45 @@ class Game {
       return v.z < 1 ? Math.hypot(((v.x + 1) / 2) * r.width - mx, ((1 - v.y) / 2) * r.height - my) : Infinity;
     };
     let best = null;
-    let bestD = CONFIG.loot.clickRadius;
-    for (const l of loot.lootables()) {
-      const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
+    let bestD = CONFIG.targeting.clickRadius;
+    const consider = (kind, obj, d) => {
       if (d < bestD) {
         bestD = d;
-        best = l;
+        best = { kind, obj };
       }
-    }
-    if (!best) return false;
-    // a living enemy under the cursor wins: fighting comes first
+    };
     for (const e of enemies.list) {
-      if (e.alive && screen(e.position.x, e.position.y + 1, e.position.z) < bestD) return false;
+      // the body and the feet both count, so tall and short foes are easy to click
+      if (e.alive) consider('enemy', e, Math.min(screen(e.position.x, e.position.y + 1, e.position.z), screen(e.position.x, e.position.y + 0.3, e.position.z)) - 6);
     }
-    if (Math.hypot(best.x - player.position.x, best.z - player.position.z) > CONFIG.loot.reach) {
-      events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
-      return true;
+    for (const n of npcs.list) consider('npc', n, screen(n.position.x, n.position.y + 1, n.position.z));
+    for (const l of loot.lootables()) {
+      const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
+      if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
     }
-    loot.lootArea(best);
+    return best;
+  }
+
+  // Left click selects, right click acts (WoW): right on an enemy starts
+  // auto attack, on a townsperson talks, and either button loots.
+  _click(button) {
+    const pick = this._pickUnderCursor();
+    if (!pick) return false;
+    const { player, events, targeting, loot } = this;
+    const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
+    if (pick.kind === 'loot') {
+      const l = pick.obj;
+      if (far(l.x, l.z, CONFIG.loot.reach)) events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
+      else loot.lootArea(l);
+    } else if (pick.kind === 'enemy') {
+      if (button === 'right') targeting.engage(pick.obj);
+      else targeting.select(pick.obj);
+    } else if (pick.kind === 'npc') {
+      const n = pick.obj;
+      if (button === 'left') targeting.selectFriendly(n);
+      else if (far(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5)) events.emit('log', { text: `You are too far away to talk to ${n.name}.`, kind: 'muted', throttle: 'talk-far' });
+      else this.npcs.talk(n);
+    }
     return true;
   }
 
@@ -375,29 +396,36 @@ class Game {
     const move = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
     const usingPad = padOn && (pad.left.m > 0 || pad.right.m > 0 || hud.padMode);
     const p = (b) => padOn && pad.pressed(b);
-    const h = (b) => padOn && pad.held(b);
     const rawAim = usingPad ? this._padAim() : this._aimPoint();
     this.rawAim = rawAim;
-    if (input.consume('Tab') || p(BUTTONS.RS)) this.targeting.toggleLock(rawAim);
-    // a click on a body or a drop loots instead of striking
-    const click = input.consumeClick() && !this._clickLoot();
+    const tg = this.targeting;
+    // Tab / R3 cycle targets; RT engages whoever is selected or ahead
+    if (input.consume('Tab') || p(BUTTONS.RS)) tg.cycle(rawAim);
+    if (p(BUTTONS.RT)) tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range));
+    // left click selects, right click attacks, talks or loots
+    if (input.consumeClick()) this._click('left');
+    if (input.consumeRightClick()) this._click('right');
     // each spell-bar slot has a fixed key; whatever ability sits there fires
     const slots = [
-      input.consume('Digit1') || p(BUTTONS.RB),
-      input.consume('Digit2') || input.consume('KeyQ') || p(BUTTONS.LB),
-      input.consume('Digit3') || p(BUTTONS.LT),
-      input.consume('Digit4') || p(BUTTONS.LEFT),
-      click || h(BUTTONS.X) || h(BUTTONS.RT),
-      input.consumeRightClick() || p(BUTTONS.Y),
+      input.consume('Digit1') || p(BUTTONS.X),
+      input.consume('Digit2') || p(BUTTONS.Y),
+      input.consume('Digit3') || input.consume('KeyQ') || p(BUTTONS.RB),
+      input.consume('Digit4') || p(BUTTONS.LB),
+      input.consume('Digit5') || p(BUTTONS.LT),
       input.consume('Space') || p(BUTTONS.B),
     ];
-    const lock = this.targeting.current;
+    const actions = this.actionBar.actions(slots);
+    // Attack on the bar turns auto attack on or off; auto attack swings
+    // whenever the target is in reach and the weapon is ready
+    if (actions.strike) tg.toggleAttack(rawAim);
+    actions.strike = tg.attacking && tg.targetInReach;
+    const fighting = tg.attacking && tg.current && tg.current.position.distanceTo(this.player.position) < 6;
     return {
       move,
-      aim: this.targeting.aimFor(rawAim, ABILITIES.strike.range),
-      lungeAim: this.targeting.aimFor(rawAim, ABILITIES.lunge.range),
-      lockOn: lock ? lock.position : null,
-      actions: this.actionBar.actions(slots),
+      aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
+      lungeAim: tg.aimFor(rawAim, ABILITIES.lunge.range),
+      lockOn: fighting ? tg.current.position : null,
+      actions,
     };
   }
 

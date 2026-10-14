@@ -89,32 +89,34 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
 
-**Targeting.** By default it is a *soft lock*: Strike, Lunge and any other targeted ability go to the enemy nearest where you aim (the cursor, or the right stick) that is in range and roughly in that direction. A faint gold ring shows who your next blow will go to, so you never have to select anything. Press **Tab** (or **R3**) for a *hard lock* on the enemy you are aiming at, or the nearest one: a red ring and a frame at the top of the screen mark it, the Warden keeps facing it as you move, and every targeted ability goes to it wherever the cursor is. Press Tab or R3 again (or Esc) to let go; a lock also ends when the enemy dies or is far away. Ranged and cast spells, when they arrive, use the same rule with their own range; ground-targeted spells land at the cursor or stick point.
+**Targeting and auto attack (WoW style).** Left-click an enemy to select it: a red ring and the frame at the top of the screen mark it. Right-click an enemy to select it and start **auto attack**: the Warden swings at it every time his weapon is ready while it is in reach, until it falls, you pick another target, or you stop (Attack on the bar, or Esc). The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby; **RT** on a pad starts auto attack on your target, or on whoever is ahead. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
 
 **No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warden's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
 
-**Looting.** Defeated enemies give experience at once, but their coins stay on the body until you loot it. Click a body or anything lying on the ground (within a few metres) to loot it, or press E / A when the prompt shows. Either way it also loots every other body and dropped item within 5 m, so after a fight one click picks up the lot; the prompt says how many ("Loot the Ashen Ghoul (and 2 more nearby)"). Things placed in the world, such as the manifest, are still taken one at a time. Looted bodies sink away; unlooted ones are kept in your save.
+**Looting.** Defeated enemies give experience at once, but their coins stay on the body until you loot it. Click (either button) a body or anything lying on the ground (within a few metres) to loot it, or press E / A when the prompt shows. Either way it also loots every other body and dropped item within 5 m, so after a fight one click picks up the lot; the prompt says how many ("Loot the Ashen Ghoul (and 2 more nearby)"). Things placed in the world, such as the manifest, are still taken one at a time. Looted bodies sink away; unlooted ones are kept in your save.
 
 | Keyboard and mouse | Gamepad | Action |
 |---|---|---|
 | WASD | Left stick | Move |
 | Mouse | Right stick | Aim (with no stick input, you aim the way you face) |
-| Tab | R3 (stick click) | Hard lock on, or let go |
-| Left click | X or RT | Strike (spell-bar slot 5); a click on a body or a drop loots it instead |
-| Right click | Y | Shield Break (slot 6) |
-| Space | B | Brace, the defensive slot (slot 7) |
-| 1 | RB | Lunge (slot 1) |
-| 2 or Q | LB | Healing draught (slot 2) |
-| 3 · 4 | LT · D-pad left | Spell-bar slots 3 and 4 (empty to start) |
+| Tab | R3 (stick click) | Next target |
+| Left click | | Select an enemy or townsperson; loot a body or drop |
+| Right click | RT | Auto attack an enemy; talk to a townsperson; loot |
+| 1 | X | Lunge (slot 1) |
+| 2 | Y | Shield Break (slot 2) |
+| 3 or Q | RB | Healing draught (slot 3) |
+| 4 | LB | Slot 4 (empty to start) |
+| 5 | LT | Attack: auto attack on or off (slot 5) |
+| Space | B | Brace, the defensive slot |
 | E | A | Interact, examine, loot everything nearby |
 | B (or I) | Start | Bags |
 | C | View | Character panel |
 | P | D-pad up | Spellbook |
 | K | D-pad down | Save |
-| Esc | B (in a window) | Close windows, then let go of the lock |
+| Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
 
-The spell-bar rows above are the default layout; keys belong to slots, so moving a spell moves its key. Clicking open ground is always the basic attack; it never moves the Warden.
+The spell-bar rows above are the default layout; keys belong to slots, so moving a spell moves its key. Clicks never move the Warden, and a click on open ground does nothing, so no swing is wasted.
 
 **Windows on a gamepad:** while a window is open the pad drives it (the world keeps running). The d-pad or left stick moves a highlight. A picks an item or spell up and puts it down (to move, swap, equip, unequip, or place a spell on the bar), X equips or uses an item, Y drops an item on the ground or removes a spell from the bar, LB/RB jump between the bags, character panel, spellbook and spell bar, and B cancels or closes.
 

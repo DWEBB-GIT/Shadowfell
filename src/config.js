@@ -66,8 +66,9 @@ export const CONFIG = {
     renderScale: 0.62, // chunky, period-appropriate pixels
   },
   targeting: {
-    range: 26, // a hard lock (Tab / R3) considers enemies this close
-    dropRange: 34, // a locked target further away than this is let go
+    range: 26, // Tab / R3 cycle through enemies this close
+    dropRange: 34, // a selected target further away than this is let go
+    clickRadius: 46, // pixels: how close a click must be to an enemy or townsperson
     softArc: 60, // soft lock: degrees either side of your aim
     softAimRadius: 2.5, // ...or an enemy this close to the cursor point
   },

@@ -122,7 +122,7 @@ export class Hud {
   _buildBar() {
     let html = '';
     BAR_SLOTS.forEach((b, i) => {
-      if (i === 4) html += '<div class="sep"></div>';
+      if (b.defensive) html += '<div class="sep"></div>';
        html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
     });
     this.el.actionBar.innerHTML = html;
@@ -333,17 +333,28 @@ export class Hud {
       this.el.prompt.hidden = !promptText;
     }
 
-    // target frame: the hard lock, else the soft-lock target, else the
-    // enemy you last traded blows with. Health always, mana if it has any.
-    const t = this.game.targeting.current;
+    // target frame: the selected enemy, else the one an ability would go to,
+    // else the enemy you last traded blows with; or a selected townsperson.
+    // Health always, mana if it has any.
+    const tg = this.game.targeting;
+    const t = tg.current;
     const recent = this.recentFoeTime > 0 && this.recentFoe && this.recentFoe.alive ? this.recentFoe : null;
-    const shown = t || this.game.targeting.soft || recent;
+    const friend = !t && tg.friendly;
+    const shown = friend ? null : t || tg.soft || recent;
     this.shownTarget = shown;
-    this.el.target.hidden = !shown;
+    this.el.target.hidden = !shown && !friend;
+    this.el.target.classList.toggle('friendly', !!friend);
+    if (friend) {
+      this.el.targetName.textContent = friend.name;
+      this.el.targetLabel.textContent = friend.def.title || '';
+      this.el.target.classList.remove('elite', 'locked', 'attacking');
+      this.el.targetManaBar.hidden = true;
+    }
     if (shown) {
       const c = shown.cfg;
       this.el.targetName.textContent = c.name;
-      this.el.targetLabel.textContent = t ? 'Locked' : `Level ${c.level || 1}`;
+      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : `Level ${c.level || 1}`;
+      this.el.target.classList.toggle('attacking', !!t && tg.attacking);
       this.el.targetFill.style.width = `${(shown.health / c.health) * 100}%`;
       this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${c.health}`;
       this.el.target.classList.toggle('elite', !!c.elite);
