@@ -1,3 +1,4 @@
+import { heightAt } from '../world/terrain.js';
 import * as THREE from 'three';
 
 // Restrained visual feedback: a ground shockwave for Shield Break, small
@@ -27,6 +28,10 @@ export class Effects {
     });
     ev.on('playerLunge', () => this.dust(this.game.player.position, 6, 0.3));
     ev.on('braceBlock', () => this.sparks(this.game.player.position, 10));
+    ev.on('anvilStrike', ({ x, z }) => {
+      const p = this.game.player.position;
+      if (Math.hypot(p.x - x, p.z - z) < 25) this.sparks({ x, y: heightAt(x, z) - 0.3, z }, 5);
+    });
     ev.on('playerBrace', () => this.braceGlow());
     ev.on('itemDropped', ({ item }) => this.dust({ x: item.x, y: this.game.player.position.y, z: item.z }, 4, 0.2));
   }

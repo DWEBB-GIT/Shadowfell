@@ -1,7 +1,7 @@
 # Shadowfall acceptance test results
 
-Run: 2026-10-14T19:34:35.390Z  
-Result: **171/171 passed**
+Run: 2026-10-14T19:47:00.738Z  
+Result: **184/184 passed**
 
 
 ## Launch and movement
@@ -10,7 +10,7 @@ Result: **171/171 passed**
 |---|---|---|
 | ✅ | Game loads in a supported desktop browser | title screen, then HUD, from file://index.html |
 | ✅ | No blocking errors occur during startup |  |
-| ✅ | Player can move in all four directions | W 2.00m, S 2.11m, A 2.78m, D 2.50m (real key events) |
+| ✅ | Player can move in all four directions | W 1.86m, S 3.50m, A 3.50m, D 3.00m (real key events) |
 | ✅ | Diagonal movement is normalised | 1s straight 5.00m, 1s diagonal 5.00m |
 | ✅ | Camera follows the player | camera offset after moving: x -0.00, z 10.00 (target 0, 10) |
 | ✅ | Movement is frame-rate independent (extra) | 1s at 24 fps 5.00m, at 144 fps 5.00m |
@@ -50,7 +50,7 @@ Result: **171/171 passed**
 | ✅ | Escape closes the active interface | modal after Esc: null |
 | ✅ | Material can be collected | prompt "Take the grave-iron" |
 | ✅ | Currency can be collected | 8 → 14 coins; purse removed from the world |
-| ✅ | Equipment can be collected | brute drop at (-20.9, -45.0), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
+| ✅ | Equipment can be collected | brute drop at (-20.9, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
 | ✅ | Equipment is not silently swapped (extra) | still equipped: worn_longsword |
 | ✅ | Shrine can restore health | 31 → 100 hp; respawn set to (7.8, 5.2) |
 | ✅ | Contextual prompts update correctly | open road: none; at shrine: "E Rest at the shrine" |
@@ -67,7 +67,7 @@ Result: **171/171 passed**
 | ✅ | Basic attack damage increases | strike 18 → 20 |
 | ✅ | Equipment upgrade improves damage | strike 20 → 25 after dragging it from the bag onto the main-hand slot (panel shows 22–28 +2) |
 | ✅ | Upgraded weapon is shown on the character (extra) | Blender model swapped in the right hand |
-| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 17 coins |
+| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 26 coins |
 | ✅ | Escape closes the bags and character panel (extra) | real Escape key |
 | ✅ | No script errors during progression (extra) |  |
 
@@ -89,13 +89,13 @@ Result: **171/171 passed**
 
 | | Check | Evidence |
 |---|---|---|
-| ✅ | Manual save works | 934 bytes in localStorage (key shadowfall.save) |
+| ✅ | Manual save works | 945 bytes in localStorage (key shadowfall.save) |
 | ✅ | A successful save produces confirmation | toast: "Game saved" |
 | ✅ | Reload restores player position and progression | pos (3.25, 12.50), level 2, xp 8, hp 77, coins 14 |
 | ✅ | Defeated enemies remain defeated | 3 enemies alive; ghoul_cart lies where it fell |
 | ✅ | An unlooted body is still there to loot after a reload | ghoul_cart body lootable: true, +3 coins |
 | ✅ | Collected loot does not reappear | loot in world: grave_iron, purse_wall, draught_rocks, satchel_ruin, helm_rocks |
-| ✅ | Manifest progress persists | objective: Complete |
+| ✅ | Manifest progress persists | objective: Return to Mara |
 | ✅ | Shrine state and respawn point persist (extra) | {"x":7.8,"z":5.2} |
 | ✅ | Repeated save/load cycles are stable (extra) | 3 cycles |
 | ✅ | Autosave on close (extra) | position after closing and reopening: (-2.50, 21.50) |
@@ -241,11 +241,29 @@ Result: **171/171 passed**
 
 | | Check | Evidence |
 |---|---|---|
-| ✅ | Every item comes from one database with slot, stats, price and icon | 9 items in src/data/items.json, all valid |
+| ✅ | Every item comes from one database with slot, stats, price and icon | 13 items in src/data/items.json, all valid |
 | ✅ | The database check catches a malformed item (extra) | broken_blade: unknown quality shiny; broken_blade: price must be a whole number of coins; broken_blade: a weapon needs damage [min, max] |
 | ✅ | Tooltips show what a merchant would pay, and the item quality | Healing draughtConsumableA small bottle of something bitter and red. Restores 42 health.Sells for 1 coinRight-click to drink |
 | ✅ | Quest items cannot be dropped (extra) | "You keep hold of the Carriage manifest. Someone will want it." |
 | ✅ | No script errors (item database) |  |
+
+## Mara's forge
+
+| | Check | Evidence |
+|---|---|---|
+| ✅ | Mara Venn stands at her forge and talking to her opens her shop beside the bags | prompt "Talk to Mara Venn", 6 items for sale, bags open: true |
+| ✅ | Buying takes the price in coins and puts the item in the bags | iron-studded gloves for 14 coins |
+| ✅ | A merchant refuses a sale the Warden cannot afford | "You cannot afford the Iron-faced kite shield (45 coins)." |
+| ✅ | Selling pays a quarter of the price (WoW style) | gloves (14) sell for 3; 2 grave iron (4 each) for 2 |
+| ✅ | Sold items can be bought back for what they fetched (extra) | 2 in buy back; gloves back for 3 |
+| ✅ | Quest items cannot be sold | the manifest stays in the bags |
+| ✅ | With the manifest in hand the objective says to return to Mara | "Return to Mara", hand-in button shown |
+| ✅ | Handing Mara the manifest pays 20 coins and 50 experience and closes the storyline | +20 coins, 50 xp; "Bells at Hallow Cut. I don't like that at all. Here, as promised. If y…" |
+| ✅ | Walking away closes the shop |  |
+| ✅ | The finished storyline persists through save and reload | "Complete" |
+| ✅ | No script errors (Mara's forge) |  |
+| ✅ | With a gamepad, A talks to Mara and A on an item buys it | 14 coins left, 2 draughts |
+| ✅ | No script errors (forge, gamepad) |  |
 
 ## Build 2: fog and lighting
 

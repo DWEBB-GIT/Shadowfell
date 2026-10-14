@@ -17,6 +17,7 @@ export class WorldState {
     this.ground = []; // items the player dropped: { uid, id, count, x, z }
     this.corpses = {}; // enemyId -> { x, z, coins } for bodies not yet looted
     this.nextGroundUid = 1;
+    this.flags = new Set(); // story facts, e.g. 'manifest_delivered'
   }
 
   isDefeated(id) {
@@ -41,6 +42,7 @@ export class WorldState {
   }
 
   get objectiveStage() {
+    if (this.flags.has('manifest_delivered')) return 'reported';
     if (this.manifestCollected) return 'complete';
     if (this.examined.has('cart')) return 'cartFound';
     return 'start';
@@ -57,6 +59,7 @@ export class WorldState {
       manifestCollected: this.manifestCollected,
       ground: this.ground.map((g) => ({ ...g })),
       corpses: Object.fromEntries(Object.entries(this.corpses).map(([k, v]) => [k, { ...v }])),
+      flags: [...this.flags],
     };
   }
 
@@ -70,5 +73,6 @@ export class WorldState {
     this.ground = (data.ground || []).map((g) => ({ ...g }));
     this.corpses = Object.fromEntries(Object.entries(data.corpses || {}).map(([k, v]) => [k, { ...v }]));
     this.nextGroundUid = this.ground.reduce((m, g) => Math.max(m, g.uid + 1), 1);
+    this.flags = new Set(Array.isArray(data.flags) ? data.flags.filter((f) => typeof f === 'string') : []);
   }
 }

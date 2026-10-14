@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { ITEMS } from '../data/items.js';
 import { Rig } from './rig.js';
 import { heightAt } from '../world/terrain.js';
 import { PLAYER_START } from '../world/layout.js';
@@ -96,8 +97,10 @@ export class Player {
     if (larm) {
       if (this.shield) larm.remove(this.shield);
       this.shield = null;
-      if (equipment.offHand && equipment.offHand.id === 'kite_shield') {
-        this.shield = this.game.assets.instance('kite_shield');
+      const off = equipment.offHand && ITEMS[equipment.offHand.id];
+      if (off && off.kind === 'shield') {
+        this.shield = this.game.assets.instance(off.model);
+        this.shieldId = equipment.offHand.id;
         this.shield.position.set(0.11, -0.42, 0.04);
         this.shield.rotation.set(0, 1.25, 0);
         this.shield.scale.setScalar(0.95);
@@ -108,7 +111,7 @@ export class Player {
 
   // kept for older callers
   showWeapon(id) {
-    this.showEquipment({ mainHand: id ? { id, count: 1 } : null, head: this.helm ? { id: 'watch_helm' } : null, offHand: this.shield ? { id: 'kite_shield' } : null });
+    this.showEquipment({ mainHand: id ? { id, count: 1 } : null, head: this.helm ? { id: 'watch_helm' } : null, offHand: this.shield ? { id: this.shieldId } : null });
   }
 
   faceTowards(x, z) {

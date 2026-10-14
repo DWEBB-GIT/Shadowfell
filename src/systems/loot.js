@@ -88,7 +88,7 @@ export class LootSystem {
       model.rotation.set(Math.PI / 2, 0, 0.6); // lying on the ground
       model.position.y = 0.06;
     }
-    if (def.model === 'kite_shield') {
+    if (def.model === 'kite_shield' || def.model === 'iron_shield') {
       model.rotation.set(-Math.PI / 2 + 0.12, 0, 0.4); // lying face up
       model.position.y = 0.05;
     }

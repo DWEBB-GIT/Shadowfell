@@ -66,6 +66,13 @@ export class AudioSystem {
       this.shieldBreak();
     });
     ev.on('itemDropped', () => this.thud(220, 0.12));
+    // Mara's hammer: a short metallic ring, quieter with distance
+    ev.on('anvilStrike', ({ x, z }) => {
+      const p = this.game.player.position;
+      const d = Math.hypot(p.x - x, p.z - z);
+      if (d < 22) this.bell(0.05 * Math.max(0, 1 - d / 22), 880);
+    });
+    ev.on('questComplete', () => this.chime([392, 494, 587, 784], 0.22));
   }
 
   _noiseBuffer() {

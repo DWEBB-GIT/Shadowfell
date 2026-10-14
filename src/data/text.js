@@ -32,8 +32,19 @@ export const OBJECTIVE = {
   stages: {
     start: 'Mara Venn\'s iron never reached the old watch post. Follow the Fallen Road and look for some sign of it.',
     cartFound: 'A merchant cart lies off the road, missing a wheel. Search it for anything that explains what happened.',
-    complete: 'You have the manifest. Grave-iron bound for the watch post, a scratched-out name, and a warning about bells. Mara will want to hear of it.',
+    complete: 'You have the manifest. Grave-iron bound for the watch post, a scratched-out name, and a warning about bells. Take it to Mara Venn at her forge by the watch post.',
+    reported: 'Mara has the manifest and paid you for it. The carters turned off north, into the Blackwood.',
   },
+};
+
+// What Mara Venn says, by how far the delivery story has got.
+export const MARA = {
+  start: 'Iron\'s late, and the watch post won\'t answer its door. Nine bars of grave-iron with my mark on them went up that road. Find out what happened and I\'ll pay for it. Need kit in the meantime? I\'ve some.',
+  cartFound: 'A cart off the road? Then someone stopped it. Look it over properly. A carter keeps papers.',
+  complete: 'That\'s Hollin\'s hand, and my mark on the iron. You found the manifest?',
+  handIn: 'Hand over the manifest',
+  thanks: 'Bells at Hallow Cut. I don\'t like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That\'s where the carters turn off.',
+  done: 'Bells in the ground and a driver nobody will name. I\'ll be asking questions in the village. Meanwhile, my forge is open.',
 };
 
 export const INTRO =

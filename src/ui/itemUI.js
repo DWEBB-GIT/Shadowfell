@@ -45,6 +45,15 @@ export class ItemUI {
       spellbook: $('spellbook-window'),
       spellList: $('spellbook-list'),
       spellHint: $('spellbook-hint'),
+      shop: $('shop-window'),
+      shopName: $('shop-name'),
+      shopTitle: $('shop-title'),
+      shopTalk: $('shop-talk'),
+      shopHandIn: $('shop-handin'),
+      shopStock: $('shop-stock'),
+      shopBuyback: $('shop-buyback'),
+      shopCoins: $('shop-coins'),
+      shopHint: $('shop-hint'),
       tooltip: $('tooltip'),
       ghost: $('drag-ghost'),
     };
@@ -52,6 +61,19 @@ export class ItemUI {
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
     $('btn-save').addEventListener('click', () => game.manualSave());
+    $('shop-close').addEventListener('click', () => game.merchant.close());
+    // a merchant opens your bags with it (and closes the ones it opened)
+    game.events.on('merchantOpened', () => {
+      this.shopOpenedBags = !this.bagsOpen;
+      if (this.shopOpenedBags) this._sockets().forEach((i) => this.openBags.add(i));
+      this.focus = null;
+      this._afterChange('shop');
+    });
+    game.events.on('merchantClosed', () => {
+      if (this.shopOpenedBags) this.openBags.clear();
+      this.shopOpenedBags = false;
+      this._afterChange(null);
+    });
     document.querySelectorAll('[data-close-panel]').forEach((b) => b.addEventListener('click', () => this.close(b.dataset.closePanel)));
     this.el.frames.addEventListener('click', (e) => {
       const b = e.target.closest('[data-close-bag]');
@@ -68,7 +90,10 @@ export class ItemUI {
         e.preventDefault();
         const loc = slot.dataset.loc || '';
         if (loc.startsWith('a:') || loc.startsWith('k:')) return;
-        if (loc.startsWith('s:')) this.toggleBag(+loc.slice(2));
+        if (this._shopClick(loc)) return;
+        // with a shop open, right-clicking something you carry sells it (WoW)
+        if (game.merchant.current && (loc.startsWith('b:') || loc.startsWith('e:'))) game.merchant.sell(loc);
+        else if (loc.startsWith('s:')) this.toggleBag(+loc.slice(2));
         else if (loc) game.inventory.use(loc);
       }
     });
@@ -92,7 +117,18 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || !!this.game.merchant.current;
+  }
+
+  // shop slots: m:<item> buys, y:<n> buys back, q:manifest hands it in
+  _shopClick(loc) {
+    const m = this.game.merchant;
+    if (loc.startsWith('m:')) m.buy(loc.slice(2));
+    else if (loc.startsWith('y:')) m.buyBack(+loc.slice(2));
+    else if (loc === 'q:manifest') m.handInManifest();
+    else return false;
+    this.render();
+    return true;
   }
 
   get bagsOpen() {
@@ -138,6 +174,8 @@ export class ItemUI {
     const was = this.anyOpen;
     this.openBags.clear();
     this.open.character = this.open.spellbook = false;
+    this.shopOpenedBags = false;
+    this.game.merchant.close();
     this._afterChange(null);
     return was;
   }
@@ -252,6 +290,36 @@ export class ItemUI {
         : 'Drag items between your bags and here. Right-click to equip. Drag out of a window to drop.';
     }
 
+    // merchant window: stock, buyback, and whatever the merchant has to say
+    const m = this.game.merchant;
+    this.el.shop.hidden = !m.current;
+    this.el.shop.classList.toggle('beside-character', this.open.character);
+    if (m.current) {
+      const def = m.def;
+      this.el.shopName.textContent = def.name;
+      this.el.shopTitle.textContent = def.title;
+      const talk = m.dialogue;
+      this.el.shopTalk.textContent = talk.text;
+      this.el.shopHandIn.hidden = !talk.handIn;
+      this.el.shopHandIn.textContent = talk.handIn || '';
+      this.el.shopHandIn.classList.toggle('focus', this.focus === 'q:manifest' && this.hud.padMode);
+      this.el.shopStock.innerHTML = m.stock
+        .map((id) => {
+          const price = m.priceOf(id);
+          const poor = price > inv.coins;
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].quality}">${ITEMS[id].name}</div><div class="shop-price"><span class="coin-dot"></span>${price}</div></div></div>`;
+        })
+        .join('');
+      const bb = m.buyback;
+      this.el.shopBuyback.innerHTML = bb.length
+        ? bb.map((b, i) => this._slotHTML('y:' + i, { id: b.id, count: b.count })).join('')
+        : '<span class="dim small">Nothing sold yet.</span>';
+      this.el.shopCoins.textContent = inv.coins;
+      this.el.shopHint.textContent = this.hud.padMode
+        ? 'A: buy   Y on a bag item: sell   B: leave'
+        : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
+    }
+
     // spellbook: every ability, ready to drag onto the bar
     this.el.spellbook.hidden = !this.open.spellbook;
     if (this.open.spellbook) {
@@ -284,7 +352,16 @@ export class ItemUI {
       tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div><div class="tt-desc">${ABILITIES[id].desc}</div>`;
       return this._placeTip(anchor);
     }
-    const stack = loc && this.game.inventory.get(loc);
+    let stack = loc && this.game.inventory.get(loc);
+    let shop = null;
+    if (loc && loc.startsWith('m:')) {
+      stack = { id: loc.slice(2), count: 1 };
+      shop = { buy: this.game.merchant.priceOf(stack.id) };
+    } else if (loc && loc.startsWith('y:')) {
+      const b = this.game.merchant.buyback[+loc.slice(2)];
+      stack = b ? { id: b.id, count: b.count } : null;
+      shop = b ? { buy: b.paid } : null;
+    }
     if (!stack || loc === 's:0') {
       tip.hidden = true;
       return;
@@ -306,7 +383,18 @@ export class ItemUI {
     if (stack.count > 1) lines.push(`<div>${stack.count} carried</div>`);
     lines.push(`<div class="tt-desc">${def.description}</div>`);
     const sell = sellPrice(stack.id, CONFIG.shop.sellFraction);
-    lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
+    if (shop) lines.push(`<div class="tt-price">Price: ${shop.buy} coin${shop.buy === 1 ? '' : 's'}</div>`);
+    else lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
+    if (shop) {
+      if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
+      tip.innerHTML = lines.join('');
+      return this._placeTip(anchor);
+    }
+    if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && !this.hud.padMode) {
+      lines.push('<div class="tt-hint">Right-click to sell</div>');
+      tip.innerHTML = lines.join('');
+      return this._placeTip(anchor);
+    }
     const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
     tip.innerHTML = lines.join('');
@@ -357,6 +445,11 @@ export class ItemUI {
       this.toggleBag(0);
       return;
     }
+    if (loc.startsWith('m:') || loc.startsWith('y:') || loc === 'q:manifest') {
+      e.preventDefault();
+      this._shopClick(loc);
+      return;
+    }
     if (!this.game.inventory.get(loc)) {
       if (loc.startsWith('s:')) this.toggleBag(+loc.slice(2));
       return;
@@ -392,6 +485,10 @@ export class ItemUI {
       return;
     }
     const under = document.elementFromPoint(e.clientX, e.clientY);
+    if (under && under.closest('#shop-window') && this.game.merchant.current && !d.from.startsWith('a:') && !d.from.startsWith('k:')) {
+      this.game.merchant.sell(d.from);
+      return;
+    }
     const target = under && under.closest('.islot, .aslot');
     const to = target && target.dataset.loc;
     this.dropOn(d.from, to, !!(under && under.closest('#action-bar')), !!(under && under.closest('.window, .modal, #bottom-bar, #objective, #char-panel')));
@@ -428,7 +525,7 @@ export class ItemUI {
 
   // ------------------------------------------------------------- gamepad
   _visibleLocs() {
-    return [...document.querySelectorAll('#bags-window .islot, #character-window .islot, #spellbook-window .islot, #bag-sockets .islot, #action-bar .aslot')]
+    return [...document.querySelectorAll('#shop-window .islot, #bags-window .islot, #character-window .islot, #spellbook-window .islot, #bag-sockets .islot, #action-bar .aslot')]
       .filter((el) => el.offsetParent !== null && el.dataset.loc !== 's:0')
       .map((el) => el.dataset.loc);
   }
@@ -438,6 +535,7 @@ export class ItemUI {
     const pick = (prefix) => locs.find((l) => l.startsWith(prefix));
     if (which === 'character' && this.open.character) return 'e:mainHand';
     if (which === 'spellbook' && this.open.spellbook) return pick('k:');
+    if (which === 'shop' && this.game.merchant.current) return pick('q:') || pick('m:');
     return pick('b:') || (this.open.character && 'e:mainHand') || pick('k:') || pick('a:') || null;
   }
 
@@ -487,7 +585,7 @@ export class ItemUI {
     if (dir) this._step(dir);
     if (pad.pressed(BUTTONS.LB) || pad.pressed(BUTTONS.RB)) {
       // cycle the highlight between the open windows and the spell bar
-      const groups = ['b:', 'e:', 'k:', 'a:'].filter((p) => this._visibleLocs().some((l) => l.startsWith(p)));
+      const groups = ['m:', 'b:', 'e:', 'k:', 'a:'].filter((p) => this._visibleLocs().some((l) => l.startsWith(p)));
       const cur = groups.findIndex((p) => this.focus && this.focus.startsWith(p));
       const next = groups[(cur + (pad.pressed(BUTTONS.LB) ? groups.length - 1 : 1)) % groups.length];
       if (next) this.focus = next === 'e:' ? 'e:mainHand' : this._visibleLocs().find((l) => l.startsWith(next));
@@ -495,7 +593,10 @@ export class ItemUI {
     const bar = this.game.actionBar;
     const isSpell = (l) => l && (l.startsWith('a:') || l.startsWith('k:'));
     const hasThing = (l) => (l.startsWith('a:') ? !!bar.slots[+l.slice(2)] : l.startsWith('k:') ? true : !!inv.get(l));
-    if (pad.pressed(BUTTONS.A) && this.focus) {
+    const shopLoc = (l) => l && (l.startsWith('m:') || l.startsWith('y:') || l === 'q:manifest');
+    if (pad.pressed(BUTTONS.A) && shopLoc(this.focus) && !this.carry) {
+      this._shopClick(this.focus);
+    } else if (pad.pressed(BUTTONS.A) && this.focus && !shopLoc(this.focus)) {
       if (this.carry) {
         if (this.carry !== this.focus) this.dropOn(this.carry, this.focus, isSpell(this.focus) && this.focus.startsWith('a:'), true);
         this.carry = null;
@@ -504,7 +605,7 @@ export class ItemUI {
       }
       this.render();
     }
-    if (pad.pressed(BUTTONS.X) && this.focus && !isSpell(this.focus)) {
+    if (pad.pressed(BUTTONS.X) && this.focus && !isSpell(this.focus) && !shopLoc(this.focus)) {
       this.carry = null;
       inv.use(this.focus);
     }
@@ -512,6 +613,7 @@ export class ItemUI {
       const loc = this.carry || this.focus;
       this.carry = null;
       if (loc && loc.startsWith('a:')) bar.remove(+loc.slice(2));
+      else if (loc && !isSpell(loc) && inv.get(loc) && this.game.merchant.current) this.game.merchant.sell(loc);
       else if (loc && !isSpell(loc) && inv.get(loc)) this.game.loot.dropFromInventory(loc);
       this.render();
     }

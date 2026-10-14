@@ -1761,6 +1761,118 @@ async function itemDatabase(browser) {
   await ctx.close();
 }
 
+async function forge(browser) {
+  current = "Mara's forge";
+  let { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await setup(page, { x: 16.2, z: -40.5 });
+  await pauseLoop(page);
+  const talk = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.coins = 30;
+    g.inventory.addItem('grave_iron', 2, { quiet: true });
+    g.interaction.update();
+    const prompt = g.interaction.current && g.interaction.current.prompt;
+    g.interaction.interact();
+    g.step(1 / 60);
+    return { prompt, current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, mara: !!g.npcs.byId('mara') };
+  });
+  record('Mara Venn stands at her forge and talking to her opens her shop beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.current === 'mara' && talk.shop && talk.bags && talk.stock === 6, `prompt "${talk.prompt}", ${talk.stock} items for sale, bags open: ${talk.bags}`);
+
+  const buy = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const c0 = g.inventory.coins;
+    const ok = g.merchant.buy('iron_gloves');
+    const c1 = g.inventory.coins;
+    const refused = !g.merchant.buy('iron_shield');
+    return { ok, paid: c0 - c1, have: g.inventory.count('iron_gloves'), refused, shields: g.inventory.count('iron_shield'), coins: g.inventory.coins, log: document.querySelector('#log li:last-child').textContent };
+  });
+  record('Buying takes the price in coins and puts the item in the bags', buy.ok && buy.paid === 14 && buy.have === 1, `iron-studded gloves for ${buy.paid} coins`);
+  record('A merchant refuses a sale the Warden cannot afford', buy.refused && buy.shields === 0 && buy.coins === 16, `"${buy.log}"`);
+
+  const sell = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const find = (id) => g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === id);
+    const c0 = g.inventory.coins;
+    g.merchant.sell(find('iron_gloves'));
+    const gloves = g.inventory.coins - c0;
+    const c1 = g.inventory.coins;
+    g.merchant.sell(find('grave_iron'));
+    const iron = g.inventory.coins - c1;
+    const buyback = document.querySelectorAll('#shop-buyback .islot').length;
+    const c2 = g.inventory.coins;
+    const back = g.merchant.buyBack(g.merchant.buyback.findIndex((b) => b.id === 'iron_gloves'));
+    return { gloves, iron, buyback, back, backCost: c2 - g.inventory.coins, have: g.inventory.count('iron_gloves') };
+  });
+  record('Selling pays a quarter of the price (WoW style)', sell.gloves === 3 && sell.iron === 2, `gloves (14) sell for ${sell.gloves}; 2 grave iron (4 each) for ${sell.iron}`);
+  record('Sold items can be bought back for what they fetched (extra)', sell.buyback === 2 && sell.back && sell.backCost === 3 && sell.have === 1, `${sell.buyback} in buy back; gloves back for ${sell.backCost}`);
+
+  const handIn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addItem('manifest', 1, { quiet: true });
+    g.worldState.examined.add('cart');
+    g.worldState.collected.add('manifest');
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'manifest');
+    const sold = g.merchant.sell(loc);
+    g.events.emit('objectiveChanged', {});
+    g.hud.items.render();
+    const before = { label: document.getElementById('objective-state').textContent, stage: g.worldState.objectiveStage, button: !document.getElementById('shop-handin').hidden };
+    window.__c0 = g.inventory.coins;
+    return { sold, before };
+  });
+  await page.click('#shop-handin');
+  Object.assign(handIn, await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.step(1 / 60);
+    const c0 = window.__c0;
+    return {
+      coins: g.inventory.coins - c0, xp: g.progression.xp, level: g.progression.level,
+      manifest: g.inventory.count('manifest'), flag: g.worldState.flags.has('manifest_delivered'),
+      stage: g.worldState.objectiveStage, label: document.getElementById('objective-state').textContent,
+      button: !document.getElementById('shop-handin').hidden, talk: document.getElementById('shop-talk').textContent,
+    };
+  }));
+  record('Quest items cannot be sold', !handIn.sold, 'the manifest stays in the bags');
+  record('With the manifest in hand the objective says to return to Mara', handIn.before.stage === 'complete' && /Mara/.test(handIn.before.label) && handIn.before.button, `"${handIn.before.label}", hand-in button shown`);
+  record('Handing Mara the manifest pays 20 coins and 50 experience and closes the storyline', handIn.coins === 20 && handIn.xp === 50 && handIn.manifest === 0 && handIn.flag && handIn.stage === 'reported' && handIn.label === 'Complete' && !handIn.button, `+${handIn.coins} coins, ${handIn.xp} xp; "${handIn.talk.slice(0, 70)}…"`);
+
+  await page.evaluate(() => window.__shadowfall.player.placeAt(24, -38));
+  await sim(page, 0.2);
+  const away = await page.evaluate(() => ({ current: window.__shadowfall.merchant.current, shown: !document.getElementById('shop-window').hidden }));
+  record('Walking away closes the shop', away.current === null && !away.shown);
+
+  await page.evaluate(() => window.__shadowfall.manualSave());
+  await page.reload();
+  await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden);
+  errors.length = 0;
+  await begin(page, '#continue-btn');
+  const saved = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { flag: g.worldState.flags.has('manifest_delivered'), stage: g.worldState.objectiveStage, label: document.getElementById('objective-state').textContent };
+  });
+  record('The finished storyline persists through save and reload', saved.flag && saved.stage === 'reported' && saved.label === 'Complete', `"${saved.label}"`);
+  record("No script errors (Mara's forge)", errors.length === 0, errors.join(' | '));
+  await ctx.close();
+
+  // the gamepad: A on a stock item buys it
+  ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await ctx.addInitScript(PAD_STUB);
+  ({ page, errors } = await openGame(ctx));
+  await pauseLoop(page);
+  await padSim(page, 0.05, { tap: [PAD.A] });
+  await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
+  await setup(page, { x: 16.2, z: -40.5 });
+  await page.evaluate(() => (window.__shadowfall.inventory.coins = 20));
+  await padSim(page, 0.05, { tap: [PAD.A] }); // talk
+  const padOpen = await page.evaluate(() => window.__shadowfall.merchant.current);
+  await page.evaluate(() => (window.__shadowfall.hud.items.focus = 'm:healing_draught'));
+  await padSim(page, 0.05, { tap: [PAD.A] });
+  const pad = await page.evaluate(() => ({ coins: window.__shadowfall.inventory.coins, draughts: window.__shadowfall.inventory.count('healing_draught') }));
+  record('With a gamepad, A talks to Mara and A on an item buys it', padOpen === 'mara' && pad.coins === 14, `${pad.coins} coins left, ${pad.draughts} draughts`);
+  record("No script errors (forge, gamepad)", errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 async function atmosphere(browser) {
   current = 'Build 2: fog and lighting';
   const { ctx, page, errors } = await freshGame(browser);
@@ -1785,7 +1897,7 @@ async function atmosphere(browser) {
 const browser = await launch();
 fs.mkdirSync(path.join(HERE, 'screenshots'), { recursive: true });
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

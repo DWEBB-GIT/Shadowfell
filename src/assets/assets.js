@@ -33,12 +33,21 @@ import watch_helm from '../../assets/models/watch_helm.glb';
 import satchel from '../../assets/models/satchel.glb';
 import kite_shield from '../../assets/models/kite_shield.glb';
 import clothes from '../../assets/models/clothes.glb';
+import mara from '../../assets/models/mara.glb';
+import anvil from '../../assets/models/anvil.glb';
+import forge from '../../assets/models/forge.glb';
+import awning from '../../assets/models/awning.glb';
+import iron_gloves from '../../assets/models/iron_gloves.glb';
+import hob_boots from '../../assets/models/hob_boots.glb';
+import mail_chausses from '../../assets/models/mail_chausses.glb';
+import iron_shield from '../../assets/models/iron_shield.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
   pine, dead_tree, rock0, rock1, grave0, grave1, ruin_wall, waymarker, fence,
   watchmans_edge, coin_purse, manifest, grave_iron, draught,
   worn_sword, watch_helm, satchel, clothes, kite_shield,
+  mara, anvil, forge, awning, iron_gloves, hob_boots, mail_chausses, iron_shield,
 };
 
 // One shared material per Blender material name keeps draw state small.

@@ -16,6 +16,11 @@ export const SHRINE = { id: 'shrine_road', position: [9.6, 5.2], rotation: -90 }
 
 export const CART = { position: [-6.3, -4.0], rotation: 25 };
 
+// Mara Venn's forge camp, beside the watch post approach.
+export const NPCS = [
+  { id: 'mara', model: 'mara', name: 'Mara Venn', title: 'Smith', position: [14.6, -42.6], facing: 110, merchant: 'mara', anvil: [13.4, -41.6] },
+];
+
 export const ENEMIES = [
   { id: 'ghoul_cart', type: 'ghoul', position: [-3.2, -9.0] },
   { id: 'ghoul_graves', type: 'ghoul', position: [-21.5, 11.0] },
@@ -77,6 +82,12 @@ export const PROPS = [
   { model: 'grave0', position: [12.6, -29.0], rotation: 30, collider: 0.3 },
   { model: 'rock1', position: [30.0, -36.0], rotation: 30, scale: 1.3, collider: 1.2 },
 
+  // Mara Venn's forge camp
+  { model: 'awning', position: [12.6, -45.4], rotation: -15, collider: [[-1.4, -1.0, 0.25], [1.4, -1.0, 0.25], [-1.4, 1.0, 0.25], [1.4, 1.0, 0.25], [-0.9, 0.6, 0.5]] },
+  { model: 'forge', position: [10.4, -42.8], rotation: 75, collider: 0.9 },
+  { model: 'anvil', position: [13.4, -41.6], rotation: 20, collider: 0.45 },
+  { model: 'crate', position: [9.8, -45.6], rotation: 8, collider: 0.5 },
+
   // scattered boulders along the woodland edge
   { model: 'rock0', position: [-14.0, 24.0], rotation: 10, scale: 1.1, collider: 1.1 },
   { model: 'rock1', position: [-15.5, -14.0], rotation: 80, scale: 1.2, collider: 1.1 },
@@ -97,6 +108,7 @@ export const CLEARINGS = [
   [24, -42, 10],
   [24.5, 13, 4.5],
   [10.5, -38, 4],
+  [12.4, -43.6, 5.5], // Mara's camp
 ];
 
 // Warm light sources: [x, z, height, intensity, distance].
@@ -108,6 +120,7 @@ export const LIGHTS = [
   { position: [24.1, -40.6], height: 1.8, intensity: 14, distance: 15, flicker: true },
   { position: [19.6, -41.4], brazier: true, noLight: true },
   { position: [28.6, -41.2], brazier: true, noLight: true },
+  { position: [10.4, -42.6], height: 1.1, intensity: 5, distance: 8, flicker: true }, // Mara's forge
 ];
 
 // A rumble plays near here (the elite's territory).

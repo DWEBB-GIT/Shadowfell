@@ -694,6 +694,139 @@ def build_equipment():
     export("kite_shield")
 
 
+
+def build_mara():
+    """Mara Venn, the smith: same joint layout as the Warden so the rig animates her."""
+    root = empty("Mara")
+
+    def legs(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.16, 0.18, 0.48), (0, 0, -0.26), P["cloth"])
+            b.box((0.15, 0.17, 0.40), (0, 0.01, -0.66), P["leather_dark"])
+            b.box((0.16, 0.25, 0.10), (0, -0.05, -0.88), P["leather_dark"])
+        return part("Leg_" + side, root, (0.11 * s, 0, 0.93), fn)
+
+    legs("L")
+    legs("R")
+
+    def torso(b):
+        b.box((0.40, 0.25, 0.24), (0, 0, 0.10), P["cloth"])
+        b.box((0.44, 0.27, 0.40), (0, 0, 0.42), P["cloth_red"], taper=(1.08, 1.0), var=0.12)  # work shirt
+        b.box((0.42, 0.06, 0.72), (0, -0.15, 0.24), P["leather"], var=0.1)                   # smith's apron
+        b.box((0.46, 0.29, 0.06), (0, 0, 0.18), P["leather_dark"])                            # belt
+        b.box((0.06, 0.04, 0.22), (0.16, -0.17, 0.02), P["iron"])                             # tongs at the belt
+        b.box((0.10, 0.10, 0.12), (-0.20, -0.06, 0.06), P["leather_dark"])                   # pouch
+    t = part("Torso", root, (0, 0, 0.92), torso)
+
+    def head(b):
+        b.box((0.08, 0.08, 0.08), (0, 0, 0.03), P["skin"])
+        b.box((0.21, 0.23, 0.25), (0, 0, 0.19), P["skin"], taper=(0.92, 0.9))
+        b.box((0.24, 0.26, 0.10), (0, 0.02, 0.32), P["hair"])                                 # hair
+        b.box((0.23, 0.08, 0.22), (0, 0.11, 0.22), P["hair"])
+        b.ball(0.07, (0, 0.15, 0.30), P["hair"], subdiv=0)                                    # tied back
+        b.box((0.24, 0.03, 0.04), (0, -0.12, 0.27), P["cloth_red"], var=0.0)                  # headband
+        b.box((0.18, 0.03, 0.03), (0, -0.12, 0.21), P["black"], var=0.0)                      # eyes
+    part("Head", t, (0, 0, 0.66), head)
+
+    def arm(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.13, 0.14, 0.16), (0, 0, -0.04), P["cloth_red"])          # rolled sleeve
+            b.box((0.11, 0.12, 0.30), (0, 0, -0.26), P["skin"])               # bare forearm
+            b.box((0.12, 0.13, 0.16), (0, -0.01, -0.50), P["leather_dark"])   # heavy glove
+            b.box((0.10, 0.11, 0.10), (0, -0.01, -0.64), P["leather_dark"])
+        return part("Arm_" + side, t, (0.28 * s, 0, 0.56), fn)
+
+    arm("L")
+    ar = arm("R")
+
+    def hammer(b):
+        b.box((0.04, 0.04, 0.42), (0, 0, 0.12), P["wood"])                  # haft
+        b.box((0.20, 0.08, 0.08), (0, 0, 0.34), P["iron"], var=0.05)         # head
+    part("Weapon", ar, (0, -0.02, -0.66), hammer).rotation_euler = (math.radians(10), 0, 0)
+    export("mara")
+
+
+def build_forge_camp():
+    b = Builder()  # anvil on a stump
+    b.cyl(0.30, 0.34, 0.50, (0, 0, 0.25), P["wood_dark"], segs=8)
+    b.box((0.26, 0.20, 0.12), (0, 0, 0.56), P["iron"], var=0.04)
+    b.box((0.18, 0.14, 0.10), (0, 0, 0.66), P["iron"], var=0.04)
+    b.box((0.62, 0.24, 0.14), (0, 0, 0.78), P["iron"], var=0.04, taper=(1.0, 1.0))
+    b.box((0.18, 0.12, 0.08), (0.38, 0, 0.80), P["iron"], var=0.04, taper=(0.3, 0.6), rot=(0, 90, 0))  # horn
+    b.to_object("Anvil")
+    export("anvil")
+    reset_scene()
+
+    b = Builder()  # stone forge hearth with live coals and a bellows
+    b.box((1.3, 1.0, 0.75), (0, 0, 0.375), P["stone"], var=0.12)
+    b.box((1.1, 0.8, 0.08), (0, 0, 0.78), P["stone_dark"])
+    for _ in range(9):
+        b.ball(rng.uniform(0.07, 0.12), (rng.uniform(-0.35, 0.35), rng.uniform(-0.25, 0.25), 0.84), P["flame"], scale=(1, 1, 0.6), subdiv=0, glow=True, var=0.15)
+    b.box((0.9, 0.7, 0.9), (0, 0.15, 1.30), P["stone_dark"], taper=(0.45, 0.45))   # hood
+    b.box((0.30, 0.30, 0.90), (0, 0.15, 2.15), P["stone"], var=0.1)                  # chimney
+    b.box((0.40, 0.55, 0.12), (0.85, 0.05, 0.55), P["leather"], rot=(0, -15, 0))      # bellows
+    b.box((0.06, 0.06, 0.40), (1.05, 0.05, 0.62), P["wood"], rot=(0, -60, 0))
+    b.to_object("Forge")
+    export("forge")
+    reset_scene()
+
+    b = Builder()  # canvas awning on poles, with a rack of goods
+    for (x, y) in ((-1.4, -1.0), (1.4, -1.0), (-1.4, 1.0), (1.4, 1.0)):
+        b.box((0.10, 0.10, 2.3 if y > 0 else 2.0), (x, y, 1.15 if y > 0 else 1.0), P["wood_dark"])
+    b.box((3.1, 2.4, 0.05), (0, 0, 2.15), P["parchment"], rot=(-8, 0, 0), var=0.15)  # canvas
+    b.box((3.1, 0.05, 0.30), (0, -1.18, 1.92), P["parchment"], var=0.15)
+    b.box((2.2, 0.10, 0.08), (0, 0.95, 1.4), P["wood"])                                # rack rail
+    for i, x in enumerate((-0.8, -0.3, 0.2, 0.7)):
+        b.box((0.05, 0.015, 0.75), (x, 0.88, 1.0), P["steel"], var=0.1, taper=(0.4, 1))   # blades on the rack
+    b.box((0.9, 0.5, 0.45), (-0.9, 0.6, 0.225), P["wood"])                            # chest of stock
+    b.box((0.92, 0.52, 0.06), (-0.9, 0.6, 0.47), P["wood_dark"])
+    b.to_object("Awning")
+    export("awning")
+
+
+def build_shop_items():
+    b = Builder()  # iron-studded gloves (pair)
+    for x in (-0.09, 0.09):
+        b.box((0.13, 0.20, 0.05), (x, 0, 0.025), P["leather_dark"])
+        b.box((0.14, 0.10, 0.06), (x, 0.13, 0.03), P["iron"], var=0.05)       # cuff plate
+        for k in range(3):
+            b.box((0.025, 0.025, 0.02), (x - 0.04 + k * 0.04, -0.04, 0.06), P["steel"], var=0.0)
+    b.to_object("IronGloves")
+    export("iron_gloves")
+    reset_scene()
+
+    b = Builder()  # hobnailed boots
+    for x in (-0.09, 0.09):
+        b.box((0.12, 0.26, 0.08), (x, -0.04, 0.04), P["leather_dark"])
+        b.box((0.12, 0.13, 0.24), (x, 0.04, 0.16), P["leather"])
+        b.box((0.13, 0.14, 0.04), (x, 0.04, 0.27), P["leather_dark"])
+    b.to_object("HobBoots")
+    export("hob_boots")
+    reset_scene()
+
+    b = Builder()  # mail chausses, folded
+    b.box((0.36, 0.26, 0.10), (0, 0, 0.05), P["steel_dark"], var=0.15)
+    b.box((0.34, 0.24, 0.06), (0, 0.01, 0.12), P["steel"], var=0.15)
+    b.box((0.38, 0.04, 0.03), (0, -0.12, 0.14), P["leather_dark"])
+    b.to_object("MailChausses")
+    export("mail_chausses")
+    reset_scene()
+
+    b = Builder()  # iron-faced kite shield: face toward -Y, point at the bottom
+    b.box((0.48, 0.06, 0.42), (0, 0, 0.21), P["steel_dark"], var=0.08)
+    b.box((0.48, 0.06, 0.44), (0, 0, -0.22), P["steel_dark"], var=0.08, taper=(0.12, 1.0), rot=(0, 180, 0))
+    b.box((0.50, 0.07, 0.04), (0, 0, 0.43), P["brass"])
+    b.box((0.05, 0.03, 0.84), (0, -0.05, 0.0), P["brass"], taper=(0.5, 1.0))
+    b.box((0.42, 0.03, 0.05), (0, -0.05, 0.16), P["brass"])
+    b.ball(0.055, (0, -0.06, 0.16), P["steel_bright"], scale=(1, 0.6, 1), subdiv=1)
+    b.box((0.05, 0.05, 0.22), (0, 0.05, 0.08), P["leather_dark"])
+    b.to_object("IronShield")
+    export("iron_shield")
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -701,6 +834,7 @@ BUILDERS = [
     lambda: build_rock(0), lambda: build_rock(1),
     lambda: build_gravestone(0), lambda: build_gravestone(1),
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
+    build_mara, build_forge_camp, build_shop_items,
 ]
 
 if __name__ == "__main__":

@@ -42,6 +42,12 @@ export const CONFIG = {
   },
   shop: {
     sellFraction: 0.25, // merchants pay a quarter of their price, as in WoW
+    buybackSlots: 6, // things you sold this session can be bought back at what you got
+    talkRange: 3.0, // how close to stand to talk to a merchant
+    leaveRange: 6.0, // walking further than this closes the shop
+  },
+  quests: {
+    manifest: { coins: 20, xp: 50 }, // Mara's reward for word of her iron
   },
   death: {
     coinLossFraction: 0.2,

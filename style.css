@@ -87,6 +87,7 @@ kbd {
 .obj-title { color: var(--gold); font-size: 14px; letter-spacing: 1px; }
 #objective-state { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 #objective-state.done { color: #a8b878; }
+#objective-state.found { color: #e0b860; }
 #objective-text { margin: 6px 0 0; font-size: 13px; line-height: 1.4; }
 
 #log {
@@ -378,3 +379,19 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .tt-name.q-rare { color: #4a8fe0; }
 .tt-name.q-quest { color: #e8c060; }
 .tt-sell { color: #b8a880; font-size: 12px; margin-top: 4px; }
+
+/* merchant window, WoW style: left of the screen, beside the character panel if open */
+#shop-window { left: 12px; top: 136px; width: 330px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#shop-window.beside-character { left: 354px; }
+#shop-window .window-head h2 { margin-right: 8px; }
+#shop-talk { font-style: italic; color: #d0b878; font-size: 13px; margin: 4px 0 8px; line-height: 1.35; }
+.quest-btn { display: block; width: 100%; height: auto; padding: 6px; margin-bottom: 8px; color: #f0d080; border-color: #a08040; font-size: 13px; }
+#shop-stock { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.shop-row { display: flex; gap: 6px; align-items: center; }
+.shop-row.poor .shop-price { color: #c05040; }
+.shop-item { font-size: 12px; line-height: 1.2; }
+.shop-item.q-uncommon { color: #6cc05a; }
+.shop-price { font-size: 12px; color: #d8c890; }
+.shop-sub { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+#shop-buyback { display: flex; gap: 4px; min-height: 40px; align-items: center; }
+.tt-price { color: #f0d890; font-size: 12px; margin-top: 4px; }

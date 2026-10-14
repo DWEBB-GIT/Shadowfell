@@ -20,6 +20,7 @@ export class Interaction {
       const own = l.kind === 'corpse' ? `Loot the ${l.name}` : l.entry.def.prompt;
       list.push({ key: 'loot:' + l.id, x: l.x, z: l.z, bias: -0.4, loot: l, prompt: n > 1 ? `${own} (and ${n - 1} more nearby)` : own, run: () => loot.lootArea(l) });
     }
+    list.push(...this.game.npcs.interactions());
     list.push({
       key: 'shrine',
       x: SHRINE.position[0],

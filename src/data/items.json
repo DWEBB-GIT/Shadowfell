@@ -122,6 +122,68 @@
       "model": "manifest",
       "icon": "manifest",
       "description": "A carter's manifest, damp at the edges. The driver's name has been scratched out."
+    },
+    "iron_gloves": {
+      "name": "Iron-studded gloves",
+      "kind": "armor",
+      "slot": "hands",
+      "armourType": "mail",
+      "quality": "common",
+      "stats": {
+        "armour": 6
+      },
+      "stack": 1,
+      "price": 14,
+      "model": "iron_gloves",
+      "icon": "iron_gloves",
+      "description": "Thick leather with iron studs across the knuckles. Mara's own pattern."
+    },
+    "hob_boots": {
+      "name": "Hobnailed boots",
+      "kind": "armor",
+      "slot": "feet",
+      "armourType": "leather",
+      "quality": "common",
+      "stats": {
+        "armour": 5,
+        "vitality": 1
+      },
+      "stack": 1,
+      "price": 12,
+      "model": "hob_boots",
+      "icon": "hob_boots",
+      "description": "Heavy boots with iron nails in the soles. They grip a wet road."
+    },
+    "mail_chausses": {
+      "name": "Mail chausses",
+      "kind": "armor",
+      "slot": "legs",
+      "armourType": "mail",
+      "quality": "common",
+      "stats": {
+        "armour": 12
+      },
+      "stack": 1,
+      "price": 24,
+      "model": "mail_chausses",
+      "icon": "mail_chausses",
+      "description": "Riveted mail leggings, re-linked where someone was unlucky."
+    },
+    "iron_shield": {
+      "name": "Iron-faced kite shield",
+      "kind": "shield",
+      "slot": "offHand",
+      "quality": "uncommon",
+      "stats": {
+        "block": 15,
+        "blockRating": 20,
+        "armour": 5
+      },
+      "stack": 1,
+      "price": 45,
+      "model": "iron_shield",
+      "icon": "iron_shield",
+      "description": "Oak under a skin of hammered iron, brass at the rim. Heavy, and worth it."
     }
   }
 }

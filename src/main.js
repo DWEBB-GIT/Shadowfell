@@ -24,6 +24,8 @@ import { Telegraphs } from './systems/telegraphs.js';
 import { ActionBar, ABILITIES } from './systems/actionBar.js';
 import { heightAt } from './world/terrain.js';
 import { Targeting } from './systems/targeting.js';
+import { NpcManager } from './systems/npcs.js';
+import { Merchant } from './systems/merchant.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
 import { EXAMINE } from './data/text.js';
@@ -67,6 +69,8 @@ class Game {
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
+    this.npcs = new NpcManager(this);
+    this.merchant = new Merchant(this);
     this.loot = new LootSystem(this);
     this.interaction = new Interaction(this);
     this.actionBar = new ActionBar(this);
@@ -157,6 +161,9 @@ class Game {
     this.worldState.reset();
     this.progression.apply({ level: 1, xp: 0 });
     this.inventory.apply(new Inventory(this).serialize());
+    this.merchant.close();
+    this.merchant.buyback = [];
+    this.merchant.justThanked = false;
     this.telegraphs.clear();
     this.hud.numbers.clear();
     this.hud.items.closeAll();
@@ -391,6 +398,8 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.enemies.update(dt);
+      this.npcs.update(dt);
+      this.merchant.update();
       this.telegraphs.update(dt);
       this.targeting.update(dt, this.rawAim, ABILITIES.strike.range + 1);
       this.interaction.update();

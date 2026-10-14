@@ -263,8 +263,10 @@ export class Hud {
   refreshObjective() {
     const stage = this.game.worldState.objectiveStage;
     this.el.objective.textContent = OBJECTIVE.stages[stage];
-    this.el.objectiveState.textContent = stage === 'complete' ? 'Complete' : 'In progress';
-    this.el.objectiveState.className = stage === 'complete' ? 'done' : '';
+    // finding the manifest is the investigation; handing it to Mara closes it
+    const label = { complete: 'Return to Mara', reported: 'Complete' }[stage] || 'In progress';
+    this.el.objectiveState.textContent = label;
+    this.el.objectiveState.className = stage === 'reported' ? 'done' : stage === 'complete' ? 'found' : '';
   }
 
   refreshStats() {

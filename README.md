@@ -9,6 +9,8 @@ A small dark fantasy action RPG prototype built to the *Shadowfall Game Design &
 
 No install, web server or internet connection is needed. Three.js and every Blender model are bundled into `dist/shadowfall.js`, so the game also runs offline.
 
+The project is a git repository (branch `main`). `dist/` is committed so a fresh checkout runs straight away; run `npm install` and `npm run build` after changing anything in `src/`.
+
 ## New in build 2
 
 - **Ground telegraphs, after Final Fantasy XIV.** The Gravebound Brute paints its attacks on the ground before they land: an amber cone for its ordinary cleave and a large orange cone for **Grave Slam** (24 damage, 1.4 s wind-up). The cone fills as the wind-up runs, a cast bar shows under its health bar, and anyone still inside when it fills is hit. The area is fixed when the wind-up starts, so walk out or Brace. Shield Break interrupts the cleave but not the slam.
@@ -42,6 +44,17 @@ The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in
 - **Level-up:** a card lists each stat that rose, old value to new, and the character panel marks those stats with a green "+n".
 
 All numbers are in `src/config.js` (`stats`, `archetypes` and the enemies) and in the item definitions.
+
+## Items and Mara's forge
+
+- **Item database.** Every item is defined once in `src/data/items.json`: name, kind, slot, armour type, quality, damage, stats, use effect, bag size, stack size, buy price, model and icon. The game checks the file at startup and logs any malformed entry. Adding an item is a new entry there, plus a Blender model if it needs a new look.
+- **Mara Venn's forge** stands beside the watch post: a forge, an anvil and an awning, with Mara hammering at her anvil until you come close. Press E (A on a pad) to talk to her. Her shop opens on the left with your bags on the right.
+  - Click an item to buy it (A on a pad). Merchants' stock is in `src/data/merchants.json`.
+  - Right-click anything in your bags (or drag it onto her window, or Y on a pad) to sell it. Merchants pay a quarter of the price, as in WoW, and tooltips show what an item sells for.
+  - Anything sold can be bought back for what it fetched until you leave the game.
+  - Quest items cannot be sold or dropped.
+  - Walking away closes the shop.
+- **The manifest.** Once you have the manifest, the objective says to return to Mara. Hand it over in her shop for 20 coins and 50 experience; that closes the cart storyline, and she points you north to the Blackwood.
 
 ## Controls
 
