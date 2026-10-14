@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { LOOT, ELITE_DROP, ITEMS } from '../data/items.js';
+import { LOOT, ELITE_DROP, ITEMS, itemView, rollItem } from '../data/items.js';
+import DROPS from '../data/drops.json';
 import { heightAt } from '../world/terrain.js';
 import { CONFIG } from '../config.js';
 
@@ -37,8 +38,8 @@ export class LootSystem {
       id: 'ground:' + g.uid,
       ground: g,
       model: item.model,
-      prompt: `Pick up ${item.name}${g.count > 1 ? ` ×${g.count}` : ''}`,
-      reward: { item: g.id, count: g.count },
+      prompt: `Pick up ${itemView(g).name}${g.count > 1 ? ` ×${g.count}` : ''}`,
+      reward: { item: g.id, count: g.count, rolls: g.rolls || null },
     };
   }
 
@@ -68,12 +69,53 @@ export class LootSystem {
     const a = player.facing + ((n % 5) - 2) * 0.5;
     const pos = { x: player.position.x + Math.sin(a) * 0.9, z: player.position.z + Math.cos(a) * 0.9 };
     collision.resolve(pos, 0.2);
-    const g = { uid: worldState.nextGroundUid++, id: taken.id, count: taken.count, x: +pos.x.toFixed(2), z: +pos.z.toFixed(2) };
-    worldState.ground.push(g);
+    const g = this._addGround(taken, pos);
     const entry = this._spawnGround(g);
     events.emit('itemDropped', { item: g });
-    events.emit('log', { text: `Dropped: ${ITEMS[g.id].name}${g.count > 1 ? ` ×${g.count}` : ''}.`, kind: 'muted' });
+    events.emit('log', { text: `Dropped: ${itemView(g).name}${g.count > 1 ? ` ×${g.count}` : ''}.`, kind: 'muted' });
     return entry;
+  }
+
+  _addGround(stack, pos) {
+    const ws = this.game.worldState;
+    const g = { uid: ws.nextGroundUid++, id: stack.id, count: stack.count, x: +pos.x.toFixed(2), z: +pos.z.toFixed(2) };
+    if (stack.rolls) g.rolls = stack.rolls;
+    ws.ground.push(g);
+    return g;
+  }
+
+  // Gear and materials an enemy drops, from its table in data/drops.json.
+  // Gear rolls its stats as it drops. Drops lie beside the body and are
+  // saved like anything else on the ground, so they wait to be looted.
+  dropFromEnemy(enemy) {
+    const table = enemy.type !== '_comment' && DROPS[enemy.type];
+    if (!table) return [];
+    const rand = this.game.random;
+    const out = [];
+    const place = (id, count) => {
+      const a = out.length * 2.1 + enemy.facing;
+      const pos = { x: enemy.position.x + Math.sin(a) * 0.8, z: enemy.position.z + Math.cos(a) * 0.8 };
+      this.game.collision.resolve(pos, 0.2);
+      const rolls = rollItem(id, rand);
+      const g = this._addGround(rolls ? { id, count, rolls } : { id, count }, pos);
+      this._spawnGround(g);
+      out.push(g);
+    };
+    for (const [id, [lo, hi]] of Object.entries(table.always || {})) {
+      const n = lo + Math.floor(rand() * (hi - lo + 1));
+      if (n > 0) place(id, n);
+    }
+    if (table.gear && rand() < table.gear.chance) {
+      const entries = Object.entries(table.gear.table);
+      let pick = rand() * entries.reduce((a, [, w]) => a + w, 0);
+      const hit = entries.find(([, w]) => (pick -= w) < 0) || entries[entries.length - 1];
+      place(hit[0], 1);
+    }
+    for (const g of out) {
+      const v = itemView(g);
+      if (ITEMS[g.id].kind !== 'material') this.game.events.emit('log', { text: `The ${enemy.cfg.name} drops ${/^[aeiou]/i.test(v.name) ? 'an' : 'a'} ${v.name}.`, kind: 'loot' });
+    }
+    return out;
   }
 
   clear() {
@@ -84,7 +126,7 @@ export class LootSystem {
   _spawn(def, x, z) {
     const group = new THREE.Group();
     const model = this.game.assets.instance(def.model);
-    if (def.model === 'watchmans_edge' || def.model === 'worn_sword') {
+    if (['watchmans_edge', 'worn_sword', 'rusted_falchion', 'blackwood_cleaver'].includes(def.model)) {
       model.rotation.set(Math.PI / 2, 0, 0.6); // lying on the ground
       model.position.y = 0.06;
     }
@@ -180,7 +222,7 @@ export class LootSystem {
     if (!def.ground && worldState.isCollected(def.id)) return false;
     const r = def.reward;
     // a full bag leaves the item where it lies
-    if (r.item && !inventory.addItem(r.item, r.count || 1)) return false;
+    if (r.item && !inventory.addItem(r.item, r.count || 1, { rolls: r.rolls || null })) return false;
     if (r.coins) inventory.addCoins(r.coins, 'in a purse');
     if (def.ground) worldState.ground.splice(worldState.ground.indexOf(def.ground), 1);
     else worldState.markCollected(def.id);
@@ -206,6 +248,7 @@ export class LootSystem {
   }
 
   describe(entry) {
-    return ITEMS[entry.def.reward.item]?.name;
+    const r = entry.def.reward;
+    return r.item ? itemView({ id: r.item, rolls: r.rolls }).name : undefined;
   }
 }

@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, sellPrice } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, sellPrice, itemView } from '../data/items.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -204,7 +204,7 @@ export class ItemUI {
       const icon = this._iconFor(stack.id);
       inner = icon ? `<img src="${icon}" alt="">` : `<span class="letter">${ITEMS[stack.id].name[0]}</span>`;
       if (stack.count > 1) inner += `<span class="count">${stack.count}</span>`;
-      cls.push('filled', 'k-' + ITEMS[stack.id].kind);
+      cls.push('filled', 'k-' + ITEMS[stack.id].kind, 'q-' + itemView(stack).quality);
     } else if (placeholder) {
       inner = `<span class="ph">${placeholder}</span>`;
     }
@@ -359,14 +359,14 @@ export class ItemUI {
       shop = { buy: this.game.merchant.priceOf(stack.id) };
     } else if (loc && loc.startsWith('y:')) {
       const b = this.game.merchant.buyback[+loc.slice(2)];
-      stack = b ? { id: b.id, count: b.count } : null;
+      stack = b || null;
       shop = b ? { buy: b.paid } : null;
     }
     if (!stack || loc === 's:0') {
       tip.hidden = true;
       return;
     }
-    const def = ITEMS[stack.id];
+    const def = itemView(stack);
     const lines = [`<div class="tt-name k-${def.kind} q-${def.quality}">${def.name}</div>`, `<div class="tt-kind">${KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
@@ -382,7 +382,7 @@ export class ItemUI {
     if (def.bagSlots) lines.push(`<div>${def.bagSlots} slots</div>`);
     if (stack.count > 1) lines.push(`<div>${stack.count} carried</div>`);
     lines.push(`<div class="tt-desc">${def.description}</div>`);
-    const sell = sellPrice(stack.id, CONFIG.shop.sellFraction);
+    const sell = sellPrice(stack, CONFIG.shop.sellFraction);
     if (shop) lines.push(`<div class="tt-price">Price: ${shop.buy} coin${shop.buy === 1 ? '' : 's'}</div>`);
     else lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
     if (shop) {

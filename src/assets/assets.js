@@ -41,6 +41,18 @@ import iron_gloves from '../../assets/models/iron_gloves.glb';
 import hob_boots from '../../assets/models/hob_boots.glb';
 import mail_chausses from '../../assets/models/mail_chausses.glb';
 import iron_shield from '../../assets/models/iron_shield.glb';
+import hound from '../../assets/models/hound.glb';
+import archer from '../../assets/models/archer.glb';
+import seer from '../../assets/models/seer.glb';
+import black_pine from '../../assets/models/black_pine.glb';
+import standing_stone from '../../assets/models/standing_stone.glb';
+import palisade from '../../assets/models/palisade.glb';
+import bone_pile from '../../assets/models/bone_pile.glb';
+import rusted_falchion from '../../assets/models/rusted_falchion.glb';
+import warden_hauberk from '../../assets/models/warden_hauberk.glb';
+import plate_sabatons from '../../assets/models/plate_sabatons.glb';
+import blackwood_cleaver from '../../assets/models/blackwood_cleaver.glb';
+import hound_pelt from '../../assets/models/hound_pelt.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
@@ -48,6 +60,8 @@ const SOURCES = {
   watchmans_edge, coin_purse, manifest, grave_iron, draught,
   worn_sword, watch_helm, satchel, clothes, kite_shield,
   mara, anvil, forge, awning, iron_gloves, hob_boots, mail_chausses, iron_shield,
+  hound, archer, seer, black_pine, standing_stone, palisade, bone_pile,
+  rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
 };
 
 // One shared material per Blender material name keeps draw state small.

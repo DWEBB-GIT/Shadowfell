@@ -33,6 +33,11 @@ export class Effects {
       if (Math.hypot(p.x - x, p.z - z) < 25) this.sparks({ x, y: heightAt(x, z) - 0.3, z }, 5);
     });
     ev.on('playerBrace', () => this.braceGlow());
+    ev.on('projectile', (p) => this.projectile(p));
+    ev.on('darkCircle', ({ x, z, radius }) => {
+      const pos = new THREE.Vector3(x, heightAt(x, z), z);
+      this.shockwave(pos, radius, 0x9a7cff);
+    });
     ev.on('itemDropped', ({ item }) => this.dust({ x: item.x, y: this.game.player.position.y, z: item.z }, 4, 0.2));
   }
 
@@ -41,13 +46,13 @@ export class Effects {
     this.items.push({ obj, life, age: 0, update });
   }
 
-  shockwave(pos, radius) {
+  shockwave(pos, radius, color = 0xffd9a0) {
     const mat = new THREE.MeshBasicMaterial({
       map: this.game.textures.ring,
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      color: 0xffd9a0,
+      color,
     });
     const ring = new THREE.Mesh(this.ringGeo, mat);
     ring.rotation.x = -Math.PI / 2;
@@ -93,6 +98,22 @@ export class Effects {
         o.scale.setScalar(1 - k);
       });
     }
+  }
+
+  // An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
+  projectile({ kind, from, to, speed }) {
+    const bolt = kind === 'bolt';
+    const obj = bolt
+      ? new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color: 0x9a7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
+      : new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.7), new THREE.MeshBasicMaterial({ color: 0xd8c8a0 }));
+    if (bolt) obj.scale.setScalar(0.6);
+    const y1 = heightAt(to.x, to.z) + 1.0;
+    const a = new THREE.Vector3(from.x, from.y, from.z);
+    const b = new THREE.Vector3(to.x, y1, to.z);
+    obj.position.copy(a);
+    if (!bolt) obj.lookAt(b);
+    const life = Math.max(0.08, a.distanceTo(b) / speed);
+    this._add(obj, life, (o, k) => o.position.lerpVectors(a, b, k));
   }
 
   // a pale shield of light in front of the Warden while Brace is up

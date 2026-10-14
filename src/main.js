@@ -7,7 +7,8 @@ import { Assets } from './assets/assets.js';
 import { createTextures } from './render/textures.js';
 import { Collision } from './world/collision.js';
 import { World } from './world/world.js';
-import { PLAYER_START, SHRINE } from './world/layout.js';
+import { PLAYER_START, SHRINE, SHRINES, REGIONS, regionAt } from './world/layout.js';
+import { blackwoodness } from './world/terrain.js';
 import { Player } from './entities/player.js';
 import { Combat } from './systems/combat.js';
 import { EnemyManager } from './systems/enemies.js';
@@ -17,7 +18,7 @@ import { Inventory } from './systems/inventory.js';
 import { Stats } from './systems/stats.js';
 import { Progression } from './systems/progression.js';
 import { WorldState } from './systems/worldState.js';
-import { SaveManager } from './systems/save.js';
+import { SaveManager, validateSave } from './systems/save.js';
 import { Effects } from './systems/fx.js';
 import { AudioSystem } from './systems/audio.js';
 import { Telegraphs } from './systems/telegraphs.js';
@@ -29,7 +30,8 @@ import { Merchant } from './systems/merchant.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
 import { EXAMINE } from './data/text.js';
-import { ITEMS, EQUIP_SLOTS, validateItems } from './data/items.js';
+import { ITEMS, EQUIP_SLOTS, validateItems, validateDrops, rollItem, itemView } from './data/items.js';
+import DROPS from './data/drops.json';
 
 // Game initialisation and the main loop. Each system owns its own state; this
 // file wires them together and routes input.
@@ -55,10 +57,15 @@ class Game {
 
     this.worldState = new WorldState(this);
     // the item database is data: refuse to run quietly with a broken entry
-    this.itemErrors = validateItems(ITEMS, EQUIP_SLOTS.map((s) => s.id), Object.keys(CONFIG.armourTypes));
+    this.itemErrors = validateItems(ITEMS, EQUIP_SLOTS.map((s) => s.id), Object.keys(CONFIG.armourTypes)).concat(
+      validateDrops(DROPS, Object.keys(CONFIG.enemies).filter((k) => typeof CONFIG.enemies[k] === 'object')),
+    );
     for (const e of this.itemErrors) console.error('Item database: ' + e);
     this.items = ITEMS;
     this.validateItems = validateItems; // for tests and tools
+    this.rollItem = rollItem;
+    this.itemView = itemView;
+    this.validateSave = validateSave;
     this.progression = new Progression(this);
     this.stats = new Stats(this);
     this.random = Math.random; // every combat roll goes through this (tests pin it)
@@ -164,6 +171,7 @@ class Game {
     this.merchant.close();
     this.merchant.buyback = [];
     this.merchant.justThanked = false;
+    this.region = null; // named again, quietly, from wherever the Warden stands
     this.telegraphs.clear();
     this.hud.numbers.clear();
     this.hud.items.closeAll();
@@ -266,18 +274,19 @@ class Game {
 
   respawnPoint() {
     const r = this.worldState.respawn;
-    if (r) return { x: r.x, z: r.z, label: 'at the roadside shrine', kind: 'shrine' };
+    const sh = SHRINES.find((x) => x.id === this.worldState.shrineActivated) || SHRINES[0];
+    if (r) return { x: r.x, z: r.z, label: sh.label, kind: 'shrine' };
     return { x: PLAYER_START.position[0], z: PLAYER_START.position[1], label: "at the road's end", kind: 'start' };
   }
 
-  restAtShrine() {
+  restAtShrine(shrine = SHRINE) {
     const { player, worldState, events, hud } = this;
     const first = !worldState.examined.has('shrine');
     worldState.examined.add('shrine');
     player.health = player.maxHealth;
     // respawn just in front of the shrine, on the road side
-    worldState.respawn = { x: SHRINE.position[0] - 1.8, z: SHRINE.position[1] };
-    worldState.shrineActivated = SHRINE.id;
+    worldState.respawn = { x: shrine.position[0] - 1.8, z: shrine.position[1] };
+    worldState.shrineActivated = shrine.id;
     events.emit('shrineRest', {});
     if (first) hud.log(EXAMINE.shrine_first, 'lore');
     hud.log('You rest a while. Your wounds close, and you will return here if you fall.', 'heal');
@@ -414,8 +423,38 @@ class Game {
       }
     }
     this.world.update(dt, performance.now() / 1000);
+    this._updateRegion();
     this._updateCamera(dt);
     if (this.started) this.hud.update(dt);
+  }
+
+  // Which region the Warden is in, and the air there: the fog and light
+  // shade smoothly from the Fallen Road's dusk into the Blackwood's gloom.
+  _updateRegion() {
+    const z = this.player.position.z;
+    const k = blackwoodness(z);
+    if (k !== this._bwk) {
+      this._bwk = k;
+      const bw = CONFIG.blackwood;
+      this.scene.fog.near = THREE.MathUtils.lerp(CONFIG.fog.near, bw.fogNear, k);
+      this.scene.fog.far = THREE.MathUtils.lerp(CONFIG.fog.far, bw.fogFar, k);
+      this.scene.fog.color.set(CONFIG.fog.color).lerp(new THREE.Color(bw.fogColor), k);
+      this.scene.background.copy(this.scene.fog.color);
+      const light = THREE.MathUtils.lerp(1, bw.light, k);
+      this.hemi.intensity = 2.1 * light;
+      this.sun.intensity = 2.3 * light;
+    }
+    // a little hysteresis so walking along the border does not flicker the name
+    let r = regionAt(z);
+    if (this.region && r !== this.region) {
+      const ahead = REGIONS.indexOf(r) > REGIONS.indexOf(this.region) ? 1.5 : -1.5;
+      if (regionAt(z + ahead) !== r) r = this.region;
+    }
+    if (r !== this.region) {
+      const first = !!this.region;
+      this.region = r;
+      this.events.emit('regionChanged', { region: r, announce: first && this.started });
+    }
   }
 
   _snapCamera() {

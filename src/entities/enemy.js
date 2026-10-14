@@ -5,6 +5,12 @@ import { heightAt } from '../world/terrain.js';
 
 // One undead enemy. AI states: idle -> chase -> attack, return home when the
 // player escapes, dead when health reaches zero. Deliberately simple.
+//
+// What an enemy can do comes from its config: a melee swing (every enemy),
+// a telegraphed cleave and special (the brute), a pack that wakes together
+// (hounds), an aimed shot down a painted line that keeps its distance
+// (archers, and the seer's bolt), and a circle cast under the Warden's feet
+// that costs mana (the seer). Out of mana, a caster closes to melee.
 
 export class Enemy {
   constructor(game, spawn) {
@@ -24,6 +30,7 @@ export class Enemy {
     this.windup = 0; // > 0 while an attack is being telegraphed
     this.casting = null; // ground-telegraphed attack in progress: { kind, telegraph }
     this.specialTimer = 3; // first Grave Slam comes a few seconds into a fight
+    this.circleTimer = 2.5; // first circle spell, likewise
     this.stagger = 0;
     this.knock = new THREE.Vector3();
     this.flash = 0;
@@ -61,6 +68,7 @@ export class Enemy {
     this.windup = 0;
     this._cancelCast();
     this.specialTimer = 3;
+    this.circleTimer = 2.5;
     this.stagger = 0;
     this.engaged = 0;
     this.rig.action = null;
@@ -76,8 +84,9 @@ export class Enemy {
     this.engaged = 6;
     this.rig.hit();
     this.stagger = Math.max(this.stagger, stagger);
-    if (heavy && !(this.casting && this.casting.kind === 'special')) {
-      // a heavy blow interrupts an ordinary swing; the elite's slam cannot be stopped
+    if (heavy && !(this.casting && (this.casting.kind === 'special' || this.casting.kind === 'circle'))) {
+      // a heavy blow interrupts an ordinary swing or an aimed shot; the
+      // elite's slam and the seer's circle cannot be stopped
       this.windup = 0;
       this.rig.action = null;
       this._cancelCast();
@@ -86,7 +95,10 @@ export class Enemy {
       const dir = new THREE.Vector3(this.position.x - knockFrom.x, 0, this.position.z - knockFrom.z);
       if (dir.lengthSq() > 0.0001) this.knock.copy(dir.normalize().multiplyScalar(knockback * 6));
     }
-    if (this.state === 'idle' || this.state === 'return') this.state = 'chase';
+    if (this.state === 'idle' || this.state === 'return') {
+      this.state = 'chase';
+      this._wakePack();
+    }
     if (this.health <= 0) {
       this.dead = true;
       this.state = 'dead';
@@ -100,6 +112,70 @@ export class Enemy {
   _cancelCast() {
     if (this.casting) this.game.telegraphs.cancel(this.casting.telegraph);
     this.casting = null;
+  }
+
+  // A hound that wakes brings the rest of its pack.
+  _wakePack() {
+    if (!this.cfg.pack) return;
+    for (const o of this.game.enemies.list) {
+      if (o === this || !o.alive || o.type !== this.type || o.state !== 'idle') continue;
+      if (Math.hypot(o.position.x - this.position.x, o.position.z - this.position.z) <= this.cfg.pack) o.state = 'chase';
+    }
+  }
+
+  // An aimed shot: a line is painted towards the Warden; when it fills, the
+  // arrow (or bolt) flies down it and hits whoever is still on it.
+  _startShot(player) {
+    const r = this.cfg.ranged;
+    const angle = Math.atan2(player.position.x - this.position.x, player.position.z - this.position.z);
+    this.facing = angle;
+    const bolt = r.projectile === 'bolt';
+    const telegraph = this.game.telegraphs.line(this, {
+      angle,
+      length: r.range + 1,
+      width: r.width,
+      duration: r.windup,
+      color: bolt ? 0x8a6cff : 0xe8a040,
+      onComplete: (shape) => {
+        this.casting = null;
+        const end = { x: shape.x + Math.sin(angle) * shape.length, z: shape.z + Math.cos(angle) * shape.length };
+        const p = this.game.player.position;
+        const onLine = shape.contains(p.x, p.z, this.game.player.radius);
+        // the shot stops at the Warden if it hits, otherwise flies on
+        const to = onLine ? { x: p.x, z: p.z } : end;
+        this.game.events.emit('projectile', { kind: r.projectile, from: { x: this.position.x, z: this.position.z, y: this.position.y + 1.3 }, to, speed: r.speed });
+        this.game.combat.resolveTelegraph(this, shape, r.damage, r.name, { canCrit: true, canBlock: true, school: r.school || 'physical' });
+      },
+    });
+    if (r.mana) this.mana -= r.mana;
+    this.casting = { kind: 'shot', telegraph, label: r.name };
+    this.attackTimer = r.interval;
+    this.rig.play(bolt ? 'cast' : 'shoot', r.windup + 0.25, r.windup / (r.windup + 0.25));
+    this.game.events.emit('enemyWindup', { enemy: this });
+  }
+
+  // A circle under the Warden's feet that fills, then strikes; walk out of it.
+  _startCircle(player) {
+    const c = this.cfg.circle;
+    this.facing = Math.atan2(player.position.x - this.position.x, player.position.z - this.position.z);
+    const telegraph = this.game.telegraphs.circle(this, {
+      x: player.position.x,
+      z: player.position.z,
+      radius: c.radius,
+      duration: c.windup,
+      onComplete: (shape) => {
+        this.casting = null;
+        this.game.events.emit('darkCircle', { x: shape.x, z: shape.z, radius: shape.range });
+        this.game.combat.resolveTelegraph(this, shape, c.damage, c.name, { canCrit: false, canBlock: false, school: c.school || 'physical' });
+      },
+    });
+    this.mana -= c.mana;
+    this.circleTimer = c.cooldown;
+    this.attackTimer = Math.max(this.attackTimer, c.windup + 0.5);
+    this.casting = { kind: 'circle', telegraph, label: c.name };
+    this.rig.play('cast', c.windup + 0.3, c.windup / (c.windup + 0.3));
+    this.game.events.emit('log', { text: `The ${this.cfg.name} calls the dark up out of the earth. Move!`, kind: 'hurt', throttle: 'circle-warn' });
+    this.game.events.emit('enemyWindup', { enemy: this, special: true });
   }
 
   // Telegraphed attacks: the area is fixed now and lands when it fills.
@@ -171,6 +247,7 @@ export class Enemy {
           if (dist < cfg.detection) {
             this.state = 'chase';
             this.game.events.emit('enemyAlert', { enemy: this });
+            this._wakePack();
           }
           break;
         case 'chase':
@@ -194,15 +271,38 @@ export class Enemy {
 
     this.attackTimer = Math.max(0, this.attackTimer - dt);
     this.specialTimer = Math.max(0, this.specialTimer - dt);
+    this.circleTimer = Math.max(0, this.circleTimer - dt);
+    if (cfg.mana) this.mana = Math.min(cfg.mana, this.mana + (cfg.manaRegen || 0) * dt);
     if (player.dead && this.casting) this._cancelCast();
+    const fighting = this.state === 'chase' || this.state === 'attack';
+    const rg = cfg.ranged;
+    const canShoot = rg && this.mana >= (rg.mana || 0);
+    const cc = cfg.circle;
 
     if (this.casting) {
       // committed: hold position while the telegraph fills
       speed01 = 0;
     } else if (this.stagger <= 0 && !player.dead) {
       const sp = cfg.special;
-      if (sp && this.specialTimer <= 0 && dist < sp.trigger && (this.state === 'chase' || this.state === 'attack')) {
+      if (sp && this.specialTimer <= 0 && dist < sp.trigger && fighting) {
         this._startCast('special', player);
+      } else if (cc && fighting && this.circleTimer <= 0 && this.mana >= cc.mana && dist <= cc.range) {
+        this._startCircle(player);
+      } else if (canShoot && fighting && dist > reach) {
+        // a ranged enemy holds its distance: closes to range, backs off
+        // when the Warden gets close, and shoots when it is ready
+        this.facing = Math.atan2(dx, dz);
+        if (dist > rg.range * 0.9) {
+          this._moveTowards(player.position.x, player.position.z, cfg.speed, dt, rg.range * 0.8);
+          speed01 = 1;
+        } else if (dist < rg.keep) {
+          this.position.x -= (dx / dist) * cfg.speed * 0.75 * dt;
+          this.position.z -= (dz / dist) * cfg.speed * 0.75 * dt;
+          speed01 = 0.7;
+          if (this.attackTimer <= 0) this._startShot(player);
+        } else if (this.attackTimer <= 0) {
+          this._startShot(player);
+        }
       } else if (this.state === 'chase') {
         this._moveTowards(player.position.x, player.position.z, cfg.speed, dt, reach * 0.85);
         speed01 = 1;
@@ -222,7 +322,7 @@ export class Enemy {
           // telegraph, then strike; the interval runs from the start of the swing
           this.windup = cfg.windup;
           this.attackTimer = cfg.attackInterval;
-          this.rig.play(this.type === 'brute' ? 'cleave' : 'claw', cfg.windup + 0.3, cfg.windup / (cfg.windup + 0.3));
+          this.rig.play(cfg.meleeAnim || (this.type === 'brute' ? 'cleave' : 'claw'), cfg.windup + 0.3, cfg.windup / (cfg.windup + 0.3));
           this.game.events.emit('enemyWindup', { enemy: this });
         }
       }
@@ -239,7 +339,7 @@ export class Enemy {
 
     this.game.collision.resolve(this.position, this.radius);
     this.position.y = heightAt(this.position.x, this.position.z);
-    this.rig.update(dt, speed01 * (this.type === 'brute' ? 0.8 : 0.7));
+    this.rig.update(dt, speed01 * (this.type === 'brute' ? 0.8 : this.type === 'hound' ? 1 : 0.7));
     this._sync();
   }
 

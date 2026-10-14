@@ -141,6 +141,7 @@ export const CONFIG = {
       xp: 65,
       coins: 9,
       elite: true,
+      reward: true, // drops Watchman's Edge
       telegraph: true, // its normal swing is marked on the ground
       special: {
         name: 'Grave Slam',
@@ -152,12 +153,82 @@ export const CONFIG = {
         damage: 31, // cannot crit or be blocked; only Brace stops it
       },
     },
+    // ---- the Blackwood
+    hound: {
+      name: 'Barrow Hound',
+      model: 'hound',
+      level: 3,
+      health: 40,
+      damage: 8,
+      armour: 0,
+      crit: 5,
+      attackInterval: 0.95,
+      windup: 0.3,
+      detection: 11,
+      meleeRange: 1.1,
+      speed: 5.0, // faster than the Warden walks: you cannot outrun a pack
+      radius: 0.45,
+      xp: 30,
+      coins: 1,
+      elite: false,
+      pack: 9, // waking one wakes every hound within this many metres
+      barHeight: 1.4,
+      meleeAnim: 'bite',
+    },
+    archer: {
+      name: 'Hollow Archer',
+      model: 'archer',
+      level: 3,
+      health: 44,
+      damage: 7, // a bony fist, if you get close
+      armour: 5,
+      crit: 5,
+      attackInterval: 1.4,
+      windup: 0.5,
+      detection: 13,
+      meleeRange: 1.2,
+      speed: 2.6,
+      radius: 0.4,
+      xp: 34,
+      coins: 3,
+      elite: false,
+      // aims along a line painted on the ground, then looses; step off the line
+      ranged: { name: 'Aimed Shot', range: 12, keep: 6, windup: 1.1, interval: 2.6, damage: 13, width: 0.9, projectile: 'arrow', speed: 24 },
+    },
+    seer: {
+      name: 'Blackwood Seer',
+      model: 'seer',
+      level: 5,
+      health: 130,
+      mana: 60,
+      manaRegen: 3, // per second
+      damage: 8, // the staff, when her mana is spent
+      armour: 5,
+      resistance: 20,
+      crit: 5,
+      attackInterval: 1.3,
+      windup: 0.5,
+      detection: 11,
+      meleeRange: 1.3,
+      speed: 2.4,
+      radius: 0.45,
+      xp: 120,
+      coins: 14,
+      elite: true,
+      barHeight: 2.4,
+      meleeAnim: 'cleave',
+      ranged: { name: 'Rot Bolt', range: 11, keep: 5, windup: 0.9, interval: 2.2, damage: 15, width: 1.1, projectile: 'bolt', speed: 14, mana: 10, school: 'shadow' },
+      // a circle of grasping dark under the Warden's feet: cannot be blocked, only Braced or escaped
+      circle: { name: 'Grasping Dark', range: 10, radius: 2.4, windup: 1.6, cooldown: 8, damage: 24, mana: 25, school: 'shadow' },
+    },
     leashDistance: 18, // give up and return home beyond this distance from home
   },
   interaction: {
     radius: 2.2,
   },
   fog: { color: 0x3a4244, near: 14, far: 40 }, // linear view-distance fog, in metres from the camera
+  // the Blackwood closes in: nearer, darker fog and dimmer light under the pines
+  blackwood: { fogColor: 0x1d2725, fogNear: 9, fogFar: 32, light: 0.68 },
   camera: {
     offset: [0, 11, 10],
     fov: 45,

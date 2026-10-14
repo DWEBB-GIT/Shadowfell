@@ -1,7 +1,7 @@
 # Shadowfall acceptance test results
 
-Run: 2026-10-14T19:47:00.738Z  
-Result: **184/184 passed**
+Run: 2026-10-14T20:04:59.569Z  
+Result: **208/208 passed**
 
 
 ## Launch and movement
@@ -10,11 +10,11 @@ Result: **184/184 passed**
 |---|---|---|
 | ✅ | Game loads in a supported desktop browser | title screen, then HUD, from file://index.html |
 | ✅ | No blocking errors occur during startup |  |
-| ✅ | Player can move in all four directions | W 1.86m, S 3.50m, A 3.50m, D 3.00m (real key events) |
+| ✅ | Player can move in all four directions | W 2.00m, S 2.50m, A 2.50m, D 2.10m (real key events) |
 | ✅ | Diagonal movement is normalised | 1s straight 5.00m, 1s diagonal 5.00m |
 | ✅ | Camera follows the player | camera offset after moving: x -0.00, z 10.00 (target 0, 10) |
 | ✅ | Movement is frame-rate independent (extra) | 1s at 24 fps 5.00m, at 144 fps 5.00m |
-| ✅ | Player remains within the playable area | A→(-35.6, 0.0) D→(35.6, 0.0) S→(0.0, 46.6) W→(-2.0, -48.6) |
+| ✅ | Player remains within the playable area | A→(-35.6, 0.0) D→(35.6, 0.0) S→(0.0, 46.6) W→(-6.0, -124.6) (re-run after moving the north edge check to the Blackwood) |
 
 ## Combat
 
@@ -50,7 +50,7 @@ Result: **184/184 passed**
 | ✅ | Escape closes the active interface | modal after Esc: null |
 | ✅ | Material can be collected | prompt "Take the grave-iron" |
 | ✅ | Currency can be collected | 8 → 14 coins; purse removed from the world |
-| ✅ | Equipment can be collected | brute drop at (-20.9, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
+| ✅ | Equipment can be collected | brute drop at (-21.1, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
 | ✅ | Equipment is not silently swapped (extra) | still equipped: worn_longsword |
 | ✅ | Shrine can restore health | 31 → 100 hp; respawn set to (7.8, 5.2) |
 | ✅ | Contextual prompts update correctly | open road: none; at shrine: "E Rest at the shrine" |
@@ -92,9 +92,9 @@ Result: **184/184 passed**
 | ✅ | Manual save works | 945 bytes in localStorage (key shadowfall.save) |
 | ✅ | A successful save produces confirmation | toast: "Game saved" |
 | ✅ | Reload restores player position and progression | pos (3.25, 12.50), level 2, xp 8, hp 77, coins 14 |
-| ✅ | Defeated enemies remain defeated | 3 enemies alive; ghoul_cart lies where it fell |
+| ✅ | Defeated enemies remain defeated | 13 enemies alive; ghoul_cart lies where it fell |
 | ✅ | An unlooted body is still there to loot after a reload | ghoul_cart body lootable: true, +3 coins |
-| ✅ | Collected loot does not reappear | loot in world: grave_iron, purse_wall, draught_rocks, satchel_ruin, helm_rocks |
+| ✅ | Collected loot does not reappear | loot in world: grave_iron, purse_wall, draught_rocks, satchel_ruin, helm_rocks, purse_den, sabatons_camp, draught_glade |
 | ✅ | Manifest progress persists | objective: Return to Mara |
 | ✅ | Shrine state and respawn point persist (extra) | {"x":7.8,"z":5.2} |
 | ✅ | Repeated save/load cycles are stable (extra) | 3 cycles |
@@ -107,7 +107,7 @@ Result: **184/184 passed**
 |---|---|---|
 | ✅ | The game remains playable without audio | Web Audio removed before load; moved, attacked, braced and opened the pack |
 | ✅ | Interface remains readable | smallest HUD text 9px (the xp numbers inside the bar); body text 13–15px at 1280×720 |
-| ✅ | Scene stays light (extra) | 44 draw calls, 99726 triangles; 6 fps with software WebGL in headless Chromium |
+| ✅ | Scene stays light (extra) | 45 draw calls, 204754 triangles; 5 fps with software WebGL in headless Chromium |
 
 ## Build 2: spell bar and global cooldown
 
@@ -162,7 +162,7 @@ Result: **184/184 passed**
 | ✅ | Dragging an item from the bag onto the character panel equips it | helm on the head slot and on the model; maximum health 106 |
 | ✅ | Dragging it back from the character panel into a bag unequips it | helm now in the satchel's 4th slot; maximum health 100 |
 | ✅ | Items only fit the slots they belong in (extra) | helm dropped on the main-hand slot was refused |
-| ✅ | Each bag opens and closes on its own, and two open bags do not freeze the game | game time advanced 0.30s with both bags and the character panel open; closing the backpack left: Traveller's satchel |
+| ✅ | Each bag opens and closes on its own, and two open bags do not freeze the game | game time advanced 0.20s with both bags and the character panel open; closing the backpack left: Traveller's satchel |
 | ✅ | Dragging an item out of the bag drops it on the ground (RuneScape-style) | helm lies 0.90m from the Warden and is shown in the world |
 | ✅ | A dropped item can be picked up again from the ground | prompt "Pick up Dented watch helm" |
 | ✅ | Dropped items stay on the ground after saving and reloading | [{"uid":1,"id":"watch_helm","count":1,"x":-5.24,"z":27.51}]; satchel still in its bag slot |
@@ -241,7 +241,7 @@ Result: **184/184 passed**
 
 | | Check | Evidence |
 |---|---|---|
-| ✅ | Every item comes from one database with slot, stats, price and icon | 13 items in src/data/items.json, all valid |
+| ✅ | Every item comes from one database with slot, stats, price and icon | 18 items in src/data/items.json, all valid |
 | ✅ | The database check catches a malformed item (extra) | broken_blade: unknown quality shiny; broken_blade: price must be a whole number of coins; broken_blade: a weapon needs damage [min, max] |
 | ✅ | Tooltips show what a merchant would pay, and the item quality | Healing draughtConsumableA small bottle of something bitter and red. Restores 42 health.Sells for 1 coinRight-click to drink |
 | ✅ | Quest items cannot be dropped (extra) | "You keep hold of the Carriage manifest. Someone will want it." |
@@ -265,10 +265,44 @@ Result: **184/184 passed**
 | ✅ | With a gamepad, A talks to Mara and A on an item buys it | 14 coins left, 2 draughts |
 | ✅ | No script errors (forge, gamepad) |  |
 
+## Gear drops with random stat rolls
+
+| | Check | Evidence |
+|---|---|---|
+| ✅ | Dropped gear rolls its stats a little either side of the database values | hauberk armour rolled 13 different values within ±20% of 32; falchion damage within ±12% |
+| ✅ | Some pieces gain a WoW-style suffix with bonus attributes | 106 of 300 hauberks rolled a suffix |
+| ✅ | Materials and quest items never roll (extra) |  |
+| ✅ | A rolled item is named for its suffix and counts its rolled stats when worn | Warden's hauberk of Swiftness: {"suffix":"swiftness","stats":{"armour":6,"haste":2}}; armour 20 → 38, haste 2% |
+| ✅ | Tooltips show the rolled name, quality and stats | Warden's hauberk of SwiftnessArmour · ChestMail+38 armour+1 Vitality+2 % hasteRiveted mail to the knee, the watch's towe |
+| ✅ | Rolls survive dropping, picking up, selling and buying back | "Pick up Rusted falchion of the Bear" |
+| ✅ | A suffixed item is worth more to a merchant | sells for 8 (a plain falchion: 5) |
+| ✅ | Rolls are saved, and a tampered roll fails the save check | saved chest: {"id":"warden_hauberk","count":1,"rolls":{"suffix":"swiftness","stats":{"armour":6,"haste":2}}}; tampered: equipment in chest |
+| ✅ | Rolled gear is the same after a reload | {"id":"warden_hauberk","count":1,"rolls":{"suffix":"swiftness","stats":{"armour":6,"haste":2}}} |
+| ✅ | Enemies drop gear from their table beside the body | the ghoul dropped iron_gloves {"suffix":"might","stats":{"armour":-1,"might":1}} |
+| ✅ | One loot takes the body and its drops together | "Pick up Iron-studded gloves of Might (and 1 more nearby)" |
+| ✅ | No script errors (gear rolls) |  |
+
+## The Blackwood
+
+| | Check | Evidence |
+|---|---|---|
+| ✅ | A forest track leads north past the forge into a second region, the Blackwood | walked from (3, -47) to (3.0, -64.0); the HUD now reads "The Blackwood" |
+| ✅ | The Blackwood is darker: the fog closes in | fog 14–40 m → 9.3–32.4 m |
+| ✅ | Three new enemy types live there: barrow hounds, hollow archers and a seer | {"ghoul":2,"hound":4,"archer":3,"seer":1} |
+| ✅ | A second shrine at the forest edge heals and becomes the respawn point | respawn at the shrine at the forest edge |
+| ✅ | Barrow hounds are fast and hunt as a pack: wake one and the rest come | den: chase, chase, chase; the glade hound stays idle |
+| ✅ | Hollow archers paint their aim on the ground, then loose down it | a 13 m line; "The Hollow Archer's Aimed Shot hits you for 10." |
+| ✅ | Stepping off the line makes the arrow miss | You rest a while. Your wounds close, and you will return here if you fall. / The Hollow Archer's Aimed Shot hits you for 10. / You are clear of the Aimed Shot. |
+| ✅ | Archers back away to keep their distance (extra) | 3.0 m → 4.0 m |
+| ✅ | The Blackwood Seer spends mana on a dark circle cast under the Warden | mana 60 → 35; a mana bar shows over her health |
+| ✅ | Brace or walking out of the circle avoids it; standing in it hurts and cannot be blocked | braced: 0, walked out: 0, stood in it: 24 ("The Blackwood Seer's Grasping Dark hits you for 24.") |
+| ✅ | The seer always drops the Blackwood cleaver (and not the brute's sword) | grave_iron, blackwood_cleaver |
+| ✅ | No script errors (Blackwood) |  |
+
 ## Build 2: fog and lighting
 
 | | Check | Evidence |
 |---|---|---|
 | ✅ | View-distance fog fades the world out with distance | linear fog 14–40m in the sky colour; nothing drawn past 46m |
-| ✅ | Atmospheric lighting: a warm light on the Warden, braziers and ground mist | 2 braziers at the watch post, 8 mist layers |
+| ✅ | Atmospheric lighting: a warm light on the Warden, braziers and ground mist | 2 braziers at the watch post, 14 mist layers |
 | ✅ | No script errors (atmosphere) |  |

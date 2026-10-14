@@ -34,10 +34,10 @@ export class Combat {
   }
 
   // A blow from an enemy on the player: variance, crit, armour, block.
-  _enemyHit(enemy, damage, { canCrit = true, canBlock = true } = {}) {
+  _enemyHit(enemy, damage, { canCrit = true, canBlock = true, school = 'physical' } = {}) {
     const { stats, player, events } = this.game;
     const r = this.game.random;
-    const hit = computeHit(r, enemyBlock(enemy.cfg), stats.statBlock, { base: enemyRoll(r, damage), canCrit, canBlock });
+    const hit = computeHit(r, enemyBlock(enemy.cfg), stats.statBlock, { base: enemyRoll(r, damage), canCrit, canBlock, school });
     if (hit.amount > 0) player.takeDamage(hit.amount);
     events.emit('damageNumber', { target: player, amount: hit.amount, crit: hit.crit, blocked: hit.blocked, kind: 'taken' });
     return hit;
@@ -82,7 +82,7 @@ export class Combat {
   }
 
   // Ground-telegraphed attacks hit whoever stands inside the marked area.
-  resolveTelegraph(enemy, shape, damage, label) {
+  resolveTelegraph(enemy, shape, damage, label, opts = null) {
     const { player, events } = this.game;
     if (enemy.dead || player.dead) return false;
     if (!shape.contains(player.position.x, player.position.z, player.radius)) {
@@ -95,11 +95,13 @@ export class Combat {
       events.emit('log', { text: `You brace and turn aside the ${label || enemy.cfg.name + "'s blow"}.`, kind: 'hit' });
       return false;
     }
-    // the slam cannot crit or be blocked; an ordinary cleave can be both
+    // the slam cannot crit or be blocked; an ordinary cleave can be both.
+    // Shots and spells say for themselves (`opts`).
     const special = !!label;
-    const hit = this._enemyHit(enemy, damage, { canCrit: !special, canBlock: !special });
-    events.emit('playerHurt', { enemy, damage: hit.amount, crit: hit.crit, blocked: hit.blocked, heavy: true });
-    events.emit('log', { text: this._hurtText(label ? 'The ' + label : `The ${enemy.cfg.name}`, hit), kind: 'hurt' });
+    const hit = this._enemyHit(enemy, damage, opts || { canCrit: !special, canBlock: !special });
+    events.emit('playerHurt', { enemy, damage: hit.amount, crit: hit.crit, blocked: hit.blocked, heavy: !opts || !opts.canBlock });
+    const who = opts && label ? `The ${enemy.cfg.name}'s ${label}` : label ? 'The ' + label : `The ${enemy.cfg.name}`;
+    events.emit('log', { text: this._hurtText(who, hit), kind: 'hurt' });
     if (player.dead) this.game.onPlayerDeath(enemy);
     return true;
   }
@@ -218,6 +220,7 @@ export class Combat {
     progression.addXp(enemy.cfg.xp);
     // coins stay on the body until looted (click it, or E / A beside it)
     if (enemy.cfg.coins > 0) loot.addCorpse(enemy, enemy.cfg.coins);
-    if (enemy.cfg.elite) loot.dropEliteReward(enemy.position.x, enemy.position.z);
+    if (enemy.cfg.reward) loot.dropEliteReward(enemy.position.x, enemy.position.z);
+    loot.dropFromEnemy(enemy);
   }
 }

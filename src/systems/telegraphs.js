@@ -29,6 +29,37 @@ export class ConeShape {
   }
 }
 
+// A strip from the caster along a direction: arrows and bolts fly down it.
+export class LineShape {
+  constructor(x, z, angle, length, width) {
+    this.x = x;
+    this.z = z;
+    this.angle = angle;
+    this.length = length;
+    this.width = width;
+  }
+
+  contains(px, pz, radius = 0) {
+    const dx = px - this.x;
+    const dz = pz - this.z;
+    const along = dx * Math.sin(this.angle) + dz * Math.cos(this.angle);
+    const across = dx * Math.cos(this.angle) - dz * Math.sin(this.angle);
+    return along >= -radius && along <= this.length + radius && Math.abs(across) <= this.width / 2 + radius;
+  }
+}
+
+export class CircleShape {
+  constructor(x, z, radius) {
+    this.x = x;
+    this.z = z;
+    this.range = radius;
+  }
+
+  contains(px, pz, radius = 0) {
+    return Math.hypot(px - this.x, pz - this.z) <= this.range + radius;
+  }
+}
+
 const vertexShader = `
   attribute float aRad;
   varying float vRad;
@@ -57,13 +88,16 @@ const fragmentShader = `
 `;
 
 // A sector mesh that follows the terrain, with per-vertex radial distance.
+// A full circle is a sector of 360 degrees with no side edges.
 function sectorGeometry(shape, rings = 10, segs = 24) {
   const pos = [];
   const rad = [];
   const edge = [];
   const idx = [];
-  const start = shape.angle - shape.half;
-  const step = (shape.half * 2) / segs;
+  const full = shape.half === undefined;
+  const half = full ? Math.PI : shape.half;
+  const start = (shape.angle || 0) - half;
+  const step = (half * 2) / segs;
   for (let r = 0; r <= rings; r++) {
     const k = r / rings;
     for (let s = 0; s <= segs; s++) {
@@ -72,13 +106,47 @@ function sectorGeometry(shape, rings = 10, segs = 24) {
       const z = shape.z + Math.cos(a) * shape.range * k;
       pos.push(x, heightAt(x, z) + 0.06, z);
       rad.push(k);
-      edge.push(s === 0 || s === segs ? 1 : 0);
+      edge.push(!full && (s === 0 || s === segs) ? 1 : 0);
     }
   }
   for (let r = 0; r < rings; r++) {
     for (let s = 0; s < segs; s++) {
       const a = r * (segs + 1) + s;
       const b = a + segs + 1;
+      idx.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('aRad', new THREE.Float32BufferAttribute(rad, 1));
+  g.setAttribute('aEdge', new THREE.Float32BufferAttribute(edge, 1));
+  g.setIndex(idx);
+  return g;
+}
+
+// A strip mesh: the fill runs from the caster to the far end.
+function lineGeometry(shape, rows = 16) {
+  const pos = [];
+  const rad = [];
+  const edge = [];
+  const idx = [];
+  const fx = Math.sin(shape.angle);
+  const fz = Math.cos(shape.angle);
+  for (let r = 0; r <= rows; r++) {
+    const k = r / rows;
+    for (let c = 0; c <= 2; c++) {
+      const side = (c - 1) * (shape.width / 2);
+      const x = shape.x + fx * shape.length * k + fz * side;
+      const z = shape.z + fz * shape.length * k - fx * side;
+      pos.push(x, heightAt(x, z) + 0.07, z);
+      rad.push(k);
+      edge.push(c === 1 ? 0 : 1);
+    }
+  }
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < 2; c++) {
+      const a = r * 3 + c;
+      const b = a + 3;
       idx.push(a, b, a + 1, a + 1, b, b + 1);
     }
   }
@@ -99,6 +167,22 @@ export class Telegraphs {
   // Starts a telegraph; `onComplete(shape)` runs when it fills.
   cone(owner, { angle, range, arc, duration, heavy = false, onComplete }) {
     const shape = new ConeShape(owner.position.x, owner.position.z, angle, range, arc);
+    return this._start(owner, shape, sectorGeometry(shape), { duration, heavy, onComplete });
+  }
+
+  // An aimed line from the owner: an archer's shot or a seer's bolt.
+  line(owner, { angle, length, width, duration, color = 0xe8a040, onComplete }) {
+    const shape = new LineShape(owner.position.x, owner.position.z, angle, length, width);
+    return this._start(owner, shape, lineGeometry(shape), { duration, color, onComplete });
+  }
+
+  // A circle on the ground anywhere (a spell under the Warden's feet).
+  circle(owner, { x, z, radius, duration, color = 0x9a5cff, heavy = true, onComplete }) {
+    const shape = new CircleShape(x, z, radius);
+    return this._start(owner, shape, sectorGeometry(shape, 10, 32), { duration, heavy, color, onComplete });
+  }
+
+  _start(owner, shape, geometry, { duration, heavy = false, color = null, onComplete }) {
     const mat = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -108,10 +192,10 @@ export class Telegraphs {
       uniforms: {
         uProgress: { value: 0 },
         uOpacity: { value: 1 },
-        uColor: { value: new THREE.Color(heavy ? 0xff6a1a : 0xe8a040) },
+        uColor: { value: new THREE.Color(color ?? (heavy ? 0xff6a1a : 0xe8a040)) },
       },
     });
-    const mesh = new THREE.Mesh(sectorGeometry(shape), mat);
+    const mesh = new THREE.Mesh(geometry, mat);
     mesh.renderOrder = 2;
     this.game.scene.add(mesh);
     const t = { owner, shape, mesh, t: 0, duration, heavy, onComplete, done: false };

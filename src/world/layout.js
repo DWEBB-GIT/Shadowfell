@@ -1,8 +1,16 @@
-// Hand-placed layout of The Fallen Road. Pure data: positions are [x, z] in
+// Hand-placed layout of the world. Pure data: positions are [x, z] in
 // metres, rotations in degrees around the vertical axis. North is -z, so the
-// road climbs "up" the screen from the start towards the watch post.
+// road climbs "up" the screen from the start towards the watch post, and a
+// track carries on north past Mara's forge into the Blackwood.
 
-export const BOUNDS = { minX: -36, maxX: 36, minZ: -49, maxZ: 47 };
+// The whole walkable world, and the regions within it. Regions are bands
+// along the road; the HUD names the one the Warden stands in.
+export const BOUNDS = { minX: -36, maxX: 36, minZ: -125, maxZ: 47 };
+export const REGIONS = [
+  { id: 'fallen_road', name: 'The Fallen Road', minZ: -56, bounds: { minX: -36, maxX: 36, minZ: -49, maxZ: 47 } },
+  { id: 'blackwood', name: 'The Blackwood', minZ: -Infinity, bounds: { minX: -36, maxX: 36, minZ: -125, maxZ: -49 } },
+];
+export const regionAt = (z) => REGIONS.find((r) => z >= r.minZ) || REGIONS[REGIONS.length - 1];
 
 export const ROAD = [
   [-9, 58], [-8, 44], [-6, 32], [-2, 22], [3, 14], [5, 6], [5, -2], [3, -10],
@@ -10,9 +18,20 @@ export const ROAD = [
 ];
 export const ROAD_HALF_WIDTH = 2.2;
 
+// The old forest track: leaves the road below the watch post, passes west of
+// Mara's camp and winds north through the Blackwood to the seer's stones.
+export const TRACK = [
+  [13, -26], [8, -34], [4, -46], [1, -58], [-4, -70], [-1, -82], [-7, -94], [-5, -106], [-6, -110],
+];
+
 export const PLAYER_START = { position: [-6, 33], facing: 180 };
 
 export const SHRINE = { id: 'shrine_road', position: [9.6, 5.2], rotation: -90 };
+// Every shrine: rest to heal and make it your respawn point.
+export const SHRINES = [
+  { ...SHRINE, label: 'at the roadside shrine' },
+  { id: 'shrine_blackwood', position: [4.6, -63.0], rotation: -90, label: 'at the shrine at the forest edge' },
+];
 
 export const CART = { position: [-6.3, -4.0], rotation: 25 };
 
@@ -26,6 +45,17 @@ export const ENEMIES = [
   { id: 'ghoul_graves', type: 'ghoul', position: [-21.5, 11.0] },
   { id: 'ghoul_road', type: 'ghoul', position: [9.0, -21.0] },
   { id: 'brute_hallow', type: 'brute', position: [22.5, -19.5] },
+  // the Blackwood
+  { id: 'ghoul_bw_track', type: 'ghoul', position: [2.5, -73.0] },
+  { id: 'hound_den_1', type: 'hound', position: [-12.8, -78.4] },
+  { id: 'hound_den_2', type: 'hound', position: [-17.2, -81.6] },
+  { id: 'hound_den_3', type: 'hound', position: [-13.6, -83.2] },
+  { id: 'archer_camp_1', type: 'archer', position: [11.2, -93.0] },
+  { id: 'archer_camp_2', type: 'archer', position: [15.4, -88.0] },
+  { id: 'ghoul_bw_deep', type: 'ghoul', position: [-11.0, -97.0] },
+  { id: 'archer_stones', type: 'archer', position: [-19.0, -104.0] },
+  { id: 'hound_glade', type: 'hound', position: [-1.6, -110.4] },
+  { id: 'seer_glade', type: 'seer', position: [-6.4, -114.6] },
 ];
 
 // Static props. `collider` is a circle radius (0 = walk-through).
@@ -88,6 +118,38 @@ export const PROPS = [
   { model: 'anvil', position: [13.4, -41.6], rotation: 20, collider: 0.45 },
   { model: 'crate', position: [9.8, -45.6], rotation: 8, collider: 0.5 },
 
+  // ---- the Blackwood
+  // the forest-edge shrine
+  { model: 'shrine', position: [4.6, -63.0], rotation: -90, collider: 0.85 },
+  { model: 'rock1', position: [7.2, -60.4], rotation: 40, scale: 0.8, collider: 0.7 },
+  { model: 'standing_stone', position: [-2.6, -57.2], rotation: 15, collider: 0.45, examine: 'blackwood_edge', examineOffset: [0, -1.2] },
+  // the hound den: gnawed bones among the rocks
+  { model: 'bone_pile', position: [-15.2, -80.4], rotation: 0, collider: 0 },
+  { model: 'bone_pile', position: [-12.4, -81.6], rotation: 120, scale: 0.8, collider: 0 },
+  { model: 'rock1', position: [-19.6, -77.0], rotation: 10, scale: 1.3, collider: 1.2 },
+  { model: 'rock0', position: [-12.0, -86.4], rotation: 200, scale: 1.3, collider: 1.3 },
+  { model: 'rock0', position: [-20.0, -84.4], rotation: 80, scale: 1.0, collider: 1.0 },
+  { model: 'dead_tree', position: [-16.8, -75.0], rotation: 60, collider: 0.4, examine: 'hound_den', examineOffset: [0, 1.2] },
+  // the archers' camp: a broken palisade round a cold fire
+  { model: 'palisade', position: [11.4, -96.0], rotation: 10, collider: [[-1.2, 0, 0.3], [-0.6, 0, 0.3], [0.6, 0, 0.3], [1.2, 0, 0.3]] },
+  { model: 'palisade', position: [17.6, -91.6], rotation: 95, collider: [[-1.2, 0, 0.3], [-0.6, 0, 0.3], [0.6, 0, 0.3], [1.2, 0, 0.3]] },
+  { model: 'palisade', position: [16.0, -85.6], rotation: 160, collider: [[-1.2, 0, 0.3], [-0.6, 0, 0.3], [0, 0, 0.3], [0.6, 0, 0.3], [1.2, 0, 0.3]] },
+  { model: 'crate_broken', position: [13.6, -94.0], rotation: 30, collider: 0, examine: 'archer_camp', examineOffset: [1.0, 0] },
+  { model: 'crate', position: [15.6, -94.4], rotation: -12, collider: 0.5 },
+  // the seer's glade: a ring of standing stones
+  { model: 'standing_stone', position: [-6.4, -119.8], rotation: 0, collider: 0.45, examine: 'seer_stones', examineOffset: [0, 1.4] },
+  { model: 'standing_stone', position: [-1.6, -117.6], rotation: -55, collider: 0.45 },
+  { model: 'standing_stone', position: [-11.2, -117.4], rotation: 50, collider: 0.45 },
+  { model: 'standing_stone', position: [-12.0, -112.0], rotation: 100, scale: 0.85, collider: 0.4 },
+  { model: 'standing_stone', position: [-0.6, -112.4], rotation: -100, scale: 0.9, collider: 0.4 },
+  { model: 'grave0', position: [-6.4, -116.6], rotation: 0, collider: 0.3 },
+  { model: 'bone_pile', position: [-4.4, -113.4], rotation: 45, scale: 0.7, collider: 0 },
+  // along the track
+  { model: 'ruin_wall', position: [6.0, -78.0], rotation: 70, collider: [[0, 0, 0.9], [0, 1.2, 0.8], [0, -1.2, 0.8]] },
+  { model: 'rock1', position: [-10.0, -66.0], rotation: 30, scale: 1.2, collider: 1.1 },
+  { model: 'dead_tree', position: [3.0, -100.0], rotation: 200, collider: 0.4 },
+  { model: 'rock0', position: [-16.0, -100.4], rotation: 140, scale: 1.1, collider: 1.1 },
+
   // scattered boulders along the woodland edge
   { model: 'rock0', position: [-14.0, 24.0], rotation: 10, scale: 1.1, collider: 1.1 },
   { model: 'rock1', position: [-15.5, -14.0], rotation: 80, scale: 1.2, collider: 1.1 },
@@ -109,6 +171,12 @@ export const CLEARINGS = [
   [24.5, 13, 4.5],
   [10.5, -38, 4],
   [12.4, -43.6, 5.5], // Mara's camp
+  // the Blackwood
+  [4.6, -63.0, 4.5], // forest-edge shrine
+  [-15.0, -80.5, 6.5], // hound den
+  [13.6, -91.0, 7.0], // archers' camp
+  [-6.4, -115.0, 7.5], // seer's glade
+  [-18.5, -104.0, 3.5],
 ];
 
 // Warm light sources: [x, z, height, intensity, distance].
@@ -121,7 +189,13 @@ export const LIGHTS = [
   { position: [19.6, -41.4], brazier: true, noLight: true },
   { position: [28.6, -41.2], brazier: true, noLight: true },
   { position: [10.4, -42.6], height: 1.1, intensity: 5, distance: 8, flicker: true }, // Mara's forge
+  { position: [4.0, -63.0], height: 0.9, intensity: 5, distance: 8, flicker: true }, // forest-edge shrine candles
+  { position: [-6.4, -115.0], height: 1.6, intensity: 7, distance: 13, color: 0x70e0b0 }, // witchlight in the seer's glade
 ];
 
+// Placed, non-flickering witchlight glows (the light above provides the light).
+// [x, z, rotation of the stone]
+export const WITCHLIGHTS = [[-6.4, -119.8, 0], [-1.6, -117.6, -55], [-11.2, -117.4, 50], [-2.6, -57.2, 15]];
+
 // A rumble plays near here (the elite's territory).
-export const DANGER_ZONES = [{ position: [22.5, -19.5], radius: 14 }];
+export const DANGER_ZONES = [{ position: [22.5, -19.5], radius: 14, enemy: 'brute_hallow' }, { position: [-6.4, -114.6], radius: 12, enemy: 'seer_glade' }];

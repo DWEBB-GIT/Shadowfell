@@ -1,4 +1,4 @@
-# Shadowfall: The Fallen Road (build 2)
+# Shadowfall: The Fallen Road and the Blackwood (build 2)
 
 A small dark fantasy action RPG prototype built to the *Shadowfall Game Design & Build Scope v0.1*. One region, one character, four undead, one investigation, and a save that survives closing the browser.
 
@@ -56,6 +56,29 @@ All numbers are in `src/config.js` (`stats`, `archetypes` and the enemies) and i
   - Walking away closes the shop.
 - **The manifest.** Once you have the manifest, the objective says to return to Mara. Hand it over in her shop for 20 coins and 50 experience; that closes the cart storyline, and she points you north to the Blackwood.
 
+## The Blackwood (second region)
+
+A forest track leaves the Fallen Road below the watch post, passes west of Mara's forge and runs north into the **Blackwood**. The HUD names the region you are in. Under the black pines the fog closes in and the light dims. The Blackwood is meant for a Warden of level 3 or so.
+
+- **A shrine at the forest edge** heals you and becomes your respawn point, so a death deep in the wood does not send you back down the road.
+- **Barrow Hounds** (level 3) are fast and hunt as a pack: wake one and every hound near it comes too. They drop pelts that Mara buys.
+- **Hollow Archers** (level 3) keep their distance and paint their aim on the ground as a line. When it fills, the arrow flies down it, so step off the line. Your shield can block an arrow, and Brace stops it. Archers back away if you close in, and a Shield Break interrupts the shot.
+- **The Blackwood Seer** (level 5, elite) has mana, shown as a blue bar under her health.
+  - Rot Bolt is a line like the archers' arrows.
+  - **Grasping Dark** is a circle under your feet. It cannot be blocked, only Braced or walked out of.
+  - When her mana runs dry she closes in with her staff.
+- **Places:** the hound den, the archers' broken camp, and the ring of standing stones where Mara's missing iron ended up. Each can be examined.
+
+## Gear drops and random stat rolls
+
+- **Drop tables.** Every enemy type has a drop table in `src/data/drops.json`: materials it always carries, and a chance of one piece of gear from a weighted list. Drops lie beside the body and are looted with it in one go.
+- **Rolled gear.** Gear that drops rolls a little, as in Diablo:
+  - armour, block and other stats move up to 20% either side of the database value;
+  - weapon damage moves up to 12%;
+  - about a third of pieces gain a WoW-style suffix such as *of the Bear* (+1–2 Might and Vitality), *of Swiftness* (haste) or *of Vigour*. A suffixed piece shows as uncommon (green) and sells for a little more.
+- **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
+- **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
+
 ## Controls
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
@@ -89,7 +112,7 @@ The spell-bar rows above are the default layout; keys belong to slots, so moving
 
 **Windows on a gamepad:** while a window is open the pad drives it (the world keeps running). The d-pad or left stick moves a highlight. A picks an item or spell up and puts it down (to move, swap, equip, unequip, or place a spell on the bar), X equips or uses an item, Y drops an item on the ground or removes a spell from the bar, LB/RB jump between the bags, character panel, spellbook and spell bar, and B cancels or closes.
 
-## What is in the region
+## What is on the Fallen Road
 
 - **The road** runs north from the road's end, past the shrine and the cart, to the ruined watch post.
 - **The roadside shrine** (east of the road, candles lit) restores health and becomes your respawn point.
@@ -130,7 +153,8 @@ src/
   ui/hud.js               HUD, spell bar, modals (reads state, requests actions)
   ui/itemUI.js            bags, character panel, drag and drop, pad menus
   ui/icons.js             item icons rendered from the Blender models
-  data/                   item definitions and all written text
+  data/                   items.json (the item database), drops.json (enemy
+                          drop tables), merchants.json, and all written text
 assets/
   blender/build_assets.py Blender script that builds every model
   models/*.glb            exported models used by the game
@@ -140,7 +164,7 @@ tests/                    automated acceptance test (Chromium), latest results,
                           and screens.mjs for reference screenshots
 ```
 
-Systems own their own state and talk through the event bus; the HUD never decides outcomes. Positions in `src/world/layout.js` and items in `src/data/items.js` are plain data with stable ids, which keeps saves meaningful across layout tweaks and should port directly to Unity ScriptableObjects or JSON.
+Systems own their own state and talk through the event bus; the HUD never decides outcomes. Positions in `src/world/layout.js` and items in `src/data/items.json` are plain data with stable ids, which keeps saves meaningful across layout tweaks and should port directly to Unity ScriptableObjects or JSON.
 
 ## Rebuilding
 
@@ -159,15 +183,15 @@ npm run assets       # rebuild the models (Blender 4.2 or later on PATH; tested 
 - `assets/fbx/` holds every model with the same part hierarchy. Characters are split into `Torso`, `Head`, `Arm_L`, `Arm_R`, `Leg_L`, `Leg_R` and `Weapon`, each pivoting at its joint, so they can be animated in Unity directly or re-rigged later. Colour is stored as vertex colour, so use a vertex-colour shader (or bake to a texture).
 - The ground telegraphs are a sector mesh with a small shader whose `uProgress` uniform fills it (`src/systems/telegraphs.js`); in Unity this maps to a decal or projector with the same parameter. Hit tests use the locked shape, not the mesh.
 - Inventory locations are plain strings (`b:<bag>:<slot>`, `e:<slot>`, `s:<bag slot>`), shared by the mouse UI, gamepad UI, saves and tests.
-- `src/config.js`, `src/world/layout.js`, `src/data/items.js` and `src/data/text.js` are the design data. The system split in `src/systems/` maps one-to-one onto MonoBehaviours or services.
+- `src/config.js`, `src/world/layout.js`, `src/data/*.json` and `src/data/text.js` are the design data. The system split in `src/systems/` maps one-to-one onto MonoBehaviours or services.
 
 ## Known limits of this build
 
-- Only the Brute uses ground telegraphs; the ghouls keep their raised-arm wind-up.
+- Ghouls and hounds keep a plain wind-up; the Brute, the archers and the seer use ground telegraphs.
 - Bags cannot be re-ordered between bag slots while they hold items (as in WoW, empty a bag before moving it).
 - Enemies use simple circle collision and do not path around large obstacles.
 - The watch post is a landmark only and cannot be entered (as the design specifies).
 - Animation is procedural, not keyframed.
-- There are no ranged or ground-targeted spells yet; targeting already supports both (`Targeting.aimFor` with `'enemy'` or `'ground'`).
-- No enemy in this region has mana yet; the HUD shows it for any enemy whose config gives it some.
+- The Warden has no ranged or ground-targeted spells yet; targeting already supports both (`Targeting.aimFor` with `'enemy'` or `'ground'`).
+- The Blackwood joins the Fallen Road as one continuous map rather than a separate zone with a loading step; the region name, fog and light change as you cross.
 - Mara Venn, dialogue and a reward for the manifest are outside this build's scope.

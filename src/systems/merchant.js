@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { ITEMS, sellPrice } from '../data/items.js';
+import { ITEMS, sellPrice, itemView } from '../data/items.js';
 import MERCHANTS from '../data/merchants.json';
 import { MARA } from '../data/text.js';
 
@@ -13,7 +13,7 @@ export class Merchant {
     this.game = game;
     this.current = null; // merchant id while a shop is open
     this.npc = null;
-    this.buyback = []; // [{ id, count, paid }]
+    this.buyback = []; // [{ id, count, rolls?, paid }]
   }
 
   get def() {
@@ -72,17 +72,17 @@ export class Merchant {
     if (!this.current) return false;
     const stack = inventory.get(loc);
     if (!stack || loc.startsWith('s:')) return false;
-    const def = ITEMS[stack.id];
+    const def = itemView(stack);
     if (def.quest) {
       events.emit('log', { text: `${this.def.name} has no use for that, and you should not part with it.`, kind: 'muted', throttle: 'shop-refuse' });
       return false;
     }
-    const each = sellPrice(stack.id, CONFIG.shop.sellFraction);
+    const each = sellPrice(stack, CONFIG.shop.sellFraction);
     const taken = inventory.take(loc);
     if (!taken) return false;
     const paid = each * taken.count;
     inventory.coins += paid;
-    this.buyback.unshift({ id: taken.id, count: taken.count, paid });
+    this.buyback.unshift({ ...taken, paid });
     this.buyback.length = Math.min(this.buyback.length, CONFIG.shop.buybackSlots);
     events.emit('coins', { amount: paid });
     events.emit('itemSold', { id: taken.id, count: taken.count, paid });
@@ -100,10 +100,10 @@ export class Merchant {
       events.emit('log', { text: 'You cannot afford to buy that back.', kind: 'muted', throttle: 'shop-refuse' });
       return false;
     }
-    if (!inventory.addItem(b.id, b.count, { quiet: true })) return false;
+    if (!inventory.addItem(b.id, b.count, { quiet: true, rolls: b.rolls || null })) return false;
     inventory.coins -= b.paid;
     this.buyback.splice(index, 1);
-    events.emit('log', { text: `Bought back: ${ITEMS[b.id].name}.`, kind: 'loot' });
+    events.emit('log', { text: `Bought back: ${itemView(b).name}.`, kind: 'loot' });
     inventory._changed();
     return true;
   }

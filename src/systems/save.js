@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
 import { ABILITIES } from './actionBar.js';
 
@@ -18,7 +18,7 @@ const isInt = (v) => Number.isInteger(v);
 const isStrArray = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const inBounds = (p) => p && isNum(p.x) && isNum(p.z) && p.x >= BOUNDS.minX - 1 && p.x <= BOUNDS.maxX + 1 && p.z >= BOUNDS.minZ - 1 && p.z <= BOUNDS.maxZ + 1;
 
-const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack;
+const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack && validRolls(s.id, s.rolls);
 
 // Upgrade a build-1 save: its flat item list goes into the backpack, its
 // weapon into the main hand. Anything else is returned unchanged.

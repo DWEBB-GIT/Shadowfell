@@ -10,7 +10,7 @@ export class Rig {
   constructor(model, style = 'warden') {
     this.model = model;
     model.rotation.order = 'YXZ'; // yaw outermost, so falls happen in the character's own frame
-    this.style = style; // 'warden' | 'ghoul' | 'brute'
+    this.style = style; // 'warden' | 'ghoul' | 'brute' | 'hound' | 'archer' | 'seer'
     this.parts = {};
     this.base = {};
     for (const name of PART_NAMES) {
@@ -58,7 +58,7 @@ export class Rig {
   update(dt, speed01) {
     this.time += dt;
     this.move += (speed01 - this.move) * Math.min(1, dt * 10);
-    const stride = this.style === 'brute' ? 6 : this.style === 'ghoul' ? 7 : 9;
+    const stride = this.style === 'brute' ? 6 : this.style === 'ghoul' ? 7 : this.style === 'hound' ? 13 : 9;
     this.phase += dt * stride * Math.max(0.2, this.move);
     this.flinch = Math.max(0, this.flinch - dt * 4);
     this.reset();
@@ -137,6 +137,26 @@ export class Rig {
         if (p.Arm_R) p.Arm_R.rotation.x += -1.8 * raise + 0.6 * swing * (1 - k);
         if (p.Torso) p.Torso.rotation.x += -0.3 * raise + 0.4 * swing * (1 - k);
         break;
+      case 'bite': // hound: a lunge with the head low
+        if (p.Torso) p.Torso.rotation.x += 0.25 * raise - 0.15 * swing * (1 - k);
+        if (p.Head) p.Head.rotation.x += -0.5 * raise + 0.7 * swing * (1 - k);
+        if (p.Arm_L) p.Arm_L.rotation.x += -0.6 * raise;
+        if (p.Arm_R) p.Arm_R.rotation.x += -0.6 * raise;
+        this.model.position.z = 0.25 * swing * (1 - k);
+        break;
+      case 'shoot': // archer: bow arm up and out, the other draws to the ear
+        if (p.Arm_L) p.Arm_L.rotation.x += -1.55 * Math.min(1, k / Math.max(0.01, impact) * 1.6) * (k < impact ? 1 : 1 - ease((k - impact) / (1 - impact)));
+        if (p.Arm_R) {
+          p.Arm_R.rotation.x += -1.4 * raise;
+          p.Arm_R.rotation.z += 0.5 * raise;
+        }
+        if (p.Torso) p.Torso.rotation.y += 0.35 * raise;
+        break;
+      case 'cast': // seer: staff and free hand raised, then thrust down
+        if (p.Arm_R) p.Arm_R.rotation.x += -2.2 * raise + 0.6 * swing * (1 - k);
+        if (p.Arm_L) p.Arm_L.rotation.x += -1.8 * raise;
+        if (p.Head) p.Head.rotation.x += -0.3 * raise;
+        break;
       case 'cleave': // brute: wide overhead chop
         if (p.Arm_R) p.Arm_R.rotation.x += -2.8 * raise;
         if (p.Arm_L) p.Arm_L.rotation.x += -1.2 * raise;
@@ -148,13 +168,16 @@ export class Rig {
     if (k >= 1) {
       this.action = null;
       if (a.type === 'dodge') this.model.position.y = 0;
+      if (a.type === 'bite') this.model.position.z = 0;
     }
   }
 
   _applyDeath(dt) {
     this.death += dt;
     const k = Math.min(1, this.death / 0.7);
-    this.model.rotation.x = -ease(k) * (Math.PI / 2) * 0.95;
+    // hounds roll onto their side; everything else topples backwards
+    if (this.style === 'hound') this.model.rotation.z = ease(k) * (Math.PI / 2) * 0.9;
+    else this.model.rotation.x = -ease(k) * (Math.PI / 2) * 0.95;
     if (this.death > 2.5) this.model.position.y = -Math.min(1.2, (this.death - 2.5) * 0.4);
     const p = this.parts;
     if (p.Arm_L) p.Arm_L.rotation.x += -1.2 * k;

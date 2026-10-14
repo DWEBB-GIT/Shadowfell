@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { buildTerrain, heightAt, distanceToRoad, seededRandom } from './terrain.js';
-import { BOUNDS, PROPS, CLEARINGS, LIGHTS } from './layout.js';
+import { buildTerrain, heightAt, distanceToRoad, distanceToMainRoad, seededRandom, blackwoodness } from './terrain.js';
+import { BOUNDS, REGIONS, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS } from './layout.js';
 
 const DEG = Math.PI / 180;
 
@@ -73,31 +73,62 @@ export class World {
   }
 
   _scatterWoodland() {
-    const { assets, collision } = this.game;
+    const { collision } = this.game;
+    // The Fallen Road's woodland, laid out exactly as it always has been
+    // (same seed, same bounds), less whatever now stands on the forest
+    // track or beyond the old northern edge, where the Blackwood begins.
+    const road = REGIONS[0].bounds;
     const rand = seededRandom(1999);
     const pines = [];
     const dead = [];
     const pad = 22;
     for (let i = 0; i < 2600 && pines.length < 520; i++) {
-      const x = BOUNDS.minX - pad + rand() * (BOUNDS.maxX - BOUNDS.minX + pad * 2);
-      const z = BOUNDS.minZ - pad + rand() * (BOUNDS.maxZ - BOUNDS.minZ + pad * 2);
-      const inside = collision.isInside(x, z);
-      const edge = Math.min(x - BOUNDS.minX, BOUNDS.maxX - x, z - BOUNDS.minZ, BOUNDS.maxZ - z);
-      const road = distanceToRoad(x, z);
-      if (road < 4.2) continue;
+      const x = road.minX - pad + rand() * (road.maxX - road.minX + pad * 2);
+      const z = road.minZ - pad + rand() * (road.maxZ - road.minZ + pad * 2);
+      const inside = x >= road.minX && x <= road.maxX && z >= road.minZ && z <= road.maxZ;
+      const edge = Math.min(x - road.minX, road.maxX - x, z - road.minZ, road.maxZ - z);
+      const toRoad = distanceToMainRoad(x, z);
+      if (toRoad < 4.2) continue;
       if (!this._clear(x, z)) continue;
       // sparse inside the play space, dense at and beyond its edge
-      const density = !inside ? 0.85 : edge < 5 ? 0.6 : road < 9 ? 0.08 : 0.2;
+      const density = !inside ? 0.85 : edge < 5 ? 0.6 : toRoad < 9 ? 0.08 : 0.2;
       if (rand() > density) continue;
       if (pines.some((p) => Math.hypot(p.x - x, p.z - z) < (inside ? 3.2 : 2.1))) continue;
       const s = 0.8 + rand() * 0.7;
-      const entry = { x, z, s, r: rand() * Math.PI * 2 };
+      const entry = { x, z, s, r: rand() * Math.PI * 2, collide: inside || edge > -3 };
       if (inside && rand() < 0.12) dead.push(entry);
       else pines.push(entry);
+    }
+    const keep = (t) => t.z > -47 && distanceToRoad(t.x, t.z) >= 3.4;
+    const roadPines = pines.filter(keep);
+    const roadDead = dead.filter(keep);
+    for (const t of [...roadPines, ...roadDead]) if (t.collide) collision.add(t.x, t.z, 0.45 * t.s);
+
+    // The Blackwood: black pines, close-set, with the track the only clear way.
+    const bw = REGIONS[1].bounds;
+    const rb = seededRandom(2024);
+    const black = [];
+    const bwDead = [];
+    const all = () => black.concat(bwDead);
+    for (let i = 0; i < 6000 && black.length < 900; i++) {
+      const x = bw.minX - pad + rb() * (bw.maxX - bw.minX + pad * 2);
+      const z = bw.minZ - pad + rb() * (-47 - bw.minZ + pad);
+      const inside = x >= bw.minX && x <= bw.maxX && z >= bw.minZ;
+      const edge = Math.min(x - bw.minX, bw.maxX - x, z - bw.minZ);
+      const toPath = distanceToRoad(x, z);
+      if (toPath < 3.4 || !this._clear(x, z)) continue;
+      const density = !inside ? 0.85 : edge < 5 ? 0.7 : toPath < 7 ? 0.3 : 0.5;
+      if (rb() > density) continue;
+      if (all().some((p) => Math.hypot(p.x - x, p.z - z) < (inside ? 2.5 : 2.0))) continue;
+      const s = 0.85 + rb() * 0.6;
+      const entry = { x, z, s, r: rb() * Math.PI * 2 };
+      if (inside && rb() < 0.1) bwDead.push(entry);
+      else black.push(entry);
       if (inside || edge > -3) collision.add(x, z, 0.45 * s);
     }
-    this._instanced('pine', pines);
-    this._instanced('dead_tree', dead);
+    this._instanced('pine', roadPines);
+    this._instanced('dead_tree', roadDead.concat(bwDead));
+    this._instanced('black_pine', black);
   }
 
   _instanced(model, list) {
@@ -178,7 +209,7 @@ export class World {
     blade.computeVertexNormals();
     const mat = new THREE.MeshLambertMaterial({ color: 0x4a5a32, side: THREE.DoubleSide });
     const rand = seededRandom(77);
-    const count = 2200;
+    const count = 3600;
     const mesh = new THREE.InstancedMesh(blade, mat, count);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -193,7 +224,7 @@ export class World {
       const s = 0.6 + rand() * 0.9;
       m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.02, z), q, new THREE.Vector3(s, s * (0.7 + rand() * 0.8), s));
       mesh.setMatrixAt(n, m);
-      col.setHSL(0.2 + rand() * 0.06, 0.25 + rand() * 0.15, 0.17 + rand() * 0.1);
+      col.setHSL(0.2 + rand() * 0.06, 0.25 + rand() * 0.15, (0.17 + rand() * 0.1) * (1 - 0.45 * blackwoodness(z)));
       mesh.setColorAt(n, col);
       n++;
     }
@@ -208,7 +239,7 @@ export class World {
       const [x, z] = l.position;
       let light = null;
       if (!l.noLight) {
-        light = new THREE.PointLight(0xffa860, l.intensity, l.distance, 1.6);
+        light = new THREE.PointLight(l.color || 0xffa860, l.intensity, l.distance, 1.6);
         light.position.set(x, heightAt(x, z) + l.height, z);
         this.group.add(light);
       }
@@ -244,16 +275,27 @@ export class World {
       }
       if (light && l.flicker) this.flickerLights.push({ light, base: l.intensity, seed: Math.random() * 10 });
     }
+    // witchlight runes on the Blackwood's standing stones glow through the fog
+    for (const [x, z, rot] of WITCHLIGHTS) {
+      const r = (rot * Math.PI) / 180; // the rune is on the stone's front face
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color: 0x80f0c0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.7, fog: false }));
+      glow.scale.setScalar(1.3);
+      glow.position.set(x + Math.sin(r) * 0.32, heightAt(x, z) + 1.2, z + Math.cos(r) * 0.32);
+      glow.name = 'Witchlight';
+      this.group.add(glow);
+      this.flames.push({ flame: null, glow, seed: x * 3.1 });
+    }
   }
 
   // Low drifting mist: a few large soft layers just above the ground. The
   // scene fog thickens them with distance, which sells the depth.
   _addMist() {
     const tex = this.game.textures.mist;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 14; i++) {
       const x = -30 + ((i * 37) % 60);
       const z = 40 - i * 11.5;
-      const mat = new THREE.MeshBasicMaterial({ map: tex, color: 0xb8c4c0, transparent: true, opacity: 0.22, depthWrite: false });
+      const deep = z < -52; // the Blackwood's mist lies thicker and greener
+      const mat = new THREE.MeshBasicMaterial({ map: tex, color: deep ? 0x9cb8a8 : 0xb8c4c0, transparent: true, opacity: deep ? 0.28 : 0.22, depthWrite: false });
       const m = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), mat);
       m.rotation.x = -Math.PI / 2;
       m.rotation.z = i * 1.3;
@@ -274,7 +316,7 @@ export class World {
     for (const f of this.flames) {
       const t = time * 9 + f.seed;
       const k = 1 + Math.sin(t) * 0.12 + Math.sin(t * 2.3) * 0.08;
-      f.flame.scale.set(1, k, 1);
+      if (f.flame) f.flame.scale.set(1, k, 1);
       f.glow.material.opacity = 0.65 + Math.sin(t * 1.7) * 0.15;
     }
     for (const f of this.flickerLights) {

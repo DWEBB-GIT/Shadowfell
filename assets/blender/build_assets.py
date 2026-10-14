@@ -74,6 +74,16 @@ P = {
     "draught": (0.55, 0.12, 0.10),
     "grave_iron": (0.25, 0.26, 0.30),
     "black": (0.05, 0.05, 0.05),
+    "fur": (0.26, 0.25, 0.23),
+    "fur_dark": (0.15, 0.14, 0.13),
+    "bone_old": (0.55, 0.52, 0.44),
+    "robe": (0.12, 0.11, 0.13),
+    "robe_trim": (0.25, 0.20, 0.30),
+    "witchlight": (0.45, 0.85, 0.70),
+    "blackwood": (0.10, 0.08, 0.07),
+    "pine_black": (0.06, 0.11, 0.09),
+    "pine_black2": (0.04, 0.08, 0.07),
+    "lichen": (0.36, 0.40, 0.30),
 }
 
 # ------------------------------------------------------------ scene setup
@@ -827,6 +837,256 @@ def build_shop_items():
     b.to_object("IronShield")
     export("iron_shield")
 
+
+# ------------------------------------------------------------ the Blackwood
+
+
+def build_hound():
+    """Barrow hound: a lean grave-dog. Hind legs are Leg_L/R, forelegs Arm_L/R,
+    so the same procedural walk drives all four."""
+    root = empty("Hound")
+
+    def hind(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.12, 0.20, 0.26), (0, 0.02, -0.12), P["fur"])
+            b.box((0.07, 0.08, 0.26), (0, 0.06, -0.36), P["fur_dark"], rot=(-12, 0, 0))
+            b.box((0.08, 0.14, 0.05), (0, -0.01, -0.50), P["fur_dark"])
+        return part("Leg_" + side, root, (0.11 * s, 0.30, 0.55), fn)
+
+    hind("L")
+    hind("R")
+
+    def torso(b):
+        b.box((0.30, 0.80, 0.26), (0, -0.02, 0.02), P["fur"], var=0.1, taper=(1.0, 0.9))
+        b.box((0.32, 0.34, 0.30), (0, -0.30, 0.06), P["fur_dark"])           # shoulders
+        for i in range(5):  # ribs through the hide
+            b.box((0.31, 0.03, 0.12), (0, -0.16 + i * 0.07, -0.06), P["bone_old"], var=0.0)
+        for i in range(4):  # ridge of bristles
+            b.cyl(0.03, 0.0, 0.10, (0, -0.30 + i * 0.16, 0.19), P["fur_dark"], segs=4, rot=(20, 0, 0))
+        b.box((0.05, 0.05, 0.38), (0, 0.48, 0.0), P["fur_dark"], rot=(-60, 0, 0), taper=(0.4, 0.4))  # tail
+    t = part("Torso", root, (0, 0, 0.58), torso)
+
+    def head(b):
+        b.box((0.20, 0.22, 0.20), (0, -0.06, 0.02), P["fur_dark"])
+        b.box((0.14, 0.24, 0.12), (0, -0.26, -0.02), P["fur"], taper=(0.8, 0.8))  # muzzle
+        b.box((0.12, 0.18, 0.04), (0, -0.25, -0.09), P["bone_old"])                # bared jaw
+        b.cyl(0.04, 0.0, 0.12, (0.07, 0.0, 0.14), P["fur_dark"], segs=4, rot=(-15, 0, 0))  # ears
+        b.cyl(0.04, 0.0, 0.12, (-0.07, 0.0, 0.14), P["fur_dark"], segs=4, rot=(-15, 0, 0))
+        b.box((0.03, 0.02, 0.025), (0.05, -0.17, 0.06), P["eye"], var=0.0, glow=True)
+        b.box((0.03, 0.02, 0.025), (-0.05, -0.17, 0.06), P["eye"], var=0.0, glow=True)
+    part("Head", t, (0, -0.44, 0.12), head)
+
+    def fore(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.10, 0.14, 0.28), (0, 0, -0.14), P["fur"])
+            b.box((0.07, 0.08, 0.24), (0, -0.01, -0.38), P["fur_dark"])
+            b.box((0.08, 0.14, 0.05), (0, -0.04, -0.51), P["fur_dark"])
+        return part("Arm_" + side, t, (0.12 * s, -0.32, -0.03), fn)
+
+    fore("L")
+    fore("R")
+    export("hound")
+
+
+def build_archer():
+    """Hollow archer: a skeleton in a rotted gambeson, bow in the left hand."""
+    root = empty("Archer")
+
+    def legs(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.07, 0.07, 0.42), (0, 0, -0.22), P["bone_old"])
+            b.box((0.06, 0.06, 0.38), (0, 0.02, -0.60), P["bone"])
+            b.box((0.10, 0.20, 0.05), (0, -0.04, -0.80), P["bone_old"])
+            b.box((0.15, 0.15, 0.18), (0, 0, -0.08), P["rag"])
+        return part("Leg_" + side, root, (0.10 * s, 0, 0.84), fn)
+
+    legs("L")
+    legs("R")
+
+    def torso(b):
+        b.box((0.06, 0.06, 0.40), (0, 0.02, 0.22), P["bone_old"])            # spine
+        b.box((0.26, 0.14, 0.14), (0, 0, 0.04), P["bone_old"])               # pelvis
+        b.box((0.34, 0.22, 0.34), (0, 0, 0.40), P["rust"], taper=(1.1, 1))   # rotted gambeson
+        for i in range(3):
+            b.box((0.30, 0.03, 0.03), (0, -0.12, 0.30 + i * 0.08), P["bone"])  # ribs through the rents
+        b.box((0.10, 0.10, 0.46), (0.06, 0.15, 0.40), P["leather_dark"], rot=(0, -20, 0))  # quiver
+        for k in range(3):
+            b.box((0.015, 0.015, 0.16), (0.02 + k * 0.03, 0.15, 0.70), P["wood"])
+            b.box((0.03, 0.01, 0.05), (0.02 + k * 0.03, 0.15, 0.78), P["cloth_red"], var=0.0)
+    t = part("Torso", root, (0, 0, 0.84), torso)
+
+    def head(b):
+        b.box((0.18, 0.20, 0.20), (0, -0.02, 0.12), P["bone"], taper=(0.9, 0.85))
+        b.box((0.14, 0.10, 0.05), (0, -0.07, 0.00), P["bone_old"])            # jaw
+        b.box((0.05, 0.02, 0.04), (0.045, -0.12, 0.13), P["black"], var=0.0)
+        b.box((0.05, 0.02, 0.04), (-0.045, -0.12, 0.13), P["black"], var=0.0)
+        b.box((0.02, 0.01, 0.02), (0.045, -0.13, 0.13), P["eye"], var=0.0, glow=True)
+        b.box((0.02, 0.01, 0.02), (-0.045, -0.13, 0.13), P["eye"], var=0.0, glow=True)
+        b.box((0.24, 0.24, 0.10), (0, 0.0, 0.22), P["iron"], var=0.1, taper=(0.7, 0.7))  # kettle helm
+    part("Head", t, (0, -0.02, 0.60), head)
+
+    def arm(side, bow):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.07, 0.07, 0.34), (0, 0, -0.17), P["bone_old"])
+            b.box((0.06, 0.06, 0.32), (0, 0, -0.48), P["bone"])
+            b.box((0.08, 0.08, 0.08), (0, 0, -0.67), P["bone_old"])
+            if bow:  # a short recurve held upright in the fist
+                b.box((0.04, 0.04, 0.12), (0, -0.02, -0.68), P["leather_dark"])
+                b.box((0.035, 0.035, 0.46), (0, -0.04, -0.42), P["wood_dark"], rot=(-12, 0, 0))
+                b.box((0.035, 0.035, 0.46), (0, -0.04, -0.94), P["wood_dark"], rot=(12, 0, 0))
+                b.box((0.008, 0.008, 0.98), (0, 0.06, -0.68), P["parchment"], var=0.0)
+        return part("Arm_" + side, t, (0.22 * s, 0, 0.52), fn)
+
+    arm("L", True)
+    arm("R", False)
+    export("archer")
+
+
+def build_seer():
+    """Blackwood seer: a hooded grave-witch with a staff of witchlight."""
+    root = empty("Seer")
+
+    def legs(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.12, 0.14, 0.40), (0, 0, -0.30), P["robe"])
+            b.box((0.10, 0.20, 0.06), (0, -0.04, -0.52), P["ash_dark"])
+        return part("Leg_" + side, root, (0.10 * s, 0, 0.56), fn)
+
+    legs("L")
+    legs("R")
+
+    def torso(b):
+        b.box((0.56, 0.48, 0.70), (0, 0, -0.12), P["robe"], var=0.06, taper=(0.62, 0.62))  # robe skirt
+        b.box((0.58, 0.04, 0.06), (0, -0.23, -0.44), P["robe_trim"])
+        b.box((0.38, 0.28, 0.44), (0, 0, 0.36), P["robe"], taper=(1.1, 1.0))
+        b.box((0.44, 0.32, 0.10), (0, 0, 0.56), P["robe_trim"])                   # mantle
+        for i in range(5):  # charms on a cord
+            b.box((0.03, 0.02, 0.05), (-0.12 + i * 0.06, -0.16, 0.42 - abs(i - 2) * 0.03), P["bone"], var=0.0)
+        b.cyl(0.04, 0.03, 0.08, (0.16, -0.10, 0.06), P["glass"], segs=6)          # vial at the belt
+    t = part("Torso", root, (0, 0, 0.62), torso)
+
+    def head(b):
+        b.box((0.20, 0.22, 0.24), (0, -0.02, 0.12), P["ash"], taper=(0.85, 0.9))
+        b.box((0.32, 0.34, 0.34), (0, 0.03, 0.18), P["robe"], taper=(0.45, 0.6))  # deep hood
+        b.box((0.20, 0.04, 0.12), (0, -0.14, 0.08), P["black"], var=0.0)        # shadowed face
+        b.box((0.04, 0.02, 0.025), (0.045, -0.165, 0.11), P["witchlight"], var=0.0, glow=True)
+        b.box((0.04, 0.02, 0.025), (-0.045, -0.165, 0.11), P["witchlight"], var=0.0, glow=True)
+    part("Head", t, (0, -0.02, 0.62), head)
+
+    def arm(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.14, 0.16, 0.34), (0, 0, -0.16), P["robe"], taper=(1.2, 1.2))
+            b.box((0.16, 0.18, 0.16), (0, 0, -0.38), P["robe_trim"])             # wide sleeve
+            b.box((0.07, 0.08, 0.14), (0, -0.01, -0.50), P["ash"])
+        return part("Arm_" + side, t, (0.24 * s, 0, 0.52), fn)
+
+    arm("L")
+    ar = arm("R")
+
+    def staff(b):
+        b.box((0.05, 0.05, 1.60), (0, 0, 0.30), P["blackwood"], var=0.1)
+        b.box((0.16, 0.04, 0.04), (0, 0, 1.06), P["blackwood"], rot=(0, 30, 0))
+        b.box((0.12, 0.04, 0.04), (0, 0, 1.00), P["blackwood"], rot=(0, -40, 0))
+        b.ball(0.07, (0, 0, 1.16), P["witchlight"], subdiv=1, var=0.0, glow=True)
+    part("Weapon", ar, (0, -0.02, -0.52), staff).rotation_euler = (math.radians(12), 0, 0)
+    export("seer")
+
+
+def build_blackwood_props():
+    b = Builder()  # a black pine: taller, narrower and darker than the road's pines
+    b.cyl(0.20, 0.10, 2.2, (0, 0, 1.1), P["blackwood"], segs=6)
+    for i, (r, h, z) in enumerate(((1.45, 2.2, 2.4), (1.15, 2.0, 3.6), (0.85, 1.8, 4.7), (0.5, 1.6, 5.7))):
+        b.cyl(r, 0.05, h, (0, 0, z), P["pine_black"] if i % 2 == 0 else P["pine_black2"], segs=6, var=0.12)
+    b.box((0.5, 0.5, 0.2), (0.4, 0.3, 0.1), P["lichen"], rot=(0, 0, 30))
+    b.to_object("BlackPine")
+    export("black_pine")
+    reset_scene()
+
+    b = Builder()  # standing stone with a witchlight rune
+    b.box((0.70, 0.50, 2.20), (0, 0, 1.0), P["stone_dark"], var=0.1, taper=(0.7, 0.8), rot=(3, -4, 0))
+    b.box((0.30, 0.04, 0.40), (0, -0.26, 1.2), P["witchlight"], var=0.0, glow=True, rot=(3, -4, 0))
+    b.box((0.76, 0.56, 0.30), (0, 0, 0.10), P["lichen"], var=0.15)
+    b.to_object("StandingStone")
+    export("standing_stone")
+    reset_scene()
+
+    b = Builder()  # a stretch of broken palisade
+    for i in range(7):
+        h = 1.6 + rng.uniform(-0.5, 0.4) if i not in (3, 4) else 0.7
+        b.box((0.24, 0.24, h), (-1.2 + i * 0.4, 0, h / 2), P["wood_dark"], var=0.12, rot=(0, rng.uniform(-6, 6), 0))
+        b.cyl(0.12, 0.0, 0.25, (-1.2 + i * 0.4, 0, h + 0.12), P["wood_dark"], segs=4)
+    b.box((2.9, 0.10, 0.12), (0, 0.14, 1.0), P["wood"], rot=(0, 3, 0))
+    b.to_object("Palisade")
+    export("palisade")
+    reset_scene()
+
+    b = Builder()  # gnawed bones by the hound den
+    for i in range(7):
+        b.box((0.06, 0.06, 0.40), (rng.uniform(-0.5, 0.5), rng.uniform(-0.4, 0.4), 0.04), P["bone"], rot=(90, 0, rng.uniform(0, 180)))
+    b.ball(0.12, (0.2, 0.1, 0.10), P["bone"], subdiv=1)
+    b.to_object("BonePile")
+    export("bone_pile")
+
+
+def build_blackwood_items():
+    b = Builder()  # rusted falchion, as the worn sword: grip at the origin, blade +Z
+    b.box((0.04, 0.04, 0.16), (0, 0, 0.0), P["wood_dark"])
+    b.box((0.20, 0.05, 0.04), (0, 0, 0.10), P["iron"])
+    b.box((0.10, 0.02, 0.70), (0.02, 0, 0.47), P["rust"], var=0.15, taper=(1.3, 1))
+    b.box((0.03, 0.022, 0.70), (-0.03, 0, 0.47), P["steel_dark"], var=0.1)
+    b.to_object("RustedFalchion")
+    export("rusted_falchion")
+    reset_scene()
+
+    b = Builder()  # warden's hauberk, laid flat
+    b.box((0.50, 0.10, 0.62), (0, 0, 0.31), P["steel_dark"], var=0.12, taper=(1.15, 1))
+    b.box((0.20, 0.09, 0.24), (0.33, 0, 0.48), P["steel_dark"], var=0.12, rot=(0, -30, 0))
+    b.box((0.20, 0.09, 0.24), (-0.33, 0, 0.48), P["steel_dark"], var=0.12, rot=(0, 30, 0))
+    b.box((0.18, 0.02, 0.18), (0, -0.06, 0.40), P["cloth_red"], var=0.0)
+    b.box((0.06, 0.03, 0.10), (0, -0.075, 0.42), P["brass"], var=0.0)
+    b.to_object("WardenHauberk")
+    export("warden_hauberk")
+    reset_scene()
+
+    b = Builder()  # blackened sabatons
+    for x in (-0.09, 0.09):
+        b.box((0.13, 0.28, 0.09), (x, -0.04, 0.045), P["iron"], var=0.08)
+        b.box((0.13, 0.13, 0.22), (x, 0.05, 0.16), P["black"], var=0.06)
+        b.box((0.14, 0.06, 0.04), (x, -0.08, 0.10), P["steel_dark"])
+    b.to_object("PlateSabatons")
+    export("plate_sabatons")
+    reset_scene()
+
+    b = Builder()  # blackwood cleaver
+    b.box((0.05, 0.05, 0.30), (0, 0, 0.04), P["blackwood"])
+    b.box((0.16, 0.06, 0.05), (0, 0, 0.20), P["grave_iron"])
+    b.box((0.18, 0.03, 0.62), (0.03, 0, 0.53), P["grave_iron"], var=0.1, taper=(1.2, 1))
+    b.box((0.04, 0.035, 0.60), (-0.05, 0, 0.52), P["blackwood"])
+    b.box((0.03, 0.01, 0.20), (0.06, -0.02, 0.60), P["witchlight"], var=0.0, glow=True)
+    b.to_object("BlackwoodCleaver")
+    export("blackwood_cleaver")
+    reset_scene()
+
+    b = Builder()  # rolled hound pelt
+    b.box((0.40, 0.26, 0.10), (0, 0, 0.05), P["fur"], var=0.15)
+    b.cyl(0.08, 0.08, 0.30, (0, 0.1, 0.12), P["fur_dark"], segs=6, rot=(0, 90, 0))
+    b.box((0.04, 0.26, 0.04), (0.08, 0, 0.12), P["leather_dark"])
+    b.to_object("HoundPelt")
+    export("hound_pelt")
+
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -835,6 +1095,7 @@ BUILDERS = [
     lambda: build_gravestone(0), lambda: build_gravestone(1),
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
     build_mara, build_forge_camp, build_shop_items,
+    build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
 ]
 
 if __name__ == "__main__":

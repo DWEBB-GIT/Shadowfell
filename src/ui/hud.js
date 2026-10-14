@@ -85,6 +85,13 @@ export class Hud {
     const ev = game.events;
     ev.on('log', (e) => this.log(e.text, e.kind, e.throttle));
     ev.on('objectiveChanged', () => this.refreshObjective());
+    ev.on('regionChanged', ({ region, announce }) => {
+      document.querySelector('#title-area .region').textContent = region.name;
+      if (announce) {
+        this.toast(region.name);
+        if (region.id === 'blackwood') this.log('The pines close overhead and the road light fails. The Blackwood.', 'lore', 'enter-blackwood');
+      }
+    });
     ev.on('equipmentChanged', () => this.refreshStats());
     ev.on('statsChanged', () => this.refreshStats());
     ev.on('levelUp', (e) => this.showLevelUp(e));
@@ -362,7 +369,7 @@ export class Hud {
         this.el.bars.appendChild(bar);
         this.enemyBars.set(e.id, bar);
       }
-      this.tmp.set(e.position.x, e.position.y + (e.cfg.elite ? 3.0 : 2.1), e.position.z).project(camera);
+      this.tmp.set(e.position.x, e.position.y + (e.cfg.barHeight || (e.cfg.elite ? 3.0 : 2.1)), e.position.z).project(camera);
       const visible = this.tmp.z < 1 && Math.abs(this.tmp.x) < 1.1 && Math.abs(this.tmp.y) < 1.1;
       bar.style.display = visible ? '' : 'none';
       bar.style.transform = `translate(${((this.tmp.x + 1) / 2) * w}px, ${((1 - this.tmp.y) / 2) * h}px) translate(-50%, -100%)`;

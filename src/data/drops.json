@@ -1,0 +1,66 @@
+{
+  "_comment": "What each enemy type drops. `always`: materials as [min, max]. `gear`: a chance of one piece from a weighted table; gear rolls its stats as it drops (see src/data/items.js).",
+  "ghoul": {
+    "gear": {
+      "chance": 0.2,
+      "table": {
+        "iron_gloves": 3,
+        "hob_boots": 3,
+        "rusted_falchion": 2,
+        "mail_chausses": 1
+      }
+    }
+  },
+  "brute": {
+    "gear": {
+      "chance": 0.45,
+      "table": {
+        "mail_chausses": 2,
+        "warden_hauberk": 2,
+        "plate_sabatons": 2,
+        "iron_shield": 1
+      }
+    }
+  },
+  "hound": {
+    "always": {
+      "hound_pelt": [
+        0,
+        1
+      ]
+    },
+    "gear": {
+      "chance": 0.12,
+      "table": {
+        "hob_boots": 2,
+        "iron_gloves": 2
+      }
+    }
+  },
+  "archer": {
+    "gear": {
+      "chance": 0.3,
+      "table": {
+        "rusted_falchion": 2,
+        "warden_hauberk": 2,
+        "plate_sabatons": 2,
+        "watch_helm": 2
+      }
+    }
+  },
+  "seer": {
+    "always": {
+      "grave_iron": [
+        1,
+        2
+      ]
+    },
+    "gear": {
+      "chance": 1.0,
+      "table": {
+        "blackwood_cleaver": 3,
+        "iron_shield": 1
+      }
+    }
+  }
+}

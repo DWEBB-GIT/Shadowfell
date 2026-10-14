@@ -1,9 +1,10 @@
 import { CONFIG } from '../config.js';
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, itemView } from '../data/items.js';
 
 // Bags, equipment and currency, laid out the way classic WoW does it:
 //   * four bag sockets; socket 0 is the fixed backpack, the others take bags
-//   * every bag has numbered slots holding a stack { id, count }
+//   * every bag has numbered slots holding a stack { id, count }, plus
+//     `rolls` for gear that dropped with random stats (see data/items.js)
 //   * the character panel has one slot per equipment position
 // Currency is kept apart from items.
 //
@@ -20,7 +21,7 @@ export const parseLoc = (loc) => {
   return null;
 };
 
-const clone = (s) => (s ? { id: s.id, count: s.count } : null);
+const clone = (s) => (s ? (s.rolls ? { id: s.id, count: s.count, rolls: s.rolls } : { id: s.id, count: s.count }) : null);
 
 export class Inventory {
   constructor(game) {
@@ -85,7 +86,7 @@ export class Inventory {
 
   get weapon() {
     const s = this.equipment.mainHand;
-    return s ? ITEMS[s.id] : { name: 'Bare hands', damage: CONFIG.stats.fistDamage };
+    return s ? itemView(s) : { name: 'Bare hands', damage: CONFIG.stats.fistDamage };
   }
 
   get draughts() {
@@ -113,13 +114,13 @@ export class Inventory {
   }
 
   // Put `count` of `id` into bags; returns how many did not fit.
-  _insert(id, count) {
+  _insert(id, count, rolls = null) {
     const def = ITEMS[id];
     let left = count;
     const locs = this.bagLocations();
     for (const loc of locs) {
       const s = this.get(loc);
-      if (left > 0 && s && s.id === id && s.count < def.stack) {
+      if (left > 0 && !rolls && s && s.id === id && !s.rolls && s.count < def.stack) {
         const add = Math.min(def.stack - s.count, left);
         s.count += add;
         left -= add;
@@ -128,7 +129,7 @@ export class Inventory {
     for (const loc of locs) {
       if (left > 0 && !this.get(loc)) {
         const add = Math.min(def.stack, left);
-        this._set(loc, { id, count: add });
+        this._set(loc, rolls ? { id, count: add, rolls } : { id, count: add });
         left -= add;
       }
     }
@@ -136,15 +137,15 @@ export class Inventory {
   }
 
   // Returns true if everything fitted. A full bag leaves loot where it is.
-  addItem(id, count = 1, { quiet = false } = {}) {
+  addItem(id, count = 1, { quiet = false, rolls = null } = {}) {
     if (!ITEMS[id]) return false;
     if (this.roomFor(id) < count) {
       this.game.events.emit('log', { text: 'Your bags are full.', kind: 'muted', throttle: 'bags-full' });
       return false;
     }
-    this._insert(id, count);
+    this._insert(id, count, rolls);
     if (!quiet) {
-      const name = ITEMS[id].name;
+      const name = itemView({ id, rolls }).name;
       this.game.events.emit('log', { text: `Taken: ${name}${count > 1 ? ` ×${count}` : ''}.`, kind: 'loot' });
       const k = ITEMS[id].kind;
       if (k === 'weapon' || k === 'armor' || k === 'shield') this.game.events.emit('log', { text: 'Drag it onto your character (C) to equip it.', kind: 'muted', throttle: 'equip-hint' });
@@ -180,7 +181,7 @@ export class Inventory {
     else s.count -= n;
     if (p.type === 'equip') this._equipmentChanged();
     this._changed();
-    return { id: s.id, count: n };
+    return s.rolls ? { id: s.id, count: n, rolls: s.rolls } : { id: s.id, count: n };
   }
 
   _bagEmpty(socket) {

@@ -75,7 +75,7 @@ export class Player {
       this.defaultWeaponMesh.visible = id === 'worn_longsword';
       this.weaponPart = this.defaultWeaponMesh;
       if (id && id !== 'worn_longsword') {
-        const blade = this.game.assets.instance(id === 'watchmans_edge' ? 'watchmans_edge' : 'worn_sword');
+        const blade = this.game.assets.instance(ITEMS[id].model);
         blade.position.copy(this.defaultWeaponMesh.position);
         blade.quaternion.copy(this.defaultWeaponMesh.quaternion);
         arm.add(blade);

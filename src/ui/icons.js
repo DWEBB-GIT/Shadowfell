@@ -27,7 +27,7 @@ export function renderItemIcons(assets, size = 64) {
   for (const name of models) {
     const obj = assets.instance(name);
     // long items (swords) are shown diagonally, the classic RPG way
-    if (name === 'worn_sword' || name === 'watchmans_edge') obj.rotation.set(0, 0, -Math.PI / 4);
+    if (['worn_sword', 'watchmans_edge', 'rusted_falchion', 'blackwood_cleaver'].includes(name)) obj.rotation.set(0, 0, -Math.PI / 4);
     else if (name === 'kite_shield' || name === 'iron_shield') obj.rotation.set(0.15, 0.35, 0);
     else obj.rotation.set(0.5, -0.6, 0);
     scene.add(obj);

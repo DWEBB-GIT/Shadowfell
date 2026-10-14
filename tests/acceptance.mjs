@@ -209,7 +209,7 @@ async function launchAndMovement(browser) {
 
   // world boundaries: walk into each edge for a long time
   const edges = [
-    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 42], [['KeyW'], -2, -30],
+    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 42], [['KeyW'], -6, -112],
   ];
   const out = [];
   let inside = true;
@@ -217,7 +217,7 @@ async function launchAndMovement(browser) {
     await setup(page, { x, z });
     await sim(page, 6, { held: keys, fps: 30 });
     const s = await state(page);
-    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -49 && s.pos.z <= 47;
+    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -125 && s.pos.z <= 47;
     inside = inside && ok;
     out.push(`${keys[0].slice(3)}→(${s.pos.x.toFixed(1)}, ${s.pos.z.toFixed(1)})`);
   }
@@ -1873,6 +1873,271 @@ async function forge(browser) {
   await ctx.close();
 }
 
+async function gearRolls(browser) {
+  current = 'Gear drops with random stat rolls';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await setup(page, { x: 16.2, z: -40.5 });
+  await pauseLoop(page);
+
+  const spread = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    let suffixed = 0;
+    let armourOk = true;
+    let damageOk = true;
+    const seen = new Set();
+    for (let i = 0; i < 300; i++) {
+      const h = g.rollItem('warden_hauberk', Math.random);
+      const a = g.itemView({ id: 'warden_hauberk', rolls: h }).stats.armour;
+      if (h && h.suffix) suffixed++;
+      seen.add(a);
+      if (a < 32 * 0.8 - 0.5 || a > 32 * 1.2 + 0.5) armourOk = false;
+      const f = g.itemView({ id: 'rusted_falchion', rolls: g.rollItem('rusted_falchion', Math.random) }).damage;
+      if (f[0] < 13 * 0.88 - 0.5 || f[1] > 19 * 1.12 + 0.5 || f[0] > f[1]) damageOk = false;
+    }
+    return { suffixed, armourOk, damageOk, kinds: seen.size, material: g.rollItem('grave_iron', Math.random), quest: g.rollItem('manifest', Math.random) };
+  });
+  record('Dropped gear rolls its stats a little either side of the database values', spread.armourOk && spread.damageOk && spread.kinds >= 8, `hauberk armour rolled ${spread.kinds} different values within ±20% of 32; falchion damage within ±12%`);
+  record('Some pieces gain a WoW-style suffix with bonus attributes', spread.suffixed > 50 && spread.suffixed < 160, `${spread.suffixed} of 300 hauberks rolled a suffix`);
+  record('Materials and quest items never roll (extra)', spread.material === null && spread.quest === null);
+
+  const worn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const vals = [0.95, 0.1, 0.0, 0.9, 0.99];
+    let i = 0;
+    const rolls = g.rollItem('warden_hauberk', () => vals[i++]);
+    const view = g.itemView({ id: 'warden_hauberk', rolls });
+    g.inventory.addItem('warden_hauberk', 1, { rolls });
+    const a0 = g.stats.armour;
+    g.inventory.equip('warden_hauberk');
+    g.hud.togglePanel('character');
+    return { rolls, name: view.name, quality: view.quality, armour: g.stats.armour, a0, haste: g.stats.haste, panel: document.getElementById('char-stats').textContent };
+  });
+  record('A rolled item is named for its suffix and counts its rolled stats when worn', worn.name === "Warden's hauberk of Swiftness" && worn.quality === 'uncommon' && worn.armour === 38 && worn.haste === 2, `${worn.name}: ${JSON.stringify(worn.rolls)}; armour ${worn.a0} → ${worn.armour}, haste ${worn.haste}%`);
+
+  await resumeLoop(page);
+  await page.hover('.islot[data-loc="e:chest"]');
+  await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
+  const tip = await page.evaluate(() => ({ text: document.getElementById('tooltip').textContent, q: document.querySelector('#tooltip .tt-name').className }));
+  record('Tooltips show the rolled name, quality and stats', /of Swiftness/.test(tip.text) && /\+38 armour/i.test(tip.text) && /\+2 ?% haste/i.test(tip.text) && /q-uncommon/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 120));
+  await pauseLoop(page);
+
+  const moved = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const rolls = { damage: [15, 21], suffix: 'bear', stats: { might: 2, vitality: 1 } };
+    g.inventory.addItem('rusted_falchion', 1, { rolls, quiet: true });
+    const find = () => g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'rusted_falchion');
+    g.loot.dropFromInventory(find());
+    const ground = g.worldState.ground.find((x) => x.id === 'rusted_falchion');
+    const entry = g.loot.active.find((l) => l.def.ground === ground);
+    const prompt = entry.def.prompt;
+    g.loot.collect(entry);
+    const back = g.inventory.get(find());
+    // sell it to Mara and buy it back
+    g.merchant.open('mara', g.npcs.byId('mara'));
+    const c0 = g.inventory.coins;
+    g.merchant.sell(find());
+    const paid = g.inventory.coins - c0;
+    g.merchant.buyBack(0);
+    const again = g.inventory.get(find());
+    g.merchant.close();
+    return { groundRolls: ground.rolls, prompt, back: back.rolls, paid, view: g.itemView(back), again: again && again.rolls };
+  });
+  const same = (r) => JSON.stringify(r) === JSON.stringify({ damage: [15, 21], suffix: 'bear', stats: { might: 2, vitality: 1 } });
+  record('Rolls survive dropping, picking up, selling and buying back', same(moved.groundRolls) && same(moved.back) && same(moved.again) && /of the Bear/.test(moved.prompt), `"${moved.prompt}"`);
+  record('A suffixed item is worth more to a merchant', moved.paid === Math.floor(moved.view.price * 0.25) && moved.paid > 5, `sells for ${moved.paid} (a plain falchion: 5)`);
+
+  await page.evaluate(() => window.__shadowfall.manualSave());
+  const bad = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const data = JSON.parse(localStorage.getItem('shadowfall.save'));
+    const chest = data.inventory.equipment.chest;
+    const tampered = JSON.parse(JSON.stringify(data));
+    tampered.inventory.equipment.chest.rolls = { suffix: 'of_godhood', stats: { might: 9999 } };
+    return { chest, ok: g.validateSave(data).length === 0, rejected: g.validateSave(tampered) };
+  });
+  record('Rolls are saved, and a tampered roll fails the save check', same(moved.again) && bad.ok && bad.chest.rolls && bad.rejected.length > 0, `saved chest: ${JSON.stringify(bad.chest)}; tampered: ${bad.rejected.join(', ')}`);
+  await page.reload();
+  await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden);
+  errors.length = 0;
+  await begin(page, '#continue-btn');
+  const loaded = await page.evaluate(() => ({ chest: window.__shadowfall.inventory.equipment.chest, armour: window.__shadowfall.stats.armour }));
+  record('Rolled gear is the same after a reload', loaded.chest.rolls && loaded.chest.rolls.suffix === 'swiftness' && loaded.armour === 38, JSON.stringify(loaded.chest));
+
+  await pauseLoop(page);
+  const drop = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const before = g.worldState.ground.length;
+    g.random = () => 0.1; // under the ghoul's 20% gear chance
+    const e = g.enemies.byId('ghoul_road');
+    e.health = 1;
+    e.hurt(5);
+    g.combat.onEnemyDefeated(e);
+    g.random = () => 0.5;
+    const dropped = g.worldState.ground.slice(before);
+    const log = [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | ');
+    g.player.placeAt(e.position.x + 1, e.position.z);
+    g.interaction.update();
+    const prompt = g.interaction.current && g.interaction.current.prompt;
+    g.interaction.interact();
+    return { dropped, near: dropped.every((d) => Math.hypot(d.x - e.position.x, d.z - e.position.z) < 1.5), prompt, left: g.worldState.ground.length - before, log };
+  });
+  const table = ['iron_gloves', 'hob_boots', 'rusted_falchion', 'mail_chausses'];
+  record('Enemies drop gear from their table beside the body', drop.dropped.length === 1 && table.includes(drop.dropped[0].id) && drop.near && /drops a/.test(drop.log), `the ghoul dropped ${drop.dropped.map((d) => d.id + (d.rolls ? ' ' + JSON.stringify(d.rolls) : '')).join(', ')}`);
+  record('One loot takes the body and its drops together', drop.left === 0 && /and 1 more nearby/.test(drop.prompt || ''), `"${drop.prompt}"`);
+  record('No script errors (gear rolls)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+async function blackwood(browser) {
+  current = 'The Blackwood';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await setup(page, { x: 3, z: -47 });
+  await pauseLoop(page);
+  const before = await page.evaluate(() => ({ region: document.querySelector('#title-area .region').textContent, near: window.__shadowfall.scene.fog.near }));
+  await sim(page, 3.4, { held: ['KeyW'] });
+  const after = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { z: g.player.position.z, x: g.player.position.x, region: document.querySelector('#title-area .region').textContent, near: g.scene.fog.near, far: g.scene.fog.far, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | ') };
+  });
+  record('A forest track leads north past the forge into a second region, the Blackwood', before.region === 'The Fallen Road' && after.z < -60 && after.region === 'The Blackwood' && /The Blackwood/.test(after.log), `walked from (3, -47) to (${after.x.toFixed(1)}, ${after.z.toFixed(1)}); the HUD now reads "${after.region}"`);
+  record('The Blackwood is darker: the fog closes in', after.near < before.near && after.far < 40, `fog ${before.near}–40 m → ${after.near.toFixed(1)}–${after.far.toFixed(1)} m`);
+
+  const roster = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const types = {};
+    for (const e of g.enemies.list) if (e.home.z < -56 || e.id.includes('_bw_') || ['hound', 'archer', 'seer'].includes(e.type)) types[e.type] = (types[e.type] || 0) + 1;
+    const seer = g.enemies.byId('seer_glade');
+    return { types, seerMana: seer.mana, seerLevel: seer.cfg.level, models: ['hound', 'archer', 'seer'].every((m) => !g.assets.usedFallback.includes(m)) };
+  });
+  record('Three new enemy types live there: barrow hounds, hollow archers and a seer', roster.types.hound === 4 && roster.types.archer === 3 && roster.types.seer === 1 && roster.models, JSON.stringify(roster.types));
+
+  // shrine at the forest edge
+  const shrine = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(2.8, -63);
+    g.player.health = 40;
+    g.interaction.update();
+    const prompt = g.interaction.current && g.interaction.current.prompt;
+    g.interaction.interact();
+    return { prompt, hp: g.player.health, max: g.player.maxHealth, label: g.respawnPoint().label };
+  });
+  record('A second shrine at the forest edge heals and becomes the respawn point', shrine.prompt === 'Rest at the shrine' && shrine.hp === shrine.max && /forest edge/.test(shrine.label), `respawn ${shrine.label}`);
+
+  // hounds hunt as a pack
+  await setup(page, { x: 6, z: -60, keep: ['hound_den_1', 'hound_den_2', 'hound_den_3', 'hound_glade'] });
+  const pack = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const hounds = ['hound_den_1', 'hound_den_2', 'hound_den_3'].map((id) => g.enemies.byId(id));
+    hounds.forEach((h) => (h.state = 'idle'));
+    g.enemies.byId('hound_glade').state = 'idle';
+    hounds[0].hurt(1);
+    return { states: hounds.map((h) => h.state), glade: g.enemies.byId('hound_glade').state, speed: hounds[0].cfg.speed };
+  });
+  record('Barrow hounds are fast and hunt as a pack: wake one and the rest come', pack.states.every((s) => s === 'chase') && pack.glade === 'idle' && pack.speed >= 5, `den: ${pack.states.join(', ')}; the glade hound stays ${pack.glade}`);
+
+  // archers: an aimed shot down a painted line
+  await setup(page, { x: 10, z: -82, keep: ['archer_camp_1'] });
+  await placeEnemy(page, 'archer_camp_1', 10, -90);
+  const shot = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.enemies.byId('archer_camp_1');
+    g.player.health = g.player.maxHealth;
+    a.state = 'chase';
+    a.attackTimer = 0;
+    g.step(1 / 60);
+    const casting = a.casting && a.casting.kind;
+    const line = g.telegraphs.active.find((t) => t.owner === a);
+    const hp0 = g.player.health;
+    for (let i = 0; i < 80; i++) g.step(1 / 60);
+    return { casting, line: line && line.shape.width > 0 ? 'line' : null, length: line && line.shape.length, hit: hp0 - g.player.health, log: document.querySelector('#log li:last-child').textContent };
+  });
+  record('Hollow archers paint their aim on the ground, then loose down it', shot.casting === 'shot' && shot.line === 'line' && shot.hit > 0, `a ${shot.length} m line; "${shot.log}"`);
+  const dodge = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.enemies.byId('archer_camp_1');
+    a.attackTimer = 0;
+    a._cancelCast();
+    g.step(1 / 60);
+    const casting = !!a.casting;
+    g.player.placeAt(g.player.position.x + 3, g.player.position.z); // step off the line
+    const hp0 = g.player.health;
+    for (let i = 0; i < 80; i++) g.step(1 / 60);
+    return { casting, hit: hp0 - g.player.health, log: [...document.querySelectorAll('#log li')].slice(-3).map((l) => l.textContent).join(' | ') };
+  });
+  record('Stepping off the line makes the arrow miss', dodge.casting && dodge.hit === 0, dodge.log);
+  const keep = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.enemies.byId('archer_camp_1');
+    a._cancelCast();
+    a.attackTimer = 5;
+    g.player.placeAt(a.position.x, a.position.z + 3);
+    const d0 = Math.hypot(a.position.x - g.player.position.x, a.position.z - g.player.position.z);
+    for (let i = 0; i < 30; i++) g.step(1 / 60);
+    return { d0, d1: Math.hypot(a.position.x - g.player.position.x, a.position.z - g.player.position.z) };
+  });
+  record('Archers back away to keep their distance (extra)', keep.d1 > keep.d0 + 0.5, `${keep.d0.toFixed(1)} m → ${keep.d1.toFixed(1)} m`);
+
+  // the seer: mana, a ground circle that cannot be blocked, and Brace
+  await setup(page, { x: -6, z: -107, keep: ['seer_glade'] });
+  await placeEnemy(page, 'seer_glade', -6, -114);
+  const seer = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const s = g.enemies.byId('seer_glade');
+    g.player.health = g.player.maxHealth;
+    g.player.cooldowns.brace = 0;
+    s.state = 'chase';
+    s.mana = s.cfg.mana;
+    s.circleTimer = 0;
+    g.step(1 / 60);
+    const kind = s.casting && s.casting.kind;
+    const circle = g.telegraphs.active.find((t) => t.owner === s);
+    const under = circle && Math.hypot(circle.shape.x - g.player.position.x, circle.shape.z - g.player.position.z) < 0.1;
+    const mana = s.mana;
+    g.step(1 / 60);
+    g.hud.update(1 / 60);
+    const bar = !!document.querySelector('.ebar .emana');
+    g.player.tryBrace();
+    const hp0 = g.player.health;
+    for (let i = 0; i < 110; i++) g.step(1 / 60);
+    const braced = hp0 - g.player.health;
+    // again, and this time walk out of it
+    s._cancelCast();
+    s.mana = s.cfg.mana;
+    s.circleTimer = 0;
+    g.step(1 / 60);
+    g.player.placeAt(g.player.position.x + 4, g.player.position.z);
+    const hp1 = g.player.health;
+    for (let i = 0; i < 110; i++) g.step(1 / 60);
+    const escaped = hp1 - g.player.health;
+    // and once more, standing in it unbraced
+    s._cancelCast();
+    s.mana = s.cfg.mana;
+    s.circleTimer = 0;
+    g.player.cooldowns.brace = 99;
+    g.step(1 / 60);
+    const hp2 = g.player.health;
+    for (let i = 0; i < 110; i++) g.step(1 / 60);
+    return { kind, under, mana, max: s.cfg.mana, bar, braced, escaped, taken: hp2 - g.player.health, log: document.querySelector('#log li:last-child').textContent };
+  });
+  record('The Blackwood Seer spends mana on a dark circle cast under the Warden', seer.kind === 'circle' && seer.under && seer.mana === seer.max - 25 && seer.bar, `mana ${seer.max} → ${seer.mana}; a mana bar shows over her health`);
+  record('Brace or walking out of the circle avoids it; standing in it hurts and cannot be blocked', seer.braced === 0 && seer.escaped === 0 && seer.taken >= 18, `braced: 0, walked out: 0, stood in it: ${seer.taken} ("${seer.log}")`);
+
+  const loot = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const s = g.enemies.byId('seer_glade');
+    const before = g.worldState.ground.length;
+    s.hurt(9999);
+    g.combat.onEnemyDefeated(s);
+    return { ground: g.worldState.ground.slice(before).map((x) => x.id), edge: !!g.worldState.drops.watchmans_edge };
+  });
+  record("The seer always drops the Blackwood cleaver (and not the brute's sword)", loot.ground.includes('blackwood_cleaver') && !loot.edge, loot.ground.join(', '));
+  record('No script errors (Blackwood)', errors.length === 0, errors.join(' | '));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'blackwood.png') });
+  await ctx.close();
+}
+
 async function atmosphere(browser) {
   current = 'Build 2: fog and lighting';
   const { ctx, page, errors } = await freshGame(browser);
@@ -1897,7 +2162,7 @@ async function atmosphere(browser) {
 const browser = await launch();
 fs.mkdirSync(path.join(HERE, 'screenshots'), { recursive: true });
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

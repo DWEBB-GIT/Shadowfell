@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { SHRINE } from '../world/layout.js';
+import { SHRINES } from '../world/layout.js';
 import { EXAMINE } from '../data/text.js';
 
 // Finds the nearest thing the player can act on and runs it when E is
@@ -21,15 +21,17 @@ export class Interaction {
       list.push({ key: 'loot:' + l.id, x: l.x, z: l.z, bias: -0.4, loot: l, prompt: n > 1 ? `${own} (and ${n - 1} more nearby)` : own, run: () => loot.lootArea(l) });
     }
     list.push(...this.game.npcs.interactions());
-    list.push({
-      key: 'shrine',
-      x: SHRINE.position[0],
-      z: SHRINE.position[1],
-      bias: 0,
-      reach: 2.6,
-      prompt: 'Rest at the shrine',
-      run: () => this.game.restAtShrine(),
-    });
+    for (const sh of SHRINES) {
+      list.push({
+        key: sh.id === 'shrine_road' ? 'shrine' : 'shrine:' + sh.id,
+        x: sh.position[0],
+        z: sh.position[1],
+        bias: 0,
+        reach: 2.6,
+        prompt: 'Rest at the shrine',
+        run: () => this.game.restAtShrine(sh),
+      });
+    }
     for (const p of world.examinePoints) {
       const seen = worldState.examined.has(p.id);
       list.push({

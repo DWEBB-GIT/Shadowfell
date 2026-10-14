@@ -395,3 +395,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .shop-sub { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 #shop-buyback { display: flex; gap: 4px; min-height: 40px; align-items: center; }
 .tt-price { color: #f0d890; font-size: 12px; margin-top: 4px; }
+
+/* quality borders on bag and equipment slots, as in WoW */
+.islot.filled.q-uncommon { border-color: rgba(108, 192, 90, 0.75); }
+.islot.filled.q-rare { border-color: rgba(74, 143, 224, 0.8); }

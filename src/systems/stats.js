@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { ITEMS } from '../data/items.js';
+import { ITEMS, itemView } from '../data/items.js';
 
 // Character stats and the one damage formula every hit goes through.
 // See docs/stats-and-damage.md. The numbers all live in CONFIG.stats, the
@@ -32,7 +32,7 @@ export class Stats {
     const t = { ...a.base };
     for (const [k, v] of Object.entries(a.perLevel)) t[k] = (t[k] || 0) + v * lv;
     for (const s of Object.values(this.game.inventory.equipment)) {
-      const st = s && ITEMS[s.id].stats;
+      const st = s && itemView(s).stats;
       if (st) for (const [k, v] of Object.entries(st)) t[k] = (t[k] || 0) + v;
     }
     for (const k of ATTRS) t[k] = t[k] || 0;

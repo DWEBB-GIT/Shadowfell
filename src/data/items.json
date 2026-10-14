@@ -184,6 +184,80 @@
       "model": "iron_shield",
       "icon": "iron_shield",
       "description": "Oak under a skin of hammered iron, brass at the rim. Heavy, and worth it."
+    },
+    "rusted_falchion": {
+      "name": "Rusted falchion",
+      "kind": "weapon",
+      "slot": "mainHand",
+      "quality": "common",
+      "damage": [
+        13,
+        19
+      ],
+      "stack": 1,
+      "price": 22,
+      "model": "rusted_falchion",
+      "icon": "rusted_falchion",
+      "description": "A broad, back-heavy blade gone orange at the spine. It still bites."
+    },
+    "warden_hauberk": {
+      "name": "Warden's hauberk",
+      "kind": "armor",
+      "slot": "chest",
+      "armourType": "mail",
+      "quality": "common",
+      "stats": {
+        "armour": 32,
+        "vitality": 1
+      },
+      "stack": 1,
+      "price": 40,
+      "model": "warden_hauberk",
+      "icon": "warden_hauberk",
+      "description": "Riveted mail to the knee, the watch's tower stitched on the breast. Someone wore it here before you."
+    },
+    "plate_sabatons": {
+      "name": "Blackened sabatons",
+      "kind": "armor",
+      "slot": "feet",
+      "armourType": "plate",
+      "quality": "common",
+      "stats": {
+        "armour": 10
+      },
+      "stack": 1,
+      "price": 30,
+      "model": "plate_sabatons",
+      "icon": "plate_sabatons",
+      "description": "Plate boots scorched black. The straps are new."
+    },
+    "blackwood_cleaver": {
+      "name": "Blackwood cleaver",
+      "kind": "weapon",
+      "slot": "mainHand",
+      "quality": "uncommon",
+      "damage": [
+        18,
+        26
+      ],
+      "stats": {
+        "might": 2
+      },
+      "stack": 1,
+      "price": 75,
+      "model": "blackwood_cleaver",
+      "icon": "blackwood_cleaver",
+      "description": "Grave-iron hammered thin around a core of black wood. It is warm in the hand."
+    },
+    "hound_pelt": {
+      "name": "Barrow hound pelt",
+      "kind": "material",
+      "quality": "common",
+      "stack": 10,
+      "price": 5,
+      "model": "hound_pelt",
+      "icon": "hound_pelt",
+      "description": "Coarse grey fur that smells of turned earth. A tanner would take it."
     }
   }
 }

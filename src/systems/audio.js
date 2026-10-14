@@ -51,7 +51,8 @@ export class AudioSystem {
       this.bell(0.12, 660);
     });
     ev.on('corpseLooted', () => this.coins());
-    ev.on('enemyWindup', ({ enemy }) => this.growl(enemy.type === 'brute' ? 70 : 120, enemy.type === 'brute' ? 0.5 : 0.35));
+    const GROWL = { brute: [70, 0.5], hound: [170, 0.25], archer: [220, 0.2], seer: [95, 0.45] };
+    ev.on('enemyWindup', ({ enemy }) => this.growl(...(GROWL[enemy.type] || [120, 0.35])));
     ev.on('playerHurt', () => this.thud(110, 0.25));
     ev.on('enemyDefeated', ({ enemy }) => this.death(enemy.type === 'brute'));
     ev.on('lootCollected', () => this.chime([660, 990], 0.12));
@@ -331,9 +332,8 @@ export class AudioSystem {
     let danger = 0;
     for (const z of DANGER_ZONES) {
       const d = Math.hypot(p.x - z.position[0], p.z - z.position[1]);
-      danger = Math.max(danger, 1 - d / z.radius);
+      danger = Math.max(danger, (1 - d / z.radius) * (this.game.worldState.isDefeated(z.enemy) ? 0.3 : 1));
     }
-    if (this.game.worldState.isDefeated('brute_hallow')) danger *= 0.3;
     this.rumbleGain.gain.setTargetAtTime(Math.max(0, danger) * 0.12, this.ctx.currentTime, 0.5);
   }
 }
