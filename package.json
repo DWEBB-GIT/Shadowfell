@@ -2,12 +2,13 @@
   "name": "shadowfall",
   "version": "0.1.0",
   "private": true,
-  "description": "Shadowfall: first playable prototype (The Fallen Road)",
+  "description": "Shadowfall: playable prototype (The Fallen Road and the Blackwood)",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --target=chrome110 --loader:.glb=binary --minify --sourcemap --outfile=dist/shadowfall.js",
     "dev": "esbuild src/main.js --bundle --format=iife --target=chrome110 --loader:.glb=binary --sourcemap --outfile=dist/shadowfall.js --watch",
     "assets": "blender --background --python assets/blender/build_assets.py",
-    "test": "node tests/acceptance.mjs"
+    "test": "node tests/validate-data.mjs && node tests/acceptance.mjs",
+    "validate": "node tests/validate-data.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",
@@ -15,5 +16,6 @@
   },
   "dependencies": {
     "three": "0.180.0"
-  }
+  },
+  "type": "module"
 }

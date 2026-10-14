@@ -1,0 +1,15 @@
+{
+  "_about": "Townsfolk. An npc may keep a shop and give quests; where they stand is in world.json (npcSpawns).",
+  "npcs": [
+    {
+      "id": "mara",
+      "name": "Mara Venn",
+      "title": "Smith",
+      "model": "mara",
+      "rig": "warden",
+      "shop": "mara_forge",
+      "quests": ["missing_delivery"],
+      "work": "anvil"
+    }
+  ]
+}

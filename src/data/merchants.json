@@ -1,9 +1,0 @@
-{
-  "merchants": {
-    "mara": {
-      "name": "Mara Venn",
-      "title": "Smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel"]
-    }
-  }
-}

@@ -1,17 +1,14 @@
+import { DB } from '../data/db.js';
+
 // The spell bar. Seven slots, each with a fixed key (and pad button); the
 // player decides which ability sits in which slot, Diablo style. Abilities
 // can be dragged between slots, dragged off the bar, and put back from the
 // spellbook. A slot location is 'a:<index>', a spellbook entry 'k:<ability>'.
 
-// `target`: 'enemy' abilities go to the soft- or hard-locked enemy within
-// `range`; 'ground' ones land at the aim point; 'self' ones need no aim.
-export const ABILITIES = {
-  strike: { name: 'Strike', target: 'enemy', range: 2.4, desc: 'A sword blow at the enemy you are aiming at. Off the global cooldown.' },
-  shieldBreak: { name: 'Shield Break', target: 'self', desc: 'A close-range blow that strikes everything around you and interrupts ordinary attacks. Triggers the global cooldown.' },
-  lunge: { name: 'Lunge', target: 'enemy', range: 6.6, desc: 'Charge at the enemy you are aiming at and strike on arrival. Triggers the global cooldown.' },
-  brace: { name: 'Brace', target: 'self', defensive: true, desc: 'Raise your shield: the next blow within 2.5 seconds, even a Grave Slam, is turned aside. The Warden\'s defensive ability. 7 second cooldown.' },
-  draught: { name: 'Healing draught', target: 'self', desc: 'Drink a healing draught from your bags.', item: 'healing_draught' },
-};
+// Abilities come from data/abilities.json. `target`: 'enemy' abilities go to
+// the soft- or hard-locked enemy within `range`; 'ground' ones land at the
+// aim point; 'self' ones need no aim. `tuning` holds the numbers each runs on.
+export const ABILITIES = DB.abilities;
 
 // Key labels for keyboard/mouse and gamepad, in slot order. The last slot is
 // the defensive slot on Space, which each archetype fills with its own move.

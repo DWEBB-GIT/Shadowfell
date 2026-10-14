@@ -1,0 +1,277 @@
+{
+  "_about": "The world: regions, roads, where the player starts, shrines, and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z.",
+  "bounds": {
+    "minX": -36,
+    "maxX": 36,
+    "minZ": -125,
+    "maxZ": 47
+  },
+  "regions": [
+    {
+      "id": "fallen_road",
+      "name": "The Fallen Road",
+      "minZ": -56,
+      "bounds": {
+        "minX": -36,
+        "maxX": 36,
+        "minZ": -49,
+        "maxZ": 47
+      }
+    },
+    {
+      "id": "blackwood",
+      "name": "The Blackwood",
+      "minZ": null,
+      "bounds": {
+        "minX": -36,
+        "maxX": 36,
+        "minZ": -125,
+        "maxZ": -49
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "fallen_road",
+      "name": "The Fallen Road",
+      "halfWidth": 2.2,
+      "points": [
+        [-9, 58],
+        [-8, 44],
+        [-6, 32],
+        [-2, 22],
+        [3, 14],
+        [5, 6],
+        [5, -2],
+        [3, -10],
+        [6, -18],
+        [13, -26],
+        [19, -33],
+        [22, -40],
+        [23, -52]
+      ]
+    },
+    {
+      "id": "forest_track",
+      "name": "The forest track",
+      "halfWidth": 2.2,
+      "points": [
+        [13, -26],
+        [8, -34],
+        [4, -46],
+        [1, -58],
+        [-4, -70],
+        [-1, -82],
+        [-7, -94],
+        [-5, -106],
+        [-6, -110]
+      ]
+    }
+  ],
+  "playerStart": {
+    "position": [-6, 33],
+    "facing": 180
+  },
+  "shrines": [
+    {
+      "id": "shrine_road",
+      "position": [9.6, 5.2],
+      "rotation": -90,
+      "label": "at the roadside shrine"
+    },
+    {
+      "id": "shrine_blackwood",
+      "position": [4.6, -63],
+      "rotation": -90,
+      "label": "at the shrine at the forest edge"
+    }
+  ],
+  "npcSpawns": [
+    {
+      "npc": "mara",
+      "position": [14.6, -42.6],
+      "facing": 110,
+      "anvil": [13.4, -41.6]
+    }
+  ],
+  "enemySpawns": [
+    {
+      "id": "ghoul_cart",
+      "enemy": "ghoul",
+      "position": [-3.2, -9]
+    },
+    {
+      "id": "ghoul_graves",
+      "enemy": "ghoul",
+      "position": [-21.5, 11]
+    },
+    {
+      "id": "ghoul_road",
+      "enemy": "ghoul",
+      "position": [9, -21]
+    },
+    {
+      "id": "brute_hallow",
+      "enemy": "brute",
+      "position": [22.5, -19.5]
+    },
+    {
+      "id": "ghoul_bw_track",
+      "enemy": "ghoul",
+      "position": [2.5, -73]
+    },
+    {
+      "id": "hound_den_1",
+      "enemy": "hound",
+      "position": [-12.8, -78.4]
+    },
+    {
+      "id": "hound_den_2",
+      "enemy": "hound",
+      "position": [-17.2, -81.6]
+    },
+    {
+      "id": "hound_den_3",
+      "enemy": "hound",
+      "position": [-13.6, -83.2]
+    },
+    {
+      "id": "archer_camp_1",
+      "enemy": "archer",
+      "position": [11.2, -93]
+    },
+    {
+      "id": "archer_camp_2",
+      "enemy": "archer",
+      "position": [15.4, -88]
+    },
+    {
+      "id": "ghoul_bw_deep",
+      "enemy": "ghoul",
+      "position": [-11, -97]
+    },
+    {
+      "id": "archer_stones",
+      "enemy": "archer",
+      "position": [-19, -104]
+    },
+    {
+      "id": "hound_glade",
+      "enemy": "hound",
+      "position": [-1.6, -110.4]
+    },
+    {
+      "id": "seer_glade",
+      "enemy": "seer",
+      "position": [-6.4, -114.6]
+    }
+  ],
+  "placedLoot": [
+    {
+      "id": "manifest",
+      "model": "manifest",
+      "position": [-5.3, -4.6],
+      "heightOffset": 0.9,
+      "prompt": "Read the manifest",
+      "reward": {
+        "item": "manifest"
+      },
+      "opensDocument": "manifest"
+    },
+    {
+      "id": "grave_iron",
+      "model": "grave_iron",
+      "position": [-8.4, -1.4],
+      "heightOffset": 0.05,
+      "prompt": "Take the grave-iron",
+      "reward": {
+        "item": "grave_iron",
+        "count": 2
+      }
+    },
+    {
+      "id": "purse_graves",
+      "model": "coin_purse",
+      "position": [-26.5, 7.5],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 6
+      }
+    },
+    {
+      "id": "purse_wall",
+      "model": "coin_purse",
+      "position": [9.5, -37.2],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 5
+      }
+    },
+    {
+      "id": "draught_rocks",
+      "model": "draught",
+      "position": [25.2, 13.2],
+      "prompt": "Take the healing draught",
+      "reward": {
+        "item": "healing_draught"
+      }
+    },
+    {
+      "id": "satchel_ruin",
+      "model": "satchel",
+      "position": [-12, -29.6],
+      "prompt": "Take the traveller's satchel",
+      "reward": {
+        "item": "travellers_satchel"
+      }
+    },
+    {
+      "id": "helm_rocks",
+      "model": "watch_helm",
+      "position": [28.2, -38.6],
+      "prompt": "Take the dented helm",
+      "reward": {
+        "item": "watch_helm"
+      }
+    },
+    {
+      "id": "purse_den",
+      "model": "coin_purse",
+      "position": [-16.4, -82.8],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 9
+      }
+    },
+    {
+      "id": "sabatons_camp",
+      "model": "plate_sabatons",
+      "position": [14.2, -91],
+      "prompt": "Take the blackened sabatons",
+      "reward": {
+        "item": "plate_sabatons"
+      }
+    },
+    {
+      "id": "draught_glade",
+      "model": "draught",
+      "position": [-10.2, -119],
+      "prompt": "Take the healing draught",
+      "reward": {
+        "item": "healing_draught"
+      }
+    }
+  ],
+  "dangerZones": [
+    {
+      "position": [22.5, -19.5],
+      "radius": 14,
+      "enemySpawn": "brute_hallow"
+    },
+    {
+      "position": [-6.4, -114.6],
+      "radius": 12,
+      "enemySpawn": "seer_glade"
+    }
+  ]
+}

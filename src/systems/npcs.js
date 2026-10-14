@@ -84,6 +84,6 @@ export class NpcManager {
 
   talk(n) {
     n.facing = Math.atan2(this.game.player.position.x - n.position.x, this.game.player.position.z - n.position.z);
-    if (n.def.merchant) this.game.merchant.open(n.def.merchant, n);
+    if (n.def.shop) this.game.merchant.open(n.def.shop, n);
   }
 }

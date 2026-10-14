@@ -544,6 +544,13 @@ async function progression(browser) {
       g.player.placeAt(e.position.x, e.position.z + 1.5);
       e.cfg = { ...e.cfg, speed: 0, detection: 0, damage: 0 };
       e.state = 'idle';
+      // the Blackwood packs are parked in the same row; keep them out of it
+      for (const o of g.enemies.list) {
+        if (o.dead || o.id.startsWith('ghoul_') && !o.id.includes('_bw_') || o.id.startsWith('brute_')) continue;
+        o.position.set(30, 0, 40);
+        o.home.copy(o.position);
+        o.state = 'idle';
+      }
     }, id);
     for (let i = 0; i < 12; i++) {
       // step back in after each knock-back, as a player would
@@ -1777,7 +1784,7 @@ async function forge(browser) {
     g.step(1 / 60);
     return { prompt, current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, mara: !!g.npcs.byId('mara') };
   });
-  record('Mara Venn stands at her forge and talking to her opens her shop beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.current === 'mara' && talk.shop && talk.bags && talk.stock === 6, `prompt "${talk.prompt}", ${talk.stock} items for sale, bags open: ${talk.bags}`);
+  record('Mara Venn stands at her forge and talking to her opens her shop beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 6, `prompt "${talk.prompt}", ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1868,7 +1875,7 @@ async function forge(browser) {
   await page.evaluate(() => (window.__shadowfall.hud.items.focus = 'm:healing_draught'));
   await padSim(page, 0.05, { tap: [PAD.A] });
   const pad = await page.evaluate(() => ({ coins: window.__shadowfall.inventory.coins, draughts: window.__shadowfall.inventory.count('healing_draught') }));
-  record('With a gamepad, A talks to Mara and A on an item buys it', padOpen === 'mara' && pad.coins === 14, `${pad.coins} coins left, ${pad.draughts} draughts`);
+  record('With a gamepad, A talks to Mara and A on an item buys it', padOpen === 'mara_forge' && pad.coins === 14, `${pad.coins} coins left, ${pad.draughts} draughts`);
   record("No script errors (forge, gamepad)", errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -1934,7 +1941,7 @@ async function gearRolls(browser) {
     g.loot.collect(entry);
     const back = g.inventory.get(find());
     // sell it to Mara and buy it back
-    g.merchant.open('mara', g.npcs.byId('mara'));
+    g.merchant.open('mara_forge', g.npcs.byId('mara'));
     const c0 = g.inventory.coins;
     g.merchant.sell(find());
     const paid = g.inventory.coins - c0;

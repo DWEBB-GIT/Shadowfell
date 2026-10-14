@@ -1,0 +1,25 @@
+{
+  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price.",
+  "vendorTypes": [
+    {
+      "id": "smith",
+      "name": "Smith",
+      "sells": ["weapon", "armor", "shield", "material", "consumable", "bag"],
+      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for."
+    },
+    {
+      "id": "general",
+      "name": "General goods",
+      "sells": ["consumable", "bag", "material", "document"],
+      "description": "Supplies, bags and sundries."
+    }
+  ],
+  "shops": [
+    {
+      "id": "mara_forge",
+      "name": "Mara's forge",
+      "vendorType": "smith",
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel"]
+    }
+  ]
+}

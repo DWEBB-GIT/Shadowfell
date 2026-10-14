@@ -1,0 +1,68 @@
+{
+  "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on.",
+  "globalCooldown": 1.5,
+  "abilities": [
+    {
+      "id": "strike",
+      "name": "Strike",
+      "target": "enemy",
+      "range": 2.4,
+      "desc": "A sword blow at the enemy you are aiming at. Off the global cooldown.",
+      "tuning": {
+        "range": 2.1,
+        "coneDegrees": 110,
+        "cooldown": 0.6,
+        "windup": 0.16
+      }
+    },
+    {
+      "id": "shieldBreak",
+      "name": "Shield Break",
+      "target": "self",
+      "desc": "A close-range blow that strikes everything around you and interrupts ordinary attacks. Triggers the global cooldown.",
+      "tuning": {
+        "damageMultiplier": 2,
+        "radius": 2.8,
+        "cooldown": 4,
+        "windup": 0.28,
+        "stagger": 0.7,
+        "knockback": 1.6
+      }
+    },
+    {
+      "id": "lunge",
+      "name": "Lunge",
+      "target": "enemy",
+      "range": 6.6,
+      "desc": "Charge at the enemy you are aiming at and strike on arrival. Triggers the global cooldown.",
+      "tuning": {
+        "damageMultiplier": 1.5,
+        "distance": 5,
+        "duration": 0.26,
+        "cooldown": 8,
+        "hitRadius": 1.6
+      }
+    },
+    {
+      "id": "brace",
+      "name": "Brace",
+      "target": "self",
+      "defensive": true,
+      "desc": "Raise your shield: the next blow within 2.5 seconds, even a Grave Slam, is turned aside. The Warden's defensive ability. 7 second cooldown.",
+      "tuning": {
+        "cooldown": 7,
+        "window": 2.5
+      }
+    },
+    {
+      "id": "draught",
+      "name": "Healing draught",
+      "target": "self",
+      "desc": "Drink a healing draught from your bags.",
+      "item": "healing_draught",
+      "tuning": {
+        "cooldown": 1
+      }
+    }
+  ]
+}

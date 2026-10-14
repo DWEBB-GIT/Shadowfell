@@ -1,0 +1,123 @@
+{
+  "_about": "Loot tables. `always`: materials dropped every time, min to max. `gear`: a chance of one piece from the weighted entries; gear rolls its stats as it drops.",
+  "lootTables": [
+    {
+      "id": "ghoul",
+      "gear": {
+        "chance": 0.2,
+        "entries": [
+          {
+            "item": "iron_gloves",
+            "weight": 3
+          },
+          {
+            "item": "hob_boots",
+            "weight": 3
+          },
+          {
+            "item": "rusted_falchion",
+            "weight": 2
+          },
+          {
+            "item": "mail_chausses",
+            "weight": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "brute",
+      "gear": {
+        "chance": 0.45,
+        "entries": [
+          {
+            "item": "mail_chausses",
+            "weight": 2
+          },
+          {
+            "item": "warden_hauberk",
+            "weight": 2
+          },
+          {
+            "item": "plate_sabatons",
+            "weight": 2
+          },
+          {
+            "item": "iron_shield",
+            "weight": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "hound",
+      "always": [
+        {
+          "item": "hound_pelt",
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "gear": {
+        "chance": 0.12,
+        "entries": [
+          {
+            "item": "hob_boots",
+            "weight": 2
+          },
+          {
+            "item": "iron_gloves",
+            "weight": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "archer",
+      "gear": {
+        "chance": 0.3,
+        "entries": [
+          {
+            "item": "rusted_falchion",
+            "weight": 2
+          },
+          {
+            "item": "warden_hauberk",
+            "weight": 2
+          },
+          {
+            "item": "plate_sabatons",
+            "weight": 2
+          },
+          {
+            "item": "watch_helm",
+            "weight": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "seer",
+      "always": [
+        {
+          "item": "grave_iron",
+          "min": 1,
+          "max": 2
+        }
+      ],
+      "gear": {
+        "chance": 1,
+        "entries": [
+          {
+            "item": "blackwood_cleaver",
+            "weight": 3
+          },
+          {
+            "item": "iron_shield",
+            "weight": 1
+          }
+        ]
+      }
+    }
+  ]
+}

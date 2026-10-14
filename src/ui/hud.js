@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { DOCUMENTS, OBJECTIVE, INTRO } from '../data/text.js';
+import { DOCUMENTS, INTRO } from '../data/text.js';
 import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
 import { ABILITIES, BAR_SLOTS } from '../systems/actionBar.js';
@@ -33,6 +33,7 @@ export class Hud {
       coins: $('stat-coins'),
       objective: $('objective-text'),
       objectiveState: $('objective-state'),
+      objectiveTitle: $('objective-title'),
       prompt: $('prompt'),
       log: $('log'),
       bars: $('enemy-bars'),
@@ -268,12 +269,13 @@ export class Hud {
   }
 
   refreshObjective() {
-    const stage = this.game.worldState.objectiveStage;
-    this.el.objective.textContent = OBJECTIVE.stages[stage];
-    // finding the manifest is the investigation; handing it to Mara closes it
-    const label = { complete: 'Return to Mara', reported: 'Complete' }[stage] || 'In progress';
-    this.el.objectiveState.textContent = label;
-    this.el.objectiveState.className = stage === 'reported' ? 'done' : stage === 'complete' ? 'found' : '';
+    const ws = this.game.worldState;
+    const quest = ws.objectiveQuest;
+    const stage = ws.questStage(quest.id);
+    this.el.objectiveTitle.textContent = quest.name;
+    this.el.objective.textContent = stage.text;
+    this.el.objectiveState.textContent = stage.label;
+    this.el.objectiveState.className = stage.style || '';
   }
 
   refreshStats() {

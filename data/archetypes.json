@@ -1,0 +1,29 @@
+{
+  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and their defensive ability.",
+  "archetypes": [
+    {
+      "id": "warden",
+      "name": "Warden",
+      "mainStat": "might",
+      "base": {
+        "might": 4,
+        "finesse": 2,
+        "intellect": 1,
+        "vitality": 10,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "blockRating": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "might": 2,
+        "vitality": 2
+      },
+      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "shields": true,
+      "resource": null,
+      "defensive": "brace"
+    }
+  ]
+}

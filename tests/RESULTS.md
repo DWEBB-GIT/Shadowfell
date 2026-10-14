@@ -1,6 +1,6 @@
 # Shadowfall acceptance test results
 
-Run: 2026-10-14T20:04:59.569Z  
+Run: 2026-10-14T20:21:37.139Z  
 Result: **208/208 passed**
 
 
@@ -10,11 +10,11 @@ Result: **208/208 passed**
 |---|---|---|
 | ✅ | Game loads in a supported desktop browser | title screen, then HUD, from file://index.html |
 | ✅ | No blocking errors occur during startup |  |
-| ✅ | Player can move in all four directions | W 2.00m, S 2.50m, A 2.50m, D 2.10m (real key events) |
+| ✅ | Player can move in all four directions | W 1.50m, S 2.50m, A 2.60m, D 3.00m (real key events) |
 | ✅ | Diagonal movement is normalised | 1s straight 5.00m, 1s diagonal 5.00m |
 | ✅ | Camera follows the player | camera offset after moving: x -0.00, z 10.00 (target 0, 10) |
 | ✅ | Movement is frame-rate independent (extra) | 1s at 24 fps 5.00m, at 144 fps 5.00m |
-| ✅ | Player remains within the playable area | A→(-35.6, 0.0) D→(35.6, 0.0) S→(0.0, 46.6) W→(-6.0, -124.6) (re-run after moving the north edge check to the Blackwood) |
+| ✅ | Player remains within the playable area | A→(-35.6, 0.0) D→(35.6, 0.0) S→(0.0, 46.6) W→(-6.0, -124.6) |
 
 ## Combat
 
@@ -50,7 +50,7 @@ Result: **208/208 passed**
 | ✅ | Escape closes the active interface | modal after Esc: null |
 | ✅ | Material can be collected | prompt "Take the grave-iron" |
 | ✅ | Currency can be collected | 8 → 14 coins; purse removed from the world |
-| ✅ | Equipment can be collected | brute drop at (-21.1, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
+| ✅ | Equipment can be collected | brute drop at (-21.0, -44.9), prompt "Take Watchman's Edge (and 1 more nearby)"; the brute's 9 coins came with it |
 | ✅ | Equipment is not silently swapped (extra) | still equipped: worn_longsword |
 | ✅ | Shrine can restore health | 31 → 100 hp; respawn set to (7.8, 5.2) |
 | ✅ | Contextual prompts update correctly | open road: none; at shrine: "E Rest at the shrine" |
@@ -67,7 +67,7 @@ Result: **208/208 passed**
 | ✅ | Basic attack damage increases | strike 18 → 20 |
 | ✅ | Equipment upgrade improves damage | strike 20 → 25 after dragging it from the bag onto the main-hand slot (panel shows 22–28 +2) |
 | ✅ | Upgraded weapon is shown on the character (extra) | Blender model swapped in the right hand |
-| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 26 coins |
+| ✅ | Inventory reflects collected items | 2 filled bag slots; the worn longsword swapped into the slot the Edge left; coins: 17 coins |
 | ✅ | Escape closes the bags and character panel (extra) | real Escape key |
 | ✅ | No script errors during progression (extra) |  |
 
@@ -270,7 +270,7 @@ Result: **208/208 passed**
 | | Check | Evidence |
 |---|---|---|
 | ✅ | Dropped gear rolls its stats a little either side of the database values | hauberk armour rolled 13 different values within ±20% of 32; falchion damage within ±12% |
-| ✅ | Some pieces gain a WoW-style suffix with bonus attributes | 106 of 300 hauberks rolled a suffix |
+| ✅ | Some pieces gain a WoW-style suffix with bonus attributes | 86 of 300 hauberks rolled a suffix |
 | ✅ | Materials and quest items never roll (extra) |  |
 | ✅ | A rolled item is named for its suffix and counts its rolled stats when worn | Warden's hauberk of Swiftness: {"suffix":"swiftness","stats":{"armour":6,"haste":2}}; armour 20 → 38, haste 2% |
 | ✅ | Tooltips show the rolled name, quality and stats | Warden's hauberk of SwiftnessArmour · ChestMail+38 armour+1 Vitality+2 % hasteRiveted mail to the knee, the watch's towe |

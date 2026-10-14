@@ -1,27 +1,31 @@
 import { CONFIG } from '../config.js';
 import { ITEMS, sellPrice, itemView } from '../data/items.js';
-import MERCHANTS from '../data/merchants.json';
-import { MARA } from '../data/text.js';
+import { DB } from '../data/db.js';
 
-// Buying and selling, WoW style. A merchant sells from a fixed stock at the
-// item database's price and buys at CONFIG.shop.sellFraction of it. Anything
-// sold this session can be bought back for what it fetched. Quest items are
-// never sold. The manifest is handed to Mara here for her reward.
+// Buying and selling, WoW style. A shop (data/shops.json) sells its stock at
+// the item database's price and buys at CONFIG.shop.sellFraction of it.
+// Anything sold this session can be bought back for what it fetched. Quest
+// items are never sold. The shopkeeper also talks about, and takes the
+// turn-in for, any quest they give (data/quests.json).
 
 export class Merchant {
   constructor(game) {
     this.game = game;
-    this.current = null; // merchant id while a shop is open
+    this.current = null; // shop id while a shop is open
     this.npc = null;
     this.buyback = []; // [{ id, count, rolls?, paid }]
   }
 
+  // what the shop window shows: who keeps it, what kind of vendor, the stock
   get def() {
-    return this.current ? MERCHANTS.merchants[this.current] : null;
+    if (!this.current) return null;
+    const shop = DB.shops[this.current];
+    const keeper = this.npc && DB.npcs[this.npc.id];
+    return { name: keeper ? keeper.name : shop.name, title: DB.vendorTypes[shop.vendorType].name, stock: shop.stock };
   }
 
   get stock() {
-    return this.def ? this.def.stock : [];
+    return this.current ? DB.shops[this.current].stock : [];
   }
 
   open(id, npc) {
@@ -108,29 +112,49 @@ export class Merchant {
     return true;
   }
 
-  // ------------------------------------------------------------ Mara's story
-  // What Mara says right now, and whether the manifest can be handed in.
-  get dialogue() {
-    const { worldState, inventory } = this.game;
-    if (this.current !== 'mara') return { text: '' };
-    if (worldState.flags.has('manifest_delivered')) return { text: this.justThanked ? MARA.thanks : MARA.done };
-    if (inventory.count('manifest') > 0) return { text: MARA.complete, handIn: MARA.handIn };
-    return { text: worldState.examined.has('cart') ? MARA.cartFound : MARA.start };
+  // ------------------------------------------------------------ quests
+  // The quests this shopkeeper gives, as data records.
+  get _quests() {
+    const keeper = this.npc && DB.npcs[this.npc.id];
+    return keeper ? (keeper.quests || []).map((id) => DB.quests[id]) : [];
   }
 
-  handInManifest() {
+  // What the shopkeeper says right now, and whether a quest item can be
+  // handed in: the quest's current stage decides.
+  get dialogue() {
+    const { worldState, inventory } = this.game;
+    for (const q of this._quests) {
+      const stage = worldState.questStage(q.id);
+      const t = q.turnIn;
+      if (t && worldState.flags.has(t.setsFlag) && this.justThanked === q.id) return { text: t.thanks };
+      if (t && stage.id === t.atStage && inventory.count(t.item) > 0) return { text: stage.giver, handIn: { quest: q.id, action: t.action } };
+      if (stage.giver) return { text: stage.giver };
+    }
+    return { text: '' };
+  }
+
+  // Hand over a quest's item for its reward (data/quests.json turnIn).
+  turnIn(questId) {
     const { worldState, inventory, progression, events } = this.game;
-    if (this.current !== 'mara' || worldState.flags.has('manifest_delivered') || inventory.count('manifest') < 1) return false;
-    inventory.removeAll('manifest');
-    worldState.flags.add('manifest_delivered');
-    this.justThanked = true;
-    const r = CONFIG.quests.manifest;
-    events.emit('log', { text: 'You hand Mara the manifest. She reads it twice.', kind: 'lore' });
-    inventory.addCoins(r.coins, 'from Mara Venn');
-    progression.addXp(r.xp);
-    events.emit('questComplete', { id: 'manifest' });
+    const q = DB.quests[questId];
+    const t = q && q.turnIn;
+    if (!t || !this._quests.includes(q)) return false;
+    if (worldState.flags.has(t.setsFlag) || worldState.questStage(q.id).id !== t.atStage || inventory.count(t.item) < 1) return false;
+    inventory.removeAll(t.item);
+    worldState.flags.add(t.setsFlag);
+    this.justThanked = q.id;
+    if (t.log) events.emit('log', { text: t.log, kind: 'lore' });
+    const r = q.reward || {};
+    if (r.coins) inventory.addCoins(r.coins, `from ${DB.npcs[t.npc].name}`);
+    if (r.xp) progression.addXp(r.xp);
+    events.emit('questComplete', { id: q.id });
     events.emit('objectiveChanged', {});
     inventory._changed();
     return true;
+  }
+
+  // (kept for scripts and tests written before quests were data)
+  handInManifest() {
+    return this.turnIn('missing_delivery');
   }
 }

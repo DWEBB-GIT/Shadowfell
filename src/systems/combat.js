@@ -220,7 +220,7 @@ export class Combat {
     progression.addXp(enemy.cfg.xp);
     // coins stay on the body until looted (click it, or E / A beside it)
     if (enemy.cfg.coins > 0) loot.addCorpse(enemy, enemy.cfg.coins);
-    if (enemy.cfg.reward) loot.dropEliteReward(enemy.position.x, enemy.position.z);
+    if (enemy.cfg.uniqueDrop) loot.dropUnique(enemy);
     loot.dropFromEnemy(enemy);
   }
 }

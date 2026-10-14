@@ -1,6 +1,6 @@
 # Stats and damage: design note
 
-Status: built in the prototype on 2026-10-14. Every number below lives in `src/config.js` (`stats`, the archetypes and the enemies) and in `src/data/items.js`, so a balance pass never has to touch code.
+Status: built in the prototype on 2026-10-14. The formula constants live in `src/config.js` (`stats`); archetypes are in `data/archetypes.json`, enemies in `data/enemies.json` and item stats in `data/items.json`, so a balance pass never has to touch code.
 
 ## Recommendation
 

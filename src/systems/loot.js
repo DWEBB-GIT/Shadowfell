@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { LOOT, ELITE_DROP, ITEMS, itemView, rollItem } from '../data/items.js';
-import DROPS from '../data/drops.json';
+import { LOOT, UNIQUE_DROPS, ITEMS, itemView, rollItem } from '../data/items.js';
+import { DB } from '../data/db.js';
 import { heightAt } from '../world/terrain.js';
 import { CONFIG } from '../config.js';
 
@@ -27,7 +27,7 @@ export class LootSystem {
       if (!ws.isCollected(def.id)) this._spawn(def, def.position[0], def.position[1]);
     }
     for (const [id, pos] of Object.entries(ws.drops)) {
-      if (id === ELITE_DROP.id && !ws.isCollected(id)) this._spawn(ELITE_DROP, pos.x, pos.z);
+      if (UNIQUE_DROPS[id] && !ws.isCollected(id)) this._spawn(UNIQUE_DROPS[id], pos.x, pos.z);
     }
     for (const g of ws.ground) this._spawnGround(g);
   }
@@ -88,7 +88,7 @@ export class LootSystem {
   // Gear rolls its stats as it drops. Drops lie beside the body and are
   // saved like anything else on the ground, so they wait to be looted.
   dropFromEnemy(enemy) {
-    const table = enemy.type !== '_comment' && DROPS[enemy.type];
+    const table = DB.lootTables[enemy.cfg.lootTable];
     if (!table) return [];
     const rand = this.game.random;
     const out = [];
@@ -101,15 +101,15 @@ export class LootSystem {
       this._spawnGround(g);
       out.push(g);
     };
-    for (const [id, [lo, hi]] of Object.entries(table.always || {})) {
-      const n = lo + Math.floor(rand() * (hi - lo + 1));
-      if (n > 0) place(id, n);
+    for (const { item, min, max } of table.always || []) {
+      const n = min + Math.floor(rand() * (max - min + 1));
+      if (n > 0) place(item, n);
     }
     if (table.gear && rand() < table.gear.chance) {
-      const entries = Object.entries(table.gear.table);
-      let pick = rand() * entries.reduce((a, [, w]) => a + w, 0);
-      const hit = entries.find(([, w]) => (pick -= w) < 0) || entries[entries.length - 1];
-      place(hit[0], 1);
+      const entries = table.gear.entries;
+      let pick = rand() * entries.reduce((a, e) => a + e.weight, 0);
+      const hit = entries.find((e) => (pick -= e.weight) < 0) || entries[entries.length - 1];
+      place(hit.item, 1);
     }
     for (const g of out) {
       const v = itemView(g);
@@ -167,7 +167,7 @@ export class LootSystem {
     }
     // only what fell in a fight (or was dropped) is area-looted; things placed
     // in the world, like the manifest, are taken one at a time
-    for (const l of this.active) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !!(l.def.ground || l.def === ELITE_DROP) });
+    for (const l of this.active) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !!(l.def.ground || UNIQUE_DROPS[l.def.id] === l.def) });
     return out;
   }
 
@@ -208,13 +208,17 @@ export class LootSystem {
     return true;
   }
 
-  dropEliteReward(x, z) {
+  // An enemy's unique drop (data/enemies.json uniqueDrop), left once where it fell.
+  dropUnique(enemy) {
     const ws = this.game.worldState;
-    if (ws.isCollected(ELITE_DROP.id) || ws.drops[ELITE_DROP.id]) return;
-    ws.drops[ELITE_DROP.id] = { x, z };
-    this._spawn(ELITE_DROP, x, z);
-    this.game.events.emit('log', { text: 'Something glints where the brute fell.', kind: 'loot' });
+    const def = UNIQUE_DROPS[enemy.cfg.uniqueDrop];
+    if (!def || ws.isCollected(def.id) || ws.drops[def.id]) return;
+    const { x, z } = enemy.position;
+    ws.drops[def.id] = { x, z };
+    this._spawn(def, x, z);
+    this.game.events.emit('log', { text: `Something glints where the ${def.droppedBy} fell.`, kind: 'loot' });
   }
+
 
   collect(entry) {
     const { worldState, inventory, events, hud } = this.game;

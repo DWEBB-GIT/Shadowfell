@@ -1,3 +1,5 @@
+import { DB } from '../data/db.js';
+
 // Persistent facts about the world, keyed by stable ids so a save written
 // today still means the same thing after the layout is tweaked.
 
@@ -41,11 +43,29 @@ export class WorldState {
     return this.collected.has('manifest');
   }
 
+  // Where a quest has got to: the last of its stages (data/quests.json)
+  // whose condition holds. The first stage has none.
+  questStage(questId) {
+    const q = DB.quests[questId];
+    let stage = q.stages[0];
+    for (const s of q.stages) if (s.when && this._holds(s.when)) stage = s;
+    return stage;
+  }
+
+  _holds(when) {
+    if (when.examined && !this.examined.has(when.examined)) return false;
+    if (when.collected && !this.collected.has(when.collected)) return false;
+    if (when.flag && !this.flags.has(when.flag)) return false;
+    return true;
+  }
+
+  // the objective shown on the HUD: the story's quest
+  get objectiveQuest() {
+    return DB.quests.missing_delivery;
+  }
+
   get objectiveStage() {
-    if (this.flags.has('manifest_delivered')) return 'reported';
-    if (this.manifestCollected) return 'complete';
-    if (this.examined.has('cart')) return 'cartFound';
-    return 'start';
+    return this.questStage(this.objectiveQuest.id).id;
   }
 
   serialize() {

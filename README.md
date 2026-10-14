@@ -45,11 +45,15 @@ The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in
 
 All numbers are in `src/config.js` (`stats`, `archetypes` and the enemies) and in the item definitions.
 
+## Game data
+
+All content lives in `data/`, one JSON file per part of the game: items, archetypes, abilities, enemies, loot tables, NPCs, shops (vendor types and stock), quests, world placements, scenery and text. Records refer to each other only by id. `npm run validate` checks every reference, id, model and position, and `npm test` runs that check first. [CONTRIBUTING.md](CONTRIBUTING.md) explains the layout and how to add content.
+
 ## Items and Mara's forge
 
-- **Item database.** Every item is defined once in `src/data/items.json`: name, kind, slot, armour type, quality, damage, stats, use effect, bag size, stack size, buy price, model and icon. The game checks the file at startup and logs any malformed entry. Adding an item is a new entry there, plus a Blender model if it needs a new look.
+- **Item database.** Every item is defined once in `data/items.json`: name, kind, slot, armour type, quality, damage, stats, use effect, bag size, stack size, buy price, model and icon. The game checks the file at startup and logs any malformed entry. Adding an item is a new entry there, plus a Blender model if it needs a new look.
 - **Mara Venn's forge** stands beside the watch post: a forge, an anvil and an awning, with Mara hammering at her anvil until you come close. Press E (A on a pad) to talk to her. Her shop opens on the left with your bags on the right.
-  - Click an item to buy it (A on a pad). Merchants' stock is in `src/data/merchants.json`.
+  - Click an item to buy it (A on a pad). Shops and their stock are in `data/shops.json`; Mara herself is in `data/npcs.json`.
   - Right-click anything in your bags (or drag it onto her window, or Y on a pad) to sell it. Merchants pay a quarter of the price, as in WoW, and tooltips show what an item sells for.
   - Anything sold can be bought back for what it fetched until you leave the game.
   - Quest items cannot be sold or dropped.
@@ -71,7 +75,7 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 
 ## Gear drops and random stat rolls
 
-- **Drop tables.** Every enemy type has a drop table in `src/data/drops.json`: materials it always carries, and a chance of one piece of gear from a weighted list. Drops lie beside the body and are looted with it in one go.
+- **Drop tables.** Every enemy type names a loot table in `data/loot_tables.json`: materials it always carries, and a chance of one piece of gear from a weighted list. Drops lie beside the body and are looted with it in one go.
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;
@@ -138,9 +142,12 @@ Every number lives in `src/config.js`. At average rolls: player 100 HP, strike 1
 ```
 index.html, style.css     page and HUD styling
 dist/shadowfall.js        the bundled game (what index.html loads)
+data/                     ALL game content as JSON, one file per domain: items,
+                          archetypes, abilities, enemies, loot tables, npcs,
+                          shops, quests, world, scenery, text (see CONTRIBUTING.md)
 src/
   main.js                 initialisation, main loop, input routing, camera
-  config.js               all tunable numbers
+  config.js               engine tuning (formula constants, camera, fog, ...)
   core/                   events (pub/sub), keyboard/mouse input, gamepad
   assets/                 loads the embedded Blender .glb files (+ procedural fallback)
   render/textures.js      small painted canvas textures
@@ -153,8 +160,8 @@ src/
   ui/hud.js               HUD, spell bar, modals (reads state, requests actions)
   ui/itemUI.js            bags, character panel, drag and drop, pad menus
   ui/icons.js             item icons rendered from the Blender models
-  data/                   items.json (the item database), drops.json (enemy
-                          drop tables), merchants.json, and all written text
+  data/                   db.js loads /data; schema.js checks it; items.js holds
+                          the item rules (rolls, prices); text.js the writing
 assets/
   blender/build_assets.py Blender script that builds every model
   models/*.glb            exported models used by the game
@@ -164,14 +171,15 @@ tests/                    automated acceptance test (Chromium), latest results,
                           and screens.mjs for reference screenshots
 ```
 
-Systems own their own state and talk through the event bus; the HUD never decides outcomes. Positions in `src/world/layout.js` and items in `src/data/items.json` are plain data with stable ids, which keeps saves meaningful across layout tweaks and should port directly to Unity ScriptableObjects or JSON.
+Systems own their own state and talk through the event bus; the HUD never decides outcomes. Everything in `data/` is plain data with stable ids, checked by `npm run validate`, which keeps saves meaningful across layout tweaks and should port directly to Unity ScriptableObjects or JSON.
 
 ## Rebuilding
 
 ```
 npm install
 npm run build        # rebundle dist/shadowfall.js after editing src/
-npm test             # run the acceptance checklist in headless Chromium
+npm run validate     # check every file in data/ (ids, references, models, positions)
+npm test             # validate, then run the acceptance checklist in headless Chromium
 node tests/acceptance.mjs gamepad telegraphs   # run only some sections
 npm run assets       # rebuild the models (Blender 4.2 or later on PATH; tested with 5.2)
 ```
@@ -183,7 +191,7 @@ npm run assets       # rebuild the models (Blender 4.2 or later on PATH; tested 
 - `assets/fbx/` holds every model with the same part hierarchy. Characters are split into `Torso`, `Head`, `Arm_L`, `Arm_R`, `Leg_L`, `Leg_R` and `Weapon`, each pivoting at its joint, so they can be animated in Unity directly or re-rigged later. Colour is stored as vertex colour, so use a vertex-colour shader (or bake to a texture).
 - The ground telegraphs are a sector mesh with a small shader whose `uProgress` uniform fills it (`src/systems/telegraphs.js`); in Unity this maps to a decal or projector with the same parameter. Hit tests use the locked shape, not the mesh.
 - Inventory locations are plain strings (`b:<bag>:<slot>`, `e:<slot>`, `s:<bag slot>`), shared by the mouse UI, gamepad UI, saves and tests.
-- `src/config.js`, `src/world/layout.js`, `src/data/*.json` and `src/data/text.js` are the design data. The system split in `src/systems/` maps one-to-one onto MonoBehaviours or services.
+- `data/*.json` is the design data (see CONTRIBUTING.md for how it maps to ScriptableObjects), and `src/config.js` the engine tuning. The system split in `src/systems/` maps one-to-one onto MonoBehaviours or services.
 
 ## Known limits of this build
 
