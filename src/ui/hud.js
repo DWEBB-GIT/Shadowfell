@@ -68,12 +68,11 @@ export class Hud {
     const P = () => game.player.cooldowns;
     this.cooldowns = {
       strike: () => [P().attack, game.stats.attackCooldown, false],
-      brace: () => [P().brace, CONFIG.brace.cooldown, false],
       draught: () => [P().draught, CONFIG.draught.cooldown, false],
       fish: () => [0, 0, false],
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
-    for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
+    for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, !s.tuning.offGlobalCooldown];
     this.portraits = new Portraits(game);
     this._rarityStyles();
     this.abilityIcons = abilityIcons();

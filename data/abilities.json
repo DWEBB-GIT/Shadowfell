@@ -54,12 +54,15 @@
     {
       "id": "brace",
       "name": "Brace",
+      "kind": "guard",
+      "school": "physical",
       "target": "self",
       "defensive": true,
-      "desc": "Raise your shield: the next blow within 2.5 seconds, even a Grave Slam, is turned aside. The Warden's defensive ability. 7 second cooldown.",
+      "desc": "Raise your shield: the next blow within 2.5 seconds, even a Grave Slam, is turned aside. Off the global cooldown. 7 second cooldown.",
       "tuning": {
         "cooldown": 7,
-        "window": 2.5
+        "window": 2.5,
+        "offGlobalCooldown": 1
       }
     },
     {
@@ -183,6 +186,22 @@
       "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod in your bags.",
       "tuning": {
         "cooldown": 1
+      }
+    },
+    {
+      "id": "rebuke",
+      "name": "Rebuke",
+      "kind": "interrupt",
+      "school": "holy",
+      "target": "enemy",
+      "range": 10,
+      "desc": "A word of command that breaks your target's spell or aimed shot, and stops it starting another for 3 seconds. Some attacks cannot be interrupted. Off the global cooldown. 10 second cooldown.",
+      "tuning": {
+        "cooldown": 10,
+        "lockout": 3,
+        "damageMin": 4,
+        "damageMax": 6,
+        "offGlobalCooldown": 1
       }
     }
   ]

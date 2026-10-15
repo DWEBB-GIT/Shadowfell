@@ -1292,7 +1292,7 @@ async function spellBar(browser) {
   await dragSlot(page, '#aslot-5', '#aslot-4');
   await page.waitForTimeout(150);
   const b4 = await bar();
-  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[5] === 'rend', 'Brace on 5, Rend on Space');
+  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[5] === 'rebuke', 'Brace on 5, Rebuke on 6');
 
   // the bar layout is saved
   await page.evaluate(() => window.__shadowfall.manualSave());
@@ -1575,6 +1575,8 @@ async function statsAndDamage(browser) {
       g.player.cooldowns.attack = 0;
       g.hud.numbers.clear();
     }, id);
+    // engaging waits one full swing before the first hit; skip that wait here
+    await page.evaluate((id) => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId(id)); g.player.cooldowns.attack = 0; }, id);
     await rolls(seq);
     await sim(page, 0.45, { clickAt: { x: 0, z: -1.6 } });
     return page.evaluate((id) => {
@@ -2177,7 +2179,7 @@ async function blackwood(browser) {
     g.step(1 / 60);
     g.hud.update(1 / 60);
     const bar = !!document.querySelector('.ebar .emana');
-    g.player.tryBrace();
+    g.spells.tryCast('brace');
     const hp0 = g.player.health;
     for (let i = 0; i < 110; i++) g.step(1 / 60);
     const braced = hp0 - g.player.health;
@@ -2539,7 +2541,7 @@ async function clickTargeting(browser) {
 
   // auto attack is not a spell: it is not on the bar or in the spellbook
   const offBar = await page.evaluate(() => ({ bar: window.__shadowfall.actionBar.slots }));
-  record('Auto attack is not on the bar (key 5 is Rend)', !offBar.bar.includes('strike') && offBar.bar[4] === 'rend', offBar.bar.map((a) => a || '—').join(', '));
+  record('Auto attack is not on the bar (key 5 is Rebuke)', !offBar.bar.includes('strike') && offBar.bar[4] === 'rebuke', offBar.bar.map((a) => a || '—').join(', '));
 
   // abilities go to the target wherever the cursor is
   await setup(page, { x: 0, z: 0, keep: ['ghoul_graves'] });
@@ -3090,8 +3092,113 @@ async function torchAndFishing(browser) {
   await ctx.close();
 }
 
+async function combatFixes(browser) {
+  current = 'Combat and targeting fixes';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const err = () => page.evaluate(() => { const g = window.__shadowfall; const t = g.hud.lastError; g.hud.lastError = null; return t; });
+
+  // the first swing waits a full weapon swing after engaging
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => { const g = window.__shadowfall; const e = g.enemies.byId('ghoul_road'); e.health = 1000; g.player.cooldowns.attack = 0; g.targeting.engage(e); });
+  await sim(page, 1.0);
+  const early = await page.evaluate(() => 1000 - window.__shadowfall.enemies.byId('ghoul_road').health);
+  await sim(page, 1.5);
+  const later = await page.evaluate(() => 1000 - window.__shadowfall.enemies.byId('ghoul_road').health);
+  record('The first auto attack waits one weapon swing (2.2 s)', early === 0 && later > 0, `after 1 s: ${early} damage; after 2.5 s: ${later}`);
+
+  // no auto attack swings while casting
+  const casting = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    e.health = 1000;
+    g.player.cooldowns.attack = 0;
+    g.player.cooldowns.gcd = 0;
+    g.spells.tryCast('hallowedBolt');
+    return { casting: !!g.player.casting };
+  });
+  await sim(page, 0.5);
+  const midCast = await page.evaluate(() => ({ dealt: 1000 - window.__shadowfall.enemies.byId('ghoul_road').health, casting: !!window.__shadowfall.player.casting }));
+  record('No auto attack while casting a spell', casting.casting && midCast.casting && midCast.dealt === 0, `0.5 s into Hallowed Bolt: ${midCast.dealt} damage`);
+  await sim(page, 2);
+
+  // Brace is a spell now
+  const brace = await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; const ok = g.spells.tryCast('brace'); return { ok: ok !== false, braced: g.player.braced > 0, gcd: g.player.cooldowns.gcd }; });
+  record('Brace is cast as a spell, off the global cooldown', brace.braced, JSON.stringify(brace));
+
+  // Rebuke interrupts an archer's shot, but not Grave Slam
+  await placeEnemy(page, 'archer_camp_1', 0, -6, { frozen: true });
+  const kick = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.enemies.byId('archer_camp_1');
+    g.targeting.select(a);
+    a._startShot(g.player);
+    g.player.cooldowns.gcd = 0;
+    g.player.cooldowns.rebuke = 0;
+    g.spells.tryCast('rebuke');
+    const first = { casting: !!a.casting, log: document.querySelector('#log li:last-child').textContent };
+    a.casting = { kind: 'slam', label: 'Grave Slam', interruptible: false };
+    const slam = a.interrupt(3);
+    a.casting = null;
+    return { ...first, slam };
+  });
+  record('Rebuke interrupts a cast; Grave Slam cannot be interrupted', !kick.casting && /interrupt/i.test(kick.log) && kick.slam === false, `log: "${kick.log}"`);
+
+  // abilities that need a target say so in red
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.clear(); g.player.cooldowns.gcd = 0; g.hud.lastError = null; g.spells.tryCast('rebuke'); });
+  const noTarget = await err();
+  record('An ability with no target says "You have no target."', noTarget === 'You have no target.', noTarget || '');
+
+  // a friendly NPC out of reach: grey cursor and a red message; close up it talks
+  const at = async (id) => page.evaluate((id) => {
+    const g = window.__shadowfall;
+    const n = g.npcs.byId(id);
+    const v = n.position.clone().setY(n.position.y + 1).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    g.input.mouse.x = r.left + ((v.x + 1) / 2) * r.width;
+    g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
+    g.input.mouse.ndcX = v.x;
+    g.input.mouse.ndcY = v.y;
+    return { x: n.position.x, z: n.position.z };
+  }, id);
+  const mara = await page.evaluate(() => { const p = window.__shadowfall.npcs.byId('mara').position; return { x: p.x, z: p.z }; });
+  await setup(page, { x: mara.x + 9, z: mara.z + 9 });
+  await at('mara');
+  await sim(page, 0.05);
+  const farCursor = await page.evaluate(() => window.__shadowfall.renderer.domElement.style.cursor);
+  await page.evaluate(() => { window.__shadowfall.input.mouse.rightClicked = true; });
+  await sim(page, 0.05);
+  const far = await page.evaluate(() => ({ err: window.__shadowfall.hud.lastError, friendly: window.__shadowfall.targeting.friendly?.id, open: !document.getElementById('dialogue-window').hidden }));
+  await setup(page, { x: mara.x + 1.2, z: mara.z + 1.2 });
+  await at('mara');
+  await sim(page, 0.05);
+  const nearCursor = await page.evaluate(() => window.__shadowfall.renderer.domElement.style.cursor);
+  record('A far NPC greys the cursor and says to come closer; right click selects it', far.err === 'You need to be closer to interact with that target.' && far.friendly === 'mara' && /url/.test(farCursor) && /url/.test(nearCursor) && farCursor !== nearCursor, `message: "${far.err}"`);
+
+  // an enemy under the mouse shows the attack cursor
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -3, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    const v = e.position.clone().setY(1).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    g.input.mouse.x = r.left + ((v.x + 1) / 2) * r.width;
+    g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
+    g.input.mouse.ndcX = v.x;
+    g.input.mouse.ndcY = v.y;
+  });
+  await sim(page, 0.05);
+  const attackCursor = await page.evaluate(() => window.__shadowfall.renderer.domElement.style.cursor);
+  record('Hovering an enemy shows the attack cursor', /url/.test(attackCursor) && attackCursor !== nearCursor && attackCursor !== farCursor);
+  record('No script errors (combat fixes)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

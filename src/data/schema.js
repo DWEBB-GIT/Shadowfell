@@ -36,6 +36,8 @@ export const SPELL_KINDS = {
   cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
   burst: { enemy: false, tuning: ['damageMultiplier', 'radius', 'windup', 'stagger', 'knockback'] }, // optional interrupts: 1
   charge: { enemy: true, tuning: ['damageMultiplier', 'distance', 'duration', 'hitRadius'] },
+  guard: { enemy: false, tuning: ['window'] }, // Brace: the next blow within `window` s is turned aside
+  interrupt: { enemy: true, tuning: ['lockout', 'damageMin', 'damageMax'] }, // breaks an interruptible enemy cast
   buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };

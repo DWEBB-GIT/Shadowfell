@@ -109,13 +109,25 @@ export class Rig {
     const swing = k < impact ? 0 : ease(Math.min(1, (k - impact) / 0.35));
 
     switch (a.type) {
-      case 'strike': // warden: overhand diagonal cut
+      case 'strike': {
+        // warden: overhand cut. The blade goes up and back through most of
+        // the windup, then comes down hard so it lands (at `impact`) low and
+        // in front; then the arm recovers.
+        const up = impact * 0.65;
+        let arm;
+        if (k < up) arm = -2.7 * ease(k / up);
+        else if (k < impact) arm = -2.7 + 2.3 * ease((k - up) / (impact - up));
+        else arm = -0.4 * (1 - ease((k - impact) / (1 - impact)));
         if (p.Arm_R) {
-          p.Arm_R.rotation.x += -2.6 * raise - 0.9 * swing * (1 - k);
-          p.Arm_R.rotation.y += 0.5 * raise;
+          p.Arm_R.rotation.x += arm;
+          p.Arm_R.rotation.y += 0.35 * Math.min(1, -arm / 2.7);
         }
-        if (p.Torso) p.Torso.rotation.y += 0.4 * raise - 0.5 * swing * (1 - k);
+        if (p.Torso) {
+          p.Torso.rotation.y += 0.35 * Math.min(1, -arm / 2.7) - 0.2 * swing * (1 - k);
+          p.Torso.rotation.x += k >= up && k < impact + 0.15 ? 0.12 : 0; // lean into the blow
+        }
         break;
+      }
       case 'slam': // Shield Break: both hands overhead, then down hard
         if (p.Arm_R) p.Arm_R.rotation.x += -2.9 * raise - 0.8 * swing * (1 - k);
         if (p.Arm_L) p.Arm_L.rotation.x += -2.7 * raise - 0.8 * swing * (1 - k);

@@ -24,6 +24,14 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Combat and targeting fixes (Dan's list, part 1)
+
+- Engaging a target waits one full weapon swing before the first hit (2.2 s with the longsword). Casting a spell stops swings, and the swing timer restarts when the cast ends.
+- **Brace** is a spell now (kind `guard`, still on Space, off the global cooldown). **Rebuke** (key 5, kind `interrupt`, 10 m, 10 s cooldown) breaks an enemy cast and locks it out for 3 s. Each enemy attack has `interruptible` in `data/enemies.json`: archer shots and Grasping Dark can be interrupted, Grave Slam cannot.
+- Red errors mid screen: "You have no target.", "Out of range", "You need to be closer to interact with that target.". Abilities with `target: ground` or `self` need no target.
+- Cursors: a sword over enemies, a speech bubble over NPCs (grey when out of reach), a bag over loot. Left and right click do the same thing on friendly NPCs.
+- The swing animation now chops down instead of up.
+
 ## Stats and damage
 
 The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in [docs/stats-and-damage.md](docs/stats-and-damage.md). In short:

@@ -128,6 +128,9 @@ export class Targeting {
     if (!this.select(enemy)) return false;
     if (!this.attacking) {
       this.attacking = true;
+      // the first swing waits a full swing time, as Dan asked: no instant opener
+      const p = this.game.player;
+      p.cooldowns.attack = Math.max(p.cooldowns.attack, this.game.stats.attackCooldown);
       this.game.events.emit('autoAttack', { on: true, target: enemy });
     }
     return true;

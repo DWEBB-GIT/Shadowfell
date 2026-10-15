@@ -245,7 +245,6 @@ export class Player {
       }
 
       const a = controls.actions || {};
-      if (a.brace) this.tryBrace();
       // spells first, so a swing coming due never swallows a key press
       for (const id in a) if (a[id] && SPELLS[id]) this.game.spells.tryCast(id);
       if (a.strike) this.tryStrike(controls.aim);
@@ -258,17 +257,6 @@ export class Player {
     this.moving = speed01 > 0;
     this.rig.update(dt, speed01);
     this._sync();
-  }
-
-  // Brace (the Warden's defensive button): the shield goes up and the next
-  // blow, telegraphed or not, is turned aside. Off the GCD.
-  tryBrace() {
-    if (this.cooldowns.brace > 0) return false;
-    this.cooldowns.brace = CONFIG.brace.cooldown;
-    this.braced = CONFIG.brace.window;
-    this.rig.play('brace', 0.5, 0.4);
-    this.game.events.emit('playerBrace', {});
-    return true;
   }
 
   get isBraced() {

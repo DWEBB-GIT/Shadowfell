@@ -84,9 +84,9 @@ export class Enemy {
     this.engaged = 6;
     this.rig.hit();
     this.stagger = Math.max(this.stagger, stagger);
-    if (heavy && !(this.casting && (this.casting.kind === 'special' || this.casting.kind === 'circle'))) {
-      // a heavy blow interrupts an ordinary swing or an aimed shot; the
-      // elite's slam and the seer's circle cannot be stopped
+    if (heavy && !(this.casting && !this.casting.interruptible)) {
+      // a heavy blow interrupts an ordinary swing or an interruptible cast;
+      // casts marked `interruptible: false` in the data (Grave Slam) go on
       this.windup = 0;
       this.rig.action = null;
       this._cancelCast();
@@ -107,6 +107,19 @@ export class Enemy {
       this.rig.die();
     }
     return dealt;
+  }
+
+  // An interrupt (Rebuke): breaks an interruptible cast and holds off the
+  // next attack for `lockout` seconds. Returns what was broken, or null.
+  interrupt(lockout) {
+    if (this.dead || !this.casting) return null;
+    if (!this.casting.interruptible) return false;
+    const label = this.casting.label;
+    this._cancelCast();
+    this.rig.action = null;
+    this.attackTimer = Math.max(this.attackTimer || 0, lockout);
+    if (this.circleTimer !== undefined) this.circleTimer = Math.max(this.circleTimer, lockout);
+    return label;
   }
 
   _cancelCast() {
@@ -148,7 +161,7 @@ export class Enemy {
       },
     });
     if (r.mana) this.mana -= r.mana;
-    this.casting = { kind: 'shot', telegraph, label: r.name };
+    this.casting = { kind: 'shot', telegraph, label: r.name, interruptible: r.interruptible !== false };
     this.attackTimer = r.interval;
     this.rig.play(bolt ? 'cast' : 'shoot', r.windup + 0.25, r.windup / (r.windup + 0.25));
     this.game.events.emit('enemyWindup', { enemy: this });
@@ -172,7 +185,7 @@ export class Enemy {
     this.mana -= c.mana;
     this.circleTimer = c.cooldown;
     this.attackTimer = Math.max(this.attackTimer, c.windup + 0.5);
-    this.casting = { kind: 'circle', telegraph, label: c.name };
+    this.casting = { kind: 'circle', telegraph, label: c.name, interruptible: c.interruptible !== false };
     this.rig.play('cast', c.windup + 0.3, c.windup / (c.windup + 0.3));
     this.game.events.emit('log', { text: `The ${this.cfg.name} calls the dark up out of the earth. Move!`, kind: 'hurt', throttle: 'circle-warn' });
     this.game.events.emit('enemyWindup', { enemy: this, special: true });
@@ -199,7 +212,7 @@ export class Enemy {
         if (special) this.game.events.emit('graveSlam', { enemy: this, shape, hit });
       },
     });
-    this.casting = { kind, telegraph, label: special ? sp.name : 'Cleave' };
+    this.casting = { kind, telegraph, label: special ? sp.name : 'Cleave', interruptible: special ? sp.interruptible !== false : true };
     if (special) {
       this.specialTimer = sp.cooldown;
       this.attackTimer = Math.max(this.attackTimer, sp.windup + 0.6);

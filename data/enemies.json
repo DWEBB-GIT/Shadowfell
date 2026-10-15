@@ -48,7 +48,8 @@
         "trigger": 3.4,
         "range": 4.2,
         "arc": 110,
-        "damage": 31
+        "damage": 31,
+        "interruptible": false
       },
       "uniqueDrop": "watchmans_edge",
       "lootTable": "brute"
@@ -103,7 +104,8 @@
         "damage": 13,
         "width": 0.9,
         "projectile": "arrow",
-        "speed": 24
+        "speed": 24,
+        "interruptible": true
       },
       "lootTable": "archer"
     },
@@ -141,7 +143,8 @@
         "projectile": "bolt",
         "speed": 14,
         "mana": 10,
-        "school": "shadow"
+        "school": "shadow",
+        "interruptible": true
       },
       "circle": {
         "name": "Grasping Dark",
@@ -151,7 +154,8 @@
         "cooldown": 8,
         "damage": 24,
         "mana": 25,
-        "school": "shadow"
+        "school": "shadow",
+        "interruptible": true
       },
       "lootTable": "seer"
     }

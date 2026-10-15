@@ -23,7 +23,7 @@ export const BAR_SLOTS = [
   { kbm: 'Space', pad: 'B', defensive: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rend', 'brace'];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rebuke', 'brace'];
 
 // may this ability sit on the bar (and show in the spellbook)?
 export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);

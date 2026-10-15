@@ -14,6 +14,9 @@ import { computeHit, enemyBlock, weaponRoll } from './stats.js';
 //   burst    a blow around you (Shield Break): every enemy within `radius`
 //            is hit, staggered and knocked back; `interrupts: 1` stops
 //            their ordinary attacks
+//   guard    Brace: the next blow within `window` seconds is turned aside
+//   interrupt a word that breaks the target's interruptible cast and locks
+//            it out of attacking for `lockout` seconds (Rebuke)
 //   charge   a dash of `distance` metres at the target (or the cursor) over
 //            `duration` seconds that strikes on arrival (Lunge)
 //   buff     raises all your damage by `damageBonus` % for `duration` seconds
@@ -66,9 +69,11 @@ export class Spells {
   tryCast(id) {
     const { player, events, stats } = this.game;
     const spell = SPELLS[id];
-    if (!spell || player.dead || player.pending || player.lunge || player.casting) return false;
+    // off-GCD spells (Brace, Rebuke) go even mid-swing
+    if (!spell || player.dead || player.lunge || player.casting || (player.pending && !spell.tuning.offGlobalCooldown)) return false;
     if (!this.game.skills.knowsAbility(id)) return false;
-    if (player.cooldowns.gcd > 0) return false; // queued out silently, as in WoW
+    const offGcd = !!spell.tuning.offGlobalCooldown;
+    if (!offGcd && player.cooldowns.gcd > 0) return false; // queued out silently, as in WoW
     if (player.cooldowns[id] > 0) {
       this.game.hud.error(`${spell.name} is not ready yet`);
       return false;
@@ -95,9 +100,12 @@ export class Spells {
       // a spell at an enemy engages it: auto attack follows once in reach
       this.game.targeting.engage(target);
     }
-    player.cooldowns.gcd = stats.globalCooldown;
+    if (!offGcd) player.cooldowns.gcd = stats.globalCooldown;
     const t = spell.tuning;
     if (spell.kind === 'cast' || spell.kind === 'camp') {
+      // casting stops the swing: a swing on its way is dropped, and the swing
+      // timer starts again when the cast ends (WoW)
+      if (player.pending && player.pending.type === 'strike') player.pending = null;
       player.casting = { id, t: 0, total: stats.hasted(t.castTime), target };
       player.rig.play('brace', player.casting.total, 0.9);
       events.emit('castStart', { id });
@@ -135,7 +143,7 @@ export class Spells {
       return soft;
     }
     if (optional) return null;
-    this.game.hud.error('You have no target');
+    this.game.hud.error('You have no target.');
     return null;
   }
 
@@ -187,6 +195,21 @@ export class Spells {
       this.zones.push({ id: spell.id, x: player.position.x, z: player.position.z, left: t.duration, next: 0 });
       events.emit('zone', { id: spell.id, x: player.position.x, z: player.position.z, radius: t.radius, duration: t.duration });
       events.emit('log', { text: `You consecrate the ground: ${spell.name}.`, kind: 'hit' });
+    } else if (spell.kind === 'guard') {
+      player.braced = t.window;
+      player.rig.play('brace', 0.5, 0.4);
+      events.emit('playerBrace', {});
+    } else if (spell.kind === 'interrupt') {
+      player.rig.play('brace', 0.35, 0.4);
+      const broke = target.interrupt(t.lockout);
+      events.emit('spellFlash', { position: target.position, school: spell.school });
+      this._damage(spell, target, this._spellBase(t), null);
+      if (broke) {
+        events.emit('interrupted', { enemy: target });
+        events.emit('log', { text: `You interrupt the ${target.cfg.name}'s ${broke}.`, kind: 'level' });
+        this.game.hud.toast('Interrupted!');
+      } else if (broke === false) this.game.hud.error(`${target.cfg.name}'s attack cannot be interrupted`);
+      else events.emit('log', { text: `${spell.name}: the ${target.cfg.name} was not casting.`, kind: 'muted' });
     } else if (spell.kind === 'camp') {
       this.game.camp.pitch(player.position.x, player.position.z);
     } else if (spell.kind === 'buff') {
@@ -303,6 +326,7 @@ export class Spells {
         player.casting = null;
         const spell = SPELLS[c.id];
         player.cooldowns[c.id] = spell.tuning.cooldown;
+        player.cooldowns.attack = Math.max(player.cooldowns.attack, this.game.stats.attackCooldown);
         events.emit('castEnd', { id: c.id, done: true });
         this._go(spell, c.target);
       }

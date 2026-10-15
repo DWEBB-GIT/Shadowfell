@@ -1,3 +1,4 @@
+import { CURSORS } from './ui/cursors.js';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Events } from './core/events.js';
@@ -286,6 +287,21 @@ class Game {
     return best;
   }
 
+  // The mouse cursor says what a click would do (WoW): a sword over an
+  // enemy, a speech bubble over a townsperson (grey until you are close
+  // enough to talk), a hand over loot.
+  _cursorFor(pick) {
+    let c = '';
+    if (pick) {
+      const p = this.player.position;
+      const o = pick.obj;
+      if (pick.kind === 'enemy') c = CURSORS.attack;
+      else if (pick.kind === 'npc') c = Math.hypot(o.position.x - p.x, o.position.z - p.z) <= CONFIG.shop.talkRange + 0.5 ? CURSORS.talk : CURSORS.talkFar;
+      else if (pick.kind === 'loot') c = Math.hypot(o.x - p.x, o.z - p.z) <= CONFIG.loot.reach ? CURSORS.loot : CURSORS.lootFar;
+    }
+    if (c !== this.cursor) this.renderer.domElement.style.cursor = this.cursor = c;
+  }
+
   // Left click selects, right click acts (WoW): right on an enemy starts
   // auto attack, on a townsperson talks, and either button loots.
   _click(button) {
@@ -315,9 +331,10 @@ class Game {
         if (!targeting.targetInReach) this.hud.error('Out of range');
       } else targeting.select(pick.obj);
     } else if (pick.kind === 'npc') {
+      // either button selects a townsperson and talks to them, if close enough
       const n = pick.obj;
-      if (button === 'left') targeting.selectFriendly(n);
-      else if (far(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5)) events.emit('log', { text: `You are too far away to talk to ${n.name}.`, kind: 'muted', throttle: 'talk-far' });
+      targeting.selectFriendly(n);
+      if (far(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5)) this.hud.error('You need to be closer to interact with that target.');
       else this.npcs.talk(n);
     }
     return true;
@@ -446,7 +463,11 @@ class Game {
     if (input.consume('Tab') || p(BUTTONS.RS)) tg.cycle(rawAim);
     if (p(BUTTONS.RT) && tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range)) && !tg.targetInReach) this.hud.error('Out of range');
     // hovering over anyone in the world shows who they are (bottom right)
-    if (!usingPad) this.hud.items.worldTip(input.mouse.onCanvas ? this._pickUnderCursor() : null);
+    if (!usingPad) {
+      const hover = input.mouse.onCanvas ? this._pickUnderCursor() : null;
+      this.hud.items.worldTip(hover);
+      this._cursorFor(hover);
+    }
     // left click selects, right click attacks, talks or loots
     if (input.consumeClick()) this._click('left');
     if (input.consumeRightClick()) this._click('right');
