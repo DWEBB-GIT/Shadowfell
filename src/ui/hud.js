@@ -1,3 +1,4 @@
+import { Portraits } from './portraits.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { DOCUMENTS, INTRO } from '../data/text.js';
@@ -67,14 +68,13 @@ export class Hud {
     const P = () => game.player.cooldowns;
     this.cooldowns = {
       strike: () => [P().attack, game.stats.attackCooldown, false],
-      shieldBreak: () => [P().shieldBreak, CONFIG.shieldBreak.cooldown, true],
-      lunge: () => [P().lunge, CONFIG.lunge.cooldown, true],
       brace: () => [P().brace, CONFIG.brace.cooldown, false],
       draught: () => [P().draught, CONFIG.draught.cooldown, false],
       fish: () => [0, 0, false],
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
     for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
+    this.portraits = new Portraits(game);
     this._rarityStyles();
     this.abilityIcons = abilityIcons();
     this._buildBar();
@@ -272,6 +272,17 @@ export class Hud {
     $('levelup').style.opacity = 1;
   }
 
+  // A WoW-style error in red in the middle of the screen ("Out of range"):
+  // it shows at once and fades; the same message again only restarts it.
+  error(text) {
+    const el = document.getElementById('ui-error');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(this.errorTimer);
+    this.errorTimer = setTimeout(() => el.classList.remove('show'), 1400);
+    this.lastError = text;
+  }
+
   toast(text, kind = '') {
     const t = this.el.toast;
     t.textContent = text;
@@ -307,7 +318,7 @@ export class Hud {
     const rested = $('xp-rested');
     rested.style.left = this.el.xpFill.style.width;
     rested.style.width = `${Math.min(100 - (progression.xp / progression.xpToNext) * 100, (progression.rested / progression.xpToNext) * 100)}%`;
-    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
+    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience (${Math.floor((progression.xp / progression.xpToNext) * 100)}%)${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
     this.el.coins.textContent = inventory.coins;
     const n = inventory.draughts;
     for (const el of this.barSlots) {
@@ -392,6 +403,13 @@ export class Hud {
     this.shownTarget = shown;
     this.el.target.hidden = !shown && !friend;
     this.el.target.classList.toggle('friendly', !!friend);
+    const who = friend || shown;
+    if (who && who !== this.portraitOf) {
+      this.portraitOf = who;
+      const model = friend ? friend.def.model : shown.cfg.model;
+      document.getElementById('target-img').src = model ? this.portraits.get(model) : '';
+    }
+    if (who) document.getElementById('target-level').textContent = friend ? friend.def.level || 1 : shown.cfg.level || 1;
     if (friend) {
       this.el.targetName.textContent = friend.name;
       this.el.targetLabel.textContent = friend.def.title || '';
@@ -401,9 +419,9 @@ export class Hud {
     if (shown) {
       const c = shown.cfg;
       this.el.targetName.textContent = c.name;
-      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : `Level ${c.level || 1}`;
+      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
       this.el.target.classList.toggle('attacking', !!t && tg.attacking);
-      this.el.targetFill.style.width = `${(shown.health / c.health) * 100}%`;
+      this.el.targetFill.style.width = `${Math.min(100, (shown.health / c.health) * 100)}%`;
       this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${c.health}`;
       this.el.target.classList.toggle('elite', !!c.elite);
       this.el.target.classList.toggle('locked', !!t);

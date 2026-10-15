@@ -28,10 +28,10 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in [docs/stats-and-damage.md](docs/stats-and-damage.md). In short:
 
-- **Four attributes:** Might, Finesse, Intellect and Vitality. Each archetype has a main attribute that adds to its damage; the Warden's is Might. Vitality gives health.
+- **Four attributes:** Stamina, Strength, Agility and Intellect (renamed from Vitality, Might and Finesse). Each archetype has a main attribute that adds to its damage; the Warden's is Strength. Stamina gives health. The character panel lists them, then Haste, Armour, Block and Crit.
 - **Derived combat stats:**
   - weapon damage ranges;
-  - crit chance (5% plus Finesse) at 150% damage;
+  - crit chance (5% plus Agility) at 150% damage;
   - armour, a capped percentage reduction that weakens against higher-level attackers;
   - shield block: block chance plus block rating, and each block stops 30% of the hit;
   - haste, from gear only, which shortens swings, windups and the global cooldown.
@@ -92,7 +92,7 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;
-  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (+1–2 Might and Vitality), *of Swiftness* (haste) or *of Vigour*: that is its magical property. It shows green and sells for a little more.
+  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (+1–2 Strength and Stamina), *of Swiftness* (haste) or *of Vigour*: that is its magical property. It shows green and sells for a little more.
 - **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
 - **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
 
@@ -109,9 +109,9 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
 
-**Targeting and auto attack (WoW style).** Left-click an enemy to select it: a red ring and the frame at the top of the screen mark it. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it: the Warden then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Might. Right-clicking does not turn the Warden: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+**Targeting and auto attack (WoW style).** Left-click anyone to select them: a yellow ring and the frame at the top of the screen (with their portrait and level) mark them. Left-clicking the ground lets go; right-clicking the ground does not. Hovering over anyone shows who they are in the bottom-right corner, where every tooltip now shows. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it (the ring turns red): the Warden then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Strength. Engaging an enemy out of reach, or using a spell on one, says "Out of range" in red mid-screen. Right-clicking does not turn the Warden: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
 
-**Weight.** A landed swing, a crit or a heavy blow holds both bodies for a split second (hit-stop), kicks the camera and knocks the enemy back a little; crits hold longer, shake harder and land with a deeper crunch. The numbers are in `impact` in `src/config.js`.
+**Weight.** A landed swing, a crit or a heavy blow kicks the camera and knocks the enemy back a little; crits shake harder and land with a deeper crunch. Nothing pauses: the action stays fluid. The numbers are in `impact` in `src/config.js`.
 
 **No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warden's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
 
@@ -134,6 +134,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | B (or I) | Start | Bags |
 | C | View | Character panel |
 | P | D-pad up | Spellbook |
+| U | | Skills (RuneScape style: each skill and its level) |
 | K | D-pad down | Save |
 | Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
@@ -165,7 +166,7 @@ Three Ashen Ghouls and the Brute are placed so they are not all visible from the
 
 ## Balance (from section 9.7)
 
-Every number lives in `src/config.js`. At average rolls: player 100 HP, auto attack 66 (59–74) every 2.2 s with the worn longsword, abilities from a normalised strike of 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Might and +2 Vitality: +12 max HP and +2 strike, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
+Every number lives in `src/config.js`. At average rolls: player 100 HP, auto attack 66 (59–74) every 2.2 s with the worn longsword, abilities from a normalised strike of 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Strength and +2 Stamina: +12 max HP and more damage, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
 
 ## Saving
 

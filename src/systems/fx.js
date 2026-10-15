@@ -15,15 +15,11 @@ export class Effects {
     this.dustMat = new THREE.MeshLambertMaterial({ color: 0x6a5c48 });
 
     const ev = game.events;
-    ev.on('shieldBreak', ({ position, radius }) => this.shockwave(position, radius));
+    ev.on('burst', ({ position, radius }) => this.shockwave(position, radius));
     ev.on('enemyHit', ({ enemy, kind, crit }) => this.sparks(enemy.position, crit ? 14 : kind === 'strike' ? 7 : 8));
-    // the weight of a landed blow: both bodies hold for a beat, the camera kicks
-    ev.on('hitImpact', ({ enemy, crit, heavy }) => {
-      if (!heavy && !crit) return;
-      const hold = CONFIG.impact.hitStop * (crit ? 1.8 : 1);
-      enemy.rig.freeze(hold);
-      this.game.player.rig.freeze(hold * 0.8);
-      this.game.shakeCamera(crit ? CONFIG.impact.critShake : CONFIG.impact.shake);
+    // the weight of a landed blow: the camera kicks (nothing ever pauses)
+    ev.on('hitImpact', ({ crit, heavy }) => {
+      if (heavy || crit) this.game.shakeCamera(crit ? CONFIG.impact.critShake : CONFIG.impact.shake);
     });
     ev.on('playerHurt', ({ heavy }) => this.game.shakeCamera(heavy ? CONFIG.impact.critShake : CONFIG.impact.shake * 0.6));
     ev.on('playerHurt', () => this.game.hud.flashDamage());

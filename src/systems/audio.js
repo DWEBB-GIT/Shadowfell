@@ -48,7 +48,7 @@ export class AudioSystem {
       this.impact();
       if (crit) this.thud(90, 0.3); // a crit lands with a deeper crunch
     });
-    ev.on('shieldBreak', () => this.shieldBreak());
+    ev.on('burst', () => this.shieldBreak());
     ev.on('playerBrace', () => this.thud(180, 0.12));
     ev.on('braceBlock', () => {
       this.impact();

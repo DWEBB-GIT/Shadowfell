@@ -9,9 +9,9 @@ import { SPELLS } from '../systems/spells.js';
 // Player controller: movement, facing, Brace and the timing of abilities.
 // Whether an attack hits is decided by the combat system, not here.
 //
-// Ability timing follows classic WoW: Shield Break and Lunge share a global
-// cooldown (GCD) on top of their own cooldowns. The basic Strike, Brace and
-// draughts are off the GCD, like Diablo's primary skill and WoW potions.
+// Ability timing follows classic WoW: every spell (Shield Break, Lunge and
+// the rest, run by the spell engine) shares a global cooldown (GCD) on top
+// of its own cooldown. Auto attack, Brace and draughts are off the GCD.
 //
 // There is one defensive button (Space), filled by the archetype: the
 // Warden's Brace raises the shield and turns aside the next blow. There is
@@ -210,22 +210,19 @@ export class Player {
         const p = this.pending;
         this.pending = null;
         if (p.type === 'strike') combat.resolvePlayerStrike(p.aim);
-        else if (p.type === 'lunge') combat.resolveLunge();
         else if (p.type === 'spell') this.game.spells.resolve(p.id);
-        else combat.resolveShieldBreak();
       }
     }
 
     let speed01 = 0;
     if (this.lunge) {
+      // a charge spell (Lunge) carries the Warden, then strikes on arrival
       const d = this.lunge;
-      const cfg = CONFIG.lunge;
       d.t += dt;
-      const speed = cfg.distance / cfg.duration;
-      this.position.x += d.dir.x * speed * dt;
-      this.position.z += d.dir.z * speed * dt;
-      if (d.t >= cfg.duration) {
-        this.pending = { type: 'lunge', t: 0 };
+      this.position.x += d.dir.x * d.speed * dt;
+      this.position.z += d.dir.z * d.speed * dt;
+      if (d.t >= d.duration) {
+        this.pending = { type: 'spell', id: d.id, t: 0 };
         this.lunge = null;
       }
       speed01 = 1;
@@ -249,11 +246,10 @@ export class Player {
 
       const a = controls.actions || {};
       if (a.brace) this.tryBrace();
-      if (a.shieldBreak) this.tryShieldBreak();
-      else if (a.lunge) this.tryLunge(controls.lungeAim || controls.aim);
-      else if (a.strike) this.tryStrike(controls.aim);
-      if (a.draught) this.game.inventory.useDraught();
+      // spells first, so a swing coming due never swallows a key press
       for (const id in a) if (a[id] && SPELLS[id]) this.game.spells.tryCast(id);
+      if (a.strike) this.tryStrike(controls.aim);
+      if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
     }
 
@@ -313,48 +309,6 @@ export class Player {
     return (dx * Math.sin(this.facing) + dz * Math.cos(this.facing)) / d >= Math.cos((halfDegrees * Math.PI) / 180);
   }
 
-  _gcdReady(name) {
-    if (this.cooldowns.gcd > 0) return false; // silently queued out, as in WoW
-    if (this.cooldowns[name] > 0) {
-      const label = name === 'shieldBreak' ? 'Shield Break' : 'Lunge';
-      this.game.events.emit('log', { text: `${label} is not ready.`, kind: 'muted', throttle: name + '-ready' });
-      return false;
-    }
-    return true;
-  }
-
-  tryShieldBreak() {
-    if (this.pending || this.lunge || this.casting) return false;
-    if (!this._gcdReady('shieldBreak')) return false;
-    const windup = this.game.stats.hasted(CONFIG.shieldBreak.windup);
-    this.cooldowns.shieldBreak = CONFIG.shieldBreak.cooldown;
-    this.cooldowns.gcd = this.game.stats.globalCooldown;
-    this.cooldowns.attack = Math.max(this.cooldowns.attack, windup + 0.2);
-    this.pending = { type: 'shieldBreak', t: windup };
-    this.rig.play('slam', windup + 0.35, windup / (windup + 0.35));
-    return true;
-  }
-
-  // Lunge: a short charge towards the aim point that strikes on arrival.
-  tryLunge(aim) {
-    if (this.pending || this.lunge || this.casting) return false;
-    if (!this._gcdReady('lunge')) return false;
-    let dir = { x: Math.sin(this.facing), z: Math.cos(this.facing) };
-    if (aim) {
-      const dx = aim.x - this.position.x;
-      const dz = aim.z - this.position.z;
-      const len = Math.hypot(dx, dz);
-      if (len > 0.3) dir = { x: dx / len, z: dz / len };
-    }
-    this.facing = Math.atan2(dir.x, dir.z);
-    this.cooldowns.lunge = CONFIG.lunge.cooldown;
-    this.cooldowns.gcd = this.game.stats.globalCooldown;
-    this.cooldowns.attack = Math.max(this.cooldowns.attack, CONFIG.lunge.duration + 0.2);
-    this.lunge = { t: 0, dir };
-    this.rig.play('strike', CONFIG.lunge.duration + 0.25, 0.7);
-    this.game.events.emit('playerLunge', {});
-    return true;
-  }
 
   takeDamage(amount) {
     if (this.dead) return false;

@@ -27,9 +27,11 @@ export class Targeting {
     this.friendly = null; // a selected townsperson (Npc), or null
     this.attacking = false; // auto attack on the selected enemy
     this.soft = null; // who an ability would go to with nothing selected
-    this.marker = this._ring(0xff5a3a, 'TargetMarker');
-    this.softMarker = this._ring(0xf0c070, 'SoftTargetMarker');
-    this.softMarker.material.opacity = 0.45;
+    // the selection ring: yellow for anyone selected (left click), red once
+    // you are fighting it (right click, or an ability on it)
+    this.marker = this._ring(0xffd040, 'TargetMarker');
+    this.softMarker = this._ring(0xd8d0c0, 'SoftTargetMarker');
+    this.softMarker.material.opacity = 0.3;
   }
 
   _ring(color, name) {
@@ -167,14 +169,15 @@ export class Targeting {
     const f = this.friendly;
     if (f && Math.hypot(f.position.x - this.game.player.position.x, f.position.z - this.game.player.position.z) > CONFIG.targeting.dropRange) this.friendly = null;
     this.soft = !this.current && softRange > 0 ? this.softTarget(rawAim, softRange) : null;
-    this._place(this.marker, this.current, dt);
+    this.marker.material.color.setHex(this.current && this.attacking ? 0xff4a30 : 0xffd040);
+    this._place(this.marker, this.current || this.friendly, dt);
     this._place(this.softMarker, this.soft, dt);
   }
 
   _place(m, e, dt) {
     m.visible = !!e;
     if (!e) return;
-    const s = e.radius * 2.6;
+    const s = (e.radius || 0.45) * 2.6;
     m.scale.set(s, s, s);
     m.position.set(e.position.x, heightAt(e.position.x, e.position.z) + 0.08, e.position.z);
     m.rotation.z += dt * 0.8;

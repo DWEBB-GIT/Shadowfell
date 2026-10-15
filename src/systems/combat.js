@@ -15,13 +15,6 @@ export class Combat {
     return this.game.stats.abilityAverage(1);
   }
 
-  get shieldBreakDamage() {
-    return this.game.stats.abilityAverage(CONFIG.shieldBreak.damageMultiplier);
-  }
-
-  get lungeDamage() {
-    return this.game.stats.abilityAverage(CONFIG.lunge.damageMultiplier);
-  }
 
   // A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
   // `swing`: an auto attack, which rolls the weapon's own per-swing damage;
@@ -51,32 +44,6 @@ export class Combat {
     return hit.crit ? ' A critical blow!' : '';
   }
 
-  // Lunge lands on the nearest living enemy around the end of the charge.
-  resolveLunge() {
-    const { player, enemies, events } = this.game;
-    if (player.dead) return null;
-    let best = this._selectedInReach(CONFIG.lunge.hitRadius + 0.4);
-    let bestD = best ? -Infinity : Infinity;
-    for (const e of enemies.list) {
-      if (!e.alive || best === e) continue;
-      const d = Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius;
-      if (d <= CONFIG.lunge.hitRadius && d < bestD) {
-        best = e;
-        bestD = d;
-      }
-    }
-    if (!best) {
-      events.emit('playerMiss', {});
-      return null;
-    }
-    player.faceTowards(best.position.x, best.position.z);
-    this.game.targeting.engage(best);
-    const hit = this._playerHit(best, CONFIG.lunge.damageMultiplier, { stagger: 0.3, knockFrom: player.position, knockback: 0.4 });
-    events.emit('enemyHit', { enemy: best, damage: hit.amount, crit: hit.crit, kind: 'strike' });
-    events.emit('log', { text: `You lunge into the ${best.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
-    if (best.dead) this.onEnemyDefeated(best);
-    return best;
-  }
 
   // The hard-locked target, if it is alive and within reach.
   _selectedInReach(range) {
@@ -162,34 +129,6 @@ export class Combat {
     return target;
   }
 
-  resolveShieldBreak() {
-    const { player, enemies, events } = this.game;
-    if (player.dead) return [];
-    const hits = [];
-    const dealt = [];
-    for (const e of enemies.list) {
-      if (!e.alive) continue;
-      const d = Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z);
-      if (d - e.radius * 0.5 > CONFIG.shieldBreak.radius) continue;
-      const hit = this._playerHit(e, CONFIG.shieldBreak.damageMultiplier, { stagger: CONFIG.shieldBreak.stagger, knockFrom: player.position, knockback: CONFIG.shieldBreak.knockback, heavy: true });
-      hits.push(e);
-      dealt.push(hit.amount);
-    }
-    const dmg = dealt.length ? Math.max(...dealt) : 0;
-    // striking engages: auto attack the target, or the first foe hit
-    const tg = this.game.targeting;
-    const alive = hits.filter((e) => e.alive);
-    if (alive.length) tg.engage(tg.current && alive.includes(tg.current) ? tg.current : alive[0]);
-    events.emit('shieldBreak', { position: player.position.clone(), radius: CONFIG.shieldBreak.radius, hits });
-    if (hits.length) {
-      const names = hits.length === 1 ? `the ${hits[0].cfg.name}` : `${hits.length} foes`;
-      events.emit('log', { text: `Shield Break staggers ${names} for ${dmg}.`, kind: 'hit' });
-    } else {
-      events.emit('log', { text: 'Shield Break strikes only earth.', kind: 'muted' });
-    }
-    for (const e of hits) if (e.dead) this.onEnemyDefeated(e);
-    return hits;
-  }
 
   resolveEnemyStrike(enemy) {
     const { player, events } = this.game;

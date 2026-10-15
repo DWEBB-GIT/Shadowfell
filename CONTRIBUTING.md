@@ -89,6 +89,8 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
   - `aoe` (target `self`): `radius`, `duration`, `tickInterval`, `damageMin`, `damageMax`
   - `cleave` (target `self`): `damageMultiplier`, `coneDegrees`, `range`, `maxTargets`, `windup`
   - `buff` (target `self`): `duration`, `damageBonus` (percent)
+  - `burst` (target `self`, Shield Break): `damageMultiplier`, `radius`, `windup`, `stagger`, `knockback`; `interrupts: 1` stops ordinary enemy attacks
+  - `charge` (target `enemy`, Lunge): `damageMultiplier`, `distance`, `duration`, `hitRadius`; dashes at the target, or the cursor with none
 
   `damageMin`-`damageMax` is a spell's own damage, plus spell power; `school` (`physical`, `holy`, `shadow`) says whether armour or resistance reduces it. Add an icon to `abilityIcons()` in `src/ui/icons.js`. Every spell is on the global cooldown and appears in the spellbook.
 - **New things for someone to say:** add `topics` and `nodes` to their `dialogue.json` record. A `when` such as `{ "quest": "missing_delivery", "status": "done" }` holds a line back until the story gets there.

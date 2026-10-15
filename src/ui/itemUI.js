@@ -1,10 +1,11 @@
+import { DB } from '../data/db.js';
 import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView } from '../data/items.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
 
-const STAT_LABEL = { might: 'Might', finesse: 'Finesse', intellect: 'Intellect', vitality: 'Vitality', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
+const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility', intellect: 'Intellect', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
 
 // Bags, the character panel, the spellbook, and the bag slots and spell bar
 // on the bottom bar. None of these pause the game.
@@ -28,7 +29,7 @@ export class ItemUI {
     this.game = game;
     this.hud = hud;
     this.openBags = new Set(); // socket indices whose bag window is open
-    this.open = { character: false, spellbook: false };
+    this.open = { character: false, spellbook: false, skills: false };
     this.icons = {};
     this.drag = null; // { from, x0, y0, moved }
     this.focus = null; // gamepad highlight: a location string
@@ -45,6 +46,8 @@ export class ItemUI {
       spellbook: $('spellbook-window'),
       spellList: $('spellbook-list'),
       spellHint: $('spellbook-hint'),
+      skills: $('skills-window'),
+      skillList: $('skills-list'),
       shop: $('shop-window'),
       shopName: $('shop-name'),
       shopTitle: $('shop-title'),
@@ -58,6 +61,7 @@ export class ItemUI {
 
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
+    $('btn-skills').addEventListener('click', () => this.toggle('skills'));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
     // a merchant opens your bags with it (and closes the ones it opened)
@@ -95,18 +99,42 @@ export class ItemUI {
         else if (loc) game.inventory.use(loc);
       }
     });
+    // Every tooltip shows in the bottom-right corner, as in WoW: items and
+    // spells (their own), any other button or stat (its title), and whoever
+    // is under the cursor in the world (see worldTip).
     document.addEventListener('mouseover', (e) => {
-      const slot = e.target.closest && e.target.closest('.islot, .aslot');
-      if (slot && !this.drag) this._tooltip(slot.dataset.loc, slot);
+      if (this.drag || !e.target.closest) return;
+      const slot = e.target.closest('.islot, .aslot');
+      if (slot) {
+        this.tipFrom = 'ui';
+        this._tooltip(slot.dataset.loc, slot);
+        return;
+      }
+      const titled = e.target.closest('[title], [data-tip]');
+      if (titled) {
+        if (titled.hasAttribute('title')) {
+          titled.dataset.tip = titled.getAttribute('title');
+          titled.removeAttribute('title'); // no browser tooltip as well
+        }
+        if (!titled.dataset.tip) return;
+        const head = titled.dataset.tipHead || '';
+        this.tipFrom = 'ui';
+        this.el.tooltip.innerHTML = (head ? `<div class="tt-name">${head}</div>` : '') + `<div>${titled.dataset.tip}</div>`;
+        this._placeTip();
+      }
     });
     document.addEventListener('mouseout', (e) => {
-      if (e.target.closest && e.target.closest('.islot, .aslot')) this.el.tooltip.hidden = true;
+      if (e.target.closest && e.target.closest('.islot, .aslot, [data-tip]')) {
+        this.el.tooltip.hidden = true;
+        this.tipFrom = null;
+      }
     });
 
     game.events.on('inventoryChanged', () => this.render());
     game.events.on('equipmentChanged', () => this.render());
     game.events.on('levelUp', () => this.render());
     game.events.on('barChanged', () => this.render());
+    game.events.on('skillsChanged', () => this.render());
   }
 
   setIcons(icons) {
@@ -115,7 +143,7 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook || !!this.game.merchant.current;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || !!this.game.merchant.current;
   }
 
   // shop slots: m:<item> buys, y:<n> buys back
@@ -170,7 +198,7 @@ export class ItemUI {
   closeAll() {
     const was = this.anyOpen;
     this.openBags.clear();
-    this.open.character = this.open.spellbook = false;
+    this.open.character = this.open.spellbook = this.open.skills = false;
     this.shopOpenedBags = false;
     this.game.merchant.close();
     this._afterChange(null);
@@ -220,7 +248,9 @@ export class ItemUI {
     // a bag whose socket was emptied closes with it
     for (const i of [...this.openBags]) if (!inv.sockets[i]) this.openBags.delete(i);
     for (let i = 1; i < BAG_SOCKETS; i++) if (this.openBags.has(i)) sockets = sockets.replace(`data-loc="s:${i}"`, `data-loc="s:${i}" data-lit="1"`);
-    sockets += `<div class="islot socket backpack filled${this.openBags.has(0) ? ' lit' : ''}" data-loc="s:0" title="Backpack (B)"><span class="bp-icon"></span><span class="key" data-kbm="B" data-pad="Start"></span></div>`;
+    // the free space in all bags shows on the backpack, as in WoW
+    const free = inv.freeSlots();
+    sockets += `<div class="islot socket backpack filled${this.openBags.has(0) ? ' lit' : ''}${free === 0 ? ' full' : ''}" data-loc="s:0" title="Backpack (B): ${free} free slot${free === 1 ? '' : 's'}"><span class="bp-icon"></span><span class="bag-free">${free}</span><span class="key" data-kbm="B" data-pad="Start"></span></div>`;
     this.el.sockets.innerHTML = sockets;
 
     // bags window: one frame per bag
@@ -249,7 +279,6 @@ export class ItemUI {
       this.el.right.innerHTML = col(EQUIP_SLOTS.slice(half));
       const { player, progression, stats } = this.game;
       const t = stats.totals;
-      const range = (m) => stats.abilityRange(m).join('–');
       // stats that rose at the last level-up keep a green "+n" for a while
       const lg = progression.lastGains;
       const gain = (id) => {
@@ -264,23 +293,18 @@ export class ItemUI {
         row('Level', `${lvl} ${arch.name}`),
         row('Health', `${Math.ceil(player.health)} / ${player.maxHealth}`, '', 'health'),
         '<div class="stat-gap"></div>',
-        row('Might', t.might, arch.mainStat === 'might' ? 'Main attribute: +1 damage per point' : '', 'might'),
-        row('Finesse', t.finesse, '+0.5% critical chance per point', 'finesse'),
+        row('Stamina', t.stamina, `+${CONFIG.stats.healthPerStamina} health per point`, 'stamina'),
+        row('Strength', t.strength, arch.mainStat === 'strength' ? 'Main attribute: adds to every swing and ability' : '', 'strength'),
+        row('Agility', t.agility, `+${CONFIG.stats.critPerAgility}% crit chance per point`, 'agility'),
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
-        row('Vitality', t.vitality, '+6 health per point', 'vitality'),
         '<div class="stat-gap"></div>',
-        row('Weapon', `${inv.weapon.name} (${stats.weaponRange.join('–')}, speed ${stats.weaponSpeed.toFixed(1)})`),
-        row('Auto attack', `${stats.swingRange.join('–')} every ${stats.attackCooldown.toFixed(2)}s`, 'Weapon damage plus might, each swing; haste shortens the swing time', 'dps'),
-        row('Damage per second', stats.dps.toFixed(1), 'From auto attack alone'),
-        row('Shield Break', range(CONFIG.shieldBreak.damageMultiplier)),
-        row('Lunge', range(CONFIG.lunge.damageMultiplier)),
-        row('Critical chance', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
-        row('Haste', `${stats.haste}% (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'Shortens swings, windups, casts and the global cooldown', 'haste'),
-        '<div class="stat-gap"></div>',
+        row('Haste', `${stats.haste}%`, `Shortens swings, windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
         row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken from a level ${lvl} foe; higher-level foes get through more`),
-        row('Block', stats.blockChance ? `${stats.blockChance}%, stops ${CONFIG.stats.blockReduction}%` : 'no shield', 'Chance to block a melee blow (shield block chance + block rating / 10)', 'block'),
-        row('Block rating', t.blockRating || 0, `${CONFIG.stats.blockRatingPerPercent} rating = +1% block chance`),
-        row('Resistance', `${t.resistance || 0} (−${mitigation(t.resistance || 0, lvl).toFixed(0)}%)`, 'Reduces magical damage taken'),
+        row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it (shield block chance + block rating / ${CONFIG.stats.blockRatingPerPercent})`, 'block'),
+        row('Crit', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
+        '<div class="stat-gap"></div>',
+        row('Weapon', `${stats.swingRange.join('–')} / ${stats.attackCooldown.toFixed(1)}s`, `${inv.weapon.name}: ${stats.weaponRange.join('–')} damage, speed ${stats.weaponSpeed.toFixed(1)}; each auto attack swing adds strength`),
+        row('Damage per second', stats.dps.toFixed(1), 'From auto attack alone', 'dps'),
         row('Wears', wears),
       ].join('');
       this.el.hint.textContent = this.hud.padMode
@@ -311,6 +335,24 @@ export class ItemUI {
       this.el.shopHint.textContent = this.hud.padMode
         ? 'A: buy   Y on a bag item: sell   B: leave'
         : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
+    }
+
+    // skills, RuneScape style: a tile per skill with its level
+    this.el.skills.hidden = !this.open.skills;
+    if (this.open.skills) {
+      const sk = this.game.skills;
+      this.el.skillList.innerHTML = Object.values(DB.skills)
+        .map((d) => {
+          const icon = this.hud.abilityIcons[(d.teaches || [])[0]] || '';
+          const known = sk.has(d.id);
+          const max = d.maxRank || 1;
+          const level = known ? (d.maxRank ? `${sk.rank(d.id)} / ${max}` : 'Learned') : 'Not learned';
+          const trainer = DB.npcs[d.trainer];
+          const tip = `${d.desc}${known ? '' : ` ${trainer ? trainer.name : 'A trainer'} teaches it for ${d.cost} coins.`}`;
+          const fill = known ? (sk.rank(d.id) / max) * 100 : 0;
+          return `<div class="skill-tile${known ? '' : ' unknown'}" data-skill="${d.id}" data-tip="${tip.replace(/"/g, '&quot;')}" data-tip-head="${d.name}"><img src="${icon}" alt=""><div><div class="skill-name">${d.name}</div><div class="skill-level">${level}</div><div class="skill-bar"><div style="width:${fill}%"></div></div></div></div>`;
+        })
+        .join('');
     }
 
     // spellbook: every ability, ready to drag onto the bar
@@ -344,7 +386,7 @@ export class ItemUI {
         return;
       }
       tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div><div class="tt-desc">${ABILITIES[id].desc}</div>`;
-      return this._placeTip(anchor);
+      return this._placeTip();
     }
     let stack = loc && this.game.inventory.get(loc);
     let shop = null;
@@ -387,34 +429,61 @@ export class ItemUI {
     if (shop) {
       if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
       tip.innerHTML = lines.join('');
-      return this._placeTip(anchor);
+      return this._placeTip();
     }
     if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && !this.hud.padMode) {
       lines.push('<div class="tt-hint">Right-click to sell</div>');
       tip.innerHTML = lines.join('');
-      return this._placeTip(anchor);
+      return this._placeTip();
     }
     const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
     tip.innerHTML = lines.join('');
-    this._placeTip(anchor);
+    this._placeTip();
   }
 
-  _placeTip(anchor) {
+  // The bottom-right corner, above the bag slots (left of the bags when
+  // they are open, so it never covers them).
+  _placeTip() {
     const tip = this.el.tooltip;
     tip.hidden = false;
-    const r = anchor.getBoundingClientRect();
     const tw = tip.offsetWidth;
     const th = tip.offsetHeight;
-    let x = r.left - tw - 8;
-    if (x < 8) x = r.right + 8;
-    let y = Math.min(window.innerHeight - th - 8, Math.max(8, r.top));
-    if (anchor.classList.contains('aslot')) {
-      // spell bar: above the slot
-      x = Math.min(window.innerWidth - tw - 8, Math.max(8, r.left + r.width / 2 - tw / 2));
-      y = r.top - th - 8;
+    const bar = document.getElementById('bottom-bar').getBoundingClientRect();
+    let x = window.innerWidth - tw - 16;
+    let y = Math.min(window.innerHeight, bar.top) - th - 10;
+    const bags = document.getElementById('bags-window');
+    if (bags && !bags.hidden) {
+      const b = bags.getBoundingClientRect();
+      x = Math.min(x, b.left - tw - 10);
     }
-    tip.style.transform = `translate(${x}px, ${y}px)`;
+    tip.style.transform = `translate(${Math.max(8, x)}px, ${Math.max(8, y)}px)`;
+  }
+
+  // Whoever is under the cursor in the world: called every frame with the
+  // pick (or null). Item and button tooltips come first.
+  worldTip(pick) {
+    if (this.tipFrom === 'ui' && !this.el.tooltip.hidden) return;
+    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc') ? pick.obj : null;
+    if (!key) {
+      if (this.tipFrom === 'world') {
+        this.el.tooltip.hidden = true;
+        this.tipFrom = null;
+        this.tipKey = null;
+      }
+      return;
+    }
+    this.tipFrom = 'world';
+    const health = key.cfg ? `${Math.ceil(key.health)} / ${key.cfg.health}` : '';
+    const html = key.cfg
+      ? `<div class="tt-name tt-foe">${key.cfg.name}</div><div>Level ${key.cfg.level || 1}${key.cfg.elite ? ' Elite' : ''}</div><div class="tt-kind">${health} health</div>`
+      : `<div class="tt-name tt-friend">${key.name}</div>${key.def.title ? `<div class="tt-kind">&lt;${key.def.title}&gt;</div>` : ''}<div>Level ${key.def.level || 1}</div>`;
+    if (this.tipKey !== key || this.tipHtml !== html) {
+      this.el.tooltip.innerHTML = html;
+      this.tipKey = key;
+      this.tipHtml = html;
+    }
+    this._placeTip();
   }
 
   // ------------------------------------------------------------- mouse drag

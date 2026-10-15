@@ -1,10 +1,11 @@
 {
-  "_about": "Townsfolk. An npc may keep a shop, train skills (skills.json names its trainer) and has a dialogue (dialogue.json); quests name their giver. Where they stand is in world.json (npcSpawns).",
+  "_about": "Townsfolk. `level` shows on their portrait and tooltip. An npc may keep a shop, train skills (skills.json names its trainer) and has a dialogue (dialogue.json); quests name their giver. Where they stand is in world.json (npcSpawns).",
   "npcs": [
     {
       "id": "mara",
       "name": "Mara Venn",
       "title": "Smith",
+      "level": 12,
       "model": "mara",
       "rig": "warden",
       "shop": "mara_forge",
@@ -15,6 +16,7 @@
       "id": "tam",
       "name": "Old Tam",
       "title": "Fisher",
+      "level": 8,
       "model": "tam",
       "rig": "warden",
       "shop": "tam_outfitters",

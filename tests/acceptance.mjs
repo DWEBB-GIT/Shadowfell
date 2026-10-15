@@ -1560,7 +1560,7 @@ async function statsAndDamage(browser) {
   await sim(page, 0.05);
   const panel = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#char-stats div')].filter((d) => d.querySelector('b')).map((d) => [d.querySelector('span').textContent, d.querySelector('b').textContent])));
   await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
-  record('The character panel shows attributes and combat stats', panel.Might === '4' && panel.Finesse === '2' && panel.Vitality === '10' && panel['Auto attack'] === '59–74 every 2.20s' && panel['Damage per second'] === '30.2' && panel['Critical chance'] === '6.0%' && panel.Armour === '20 (−29%)' && panel.Block === '10%, stops 30%' && panel.Haste.startsWith('0%') && /Mail, Plate, shields/.test(panel.Wears),
+  record('The character panel shows attributes and combat stats', panel.Strength === '4' && panel.Agility === '2' && panel.Stamina === '10' && panel.Weapon === '59–74 / 2.2s' && panel['Damage per second'] === '30.2' && panel.Crit === '6.0%' && panel.Armour === '20 (−29%)' && panel.Block === '10%' && panel.Haste === '0%' && /Mail, Plate, shields/.test(panel.Wears),
     Object.entries(panel).map(([k, v]) => `${k} ${v}`).join(', '));
 
   // weapon hits roll within the weapon's range
@@ -1676,9 +1676,9 @@ async function statsAndDamage(browser) {
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   const tf = await page.evaluate(() => ({
     vis: !document.getElementById('target-frame').hidden, name: document.getElementById('target-name').textContent, text: document.getElementById('target-text').textContent,
-    label: document.getElementById('target-label').textContent, mana: !document.getElementById('target-mana-bar').hidden, bar: !!document.querySelector('#enemy-bars .ebar'),
+    label: document.getElementById('target-label').textContent, level: document.getElementById('target-level').textContent, mana: !document.getElementById('target-mana-bar').hidden, bar: !!document.querySelector('#enemy-bars .ebar'),
   }));
-  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '30 / 48' && tf.label === 'Level 1' && !tf.mana && tf.bar,
+  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '30 / 48' && tf.level === '1' && !tf.mana && tf.bar,
     `aiming at a wounded ghoul: "${tf.name}" ${tf.text} (${tf.label}), bar over its head; no mana bar`);
   await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1771,9 +1771,9 @@ async function statsAndDamage(browser) {
   await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
   await sim(page, 6.2);
   const luGone = await page.evaluate(() => document.getElementById('levelup').hidden);
-  record('Level-up shows each stat increase', lu.vis && lu.title === 'Level 2' && lu.rows.some((r) => /^Might 4 → 6 \+2$/.test(r)) && lu.rows.some((r) => /^Vitality 11 → 13 \+2$/.test(r)) && lu.rows.some((r) => /^Maximum health 106 → 118 \+12$/.test(r)) && lu.rows.some((r) => /^Strike 16–20 → 18–22 \+2$/.test(r)) && luGone,
+  record('Level-up shows each stat increase', lu.vis && lu.title === 'Level 2' && lu.rows.some((r) => /^Strength 4 → 6 \+2$/.test(r)) && lu.rows.some((r) => /^Stamina 11 → 13 \+2$/.test(r)) && lu.rows.some((r) => /^Maximum health 106 → 118 \+12$/.test(r)) && lu.rows.some((r) => /^Auto attack 30.2 per second → 33.4 per second \+3.2$/.test(r)) && luGone,
     lu.rows.join(' | '));
-  record('The character screen marks what rose at the last level-up', ['health+12', 'might+2', 'vitality+2', 'dps+3.2'].every((m) => marks.includes(m)), marks.join(', '));
+  record('The character screen marks what rose at the last level-up', ['health+12', 'strength+2', 'stamina+2', 'dps+3.2'].every((m) => marks.includes(m)), marks.join(', '));
 
   record('No script errors (stats and damage)', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'stats.png') });
@@ -2890,6 +2890,131 @@ async function ghostAndCamp(browser) {
   await ctx.close();
 }
 
+async function targetAndUi(browser) {
+  current = 'Targets, tooltips, stats and skills';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const screenOf = (id) => page.evaluate((id) => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId(id) || g.npcs.byId(id);
+    const v = e.position.clone().setY(e.position.y + 1).project(g.camera);
+    const r = g.renderer.domElement.getBoundingClientRect();
+    return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+  }, id);
+  const ring = () => page.evaluate(() => {
+    const g = window.__shadowfall;
+    const m = g.targeting.marker;
+    return { visible: m.visible, color: m.material.color.getHexString(), target: g.targeting.current?.id || g.targeting.friendly?.id || null };
+  });
+  const clickAtScreen = (pt, button) => page.evaluate(({ pt, button }) => {
+    const g = window.__shadowfall;
+    const r = g.renderer.domElement.getBoundingClientRect();
+    g.input.mouse.x = pt.x;
+    g.input.mouse.y = pt.y;
+    g.input.mouse.ndcX = ((pt.x - r.left) / r.width) * 2 - 1;
+    g.input.mouse.ndcY = -((pt.y - r.top) / r.height) * 2 + 1;
+    if (button === 'right') g.input.mouse.rightClicked = true;
+    else g.input.mouse.clicked = true;
+  }, { pt, button });
+
+  // left click: yellow ring on anyone; right click on an enemy: red
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -5, { frozen: true });
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 500));
+  await clickAtScreen(await screenOf('ghoul_road'), 'left');
+  await sim(page, 0.05);
+  const yellow = await ring();
+  await clickAtScreen(await screenOf('ghoul_road'), 'right');
+  await sim(page, 0.05);
+  const red = await ring();
+  const err = await page.evaluate(() => ({ text: document.getElementById('ui-error').textContent, shown: document.getElementById('ui-error').classList.contains('show') }));
+  record('Left-clicking an enemy rings it yellow; right-clicking rings it red', yellow.visible && yellow.color === 'ffd040' && yellow.target === 'ghoul_road' && red.visible && red.color === 'ff4a30', `left: #${yellow.color}, right: #${red.color}`);
+  record('Engaging an enemy out of reach shows "Out of range" in red mid-screen', err.shown && err.text === 'Out of range', `"${err.text}"`);
+  // right click on the ground keeps the target; left click lets it go
+  const ground = { x: 200, y: 300 };
+  await clickAtScreen(ground, 'right');
+  await sim(page, 0.05);
+  const kept = await ring();
+  await clickAtScreen(ground, 'left');
+  await sim(page, 0.05);
+  const gone = await ring();
+  record('Right-clicking the ground keeps the target; left-clicking it deselects', kept.target === 'ghoul_road' && !gone.target && !gone.visible, `after right: ${kept.target}; after left: ${gone.target}`);
+
+  // townsfolk: yellow ring, a level on the portrait
+  await setup(page, { x: 0, z: 0 });
+  const mara = await page.evaluate(() => { const n = window.__shadowfall.npcs.byId('mara'); return { x: n.position.x, z: n.position.z }; });
+  await page.evaluate(({ x, z }) => window.__shadowfall.player.placeAt(x, z + 4), mara);
+  await page.evaluate(() => window.__shadowfall._snapCamera());
+  await clickAtScreen(await screenOf('mara'), 'left');
+  await sim(page, 0.05);
+  const friend = await ring();
+  const portrait = await page.evaluate(() => ({ level: document.getElementById('target-level').textContent, img: document.getElementById('target-img').src.length }));
+  record('Left-clicking a townsperson rings them yellow; the portrait shows their level', friend.target === 'mara' && friend.color === 'ffd040' && portrait.level === '12' && portrait.img > 500, `Mara Venn: level ${portrait.level}, portrait ${portrait.img} bytes`);
+  // an enemy's level on its portrait
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -3, { frozen: true });
+  await page.evaluate(() => window.__shadowfall.targeting.select(window.__shadowfall.enemies.byId('ghoul_road')));
+  await sim(page, 0.05);
+  const elevel = await page.evaluate(() => document.getElementById('target-level').textContent);
+  record('Enemy portraits show just their level', elevel === '1', `ghoul: ${elevel}`);
+
+  // hovering anyone: a tooltip in the bottom-right corner
+  const pt = await screenOf('ghoul_road');
+  await page.mouse.move(pt.x, pt.y);
+  await sim(page, 0.05);
+  const hover = await page.evaluate(() => {
+    const t = document.getElementById('tooltip');
+    const r = t.getBoundingClientRect();
+    return { shown: !t.hidden, text: t.textContent, right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom };
+  });
+  record('Hovering an enemy shows its tooltip in the bottom-right corner', hover.shown && /Ashen Ghoul/.test(hover.text) && /Level 1/.test(hover.text) && hover.right < 40 && hover.bottom < 160, `"${hover.text}" at ${hover.right.toFixed(0)}px from the right, ${hover.bottom.toFixed(0)}px from the bottom`);
+  await page.mouse.move(5, 5);
+  await sim(page, 0.05);
+  // a spell on the bar and a menu button: the same corner
+  const slot = await page.evaluate(() => { const r = document.getElementById('aslot-1').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(slot.x, slot.y);
+  await page.waitForTimeout(100);
+  const spellTip = await page.evaluate(() => { const t = document.getElementById('tooltip'); const r = t.getBoundingClientRect(); return { shown: !t.hidden, text: t.textContent, right: window.innerWidth - r.right }; });
+  const btn = await page.evaluate(() => { const r = document.getElementById('btn-character').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(btn.x, btn.y);
+  await page.waitForTimeout(100);
+  const btnTip = await page.evaluate(() => { const t = document.getElementById('tooltip'); const r = t.getBoundingClientRect(); return { shown: !t.hidden, text: t.textContent, right: window.innerWidth - r.right, title: document.getElementById('btn-character').getAttribute('title') }; });
+  record('Spell and menu tooltips show in the same corner', spellTip.shown && /Shield Break/.test(spellTip.text) && spellTip.right < 40 && btnTip.shown && /Character/.test(btnTip.text) && btnTip.right < 40 && !btnTip.title, `"${spellTip.text.slice(0, 30)}…", "${btnTip.text}"`);
+  await page.mouse.move(5, 5);
+
+  // no hit-stop; Shield Break and Lunge are spells
+  const spells = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { freeze: typeof g.player.rig.freeze, sb: g.config.abilities?.shieldBreak?.kind || null, kinds: ['shieldBreak', 'lunge'].map((id) => window.__shadowfall.spells && Object.keys(window.__shadowfall.player.cooldowns).includes(id)) };
+  });
+  record('No hit-stop: nothing freezes when a blow lands', spells.freeze === 'undefined');
+
+  // stats panel: the new names; no Shield Break or Lunge rows
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
+  const panel = await page.evaluate(() => [...document.querySelectorAll('#char-stats div')].filter((d) => d.querySelector('b')).map((d) => d.querySelector('span').textContent));
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
+  const want = ['Stamina', 'Strength', 'Agility', 'Intellect', 'Haste', 'Armour', 'Block', 'Crit'];
+  record('The character panel uses Stamina, Strength, Agility, Intellect, Haste, Armour, Block and Crit, without Shield Break or Lunge', want.every((w) => panel.includes(w)) && !panel.includes('Shield Break') && !panel.includes('Lunge') && !panel.includes('Might'), panel.join(', '));
+
+  // experience %, bag space
+  const xp = await page.evaluate(() => { const g = window.__shadowfall; g.progression.xp = 37; g.hud.update(0.016); return document.getElementById('xp-text').textContent; });
+  record('The experience bar shows a percentage', /\(37%\)/.test(xp), xp);
+  const bag = await page.evaluate(() => ({ shown: document.querySelector('#bag-sockets .bag-free')?.textContent, free: window.__shadowfall.inventory.freeSlots() }));
+  record('The backpack shows how many bag slots are free', bag.shown === String(bag.free), `${bag.shown} free`);
+
+  // skills panel
+  await page.evaluate(() => { const g = window.__shadowfall; g.skills.ranks.set('fishing', 7); g.events.emit('skillsChanged', {}); });
+  await sim(page, 0.05, { press: ['KeyU'] });
+  const skills = await page.evaluate(() => [...document.querySelectorAll('#skills-list .skill-tile')].map((t) => t.textContent));
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'skills-and-target.png') });
+  await sim(page, 0.05, { press: ['KeyU'] });
+  record('The skills panel (U) shows each skill and its level', skills.some((t) => /Fishing7 \/ 50/.test(t)) && skills.some((t) => /CampingNot learned/.test(t)), skills.join(' | '));
+  record('No script errors (targets, tooltips, stats and skills)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 async function torchAndFishing(browser) {
   current = 'Torch, dark places and fishing';
   const { ctx, page, errors } = await freshGame(browser);
@@ -2966,7 +3091,7 @@ async function torchAndFishing(browser) {
 }
 
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

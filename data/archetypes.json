@@ -4,12 +4,12 @@
     {
       "id": "warden",
       "name": "Warden",
-      "mainStat": "might",
+      "mainStat": "strength",
       "base": {
-        "might": 4,
-        "finesse": 2,
+        "strength": 4,
+        "agility": 2,
         "intellect": 1,
-        "vitality": 10,
+        "stamina": 10,
         "armour": 0,
         "resistance": 0,
         "block": 0,
@@ -17,8 +17,8 @@
         "haste": 0
       },
       "perLevel": {
-        "might": 2,
-        "vitality": 2
+        "strength": 2,
+        "stamina": 2
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,

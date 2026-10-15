@@ -54,12 +54,12 @@ export const CONFIG = {
   // hit: base x multiplier, then crit, then armour or resistance, then block.
   stats: {
     healthBase: 40,
-    healthPerVitality: 6,
+    healthPerStamina: 6,
     manaPerIntellect: 10,
     powerPerMainStat: 1, // flat damage added to every weapon hit
     spellPowerPerIntellect: 1,
     critBase: 5, // percent
-    critPerFinesse: 0.5,
+    critPerAgility: 0.5,
     critMultiplier: 1.5,
     // reduction = armour / (armour + armourConstant + armourPerLevel x attacker
     // level), as in WoW and Diablo III: armour keeps its worth as levels rise
@@ -78,9 +78,8 @@ export const CONFIG = {
   interaction: {
     radius: 2.2,
   },
-  // how a landed blow feels: a short hit-stop on both bodies, a camera kick
+  // how a landed blow feels: a camera kick (no hit-stop: the action never pauses)
   impact: {
-    hitStop: 0.07, // seconds; crits hold longer
     shake: 0.07, // metres of camera kick
     critShake: 0.16,
     shakeDecay: 9, // per second

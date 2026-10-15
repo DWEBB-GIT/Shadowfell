@@ -28,12 +28,6 @@ export class Rig {
     this.death = -1; // -1 alive, otherwise seconds since death
     this.lean = 0;
     this.pose = null; // a held pose ('fish') when no action plays
-    this.frozen = 0; // hit-stop: the pose holds for a moment when a blow lands
-  }
-
-  // hold the current pose for `seconds` (the weight of a landed blow)
-  freeze(seconds) {
-    this.frozen = Math.max(this.frozen, seconds);
   }
 
   play(type, duration, impact = 0.5) {
@@ -63,10 +57,6 @@ export class Rig {
   }
 
   update(dt, speed01) {
-    if (this.frozen > 0 && this.death < 0) {
-      this.frozen -= dt;
-      return;
-    }
     this.time += dt;
     this.move += (speed01 - this.move) * Math.min(1, dt * 10);
     const stride = this.style === 'brute' ? 6 : this.style === 'ghoul' ? 7 : this.style === 'hound' ? 13 : 9;

@@ -349,7 +349,14 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .spell-where { font-size: 11px; }
 
 /* ------------------------------------------------------------------ targeting and Brace */
-#target-frame { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 260px; padding: 6px 10px 8px; }
+#target-frame { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 310px; padding: 6px 10px 8px 6px; display: flex; gap: 10px; align-items: center; }
+#target-frame[hidden] { display: none; }
+#target-body { flex: 1; min-width: 0; }
+#target-portrait { position: relative; width: 54px; height: 54px; flex: none; border-radius: 50%; border: 2px solid #8a6a3a; background: radial-gradient(circle at 50% 40%, #2a2219, #0a0807); box-shadow: 0 0 0 1px #000; }
+#target-portrait img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+#target-level { position: absolute; left: -4px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 3px; border-radius: 10px; background: #120e0a; border: 1px solid #b08a4a; color: #f0d890; font-size: 12px; font-weight: bold; line-height: 18px; text-align: center; }
+#target-frame.elite #target-portrait { border-color: #e0a040; }
+#target-frame.friendly #target-portrait { border-color: #6a9a4a; }
 #target-name { color: #e8c8a0; font-size: 14px; letter-spacing: 1px; }
 #target-frame.elite { border-color: #a0603a; }
 #target-frame.elite #target-name { color: #ff9c60; }
@@ -465,3 +472,21 @@ body.ghost #prompt { color: #cfe6ff; }
 #xp-rested { position: absolute; top: 0; bottom: 0; background: rgba(90, 140, 230, 0.45); pointer-events: none; }
 
 .tt-weapon { display: flex; justify-content: space-between; gap: 18px; }
+.tt-foe { color: #ff8a6a; }
+.tt-friend { color: #a8e08c; }
+.bag-free { position: absolute; right: 2px; bottom: 1px; font-size: 12px; font-weight: bold; color: #f0e4c8; text-shadow: 0 0 2px #000, 1px 1px 0 #000; pointer-events: none; }
+.islot.full .bag-free { color: #ff6a50; }
+#ui-error { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); font-size: 20px; letter-spacing: 1px; color: #ff3a2a; text-shadow: 0 0 3px #000, 1px 1px 0 #000; opacity: 0; transition: opacity 0.6s; pointer-events: none; white-space: nowrap; }
+#ui-error.show { opacity: 1; transition: none; }
+
+/* skills, RuneScape style */
+#skills-window { left: 50%; bottom: 140px; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.skill-tile { display: flex; gap: 8px; align-items: center; padding: 6px; border: 1px solid #3a2f20; background: #0f0c09; }
+.skill-tile img { width: 34px; height: 34px; }
+.skill-tile.unknown { opacity: 0.5; }
+.skill-name { font-size: 13px; color: #f0e4c8; }
+.skill-level { font-size: 15px; color: #f0d070; font-weight: bold; }
+.skill-tile.unknown .skill-level { font-size: 12px; color: var(--text-dim); font-weight: normal; }
+.skill-bar { height: 4px; width: 90px; margin-top: 3px; background: #000; }
+.skill-bar div { height: 100%; background: #c8a040; }

@@ -78,7 +78,10 @@ export function itemView(stack) {
   const r = stack.rolls;
   if (!d || !r) return d;
   const stats = { ...(d.stats || {}) };
-  for (const [k, v] of Object.entries(r.stats || {})) stats[k] = (stats[k] || 0) + v;
+  for (const [k, v] of Object.entries(r.stats || {})) {
+    const key = RENAMED_STATS[k] || k;
+    stats[key] = (stats[key] || 0) + v;
+  }
   for (const k of Object.keys(stats)) if (stats[k] <= 0) delete stats[k];
   const bonus = Object.values(r.stats || {}).reduce((a, v) => a + Math.max(0, v), 0);
   return {
@@ -90,6 +93,9 @@ export function itemView(stack) {
     price: d.price + (r.suffix ? bonus * ROLLS.valuePerPoint : 0),
   };
 }
+
+// Stats renamed after saves held them in rolls (Might, Finesse, Vitality).
+const RENAMED_STATS = { might: 'strength', finesse: 'agility', vitality: 'stamina' };
 
 // Weapon damage became per swing when weapons gained a speed; rolls saved
 // before then (a few points either side of the old, smaller numbers) are
@@ -106,7 +112,7 @@ export function validRolls(id, r) {
   const d = ITEMS[id];
   if (!d || !r || typeof r !== 'object' || !ROLLED_KINDS.includes(d.kind)) return false;
   const okNum = (v) => Number.isInteger(v) && Math.abs(v) <= 100;
-  if (r.stats !== undefined && !(r.stats && typeof r.stats === 'object' && Object.entries(r.stats).every(([k, v]) => STAT_KEYS.includes(k) && okNum(v)))) return false;
+  if (r.stats !== undefined && !(r.stats && typeof r.stats === 'object' && Object.entries(r.stats).every(([k, v]) => (STAT_KEYS.includes(k) || RENAMED_STATS[k]) && okNum(v)))) return false;
   if (r.damage !== undefined && !(Array.isArray(r.damage) && r.damage.length === 2 && r.damage.every((v) => Number.isInteger(v) && v >= 1 && v <= 1000) && r.damage[0] <= r.damage[1])) return false;
   if (r.suffix !== undefined && !SUFFIXES[r.suffix]) return false;
   return true;

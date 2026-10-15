@@ -21,28 +21,28 @@
   "suffixes": [
     {
       "id": "might",
-      "name": "of Might",
-      "stats": ["might"]
+      "name": "of Strength",
+      "stats": ["strength"]
     },
     {
       "id": "vigour",
       "name": "of Vigour",
-      "stats": ["vitality"]
+      "stats": ["stamina"]
     },
     {
       "id": "finesse",
-      "name": "of Finesse",
-      "stats": ["finesse"]
+      "name": "of Agility",
+      "stats": ["agility"]
     },
     {
       "id": "bear",
       "name": "of the Bear",
-      "stats": ["might", "vitality"]
+      "stats": ["strength", "stamina"]
     },
     {
       "id": "tiger",
       "name": "of the Tiger",
-      "stats": ["might", "finesse"]
+      "stats": ["strength", "agility"]
     },
     {
       "id": "swiftness",
@@ -107,7 +107,7 @@
       "armourType": "mail",
       "stats": {
         "armour": 10,
-        "vitality": 1
+        "stamina": 1
       },
       "stack": 1,
       "price": 25,
@@ -204,7 +204,7 @@
       "armourType": "leather",
       "stats": {
         "armour": 5,
-        "vitality": 1
+        "stamina": 1
       },
       "stack": 1,
       "price": 12,
@@ -268,7 +268,7 @@
       "armourType": "mail",
       "stats": {
         "armour": 32,
-        "vitality": 1
+        "stamina": 1
       },
       "stack": 1,
       "price": 40,
@@ -301,7 +301,7 @@
       "damage": [84, 121],
       "speed": 2.8,
       "stats": {
-        "might": 2
+        "strength": 2
       },
       "stack": 1,
       "price": 75,
@@ -362,8 +362,8 @@
       "armourType": "mail",
       "stats": {
         "armour": 18,
-        "vitality": 4,
-        "might": 2
+        "stamina": 4,
+        "strength": 2
       },
       "stack": 1,
       "price": 110,
@@ -380,8 +380,8 @@
       "damage": [104, 136],
       "speed": 2.4,
       "stats": {
-        "might": 4,
-        "vitality": 3,
+        "strength": 4,
+        "stamina": 3,
         "haste": 5
       },
       "reservedFor": ["seer"],

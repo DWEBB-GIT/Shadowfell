@@ -23,10 +23,13 @@
     </div>
 
     <div id="target-frame" class="panel" hidden>
-      <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
-      <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
-      <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
-      <div id="target-auras" class="auras"></div>
+      <div id="target-portrait"><img id="target-img" alt=""><span id="target-level">1</span></div>
+      <div id="target-body">
+        <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
+        <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
+        <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
+        <div id="target-auras" class="auras"></div>
+      </div>
     </div>
 
     <!-- top right: the minimap, and the tracked quests under it -->
@@ -44,6 +47,7 @@
     <div id="enemy-bars"></div>
     <div id="damage-numbers"></div>
     <div id="toast"></div>
+    <div id="ui-error"></div>
     <div id="levelup" class="panel" hidden><div id="levelup-title"></div><div id="levelup-list"></div></div>
     <div id="mute-indicator" hidden>Sound off (M)</div>
 
@@ -56,6 +60,7 @@
         <div id="micro-bar" class="panel">
           <button class="micro" id="btn-character" title="Character (C)"><span class="micro-icon">&#9876;</span><span class="key" data-kbm="C" data-pad="View"></span></button>
           <button class="micro" id="btn-spellbook" title="Spellbook (P)"><span class="micro-icon">&#10022;</span><span class="key" data-kbm="P" data-pad="&#8593;"></span></button>
+          <button class="micro" id="btn-skills" title="Skills (U)"><span class="micro-icon">&#9881;</span><span class="key" data-kbm="U" data-pad=""></span></button>
           <button class="micro" id="btn-quests" title="Quest log (L)"><span class="micro-icon">!</span><span class="key" data-kbm="L" data-pad="&#8594;"></span></button>
           <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
           <div class="coins" title="Coins"><span class="coin-dot"></span><b id="stat-coins">0</b></div>
@@ -87,6 +92,12 @@
     <div class="window-head"><h2>Spellbook</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
     <div id="spellbook-list"></div>
     <div class="window-hint" id="spellbook-hint"></div>
+  </div>
+
+  <div id="skills-window" class="window panel" hidden>
+    <div class="window-head"><h2>Skills</h2><button class="btn small" data-close-panel="skills">&times;</button></div>
+    <div id="skills-list"></div>
+    <div class="window-hint">Skills are learned from trainers and rise as you use them.</div>
   </div>
 
   <div id="shop-window" class="window panel" hidden>

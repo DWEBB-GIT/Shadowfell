@@ -14,7 +14,7 @@ export const KINDS = ['weapon', 'armor', 'shield', 'torch', 'tool', 'bag', 'cons
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
 const EQUIPPABLE = ['weapon', 'armor', 'shield', 'torch'];
-export const STAT_KEYS = ['might', 'finesse', 'intellect', 'vitality', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
+export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
 export const EQUIP_SLOTS = [
   { id: 'head', label: 'Head' },
   { id: 'chest', label: 'Chest' },
@@ -34,6 +34,8 @@ export const SPELL_KINDS = {
   instant: { enemy: true, tuning: ['damageMin', 'damageMax'] },
   aoe: { enemy: false, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] },
   cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
+  burst: { enemy: false, tuning: ['damageMultiplier', 'radius', 'windup', 'stagger', 'knockback'] }, // optional interrupts: 1
+  charge: { enemy: true, tuning: ['damageMultiplier', 'distance', 'duration', 'hitRadius'] },
   buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };
@@ -286,6 +288,7 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, n] of Object.entries(npcs)) {
     const w = `npcs.json ${id}`;
     if (!isStr(n.name)) errors.push(`${w}: needs a name`);
+    if (!(Number.isInteger(n.level) && n.level >= 1)) errors.push(`${w}: needs a level (a whole number, 1 or more)`);
     model(w, n.model);
     if (n.shop) ref(w, 'shop', shops, n.shop);
     if (n.dialogue !== undefined) ref(w, 'dialogue', dialogues, n.dialogue);

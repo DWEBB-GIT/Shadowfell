@@ -298,7 +298,11 @@ class Game {
       if (d < CONFIG.fishing.clickRadius) return this.fishing.strike();
     }
     const pick = this._pickUnderCursor();
-    if (!pick) return false;
+    // a left click on the ground lets go of the target; a right click does not
+    if (!pick) {
+      if (button === 'left') this.targeting.clear();
+      return false;
+    }
     const { player, events, targeting, loot } = this;
     const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
     if (pick.kind === 'loot') {
@@ -306,8 +310,10 @@ class Game {
       if (far(l.x, l.z, CONFIG.loot.reach)) events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
       else loot.lootArea(l);
     } else if (pick.kind === 'enemy') {
-      if (button === 'right') targeting.engage(pick.obj);
-      else targeting.select(pick.obj);
+      if (button === 'right') {
+        targeting.engage(pick.obj);
+        if (!targeting.targetInReach) this.hud.error('Out of range');
+      } else targeting.select(pick.obj);
     } else if (pick.kind === 'npc') {
       const n = pick.obj;
       if (button === 'left') targeting.selectFriendly(n);
@@ -405,6 +411,7 @@ class Game {
     if (input.consume('KeyB') || input.consume('KeyI') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
     if (input.consume('KeyC') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
     if (input.consume('KeyP')) hud.togglePanel('spellbook');
+    if (input.consume('KeyU')) hud.togglePanel('skills');
     // D-pad right opens and closes the log (it moves the highlight in the bags)
     if (input.consume('KeyL') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
     // With a window open the pad drives the window; the world keeps running
@@ -437,7 +444,9 @@ class Game {
     const tg = this.targeting;
     // Tab / R3 cycle targets; RT engages whoever is selected or ahead
     if (input.consume('Tab') || p(BUTTONS.RS)) tg.cycle(rawAim);
-    if (p(BUTTONS.RT)) tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range));
+    if (p(BUTTONS.RT) && tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range)) && !tg.targetInReach) this.hud.error('Out of range');
+    // hovering over anyone in the world shows who they are (bottom right)
+    if (!usingPad) this.hud.items.worldTip(input.mouse.onCanvas ? this._pickUnderCursor() : null);
     // left click selects, right click attacks, talks or loots
     if (input.consumeClick()) this._click('left');
     if (input.consumeRightClick()) this._click('right');
@@ -458,7 +467,6 @@ class Game {
     return {
       move,
       aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
-      lungeAim: tg.aimFor(rawAim, ABILITIES.lunge.range),
       rawAim,
       actions,
     };

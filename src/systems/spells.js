@@ -11,6 +11,11 @@ import { computeHit, enemyBlock, weaponRoll } from './stats.js';
 //   aoe      consecrates the ground around you; enemies in it take a tick
 //            of damage every `tickInterval` for `duration` seconds
 //   cleave   a wide swing hitting up to `maxTargets` enemies in front of you
+//   burst    a blow around you (Shield Break): every enemy within `radius`
+//            is hit, staggered and knocked back; `interrupts: 1` stops
+//            their ordinary attacks
+//   charge   a dash of `distance` metres at the target (or the cursor) over
+//            `duration` seconds that strikes on arrival (Lunge)
 //   buff     raises all your damage by `damageBonus` % for `duration` seconds
 //   camp     Set Camp: a cast, then the camp is pitched (systems/camp.js)
 //
@@ -65,18 +70,24 @@ export class Spells {
     if (!this.game.skills.knowsAbility(id)) return false;
     if (player.cooldowns.gcd > 0) return false; // queued out silently, as in WoW
     if (player.cooldowns[id] > 0) {
-      events.emit('log', { text: `${spell.name} is not ready.`, kind: 'muted', throttle: id + '-ready' });
+      this.game.hud.error(`${spell.name} is not ready yet`);
       return false;
     }
     if (spell.kind === 'camp' && this.game.camp.enemiesNear) {
-      events.emit('log', { text: 'You cannot make camp with enemies close by.', kind: 'muted', throttle: 'camp-enemies' });
+      this.game.hud.error('You cannot make camp with enemies close by');
       return false;
     }
     if ((spell.kind === 'cast' || spell.kind === 'camp') && player.moving) {
-      events.emit('log', { text: "You can't cast that while moving.", kind: 'muted', throttle: 'cast-moving' });
+      this.game.hud.error("You can't do that while moving");
       return false;
     }
     let target = null;
+    if (spell.kind === 'charge') {
+      // a charge goes at the target in range, or towards the cursor without one
+      target = this._targetFor(spell, { optional: true });
+      if (target === false) return false;
+      return this._charge(spell, target);
+    }
     if (spell.target === 'enemy') {
       target = this._targetFor(spell);
       if (!target) return false;
@@ -92,12 +103,13 @@ export class Spells {
       events.emit('castStart', { id });
       return true;
     }
-    if (spell.kind === 'cleave') {
-      // the swing lands after its windup, like Strike
+    if (spell.kind === 'cleave' || spell.kind === 'burst') {
+      // the blow lands after its windup, like a swing
       const windup = stats.hasted(t.windup);
+      const anim = spell.kind === 'burst' ? windup + 0.35 : windup + 0.3;
       player.pending = { type: 'spell', id, t: windup };
       player.cooldowns.attack = Math.max(player.cooldowns.attack, windup + 0.2);
-      player.rig.play('strike', windup + 0.3, windup / (windup + 0.3));
+      player.rig.play(spell.kind === 'burst' ? 'slam' : 'strike', anim, windup / anim);
       player.cooldowns[id] = t.cooldown;
       return true;
     }
@@ -106,23 +118,48 @@ export class Spells {
     return true;
   }
 
-  // the selected enemy if in range, else the soft target near the aim
-  _targetFor(spell) {
-    const { targeting, player, events } = this.game;
+  // the selected enemy if in range, else the soft target near the aim.
+  // `optional`: no target is fine (null); out of range is still refused (false).
+  _targetFor(spell, { optional = false } = {}) {
+    const { targeting, player } = this.game;
     const inRange = (e) => e && e.alive && Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) <= spell.range + e.radius * 0.6;
     const cur = targeting.current;
     if (cur && cur.alive) {
       if (inRange(cur)) return cur;
-      events.emit('log', { text: 'Out of range.', kind: 'muted', throttle: 'out-of-range' });
-      return null;
+      this.game.hud.error('Out of range');
+      return optional ? false : null;
     }
     const soft = targeting.softTarget(this.game.rawAim || player.position, spell.range);
     if (inRange(soft)) {
       targeting.select(soft);
       return soft;
     }
-    events.emit('log', { text: 'You have no target.', kind: 'muted', throttle: 'no-target' });
+    if (optional) return null;
+    this.game.hud.error('You have no target');
     return null;
+  }
+
+  // Lunge and other charges: dash at the target (or the cursor), strike on arrival.
+  _charge(spell, target) {
+    const { player, stats, events } = this.game;
+    const t = spell.tuning;
+    const aim = target ? target.position : this.game.rawAim;
+    let dir = { x: Math.sin(player.facing), z: Math.cos(player.facing) };
+    if (aim) {
+      const dx = aim.x - player.position.x;
+      const dz = aim.z - player.position.z;
+      const len = Math.hypot(dx, dz);
+      if (len > 0.3) dir = { x: dx / len, z: dz / len };
+    }
+    if (target) this.game.targeting.engage(target);
+    player.facing = Math.atan2(dir.x, dir.z);
+    player.cooldowns[spell.id] = t.cooldown;
+    player.cooldowns.gcd = stats.globalCooldown;
+    player.cooldowns.attack = Math.max(player.cooldowns.attack, t.duration + 0.2);
+    player.lunge = { t: 0, dir, id: spell.id, speed: t.distance / t.duration, duration: t.duration };
+    player.rig.play('strike', t.duration + 0.25, 0.7);
+    events.emit('playerLunge', {});
+    return true;
   }
 
   // a spell going off: instant effects now, bolts and zones over time
@@ -160,11 +197,15 @@ export class Spells {
     }
   }
 
-  // Called by the player when a pending spell swing lands (Cleave).
+  // Called by the player when a pending spell blow lands (cleave, burst, charge).
   resolve(id) {
     const spell = SPELLS[id];
-    const { player, enemies, events } = this.game;
-    if (player.dead || spell.kind !== 'cleave') return [];
+    const { player } = this.game;
+    if (player.dead) return [];
+    if (spell.kind === 'burst') return this._burst(spell);
+    if (spell.kind === 'charge') return this._chargeHit(spell);
+    if (spell.kind !== 'cleave') return [];
+    const { enemies, events } = this.game;
     const t = spell.tuning;
     const fx = Math.sin(player.facing);
     const fz = Math.cos(player.facing);
@@ -192,6 +233,40 @@ export class Spells {
     return hits;
   }
 
+  _burst(spell) {
+    const { player, enemies, events } = this.game;
+    const t = spell.tuning;
+    const hits = enemies.list.filter((e) => e.alive && Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius);
+    let most = 0;
+    for (const e of hits) most = Math.max(most, this._damage(spell, e, weaponRoll(this.game.random, this.game.stats), null, t.damageMultiplier, { stagger: t.stagger, knockFrom: player.position, knockback: t.knockback, heavy: !!t.interrupts }).amount);
+    events.emit('burst', { id: spell.id, position: player.position.clone(), radius: t.radius, hits });
+    // striking engages: auto attack the target, or the first foe left standing
+    const tg = this.game.targeting;
+    const alive = hits.filter((e) => e.alive);
+    if (alive.length) tg.engage(tg.current && alive.includes(tg.current) ? tg.current : alive[0]);
+    if (hits.length) events.emit('log', { text: `${spell.name} ${t.interrupts ? 'staggers' : 'hits'} ${hits.length === 1 ? 'the ' + hits[0].cfg.name : hits.length + ' foes'} for ${most}.`, kind: 'hit' });
+    else events.emit('log', { text: `${spell.name} strikes only earth.`, kind: 'muted' });
+    return hits;
+  }
+
+  // the charge has arrived: strike the target if close, else the nearest foe
+  _chargeHit(spell) {
+    const { player, enemies, events, targeting } = this.game;
+    const t = spell.tuning;
+    const dist = (e) => Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius;
+    let best = targeting.current && targeting.current.alive && dist(targeting.current) <= t.hitRadius + 0.4 ? targeting.current : null;
+    if (!best) for (const e of enemies.list) if (e.alive && dist(e) <= t.hitRadius && (!best || dist(e) < dist(best))) best = e;
+    if (!best) {
+      events.emit('playerMiss', {});
+      return [];
+    }
+    player.faceTowards(best.position.x, best.position.z);
+    targeting.engage(best);
+    const hit = this._damage(spell, best, weaponRoll(this.game.random, this.game.stats), null, t.damageMultiplier, { stagger: 0.3, knockFrom: player.position, knockback: 0.4 });
+    events.emit('log', { text: `You ${spell.name.toLowerCase()} into the ${best.cfg.name} for ${hit.amount}.${hit.crit ? ' A critical blow!' : ''}`, kind: 'hit' });
+    return [best];
+  }
+
   _spellBase(t) {
     return t.damageMin + (t.damageMax - t.damageMin) * this.game.random() + this.game.stats.spellPower;
   }
@@ -203,7 +278,7 @@ export class Spells {
     const hit = computeHit(this.game.random, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * this.damageScale * this.game.afterlife.damageScaleAgainst(enemy), school: spell.school || 'physical' });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
-    events.emit('enemyHit', { enemy, damage: hit.amount, crit: hit.crit, kind: 'spell' });
+    events.emit('enemyHit', { enemy, damage: hit.amount, crit: hit.crit, kind: (spell.school || 'physical') === 'physical' ? 'strike' : 'spell' });
     events.emit('hitImpact', { enemy, crit: hit.crit, heavy: (hurtOpts.knockback || 0) > 0 });
     if (line) events.emit('log', { text: line.replace('{name}', enemy.cfg.name).replace('{n}', hit.amount) + (hit.crit ? ' A critical blow!' : ''), kind: 'hit' });
     if (enemy.dead) combat.onEnemyDefeated(enemy);

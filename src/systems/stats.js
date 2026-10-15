@@ -5,7 +5,7 @@ import { ITEMS, itemView } from '../data/items.js';
 // See docs/stats-and-damage.md. The numbers all live in CONFIG.stats, the
 // archetype entry and the item definitions.
 
-const ATTRS = ['might', 'finesse', 'intellect', 'vitality'];
+const ATTRS = ['stamina', 'strength', 'agility', 'intellect'];
 const S = () => CONFIG.stats;
 
 // percent reduction from armour or resistance against an attacker of a level
@@ -40,7 +40,7 @@ export class Stats {
   }
 
   get maxHealth() {
-    return S().healthBase + this.totals.vitality * S().healthPerVitality;
+    return S().healthBase + this.totals.stamina * S().healthPerStamina;
   }
 
   get maxMana() {
@@ -56,7 +56,7 @@ export class Stats {
   }
 
   get critChance() {
-    return S().critBase + this.totals.finesse * S().critPerFinesse;
+    return S().critBase + this.totals.agility * S().critPerAgility;
   }
 
   get armour() {
@@ -145,17 +145,15 @@ export class Stats {
   // What a level-up compares: label, value, and how to show it.
   snapshot() {
     const t = this.totals;
-    const [lo, hi] = this.abilityRange(1);
     return {
-      might: { label: 'Might', v: t.might },
-      finesse: { label: 'Finesse', v: t.finesse },
+      stamina: { label: 'Stamina', v: t.stamina },
+      strength: { label: 'Strength', v: t.strength },
+      agility: { label: 'Agility', v: t.agility },
       intellect: { label: 'Intellect', v: t.intellect },
-      vitality: { label: 'Vitality', v: t.vitality },
       health: { label: 'Maximum health', v: this.maxHealth },
       mana: { label: 'Maximum mana', v: this.maxMana },
-      strike: { label: 'Strike', v: (lo + hi) / 2, text: `${lo}–${hi}` },
       dps: { label: 'Auto attack', v: this.dps, text: `${this.dps.toFixed(1)} per second` },
-      crit: { label: 'Critical chance', v: this.critChance, text: `${this.critChance.toFixed(1)}%` },
+      crit: { label: 'Crit', v: this.critChance, text: `${this.critChance.toFixed(1)}%` },
       spellPower: { label: 'Spell power', v: this.spellPower },
       block: { label: 'Block chance', v: this.blockChance, text: `${this.blockChance}%` },
       haste: { label: 'Haste', v: this.haste, text: `${this.haste}%` },
