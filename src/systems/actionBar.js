@@ -44,7 +44,7 @@ export function freeSlot(slots) {
   const i = order.find((k) => !slots[k]);
   return i === undefined ? -1 : i;
 }
-export const UTILITY_ABILITIES = ['fish', 'setCamp'];
+export const UTILITY_ABILITIES = ['fish', 'setCamp', 'cook'];
 
 // may this ability sit on the bar (and show in the spellbook)?
 export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);

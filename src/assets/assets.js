@@ -62,6 +62,16 @@ import arming_sword from '../../assets/models/arming_sword.glb';
 import militia_sword from '../../assets/models/militia_sword.glb';
 import dirk from '../../assets/models/dirk.glb';
 import bone_knife from '../../assets/models/bone_knife.glb';
+import cooked_fish from '../../assets/models/cooked_fish.glb';
+import steak from '../../assets/models/steak.glb';
+import stew from '../../assets/models/stew.glb';
+import innkeeper from '../../assets/models/innkeeper.glb';
+import inn_shell from '../../assets/models/inn_shell.glb';
+import inn_front from '../../assets/models/inn_front.glb';
+import inn_roof from '../../assets/models/inn_roof.glb';
+import cottage from '../../assets/models/cottage.glb';
+import well from '../../assets/models/well.glb';
+import lamp_post from '../../assets/models/lamp_post.glb';
 import tam from '../../assets/models/tam.glb';
 import camp from '../../assets/models/camp.glb';
 import torch from '../../assets/models/torch.glb';
@@ -83,6 +93,7 @@ const SOURCES = {
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
   tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
   arming_sword, militia_sword, dirk, bone_knife,
+  cooked_fish, steak, stew, innkeeper, inn_shell, inn_front, inn_roof, cottage, well, lamp_post,
 };
 
 // One shared material per Blender material name keeps draw state small.

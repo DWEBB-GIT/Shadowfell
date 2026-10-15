@@ -264,6 +264,30 @@ export function abilityIcons() {
       g.lineTo(44, 58);
       g.stroke();
     }),
+    cook: glyph((g) => {
+      // a pot over flames
+      g.fillStyle = '#e07a2a';
+      for (const [x, h] of [[22, 16], [32, 22], [42, 16]]) {
+        g.beginPath();
+        g.moveTo(x - 6, 58);
+        g.quadraticCurveTo(x - 4, 58 - h * 0.6, x, 58 - h);
+        g.quadraticCurveTo(x + 4, 58 - h * 0.6, x + 6, 58);
+        g.fill();
+      }
+      g.fillStyle = '#4a4440';
+      g.beginPath();
+      g.ellipse(32, 30, 18, 12, 0, 0, Math.PI);
+      g.fill();
+      g.fillRect(14, 26, 36, 5);
+      g.strokeStyle = 'rgba(220,220,210,0.6)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(26, 22);
+      g.quadraticCurveTo(22, 15, 27, 8);
+      g.moveTo(37, 22);
+      g.quadraticCurveTo(41, 15, 36, 8);
+      g.stroke();
+    }),
     fish: glyph((g) => {
       // a rod, its line and a bob on the water
       g.strokeStyle = '#8a6a3a';

@@ -13,6 +13,7 @@ import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
 import { SPELLS } from '../systems/spells.js';
 import { RARITY, ITEMS } from '../data/items.js';
+import { DB } from '../data/db.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -388,12 +389,21 @@ export class Hud {
   // The cast bar, buffs under the health bar, and your effects on the target.
   _refreshSpells() {
     const { player, spells } = this.game;
-    const c = player.casting;
+    // a spell, a dish on the fire, or a meal (which empties as you eat)
+    const k = this.game.cooking?.crafting;
+    const e = player.eating;
+    const c = player.casting
+      ? { t: player.casting.t, total: player.casting.total, name: SPELLS[player.casting.id].name }
+      : k
+        ? { t: k.t, total: k.total, name: `Cooking ${ITEMS[DB.recipes[k.id].output.item].name}${k.left > 1 ? ` (${k.left})` : ''}` }
+        : e
+          ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
+          : null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
       $('cast-fill').style.width = `${Math.min(100, (c.t / c.total) * 100)}%`;
-      $('cast-text').textContent = `${SPELLS[c.id].name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
+      $('cast-text').textContent = `${c.name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
     }
     // the weapon swing timer (WoW addons' swing timer): fills until the next
     // blow lands, while auto attack is on

@@ -4,9 +4,20 @@
     "minX": -36,
     "maxX": 36,
     "minZ": -125,
-    "maxZ": 47
+    "maxZ": 100
   },
   "regions": [
+    {
+      "id": "brackenford",
+      "name": "Brackenford",
+      "minZ": 50,
+      "bounds": {
+        "minX": -36,
+        "maxX": 36,
+        "minZ": 50,
+        "maxZ": 100
+      }
+    },
     {
       "id": "fallen_road",
       "name": "The Fallen Road",
@@ -36,6 +47,9 @@
       "name": "The Fallen Road",
       "halfWidth": 2.2,
       "points": [
+        [-6, 98],
+        [-8, 86],
+        [-8, 72],
         [-9, 58],
         [-8, 44],
         [-6, 32],
@@ -134,6 +148,18 @@
       "name": "The Barrow Hollow",
       "position": [-27, -90],
       "radius": 6
+    },
+    {
+      "id": "brackenford",
+      "name": "Brackenford",
+      "position": [-2, 76],
+      "radius": 16
+    },
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "position": [8, 72],
+      "radius": 6
     }
   ],
   "npcSpawns": [
@@ -147,6 +173,11 @@
       "npc": "tam",
       "position": [-18.2, -12.4],
       "facing": 250
+    },
+    {
+      "npc": "hester",
+      "position": [11.2, 68.6],
+      "facing": 0
     }
   ],
   "enemySpawns": [
@@ -422,5 +453,57 @@
         "pick": 3
       }
     }
+  ],
+  "buildings": [
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "position": [8, 72],
+      "size": [12, 9],
+      "shell": "inn_shell",
+      "front": "inn_front",
+      "roof": "inn_roof",
+      "walls": [
+        [-6, -4.5, 6, -4.5],
+        [6, -4.5, 6, 4.5],
+        [-6, 4.5, 6, 4.5],
+        [-6, -4.5, -6, -0.9],
+        [-6, 0.9, -6, 4.5]
+      ],
+      "furniture": [
+        [-3.8, -3.95, 1.0],
+        [-3.0, -3.95, 0.6],
+        [-4.6, -3.95, 0.6],
+        [1.8, -2.9, 0.4],
+        [2.6, -2.9, 0.4],
+        [3.4, -2.9, 0.4],
+        [4.2, -2.9, 0.4],
+        [5.0, -2.9, 0.4],
+        [-2.2, 1.2, 0.6],
+        [1.4, 2.4, 0.6],
+        [-1.0, -1.4, 0.6],
+        [4.7, 3.4, 0.6],
+        [5.4, 3.4, 0.5],
+        [4.7, 1.6, 0.6],
+        [5.4, 1.6, 0.5]
+      ],
+      "rest": true,
+      "light": [-3.8, -3.4]
+    }
+  ],
+  "stations": [
+    {
+      "id": "inn_hearth",
+      "name": "the inn's hearth",
+      "kind": "fire",
+      "position": [4.2, 68.4],
+      "radius": 2.6
+    }
+  ],
+  "pads": [
+    [8, 72, 8],
+    [-22, 62, 4.5],
+    [-23, 82, 4.5],
+    [20, 88, 4.5]
   ]
 }

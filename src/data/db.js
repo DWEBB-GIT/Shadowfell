@@ -16,7 +16,8 @@
 //   data/world.json        regions, roads, shrines, locations, spawns, loot
 //   data/scenery.json      props, clearings, lights
 //   data/text.json         intro, documents, examine text
-//   data/skills.json       skills learned from trainers (camping, fishing)
+//   data/skills.json       skills learned from trainers (camping, fishing, cooking)
+//   data/recipes.json      recipes for crafting skills (cooking)
 //
 // See CONTRIBUTING.md for how to add content.
 
@@ -35,6 +36,7 @@ import scenery from '../../data/scenery.json';
 import text from '../../data/text.json';
 import skills from '../../data/skills.json';
 import factions from '../../data/factions.json';
+import recipes from '../../data/recipes.json';
 import { validateGameData, indexById } from './schema.js';
 
 export const RAW = {
@@ -53,6 +55,7 @@ export const RAW = {
   'text.json': text,
   'skills.json': skills,
   'factions.json': factions,
+  'recipes.json': recipes,
 };
 
 // Problems found in the data (empty when it is sound). The game logs them at
@@ -82,6 +85,7 @@ export const DB = {
   locations: byId(world.locations, 'locations'),
   skills: byId(skills.skills, 'skills'),
   factions: byId(factions.factions, 'factions'),
+  recipes: byId(recipes.recipes, 'recipes'),
   standings: factions.standings,
   water: world.water || [],
   obscured: world.obscured || [],

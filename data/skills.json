@@ -1,5 +1,5 @@
 {
-  "_about": "Skills the Warden can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch).",
+  "_about": "Skills the Warden can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
   "skills": [
     {
       "id": "camping",
@@ -26,6 +26,15 @@
       "teaches": [],
       "maxRank": 50,
       "desc": "Open locked chests without their key (you need lockpicks). Each lock needs a certain rank; every lock you pick raises it."
+    },
+    {
+      "id": "cooking",
+      "name": "Cooking",
+      "trainer": "hester",
+      "cost": 10,
+      "teaches": ["cook"],
+      "maxRank": 50,
+      "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook."
     }
   ]
 }

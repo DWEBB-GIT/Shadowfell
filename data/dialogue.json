@@ -166,6 +166,60 @@
           ]
         }
       ]
+    },
+    {
+      "id": "hester",
+      "greetings": [
+        {
+          "text": "Come in out of it. There's a fire, a bed, and stew if you don't ask what's in it."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "hester_who"
+        },
+        {
+          "id": "cook",
+          "prompt": "Can you teach me to cook?",
+          "node": "hester_cook"
+        },
+        {
+          "id": "rest",
+          "prompt": "Can I rest here?",
+          "node": "hester_rest"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "hester_who",
+          "text": "Hester Vale. I keep the Ford Inn, which mostly means I keep it standing. Brackenford's what's left of the folk who wouldn't leave when the road fell.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_cook",
+          "text": "Anyone can burn a fish. Cooking's knowing when to stop. Learn from me and you'll eat better than the dead do. Bring me perch and dace to start; once you've the knack I'll show you what to do with hound.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_rest",
+          "text": "Under this roof you're safe to rest. Sit a while and you'll wake sharper for it. Say the word and I'll keep a bed for you: if the road kills you, you'll wake up here.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

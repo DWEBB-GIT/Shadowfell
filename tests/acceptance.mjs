@@ -3730,7 +3730,115 @@ async function dualWield(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, gearRolls, blackwood, atmosphere };
+async function townAndCooking(browser) {
+  current = 'Town, inn and cooking';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // Hester teaches Cooking, then a recipe that needs rank 10
+  const learn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addCoins(500);
+    g.dialogue.open(g.npcs.byId('hester'));
+    const opts = g.dialogue.page.options.map((o) => o.id);
+    const ok = g.dialogue.choose('train:cooking');
+    const after = g.dialogue.page.options.map((o) => o.id);
+    const early = g.cooking.learnRecipe('hound_steak');
+    g.dialogue.close();
+    return { opts, ok, after, early, rank: g.skills.rank('cooking'), known: g.cooking.known().map((r) => r.id) };
+  });
+  record('Hester, the innkeeper, teaches Cooking; the starter recipes come with it', learn.opts.includes('train:cooking') && learn.opts.includes('home') && learn.ok && learn.rank === 1 && learn.known.join() === 'grilled_perch,roast_dace', JSON.stringify(learn));
+  record('She offers taught recipes once you can cook, but not before your rank allows', learn.after.includes('recipe:hound_steak') && learn.early === false, learn.after.join(', '));
+
+  // cook at the hearth: needs a fire, takes a cast, raises the skill (orange)
+  await setup(page, { x: 30, z: 60 });
+  await page.evaluate(() => window.__shadowfall.inventory.addItem('gloomwater_perch', 3, { quiet: true }));
+  const noFire = await page.evaluate(() => ({ ok: window.__shadowfall.cooking.start('grilled_perch'), why: window.__shadowfall.cooking.blocked(window.__shadowfall.db.recipes.grilled_perch) }));
+  await setup(page, { x: 4.6, z: 69.6 });
+  await sim(page, 0.2);
+  const prompt = await page.evaluate(() => { const g = window.__shadowfall; g.interaction.update(); return g.interaction.current?.prompt; });
+  await page.evaluate(() => window.__shadowfall.interaction.interact());
+  await sim(page, 0.1);
+  const winOpen = await page.evaluate(() => !document.getElementById('cooking-window').hidden && document.querySelectorAll('#cooking-list .recipe').length);
+  record('Cooking needs a fire; E at the inn hearth opens the cooking window', noFire.ok === false && /fire/.test(noFire.why) && /hearth/.test(prompt || '') && winOpen === 2, `away: "${noFire.why}"; prompt "${prompt}"; ${winOpen} recipes listed`);
+  await page.click('#cooking-list [data-cook="grilled_perch"][data-all]');
+  await sim(page, 1.2);
+  const mid = await page.evaluate(() => ({ cast: !document.getElementById('cast-bar').hidden, text: document.getElementById('cast-text').textContent, made: window.__shadowfall.inventory.count('grilled_perch') }));
+  await sim(page, 7);
+  const done = await page.evaluate(() => ({ made: window.__shadowfall.inventory.count('grilled_perch'), raw: window.__shadowfall.inventory.count('gloomwater_perch'), rank: window.__shadowfall.skills.rank('cooking') }));
+  record('Cook all makes each dish after a 2.5 s cast, shown on the cast bar', mid.cast && /Cooking Grilled perch/i.test(mid.text) && mid.made === 0 && done.made === 3 && done.raw === 0, `${mid.text}; then ${done.made} cooked, ${done.raw} raw left`);
+  record('Orange recipes always raise the skill', done.rank === 4, `Cooking ${done.rank}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'cooking.png') });
+  // moving stops cooking
+  await page.evaluate(() => { const g = window.__shadowfall; g.inventory.addItem('silver_dace', 2, { quiet: true }); g.cooking.start('roast_dace', Infinity); });
+  await sim(page, 0.8, { held: ['KeyD'] });
+  const stopped = await page.evaluate(() => ({ c: window.__shadowfall.cooking.crafting, n: window.__shadowfall.inventory.count('roast_dace') }));
+  record('Moving stops cooking', !stopped.c && stopped.n === 0, JSON.stringify(stopped));
+
+  // eat: sit, heal over time, stop on moving; refused in a fight
+  const eat = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.health = 20;
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    g.inventory.use(loc);
+    return { eating: !!g.player.eating, pose: g.player.rig.pose, hp: g.player.health };
+  });
+  await sim(page, 5);
+  const ate = await page.evaluate(() => ({ hp: window.__shadowfall.player.health, eating: !!window.__shadowfall.player.eating }));
+  await sim(page, 0.4, { held: ['KeyW'] });
+  const moved = await page.evaluate(() => ({ eating: !!window.__shadowfall.player.eating, pose: window.__shadowfall.player.rig.pose }));
+  record('Eating sits you down and heals over time; moving stops it', eat.eating && eat.pose === 'sit' && ate.hp > 30 && ate.eating && !moved.eating && moved.pose !== 'sit', `${eat.hp} → ${ate.hp} hp in 5 s; after moving: ${JSON.stringify(moved)}`);
+  const fight = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    Object.defineProperty(g.resources, 'inCombat', { value: true, configurable: true });
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    const ok = g.cooking.eat(loc);
+    delete g.resources.inCombat;
+    return ok;
+  });
+  record("You can't eat in a fight", fight === false);
+
+  // indoors: walls block, the roof and front wall fade, the camera comes in
+  await page.evaluate(() => { window.__shadowfall.hud.items.closeAll(); document.getElementById('ui-error').classList.remove('show'); });
+  await setup(page, { x: -7, z: 74 });
+  await sim(page, 1.5);
+  const out = await page.evaluate(() => { const g = window.__shadowfall; return { cam: g.camera.position.distanceTo(g.player.position), blend: g.world.indoorBlend }; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'town.png') });
+  await setup(page, { x: 8, z: 70 });
+  await sim(page, 1.5);
+  const inn = await page.evaluate(() => { const g = window.__shadowfall; const b = g.world.indoors; return { cam: g.camera.position.distanceTo(g.player.position), blend: g.world.indoorBlend, name: b?.def.name, roof: b?.fade[1].mats[0].opacity, front: b?.fade[0].mats[0].opacity, roofVis: b?.fade[1].obj.visible }; });
+  record('Inside the inn the roof hides, the front wall fades and the camera comes closer', inn.name && inn.blend > 0.95 && out.blend < 0.05 && inn.roofVis === false && inn.front < 0.3 && inn.cam < out.cam * 0.85, `outside ${out.cam.toFixed(1)} m, inside ${inn.cam.toFixed(1)} m; roof ${inn.roof?.toFixed(2)}, front ${inn.front?.toFixed(2)}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'inn.png') });
+  // walls are solid: walk north into the north wall
+  await sim(page, 3, { held: ['KeyW'] });
+  const z = await page.evaluate(() => window.__shadowfall.player.position.z);
+  record('The inn walls are solid', z > 67.6, `stopped at z ${z.toFixed(2)} (north wall at 67.5)`);
+  // resting at the inn builds rested XP
+  await page.evaluate(() => { window.__shadowfall.progression.rested = 0; });
+  await sim(page, 2);
+  const rested = await page.evaluate(() => ({ r: window.__shadowfall.progression.rested, where: window.__shadowfall.camp.resting }));
+  record('Resting inside the inn builds rested experience', rested.r > 0 && rested.where === 'inn', JSON.stringify(rested));
+  // make it your home: you wake here after a death, and it saves
+  const home = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.open(g.npcs.byId('hester'));
+    g.dialogue.choose('home');
+    g.dialogue.close();
+    const rp = g.afterlife.restPoint();
+    const saved = JSON.parse(JSON.stringify(g.worldState.serialize()));
+    g.worldState.apply(saved);
+    return { point: g.worldState.restPoint, rp, again: g.worldState.restPoint };
+  });
+  record('Make this inn your home: you wake by its hearth, and it is saved', home.point === 'inn:hester' && home.rp.kind === 'inn' && home.again === 'inn:hester', JSON.stringify(home));
+
+  record('No script errors (town and cooking)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

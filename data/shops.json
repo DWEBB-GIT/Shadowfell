@@ -19,6 +19,12 @@
       "name": "Outfitter",
       "sells": ["tool", "torch", "consumable", "material"],
       "description": "Rods, lights and the things a traveller forgets."
+    },
+    {
+      "id": "innkeeper",
+      "name": "Innkeeper",
+      "sells": ["consumable"],
+      "description": "Food, drink and a bed."
     }
   ],
   "shops": [
@@ -35,6 +41,12 @@
       "vendorType": "outfitter",
       "stock": ["fishing_rod", "torch", "healing_draught", "lockpicks"],
       "faction": "mere_folk"
+    },
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "vendorType": "innkeeper",
+      "stock": ["grilled_perch", "travellers_stew", "healing_draught"]
     }
   ]
 }

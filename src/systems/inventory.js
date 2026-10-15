@@ -316,6 +316,7 @@ export class Inventory {
       if (!free) return !!this._refuse('Your bags are full.');
       return this.move(loc, free).ok;
     }
+    if (def.use?.food) return this.game.cooking.eat(loc);
     if (def.kind === 'consumable') return this.useDraught(loc);
     if (def.kind === 'document') {
       this.game.hud.openDocument(s.id);

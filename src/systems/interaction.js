@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { SHRINES } from '../world/layout.js';
+import { SHRINES, STATIONS } from '../world/layout.js';
 import { EXAMINE } from '../data/text.js';
 
 // Finds the nearest thing the player can act on and runs it when E is
@@ -32,6 +32,13 @@ export class Interaction {
         prompt: 'Rest at the shrine',
         run: () => this.game.restAtShrine(sh),
       });
+    }
+    // a hearth opens Cooking once you know the skill
+    if (this.game.skills.has('cooking')) {
+      for (const st of STATIONS) {
+        if (st.kind !== 'fire') continue;
+        list.push({ key: 'station:' + st.id, x: st.position[0], z: st.position[1], bias: 0.3, reach: st.radius, prompt: `Cook at ${st.name}`, run: () => this.game.hud.items.show('cooking') });
+      }
     }
     for (const p of world.examinePoints) {
       const seen = worldState.examined.has(p.id);

@@ -275,6 +275,7 @@ export class Player {
       }
       if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
+      if (a.cook) this.game.hud.items.toggle('cooking');
     }
 
     collision.resolve(this.position, this.radius);

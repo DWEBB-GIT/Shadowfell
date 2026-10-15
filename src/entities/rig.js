@@ -97,6 +97,14 @@ export class Rig {
     }
 
     // a held pose under any action: the rod out over the water
+    // sitting to eat: knees up, a little lower
+    if (this.pose === 'sit' && !this.action) {
+      if (p.Leg_L) p.Leg_L.rotation.x += -1.45;
+      if (p.Leg_R) p.Leg_R.rotation.x += -1.35;
+      if (p.Arm_R) p.Arm_R.rotation.x += -0.9 + Math.sin(this.time * 3) * 0.25;
+      if (p.Arm_L) p.Arm_L.rotation.x += -0.5;
+      this.model.position.y = -0.5;
+    } else if (this.death < 0) this.model.position.y = 0;
     if (this.pose === 'fish' && !this.action) {
       if (p.Arm_R) p.Arm_R.rotation.x += -1.0;
       if (p.Arm_L) p.Arm_L.rotation.x += -0.35;

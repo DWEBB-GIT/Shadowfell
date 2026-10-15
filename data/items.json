@@ -497,6 +497,91 @@
       "description": "Black as the mere's bottom and nearly as old. Tam has caught two in forty years."
     },
     {
+      "id": "grilled_perch",
+      "name": "Grilled perch",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 60,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 6,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Charred at the edges, sweet in the middle. Restores 60 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "roast_dace",
+      "name": "Roast dace",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 70,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 7,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Small, bright and gone in three bites. Restores 70 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "hound_steak",
+      "name": "Hound steak",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 90,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 8,
+      "model": "steak",
+      "icon": "steak",
+      "description": "Tough as a boot and twice as filling. Restores 90 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "travellers_stew",
+      "name": "Traveller's stew",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 120,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 12,
+      "model": "stew",
+      "icon": "stew",
+      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "smoked_eel",
+      "name": "Smoked barrow eel",
+      "kind": "consumable",
+      "rarity": "rare",
+      "use": {
+        "food": {
+          "heal": 200,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 40,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Black, rich and faintly sinister. Restores 200 health over 15 seconds while you sit and eat."
+    },
+    {
       "id": "old_boot",
       "name": "Waterlogged boot",
       "kind": "junk",

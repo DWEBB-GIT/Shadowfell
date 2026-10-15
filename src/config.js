@@ -94,6 +94,7 @@ export const CONFIG = {
   blackwood: { fogColor: 0x1d2725, fogNear: 9, fogFar: 32, light: 0.68 },
   camera: {
     offset: [0, 11, 10],
+    indoorZoom: 0.22, // how much closer the camera comes inside a building
     fov: 45,
     followSharpness: 8, // higher = tighter follow
     renderScale: 0.62, // chunky, period-appropriate pixels

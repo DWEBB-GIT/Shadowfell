@@ -46,22 +46,29 @@ export class Camp {
     this.game.scene.add(this.mesh);
   }
 
+  // 'camp' by your fire, 'inn' under an inn's roof (no enemy near), else null
   get resting() {
     const c = this.game.worldState.camp;
-    const { player } = this.game;
-    return !!c && !player.dead && Math.hypot(player.position.x - c.x, player.position.z - c.z) <= CONFIG.camp.restRadius && !this.enemiesNear;
+    const { player, world } = this.game;
+    if (player.dead || this.enemiesNear) return null;
+    if (world?.indoors?.def.rest) return 'inn';
+    return c && Math.hypot(player.position.x - c.x, player.position.z - c.z) <= CONFIG.camp.restRadius ? 'camp' : null;
   }
 
   update(dt, time) {
     if (this.light) this.light.intensity = 2.0 + Math.sin(time * 9) * 0.25 + Math.sin(time * 23) * 0.15;
     // rested experience builds while you sit by the fire
     const prog = this.game.progression;
-    if (this.resting) {
+    const where = this.resting;
+    if (where) {
       const cap = prog.xpToNext * CONFIG.camp.restedCap;
       if (prog.rested < cap) {
         const was = prog.rested;
         prog.rested = Math.min(cap, prog.rested + prog.xpToNext * CONFIG.camp.restedPerSecond * dt);
-        if (was === 0) this.game.events.emit('log', { text: 'You rest by the fire. You feel rested.', kind: 'heal', throttle: 'rested' });
+        if (was === 0) {
+          const text = where === 'inn' ? 'You rest at the inn. You feel rested.' : 'You rest by the fire. You feel rested.';
+          this.game.events.emit('log', { text, kind: 'heal', throttle: 'rested' });
+        }
       }
     }
   }

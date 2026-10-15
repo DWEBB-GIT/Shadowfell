@@ -49,4 +49,11 @@ export const WITCHLIGHTS = S.witchlights;
 export const WATER = DB.water;
 export const OBSCURED = DB.obscured;
 
+// Buildings you can walk into (the Ford Inn): footprint, models, walls.
+export const BUILDINGS = W.buildings || [];
+// Places that count as a cooking fire (the inn's hearth); a pitched camp counts too.
+export const STATIONS = W.stations || [];
+// Ground flattened for a building: [x, z, radius].
+export const PADS = W.pads || [];
+
 export const DANGER_ZONES = W.dangerZones.map((z) => ({ position: z.position, radius: z.radius, enemy: z.enemySpawn }));

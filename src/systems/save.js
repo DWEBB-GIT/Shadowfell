@@ -103,6 +103,7 @@ export function validateSave(data) {
     check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
   }
   if (data.reputation !== undefined) check(data.reputation && typeof data.reputation === 'object' && Object.values(data.reputation).every((n) => Number.isFinite(n)), 'reputation');
+  if (data.cooking !== undefined) check(data.cooking && isStrArray(data.cooking.recipes) && data.cooking.recipes.every((id) => DB.recipes[id]), 'recipes');
   if (data.skills !== undefined) {
     check(data.skills && typeof data.skills === 'object' && Object.entries(data.skills).every(([id, r]) => DB.skills[id] && isInt(r) && r >= 1), 'skills');
   }
@@ -118,7 +119,7 @@ export function validateSave(data) {
       'items on the ground',
     );
     if (w.camp !== undefined) check(w.camp === null || inBounds(w.camp), 'camp position');
-    if (w.restPoint !== undefined) check(w.restPoint === 'camp' || w.restPoint === 'shrine', 'rest point');
+    if (w.restPoint !== undefined) check(w.restPoint === 'camp' || w.restPoint === 'shrine' || (typeof w.restPoint === 'string' && w.restPoint.startsWith('inn:')), 'rest point');
     if (w.nemesis !== undefined) check(w.nemesis === null || typeof w.nemesis === 'string', 'nemesis');
     if (w.respawnAt !== undefined) check(w.respawnAt && typeof w.respawnAt === 'object' && Object.values(w.respawnAt).every((t) => Number.isFinite(t)), 'respawn timers');
     if (w.corpses !== undefined) {
@@ -152,6 +153,7 @@ export class SaveManager {
       quests: this.game.quests.serialize(),
       skills: this.game.skills.serialize(),
       reputation: this.game.reputation.serialize(),
+      cooking: this.game.cooking.serialize(),
     };
   }
 
@@ -216,6 +218,7 @@ export class SaveManager {
     worldState.apply(data.world);
     this.game.quests.apply(data.quests, worldState.flags);
     this.game.skills.apply(data.skills);
+    this.game.cooking.apply(data.cooking);
     this.game.reputation.apply(data.reputation);
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
