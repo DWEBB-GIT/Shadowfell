@@ -31,7 +31,7 @@ export class ItemUI {
     this.game = game;
     this.hud = hud;
     this.openBags = new Set(); // socket indices whose bag window is open
-    this.open = { character: false, spellbook: false, skills: false, settings: false };
+    this.open = { character: false, spellbook: false, skills: false, settings: false, talents: false };
     this.icons = {};
     this.drag = null; // { from, x0, y0, moved }
     this.focus = null; // gamepad highlight: a location string
@@ -50,6 +50,7 @@ export class ItemUI {
       spellHint: $('spellbook-hint'),
       skills: $('skills-window'),
       settings: $('settings-window'),
+      talents: $('talents-window'),
       skillList: $('skills-list'),
       shop: $('shop-window'),
       shopName: $('shop-name'),
@@ -66,6 +67,7 @@ export class ItemUI {
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
     $('btn-settings').addEventListener('click', () => this.toggle('settings'));
+    $('btn-talents').addEventListener('click', () => this.toggle('talents'));
     $('settings-list').addEventListener('change', (e) => game.settings.set(e.target.dataset.setting, e.target.checked));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
@@ -150,7 +152,7 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || !!this.game.merchant.current;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || this.open.talents || !!this.game.merchant.current;
   }
 
   // shop slots: m:<item> buys, y:<n> buys back
@@ -205,7 +207,7 @@ export class ItemUI {
   closeAll() {
     const was = this.anyOpen;
     this.openBags.clear();
-    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = false;
+    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = this.open.talents = false;
     this.shopOpenedBags = false;
     this.game.merchant.close();
     this._afterChange(null);
@@ -360,12 +362,14 @@ export class ItemUI {
         : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
     }
 
-    // settings: one checkbox each
+    this.el.talents.hidden = !this.open.talents;
+    // settings: one checkbox each, then the key bindings
     this.el.settings.hidden = !this.open.settings;
     if (this.open.settings) {
       const list = document.getElementById('settings-list');
       if (!list.children.length) list.innerHTML = SETTINGS.map((s) => `<label><input type="checkbox" data-setting="${s.id}"> ${s.label}</label>`).join('');
       for (const box of list.querySelectorAll('input')) box.checked = this.game.settings.get(box.dataset.setting);
+      this.hud.keybindUI.render();
     }
 
     // skills, RuneScape style: a tile per skill with its level

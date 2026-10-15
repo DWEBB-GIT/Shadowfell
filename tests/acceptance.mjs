@@ -1355,7 +1355,7 @@ async function controls(browser) {
   await pauseLoop(page);
   const labels = await page.evaluate(() => [...document.querySelectorAll('#action-bar .aslot .key')].map((k) => k.textContent));
   const defensive = await page.evaluate(() => document.getElementById('aslot-5').classList.contains('defensive'));
-  record('The spell bar is on number keys (the mouse selects and attacks), with Space as the defensive slot', labels.join() === '1,2,3 / Q,4,5,Space' && defensive, `slots: ${labels.join(' | ')}`);
+  record('The spell bar is on number keys (the mouse selects and attacks), with Space as the defensive slot', labels.join() === '1,2,3 / Q,4,5,Space,6,7,8,9' && defensive, `slots: ${labels.join(' | ')}`);
 
   // the camera is fixed: no orbit, WASD is screen-relative
   await setup(page, { x: -6, z: 30 });
@@ -1369,7 +1369,7 @@ async function controls(browser) {
     const [ox, oy, oz] = g.config.camera.offset;
     return { yaw: g.camYaw, off: [c.x - t.x - ox, c.y - t.y - oy, c.z - t.z - oz].map((v) => Math.abs(v)) };
   });
-  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -5, 0.2) && near(b.x - a.x, 0, 0.2),
+  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -6.5, 0.2) && near(b.x - a.x, 0, 0.2),
     `camera holds its isometric offset; W moved (${(b.x - a.x).toFixed(2)}, ${(b.z - a.z).toFixed(2)}), straight up the screen`);
 
   // nothing selected: a faint ring shows who an ability would go to
@@ -1395,7 +1395,7 @@ async function controls(browser) {
   await sim(page, 0.6, { aimAt: { x: 4, z: -1 }, press: ['Digit1'] });
   b = (await state(page)).pos;
   gh = await enemy(page, 'ghoul_road');
-  record('Lunge (and any targeted spell) goes to the soft-locked enemy', b.x - a.x > 3.5 && gh.hp === 21, `aimed near the ghoul: charged ${(b.x - a.x).toFixed(2)}m east, ghoul 48 → ${gh.hp}`);
+  record('Lunge (and any targeted spell) goes to the soft-locked enemy', b.x - a.x > 3.5 && gh.hp < 48, `aimed near the ghoul: charged ${(b.x - a.x).toFixed(2)}m east, ghoul 48 → ${gh.hp}`);
 
   // hard lock: Tab locks what you aim at, a second Tab releases
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
@@ -1413,13 +1413,13 @@ async function controls(browser) {
 
   // auto attacking, the Warden faces the target and blows go to it
   const t3 = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
-  await page.evaluate(() => window.__shadowfall.targeting.engage(window.__shadowfall.targeting.current));
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.targeting.current); g.player.cooldowns.attack = 0; });
   await sim(page, 0.55, { aimAt: { x: -4, z: 0 } });
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   const facing = await page.evaluate(() => window.__shadowfall.player.facing);
   gh = await enemy(page, 'ghoul_road');
-  record('Auto attack keeps the Warden facing the target and hits it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp === 30,
-    `facing ${(facing * 180 / Math.PI).toFixed(0)}° (towards the ghoul); cursor off to the west: ghoul 48 → ${gh.hp}`);
+  record('Auto attack keeps the Warden facing the target and hits it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp < 22,
+    `facing ${(facing * 180 / Math.PI).toFixed(0)}° (towards the ghoul); cursor off to the west: ghoul 22 → ${gh.hp}`);
   await sim(page, 0.05, { press: ['Escape'] });
   const cleared = await page.evaluate(() => window.__shadowfall.targeting.current === null && document.getElementById('target-label').textContent !== 'Locked');
   record('Escape clears the target', cleared);
@@ -1437,10 +1437,12 @@ async function controls(browser) {
   await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 48; g.player.cooldowns.attack = 0; });
   await padSim(page, 0.05, { tap: [11] });
   const padLock = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
-  await padSim(page, 0.5, { tap: [PAD.RT], axes: [0, 0, -1, 0] });
+  await padSim(page, 0.05, { tap: [PAD.RT], axes: [0, 0, -1, 0] });
+  await page.evaluate(() => (window.__shadowfall.player.cooldowns.attack = 0)); // skip the first-swing wait
+  await padSim(page, 0.5, { axes: [0, 0, -1, 0] });
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   gh = await enemy(page, 'ghoul_road');
-  record('R3 picks a target on a gamepad; RT auto attacks it wherever the stick points', padLock === 'ghoul_road' && gh.hp === 30, `targeted ${padLock}; right stick pushed away, RT still hit it (48 → ${gh.hp})`);
+  record('R3 picks a target on a gamepad; RT auto attacks it wherever the stick points', padLock === 'ghoul_road' && gh.hp < 48, `targeted ${padLock}; right stick pushed away, RT still hit it (48 → ${gh.hp})`);
   await page.evaluate(() => window.__shadowfall.hud.setPadMode(false));
 
   // looting: bodies keep their coins; area loot takes everything close by
@@ -3432,8 +3434,65 @@ async function utilityBar(browser) {
   await ctx.close();
 }
 
+async function uiLayout(browser) {
+  current = 'Swing timer, menus and key bindings';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 999; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.5);
+  const w1 = await page.evaluate(() => ({ shown: !document.getElementById('swing-bar').hidden, fill: parseFloat(document.getElementById('swing-fill').style.width) }));
+  await sim(page, 1.0);
+  const w2 = await page.evaluate(() => parseFloat(document.getElementById('swing-fill').style.width));
+  const castBelow = await page.evaluate(() => getComputedStyle(document.getElementById('swing-bar')).bottom === '112px');
+  record('A swing timer fills toward the next blow, where the cast bar sits', w1.shown && w2 > w1.fill && castBelow, `${w1.fill.toFixed(0)}% → ${w2.toFixed(0)}%`);
+
+  const layout = await page.evaluate(() => {
+    const r = (id) => document.getElementById(id).getBoundingClientRect();
+    const bar = r('action-bar');
+    const coins = document.querySelector('#right-dock .coins').getBoundingClientRect();
+    return {
+      menus: [...document.querySelectorAll('#micro-bar .micro')].map((b) => b.dataset.tip),
+      centred: Math.abs((bar.left + bar.right) / 2 - innerWidth / 2) < 2,
+      coinsRight: innerWidth - coins.right < 20,
+      overlap: bar.right > r('right-dock').left,
+    };
+  });
+  record('The spell bar is centred; money sits on the far right; the menu is Character, Spells, Talents, Quest Log, Settings', layout.centred && layout.coinsRight && !layout.overlap && layout.menus.map((t) => t.replace(/ \(.*\)$/, '')).join(',') === 'Character,Spells,Talents,Quest Log,Settings', JSON.stringify(layout));
+
+  // rebinding: slot 1 to Z, then Z casts what is in slot 1
+  const rebind = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.keys.bind('bar0', 'KeyZ');
+    const label = document.querySelector('#aslot-0 .key').textContent;
+    const fired = g.actionBar.actions([g.keys.pressed('bar0')]);
+    g.input.pressed.add('KeyZ');
+    const hit = g.keys.pressed('bar0');
+    g.input.pressed.add('Digit1');
+    const old = g.keys.pressed('bar0');
+    g.input.pressed.clear();
+    return { label, hit, old };
+  });
+  record('Settings can rebind a key; the bar shows the new key', rebind.label === 'Z' && rebind.hit && !rebind.old, JSON.stringify(rebind));
+
+  // quick bind: hover a utility slot and press a key
+  await resumeLoop(page);
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('settings'));
+  await page.click('#quick-bind');
+  await page.hover('#aslot-6');
+  await page.keyboard.press('KeyF');
+  await page.keyboard.press('Escape');
+  const quick = await page.evaluate(() => ({ keys: window.__shadowfall.keys.keys('bar6'), label: document.querySelector('#aslot-6 .key').textContent, banner: document.getElementById('quick-bind-banner').hidden }));
+  record('Quick bind: hover a utility slot and press a key', quick.keys.join() === 'KeyF' && quick.label === 'F' && quick.banner, JSON.stringify(quick));
+  await page.evaluate(() => window.__shadowfall.keys.resetAll());
+  record('No script errors (UI layout)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

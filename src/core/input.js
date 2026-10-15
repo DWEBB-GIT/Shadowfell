@@ -14,8 +14,15 @@ export class Input {
     this.mouse = { x: 0, y: 0, ndcX: 0, ndcY: 0, clicked: false, rightClicked: false };
     this.canvas = canvas;
 
+    this.capture = null; // set while Settings waits for a key to bind
+    this.isBound = () => false; // key bindings say which other keys the game uses
     window.addEventListener('keydown', (e) => {
-      if (GAME_KEYS.has(e.code)) e.preventDefault();
+      if (this.capture) {
+        e.preventDefault();
+        if (!e.repeat) this.capture(e);
+        return;
+      }
+      if (GAME_KEYS.has(e.code) || this.isBound(e.code)) e.preventDefault();
       if (!e.repeat) this.pressed.add(e.code);
       this.held.add(e.code);
     });

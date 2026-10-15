@@ -54,21 +54,26 @@
 
     <!-- bottom of the screen: experience, spell bar, menus and bag slots -->
     <div id="cast-bar" class="bar cast" hidden><div id="cast-fill" class="fill"></div><span id="cast-text" class="bar-text"></span></div>
+    <!-- the weapon swing timer sits where the cast bar does (the cast bar shows above it) -->
+    <div id="swing-bar" class="bar swing" hidden><div id="swing-fill" class="fill"></div><span id="swing-text" class="bar-text"></span></div>
+    <!-- centre: experience and the spell and utility bars -->
     <div id="bottom-bar">
       <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><div id="xp-rested"></div><span id="xp-text" class="bar-text"></span></div>
       <div id="bar-row">
         <div id="action-bar" class="panel"></div>
-        <div id="micro-bar" class="panel">
-          <button class="micro" id="btn-character" title="Character (C)"><span class="micro-icon">&#9876;</span><span class="key" data-kbm="C" data-pad="View"></span></button>
-          <button class="micro" id="btn-spellbook" title="Spellbook (P)"><span class="micro-icon">&#10022;</span><span class="key" data-kbm="P" data-pad="&#8593;"></span></button>
-          <button class="micro" id="btn-skills" title="Skills (U)"><span class="micro-icon">&#9881;</span><span class="key" data-kbm="U" data-pad=""></span></button>
-          <button class="micro" id="btn-settings" title="Settings (O)"><span class="micro-icon">&#9776;</span><span class="key" data-kbm="O" data-pad=""></span></button>
-          <button class="micro" id="btn-quests" title="Quest log (L)"><span class="micro-icon">!</span><span class="key" data-kbm="L" data-pad="&#8594;"></span></button>
-          <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
-          <div class="coins" title="Money"><span id="stat-coins"></span></div>
-          <div id="bag-sockets"></div>
-        </div>
       </div>
+    </div>
+    <!-- far right: money, the menus and the bag slots -->
+    <div id="right-dock">
+      <div class="coins panel" title="Money"><span id="stat-coins"></span></div>
+      <div id="micro-bar" class="panel">
+        <button class="micro" id="btn-character" data-tip="Character"><span class="micro-icon">&#9876;</span><span class="key" data-key-action="character" data-kbm="C" data-pad="View"></span></button>
+        <button class="micro" id="btn-spellbook" data-tip="Spells"><span class="micro-icon">&#10022;</span><span class="key" data-key-action="spellbook" data-kbm="P" data-pad="&#8593;"></span></button>
+        <button class="micro" id="btn-talents" data-tip="Talents"><span class="micro-icon">&#10048;</span><span class="key" data-key-action="talents" data-kbm="N" data-pad=""></span></button>
+        <button class="micro" id="btn-quests" data-tip="Quest Log"><span class="micro-icon">!</span><span class="key" data-key-action="quests" data-kbm="L" data-pad="&#8594;"></span></button>
+        <button class="micro" id="btn-settings" data-tip="Settings"><span class="micro-icon">&#9776;</span><span class="key" data-key-action="settings" data-kbm="O" data-pad=""></span></button>
+      </div>
+      <div id="bag-dock" class="panel"><div id="bag-sockets"></div></div>
     </div>
   </div>
 
@@ -93,7 +98,7 @@
   </div>
 
   <div id="spellbook-window" class="window panel" hidden>
-    <div class="window-head"><h2>Spellbook</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
+    <div class="window-head"><h2>Spells</h2><button class="btn small" id="btn-skills" data-tip="Skills (fishing, lockpicking…)">Skills</button><button class="btn small" data-close-panel="spellbook">&times;</button></div>
     <div id="spellbook-list"></div>
     <div class="window-hint" id="spellbook-hint"></div>
   </div>
@@ -107,7 +112,18 @@
   <div id="settings-window" class="window panel" hidden>
     <div class="window-head"><h2>Settings</h2><button class="btn small" data-close-panel="settings">&times;</button></div>
     <div id="settings-list"></div>
+    <h3 class="set-head">Key bindings</h3>
+    <div class="set-buttons"><button class="btn small" id="quick-bind">Quick bind</button><button class="btn small" id="keys-reset">Reset to defaults</button></div>
+    <div id="keybind-list"></div>
+    <div class="set-buttons"><button class="btn small" id="btn-save">Save the game</button></div>
   </div>
+
+  <div id="talents-window" class="window panel" hidden>
+    <div class="window-head"><h2>Talents</h2><button class="btn small" data-close-panel="talents">&times;</button></div>
+    <p class="dim">Talent trees arrive in a later build. You will earn a point each level from 10 and spend them here.</p>
+  </div>
+
+  <div id="quick-bind-banner" hidden>Quick bind: hover a spell or utility bar slot and press a key. Esc when done.</div>
 
   <div id="shop-window" class="window panel" hidden>
     <div class="window-head"><h2 id="shop-name"></h2><span id="shop-title" class="dim"></span><button class="btn small" id="shop-close">&times;</button></div>
