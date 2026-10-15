@@ -22,7 +22,7 @@ export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour
 export const EQUIP_SLOTS = [
   { id: 'head', label: 'Head', col: 'left' },
   { id: 'neck', label: 'Neck', col: 'left' },
-  { id: 'shoulders', label: 'Shoulders', col: 'left' },
+  { id: 'shoulders', label: 'Shoulder', col: 'left' },
   { id: 'back', label: 'Back', col: 'left' },
   { id: 'chest', label: 'Chest', col: 'left' },
   { id: 'wrists', label: 'Wrists', col: 'left' },

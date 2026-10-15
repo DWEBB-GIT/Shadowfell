@@ -141,6 +141,24 @@ export function abilityIcons() {
       g.lineTo(44, 28);
       g.stroke();
     }),
+    rebuke: glyph((g) => {
+      // a spell broken: a spark of gold under a struck-through ring
+      const r = g.createRadialGradient(32, 32, 1, 32, 32, 14);
+      r.addColorStop(0, '#fff6d0');
+      r.addColorStop(0.6, '#ffc850');
+      r.addColorStop(1, 'rgba(255,160,40,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(32, 32, 14, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = '#d84a30';
+      g.lineWidth = 5;
+      g.beginPath();
+      g.arc(32, 32, 21, 0, Math.PI * 2);
+      g.moveTo(17, 17);
+      g.lineTo(47, 47);
+      g.stroke();
+    }),
     hallowedBolt: glyph((g) => {
       // a mote of gold fire with its trail
       g.strokeStyle = 'rgba(255,210,120,0.55)';
