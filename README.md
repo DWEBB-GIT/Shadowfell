@@ -32,7 +32,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 ## Brackenford, the Ford Inn and Cooking
 
-- **Brackenford** is a small town at the south end of the Fallen Road, where the game now begins: three cottages, a well, lamp posts and the **Ford Inn**.
+- **Brackenford** is a small town at the south end of the Fallen Road, a short walk south of where you start: three cottages, a well, lamp posts and the **Ford Inn**.
 - **Indoors.** Walk in through the inn's west door. Its walls are solid; inside, the roof hides, the front wall fades to a ghost, and the camera comes in about a fifth closer. All of it eases back as you step out.
 - **Hester Vale**, the innkeeper, sells food, teaches Cooking (10 coins) and its recipes, and can make the inn your home: if you fall, you wake by her hearth. Standing inside the inn with no enemy near builds rested experience, as by your camp fire.
 - **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
