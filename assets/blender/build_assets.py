@@ -1087,6 +1087,54 @@ def build_blackwood_items():
     export("hound_pelt")
 
 
+def build_loot_items():
+    """Drops from the rarity loot tables: junk, hound meat, a rare helm, an epic blade."""
+    b = Builder()  # cracked bone (junk)
+    b.cyl(0.03, 0.025, 0.36, (0, 0, 0.03), P["bone"], segs=6, rot=(0, 90, 0), var=0.1)
+    b.ball(0.05, (0.19, 0, 0.04), P["bone"], subdiv=0)
+    b.ball(0.045, (-0.18, 0.02, 0.04), P["bone_old"], subdiv=0)
+    b.box((0.05, 0.03, 0.02), (0.02, -0.02, 0.06), P["ash_dark"], var=0.0)  # the crack
+    b.to_object("CrackedBone")
+    export("cracked_bone")
+    reset_scene()
+
+    b = Builder()  # bent arrowheads (junk)
+    for i, (x, y, r) in enumerate(((0, 0, 20), (0.08, 0.05, -40), (-0.07, 0.04, 70))):
+        b.box((0.04, 0.012, 0.10), (x, y, 0.01), P["rust"], rot=(90, 0, r), var=0.1, taper=(0.1, 1))
+        b.box((0.015, 0.015, 0.08), (x - 0.03, y - 0.04, 0.01), P["wood_dark"], rot=(90, 0, r))
+    b.to_object("BentArrowhead")
+    export("bent_arrowhead")
+    reset_scene()
+
+    b = Builder()  # a raw hound flank on the bone
+    b.ball(0.13, (0, 0, 0.08), P["draught"], scale=(1.4, 1, 0.7), subdiv=1, var=0.12)
+    b.ball(0.10, (0.04, 0.02, 0.12), P["skin"], scale=(1.2, 0.9, 0.5), subdiv=1, var=0.1)  # fat
+    b.cyl(0.025, 0.025, 0.16, (0.24, 0, 0.07), P["bone"], segs=6, rot=(0, 90, 0))
+    b.ball(0.035, (0.32, 0, 0.07), P["bone"], subdiv=0)
+    b.to_object("HoundMeat")
+    export("hound_meat")
+    reset_scene()
+
+    b = Builder()  # helm of the old watch (rare): a full helm with a brass crest
+    b.ball(0.17, (0, 0, 0.11), P["steel"], scale=(1, 1.08, 0.95), subdiv=1, var=0.06)
+    b.cyl(0.20, 0.20, 0.04, (0, 0, 0.03), P["steel_dark"], segs=12)
+    b.box((0.26, 0.03, 0.03), (0, -0.17, 0.10), P["black"], var=0.0)  # eye slit
+    b.box((0.03, 0.30, 0.10), (0, 0, 0.29), P["brass"], var=0.05)  # crest
+    b.box((0.05, 0.05, 0.10), (0, -0.19, 0.03), P["steel_dark"])  # nasal
+    b.to_object("OldWatchHelm")
+    export("old_watch_helm")
+    reset_scene()
+
+    b = Builder()  # witchbane (epic): a pale blade with witchlight in the fuller
+    b.box((0.045, 0.045, 0.18), (0, 0, 0.0), P["leather_dark"])
+    b.ball(0.045, (0, 0, -0.11), P["witchlight"], subdiv=1, glow=True)
+    b.box((0.30, 0.06, 0.05), (0, 0, 0.11), P["grave_iron"], taper=(1.2, 1))
+    b.box((0.08, 0.018, 0.86), (0, 0, 0.57), P["steel_bright"], var=0.06, taper=(0.4, 1))
+    b.box((0.02, 0.022, 0.70), (0, 0, 0.50), P["witchlight"], var=0.0, glow=True)
+    b.to_object("Witchbane")
+    export("witchbane")
+
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -1096,10 +1144,15 @@ BUILDERS = [
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
     build_mara, build_forge_camp, build_shop_items,
     build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
+    build_loot_items,
 ]
 
 if __name__ == "__main__":
+    # `-- build_loot_items` builds only the named builders
+    only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     for fn in BUILDERS:
+        if only and getattr(fn, "__name__", "") not in only:
+            continue
         reset_scene()
         fn()
     print("done:", sorted(os.listdir(OUT_GLB)))

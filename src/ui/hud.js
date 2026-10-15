@@ -8,6 +8,7 @@ import { DamageNumbers } from './damageNumbers.js';
 import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
 import { SPELLS } from '../systems/spells.js';
+import { RARITY } from '../data/items.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -73,6 +74,7 @@ export class Hud {
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
     for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
+    this._rarityStyles();
     this.abilityIcons = abilityIcons();
     this._buildBar();
     this.items = new ItemUI(game, this);
@@ -88,7 +90,7 @@ export class Hud {
     };
 
     const ev = game.events;
-    ev.on('log', (e) => this.log(e.text, e.kind, e.throttle));
+    ev.on('log', (e) => this.log(e.text, e.rarity ? `${e.kind} q-${e.rarity}` : e.kind, e.throttle));
     ev.on('objectiveChanged', () => this.refreshObjective());
     ev.on('regionChanged', ({ region, announce }) => {
       document.querySelector('#title-area .region').textContent = region.name;
@@ -107,6 +109,19 @@ export class Hud {
     document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => this.closeModal()));
     this.el.respawnBtn.addEventListener('click', () => game.respawn());
 
+  }
+
+  // Rarity colours come from data/rarities.json: item names, loot lines in
+  // the log, and the border of a filled slot above common.
+  _rarityStyles() {
+    const css = Object.entries(RARITY).map(([id, r]) => {
+      const border = ['junk', 'common'].includes(id) ? '' : `.islot.filled.q-${id} { border-color: ${r.colour}cc; }`;
+      return `.tt-name.q-${id}, .shop-item.q-${id}, .q-item.q-${id}, #log li.q-${id} { color: ${r.colour}; } ${border}`;
+    });
+    const style = document.createElement('style');
+    style.id = 'rarity-styles';
+    style.textContent = css.join('\n');
+    document.head.appendChild(style);
   }
 
   setItemIcons(icons) {

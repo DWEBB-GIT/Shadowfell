@@ -9,8 +9,10 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
-export const KINDS = ['weapon', 'armor', 'shield', 'bag', 'consumable', 'material', 'document'];
-export const QUALITIES = ['poor', 'common', 'uncommon', 'rare', 'quest'];
+export const KINDS = ['weapon', 'armor', 'shield', 'bag', 'consumable', 'material', 'junk', 'document'];
+// rarity ids, lowest first (data/rarities.json holds their names and colours)
+export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
+const GEAR = ['weapon', 'armor', 'shield'];
 export const STAT_KEYS = ['might', 'finesse', 'intellect', 'vitality', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
 export const EQUIP_SLOTS = [
   { id: 'head', label: 'Head' },
@@ -59,14 +61,15 @@ export function indexById(list, where, errors, idPattern = ID) {
 
 // Item records as a map, checked on their own (the item database check the
 // game has always run; the tests also feed it deliberately broken items).
-export function validateItems(items, slots, armourTypes) {
+export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
   const errors = [];
   for (const [id, d] of Object.entries(items)) {
     const bad = (msg) => errors.push(`${id}: ${msg}`);
     if (!ID.test(id)) bad('id must be lower_snake_case');
     if (!d.name || !d.description) bad('needs a name and a description');
     if (!KINDS.includes(d.kind)) bad(`unknown kind ${d.kind}`);
-    if (!QUALITIES.includes(d.quality)) bad(`unknown quality ${d.quality}`);
+    if (!rarities.includes(d.rarity)) bad(`unknown rarity ${d.rarity}`);
+    if (d.quest && d.rarity !== 'quest') bad('a quest item has the quest rarity');
     if (!isInt(d.stack) || d.stack < 1) bad('stack must be a whole number of at least 1');
     if (!isInt(d.price) || d.price < 0) bad('price must be a whole number of coins');
     if (!d.model || !d.icon) bad('needs a model and an icon');
@@ -99,6 +102,7 @@ export function validateGameData(raw, opts = {}) {
   const abilF = need('abilities.json');
   const enemF = need('enemies.json');
   const lootF = need('loot_tables.json');
+  const rarF = need('rarities.json');
   const shopF = need('shops.json');
   const npcF = need('npcs.json');
   const questF = need('quests.json');
@@ -109,6 +113,7 @@ export function validateGameData(raw, opts = {}) {
 
   const armourTypes = indexById(itemsF.armourTypes, 'items.json armourTypes', errors);
   const suffixes = indexById(itemsF.suffixes, 'items.json suffixes', errors);
+  const rarities = indexById(rarF.rarities, 'rarities.json', errors);
   const items = indexById(itemsF.items, 'items.json items', errors);
   const archetypes = indexById(archF.archetypes, 'archetypes.json', errors);
   const abilities = indexById(abilF.abilities, 'abilities.json', errors, ABILITY_ID);
@@ -136,7 +141,14 @@ export function validateGameData(raw, opts = {}) {
   };
 
   // ---- items
-  for (const e of validateItems(items, EQUIP_SLOTS.map((s) => s.id), Object.keys(armourTypes))) errors.push('items.json ' + e);
+  for (const id of RARITIES) if (!rarities[id]) errors.push(`rarities.json: missing the ${id} rarity`);
+  for (const [id, r] of Object.entries(rarities)) {
+    if (!RARITIES.includes(id)) errors.push(`rarities.json ${id}: unknown rarity (the engine knows ${RARITIES.join(', ')})`);
+    if (!isStr(r.name) || !/^#[0-9a-f]{6}$/i.test(r.colour || '')) errors.push(`rarities.json ${id}: needs a name and a #rrggbb colour`);
+  }
+  for (const e of validateItems(items, EQUIP_SLOTS.map((s) => s.id), Object.keys(armourTypes), Object.keys(rarities))) errors.push('items.json ' + e);
+  // an item kept for certain loot tables (a boss's own blade) drops from those alone
+  for (const [id, d] of Object.entries(items)) for (const t of d.reservedFor || []) ref(`items.json ${id} reservedFor`, 'loot table', lootTables, t);
   for (const [id, d] of Object.entries(items)) {
     model(`items.json ${id}`, d.model);
     model(`items.json ${id} icon`, d.icon);
@@ -197,15 +209,39 @@ export function validateGameData(raw, opts = {}) {
     const w = `loot_tables.json ${id}`;
     for (const a of t.always || []) {
       ref(w + ' always', 'item', items, a.item);
+      if (items[a.item] && items[a.item].quest) errors.push(`${w}: quest item ${a.item} cannot be loot`);
       if (!(isInt(a.min) && isInt(a.max) && a.min >= 0 && a.min <= a.max)) errors.push(`${w}: always ${a.item} needs whole min <= max`);
     }
-    if (t.gear) {
-      if (!(isNum(t.gear.chance) && t.gear.chance >= 0 && t.gear.chance <= 1)) errors.push(`${w}: gear chance must be between 0 and 1`);
-      if (!Array.isArray(t.gear.entries) || !t.gear.entries.length) errors.push(`${w}: gear needs entries`);
-      for (const g of t.gear.entries || []) {
-        ref(w + ' gear entry', 'item', items, g.item);
-        if (!(isNum(g.weight) && g.weight > 0)) errors.push(`${w}: gear entry ${g.item} needs a weight above 0`);
+    // the rarity roll, then the item roll from that rarity's list
+    const drops = t.drops;
+    if (drops) {
+      if (!(isInt(drops.rolls) && drops.rolls >= 1)) errors.push(`${w}: drops.rolls must be a whole number of at least 1`);
+      if (!(isNum(drops.chance) && drops.chance >= 0 && drops.chance <= 1)) errors.push(`${w}: drops.chance must be between 0 and 1`);
+      const weights = drops.rarity || {};
+      const lists = drops.items || {};
+      for (const [r, wt] of Object.entries(weights)) {
+        if (!rarities[r] || rarities[r].drops === false) errors.push(`${w}: rarity ${r} cannot drop`);
+        if (!(isNum(wt) && wt > 0)) errors.push(`${w}: rarity ${r} needs a weight above 0`);
+        if (!Array.isArray(lists[r]) || !lists[r].length) errors.push(`${w}: rarity ${r} has no items to roll`);
       }
+      if (!Object.keys(weights).length) errors.push(`${w}: drops.rarity needs at least one rarity`);
+      for (const [r, list] of Object.entries(lists)) {
+        if (!(r in weights)) errors.push(`${w}: items listed for ${r}, which this table never rolls`);
+        for (const e of Array.isArray(list) ? list : []) {
+          ref(`${w} ${r} entry`, 'item', items, e.item);
+          if (!(isNum(e.weight) && e.weight > 0)) errors.push(`${w}: ${r} entry ${e.item} needs a weight above 0`);
+          const d = items[e.item];
+          if (!d) continue;
+          // common gear may roll up to enhanced (it gains a suffix); otherwise an item drops at its own rarity
+          const rollsUp = r === 'enhanced' && d.rarity === 'common' && GEAR.includes(d.kind);
+          if (d.rarity !== r && !rollsUp) errors.push(`${w}: ${e.item} is ${d.rarity} and cannot be listed under ${r}`);
+        }
+      }
+    }
+    const named = [...(t.always || []), ...Object.values(drops?.items || {}).flat()].map((e) => e && e.item);
+    for (const it of named) {
+      const res = items[it] && items[it].reservedFor;
+      if (res && !res.includes(id)) errors.push(`${w}: ${it} is kept for ${res.join(', ')} and cannot drop here`);
     }
   }
 
@@ -221,6 +257,7 @@ export function validateGameData(raw, opts = {}) {
     for (const it of s.stock || []) {
       ref(w + ' stock', 'item', items, it);
       if (items[it] && items[it].quest) errors.push(`${w}: quest item ${it} cannot be sold`);
+      if (items[it] && items[it].reservedFor) errors.push(`${w}: ${it} is a boss's own drop and cannot be sold`);
       if (items[it] && vt && !(vt.sells || []).includes(items[it].kind)) errors.push(`${w}: a ${vt.name} does not sell ${items[it].kind} (${it})`);
     }
   }

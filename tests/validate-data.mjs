@@ -36,7 +36,7 @@ console.log(
 
 // the checks must catch typical mistakes, or they are no use
 const broken = [
-  ['a loot table naming an item that does not exist', (d) => (d['loot_tables.json'].lootTables[0].gear.entries[0].item = 'iron_glvoes'), /unknown item iron_glvoes/],
+  ['a loot table naming an item that does not exist', (d) => (d['loot_tables.json'].lootTables[0].drops.items.common[0].item = 'iron_glvoes'), /unknown item iron_glvoes/],
   ['two items with the same id', (d) => d['items.json'].items.push({ ...d['items.json'].items[0] }), /duplicate id/],
   ['a shop selling a quest item', (d) => d['shops.json'].shops[0].stock.push('manifest'), /quest item manifest cannot be sold/],
   ['an npc pointing at a missing shop', (d) => (d['npcs.json'].npcs[0].shop = 'nowhere'), /unknown shop nowhere/],
@@ -47,6 +47,9 @@ const broken = [
   ['a quest needing more kills than the world has enemies', (d) => (d['quests.json'].quests[2].objectives[1].count = 9), /world only has/],
   ['quests that require each other', (d) => d['quests.json'].quests[0].requires = ['the_glade_seer'], /loop back/],
   ['a dialogue reply leading to a missing node', (d) => (d['dialogue.json'].dialogues[0].nodes[0].replies[0].node = 'nowhere'), /unknown node nowhere/],
+  ['a boss\'s own epic weapon in an ordinary enemy\'s table', (d) => Object.assign(d['loot_tables.json'].lootTables[0].drops, { rarity: { ...d['loot_tables.json'].lootTables[0].drops.rarity, epic: 1 }, items: { ...d['loot_tables.json'].lootTables[0].drops.items, epic: [{ item: 'witchbane', weight: 1 }] } }), /witchbane is kept for seer/],
+  ['a rarity rolled with no items to roll', (d) => (d['loot_tables.json'].lootTables[0].drops.rarity.legendary = 1), /rarity legendary has no items/],
+  ['an item with an unknown rarity', (d) => (d['items.json'].items[0].rarity = 'shiny'), /unknown rarity shiny/],
   ['a spell missing a number its kind needs', (d) => delete d['abilities.json'].abilities.find((a) => a.kind === 'cast').tuning.castTime, /needs tuning.castTime/],
 ];
 const selfTest = [];

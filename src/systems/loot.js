@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { LOOT, UNIQUE_DROPS, ITEMS, itemView, rollItem } from '../data/items.js';
+import { LOOT, UNIQUE_DROPS, ITEMS, RARITY, itemView, rollItem, rollLoot } from '../data/items.js';
 import { DB } from '../data/db.js';
 import { heightAt } from '../world/terrain.js';
 import { CONFIG } from '../config.js';
@@ -87,33 +87,25 @@ export class LootSystem {
   // Gear and materials an enemy drops, from its table in data/drops.json.
   // Gear rolls its stats as it drops. Drops lie beside the body and are
   // saved like anything else on the ground, so they wait to be looted.
+  // Roll the enemy's loot table (rarity first, then the item) and lay what
+  // drops around the body.
   dropFromEnemy(enemy) {
-    const table = DB.lootTables[enemy.cfg.lootTable];
-    if (!table) return [];
     const rand = this.game.random;
     const out = [];
-    const place = (id, count) => {
+    for (const { id, count, rarity } of rollLoot(DB.lootTables[enemy.cfg.lootTable], rand)) {
       const a = out.length * 2.1 + enemy.facing;
       const pos = { x: enemy.position.x + Math.sin(a) * 0.8, z: enemy.position.z + Math.cos(a) * 0.8 };
       this.game.collision.resolve(pos, 0.2);
-      const rolls = rollItem(id, rand);
+      const rolls = rollItem(id, rand, rarity);
       const g = this._addGround(rolls ? { id, count, rolls } : { id, count }, pos);
       this._spawnGround(g);
       out.push(g);
-    };
-    for (const { item, min, max } of table.always || []) {
-      const n = min + Math.floor(rand() * (max - min + 1));
-      if (n > 0) place(item, n);
-    }
-    if (table.gear && rand() < table.gear.chance) {
-      const entries = table.gear.entries;
-      let pick = rand() * entries.reduce((a, e) => a + e.weight, 0);
-      const hit = entries.find((e) => (pick -= e.weight) < 0) || entries[entries.length - 1];
-      place(hit.item, 1);
     }
     for (const g of out) {
       const v = itemView(g);
-      if (ITEMS[g.id].kind !== 'material') this.game.events.emit('log', { text: `The ${enemy.cfg.name} drops ${/^[aeiou]/i.test(v.name) ? 'an' : 'a'} ${v.name}.`, kind: 'loot' });
+      if (ITEMS[g.id].kind === 'material') continue;
+      const tag = v.rarity === 'common' || v.rarity === 'junk' ? '' : ` (${RARITY[v.rarity].name})`;
+      this.game.events.emit('log', { text: `The ${enemy.cfg.name} drops ${/^[aeiou]/i.test(v.name) ? 'an' : 'a'} ${v.name}${tag}.`, kind: 'loot', rarity: v.rarity });
     }
     return out;
   }
@@ -140,6 +132,13 @@ export class LootSystem {
     );
     glint.scale.setScalar(0.7);
     glint.position.y = 0.35;
+    // gear above common glints in its rarity's colour, and rare and better glint brighter
+    const item = def.reward && def.reward.item;
+    if (item && ITEMS[item]) {
+      const rarity = itemView({ id: item, rolls: def.ground ? def.ground.rolls : null }).rarity;
+      if (!['junk', 'common', 'quest'].includes(rarity)) glint.material.color.set(RARITY[rarity].colour);
+      if (['rare', 'epic', 'legendary'].includes(rarity)) glint.scale.setScalar(1.1);
+    }
     group.add(glint);
     const baseY = heightAt(x, z) + (def.heightOffset || 0);
     group.position.set(x, baseY, z);

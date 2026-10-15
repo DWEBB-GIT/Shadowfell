@@ -389,12 +389,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #char-stats .gain { color: #8cbf78; font-size: 11px; margin-left: 4px; }
 #char-stats b { text-align: right; margin-left: 8px; }
 
-/* item quality, WoW colours toned down */
-.tt-name.q-poor { color: #9d9d9d; }
-.tt-name.q-common { color: #f0e4c8; }
-.tt-name.q-uncommon { color: #6cc05a; }
-.tt-name.q-rare { color: #4a8fe0; }
-.tt-name.q-quest { color: #e8c060; }
+/* item rarity colours are set from data/rarities.json (hud.js _rarityStyles) */
 .tt-sell { color: #b8a880; font-size: 12px; margin-top: 4px; }
 
 /* merchant window, WoW style: left of the screen, beside the character panel if open */
@@ -405,15 +400,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .shop-row { display: flex; gap: 6px; align-items: center; }
 .shop-row.poor .shop-price { color: #c05040; }
 .shop-item { font-size: 12px; line-height: 1.2; }
-.shop-item.q-uncommon { color: #6cc05a; }
 .shop-price { font-size: 12px; color: #d8c890; }
 .shop-sub { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 #shop-buyback { display: flex; gap: 4px; min-height: 40px; align-items: center; }
 .tt-price { color: #f0d890; font-size: 12px; margin-top: 4px; }
 
-/* quality borders on bag and equipment slots, as in WoW */
-.islot.filled.q-uncommon { border-color: rgba(108, 192, 90, 0.75); }
-.islot.filled.q-rare { border-color: rgba(74, 143, 224, 0.8); }
 
 /* ------------------------------------------------------------------ conversations and the quest log */
 #dialogue-window { left: 12px; top: 136px; width: 340px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
@@ -426,8 +417,6 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .q-rewards { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; }
 .q-reward { display: inline-flex; align-items: center; gap: 5px; }
 .q-item img { width: 26px; height: 26px; border: 1px solid var(--border-dim); background: #0b0908; }
-.q-item.q-uncommon { color: #6fd36f; }
-.q-item.q-rare { color: #5aa0ff; }
 #dlg-options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; border-top: 1px solid var(--border-dim); padding-top: 6px; }
 .dlg-option { display: flex; align-items: center; gap: 8px; text-align: left; padding: 5px 6px; font: inherit; font-size: 14px; color: var(--text); background: none; border: 1px solid transparent; cursor: pointer; }
 .dlg-option:hover, .dlg-option.focus { background: rgba(201, 164, 92, 0.12); border-color: var(--border-dim); }

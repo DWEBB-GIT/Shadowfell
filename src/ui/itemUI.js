@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, sellPrice, itemView } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView } from '../data/items.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -21,7 +21,7 @@ const STAT_LABEL = { might: 'Might', finesse: 'Finesse', intellect: 'Intellect',
 // Every action is a request to the Inventory, which decides what is allowed.
 
 const $ = (id) => document.getElementById(id);
-const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', consumable: 'Consumable', material: 'Material', document: 'Document' };
+const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
 
 export class ItemUI {
   constructor(game, hud) {
@@ -201,7 +201,7 @@ export class ItemUI {
       const icon = this._iconFor(stack.id);
       inner = icon ? `<img src="${icon}" alt="">` : `<span class="letter">${ITEMS[stack.id].name[0]}</span>`;
       if (stack.count > 1) inner += `<span class="count">${stack.count}</span>`;
-      cls.push('filled', 'k-' + ITEMS[stack.id].kind, 'q-' + itemView(stack).quality);
+      cls.push('filled', 'k-' + ITEMS[stack.id].kind, 'q-' + itemView(stack).rarity);
     } else if (placeholder) {
       inner = `<span class="ph">${placeholder}</span>`;
     }
@@ -299,7 +299,7 @@ export class ItemUI {
         .map((id) => {
           const price = m.priceOf(id);
           const poor = price > inv.coins;
-          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].quality}">${ITEMS[id].name}</div><div class="shop-price"><span class="coin-dot"></span>${price}</div></div></div>`;
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price"><span class="coin-dot"></span>${price}</div></div></div>`;
         })
         .join('');
       const bb = m.buyback;
@@ -359,7 +359,7 @@ export class ItemUI {
       return;
     }
     const def = itemView(stack);
-    const lines = [`<div class="tt-name k-${def.kind} q-${def.quality}">${def.name}</div>`, `<div class="tt-kind">${KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);

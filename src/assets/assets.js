@@ -53,6 +53,11 @@ import warden_hauberk from '../../assets/models/warden_hauberk.glb';
 import plate_sabatons from '../../assets/models/plate_sabatons.glb';
 import blackwood_cleaver from '../../assets/models/blackwood_cleaver.glb';
 import hound_pelt from '../../assets/models/hound_pelt.glb';
+import cracked_bone from '../../assets/models/cracked_bone.glb';
+import bent_arrowhead from '../../assets/models/bent_arrowhead.glb';
+import hound_meat from '../../assets/models/hound_meat.glb';
+import old_watch_helm from '../../assets/models/old_watch_helm.glb';
+import witchbane from '../../assets/models/witchbane.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
@@ -62,6 +67,7 @@ const SOURCES = {
   mara, anvil, forge, awning, iron_gloves, hob_boots, mail_chausses, iron_shield,
   hound, archer, seer, black_pine, standing_stone, palisade, bone_pile,
   rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
+  cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
 };
 
 // One shared material per Blender material name keeps draw state small.

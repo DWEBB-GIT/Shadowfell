@@ -140,7 +140,7 @@ export class QuestUI {
     for (const g of r.items || []) {
       const def = ITEMS[g.item];
       const icon = this.hud.items.icons[def.model];
-      parts.push(`<span class="q-reward q-item q-${def.quality}">${icon ? `<img src="${icon}" alt="">` : ''}${esc(def.name)}${(g.count || 1) > 1 ? ` ×${g.count}` : ''}</span>`);
+      parts.push(`<span class="q-reward q-item q-${def.rarity}">${icon ? `<img src="${icon}" alt="">` : ''}${esc(def.name)}${(g.count || 1) > 1 ? ` ×${g.count}` : ''}</span>`);
     }
     return parts.length ? `<div class="q-sub">Rewards</div><div class="q-rewards">${parts.join('')}</div>` : '';
   }

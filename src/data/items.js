@@ -3,10 +3,12 @@
 // a merchant pays for it. Fields of an item record:
 //
 // name, description
-// kind:       weapon | armor | shield | bag | consumable | material | document
+// kind:       weapon | armor | shield | bag | consumable | material | junk | document
 // slot:       the character slot an equippable item goes into
 // armourType: an armour type id (who may wear it: see archetypes.json)
-// quality:    poor | common | uncommon | rare | quest (tooltip colour)
+// rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
+//             legendary | quest (the colour of its name and border)
+// reservedFor: the only loot tables that may drop it (a boss's own weapon)
 // damage:     a weapon's [min, max]
 // stats:      attributes, armour, block, block rating, haste it adds
 // use:        what using it does, e.g. { heal: 42 }
@@ -19,8 +21,9 @@
 import { DB } from './db.js';
 import { STAT_KEYS } from './schema.js';
 
-export { KINDS, QUALITIES, EQUIP_SLOTS, validateItems } from './schema.js';
+export { KINDS, RARITIES, EQUIP_SLOTS, validateItems } from './schema.js';
 export const ITEMS = DB.items;
+export const RARITY = DB.rarities; // id -> { name, colour, suffix?, drops? }, lowest first
 
 export const BACKPACK_SLOTS = 16;
 export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
@@ -28,17 +31,20 @@ export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
 // ------------------------------------------------------------ random rolls
 // Gear that drops from enemies rolls a little, Diablo style: its stats and
 // weapon damage move a few points either side of the database values, and
-// some pieces gain a WoW-style suffix with a bonus attribute ("of the Bear").
+// pieces that drop at a rarity with `suffix` (enhanced) gain a WoW-style
+// suffix with a bonus attribute ("of the Bear"): their magical property.
 // A stack keeps only what differs from the database, as `rolls`:
 //   { stats: { armour: 2 }, damage: [13, 18], suffix: 'bear' }
 // so a balance change to the item still reaches items already in bags.
 
 export const SUFFIXES = DB.suffixes;
 
-const ROLLS = { spread: 0.2, damageSpread: 0.12, suffixChance: 0.35, suffixMax: 2, valuePerPoint: 4 };
+const ROLLS = { spread: 0.2, damageSpread: 0.12, suffixMax: 2, valuePerPoint: 4 };
 const ROLLED_KINDS = ['weapon', 'armor', 'shield'];
 
-export function rollItem(id, rand) {
+// `rarity` is the rarity it dropped at (its own, unless common gear rolled
+// up to enhanced).
+export function rollItem(id, rand, rarity = ITEMS[id] && ITEMS[id].rarity) {
   const d = ITEMS[id];
   if (!d || !ROLLED_KINDS.includes(d.kind) || d.quest) return null;
   const r = {};
@@ -54,7 +60,7 @@ export function rollItem(id, rand) {
     const hi = Math.max(lo, Math.round(d.damage[1] * k));
     if (lo !== d.damage[0] || hi !== d.damage[1]) r.damage = [lo, hi];
   }
-  if (rand() < ROLLS.suffixChance) {
+  if (RARITY[rarity] && RARITY[rarity].suffix && d.rarity === 'common') {
     const keys = Object.keys(SUFFIXES);
     r.suffix = keys[Math.min(keys.length - 1, Math.floor(rand() * keys.length))];
     for (const k of SUFFIXES[r.suffix].stats) stats[k] = (stats[k] || 0) + 1 + Math.floor(rand() * ROLLS.suffixMax);
@@ -75,7 +81,7 @@ export function itemView(stack) {
   return {
     ...d,
     name: r.suffix ? `${d.name} ${SUFFIXES[r.suffix].name}` : d.name,
-    quality: r.suffix && d.quality === 'common' ? 'uncommon' : d.quality,
+    rarity: r.suffix && d.rarity === 'common' ? 'enhanced' : d.rarity,
     stats,
     damage: r.damage || d.damage,
     price: d.price + (r.suffix ? bonus * ROLLS.valuePerPoint : 0),
@@ -99,6 +105,32 @@ export function sellPrice(item, fraction) {
   const stack = typeof item === 'string' ? { id: item } : item;
   const d = stack && ITEMS[stack.id];
   return d && !d.quest ? Math.floor(itemView(stack).price * fraction) : 0;
+}
+
+// What one enemy drops (data/loot_tables.json): every `always` item, then
+// `rolls` tries at `chance`, each rolling a rarity by weight and then an item
+// from that rarity's list. Returns [{ id, count, rarity }].
+export function rollLoot(table, rand) {
+  const out = [];
+  if (!table) return out;
+  for (const { item, min, max } of table.always || []) {
+    const n = min + Math.floor(rand() * (max - min + 1));
+    if (n > 0) out.push({ id: item, count: n, rarity: ITEMS[item].rarity });
+  }
+  const drops = table.drops;
+  for (let i = 0; drops && i < drops.rolls; i++) {
+    if (rand() >= drops.chance) continue;
+    // rarities in their order, lowest first, so a roll means the same thing in every table
+    const tiers = Object.keys(RARITY).filter((r) => drops.rarity[r]);
+    const rarity = pickWeighted(tiers.map((r) => ({ r, weight: drops.rarity[r] })), rand).r;
+    out.push({ id: pickWeighted(drops.items[rarity], rand).item, count: 1, rarity });
+  }
+  return out;
+}
+
+function pickWeighted(list, rand) {
+  let pick = rand() * list.reduce((a, e) => a + e.weight, 0);
+  return list.find((e) => (pick -= e.weight) < 0) || list[list.length - 1];
 }
 
 // Loot placed in the world (data/world.json placedLoot).

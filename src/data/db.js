@@ -7,7 +7,8 @@
 //   data/archetypes.json   playable archetypes
 //   data/abilities.json    player abilities and their tuning
 //   data/enemies.json      enemy types (stats, behaviour, loot table)
-//   data/loot_tables.json  what enemies drop
+//   data/rarities.json     item rarity tiers (junk to legendary) and colours
+//   data/loot_tables.json  what enemies drop: a rarity roll, then an item
 //   data/npcs.json         townsfolk (their shop and quests)
 //   data/shops.json        vendor types and shop stock
 //   data/quests.json       quests: giver, objectives, turn-in, reward
@@ -23,6 +24,7 @@ import archetypes from '../../data/archetypes.json';
 import abilities from '../../data/abilities.json';
 import enemies from '../../data/enemies.json';
 import lootTables from '../../data/loot_tables.json';
+import rarities from '../../data/rarities.json';
 import npcs from '../../data/npcs.json';
 import shops from '../../data/shops.json';
 import quests from '../../data/quests.json';
@@ -38,6 +40,7 @@ export const RAW = {
   'abilities.json': abilities,
   'enemies.json': enemies,
   'loot_tables.json': lootTables,
+  'rarities.json': rarities,
   'npcs.json': npcs,
   'shops.json': shops,
   'quests.json': quests,
@@ -65,6 +68,7 @@ export const DB = {
   enemies: strip(byId(enemies.enemies, 'enemies')),
   leashDistance: enemies.leashDistance,
   lootTables: byId(lootTables.lootTables, 'lootTables'),
+  rarities: byId(rarities.rarities, 'rarities'), // in order, lowest first
   npcs: byId(npcs.npcs, 'npcs'),
   vendorTypes: byId(shops.vendorTypes, 'vendorTypes'),
   shops: byId(shops.shops, 'shops'),

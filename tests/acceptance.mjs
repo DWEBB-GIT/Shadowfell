@@ -1770,12 +1770,12 @@ async function itemDatabase(browser) {
   await pauseLoop(page);
   const db = await page.evaluate(() => {
     const g = window.__shadowfall;
-    return { errors: g.itemErrors, count: Object.keys(g.items).length, missing: Object.entries(g.items).filter(([, d]) => !(Number.isInteger(d.price) && d.icon && d.quality)).map(([id]) => id) };
+    return { errors: g.itemErrors, count: Object.keys(g.items).length, missing: Object.entries(g.items).filter(([, d]) => !(Number.isInteger(d.price) && d.icon && d.rarity)).map(([id]) => id) };
   });
   record('Every item comes from one database with slot, stats, price and icon', db.errors.length === 0 && db.missing.length === 0 && db.count >= 9, `${db.count} items in src/data/items.json, all valid`);
   const caught = await page.evaluate(() => {
     const g = window.__shadowfall;
-    const bad = { broken_blade: { name: 'Broken blade', kind: 'weapon', slot: 'mainHand', quality: 'shiny', stack: 1, price: -1, model: 'worn_sword', icon: 'worn_sword', description: 'x' } };
+    const bad = { broken_blade: { name: 'Broken blade', kind: 'weapon', slot: 'mainHand', rarity: 'shiny', stack: 1, price: -1, model: 'worn_sword', icon: 'worn_sword', description: 'x' } };
     return g.validateItems(bad, ['mainHand'], ['cloth']);
   });
   record('The database check catches a malformed item (extra)', caught.length >= 3, caught.join('; '));
@@ -1785,7 +1785,7 @@ async function itemDatabase(browser) {
   await page.hover('.islot[data-loc="b:0:0"]');
   await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
   const tip = await page.evaluate(() => ({ text: document.getElementById('tooltip').textContent, q: document.querySelector('#tooltip .tt-name').className }));
-  record('Tooltips show what a merchant would pay, and the item quality', /Sells for 1 coin/.test(tip.text) && /q-common/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 140));
+  record('Tooltips show what a merchant would pay, and the item rarity', /Sells for 1 coin/.test(tip.text) && /q-common/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 140));
   await pauseLoop(page);
 
   const quest = await page.evaluate(() => {
@@ -1946,7 +1946,9 @@ async function gearRolls(browser) {
     let damageOk = true;
     const seen = new Set();
     for (let i = 0; i < 300; i++) {
-      const h = g.rollItem('warden_hauberk', Math.random);
+      // common gear dropping at enhanced gains a suffix; at common it never does
+      const h = g.rollItem('warden_hauberk', Math.random, i % 2 ? 'enhanced' : 'common');
+      if (!(i % 2) && h && h.suffix) suffixed = -999;
       const a = g.itemView({ id: 'warden_hauberk', rolls: h }).stats.armour;
       if (h && h.suffix) suffixed++;
       seen.add(a);
@@ -1957,28 +1959,28 @@ async function gearRolls(browser) {
     return { suffixed, armourOk, damageOk, kinds: seen.size, material: g.rollItem('grave_iron', Math.random), quest: g.rollItem('manifest', Math.random) };
   });
   record('Dropped gear rolls its stats a little either side of the database values', spread.armourOk && spread.damageOk && spread.kinds >= 8, `hauberk armour rolled ${spread.kinds} different values within ±20% of 32; falchion damage within ±12%`);
-  record('Some pieces gain a WoW-style suffix with bonus attributes', spread.suffixed > 50 && spread.suffixed < 160, `${spread.suffixed} of 300 hauberks rolled a suffix`);
+  record('Gear dropping as Enhanced (green) always gains a WoW-style suffix; Common (white) never does', spread.suffixed === 150, `${spread.suffixed} of 150 enhanced hauberks rolled a suffix, none of 150 common ones`);
   record('Materials and quest items never roll (extra)', spread.material === null && spread.quest === null);
 
   const worn = await page.evaluate(() => {
     const g = window.__shadowfall;
-    const vals = [0.95, 0.1, 0.0, 0.9, 0.99];
+    const vals = [0.95, 0.1, 0.9, 0.99];
     let i = 0;
-    const rolls = g.rollItem('warden_hauberk', () => vals[i++]);
+    const rolls = g.rollItem('warden_hauberk', () => vals[i++], 'enhanced');
     const view = g.itemView({ id: 'warden_hauberk', rolls });
     g.inventory.addItem('warden_hauberk', 1, { rolls });
     const a0 = g.stats.armour;
     g.inventory.equip('warden_hauberk');
     g.hud.togglePanel('character');
-    return { rolls, name: view.name, quality: view.quality, armour: g.stats.armour, a0, haste: g.stats.haste, panel: document.getElementById('char-stats').textContent };
+    return { rolls, name: view.name, rarity: view.rarity, armour: g.stats.armour, a0, haste: g.stats.haste, panel: document.getElementById('char-stats').textContent };
   });
-  record('A rolled item is named for its suffix and counts its rolled stats when worn', worn.name === "Warden's hauberk of Swiftness" && worn.quality === 'uncommon' && worn.armour === 38 && worn.haste === 2, `${worn.name}: ${JSON.stringify(worn.rolls)}; armour ${worn.a0} → ${worn.armour}, haste ${worn.haste}%`);
+  record('A rolled item is named for its suffix and counts its rolled stats when worn', worn.name === "Warden's hauberk of Swiftness" && worn.rarity === 'enhanced' && worn.armour === 38 && worn.haste === 2, `${worn.name}: ${JSON.stringify(worn.rolls)}; armour ${worn.a0} → ${worn.armour}, haste ${worn.haste}%`);
 
   await resumeLoop(page);
   await page.hover('.islot[data-loc="e:chest"]');
   await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
   const tip = await page.evaluate(() => ({ text: document.getElementById('tooltip').textContent, q: document.querySelector('#tooltip .tt-name').className }));
-  record('Tooltips show the rolled name, quality and stats', /of Swiftness/.test(tip.text) && /\+38 armour/i.test(tip.text) && /\+2 ?% haste/i.test(tip.text) && /q-uncommon/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 120));
+  record('Tooltips show the rolled name, rarity and stats', /of Swiftness/.test(tip.text) && /\+38 armour/i.test(tip.text) && /\+2 ?% haste/i.test(tip.text) && /q-enhanced/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 120));
   await pauseLoop(page);
 
   const moved = await page.evaluate(() => {
@@ -2027,7 +2029,8 @@ async function gearRolls(browser) {
   const drop = await page.evaluate(() => {
     const g = window.__shadowfall;
     const before = g.worldState.ground.length;
-    g.random = () => 0.1; // under the ghoul's 20% gear chance
+    const seq = [0.1, 0.6, 0.1]; // under the ghoul's drop chance, then the common rarity, then the first item
+    g.random = () => (seq.length ? seq.shift() : 0.5);
     const e = g.enemies.byId('ghoul_road');
     e.health = 1;
     e.hurt(5);
@@ -2658,8 +2661,90 @@ async function spells(browser) {
   await ctx.close();
 }
 
+async function lootRarity(browser) {
+  current = 'Loot rarity';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await setup(page, { x: 16.2, z: -40.5 });
+  await pauseLoop(page);
+
+  // many rolls of each table: rarity first, then an item from that rarity's list
+  const stats = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const N = 20000;
+    const count = (table) => {
+      const out = { rarity: {}, items: {} };
+      for (let i = 0; i < N; i++) {
+        for (const d of g.rollLoot(g.db.lootTables[table], Math.random)) {
+          const r = g.itemView({ id: d.id, rolls: g.rollItem(d.id, Math.random, d.rarity) }).rarity;
+          out.rarity[r] = (out.rarity[r] || 0) + 1;
+          out.items[d.id] = (out.items[d.id] || 0) + 1;
+        }
+      }
+      return out;
+    };
+    return { ghoul: count('ghoul'), hound: count('hound'), seer: count('seer'), N };
+  });
+  const pct = (n) => (100 * (n || 0)) / stats.N;
+  const near = (n, want, tol) => Math.abs(pct(n) - want) <= tol;
+  const gh = stats.ghoul.rarity;
+  record('A drop rolls its rarity first: a ghoul drops junk, common, enhanced and rarely rare', near(gh.junk, 22.5, 1.5) && near(gh.common, 14.4, 1.2) && near(gh.enhanced, 6.75, 1) && near(gh.rare, 1.35, 0.5) && !gh.epic,
+    `per ghoul: junk ${pct(gh.junk).toFixed(1)}%, common ${pct(gh.common).toFixed(1)}%, enhanced ${pct(gh.enhanced).toFixed(1)}%, rare ${pct(gh.rare).toFixed(2)}%, epic 0`);
+  record('Items reserved for a boss drop only from that boss', !stats.ghoul.items.witchbane && !stats.hound.items.witchbane && near(stats.seer.items.witchbane, 15, 1.5), `Witchbane: seer ${pct(stats.seer.items.witchbane).toFixed(1)}%, ghouls and hounds never`);
+  record('Hounds always drop their own meat, and often a pelt', stats.hound.items.hound_meat === stats.N && near(stats.hound.items.hound_pelt, 50, 2), `meat ${pct(stats.hound.items.hound_meat)}%, pelt ${pct(stats.hound.items.hound_pelt).toFixed(1)}%`);
+
+  // the seer falls and drops her epic blade: purple name, glint and log line
+  const epic = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const before = g.worldState.ground.length;
+    const seq = [0.1, 0.1, 0.99]; // one grave-iron, the drop roll, then the top of the rarity roll: epic
+    g.random = () => (seq.length ? seq.shift() : 0.5);
+    const e = g.enemies.byId('seer_glade') || g.enemies.list.find((x) => x.type === 'seer');
+    e.position.set(16.2, 0, -38);
+    e.health = 1;
+    e.hurt(5);
+    g.combat.onEnemyDefeated(e);
+    g.random = () => 0.5;
+    const dropped = g.worldState.ground.slice(before).map((d) => d.id);
+    const blade = g.loot.active.find((l) => l.def.ground && l.def.ground.id === 'witchbane');
+    const log = [...document.querySelectorAll('#log li')].find((l) => /Witchbane/.test(l.textContent));
+    return { dropped, glint: blade && '#' + blade.glint.material.color.getHexString(), log: log && log.textContent, logColour: log && getComputedStyle(log).color };
+  });
+  record('An epic drop shows purple: its glint on the ground and its line in the log', epic.dropped.includes('witchbane') && epic.glint === '#b06cf0' && /\(Epic\)/.test(epic.log || '') && epic.logColour === 'rgb(176, 108, 240)',
+    `dropped ${epic.dropped.join(', ')}; glint ${epic.glint}; "${epic.log}" in ${epic.logColour}`);
+
+  // tooltip and slot border carry the rarity
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addItem('witchbane', 1, { quiet: true });
+    g.inventory.addItem('cracked_bone', 3, { quiet: true });
+    g.hud.togglePanel('bags');
+  });
+  await resumeLoop(page);
+  const loc = await page.evaluate(() => window.__shadowfall.inventory.bagLocations().find((l) => window.__shadowfall.inventory.get(l)?.id === 'witchbane'));
+  await page.hover(`.islot[data-loc="${loc}"]`);
+  await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
+  const tip = await page.evaluate((loc) => ({ text: document.getElementById('tooltip').textContent, colour: getComputedStyle(document.querySelector('#tooltip .tt-name')).color, border: getComputedStyle(document.querySelector(`.islot[data-loc="${loc}"]`)).borderTopColor }), loc);
+  record('Tooltips and bag slots show the rarity colour; the tooltip names Epic', /Epic weapon/.test(tip.text) && tip.colour === 'rgb(176, 108, 240)' && /176, 108, 240/.test(tip.border), `${tip.text.replace(/\s+/g, ' ').slice(0, 60)} (${tip.colour}, border ${tip.border})`);
+  await pauseLoop(page);
+
+  const junk = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.merchant.open('mara_forge', g.npcs.byId('mara'));
+    const c0 = g.inventory.coins;
+    g.merchant.sell(g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'cracked_bone'));
+    const paid = g.inventory.coins - c0;
+    g.merchant.close();
+    return paid;
+  });
+  record('Junk (grey) is worth a little to a merchant', junk >= 1, `3 cracked bones sold for ${junk}`);
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'loot-rarity.png') });
+  record('No script errors (loot rarity)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

@@ -1,5 +1,5 @@
 {
-  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id.",
+  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id. `rarity` is a rarities.json id. `reservedFor` lists the only loot tables that may drop an item (a boss's own weapon).",
   "armourTypes": [
     {
       "id": "cloth",
@@ -55,8 +55,8 @@
       "id": "worn_longsword",
       "name": "Worn longsword",
       "kind": "weapon",
+      "rarity": "common",
       "slot": "mainHand",
-      "quality": "common",
       "damage": [12, 16],
       "stack": 1,
       "price": 12,
@@ -68,8 +68,8 @@
       "id": "watchmans_edge",
       "name": "Watchman's Edge",
       "kind": "weapon",
+      "rarity": "enhanced",
       "slot": "mainHand",
-      "quality": "uncommon",
       "damage": [16, 22],
       "stats": {
         "haste": 4
@@ -84,9 +84,9 @@
       "id": "travelling_clothes",
       "name": "Travelling clothes",
       "kind": "armor",
+      "rarity": "common",
       "slot": "chest",
       "armourType": "leather",
-      "quality": "common",
       "stats": {
         "armour": 20
       },
@@ -100,9 +100,9 @@
       "id": "watch_helm",
       "name": "Dented watch helm",
       "kind": "armor",
+      "rarity": "common",
       "slot": "head",
       "armourType": "mail",
-      "quality": "common",
       "stats": {
         "armour": 10,
         "vitality": 1
@@ -117,8 +117,8 @@
       "id": "kite_shield",
       "name": "Battered kite shield",
       "kind": "shield",
+      "rarity": "common",
       "slot": "offHand",
-      "quality": "common",
       "stats": {
         "block": 10
       },
@@ -132,7 +132,7 @@
       "id": "travellers_satchel",
       "name": "Traveller's satchel",
       "kind": "bag",
-      "quality": "common",
+      "rarity": "common",
       "bagSlots": 8,
       "stack": 1,
       "price": 18,
@@ -144,7 +144,7 @@
       "id": "healing_draught",
       "name": "Healing draught",
       "kind": "consumable",
-      "quality": "common",
+      "rarity": "common",
       "use": {
         "heal": 42
       },
@@ -158,7 +158,7 @@
       "id": "grave_iron",
       "name": "Grave-iron bar",
       "kind": "material",
-      "quality": "common",
+      "rarity": "common",
       "stack": 10,
       "price": 4,
       "model": "grave_iron",
@@ -169,7 +169,7 @@
       "id": "manifest",
       "name": "Carriage manifest",
       "kind": "document",
-      "quality": "quest",
+      "rarity": "quest",
       "stack": 1,
       "price": 0,
       "quest": true,
@@ -181,9 +181,9 @@
       "id": "iron_gloves",
       "name": "Iron-studded gloves",
       "kind": "armor",
+      "rarity": "common",
       "slot": "hands",
       "armourType": "mail",
-      "quality": "common",
       "stats": {
         "armour": 6
       },
@@ -197,9 +197,9 @@
       "id": "hob_boots",
       "name": "Hobnailed boots",
       "kind": "armor",
+      "rarity": "common",
       "slot": "feet",
       "armourType": "leather",
-      "quality": "common",
       "stats": {
         "armour": 5,
         "vitality": 1
@@ -214,9 +214,9 @@
       "id": "mail_chausses",
       "name": "Mail chausses",
       "kind": "armor",
+      "rarity": "common",
       "slot": "legs",
       "armourType": "mail",
-      "quality": "common",
       "stats": {
         "armour": 12
       },
@@ -230,8 +230,8 @@
       "id": "iron_shield",
       "name": "Iron-faced kite shield",
       "kind": "shield",
+      "rarity": "enhanced",
       "slot": "offHand",
-      "quality": "uncommon",
       "stats": {
         "block": 15,
         "blockRating": 20,
@@ -247,8 +247,8 @@
       "id": "rusted_falchion",
       "name": "Rusted falchion",
       "kind": "weapon",
+      "rarity": "common",
       "slot": "mainHand",
-      "quality": "common",
       "damage": [13, 19],
       "stack": 1,
       "price": 22,
@@ -260,9 +260,9 @@
       "id": "warden_hauberk",
       "name": "Warden's hauberk",
       "kind": "armor",
+      "rarity": "common",
       "slot": "chest",
       "armourType": "mail",
-      "quality": "common",
       "stats": {
         "armour": 32,
         "vitality": 1
@@ -277,9 +277,9 @@
       "id": "plate_sabatons",
       "name": "Blackened sabatons",
       "kind": "armor",
+      "rarity": "common",
       "slot": "feet",
       "armourType": "plate",
-      "quality": "common",
       "stats": {
         "armour": 10
       },
@@ -293,8 +293,8 @@
       "id": "blackwood_cleaver",
       "name": "Blackwood cleaver",
       "kind": "weapon",
+      "rarity": "enhanced",
       "slot": "mainHand",
-      "quality": "uncommon",
       "damage": [18, 26],
       "stats": {
         "might": 2
@@ -309,12 +309,82 @@
       "id": "hound_pelt",
       "name": "Barrow hound pelt",
       "kind": "material",
-      "quality": "common",
+      "rarity": "common",
       "stack": 10,
       "price": 5,
       "model": "hound_pelt",
       "icon": "hound_pelt",
       "description": "Coarse grey fur that smells of turned earth. A tanner would take it."
+    },
+    {
+      "id": "cracked_bone",
+      "name": "Cracked bone",
+      "kind": "junk",
+      "rarity": "junk",
+      "stack": 20,
+      "price": 6,
+      "model": "cracked_bone",
+      "icon": "cracked_bone",
+      "description": "A thigh bone, split along its length. Not yours, which is something."
+    },
+    {
+      "id": "bent_arrowhead",
+      "name": "Bent arrowheads",
+      "kind": "junk",
+      "rarity": "junk",
+      "stack": 20,
+      "price": 8,
+      "model": "bent_arrowhead",
+      "icon": "bent_arrowhead",
+      "description": "Iron heads, too bent to fly true. A smith will take them for the metal."
+    },
+    {
+      "id": "hound_meat",
+      "name": "Raw hound flank",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "Dark, lean meat from a barrow hound. A cook with a strong stomach would want it."
+    },
+    {
+      "id": "old_watch_helm",
+      "name": "Helm of the Old Watch",
+      "kind": "armor",
+      "rarity": "rare",
+      "slot": "head",
+      "armourType": "mail",
+      "stats": {
+        "armour": 18,
+        "vitality": 4,
+        "might": 2
+      },
+      "stack": 1,
+      "price": 110,
+      "model": "old_watch_helm",
+      "icon": "old_watch_helm",
+      "description": "A captain's helm from before the road fell, its brass crest still bright. Whoever wore it last kept the watch to the end."
+    },
+    {
+      "id": "witchbane",
+      "name": "Witchbane",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "mainHand",
+      "damage": [26, 34],
+      "stats": {
+        "might": 4,
+        "vitality": 3,
+        "haste": 5
+      },
+      "reservedFor": ["seer"],
+      "stack": 1,
+      "price": 260,
+      "model": "witchbane",
+      "icon": "witchbane",
+      "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
     }
   ]
 }

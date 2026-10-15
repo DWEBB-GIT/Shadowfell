@@ -10,7 +10,8 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | `archetypes.json` | Playable archetypes: base attributes, per-level gains, armour types, defensive ability | armour types, abilities |
 | `abilities.json` | Player abilities: name, targeting, description, and the `tuning` numbers each runs on; `globalCooldown` | items (the draught) |
 | `enemies.json` | Enemy types: stats, behaviour (`ranged`, `circle`, `special`, `pack`), `lootTable`, `uniqueDrop`; `leashDistance` | loot tables, items, models |
-| `loot_tables.json` | `always` materials (min to max) and a `gear` chance with weighted entries | items |
+| `rarities.json` | Item rarity tiers, lowest first (junk, common, enhanced, rare, epic, legendary, quest): name and colour | |
+| `loot_tables.json` | `always` items (min to max), and `drops`: `rolls` tries at `chance`, each rolling a rarity by weight, then an item from that rarity's list | items |
 | `npcs.json` | Townsfolk: name, title, model, the shop they keep, their dialogue | shops, dialogue, models |
 | `shops.json` | `vendorTypes` (what kinds of goods each type deals in) and `shops` (a vendor type and its stock) | items |
 | `quests.json` | Quests: giver, turn-in npc, `requires`, `objectives` (kill, collect, examine), what the giver says, `reward` | npcs, enemy types, items, examine points, locations |
@@ -65,7 +66,7 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
 - **A new item:**
   1. Add a record to `items.json`.
   2. If it needs its own look, add a builder to `assets/blender/build_assets.py`, run `npm run assets`, and register the model in `src/assets/assets.js`.
-  3. Sell it from a shop, or add it to a loot table.
+  3. Give it a `rarity`. Sell it from a shop, or list it in a loot table under its rarity. Common weapons and armour may also be listed under `enhanced`, where they drop with a suffix. To keep an item for one boss, set `reservedFor: ["<loot table id>"]`; the check then refuses it in any other table or shop.
 - **A new enemy type:**
   1. Add a record to `enemies.json`, reusing behaviour blocks such as `ranged`, `circle`, `special` and `pack`.
   2. Add a loot table.

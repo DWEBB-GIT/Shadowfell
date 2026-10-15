@@ -33,7 +33,8 @@ import { Dialogue } from './systems/dialogue.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
 import { EXAMINE } from './data/text.js';
-import { ITEMS, validateItems, rollItem, itemView } from './data/items.js';
+import { ITEMS, validateItems, rollItem, itemView, rollLoot } from './data/items.js';
+import { DB } from './data/db.js';
 import { DATA_ERRORS } from './data/db.js';
 
 // Game initialisation and the main loop. Each system owns its own state; this
@@ -68,6 +69,8 @@ class Game {
     this.validateItems = validateItems; // for tests and tools
     this.rollItem = rollItem;
     this.itemView = itemView;
+    this.rollLoot = rollLoot;
+    this.db = DB;
     this.validateSave = validateSave;
     this.progression = new Progression(this);
     this.stats = new Stats(this);

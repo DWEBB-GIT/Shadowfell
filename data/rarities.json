@@ -1,0 +1,49 @@
+{
+  "_about": "Item rarity tiers, lowest to highest. An item's `rarity` in items.json is one of these ids; it sets the colour of its name and border. Loot tables roll a rarity first, then an item listed under that rarity. `suffix`: common gear that drops at this tier gains a WoW-style suffix (its magical property). `drops: false` tiers never come from loot tables.",
+  "rarities": [
+    {
+      "id": "junk",
+      "name": "Junk",
+      "colour": "#9d9d9d",
+      "desc": "Grey. Worth a few coins to a merchant and nothing else."
+    },
+    {
+      "id": "common",
+      "name": "Common",
+      "colour": "#f0e4c8",
+      "desc": "White. Plain weapons and armour with no magical properties."
+    },
+    {
+      "id": "enhanced",
+      "name": "Enhanced",
+      "colour": "#6cc05a",
+      "suffix": true,
+      "desc": "Green. Gear with a magical property, such as a bonus stat."
+    },
+    {
+      "id": "rare",
+      "name": "Rare",
+      "colour": "#4a8fe0",
+      "desc": "Blue. A very low drop chance, or from bosses and quest chains."
+    },
+    {
+      "id": "epic",
+      "name": "Epic",
+      "colour": "#b06cf0",
+      "desc": "Purple. The best gear in the game, kept for bosses."
+    },
+    {
+      "id": "legendary",
+      "name": "Legendary",
+      "colour": "#ff9030",
+      "desc": "Orange. A small handful of items with a story."
+    },
+    {
+      "id": "quest",
+      "name": "Quest",
+      "colour": "#e8c060",
+      "drops": false,
+      "desc": "Quest items: kept until handed in."
+    }
+  ]
+}

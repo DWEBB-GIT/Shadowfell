@@ -1,99 +1,241 @@
 {
-  "_about": "Loot tables. `always`: materials dropped every time, min to max. `gear`: a chance of one piece from the weighted entries; gear rolls its stats as it drops.",
+  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops.",
   "lootTables": [
     {
       "id": "ghoul",
-      "gear": {
-        "chance": 0.2,
-        "entries": [
-          {
-            "item": "iron_gloves",
-            "weight": 3
-          },
-          {
-            "item": "hob_boots",
-            "weight": 3
-          },
-          {
-            "item": "rusted_falchion",
-            "weight": 2
-          },
-          {
-            "item": "mail_chausses",
-            "weight": 1
-          }
-        ]
+      "drops": {
+        "rolls": 1,
+        "chance": 0.45,
+        "rarity": {
+          "junk": 50,
+          "common": 32,
+          "enhanced": 15,
+          "rare": 3
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "cracked_bone",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "iron_gloves",
+              "weight": 3
+            },
+            {
+              "item": "hob_boots",
+              "weight": 3
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 1
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "iron_gloves",
+              "weight": 3
+            },
+            {
+              "item": "hob_boots",
+              "weight": 3
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
       }
     },
     {
       "id": "brute",
-      "gear": {
+      "drops": {
+        "rolls": 1,
         "chance": 0.45,
-        "entries": [
-          {
-            "item": "mail_chausses",
-            "weight": 2
-          },
-          {
-            "item": "warden_hauberk",
-            "weight": 2
-          },
-          {
-            "item": "plate_sabatons",
-            "weight": 2
-          },
-          {
-            "item": "iron_shield",
-            "weight": 1
-          }
-        ]
+        "rarity": {
+          "junk": 30,
+          "common": 35,
+          "enhanced": 27,
+          "rare": 8
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "cracked_bone",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "mail_chausses",
+              "weight": 2
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 2
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 2
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "mail_chausses",
+              "weight": 2
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 2
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 2
+            },
+            {
+              "item": "iron_shield",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
       }
     },
     {
       "id": "hound",
       "always": [
         {
+          "item": "hound_meat",
+          "min": 1,
+          "max": 2
+        },
+        {
           "item": "hound_pelt",
           "min": 0,
           "max": 1
         }
       ],
-      "gear": {
+      "drops": {
+        "rolls": 1,
         "chance": 0.12,
-        "entries": [
-          {
-            "item": "hob_boots",
-            "weight": 2
-          },
-          {
-            "item": "iron_gloves",
-            "weight": 2
-          }
-        ]
+        "rarity": {
+          "common": 60,
+          "enhanced": 35,
+          "rare": 5
+        },
+        "items": {
+          "common": [
+            {
+              "item": "hob_boots",
+              "weight": 2
+            },
+            {
+              "item": "iron_gloves",
+              "weight": 2
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "hob_boots",
+              "weight": 2
+            },
+            {
+              "item": "iron_gloves",
+              "weight": 2
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
       }
     },
     {
       "id": "archer",
-      "gear": {
+      "drops": {
+        "rolls": 1,
         "chance": 0.3,
-        "entries": [
-          {
-            "item": "rusted_falchion",
-            "weight": 2
-          },
-          {
-            "item": "warden_hauberk",
-            "weight": 2
-          },
-          {
-            "item": "plate_sabatons",
-            "weight": 2
-          },
-          {
-            "item": "watch_helm",
-            "weight": 2
-          }
-        ]
+        "rarity": {
+          "junk": 45,
+          "common": 33,
+          "enhanced": 18,
+          "rare": 4
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "bent_arrowhead",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 2
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 2
+            },
+            {
+              "item": "watch_helm",
+              "weight": 2
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 2
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 2
+            },
+            {
+              "item": "watch_helm",
+              "weight": 2
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
       }
     },
     {
@@ -105,18 +247,38 @@
           "max": 2
         }
       ],
-      "gear": {
+      "drops": {
+        "rolls": 1,
         "chance": 1,
-        "entries": [
-          {
-            "item": "blackwood_cleaver",
-            "weight": 3
-          },
-          {
-            "item": "iron_shield",
-            "weight": 1
-          }
-        ]
+        "rarity": {
+          "enhanced": 80,
+          "rare": 5,
+          "epic": 15
+        },
+        "items": {
+          "enhanced": [
+            {
+              "item": "blackwood_cleaver",
+              "weight": 3
+            },
+            {
+              "item": "iron_shield",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ],
+          "epic": [
+            {
+              "item": "witchbane",
+              "weight": 1
+            }
+          ]
+        }
       }
     }
   ]

@@ -47,7 +47,7 @@ All numbers are in `src/config.js` (`stats`, `archetypes` and the enemies) and i
 
 ## Game data
 
-All content lives in `data/`, one JSON file per part of the game: items, archetypes, abilities, enemies, loot tables, NPCs, shops (vendor types and stock), quests, world placements, scenery and text. Records refer to each other only by id. `npm run validate` checks every reference, id, model and position, and `npm test` runs that check first. [CONTRIBUTING.md](CONTRIBUTING.md) explains the layout and how to add content.
+All content lives in `data/`, one JSON file per part of the game: items, item rarities, archetypes, abilities, enemies, loot tables, NPCs, shops (vendor types and stock), quests, world placements, scenery and text. Records refer to each other only by id. `npm run validate` checks every reference, id, model and position, and `npm test` runs that check first. [CONTRIBUTING.md](CONTRIBUTING.md) explains the layout and how to add content.
 
 ## Items and Mara's forge
 
@@ -77,11 +77,22 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 
 ## Gear drops and random stat rolls
 
-- **Drop tables.** Every enemy type names a loot table in `data/loot_tables.json`: materials it always carries, and a chance of one piece of gear from a weighted list. Drops lie beside the body and are looted with it in one go.
+- **Rarity.** Every item has a rarity from `data/rarities.json`, which sets the colour of its name, its bag-slot border, its loot line in the log and its glint on the ground:
+
+  | Rarity | Colour | What it is |
+  |---|---|---|
+  | Junk | Grey | Vendor trash (cracked bones, bent arrowheads) |
+  | Common | White | Plain weapons and armour, no magical properties |
+  | Enhanced | Green | Gear with a magical property, such as a bonus stat |
+  | Rare | Blue | A very low drop chance, or from bosses and quest chains (Helm of the Old Watch) |
+  | Epic | Purple | The best gear, kept for bosses (Witchbane, the seer's blade) |
+  | Legendary | Orange | Reserved for a handful of items; none yet |
+
+- **Drop tables, rarity first.** Every enemy type names a loot table in `data/loot_tables.json`. A kill drops the table's `always` items (a hound's meat, and often its pelt), then has a chance to drop something: it rolls a rarity by weight, then an item from that rarity's list. A ghoul, for example, drops junk 22.5% of the time, common gear 14%, enhanced 7% and rare 1.4%. The Blackwood Seer always drops enhanced gear or better, and Witchbane 15% of the time. An item can be `reservedFor` one table (a boss's weapon), and the data check stops it appearing anywhere else. Drops lie beside the body and are looted with it in one go.
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;
-  - about a third of pieces gain a WoW-style suffix such as *of the Bear* (+1–2 Might and Vitality), *of Swiftness* (haste) or *of Vigour*. A suffixed piece shows as uncommon (green) and sells for a little more.
+  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (+1–2 Might and Vitality), *of Swiftness* (haste) or *of Vigour*: that is its magical property. It shows green and sells for a little more.
 - **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
 - **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
 
