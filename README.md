@@ -24,6 +24,13 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Swing timer, layout and key bindings
+
+- **Swing timer.** While you auto attack, a bar where the cast bar sits fills up to the moment your weapon blow lands, with the weapon's name and the seconds left. A spell cast shows its cast bar just above it.
+- **Layout.** The spell bar and experience bar sit in the middle of the bottom edge. Coins, the menu and the bag slots are stacked on the far right.
+- **Menu.** Five buttons: Character (C), Spells (P), Talents (N, an empty placeholder), Quest Log (L) and Settings (O). Skills moved into the Spells window header and Save into Settings (K still saves).
+- **Key bindings.** Settings lists every action with its key; click one and press a new key (Backspace clears it, Esc cancels). A key taken from another action moves over. **Quick bind** lets you hover a spell or utility slot and press a key to bind it; Esc ends it. Bindings are saved in the browser and the bar labels and tooltips follow them.
+
 ## Utility bar and camera (Dan's list, part 4)
 
 - **Utility bar.** Four more slots after the combat bar, on keys 6–9 (gamepad: hold D-pad left and press X, Y, A or B, like FFXIV's cross hotbar). They take non-combat skills (Fishing and Set Camp land there when learned) and items dragged from the bags, WoW style: the torch lights on one press and goes away on the next, swapping your shield back in. Old six-slot bars move Fishing and Set Camp across.
@@ -164,10 +171,15 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | B (or I) | Start | Bags |
 | C | View | Character panel |
 | P | D-pad up | Spellbook |
-| U | | Skills (RuneScape style: each skill and its level) |
+| N | | Talents (placeholder for now) |
+| L | | Quest log |
+| O | | Settings (key bindings, nameplates, save) |
+| U | | Skills (RuneScape style: each skill and its level; also a button in the Spells window) |
 | K | D-pad down | Save |
 | Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
+
+Every keyboard key above except WASD, Esc and M can be changed in Settings (O).
 
 **Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
 

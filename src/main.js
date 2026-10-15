@@ -16,6 +16,7 @@ import { Spells } from './systems/spells.js';
 import { Afterlife } from './systems/afterlife.js';
 import { Skills } from './systems/skills.js';
 import { Settings } from './systems/settings.js';
+import { Keybinds } from './systems/keybinds.js';
 import { Chests } from './systems/chests.js';
 import { Reputation } from './systems/reputation.js';
 import { Sparkles } from './render/sparkles.js';
@@ -95,6 +96,9 @@ class Game {
     this.afterlife = new Afterlife(this);
     this.skills = new Skills(this);
     this.settings = new Settings(this);
+    this.keys = new Keybinds(this);
+    this.input.isBound = (code) => this.keys.isBound(code);
+    this.hud?._applyKeyLabels?.();
     this.reputation = new Reputation(this);
     this.camp = new Camp(this);
     this.fishing = new Fishing(this);
@@ -432,20 +436,21 @@ class Game {
       return null;
     }
     if (hud.modal === 'death') {
-      if (input.consume('Enter') || input.consume('KeyE') || pad.pressed(BUTTONS.A)) this.releaseSpirit();
+      if (input.consume('Enter') || this.keys.pressed('interact') || pad.pressed(BUTTONS.A)) this.releaseSpirit();
       return null;
     }
     if (hud.modal === 'document') {
       if (pad.pressed(BUTTONS.B) || pad.pressed(BUTTONS.A)) hud.closeModal();
       return null;
     }
-    if (input.consume('KeyB') || input.consume('KeyI') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
-    if (input.consume('KeyC') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
-    if (input.consume('KeyP')) hud.togglePanel('spellbook');
-    if (input.consume('KeyU')) hud.togglePanel('skills');
-    if (input.consume('KeyO')) hud.togglePanel('settings');
+    if (this.keys.pressed('bags') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
+    if (this.keys.pressed('character') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
+    if (this.keys.pressed('spellbook')) hud.togglePanel('spellbook');
+    if (this.keys.pressed('talents')) hud.togglePanel('talents');
+    if (this.keys.pressed('skills')) hud.togglePanel('skills');
+    if (this.keys.pressed('settings')) hud.togglePanel('settings');
     // D-pad right opens and closes the log (it moves the highlight in the bags)
-    if (input.consume('KeyL') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
+    if (this.keys.pressed('quests') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
     // With a window open the pad drives the window; the world keeps running
     // and the keyboard and mouse still play, as in WoW. Conversations and the
     // quest log come first.
@@ -453,9 +458,9 @@ class Game {
     if (hud.quests.anyOpen) hud.quests.gamepad(pad, dt);
     else if (padMenu) hud.items.gamepad(pad, dt);
     else if (pad.pressed(BUTTONS.UP)) hud.togglePanel('spellbook');
-    if (input.consume('KeyK') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
+    if (this.keys.pressed('save') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
     if (hud.blocksGameplay) return null;
-    if (input.consume('KeyE') || (!padMenu && !pad.held(BUTTONS.LEFT) && pad.pressed(BUTTONS.A))) {
+    if (this.keys.pressed('interact') || (!padMenu && !pad.held(BUTTONS.LEFT) && pad.pressed(BUTTONS.A))) {
       if (this.fishing.active) this.fishing.strike();
       else this.interaction.interact();
     }
@@ -475,7 +480,7 @@ class Game {
     this.rawAim = rawAim;
     const tg = this.targeting;
     // Tab / R3 cycle targets; RT engages whoever is selected or ahead
-    if (input.consume('Tab') || p(BUTTONS.RS)) tg.cycle(rawAim);
+    if (this.keys.pressed('cycleTarget') || p(BUTTONS.RS)) tg.cycle(rawAim);
     if (p(BUTTONS.RT) && tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range)) && !tg.targetInReach) this.hud.error('Out of range');
     // hovering over anyone in the world shows who they are (bottom right)
     if (!usingPad) {
@@ -489,17 +494,17 @@ class Game {
     // each spell-bar slot has a fixed key; whatever ability sits there fires
     const util = padOn && pad.held(BUTTONS.LEFT);
     const slots = [
-      input.consume('Digit1') || (!util && p(BUTTONS.X)),
-      input.consume('Digit2') || (!util && p(BUTTONS.Y)),
-      input.consume('Digit3') || input.consume('KeyQ') || p(BUTTONS.RB),
-      input.consume('Digit4') || p(BUTTONS.LB),
-      input.consume('Digit5') || p(BUTTONS.LT),
-      input.consume('Space') || (!util && p(BUTTONS.B)),
+      this.keys.pressed('bar0') || (!util && p(BUTTONS.X)),
+      this.keys.pressed('bar1') || (!util && p(BUTTONS.Y)),
+      this.keys.pressed('bar2') || p(BUTTONS.RB),
+      this.keys.pressed('bar3') || p(BUTTONS.LB),
+      this.keys.pressed('bar4') || p(BUTTONS.LT),
+      this.keys.pressed('bar5') || (!util && p(BUTTONS.B)),
       // utility slots: 6-9, or D-pad left held with a face button
-      input.consume('Digit6') || (util && p(BUTTONS.X)),
-      input.consume('Digit7') || (util && p(BUTTONS.Y)),
-      input.consume('Digit8') || (util && p(BUTTONS.A)),
-      input.consume('Digit9') || (util && p(BUTTONS.B)),
+      this.keys.pressed('bar6') || (util && p(BUTTONS.X)),
+      this.keys.pressed('bar7') || (util && p(BUTTONS.Y)),
+      this.keys.pressed('bar8') || (util && p(BUTTONS.A)),
+      this.keys.pressed('bar9') || (util && p(BUTTONS.B)),
     ];
     const actions = this.actionBar.actions(slots);
     // Auto attack (WoW): once engaged (right-click, RT, or any ability used

@@ -1,6 +1,7 @@
 import { moneyText, moneyHTML } from './money.js';
 import { Portraits } from './portraits.js';
 import { WorldLabels } from './worldLabels.js';
+import { KeybindUI } from './keybindUI.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { DOCUMENTS, INTRO } from '../data/text.js';
@@ -80,6 +81,7 @@ export class Hud {
     this.abilityIcons = abilityIcons();
     this._buildBar();
     this.items = new ItemUI(game, this);
+    this.keybindUI = new KeybindUI(game, this);
     this.labels = new WorldLabels(game, $('world-labels'));
     this.numbers = new DamageNumbers(game, $('damage-numbers'));
     this.quests = new QuestUI(game, this);
@@ -179,6 +181,16 @@ export class Hud {
   }
 
   _applyKeyLabels() {
+    // keyboard labels follow the player's key bindings
+    const keys = this.game.keys;
+    if (keys) {
+      this.barSlots?.forEach((el, i) => (el.querySelector('.key').dataset.kbm = keys.label('bar' + i)));
+      document.querySelectorAll('.key[data-key-action]').forEach((k) => {
+        k.dataset.kbm = keys.label(k.dataset.keyAction);
+        const btn = k.closest('[data-tip]');
+        if (btn) btn.dataset.tip = `${btn.dataset.tip.replace(/ \(.*\)$/, '')}${k.dataset.kbm ? ` (${k.dataset.kbm})` : ''}`;
+      });
+    }
     document.querySelectorAll('.key[data-kbm]').forEach((k) => {
       k.textContent = this.padMode ? k.dataset.pad : k.dataset.kbm;
     });
@@ -361,6 +373,20 @@ export class Hud {
     if (c) {
       $('cast-fill').style.width = `${Math.min(100, (c.t / c.total) * 100)}%`;
       $('cast-text').textContent = `${SPELLS[c.id].name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
+    }
+    // the weapon swing timer (WoW addons' swing timer): fills until the next
+    // blow lands, while auto attack is on
+    const tg = this.game.targeting;
+    const sw = $('swing-bar');
+    sw.hidden = !tg.attacking || player.dead;
+    if (!sw.hidden) {
+      const st = this.game.stats;
+      const pend = player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
+      const windup = st.hasted(this.game.config.attack.windup);
+      const left = pend || player.cooldowns.attack + windup;
+      const total = st.attackCooldown;
+      $('swing-fill').style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
+      $('swing-text').textContent = `${this.game.inventory.weapon.name}  ${left.toFixed(1)}`;
     }
     this._auras($('buffs'), spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');

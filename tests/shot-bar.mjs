@@ -19,5 +19,5 @@ await page.evaluate(() => {
   g.inventory.useFromBar('torch');
 });
 await page.waitForTimeout(1500);
-await page.screenshot({ path: out, clip: { x: 0, y: 600, width: 1280, height: 120 } });
+await page.screenshot({ path: out, fullPage: false });
 await browser.close();

@@ -481,7 +481,25 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #target-frame.friendly #target-name { color: #a8e08c; }
 
 /* spells: the player's cast bar, and buffs / your effects on the target */
-#cast-bar { position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); width: 240px; height: 16px; }
+#cast-bar { position: absolute; left: 50%; bottom: 132px; transform: translateX(-50%); width: 240px; height: 16px; }
+#swing-bar { position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); width: 240px; height: 12px; }
+#swing-bar .fill { background: linear-gradient(#c8c4b8, #7c776a); }
+#swing-bar .bar-text { font-size: 10px; line-height: 11px; }
+#swing-bar[hidden], #quick-bind-banner[hidden] { display: none; }
+#right-dock { position: absolute; right: 12px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: auto; }
+#right-dock .coins { height: 30px; padding: 0 10px; }
+#bag-dock { padding: 5px 6px 4px; }
+#settings-window { top: 70px; max-height: calc(100vh - 220px); overflow-y: auto; }
+.set-head { font-size: 13px; color: var(--gold); font-weight: normal; margin: 10px 0 4px; }
+.set-buttons { display: flex; gap: 6px; margin: 4px 0; }
+.kb-group { font-size: 11px; color: var(--text-dim); margin: 6px 0 2px; text-transform: uppercase; letter-spacing: 1px; }
+.kb-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; font-size: 12px; }
+.kb-row button { min-width: 80px; }
+.kb-row button.waiting { border-color: var(--gold); color: var(--gold); }
+#quick-bind.on { border-color: var(--gold); color: var(--gold); }
+#talents-window { left: 50%; top: 30%; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#quick-bind-banner { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); padding: 8px 14px; background: rgba(16, 13, 10, 0.92); border: 1px solid var(--gold); color: var(--gold); pointer-events: none; }
+body.quick-bind .aslot:hover { outline: 2px solid var(--gold); }
 #cast-bar .fill { background: linear-gradient(#e8c060, #a87a28); }
 .auras { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .auras:empty { display: none; }
@@ -509,7 +527,7 @@ body.ghost #prompt { color: #cfe6ff; }
 
 /* skills, RuneScape style */
 #skills-window { left: 50%; bottom: 140px; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
-#settings-window { left: 50%; top: 30%; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#settings-window { left: 50%; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 #settings-list label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
 #skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .skill-tile { display: flex; gap: 8px; align-items: center; padding: 6px; border: 1px solid #3a2f20; background: #0f0c09; }
