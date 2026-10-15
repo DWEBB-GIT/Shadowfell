@@ -99,9 +99,21 @@ export class Stats {
     return seconds / this.speed;
   }
 
-  // Auto attack swings once every weapon speed seconds, shortened by haste.
+  // The swing timer (Dan's formula): T = W / (1 + H), W the weapon's speed
+  // and H haste as a fraction. 2.5 s at 20% haste swings every 2.083 s.
   get attackCooldown() {
-    return this.hasted(this.weaponSpeed);
+    return this.weaponSpeed / this.speed;
+  }
+
+  // Seconds from the start of a swing to its impact frame. Haste shortens the
+  // time between swings, not the swing itself: the animation keeps its own
+  // timing unless the interval is too short for it, then it is squeezed in.
+  get swingWindup() {
+    return Math.min(CONFIG.attack.windup, this.attackCooldown * 0.4);
+  }
+
+  get swingAnimation() {
+    return Math.min(CONFIG.attack.swingAnimation, this.attackCooldown * 0.9);
   }
 
   get weaponSpeed() {

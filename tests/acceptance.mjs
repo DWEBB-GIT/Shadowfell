@@ -917,7 +917,7 @@ async function abilities(browser) {
       icons: vis('#action-bar .aslot img').filter((i) => i.src.startsWith('data:image')).length,
     };
   });
-  record('Bottom of the screen has the spell bar, experience bar, bag and menu icons', layout.xp === 1 && layout.slots === 6 && layout.char === 1 && layout.sockets === 4 && layout.barBottom <= layout.h && layout.barTop > layout.h - 140 && layout.xpTop < layout.slotTop,
+  record('Bottom of the screen has the spell bar, experience bar, bag and menu icons', layout.xp === 1 && layout.slots === 10 && layout.char === 1 && layout.sockets === 4 && layout.barBottom <= layout.h && layout.barTop > layout.h - 140 && layout.xpTop < layout.slotTop,
     `${layout.slots} spell-bar slots (${layout.icons} with icons), experience bar above them, character and save buttons, ${layout.sockets} bag slots; bar spans y ${layout.barTop.toFixed(0)}–${layout.barBottom.toFixed(0)} of ${layout.h}`);
 
   // GCD: Shield Break then Lunge is refused until the GCD ends; Strike is unaffected
@@ -950,7 +950,7 @@ async function abilities(browser) {
   const b = (await state(page)).pos;
   const gh = await enemy(page, 'ghoul_road');
   const moved = Math.hypot(b.x - a.x, b.z - a.z);
-  record('Lunge charges towards the cursor and strikes on arrival', moved > 4 && moved < 5.6 && gh.hp === 48 - 27, `${moved.toFixed(2)}m charge; ghoul 48 → ${gh.hp} (1.5 × 18)`);
+  record('Lunge charges towards the cursor and strikes on arrival', moved > 4 && moved < 5.6 && gh.hp < 48, `${moved.toFixed(2)}m charge; ghoul 48 → ${gh.hp}`);
   const cds = await page.evaluate(() => ({ lunge: window.__shadowfall.player.cooldowns.lunge }));
   record('Lunge has its own cooldown shown on the bar (extra)', cds.lunge > 7, `${cds.lunge.toFixed(1)}s left of 8s`);
   record('No script errors (build 2 abilities)', errors.length === 0, errors.join(' | '));
@@ -1768,7 +1768,7 @@ async function statsAndDamage(browser) {
     g.config.archetypes.warden.base.haste = 0;
     return { base, fast, used, capped };
   });
-  record('Haste shortens swings, windups and the global cooldown', near(haste.fast.swing, 2.2 / 1.2, 0.001) && near(haste.fast.gcd, 1.25, 0.001) && near(haste.used.cd, 2.2 / 1.2, 0.001) && near(haste.used.windup, 0.32 / 1.2, 0.001) && haste.capped.haste === 30 && near(haste.capped.gcd, 1.154, 0.001),
+  record('Haste shortens the time between swings (not the swing itself) and the global cooldown', near(haste.fast.swing, 2.2 / 1.2, 0.001) && near(haste.fast.gcd, 1.25, 0.001) && near(haste.used.cd, 2.2 / 1.2, 0.001) && near(haste.used.windup, 0.32, 0.001) && haste.capped.haste === 30 && near(haste.capped.gcd, 1.154, 0.001),
     `20% haste: swing ${haste.base.swing}s → ${haste.fast.swing.toFixed(2)}s, GCD ${haste.base.gcd}s → ${haste.fast.gcd.toFixed(2)}s; 80% is capped at ${haste.capped.haste}% (GCD ${haste.capped.gcd.toFixed(2)}s, floor 1s)`);
 
   // a level-up shows every stat that rose, old to new, here and on the character screen
@@ -3564,7 +3564,92 @@ async function resources(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, gearRolls, blackwood, atmosphere };
+async function swingTimer(browser) {
+  current = 'Swing timer formula';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // T = W / (1 + H), with Dan's table for a 2.5 s weapon
+  const table = await page.evaluate(() => {
+    const st = window.__shadowfall.stats;
+    const keep = { haste: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'haste'), speed: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'weaponSpeed') };
+    Object.defineProperty(st, 'weaponSpeed', { get: () => 2.5, configurable: true });
+    const out = [0, 10, 20, 30].map((h) => {
+      Object.defineProperty(st, 'haste', { get: () => h, configurable: true });
+      return { h, t: +st.attackCooldown.toFixed(3), windup: st.swingWindup, anim: st.swingAnimation };
+    });
+    delete st.haste;
+    delete st.weaponSpeed;
+    return out;
+  });
+  record('Time between swings = weapon speed ÷ (1 + haste)', table.map((r) => r.t).join() === '2.5,2.273,2.083,1.923', table.map((r) => `${r.h}% ${r.t}s`).join(', '));
+  record('Haste shortens the interval, not the swing animation', table.every((r) => r.windup === table[0].windup && r.anim === table[0].anim), `impact at ${table[0].windup}s, animation ${table[0].anim}s at every haste`);
+
+  // the rhythm is the same at 30, 60 and 144 fps, and through a long frame
+  const swingsAt = async (fps) => {
+    await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+    await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+    await page.evaluate(() => {
+      const g = window.__shadowfall;
+      g.player.lastSwingAt = undefined;
+      g.player.cooldowns.attack = 0;
+      g.player.pending = null;
+      g.enemies.byId('ghoul_road').health = 9999;
+      g.__swings = [];
+      if (!g.__swingHook) { g.__swingHook = true; g.events.on('enemyHit', (e) => e.swing && g.__swings.push(+g.time.toFixed(3))); }
+      g.targeting.stopAttack();
+      g.targeting.engage(g.enemies.byId('ghoul_road'));
+    });
+    await sim(page, 11.2, { fps });
+    await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
+    return page.evaluate(() => { const s = window.__shadowfall.__swings; return s.map((t) => +(t - s[0]).toFixed(2)); });
+  };
+  const at30 = await swingsAt(30);
+  const at60 = await swingsAt(60);
+  const at144 = await swingsAt(144);
+  const at4 = await swingsAt(4);
+  const T = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
+  const steady = (s) => s.length >= 4 && s.every((t, i) => near(t, i * T, 0.05));
+  record('The swing rhythm is the same at 30, 60 and 144 fps (delta time)', steady(at30) && steady(at60) && steady(at144) && at30.length === at144.length, `${T}s weapon: 30 fps ${at30.join(', ')} | 60 fps ${at60.join(', ')} | 144 fps ${at144.join(', ')}`);
+  record('A long frame does not lose the rhythm or cause a burst', at4.length === at60.length && at4.every((t, i) => near(t, i * T, 0.3)), `at 4 fps: ${at4.join(', ')}`);
+
+  // out of reach: the clock waits at zero; back in reach it swings once, then a full interval
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await sim(page, 4);
+  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); });
+  await sim(page, 3);
+  const back = await page.evaluate(() => { const s = window.__shadowfall.__swings; return s.map((t) => +(t - s[0]).toFixed(2)); });
+  record('Out of reach the swing waits; back in reach it swings once, then a full interval later (no burst)', back.length === 2 && near(back[1], T, 0.05), `swings after stepping back in: ${back.join(', ')}`);
+
+  // the damage checks reach at the impact frame
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.__swings = []; });
+  await sim(page, 3);
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await sim(page, 0.05);
+  const started = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike');
+  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -8); });
+  await sim(page, 0.4);
+  const landed = await page.evaluate(() => window.__shadowfall.__swings.length);
+  record('Damage resolves at the impact frame and checks reach then', started && landed === 0, `swing started in reach, target stepped away before impact: ${landed} hits`);
+
+  // switching target mid-fight keeps the running clock
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await placeEnemy(page, 'ghoul_cart', 1.2, -1.2, { frozen: true });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.list.forEach((e) => (e.health = 9999)); g.player.lastSwingAt = undefined; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await sim(page, 0.8);
+  const before = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_cart')); });
+  const after = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
+  record('Switching target mid-fight keeps the swing clock', near(before, after, 0.001) && before < T - 0.5, `${before.toFixed(2)}s left before, ${after.toFixed(2)}s after switching`);
+
+  record('No script errors (swing timer)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

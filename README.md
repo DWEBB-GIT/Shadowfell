@@ -34,7 +34,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 ## Swing timer, layout and key bindings
 
-- **Swing timer.** While you auto attack, a bar where the cast bar sits fills up to the moment your weapon blow lands, with the weapon's name and the seconds left. A spell cast shows its cast bar just above it.
+- **Swing timer.** Time between swings = weapon speed ÷ (1 + haste), on its own clock. A bar where the cast bar sits fills up to the moment your blow lands, with the weapon's name and the seconds left. The blow lands at the swing's impact frame and only if the target is still in reach; haste shortens the gap between swings, not the swing itself. Details in `docs/stats-and-damage.md` (The swing timer).
 - **Layout.** The spell bar and experience bar sit in the middle of the bottom edge. Coins, the menu and the bag slots are stacked on the far right.
 - **Menu.** Five buttons: Character (C), Spells (P), Talents (N, an empty placeholder), Quest Log (L) and Settings (O). Skills moved into the Spells window header and Save into Settings (K still saves).
 - **Key bindings.** Settings lists every action with its key; click one and press a new key (Backspace clears it, Esc cancels). A key taken from another action moves over. **Quick bind** lets you hover a spell or utility slot and press a key to bind it; Esc ends it. Bindings are saved in the browser and the bar labels and tooltips follow them.

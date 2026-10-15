@@ -7,14 +7,15 @@
       "name": "Attack",
       "target": "enemy",
       "range": 2.4,
-      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Swing time is the weapon's speed, shortened by haste. Not on the spell bar.",
+      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Not on the spell bar.",
       "tuning": {
         "range": 2.1,
         "coneDegrees": 110,
         "windup": 0.32,
         "swingAnimation": 0.8,
         "abilityWeaponSeconds": 0.6,
-        "turnRate": 6
+        "turnRate": 6,
+        "catchUp": 0.25
       },
       "bar": false
     },
