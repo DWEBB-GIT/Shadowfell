@@ -412,10 +412,12 @@ export class Hud {
     const st = this.game.stats;
     const showSwing = (hand, bar, fill, text) => {
       const el = $(bar);
-      el.hidden = !tg.attacking || player.dead || (hand === 'off' && !st.dualWielding);
+      // (hidden until you first reach the target: the clock is not running)
+      el.hidden = !tg.attacking || player.dead || player.awaitingOpener || (hand === 'off' && !st.dualWielding);
       if (el.hidden) return;
-      const pend = hand === 'off' ? player.pendingOff?.t || 0 : player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
-      const left = pend || player.cooldowns[hand === 'off' ? 'attackOff' : 'attack'] + st.swingWindupFor(hand);
+      // the bar fills on the blow itself
+      const pend = hand === 'off' ? player.pendingOff?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
+      const left = Math.max(0, pend ?? player.cooldowns[hand === 'off' ? 'attackOff' : 'attack']);
       const total = st.attackCooldownFor(hand);
       $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
       $(text).textContent = `${st.handWeapon(hand).name}${hand === 'off' ? ' (off hand)' : ''}  ${left.toFixed(1)}`;

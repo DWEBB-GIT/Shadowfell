@@ -279,12 +279,9 @@ async function combat(browser) {
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 400));
   await page.mouse.click(pt.x, pt.y, { button: 'right' });
   // software WebGL runs slowly, so wait for the swing to start and finish in game time
-  await page.waitForFunction(() => window.__shadowfall.player.pending !== null, null, { timeout: 15000 });
+  // (a blow lands when the swing clock runs out; stopping before then calls it off)
+  await page.waitForFunction(() => window.__shadowfall.enemies.byId('ghoul_road').health < 400, null, { timeout: 15000 });
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
-  await page.waitForFunction(() => {
-    const p = window.__shadowfall.player;
-    return p.cooldowns.attack === 0 && !p.pending;
-  }, null, { timeout: 15000 });
   await pauseLoop(page);
   let g = await enemy(page, 'ghoul_road');
   // one auto attack swing: the worn longsword's 44–59 plus swing power, less the ghoul's armour
@@ -2507,16 +2504,18 @@ async function clickTargeting(browser) {
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_cart', 2.5, 1, { frozen: true });
-  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 150));
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 20));
   await rightClickOn('ghoul_road');
-  await sim(page, 1.3);
+  // the first blow lands one swing time after you reach the target (2.2 s)
+  const TT = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
+  await sim(page, TT + 0.1);
   const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent, cd: window.__shadowfall.player.cooldowns.attack }));
-  await sim(page, 1.4);
+  await sim(page, TT);
   const second = await page.evaluate(() => window.__shadowfall.enemies.byId('ghoul_road').health);
-  await sim(page, 2.4);
+  await sim(page, TT + 0.3);
   const end = await page.evaluate(() => ({ dead: window.__shadowfall.enemies.byId('ghoul_road').dead, attacking: window.__shadowfall.targeting.attacking, target: window.__shadowfall.targeting.current }));
-  record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp === 84 && mid.attacking && mid.label === 'Attacking' && second === 18 && end.dead && !end.attacking && !end.target,
-    `150 → ${mid.hp} after 1.3s (one swing; next in ${mid.cd.toFixed(2)}s of the longsword's 2.2s) → ${second} after 2.7s (frame: "${mid.label}"); then it fell and auto attack stopped`);
+  record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp < 20 && mid.hp - second === 20 - mid.hp && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
+    `20 → ${mid.hp} one swing time after reaching it (next in ${mid.cd.toFixed(2)}s of ${TT}s) → ${second} a swing later (frame: "${mid.label}"); then it fell and auto attack stopped`);
 
   // right-clicking does not snap the Warden round: moving, he faces where he
   // walks and holds his swing; standing still, he turns to the target
@@ -2584,7 +2583,8 @@ async function clickTargeting(browser) {
   await rightClickOn('mara');
   await sim(page, 0.05);
   const talking = await page.evaluate(() => window.__shadowfall.dialogue.isOpen);
-  record('Left click selects a townsperson; right click talks to them', friend.f === 'mara' && friend.frame === 'Mara Venn' && !friend.talking && talking, `target frame "${friend.frame}"; right click opened the conversation`);
+  // (either button selects a townsperson and talks to them, as src/main.js _click says)
+  record('Clicking a townsperson selects and talks to them, with either button', friend.f === 'mara' && friend.frame === 'Mara Venn' && friend.talking && talking, `target frame "${friend.frame}"; left click talking: ${friend.talking}, right click talking: ${talking}`);
   record('No script errors (click targeting)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3613,12 +3613,40 @@ async function swingTimer(browser) {
   record('The swing rhythm is the same at 30, 60 and 144 fps (delta time)', steady(at30) && steady(at60) && steady(at144) && at30.length === at144.length, `${T}s weapon: 30 fps ${at30.join(', ')} | 60 fps ${at60.join(', ')} | 144 fps ${at144.join(', ')}`);
   record('A long frame does not lose the rhythm or cause a burst', at4.length === at60.length && at4.every((t, i) => near(t, i * T, 0.3)), `at 4 fps: ${at4.join(', ')}`);
 
+  // the animation's impact frame, the hit and the bar filling are one moment
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.__sync = [];
+    g.enemies.byId('ghoul_road').health = 9999;
+    g.events.on('playerSwing', (e) => { if (!e.hand) g.__sync.push({ start: g.time, impactIn: g.player.pending.t, clock: g.player.cooldowns.attack, frac: g.player.rig.action.impact * g.player.rig.action.duration }); });
+    g.events.on('enemyHit', (e) => { if (e.swing && g.__sync.length) Object.assign(g.__sync[g.__sync.length - 1], { hit: g.time, bar: document.getElementById('swing-fill').style.width }); });
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+  });
+  await sim(page, 0.1);
+  await sim(page, 3 * T);
+  const sync = await page.evaluate(() => window.__shadowfall.__sync.filter((x) => x.hit).map((x) => ({ lead: +(x.hit - x.start).toFixed(3), impactIn: +x.impactIn.toFixed(3), clock: +x.clock.toFixed(3), frac: +x.frac.toFixed(3), bar: x.bar })));
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
+  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x) => near(x.lead, x.impactIn, 0.005) && near(x.impactIn, Math.max(x.clock, 0.15), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
+
   // out of reach: the clock waits at zero; back in reach it swings once, then a full interval
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  // first, the opening: the clock does not run while you close in
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 4);
-  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); });
+  const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, waiting: !!window.__shadowfall.player.awaitingOpener, bar: !document.getElementById('swing-bar').hidden, hits: window.__shadowfall.__swings.length }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; });
+  await sim(page, T + 0.3);
+  const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
+  record('The swing timer does not run (or show) while you are out of reach of a new target; it starts when you reach it', closing.waiting && closing.clock === 0 && !closing.bar && closing.hits === 0 && opener.length === 1 && near(opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, bar ${closing.bar ? 'shown' : 'hidden'}; first blow ${opener[0]}s after reaching it (T ${T}s)`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
+  await sim(page, 3);
+  // mid-fight: a clock that runs out with the target out of reach waits at zero
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.player.lastSwingAt = undefined; g.__swings = []; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.awaitingOpener = false; g.player.cooldowns.attack = 0; });
+  await sim(page, 4);
+  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); e.health = 9999; });
   await sim(page, 3);
   const back = await page.evaluate(() => { const s = window.__shadowfall.__swings; return s.map((t) => +(t - s[0]).toFixed(2)); });
   record('Out of reach the swing waits; back in reach it swings once, then a full interval later (no burst)', back.length === 2 && near(back[1], T, 0.05), `swings after stepping back in: ${back.join(', ')}`);
@@ -3626,7 +3654,7 @@ async function swingTimer(browser) {
   // the damage checks reach at the impact frame
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.__swings = []; });
   await sim(page, 3);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.awaitingOpener = false; g.player.cooldowns.attack = 0; });
   await sim(page, 0.05);
   const started = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike');
   await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -8); });

@@ -77,20 +77,20 @@ H  haste as a fraction (20% = 0.20), gear only, capped at 0.30
 | 20% | 2.083 s | 28.8 |
 | 30% (cap) | 1.923 s | 31.2 |
 
-Auto attack is three separate parts:
+Auto attack is three separate parts, timed the way WoW times them: the swing timer bar fills at the moment the blow lands.
 
-1. **The swing clock** (`player.cooldowns.attack`) counts down on delta time, so the rhythm is the same at 30, 60 or 144 fps. When it reaches zero and the target is in reach and in front of you, a swing starts and the clock is set to T. If the clock ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst. A clock that runs out while you are out of reach waits at zero: stepping back in gives one swing, then a full T.
-2. **The animation** plays from the swing's start at its own length (0.8 s, impact at 0.32 s). Haste does not speed it up. Only if T is shorter than the animation (not possible with today's weapons) is it squeezed to fit, so swings never overlap.
-3. **The damage** resolves at the impact frame. Reach and target are checked then, so an enemy that steps away mid-swing is missed. Moving does not cancel a swing, and you can reposition during the recovery.
+1. **The swing clock** (`player.cooldowns.attack`) counts down, on delta time, to the moment of the next blow, so the rhythm is the same at 30, 60 or 144 fps. When a blow lands the clock restarts at T. If it ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst.
+2. **The animation** (0.8 s, impact frame 0.32 s in) starts 0.32 s *before* the clock runs out, so its impact frame and the hit are the same moment. It only starts if the target is in reach and in front of you. Haste does not speed it up.
+3. **The damage** resolves at the impact frame, when the clock runs out. Reach and target are checked then: if the target has stepped out of reach there is no blow, the swing is called off, and the clock waits at zero. You swing the moment you are back in reach (a short 0.15 s windup, `readyWindup`), then every T. Moving does not cancel a swing.
 
-When the clock starts: the first swing of a fight waits a full T, so there is no instant opener. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. The swing bar above the spell bar shows the time until the next blow lands.
+When the clock starts: the first blow of a fight lands a full T after you **first reach** the target (no instant opener, as Dan asked). While you close in, the clock does not run and the swing bar is hidden. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. Stopping auto attack before a blow lands calls it off.
 
 ### Dual wielding
 
 A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:
 
 - **Each hand has its own swing clock** (`cooldowns.attack` and `cooldowns.attackOff`), at its own weapon's speed and the same T = W ÷ (1 + H), its own animation (the left arm) and its own impact frame. A sword at 2.4 s and a dirk at 1.6 s swing 25 and 37.5 times a minute.
-- **Staggered:** when a fight opens, the off hand starts half a main-hand swing later. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, it waits until the main hand has landed and the gap has passed. The main hand is never held.
+- **Staggered:** when a fight opens, the off hand's first blow comes half a main-hand swing after the main hand's. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, its clock is pushed back to just after that blow. The main hand is never held.
 - **Off-hand penalty:** off-hand blows do 50% damage (`offHandDamage` in `src/config.js`), knock back half as far and build half the Resolve.
 - Abilities use the main-hand weapon. Casting drops both swings in progress; charges hold both clocks.
 - **Budget:** a one-hand weapon weighs 0.75 of a slot, so two of them carry the same stat points as a main-hand weapon (1) and a shield (0.5). Damage per second is the same formula as any weapon of its item level.

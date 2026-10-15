@@ -184,11 +184,7 @@ export class Player {
 
   update(dt, controls) {
     const { combat, collision } = this.game;
-    // the swing clock runs on delta time; if it ran out partway through this
-    // frame, the overshoot is kept (capped) so the next swing keeps the rhythm
-    const late = (k) => (this.cooldowns[k] > 0 && this.cooldowns[k] < dt ? Math.min(dt - this.cooldowns[k], CONFIG.attack.catchUp) : 0);
-    this.swingLate = late('attack');
-    this.swingLateOff = late('attackOff');
+    // the swing clocks run on delta time (see tryStrike)
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
     this.braced = Math.max(0, this.braced - dt);
 
@@ -219,21 +215,18 @@ export class Player {
     // queued attacks land after a short windup, independent of frame rate
     if (this.pending) {
       this.pending.t -= dt;
-      if (this.pending.t <= 0) {
+      if (this.pending.t <= 1e-6) {
         const p = this.pending;
         this.pending = null;
-        if (p.type === 'strike') {
-          this.lastMainImpactAt = this.game.time;
-          combat.resolvePlayerStrike(p.aim);
-        }
+        if (p.type === 'strike') this._impact('main', p, dt);
         else if (p.type === 'spell') this.game.spells.resolve(p.id);
       }
     }
     // the off hand's blow has its own impact frame
-    if (this.pendingOff && (this.pendingOff.t -= dt) <= 0) {
+    if (this.pendingOff && (this.pendingOff.t -= dt) <= 1e-6) {
       const p = this.pendingOff;
       this.pendingOff = null;
-      combat.resolvePlayerStrike(p.aim, 'off');
+      this._impact('off', p, dt);
     }
 
     let speed01 = 0;
@@ -297,47 +290,85 @@ export class Player {
     return true;
   }
 
-  // An auto attack swing, when the weapon is ready and the target is in
-  // front of the Warden (he does not snap round to it). Three parts:
-  // the swing clock (cooldowns.attack, T = W / (1 + H)), the animation, and
-  // the damage, which resolves at the impact frame (combat checks reach and
-  // target then). A clock that ran out while the target was out of reach
-  // just waits at zero: no debt, so no burst when you get back in range.
+  // Auto attack, as WoW does it. Each hand has a swing clock
+  // (cooldowns.attack / attackOff, T = W / (1 + H)) that counts down to the
+  // moment the blow lands, so the swing timer bar fills exactly on the hit.
+  // The animation starts its windup early, so its impact frame is that same
+  // moment; it only starts if the target is in reach and in front of you.
+  // If the target is out of reach when the clock runs out, there is no
+  // swing: the clock waits, full, and you swing the moment you are back in
+  // reach (after a short windup). It restarts from the blow, keeping any
+  // overshoot (capped by `catchUp`) so the rhythm holds at low frame rates.
+  // The first blow of a fight comes a full swing time after you first reach
+  // the target; its clock does not run while you close in.
   tryStrike(aim) {
-    if (this.cooldowns.attack > 0 || this.pending || this.casting) return false;
-    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    if (this.pending || this.casting) return false;
     const stats = this.game.stats;
+    if (this.awaitingOpener) {
+      this.awaitingOpener = false;
+      this.cooldowns.attack = Math.max(this.cooldowns.attack, stats.attackCooldown);
+      // dual wielding, the off hand opens half a main-hand swing later
+      if (stats.dualWielding) this.cooldowns.attackOff = Math.max(this.cooldowns.attackOff, stats.attackCooldownFor('off') + stats.attackCooldown / 2);
+      return false;
+    }
     const windup = stats.swingWindup;
+    if (this.cooldowns.attack > windup) return false;
+    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    const t = Math.max(this.cooldowns.attack, Math.min(windup, CONFIG.attack.readyWindup));
     const anim = stats.swingAnimation;
-    this.cooldowns.attack = stats.attackCooldown - (this.swingLate || 0);
-    this.lastSwingAt = this.game.time;
-    this.pending = { type: 'strike', t: windup, aim: aim ? { x: aim.x, z: aim.z } : null };
-    this.rig.play('strike', anim, windup / anim);
+    this.pending = { type: 'strike', t, aim: aim ? { x: aim.x, z: aim.z } : null };
+    this.rig.play('strike', anim, t / anim);
     this.rig.action.auto = true;
     this.game.events.emit('playerSwing', {});
     return true;
   }
 
-  // The off hand, when dual wielding: its own clock (cooldowns.attackOff, at
-  // its own weapon's speed), its own animation on the left arm, and its own
-  // impact. The hands stagger: the off hand never lands within `staggerGap`
-  // of the main hand's next blow; if it would, it waits until that has landed.
+  // The off hand, when dual wielding: its own clock, its own animation on
+  // the left arm, its own impact. The hands stagger: the off hand never lands
+  // within `staggerGap` of a main-hand blow; if it would, its clock is pushed
+  // back until just after that blow.
   tryStrikeOff(aim) {
     const stats = this.game.stats;
-    if (!stats.dualWielding || this.cooldowns.attackOff > 0 || this.pendingOff || this.casting || this.lunge) return false;
+    if (!stats.dualWielding || this.awaitingOpener || this.pendingOff || this.casting || this.lunge) return false;
     if (this.pending && this.pending.type === 'spell') return false;
-    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
     const windup = stats.swingWindupFor('off');
-    const mainImpact = this.pending && this.pending.type === 'strike' ? this.pending.t : this.cooldowns.attack + stats.swingWindupFor('main');
-    const sinceMain = this.game.time + windup - (this.lastMainImpactAt ?? -Infinity);
-    if (Math.abs(mainImpact - windup) < CONFIG.attack.staggerGap || sinceMain < CONFIG.attack.staggerGap) return false;
+    if (this.cooldowns.attackOff > windup) return false;
+    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    const gap = CONFIG.attack.staggerGap;
+    const t = Math.max(this.cooldowns.attackOff, Math.min(windup, CONFIG.attack.readyWindup));
+    const main = this.pending && this.pending.type === 'strike' ? this.pending.t : this.cooldowns.attack;
+    const since = this.game.time - (this.lastMainImpactAt ?? -Infinity);
+    if (Math.abs(main - t) < gap) {
+      this.cooldowns.attackOff = main + gap;
+      return false;
+    }
+    if (since + t < gap) {
+      this.cooldowns.attackOff = gap - since;
+      return false;
+    }
     const anim = stats.swingAnimationFor('off');
-    this.cooldowns.attackOff = stats.attackCooldownFor('off') - (this.swingLateOff || 0);
-    this.lastSwingAt = this.game.time;
-    this.pendingOff = { t: windup, aim: aim ? { x: aim.x, z: aim.z } : null };
-    this.rig.playOff(anim, windup / anim);
+    this.pendingOff = { t, aim: aim ? { x: aim.x, z: aim.z } : null };
+    this.rig.playOff(anim, t / anim);
     this.game.events.emit('playerSwing', { hand: 'off' });
     return true;
+  }
+
+  // A blow's impact frame: it lands only if the target is still in reach,
+  // and the hand's clock starts again from here. Out of reach, the swing is
+  // called off and the clock waits at zero.
+  _impact(hand, p, dt) {
+    const off = hand === 'off';
+    const tg = this.game.targeting;
+    if (!tg.attacking || !tg.targetInReach) {
+      if (off) this.rig.offAction = null;
+      else if (this.rig.action?.type === 'strike') this.rig.action = null;
+      return;
+    }
+    const late = Math.min(-p.t, dt, CONFIG.attack.catchUp);
+    this.cooldowns[off ? 'attackOff' : 'attack'] = Math.max(0, this.game.stats.attackCooldownFor(hand) - late);
+    this.lastSwingAt = this.game.time;
+    if (!off) this.lastMainImpactAt = this.game.time;
+    this.game.combat.resolvePlayerStrike(p.aim, hand);
   }
 
   // is (x, z) within `halfDegrees` of where the Warden faces? (very close counts)

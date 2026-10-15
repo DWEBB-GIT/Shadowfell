@@ -16,6 +16,7 @@
         "abilityWeaponSeconds": 0.6,
         "turnRate": 6,
         "catchUp": 0.25,
+        "readyWindup": 0.15,
         "staggerGap": 0.2
       },
       "bar": false
