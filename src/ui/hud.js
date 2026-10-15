@@ -71,6 +71,7 @@ export class Hud {
       lunge: () => [P().lunge, CONFIG.lunge.cooldown, true],
       brace: () => [P().brace, CONFIG.brace.cooldown, false],
       draught: () => [P().draught, CONFIG.draught.cooldown, false],
+      fish: () => [0, 0, false],
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
     for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
@@ -107,7 +108,7 @@ export class Hud {
     ev.on('playerHurt', fought);
 
     document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => this.closeModal()));
-    this.el.respawnBtn.addEventListener('click', () => game.respawn());
+    this.el.respawnBtn.addEventListener('click', () => game.releaseSpirit());
 
   }
 
@@ -217,9 +218,10 @@ export class Hud {
   showDeath({ coinsLost, destination }) {
     this.closeModal(true);
     this.modal = 'death';
+    const where = destination === 'camp' ? 'by your camp' : destination === 'shrine' ? 'at the last shrine you rested at' : "at the road's end";
     this.el.deathText.textContent =
-      `The road takes what it can. ${coinsLost > 0 ? `You will wake ${coinsLost} coin${coinsLost === 1 ? '' : 's'} lighter.` : 'You have nothing left for it to take.'}`;
-    this.el.respawnBtn.textContent = destination === 'shrine' ? 'Return to the last shrine' : "Return to the road's end";
+      `Your spirit will rise ${where}. Walk back to your body to live again with nothing lost, or return to life where you rise${coinsLost > 0 ? `, ${coinsLost} coin${coinsLost === 1 ? '' : 's'} lighter` : ''}.`;
+    this.el.respawnBtn.textContent = 'Release spirit';
     this.el.death.hidden = false;
     this.el.respawnBtn.focus();
   }
@@ -301,7 +303,11 @@ export class Hud {
     this.el.hpFill.style.width = `${(player.health / player.maxHealth) * 100}%`;
     this.el.hpText.textContent = `${hp} / ${player.maxHealth}`;
     this.el.xpFill.style.width = `${(progression.xp / progression.xpToNext) * 100}%`;
-    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience`;
+    // rested experience shows as a pale band ahead of the fill, as in WoW
+    const rested = $('xp-rested');
+    rested.style.left = this.el.xpFill.style.width;
+    rested.style.width = `${Math.min(100 - (progression.xp / progression.xpToNext) * 100, (progression.rested / progression.xpToNext) * 100)}%`;
+    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
     this.el.coins.textContent = inventory.coins;
     const n = inventory.draughts;
     for (const el of this.barSlots) {
@@ -414,7 +420,8 @@ export class Hud {
     const seen = new Set();
     for (const e of enemies.list) {
       if (!e.alive) continue;
-      if (e.engaged <= 0 && e.health >= e.cfg.health && e !== t && e !== shown) continue;
+      const nemesis = this.game.afterlife.isNemesis(e);
+      if (e.engaged <= 0 && e.health >= e.cfg.health && e !== t && e !== shown && !nemesis) continue;
       seen.add(e.id);
       let bar = this.enemyBars.get(e.id);
       if (!bar) {
@@ -432,6 +439,7 @@ export class Hud {
       if (e.cfg.mana) bar.querySelector('.emana-fill').style.width = `${(e.mana / e.cfg.mana) * 100}%`;
       bar.classList.toggle('winding', e.windup > 0 || !!e.casting);
       bar.classList.toggle('targeted', e === t);
+      bar.classList.toggle('nemesis', nemesis);
       // FFXIV-style cast bar under the name while a telegraphed attack winds up
       const cast = e.casting;
       bar.classList.toggle('casting', !!cast);

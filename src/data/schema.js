@@ -9,10 +9,11 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
-export const KINDS = ['weapon', 'armor', 'shield', 'bag', 'consumable', 'material', 'junk', 'document'];
+export const KINDS = ['weapon', 'armor', 'shield', 'torch', 'tool', 'bag', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
+const EQUIPPABLE = ['weapon', 'armor', 'shield', 'torch'];
 export const STAT_KEYS = ['might', 'finesse', 'intellect', 'vitality', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
 export const EQUIP_SLOTS = [
   { id: 'head', label: 'Head' },
@@ -34,6 +35,7 @@ export const SPELL_KINDS = {
   aoe: { enemy: false, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] },
   cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
   buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
+  camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };
 const ID = /^[a-z][a-z0-9_]*$/;
 const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved spell bars use them
@@ -73,13 +75,15 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (!isInt(d.stack) || d.stack < 1) bad('stack must be a whole number of at least 1');
     if (!isInt(d.price) || d.price < 0) bad('price must be a whole number of coins');
     if (!d.model || !d.icon) bad('needs a model and an icon');
-    const equips = ['weapon', 'armor', 'shield'].includes(d.kind);
+    const equips = EQUIPPABLE.includes(d.kind);
     if (equips && !slots.includes(d.slot)) bad(`unknown slot ${d.slot}`);
     if (!equips && d.slot) bad('only weapons, armour and shields have a slot');
     if (d.kind === 'armor' && !armourTypes.includes(d.armourType)) bad('armour needs an armour type');
     if (d.armourType && !armourTypes.includes(d.armourType)) bad(`unknown armour type ${d.armourType}`);
     if (d.kind === 'weapon' && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage[0] <= d.damage[1])) bad('a weapon needs damage [min, max]');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
+    if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
+    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
     for (const [k, v] of Object.entries(d.stats || {})) {
       if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
       else if (!isNum(v)) bad(`stat ${k} must be a number`);
@@ -110,10 +114,12 @@ export function validateGameData(raw, opts = {}) {
   const worldF = need('world.json');
   const sceneF = need('scenery.json');
   const textF = need('text.json');
+  const skillF = need('skills.json');
 
   const armourTypes = indexById(itemsF.armourTypes, 'items.json armourTypes', errors);
   const suffixes = indexById(itemsF.suffixes, 'items.json suffixes', errors);
   const rarities = indexById(rarF.rarities, 'rarities.json', errors);
+  const skills = indexById(skillF.skills, 'skills.json', errors);
   const items = indexById(itemsF.items, 'items.json items', errors);
   const archetypes = indexById(archF.archetypes, 'archetypes.json', errors);
   const abilities = indexById(abilF.abilities, 'abilities.json', errors, ABILITY_ID);
@@ -177,6 +183,8 @@ export function validateGameData(raw, opts = {}) {
     if (!ABILITY_TARGETS.includes(a.target)) errors.push(`${w}: target must be one of ${ABILITY_TARGETS.join(', ')}`);
     if (a.target === 'enemy' && !isNum(a.range)) errors.push(`${w}: an enemy-targeted ability needs a range`);
     if (a.item) ref(w, 'item', items, a.item);
+    if (a.requiresItem) ref(w, 'item', items, a.requiresItem);
+    if (a.skill) ref(w, 'skill', skills, a.skill);
     if (!a.tuning || typeof a.tuning !== 'object' || !Object.values(a.tuning).every(isNum)) errors.push(`${w}: tuning must be a set of numbers`);
     if (a.school && !SCHOOLS.includes(a.school)) errors.push(`${w}: unknown school ${a.school}`);
     if (a.kind !== undefined) {
@@ -242,6 +250,19 @@ export function validateGameData(raw, opts = {}) {
     for (const it of named) {
       const res = items[it] && items[it].reservedFor;
       if (res && !res.includes(id)) errors.push(`${w}: ${it} is kept for ${res.join(', ')} and cannot drop here`);
+    }
+  }
+
+  // ---- skills: learned from a trainer, they unlock abilities
+  for (const [id, s] of Object.entries(skills)) {
+    const w = `skills.json ${id}`;
+    if (!isStr(s.name) || !isStr(s.desc)) errors.push(`${w}: needs a name and a desc`);
+    ref(w, 'trainer npc', npcs, s.trainer);
+    if (!(isInt(s.cost) && s.cost >= 0)) errors.push(`${w}: cost must be a whole number of coins`);
+    if (s.maxRank !== undefined && !(isInt(s.maxRank) && s.maxRank >= 1)) errors.push(`${w}: maxRank must be a whole number of at least 1`);
+    for (const ab of s.teaches || []) {
+      ref(w, 'ability', abilities, ab);
+      if (abilities[ab] && abilities[ab].skill !== id) errors.push(`${w}: teaches ${ab}, which does not name ${id} as its skill`);
     }
   }
 
@@ -361,6 +382,17 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, r] of Object.entries(regions)) if (!isStr(r.name) || !(r.minZ === null || isNum(r.minZ))) errors.push(`world.json region ${id}: needs a name and minZ (a number, or null for the last)`);
   for (const road of worldF.roads || []) if (!Array.isArray(road.points) || road.points.length < 2 || !road.points.every(isVec2)) errors.push(`world.json road ${road.id}: needs at least two [x, z] points`);
   if (!worldF.playerStart || !inWorld(worldF.playerStart.position)) errors.push('world.json: playerStart needs a position inside the world');
+  for (const wa of worldF.water || []) {
+    const w = `world.json water ${wa.id}`;
+    pos(w, wa.position);
+    if (!(isNum(wa.radius) && wa.radius > 0)) errors.push(`${w}: needs a radius`);
+    ref(w, 'fish loot table', lootTables, wa.fishTable);
+  }
+  for (const o of worldF.obscured || []) {
+    const w = `world.json obscured ${o.id}`;
+    pos(w, o.position);
+    if (!(isNum(o.radius) && o.radius > 0) || !isStr(o.name)) errors.push(`${w}: needs a name and a radius`);
+  }
   for (const [id, s] of Object.entries(shrines)) {
     pos(`world.json shrine ${id}`, s.position);
     if (!isStr(s.label)) errors.push(`world.json shrine ${id}: needs a label (shown on the death screen)`);

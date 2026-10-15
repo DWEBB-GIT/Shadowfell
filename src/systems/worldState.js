@@ -18,6 +18,9 @@ export class WorldState {
     this.corpses = {}; // enemyId -> { x, z, coins } for bodies not yet looted
     this.nextGroundUid = 1;
     this.flags = new Set(); // story facts, e.g. 'manifest_delivered'
+    this.camp = null; // { x, z } of the Warden's camp, if one is pitched
+    this.restPoint = 'shrine'; // where the spirit rises: 'camp' or 'shrine' (the last rested at)
+    this.nemesis = null; // the enemy spawn id that last killed the Warden
   }
 
   isDefeated(id) {
@@ -53,6 +56,9 @@ export class WorldState {
       ground: this.ground.map((g) => ({ ...g })),
       corpses: Object.fromEntries(Object.entries(this.corpses).map(([k, v]) => [k, { ...v }])),
       flags: [...this.flags],
+      camp: this.camp ? { ...this.camp } : null,
+      restPoint: this.restPoint,
+      nemesis: this.nemesis,
     };
   }
 
@@ -67,5 +73,8 @@ export class WorldState {
     this.corpses = Object.fromEntries(Object.entries(data.corpses || {}).map(([k, v]) => [k, { ...v }]));
     this.nextGroundUid = this.ground.reduce((m, g) => Math.max(m, g.uid + 1), 1);
     this.flags = new Set(Array.isArray(data.flags) ? data.flags.filter((f) => typeof f === 'string') : []);
+    this.camp = data.camp ? { ...data.camp } : null;
+    this.restPoint = data.restPoint === 'camp' && this.camp ? 'camp' : 'shrine';
+    this.nemesis = typeof data.nemesis === 'string' ? data.nemesis : null;
   }
 }

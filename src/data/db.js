@@ -16,6 +16,7 @@
 //   data/world.json        regions, roads, shrines, locations, spawns, loot
 //   data/scenery.json      props, clearings, lights
 //   data/text.json         intro, documents, examine text
+//   data/skills.json       skills learned from trainers (camping, fishing)
 //
 // See CONTRIBUTING.md for how to add content.
 
@@ -32,6 +33,7 @@ import dialogue from '../../data/dialogue.json';
 import world from '../../data/world.json';
 import scenery from '../../data/scenery.json';
 import text from '../../data/text.json';
+import skills from '../../data/skills.json';
 import { validateGameData, indexById } from './schema.js';
 
 export const RAW = {
@@ -48,6 +50,7 @@ export const RAW = {
   'world.json': world,
   'scenery.json': scenery,
   'text.json': text,
+  'skills.json': skills,
 };
 
 // Problems found in the data (empty when it is sound). The game logs them at
@@ -75,6 +78,9 @@ export const DB = {
   quests: byId(quests.quests, 'quests'),
   dialogues: byId(dialogue.dialogues, 'dialogues'),
   locations: byId(world.locations, 'locations'),
+  skills: byId(skills.skills, 'skills'),
+  water: world.water || [],
+  obscured: world.obscured || [],
   world,
   scenery,
   text,

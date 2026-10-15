@@ -454,3 +454,12 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .aura img { width: 100%; height: 100%; display: block; }
 .aura span { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center; font-size: 10px; color: #f0e0c0; text-shadow: 0 0 2px #000, 0 0 2px #000; }
 .aura.debuff { border-color: #8a3a2a; }
+
+/* the enemy that killed you: a skull before its name, always shown */
+.ebar.nemesis .ename { display: block; color: #ff6a50; }
+.ebar.nemesis .ename::before { content: '\2620  '; color: #ff4a3a; }
+.ebar.nemesis .etrack { outline: 1px solid #a02818; }
+/* walking as a spirit */
+body.ghost #prompt { color: #cfe6ff; }
+#xp-bar { position: relative; }
+#xp-rested { position: absolute; top: 0; bottom: 0; background: rgba(90, 140, 230, 0.45); pointer-events: none; }

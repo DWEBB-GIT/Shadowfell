@@ -45,4 +45,8 @@ export const LIGHTS = S.lights;
 export const WITCHLIGHTS = S.witchlights;
 
 // A rumble plays near these (an elite's ground), quieter once it is dead.
+// ponds to fish (`fishTable` names a loot table) and places too dark to enter without a torch
+export const WATER = DB.water;
+export const OBSCURED = DB.obscured;
+
 export const DANGER_ZONES = W.dangerZones.map((z) => ({ position: z.position, radius: z.radius, enemy: z.enemySpawn }));

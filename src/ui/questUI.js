@@ -15,7 +15,7 @@ import { QuestLog, MAX_TRACKED } from '../systems/quests.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const MARK = { ready: '?', available: '!', active: '?' };
-const OPTION_ICON = { ready: '?', available: '!', active: '?', talk: '&#10077;', shop: '&#9878;', bye: '&#10005;', accept: '&#10003;', back: '&#8617;' };
+const OPTION_ICON = { ready: '?', available: '!', active: '?', talk: '&#10077;', shop: '&#9878;', bye: '&#10005;', accept: '&#10003;', back: '&#8617;', train: '&#9733;' };
 
 export class QuestUI {
   constructor(game, hud) {

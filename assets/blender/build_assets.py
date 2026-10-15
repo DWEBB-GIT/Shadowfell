@@ -1135,6 +1135,121 @@ def build_loot_items():
     export("witchbane")
 
 
+def build_tam():
+    """Old Tam, fisher and woodsman by the pond: same joint layout as the Warden."""
+    root = empty("Tam")
+
+    def legs(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.16, 0.18, 0.48), (0, 0, -0.26), P["cloak"])
+            b.box((0.16, 0.18, 0.40), (0, 0.01, -0.66), P["leather"])   # waders
+            b.box((0.17, 0.26, 0.10), (0, -0.05, -0.88), P["leather_dark"])
+        return part("Leg_" + side, root, (0.11 * s, 0, 0.93), fn)
+
+    legs("L")
+    legs("R")
+
+    def torso(b):
+        b.box((0.42, 0.26, 0.26), (0, 0, 0.10), P["cloak"])
+        b.box((0.46, 0.29, 0.42), (0, 0, 0.42), P["moss"], taper=(1.06, 1.0), var=0.12)   # oilskin coat
+        b.box((0.48, 0.30, 0.06), (0, 0, 0.18), P["leather_dark"])                        # belt
+        b.box((0.14, 0.10, 0.14), (0.20, -0.08, 0.06), P["wood_grey"])                    # creel
+        b.box((0.12, 0.04, 0.06), (-0.16, -0.16, 0.30), P["brass"], var=0.0)              # tin of hooks
+    t = part("Torso", root, (0, 0, 0.92), torso)
+
+    def head(b):
+        b.box((0.08, 0.08, 0.08), (0, 0, 0.03), P["skin"])
+        b.box((0.21, 0.23, 0.25), (0, 0, 0.19), P["skin"], taper=(0.92, 0.9))
+        b.box((0.20, 0.10, 0.16), (0, -0.09, 0.08), P["ash"], taper=(0.7, 1.0))           # grey beard
+        b.box((0.18, 0.03, 0.03), (0, -0.12, 0.22), P["black"], var=0.0)                   # eyes
+        b.cyl(0.24, 0.24, 0.03, (0, 0, 0.32), P["wood_grey"], segs=12)                     # wide hat brim
+        b.cyl(0.13, 0.12, 0.12, (0, 0, 0.39), P["wood_grey"], segs=10)                     # crown
+    part("Head", t, (0, 0, 0.66), head)
+
+    def arm(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.13, 0.14, 0.40), (0, 0, -0.18), P["moss"])
+            b.box((0.10, 0.11, 0.14), (0, -0.01, -0.46), P["skin"])
+        return part("Arm_" + side, t, (0.28 * s, 0, 0.56), fn)
+
+    arm("L")
+    ar = arm("R")
+
+    def rod(b):
+        b.box((0.035, 0.035, 0.30), (0, 0, 0.0), P["leather_dark"])
+        b.cyl(0.016, 0.006, 1.5, (0, 0, 0.88), P["wood"], segs=5)
+        b.cyl(0.035, 0.035, 0.04, (0.04, 0, 0.12), P["iron"], segs=6, rot=(0, 90, 0))     # reel
+    part("Weapon", ar, (0, -0.02, -0.5), rod).rotation_euler = (math.radians(35), 0, 0)
+    export("tam")
+
+
+def build_camp_items():
+    """Camp, torch, rod, fish and the hollow's chest."""
+    b = Builder()  # the Warden's camp: a ring of stones, crossed logs, a flame and a bedroll
+    for i in range(8):
+        a = i / 8 * math.tau
+        b.ball(0.09, (math.cos(a) * 0.42, math.sin(a) * 0.42, 0.05), P["stone"], subdiv=0, var=0.15)
+    b.box((0.60, 0.09, 0.09), (0, 0, 0.07), P["bark"], rot=(0, 0, 30))
+    b.box((0.60, 0.09, 0.09), (0, 0, 0.11), P["bark"], rot=(0, 0, -40))
+    b.ball(0.16, (0, 0, 0.24), P["flame"], scale=(1, 1, 1.6), subdiv=1, glow=True, var=0.0)
+    b.box((0.55, 1.2, 0.08), (1.1, 0.2, 0.04), P["cloth_red"], var=0.08)      # bedroll
+    b.cyl(0.10, 0.10, 0.55, (1.1, -0.45, 0.10), P["cloth"], segs=8, rot=(0, 90, 0))
+    b.to_object("Camp")
+    export("camp")
+    reset_scene()
+
+    b = Builder()  # a torch: grip at the origin, burning head along +Z
+    b.box((0.05, 0.05, 0.50), (0, 0, 0.12), P["wood"], var=0.1)
+    b.box((0.09, 0.09, 0.12), (0, 0, 0.40), P["rag"], var=0.1)
+    b.ball(0.08, (0, 0, 0.52), P["flame"], scale=(1, 1, 1.5), subdiv=1, glow=True, var=0.0)
+    b.to_object("Torch")
+    export("torch")
+    reset_scene()
+
+    b = Builder()  # a fishing rod, laid down
+    b.box((0.04, 0.04, 0.26), (0, 0, 0.0), P["leather_dark"])
+    b.cyl(0.016, 0.006, 1.3, (0, 0, 0.78), P["wood"], segs=5)
+    b.cyl(0.035, 0.035, 0.04, (0.04, 0, 0.10), P["iron"], segs=6, rot=(0, 90, 0))
+    b.to_object("FishingRod")
+    export("fishing_rod")
+    reset_scene()
+
+    def fish(name, body, fin, length, girth):
+        b = Builder()
+        b.ball(girth, (0, 0, girth), P[body], scale=(length / girth, 0.55, 1), subdiv=1, var=0.08)
+        b.box((0.02, 0.10, 0.12), (-length - 0.04, 0, girth), P[fin], var=0.0, rot=(0, 0, 0))   # tail
+        b.box((0.10, 0.02, 0.05), (0, 0, girth * 1.9), P[fin], var=0.0)                         # dorsal fin
+        b.ball(0.015, (length * 0.75, -girth * 0.45, girth * 1.2), P["black"], subdiv=0)
+        b.to_object(name)
+        export(name.lower())
+        reset_scene()
+
+    fish("Perch", "moss", "cloth_red", 0.16, 0.07)
+    fish("Dace", "steel_bright", "steel", 0.15, 0.05)
+    fish("Eel", "pine_black", "fur_dark", 0.32, 0.04)
+
+    b = Builder()  # an old boot
+    b.box((0.12, 0.26, 0.08), (0, 0.04, 0.04), P["leather_dark"], var=0.15)
+    b.box((0.12, 0.12, 0.24), (0, -0.05, 0.18), P["leather_dark"], var=0.15)
+    b.box((0.13, 0.13, 0.03), (0, -0.05, 0.30), P["moss"], var=0.1)
+    b.to_object("OldBoot")
+    export("old_boot")
+    reset_scene()
+
+    b = Builder()  # a strongbox left in the dark
+    b.box((0.70, 0.45, 0.40), (0, 0, 0.20), P["wood_dark"], var=0.1)
+    b.box((0.72, 0.47, 0.16), (0, 0, 0.46), P["wood"], var=0.1)
+    for x in (-0.25, 0.25):
+        b.box((0.06, 0.49, 0.58), (x, 0, 0.29), P["iron"])
+    b.box((0.10, 0.04, 0.12), (0, -0.25, 0.36), P["brass"], var=0.0)
+    b.to_object("Chest")
+    export("chest")
+
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -1144,7 +1259,7 @@ BUILDERS = [
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
     build_mara, build_forge_camp, build_shop_items,
     build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
-    build_loot_items,
+    build_loot_items, build_tam, build_camp_items,
 ]
 
 if __name__ == "__main__":

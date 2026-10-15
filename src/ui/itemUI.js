@@ -318,6 +318,7 @@ export class ItemUI {
       const bar = this.game.actionBar;
       const icons = this.hud.abilityIcons;
       this.el.spellList.innerHTML = Object.entries(ABILITIES)
+        .filter(([id]) => this.game.skills.knowsAbility(id))
         .map(([id, a]) => {
           const at = bar.slots.indexOf(id);
           return `<div class="spell-row"><div class="islot spell filled${this.carry === 'k:' + id ? ' carried' : ''}" data-loc="k:${id}"><img src="${icons[id] || ''}" alt=""></div><div><div class="spell-name">${a.name}</div><div class="dim spell-where">${at >= 0 ? 'On the bar' : 'Not on the bar'}</div></div></div>`;

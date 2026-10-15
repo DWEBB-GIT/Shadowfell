@@ -3,7 +3,7 @@
 // a merchant pays for it. Fields of an item record:
 //
 // name, description
-// kind:       weapon | armor | shield | bag | consumable | material | junk | document
+// kind:       weapon | armor | shield | torch | tool | bag | consumable | material | junk | document
 // slot:       the character slot an equippable item goes into
 // armourType: an armour type id (who may wear it: see archetypes.json)
 // rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
@@ -13,6 +13,8 @@
 // stats:      attributes, armour, block, block rating, haste it adds
 // use:        what using it does, e.g. { heal: 42 }
 // bagSlots:   slots a bag adds
+// light:      a torch's light radius in metres (it lets the Warden into obscured areas)
+// bait:       percent added to the fishing catch chance (one is used per strike)
 // stack:      how many fit in one bag slot (1 = does not stack)
 // price:      what a merchant asks; merchants pay CONFIG.shop.sellFraction of it
 // quest:      quest items cannot be sold or dropped

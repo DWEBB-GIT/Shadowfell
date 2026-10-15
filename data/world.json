@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch.",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -122,6 +122,18 @@
       "name": "The seer's glade",
       "position": [-6.4, -115],
       "radius": 8
+    },
+    {
+      "id": "stillwater_mere",
+      "name": "Stillwater Mere",
+      "position": [-24, -14],
+      "radius": 6
+    },
+    {
+      "id": "barrow_hollow",
+      "name": "The Barrow Hollow",
+      "position": [-27, -90],
+      "radius": 6
     }
   ],
   "npcSpawns": [
@@ -130,6 +142,11 @@
       "position": [14.6, -42.6],
       "facing": 110,
       "anvil": [13.4, -41.6]
+    },
+    {
+      "npc": "tam",
+      "position": [-18.2, -12.4],
+      "facing": 250
     }
   ],
   "enemySpawns": [
@@ -298,6 +315,24 @@
       "reward": {
         "item": "healing_draught"
       }
+    },
+    {
+      "id": "hollow_chest",
+      "model": "chest",
+      "position": [-28.5, -91.5],
+      "prompt": "Open the strongbox",
+      "reward": {
+        "item": "old_watch_helm"
+      }
+    },
+    {
+      "id": "hollow_purse",
+      "model": "coin_purse",
+      "position": [-25.4, -88.6],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 15
+      }
     }
   ],
   "dangerZones": [
@@ -310,6 +345,24 @@
       "position": [-6.4, -114.6],
       "radius": 12,
       "enemySpawn": "seer_glade"
+    }
+  ],
+  "water": [
+    {
+      "id": "stillwater_mere",
+      "name": "Stillwater Mere",
+      "position": [-24, -14],
+      "radius": 5.5,
+      "fishTable": "mere_fish"
+    }
+  ],
+  "obscured": [
+    {
+      "id": "barrow_hollow",
+      "name": "The Barrow Hollow",
+      "position": [-27, -90],
+      "radius": 6,
+      "text": "It is too dark to go further. You will need a light."
     }
   ]
 }

@@ -280,6 +280,42 @@
           ]
         }
       }
+    },
+    {
+      "id": "mere_fish",
+      "drops": {
+        "rolls": 1,
+        "chance": 1,
+        "rarity": {
+          "junk": 12,
+          "common": 84,
+          "rare": 4
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "old_boot",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "gloomwater_perch",
+              "weight": 3
+            },
+            {
+              "item": "silver_dace",
+              "weight": 2
+            }
+          ],
+          "rare": [
+            {
+              "item": "barrow_eel",
+              "weight": 1
+            }
+          ]
+        }
+      }
     }
   ]
 }

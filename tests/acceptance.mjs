@@ -674,6 +674,8 @@ async function death(browser) {
   await page.click('#respawn-btn');
   await page.waitForTimeout(200);
   await pauseLoop(page);
+  // the spirit rises at the shrine; returning to life there costs the coins
+  await sim(page, 0.1, { press: ['KeyE'] });
   s = await state(page);
   const respawn = await page.evaluate(() => window.__shadowfall.worldState.respawn);
   record('Respawn restores health', !s.dead && s.hp === s.maxHp, `${s.hp}/${s.maxHp}`);
@@ -2743,8 +2745,192 @@ async function lootRarity(browser) {
   await ctx.close();
 }
 
+async function ghostAndCamp(browser) {
+  current = 'Ghost run, killer and camp';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // rest at the roadside shrine, then fall to a ghoul far from it
+  await setup(page, { x: 7.6, z: 5.2 });
+  await sim(page, 0.1, { press: ['KeyE'] });
+  await page.evaluate(() => (window.__shadowfall.inventory.coins = 20));
+  await setup(page, { x: 0, z: -15, keep: ['ghoul_road'], hp: 4 });
+  await placeEnemy(page, 'ghoul_road', 0, -16.4, { attackTimer: 0 });
+  await sim(page, 3.0);
+  const fell = await page.evaluate(() => ({ dead: window.__shadowfall.player.dead, nemesis: window.__shadowfall.worldState.nemesis, text: document.getElementById('death-text').textContent, btn: document.getElementById('respawn-btn').textContent }));
+  record('Death offers to release your spirit, and remembers your killer', fell.dead && fell.nemesis === 'ghoul_road' && fell.btn === 'Release spirit' && /walk back to your body/i.test(fell.text), `"${fell.text}"`);
+
+  await sim(page, 0.05, { press: ['Enter'] });
+  const ghost = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { ghost: g.player.ghost, x: g.player.position.x, z: g.player.position.z, corpse: !!g.scene.getObjectByName('Corpse'), grey: g.renderer.domElement.style.filter, prompt: g.interaction.current && g.interaction.current.prompt, marks: g.hud.minimap.markers().map((m) => m.kind) };
+  });
+  record('The spirit rises at the shrine; the body stays where it fell; the world turns grey', ghost.ghost && Math.hypot(ghost.x - 7.8, ghost.z - 5.2) < 1 && ghost.corpse && /grayscale/.test(ghost.grey) && /Return to life here \(lose 4 coins\)/.test(ghost.prompt || '') && ghost.marks.includes('corpse') && ghost.marks.includes('nemesis'),
+    `ghost at (${ghost.x.toFixed(1)}, ${ghost.z.toFixed(1)}); prompt "${ghost.prompt}"; minimap: body and skull`);
+
+  // the ghost walks past the ghoul untouched, faster than the living
+  const t0 = await page.evaluate(() => window.__shadowfall.player.position.clone());
+  await sim(page, 1, { held: ['KeyS'] });
+  const t1 = await page.evaluate(() => window.__shadowfall.player.position.clone());
+  await page.evaluate(() => window.__shadowfall.player.placeAt(0.8, -15.2));
+  await sim(page, 2);
+  const run = await page.evaluate(() => ({ hp: window.__shadowfall.player.health, prompt: window.__shadowfall.interaction.current && window.__shadowfall.interaction.current.prompt }));
+  record('A spirit moves faster and enemies ignore it', Math.hypot(t1.x - t0.x, t1.z - t0.z) > 6.5 && run.hp === 0, `covered ${Math.hypot(t1.x - t0.x, t1.z - t0.z).toFixed(1)} m in 1 s (alive: 5); stood by the ghoul untouched`);
+  await sim(page, 0.05, { press: ['KeyE'] });
+  const back = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { alive: !g.player.dead && !g.player.ghost, hp: g.player.health, max: g.player.maxHealth, coins: g.inventory.coins, grey: g.renderer.domElement.style.filter, corpse: !!g.scene.getObjectByName('Corpse') };
+  });
+  record('Returning to your body revives you there at half health, nothing lost', run.prompt === 'Return to your body' && back.alive && back.hp === Math.round(back.max / 2) && back.coins === 20 && !back.grey && !back.corpse, `${back.hp}/${back.max} health, ${back.coins} coins kept`);
+
+  // the killer: a skull over it, extra damage, and revenge
+  const skull = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.health = 500;
+    g.hud.update(0);
+    const bar = [...document.querySelectorAll('.ebar.nemesis')];
+    return { bars: bar.length, scale: g.afterlife.damageScaleAgainst(g.enemies.byId('ghoul_road')) };
+  });
+  const xp0 = await page.evaluate(() => window.__shadowfall.progression.xp);
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    e.health = 1;
+    e.hurt(5);
+    g.combat.onEnemyDefeated(e);
+  });
+  const rev = await page.evaluate(() => ({ xp: window.__shadowfall.progression.xp, nemesis: window.__shadowfall.worldState.nemesis, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | ') }));
+  record('Your killer wears a skull, takes 25% more damage from you, and pays a revenge bonus', skull.bars === 1 && skull.scale === 1.25 && rev.nemesis === null && /Revenge/.test(rev.log) && rev.xp - xp0 > 0, `+${rev.xp - xp0} experience including the revenge bonus`);
+
+  // camping: learned from Old Tam, pitched away from enemies, rested by the fire
+  const learn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.coins = 30;
+    g.player.placeAt(-18.2, -14.2);
+    g.npcs.talk(g.npcs.byId('tam'));
+    const opts = g.dialogue.page.options.map((o) => o.id);
+    const before = g.skills.knowsAbility('setCamp');
+    g.dialogue.choose('train:camping');
+    g.dialogue.close();
+    return { opts, before, after: g.skills.knowsAbility('setCamp'), coins: g.inventory.coins, bar: g.actionBar.slots.includes('setCamp'), book: (g.hud.togglePanel('spellbook'), !!document.querySelector('[data-loc="k:setCamp"]')) };
+  });
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('spellbook'));
+  record('Old Tam teaches Camping for coins; Set Camp then appears in the spellbook', learn.opts.includes('train:camping') && learn.opts.includes('train:fishing') && !learn.before && learn.after && learn.coins === 20 && learn.book, `options: ${learn.opts.join(', ')}; 30 → ${learn.coins} coins`);
+  await setup(page, { x: -10, z: 22 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('setCamp', 3); g.player.cooldowns.gcd = 0; });
+  await sim(page, 0.05, { press: ['Digit4'] });
+  await sim(page, 3.2);
+  const camp = await page.evaluate(() => ({ camp: window.__shadowfall.worldState.camp, rest: window.__shadowfall.worldState.restPoint, mesh: !!window.__shadowfall.scene.getObjectByName('Camp') }));
+  await sim(page, 20);
+  const rested = await page.evaluate(() => ({ r: window.__shadowfall.progression.rested, need: window.__shadowfall.progression.xpToNext, band: document.getElementById('xp-rested').style.width }));
+  record('Set Camp: a 3 s cast pitches a camp, which becomes where you rise', camp.camp && Math.hypot(camp.camp.x + 10, camp.camp.z - 22) < 0.1 && camp.rest === 'camp' && camp.mesh, JSON.stringify(camp.camp));
+  record('Resting by the fire builds rested experience, shown on the bar', rested.r > rested.need * 0.15 && parseFloat(rested.band) > 10, `${rested.r.toFixed(1)} rested after 20 s (band ${rested.band})`);
+  const kill = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const x0 = g.progression.xp + g.progression.level * 1000;
+    const e = g.enemies.byId('ghoul_cart');
+    e.health = 1;
+    e.hurt(5);
+    g.combat.onEnemyDefeated(e);
+    return { gained: g.progression.xp + g.progression.level * 1000 - x0, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).find((t) => /rested bonus/.test(t)) };
+  });
+  record('Rested experience doubles kill experience until spent', !!kill.log, kill.log || '');
+
+  // a camp near enemies is refused
+  await setup(page, { x: 0, z: -15, keep: ['ghoul_graves'], park: true });
+  await placeEnemy(page, 'ghoul_graves', 0, -20);
+  await page.evaluate(() => (window.__shadowfall.player.cooldowns.setCamp = 0));
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const refused = await page.evaluate(() => !window.__shadowfall.player.casting && [...document.querySelectorAll('#log li')].some((l) => /enemies close by/.test(l.textContent)));
+  record('No camp with enemies close by', refused);
+
+  // the next death rises at the camp, and the camp survives a save
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.takeDamage(9999); g.onPlayerDeath(null); });
+  await sim(page, 2);
+  await sim(page, 0.05, { press: ['Enter'] });
+  const atCamp = await page.evaluate(() => ({ x: window.__shadowfall.player.position.x, z: window.__shadowfall.player.position.z }));
+  record('After a death the spirit rises by your camp', Math.hypot(atCamp.x + 8.6, atCamp.z - 22) < 1, `(${atCamp.x.toFixed(1)}, ${atCamp.z.toFixed(1)})`);
+  record('No script errors (ghost and camp)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+async function torchAndFishing(browser) {
+  current = 'Torch, dark places and fishing';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // the Barrow Hollow keeps out anyone without a light
+  await setup(page, { x: -27, z: -82 });
+  await sim(page, 2.5, { held: ['KeyW'] });
+  const dark = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const p = g.player.position;
+    return { d: Math.hypot(p.x + 27, p.z + 90), log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).find((t) => /too dark/.test(t)) };
+  });
+  record('An obscured area cannot be entered without a light', dark.d >= 6 && !!dark.log, `stopped ${dark.d.toFixed(1)} m from its heart: "${dark.log}"`);
+  const torch = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addItem('torch', 1, { quiet: true });
+    g.inventory.equip('torch');
+    return { off: g.inventory.equipment.offHand && g.inventory.equipment.offHand.id, light: g.player.lightRadius, block: g.stats.blockChance };
+  });
+  await sim(page, 1.5, { held: ['KeyW'] });
+  const lit = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const p = g.player.position;
+    const chest = g.loot.active.find((l) => l.def.id === 'hollow_chest');
+    return { d: Math.hypot(p.x + 27, p.z + 90), dome: g.scene.getObjectByName('Obscured_barrow_hollow').material.opacity, chest: !!chest };
+  });
+  record('A torch in the off hand lights the way in (and gives up the shield)', torch.off === 'torch' && torch.light === 9 && torch.block === 0 && lit.d < 4 && lit.dome < 0.5 && lit.chest, `torch light ${torch.light} m; walked to ${lit.d.toFixed(1)} m from the heart; the dark thinned to ${lit.dome.toFixed(2)}; the strongbox waits inside`);
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'barrow-hollow.png') });
+
+  // fishing: learn it, buy a rod, cast, wait for the bite, strike
+  const setupFish = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.coins = 40;
+    g.player.placeAt(-18.4, -14.4);
+    g.npcs.talk(g.npcs.byId('tam'));
+    g.dialogue.choose('train:fishing');
+    g.dialogue.choose('shop');
+    g.merchant.buy('fishing_rod');
+    g.merchant.close();
+    return { skill: g.skills.rank('fishing'), rod: g.inventory.count('fishing_rod'), coins: g.inventory.coins };
+  });
+  record('Old Tam teaches Fishing and sells a rod', setupFish.skill === 1 && setupFish.rod === 1, `rank ${setupFish.skill}, ${setupFish.coins} coins left`);
+  await setup(page, { x: -16.8, z: -14 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.facing = -Math.PI / 2; g.actionBar.place('fish', 3); });
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
+  await sim(page, 1.0);
+  const waiting = await page.evaluate(() => ({ phase: window.__shadowfall.fishing.state && window.__shadowfall.fishing.state.phase, bob: window.__shadowfall.fishing.bobPosition && window.__shadowfall.fishing.bobPosition.x }));
+  await sim(page, 6.0);
+  const biting = await page.evaluate(() => window.__shadowfall.fishing.biting);
+  await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'fishing.png') });
+  await sim(page, 0.05, { press: ['KeyE'] });
+  const caught = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const fish = ['gloomwater_perch', 'silver_dace', 'barrow_eel', 'old_boot'].filter((f) => g.inventory.count(f) > 0);
+    return { fish, rank: g.skills.rank('fishing'), active: g.fishing.active };
+  });
+  record('Cast into the mere, wait for the bob to dip, strike: a fish', waiting.phase === 'wait' && waiting.bob < -19 && biting && caught.fish.length === 1 && caught.rank === 2 && !caught.active, `caught ${caught.fish.join(', ')}; Fishing rank 1 → ${caught.rank}`);
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
+  await sim(page, 2);
+  await sim(page, 0.05, { press: ['KeyE'] });
+  const early = await page.evaluate(() => ({ active: window.__shadowfall.fishing.active, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).find((t) => /too soon/.test(t)) }));
+  record('Striking before the bite loses the fish', !early.active && !!early.log, early.log || '');
+  const noWater = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(0, 20, 0);
+    return g.fishing.cast({ x: 0, z: 24 });
+  });
+  record('You can only fish facing water', noWater === false);
+  record('No script errors (torch and fishing)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

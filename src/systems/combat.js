@@ -27,7 +27,7 @@ export class Combat {
   _playerHit(enemy, mult, hurtOpts) {
     const { stats, events } = this.game;
     const r = this.game.random;
-    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base: weaponRoll(r, stats), mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) });
+    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base: weaponRoll(r, stats), mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
     return hit;
@@ -217,10 +217,11 @@ export class Combat {
     worldState.markDefeated(enemy.id);
     events.emit('enemyDefeated', { enemy });
     events.emit('log', { text: `The ${enemy.cfg.name} falls still.`, kind: 'kill' });
-    progression.addXp(enemy.cfg.xp);
+    progression.addXp(enemy.cfg.xp, { kill: true });
     // coins stay on the body until looted (click it, or E / A beside it)
     if (enemy.cfg.coins > 0) loot.addCorpse(enemy, enemy.cfg.coins);
     if (enemy.cfg.uniqueDrop) loot.dropUnique(enemy);
     loot.dropFromEnemy(enemy);
+    this.game.afterlife.onEnemyDefeated(enemy);
   }
 }

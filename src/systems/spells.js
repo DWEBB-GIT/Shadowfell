@@ -12,6 +12,7 @@ import { computeHit, enemyBlock, weaponRoll } from './stats.js';
 //            of damage every `tickInterval` for `duration` seconds
 //   cleave   a wide swing hitting up to `maxTargets` enemies in front of you
 //   buff     raises all your damage by `damageBonus` % for `duration` seconds
+//   camp     Set Camp: a cast, then the camp is pitched (systems/camp.js)
 //
 // Damage is either weapon based (`damageMultiplier` / `tickMultiplier` x a
 // weapon roll, as Strike) or a spell's own `damageMin`-`damageMax` plus spell
@@ -61,12 +62,17 @@ export class Spells {
     const { player, events, stats } = this.game;
     const spell = SPELLS[id];
     if (!spell || player.dead || player.pending || player.lunge || player.casting) return false;
+    if (!this.game.skills.knowsAbility(id)) return false;
     if (player.cooldowns.gcd > 0) return false; // queued out silently, as in WoW
     if (player.cooldowns[id] > 0) {
       events.emit('log', { text: `${spell.name} is not ready.`, kind: 'muted', throttle: id + '-ready' });
       return false;
     }
-    if (spell.kind === 'cast' && player.moving) {
+    if (spell.kind === 'camp' && this.game.camp.enemiesNear) {
+      events.emit('log', { text: 'You cannot make camp with enemies close by.', kind: 'muted', throttle: 'camp-enemies' });
+      return false;
+    }
+    if ((spell.kind === 'cast' || spell.kind === 'camp') && player.moving) {
       events.emit('log', { text: "You can't cast that while moving.", kind: 'muted', throttle: 'cast-moving' });
       return false;
     }
@@ -78,7 +84,7 @@ export class Spells {
     }
     player.cooldowns.gcd = stats.globalCooldown;
     const t = spell.tuning;
-    if (spell.kind === 'cast') {
+    if (spell.kind === 'cast' || spell.kind === 'camp') {
       player.casting = { id, t: 0, total: stats.hasted(t.castTime), target };
       player.rig.play('brace', player.casting.total, 0.9);
       events.emit('castStart', { id });
@@ -142,6 +148,8 @@ export class Spells {
       this.zones.push({ id: spell.id, x: player.position.x, z: player.position.z, left: t.duration, next: 0 });
       events.emit('zone', { id: spell.id, x: player.position.x, z: player.position.z, radius: t.radius, duration: t.duration });
       events.emit('log', { text: `You consecrate the ground: ${spell.name}.`, kind: 'hit' });
+    } else if (spell.kind === 'camp') {
+      this.game.camp.pitch(player.position.x, player.position.z);
     } else if (spell.kind === 'buff') {
       player.rig.play('brace', 0.6, 0.4);
       this.buffs.set(spell.id, { left: t.duration, total: t.duration });
@@ -190,7 +198,7 @@ export class Spells {
   // the log line ({name} and {n} filled in), and the kill.
   _damage(spell, enemy, base, line, mult = 1, hurtOpts = { stagger: 0.12 }) {
     const { stats, events, combat } = this.game;
-    const hit = computeHit(this.game.random, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * this.damageScale, school: spell.school || 'physical' });
+    const hit = computeHit(this.game.random, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * this.damageScale * this.game.afterlife.damageScaleAgainst(enemy), school: spell.school || 'physical' });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
     events.emit('enemyHit', { enemy, damage: hit.amount, crit: hit.crit, kind: 'spell' });
@@ -205,10 +213,11 @@ export class Spells {
     // the cast bar: moving or dying breaks it, as in WoW
     const c = player.casting;
     if (c) {
-      if (player.dead || player.moving || !c.target.alive) {
+      const gone = c.target && !c.target.alive;
+      if (player.dead || player.moving || gone) {
         player.casting = null;
         player.rig.action = null;
-        if (!player.dead) events.emit('log', { text: c.target.alive ? 'Interrupted.' : 'Your target is gone.', kind: 'muted', throttle: 'interrupted' });
+        if (!player.dead) events.emit('log', { text: gone ? 'Your target is gone.' : 'Interrupted.', kind: 'muted', throttle: 'interrupted' });
         events.emit('castEnd', { id: c.id, done: false });
       } else if ((c.t += dt) >= c.total) {
         player.casting = null;

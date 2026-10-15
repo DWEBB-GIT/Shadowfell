@@ -1,5 +1,5 @@
 import { DB } from '../data/db.js';
-import { BOUNDS, REGIONS, PROPS, CLEARINGS, SHRINES } from '../world/layout.js';
+import { BOUNDS, REGIONS, PROPS, CLEARINGS, SHRINES, WATER, OBSCURED } from '../world/layout.js';
 
 // A round minimap in the top-right corner, north up (the camera never turns,
 // so up on the map is up on the screen). The ground, roads, trees and props
@@ -112,6 +112,19 @@ export class Minimap {
         g.restore();
       }
     }
+    // ponds, and the places too dark to see into
+    for (const w of WATER) {
+      g.fillStyle = '#2c5056';
+      g.beginPath();
+      g.arc(X(w.position[0]), Z(w.position[1]), w.radius * PX, 0, Math.PI * 2);
+      g.fill();
+    }
+    for (const o of OBSCURED) {
+      g.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      g.beginPath();
+      g.arc(X(o.position[0]), Z(o.position[1]), o.radius * PX, 0, Math.PI * 2);
+      g.fill();
+    }
     // beyond the world's edge: darkness
     g.fillStyle = 'rgba(0, 0, 0, 0.55)';
     g.fillRect(0, 0, w, Z(BOUNDS.minZ));
@@ -143,6 +156,12 @@ export class Minimap {
       const status = quests.markerFor(n.id);
       out.push({ x: n.position.x, z: n.position.z, kind: status || 'npc', label: n.name });
     }
+    // the enemy that killed you, and your body while you walk as a spirit
+    const { afterlife, enemies, worldState } = this.game;
+    const foe = worldState.nemesis && enemies.list.find((e) => e.id === worldState.nemesis && e.alive);
+    if (foe) out.push({ x: foe.position.x, z: foe.position.z, kind: 'nemesis', label: foe.cfg.name });
+    if (afterlife.corpse) out.push({ x: afterlife.corpse.x, z: afterlife.corpse.z, kind: 'corpse', label: 'Your body' });
+    if (worldState.camp) out.push({ x: worldState.camp.x, z: worldState.camp.z, kind: 'camp', label: 'Your camp' });
     return out;
   }
 
@@ -209,6 +228,20 @@ export class Minimap {
       const colour = m.kind === 'active' ? '#a8a8a8' : '#ffd23c';
       if (Math.hypot(s.x - R, s.y - R) <= R - 8) this._glyph(s.x, s.y, glyph, colour, 15);
       else this._rim(s, R, colour, glyph);
+    }
+    // your camp, your killer and your body: always shown, on the rim when far
+    for (const m of markers) {
+      const s = toMap(m.x, m.z);
+      const inside = Math.hypot(s.x - R, s.y - R) <= R - 8;
+      if (m.kind === 'camp') {
+        if (inside) this._glyph(s.x, s.y, '\u25B2', '#ff9a40', 11);
+      } else if (m.kind === 'nemesis') {
+        if (inside) this._glyph(s.x, s.y, '\u2620', '#ff4a3a', 15);
+        else this._rim(s, R, '#ff4a3a', '\u2620');
+      } else if (m.kind === 'corpse') {
+        if (inside) this._glyph(s.x, s.y, '\u271D', '#cfe6ff', 15);
+        else this._rim(s, R, '#cfe6ff', null);
+      }
     }
     // the Warden, at the centre, pointing the way they face
     ctx.save();

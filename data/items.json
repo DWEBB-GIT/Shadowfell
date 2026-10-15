@@ -385,6 +385,74 @@
       "model": "witchbane",
       "icon": "witchbane",
       "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
+    },
+    {
+      "id": "torch",
+      "name": "Pitch torch",
+      "kind": "torch",
+      "rarity": "common",
+      "slot": "offHand",
+      "light": 9,
+      "stack": 1,
+      "price": 8,
+      "model": "torch",
+      "icon": "torch",
+      "description": "Rags soaked in pitch, bound to a stave. Carried in the off hand, it lights the dark places, at the cost of your shield."
+    },
+    {
+      "id": "fishing_rod",
+      "name": "Fishing rod",
+      "kind": "tool",
+      "rarity": "common",
+      "stack": 1,
+      "price": 10,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Ash and horsehair line. Keep it in your bags to fish, once someone has shown you how."
+    },
+    {
+      "id": "gloomwater_perch",
+      "name": "Gloomwater perch",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 4,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Striped and bad-tempered. Good eating, by the standards of the road."
+    },
+    {
+      "id": "silver_dace",
+      "name": "Silver dace",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 5,
+      "model": "dace",
+      "icon": "dace",
+      "description": "A quick, bright little fish. Tam says they bite best in the evening."
+    },
+    {
+      "id": "barrow_eel",
+      "name": "Barrow eel",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 30,
+      "model": "eel",
+      "icon": "eel",
+      "description": "Black as the mere's bottom and nearly as old. Tam has caught two in forty years."
+    },
+    {
+      "id": "old_boot",
+      "name": "Waterlogged boot",
+      "kind": "junk",
+      "rarity": "junk",
+      "stack": 5,
+      "price": 4,
+      "model": "old_boot",
+      "icon": "old_boot",
+      "description": "Somebody's boot. You decide not to wonder where the rest of them is."
     }
   ]
 }

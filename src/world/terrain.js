@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOUNDS, ROAD, TRACK, ROAD_HALF_WIDTH } from './layout.js';
+import { BOUNDS, ROAD, TRACK, ROAD_HALF_WIDTH, WATER } from './layout.js';
 
 // Analytic terrain so gameplay code can ask for the ground height anywhere
 // without raycasting. The mesh is built from the same function.
@@ -52,12 +52,35 @@ function rawHeight(x, z) {
   return h;
 }
 
-export function heightAt(x, z) {
+function landHeight(x, z) {
   const h = rawHeight(x, z);
   // flatten the road bed a little
   const d = distanceToRoad(x, z);
   const k = THREE.MathUtils.smoothstep(d, ROAD_HALF_WIDTH * 0.6, ROAD_HALF_WIDTH * 2.5);
   return THREE.MathUtils.lerp(h * 0.55 - 0.05, h, k);
+}
+
+// The surface of each pond sits a little below the land at its centre; the
+// ground dips under it into a bowl.
+export function waterLevel(w) {
+  if (w.level === undefined) w.level = landHeight(w.position[0], w.position[1]) - 0.25;
+  return w.level;
+}
+
+export function heightAt(x, z) {
+  let h = landHeight(x, z);
+  for (const w of WATER) {
+    const d = Math.hypot(x - w.position[0], z - w.position[1]);
+    if (d > w.radius + 1) continue;
+    const k = 1 - THREE.MathUtils.smoothstep(d, w.radius - 1.6, w.radius + 0.6);
+    h = THREE.MathUtils.lerp(h, waterLevel(w) - 1.1, k);
+  }
+  return h;
+}
+
+// The pond at a point, if any.
+export function waterAt(x, z, margin = 0) {
+  return WATER.find((w) => Math.hypot(x - w.position[0], z - w.position[1]) <= w.radius - margin) || null;
 }
 
 // Seeded random so the woodland is identical on every launch.

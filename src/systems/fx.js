@@ -46,6 +46,8 @@ export class Effects {
       this.shockwave(new THREE.Vector3(position.x + Math.sin(facing) * r, position.y, position.z + Math.cos(facing) * r), range * 0.7, 0xffc890);
     });
     ev.on('buff', () => this.pillar(this.game.player.position, 0xff9a5a));
+    ev.on('splash', ({ x, y, z, small }) => this.splash(x, y, z, small));
+    ev.on('campPitched', ({ x, z }) => this.dust({ x, y: heightAt(x, z), z }, 10, 0.6));
     ev.on('itemDropped', ({ item }) => this.dust({ x: item.x, y: this.game.player.position.y, z: item.z }, 4, 0.2));
   }
 
@@ -135,6 +137,22 @@ export class Effects {
       o.position.set(player.position.x + Math.sin(f) * 0.6, player.position.y + 1.1, player.position.z + Math.cos(f) * 0.6);
       o.material.opacity = player.isBraced ? 0.5 : 0;
     });
+  }
+
+  // rings on the water where the bob lands or a fish takes it
+  splash(x, y, z, small) {
+    for (let i = 0; i < (small ? 1 : 3); i++) {
+      const mat = new THREE.MeshBasicMaterial({ map: this.game.textures.ring, color: 0xcfe6e0, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+      const ring = new THREE.Mesh(this.ringGeo, mat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(x, y + 0.03, z);
+      const delay = i * 0.12;
+      this._add(ring, 0.8 + delay, (o, k) => {
+        const t = Math.max(0, (k * (0.8 + delay) - delay) / 0.8);
+        o.scale.setScalar((small ? 0.4 : 0.6) + t * (small ? 0.8 : 1.6));
+        o.material.opacity = t > 0 ? 0.8 * (1 - t) : 0;
+      });
+    }
   }
 
   // a quick burst of light on a target (Smite)

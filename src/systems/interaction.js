@@ -57,13 +57,13 @@ export class Interaction {
 
   update() {
     const { player } = this.game;
-    if (player.dead) {
+    if (player.dead && !player.ghost) {
       this.current = null;
       return;
     }
     let best = null;
     let bestScore = Infinity;
-    for (const c of this._candidates()) {
+    for (const c of player.ghost ? this.game.afterlife.interactions() : this._candidates()) {
       const d = Math.hypot(c.x - player.position.x, c.z - player.position.z);
       if (d > (c.reach || CONFIG.interaction.radius)) continue;
       const score = d + c.bias;

@@ -7,6 +7,7 @@ export class Progression {
     this.game = game;
     this.level = 1;
     this.xp = 0; // experience towards the next level
+    this.rested = 0; // rested experience (built at a camp): kills pay double until it is spent
     this.lastGains = null; // { level, gains: [{ id, label, from, to, diff }] } from the last level-up
   }
 
@@ -14,10 +15,14 @@ export class Progression {
     return xpForNextLevel(this.level);
   }
 
-  addXp(amount) {
+  // `kill`: experience from a kill, which rested experience doubles.
+  addXp(amount, { kill = false } = {}) {
     const { events, player } = this.game;
+    const bonus = kill ? Math.min(Math.floor(this.rested), amount) : 0;
+    this.rested = Math.max(0, this.rested - bonus);
+    amount += bonus;
     this.xp += amount;
-    events.emit('log', { text: `+${amount} experience.`, kind: 'xp' });
+    events.emit('log', { text: bonus ? `+${amount} experience (${bonus} rested bonus).` : `+${amount} experience.`, kind: 'xp' });
     while (this.xp >= this.xpToNext) {
       const before = this.game.stats.snapshot();
       this.xp -= this.xpToNext;
@@ -40,11 +45,12 @@ export class Progression {
   }
 
   serialize() {
-    return { level: this.level, xp: this.xp };
+    return { level: this.level, xp: this.xp, rested: Math.floor(this.rested) };
   }
 
   apply(data) {
     this.level = data.level;
     this.xp = data.xp;
+    this.rested = Number.isFinite(data.rested) && data.rested > 0 ? data.rested : 0;
   }
 }

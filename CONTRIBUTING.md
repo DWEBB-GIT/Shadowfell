@@ -10,13 +10,14 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | `archetypes.json` | Playable archetypes: base attributes, per-level gains, armour types, defensive ability | armour types, abilities |
 | `abilities.json` | Player abilities: name, targeting, description, and the `tuning` numbers each runs on; `globalCooldown` | items (the draught) |
 | `enemies.json` | Enemy types: stats, behaviour (`ranged`, `circle`, `special`, `pack`), `lootTable`, `uniqueDrop`; `leashDistance` | loot tables, items, models |
+| `skills.json` | Learnable skills (Camping, Fishing): the `trainer` npc, `cost`, `maxRank`, the ability it `teaches` | npcs, abilities |
 | `rarities.json` | Item rarity tiers, lowest first (junk, common, enhanced, rare, epic, legendary, quest): name and colour | |
 | `loot_tables.json` | `always` items (min to max), and `drops`: `rolls` tries at `chance`, each rolling a rarity by weight, then an item from that rarity's list | items |
 | `npcs.json` | Townsfolk: name, title, model, the shop they keep, their dialogue | shops, dialogue, models |
 | `shops.json` | `vendorTypes` (what kinds of goods each type deals in) and `shops` (a vendor type and its stock) | items |
 | `quests.json` | Quests: giver, turn-in npc, `requires`, `objectives` (kill, collect, examine), what the giver says, `reward` | npcs, enemy types, items, examine points, locations |
 | `dialogue.json` | What townsfolk say: `greetings` (the last whose `when` holds), `topics`, and `nodes` with `replies` | nodes, quests |
-| `world.json` | Bounds, regions, roads, player start, shrines, named `locations` (quest areas on the map), and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
+| `world.json` | Bounds, regions, roads, player start, shrines, named `locations` (quest areas on the map), `water`, `obscured` areas, and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
 | `scenery.json` | Props (with colliders and examine points), clearings kept free of trees, lights | models, examine text |
 | `text.json` | The intro, readable documents, and examine text | |
 
@@ -90,6 +91,10 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
 
   `damageMin`-`damageMax` is a spell's own damage, plus spell power; `school` (`physical`, `holy`, `shadow`) says whether armour or resistance reduces it. Add an icon to `abilityIcons()` in `src/ui/icons.js`. Every spell is on the global cooldown and appears in the spellbook.
 - **New things for someone to say:** add `topics` and `nodes` to their `dialogue.json` record. A `when` such as `{ "quest": "missing_delivery", "status": "done" }` holds a line back until the story gets there.
+- **An obscured (dark) area:** add an entry to `obscured` in `world.json`: `{ "id", "name", "position": [x, z], "radius", "text" }`. Without a torch (any item of kind `torch`, with a `light` radius, in the off hand) the Warden is pushed back at its edge and `text` shows in the log; with one, the dark thins and they can walk in. It shows black on the minimap. Put something worth finding inside with `placedLoot`, and a `clearings` entry in `scenery.json` so trees stay out.
+- **Water and fish:** add an entry to `water` in `world.json`: `{ "id", "name", "position": [x, z], "radius", "fishTable" }`. The ground dips into a pond there, the water blocks walking, and it shows blue on the minimap. `fishTable` is an ordinary loot table (rarity weights and items per rarity); fish are items like any other and are never shown in the water. Add a `clearings` entry so trees stay out.
+- **Bait:** an item with `bait: <percent>` adds that much to the catch chance while it is in the bags; one is used per strike.
+- **A learnable skill:** add a `skills.json` record with a `trainer`, `cost`, `maxRank` and the ability it `teaches`, and give that ability `skill: "<skill id>"` (and `requiresItem` if it needs a tool). The trainer then offers "Teach me ..." in dialogue, and the ability stays out of the spellbook until learned.
 - **A new place:**
   1. Add props to `scenery.json`, with examine text in `text.json`.
   2. Add spawns and placed loot to `world.json`. A new region is a `regions` entry.

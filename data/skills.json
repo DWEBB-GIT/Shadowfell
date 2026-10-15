@@ -1,0 +1,22 @@
+{
+  "_about": "Skills the Warden can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch).",
+  "skills": [
+    {
+      "id": "camping",
+      "name": "Camping",
+      "trainer": "tam",
+      "cost": 10,
+      "teaches": ["setCamp"],
+      "desc": "Pitch a camp anywhere quiet. Your spirit rises there if you fall, and resting by it builds rested experience."
+    },
+    {
+      "id": "fishing",
+      "name": "Fishing",
+      "trainer": "tam",
+      "cost": 5,
+      "teaches": ["fish"],
+      "maxRank": 50,
+      "desc": "Cast a line into still water and strike when the bob dips. Rises with every catch."
+    }
+  ]
+}

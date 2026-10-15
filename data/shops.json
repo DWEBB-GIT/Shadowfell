@@ -4,7 +4,7 @@
     {
       "id": "smith",
       "name": "Smith",
-      "sells": ["weapon", "armor", "shield", "material", "consumable", "bag"],
+      "sells": ["weapon", "armor", "shield", "material", "consumable", "bag", "torch"],
       "description": "A frontier smith: arms and armour, and the road supplies travellers ask for."
     },
     {
@@ -12,6 +12,12 @@
       "name": "General goods",
       "sells": ["consumable", "bag", "material", "document"],
       "description": "Supplies, bags and sundries."
+    },
+    {
+      "id": "outfitter",
+      "name": "Outfitter",
+      "sells": ["tool", "torch", "consumable", "material"],
+      "description": "Rods, lights and the things a traveller forgets."
     }
   ],
   "shops": [
@@ -19,7 +25,13 @@
       "id": "mara_forge",
       "name": "Mara's forge",
       "vendorType": "smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel"]
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel", "torch"]
+    },
+    {
+      "id": "tam_outfitters",
+      "name": "Tam's tackle",
+      "vendorType": "outfitter",
+      "stock": ["fishing_rod", "torch", "healing_draught"]
     }
   ]
 }

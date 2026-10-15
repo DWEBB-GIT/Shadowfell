@@ -49,7 +49,7 @@ export class ActionBar {
   // Put an ability in a slot; it leaves any slot it was in, and whatever was
   // in the target slot goes back to the spellbook.
   place(ability, index) {
-    if (!ABILITIES[ability]) return;
+    if (!ABILITIES[ability] || !this.game.skills.knowsAbility(ability)) return;
     const was = this.slots.indexOf(ability);
     if (was >= 0) this.slots[was] = null;
     this.slots[index] = ability;

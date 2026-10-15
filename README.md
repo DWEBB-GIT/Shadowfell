@@ -96,6 +96,15 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
 - **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
 
+## Death, camps, the dark and fishing
+
+- **Death.** When you fall, release your spirit. It rises, grey and fast, at your camp or the last shrine you rested at. Enemies ignore a spirit. Walk back to your body (marked ✝ on the minimap) and rise there at half health with nothing lost, or return to life where you rose and lose a few coins.
+- **The dead remember.** The enemy that killed you wears a skull, over its head and on the minimap (☠). You deal it 25% more damage, and killing it pays half its experience again as revenge.
+- **Old Tam**, the fisher by the Stillwater Mere west of the road, teaches Camping (10 coins) and Fishing (5 coins), and sells rods and torches.
+- **Set Camp.** A 3 second cast, standing still, with no enemies near. The camp (▲ on the minimap) becomes where your spirit rises. Resting by its fire builds rested experience (the pale band on the experience bar), which doubles kill experience until spent.
+- **Torches and the dark.** Some places are too dark to enter. Equip a torch in the off hand (it replaces the shield, so no block) to walk in. The Barrow Hollow, west of the hound den in the Blackwood, holds a strongbox and a purse.
+- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
+
 ## Controls
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.

@@ -21,9 +21,30 @@ export const CONFIG = {
     leaveRange: 6.0, // walking further than this closes the shop
   },
   death: {
-    coinLossFraction: 0.2,
+    coinLossFraction: 0.2, // lost only by returning to life at the rest point, not at your body
     coinLossCap: 5,
     screenDelay: 1.3,
+    ghostSpeed: 1.5, // a spirit moves this much faster than the living
+    corpseReach: 3.5, // how close a spirit must come to its body to rise there
+    restReach: 4, // ...or to the rest point to return to life there
+    corpseHealth: 0.5, // rising at the body: this share of health
+    revengeBonus: 25, // percent more damage to the enemy that killed you
+    revengeXp: 0.5, // killing it pays this share of its experience again
+  },
+  fishing: {
+    castTime: 0.6, // the bob's flight
+    biteMin: 3, // seconds before a bite, at least...
+    biteMax: 9, // ...and at most
+    biteWindow: 1.4, // how long the bob stays under: strike now
+    baseChance: 65, // percent chance to land it on a timely strike...
+    chancePerRank: 0.6, // ...plus this per rank of Fishing (bait adds its own)
+    clickRadius: 60, // pixels: a click this close to the bob strikes
+  },
+  camp: {
+    clearRadius: 14, // no camp with a living enemy this close, or any enemy engaged
+    restRadius: 4, // rest within this of the fire to build rested experience
+    restedPerSecond: 0.01, // share of a level's experience rested per second by the fire
+    restedCap: 1, // at most one level's worth of rested experience
   },
   progression: {
     firstLevelXp: 100,

@@ -12,6 +12,11 @@ import { blackwoodness } from './world/terrain.js';
 import { Player } from './entities/player.js';
 import { Combat } from './systems/combat.js';
 import { Spells } from './systems/spells.js';
+import { Afterlife } from './systems/afterlife.js';
+import { Skills } from './systems/skills.js';
+import { Camp } from './systems/camp.js';
+import { WaterAndDark } from './world/waterAndDark.js';
+import { Fishing } from './systems/fishing.js';
 import { EnemyManager } from './systems/enemies.js';
 import { LootSystem } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
@@ -57,6 +62,7 @@ class Game {
     this.assets = await new Assets().load();
     this.collision = new Collision();
     this.world = new World(this).build();
+    this.waterAndDark = new WaterAndDark(this).build();
     this.scene.add(this.world.group);
 
     this.worldState = new WorldState(this);
@@ -81,6 +87,10 @@ class Game {
     this.quests = new QuestLog(this);
     this.combat = new Combat(this);
     this.spells = new Spells(this);
+    this.afterlife = new Afterlife(this);
+    this.skills = new Skills(this);
+    this.camp = new Camp(this);
+    this.fishing = new Fishing(this);
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
@@ -182,6 +192,9 @@ class Game {
     this.merchant.buyback = [];
     this.quests.startNew();
     this.region = null; // named again, quietly, from wherever the Warden stands
+    this.afterlife.reset();
+    this.skills.reset();
+    this.pendingDeath = null;
     this.telegraphs.clear();
     this.hud.numbers.clear();
     this.hud.items.closeAll();
@@ -204,6 +217,7 @@ class Game {
       }
     }
     this.recomputeMaxHealth();
+    this.camp.show();
     this.enemies.spawnAll();
     this.loot.spawnAll();
     this.hud.hideTitle();
@@ -215,28 +229,30 @@ class Game {
   }
 
   // ----------------------------------------------------------- game events
-  onPlayerDeath() {
+  onPlayerDeath(killer = null) {
     const coins = this.inventory.coins;
     const loss = Math.min(CONFIG.death.coinLossCap, Math.floor(coins * CONFIG.death.coinLossFraction));
     this.pendingDeath = { loss, timer: CONFIG.death.screenDelay };
+    this.afterlife.onDeath(killer, loss);
     this.events.emit('playerDied', {});
     this.hud.closeModal(true);
     this.hud.log('You fall.', 'hurt');
   }
 
-  respawn() {
-    if (!this.player.dead || !this.pendingDeath) return;
-    const lost = this.inventory.loseCoins(this.pendingDeath.loss);
+  // Leave the body and walk as a spirit (systems/afterlife.js).
+  releaseSpirit() {
+    if (!this.player.dead || !this.pendingDeath) return false;
     this.pendingDeath = null;
-    const dest = this.respawnPoint();
-    this.telegraphs.clear();
-    this.hud.numbers.clear();
-    this.targeting.clear();
-    this.player.revive(dest.x, dest.z);
-    this.enemies.resetSurvivors();
     this.hud.hideDeath();
+    this.afterlife.release();
     this._snapCamera();
-    this.hud.log(`You wake ${dest.label}.${lost ? ` ${lost} coin${lost === 1 ? '' : 's'} gone.` : ''}`, 'lore');
+    return true;
+  }
+
+  // Release and return to life at once at the rest point, coins lost.
+  respawn() {
+    if (!this.releaseSpirit()) return;
+    this.afterlife.reviveHere();
   }
 
   // What is under the cursor: a body or drop to loot, a living enemy, or a
@@ -273,6 +289,14 @@ class Game {
   // Left click selects, right click acts (WoW): right on an enemy starts
   // auto attack, on a townsperson talks, and either button loots.
   _click(button) {
+    // a click on (or near) the fishing bob strikes
+    const bob = this.fishing.bobPosition;
+    if (bob) {
+      const r = this.renderer.domElement.getBoundingClientRect();
+      const v = bob.clone().project(this.camera);
+      const d = Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top));
+      if (d < CONFIG.fishing.clickRadius) return this.fishing.strike();
+    }
     const pick = this._pickUnderCursor();
     if (!pick) return false;
     const { player, events, targeting, loot } = this;
@@ -304,10 +328,7 @@ class Game {
   }
 
   respawnPoint() {
-    const r = this.worldState.respawn;
-    const sh = SHRINES.find((x) => x.id === this.worldState.shrineActivated) || SHRINES[0];
-    if (r) return { x: r.x, z: r.z, label: sh.label, kind: 'shrine' };
-    return { x: PLAYER_START.position[0], z: PLAYER_START.position[1], label: "at the road's end", kind: 'start' };
+    return this.afterlife.restPoint();
   }
 
   restAtShrine(shrine = SHRINE) {
@@ -318,6 +339,7 @@ class Game {
     // respawn just in front of the shrine, on the road side
     worldState.respawn = { x: shrine.position[0] - 1.8, z: shrine.position[1] };
     worldState.shrineActivated = shrine.id;
+    worldState.restPoint = 'shrine';
     events.emit('shrineRest', {});
     if (first) hud.log(EXAMINE.shrine_first, 'lore');
     hud.log('You rest a while. Your wounds close, and you will return here if you fall.', 'heal');
@@ -373,7 +395,7 @@ class Game {
       return null;
     }
     if (hud.modal === 'death') {
-      if (input.consume('Enter') || input.consume('KeyE') || pad.pressed(BUTTONS.A)) this.respawn();
+      if (input.consume('Enter') || input.consume('KeyE') || pad.pressed(BUTTONS.A)) this.releaseSpirit();
       return null;
     }
     if (hud.modal === 'document') {
@@ -394,10 +416,19 @@ class Game {
     else if (pad.pressed(BUTTONS.UP)) hud.togglePanel('spellbook');
     if (input.consume('KeyK') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
     if (hud.blocksGameplay) return null;
-    if (input.consume('KeyE') || (!padMenu && pad.pressed(BUTTONS.A))) this.interaction.interact();
+    if (input.consume('KeyE') || (!padMenu && pad.pressed(BUTTONS.A))) {
+      if (this.fishing.active) this.fishing.strike();
+      else this.interaction.interact();
+    }
+    const padOn = !padMenu;
+    // a spirit only walks
+    if (this.player.ghost) {
+      input.consumeClick();
+      input.consumeRightClick();
+      return { move: padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis(), aim: null, actions: {} };
+    }
     if (this.player.dead) return null;
 
-    const padOn = !padMenu;
     const move = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
     const usingPad = padOn && (pad.left.m > 0 || pad.right.m > 0 || hud.padMode);
     const p = (b) => padOn && pad.pressed(b);
@@ -430,6 +461,7 @@ class Game {
       aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
       lungeAim: tg.aimFor(rawAim, ABILITIES.lunge.range),
       lockOn: fighting ? tg.current.position : null,
+      rawAim,
       actions,
     };
   }
@@ -449,6 +481,9 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.spells.update(dt);
+      this.camp.update(dt, this.time);
+      this.fishing.update(dt);
+      this.waterAndDark.update(dt, this.time);
       this.enemies.update(dt);
       this.npcs.update(dt);
       this.merchant.update();

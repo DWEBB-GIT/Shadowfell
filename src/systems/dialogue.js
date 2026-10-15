@@ -72,6 +72,8 @@ export class Dialogue {
       for (const t of d ? d.topics || [] : []) {
         if (conditionHolds(this.game, t.when)) page.options.push({ id: 'node:' + t.node, text: t.prompt, icon: 'talk' });
       }
+      // trainers offer what they teach and the Warden has not learned
+      for (const s of this.game.skills.offeredBy(this.npc.id)) page.options.push({ id: 'train:' + s.id, text: `Teach me ${s.name} (${s.cost} coins).`, icon: 'train' });
       if (npc.shop) page.options.push({ id: 'shop', text: 'Let me see your wares.', icon: 'shop' });
       page.options.push({ id: 'bye', text: 'Goodbye.', icon: 'bye' });
     } else if (v.kind === 'node') {
@@ -108,6 +110,8 @@ export class Dialogue {
       this.close();
       merchant.open(DB.npcs[npc.id].shop, npc);
       return true;
+    } else if (id.startsWith('train:')) {
+      if (!this.game.skills.learn(id.slice(6))) return false;
     } else if (id.startsWith('quest:')) this.view = { kind: 'quest', id: id.slice(6) };
     else if (id.startsWith('node:')) this.view = { kind: 'node', id: id.slice(5) };
     else if (id === 'accept' && v.kind === 'quest') {

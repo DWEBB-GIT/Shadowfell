@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { ITEMS } from '../data/items.js';
-import { Rig } from './rig.js';
+import { Rig, setEmissive } from './rig.js';
 import { heightAt } from '../world/terrain.js';
 import { PLAYER_START } from '../world/layout.js';
 import { SPELLS } from '../systems/spells.js';
@@ -29,6 +29,7 @@ export class Player {
     this.model = game.assets.instance('warden');
     this.group.add(this.model);
     this.rig = new Rig(this.model, 'warden');
+    this.materials = Rig.isolateMaterials(this.model); // so the ghost can fade without touching other models
     this.weaponPart = this.model.getObjectByName('Weapon');
     this.defaultWeaponMesh = this.weaponPart;
 
@@ -46,6 +47,7 @@ export class Player {
     this.maxHealth = 100; // set from stats once the game is assembled
     this.health = this.maxHealth;
     this.dead = false;
+    this.ghost = false; // dead, walking as a spirit (see systems/afterlife.js)
     this.deadTime = 0;
     this.cooldowns = freshCooldowns();
     this.braced = 0; // seconds left with the shield raised
@@ -53,6 +55,10 @@ export class Player {
     this.pending = null; // queued attack waiting for its impact frame
     this.casting = null; // a spell being cast: { id, t, total, target }
     this.moving = false;
+    this.lightRadius = 0; // a torch in the off hand lights the dark (systems: world/waterAndDark.js)
+    this.torchLight = new THREE.PointLight(0xffa860, 0, 9, 1.4);
+    this.torchLight.position.set(0.3, 1.8, 0.2);
+    this.group.add(this.torchLight);
 
     this.placeAt(PLAYER_START.position[0], PLAYER_START.position[1], PLAYER_START.facing * (Math.PI / 180));
   }
@@ -105,7 +111,17 @@ export class Player {
       if (this.shield) larm.remove(this.shield);
       this.shield = null;
       const off = equipment.offHand && ITEMS[equipment.offHand.id];
-      if (off && off.kind === 'shield') {
+      this.lightRadius = off && off.kind === 'torch' ? off.light || 8 : 0;
+      this.torchLight.distance = this.lightRadius;
+      this.torchLight.intensity = this.lightRadius ? 3 : 0;
+      if (off && off.kind === 'torch') {
+        // held up in the left hand, flame forward
+        this.shield = this.game.assets.instance(off.model);
+        this.shieldId = equipment.offHand.id;
+        this.shield.position.set(0, -0.62, 0.02);
+        this.shield.rotation.set(-0.5, 0, 0);
+        larm.add(this.shield);
+      } else if (off && off.kind === 'shield') {
         this.shield = this.game.assets.instance(off.model);
         this.shieldId = equipment.offHand.id;
         this.shield.position.set(0.11, -0.42, 0.04);
@@ -132,6 +148,23 @@ export class Player {
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
     this.braced = Math.max(0, this.braced - dt);
 
+    if (this.ghost) {
+      // a spirit walks fast, fights nothing and passes unseen
+      const move = controls ? controls.move : { x: 0, z: 0 };
+      const mag = Math.min(1, Math.hypot(move.x, move.z));
+      if (mag > 0) {
+        const sp = CONFIG.player.speed * CONFIG.death.ghostSpeed;
+        this.position.x += move.x * sp * dt;
+        this.position.z += move.z * sp * dt;
+        this.facing = turnTowards(this.facing, Math.atan2(move.x, move.z), dt * 14);
+      }
+      collision.resolve(this.position, this.radius);
+      this.position.y = heightAt(this.position.x, this.position.z) + 0.15 + Math.sin(this.game.time * 2) * 0.06;
+      this.moving = mag > 0;
+      this.rig.update(dt, mag);
+      this._sync();
+      return;
+    }
     if (this.dead) {
       this.deadTime += dt;
       this.rig.update(dt, 0);
@@ -189,6 +222,7 @@ export class Player {
       else if (a.strike) this.tryStrike(controls.aim);
       if (a.draught) this.game.inventory.useDraught();
       for (const id in a) if (a[id] && SPELLS[id]) this.game.spells.tryCast(id);
+      if (a.fish) this.game.fishing.cast(controls.rawAim);
     }
 
     collision.resolve(this.position, this.radius);
@@ -300,9 +334,31 @@ export class Player {
     return this.health - before;
   }
 
-  revive(x, z) {
+  // Rise as a spirit at (x, z): see systems/afterlife.js.
+  becomeGhost(x, z) {
+    this.ghost = true;
+    this.rig.revive();
+    this.placeAt(x, z, Math.PI);
+    for (const m of this.materials) {
+      m.transparent = true;
+      m.opacity = 0.45;
+      m.depthWrite = false;
+    }
+    setEmissive(this.materials, { r: 0.35, g: 0.55, b: 0.8 }, 1);
+  }
+
+  revive(x, z, healthFraction = 1) {
     this.dead = false;
-    this.health = this.maxHealth;
+    if (this.ghost) {
+      this.ghost = false;
+      for (const m of this.materials) {
+        m.transparent = false;
+        m.opacity = 1;
+        m.depthWrite = true;
+      }
+      setEmissive(this.materials, { r: 0, g: 0, b: 0 }, 0);
+    }
+    this.health = Math.max(1, Math.round(this.maxHealth * healthFraction));
     this.rig.revive();
     this.cooldowns = freshCooldowns();
     this.game.spells?.reset();

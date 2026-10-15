@@ -58,6 +58,15 @@ import bent_arrowhead from '../../assets/models/bent_arrowhead.glb';
 import hound_meat from '../../assets/models/hound_meat.glb';
 import old_watch_helm from '../../assets/models/old_watch_helm.glb';
 import witchbane from '../../assets/models/witchbane.glb';
+import tam from '../../assets/models/tam.glb';
+import camp from '../../assets/models/camp.glb';
+import torch from '../../assets/models/torch.glb';
+import fishing_rod from '../../assets/models/fishing_rod.glb';
+import perch from '../../assets/models/perch.glb';
+import dace from '../../assets/models/dace.glb';
+import eel from '../../assets/models/eel.glb';
+import old_boot from '../../assets/models/old_boot.glb';
+import chest from '../../assets/models/chest.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
@@ -68,6 +77,7 @@ const SOURCES = {
   hound, archer, seer, black_pine, standing_stone, palisade, bone_pile,
   rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
+  tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
 };
 
 // One shared material per Blender material name keeps draw state small.

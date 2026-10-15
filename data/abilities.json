@@ -152,6 +152,30 @@
         "duration": 15,
         "damageBonus": 20
       }
+    },
+    {
+      "id": "setCamp",
+      "name": "Set Camp",
+      "kind": "camp",
+      "target": "self",
+      "skill": "camping",
+      "desc": "Spend 3 seconds pitching a camp where you stand. Your spirit rises there if you fall, and resting beside it builds rested experience. Not with enemies close by. Moving interrupts it.",
+      "tuning": {
+        "castTime": 3,
+        "cooldown": 20
+      }
+    },
+    {
+      "id": "fish",
+      "name": "Fishing",
+      "target": "ground",
+      "range": 9,
+      "skill": "fishing",
+      "requiresItem": "fishing_rod",
+      "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod in your bags.",
+      "tuning": {
+        "cooldown": 1
+      }
     }
   ]
 }

@@ -102,6 +102,9 @@ export function validateSave(data) {
     const known = (l) => isStrArray(l) && l.every((id) => DB.quests[id]);
     check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
   }
+  if (data.skills !== undefined) {
+    check(data.skills && typeof data.skills === 'object' && Object.entries(data.skills).every(([id, r]) => DB.skills[id] && isInt(r) && r >= 1), 'skills');
+  }
   const w = data.world;
   check(w && typeof w === 'object', 'missing world');
   if (w) {
@@ -113,6 +116,9 @@ export function validateSave(data) {
       Array.isArray(w.ground) && w.ground.every((g) => isStack(g) && isInt(g.uid) && g.uid >= 1 && inBounds(g)),
       'items on the ground',
     );
+    if (w.camp !== undefined) check(w.camp === null || inBounds(w.camp), 'camp position');
+    if (w.restPoint !== undefined) check(w.restPoint === 'camp' || w.restPoint === 'shrine', 'rest point');
+    if (w.nemesis !== undefined) check(w.nemesis === null || typeof w.nemesis === 'string', 'nemesis');
     if (w.corpses !== undefined) {
       check(w.corpses && typeof w.corpses === 'object' && Object.values(w.corpses).every((c) => inBounds(c) && isInt(c.coins) && c.coins >= 0), 'bodies to loot');
     }
@@ -142,6 +148,7 @@ export class SaveManager {
       world: worldState.serialize(),
       bar: this.game.actionBar.serialize(),
       quests: this.game.quests.serialize(),
+      skills: this.game.skills.serialize(),
     };
   }
 
@@ -205,6 +212,7 @@ export class SaveManager {
     const { player, progression, inventory, worldState } = this.game;
     worldState.apply(data.world);
     this.game.quests.apply(data.quests, worldState.flags);
+    this.game.skills.apply(data.skills);
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);

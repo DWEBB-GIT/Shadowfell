@@ -218,6 +218,58 @@ export function abilityIcons() {
       g.fillStyle = '#8a6a3a';
       g.fillRect(28, 44, 8, 14);
     }),
+    setCamp: glyph((g) => {
+      // a campfire under a little tent
+      g.fillStyle = '#7a5c3a';
+      g.beginPath();
+      g.moveTo(32, 10);
+      g.lineTo(54, 44);
+      g.lineTo(10, 44);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#1a120c';
+      g.beginPath();
+      g.moveTo(32, 22);
+      g.lineTo(40, 44);
+      g.lineTo(24, 44);
+      g.fill();
+      g.fillStyle = '#ffa040';
+      g.beginPath();
+      g.ellipse(32, 50, 6, 9, 0, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = '#6a4a2a';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(20, 58);
+      g.lineTo(44, 52);
+      g.moveTo(20, 52);
+      g.lineTo(44, 58);
+      g.stroke();
+    }),
+    fish: glyph((g) => {
+      // a rod, its line and a bob on the water
+      g.strokeStyle = '#8a6a3a';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(8, 56);
+      g.lineTo(44, 10);
+      g.stroke();
+      g.strokeStyle = 'rgba(220,220,200,0.7)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(44, 10);
+      g.quadraticCurveTo(52, 30, 46, 44);
+      g.stroke();
+      g.strokeStyle = '#5a8a9a';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(46, 48, 12, 4, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = '#d04030';
+      g.beginPath();
+      g.arc(46, 45, 4, 0, Math.PI * 2);
+      g.fill();
+    }),
     battleCry: glyph((g) => {
       // sound waves from a shout
       g.strokeStyle = '#ff9a5a';
