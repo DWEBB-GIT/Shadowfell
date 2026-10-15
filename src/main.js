@@ -13,6 +13,7 @@ import { blackwoodness } from './world/terrain.js';
 import { Player } from './entities/player.js';
 import { Combat } from './systems/combat.js';
 import { Spells } from './systems/spells.js';
+import { Resources } from './systems/resources.js';
 import { Afterlife } from './systems/afterlife.js';
 import { Skills } from './systems/skills.js';
 import { Settings } from './systems/settings.js';
@@ -93,6 +94,7 @@ class Game {
     this.quests = new QuestLog(this);
     this.combat = new Combat(this);
     this.spells = new Spells(this);
+    this.resources = new Resources(this);
     this.afterlife = new Afterlife(this);
     this.skills = new Skills(this);
     this.settings = new Settings(this);
@@ -534,6 +536,7 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.spells.update(dt);
+      this.resources.update(dt);
       this.camp.update(dt, this.time);
       this.fishing.update(dt);
       this.waterAndDark.update(dt, this.time);

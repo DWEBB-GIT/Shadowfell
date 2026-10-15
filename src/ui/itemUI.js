@@ -425,7 +425,7 @@ export class ItemUI {
         tip.innerHTML = `<div class="tt-name q-${d.rarity}">${d.name}</div><div class="tt-desc">${d.description}</div><div class="tt-hint">Press to use${d.slot === 'offHand' ? ' (again to put it away)' : ''}</div>`;
         return this._placeTip();
       }
-      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div><div class="tt-desc">${ABILITIES[id].desc}</div>`;
+      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div>${this._costLine(ABILITIES[id])}<div class="tt-desc">${ABILITIES[id].desc}</div>`;
       return this._placeTip();
     }
     let stack = loc && this.game.inventory.get(loc);
@@ -489,6 +489,16 @@ export class ItemUI {
 
   // The bottom-right corner, above the bag slots (left of the bags when
   // they are open, so it never covers them).
+  // "20 mana" / "25 Resolve" / "Gives 15 Resolve" under an ability's name
+  _costLine(a) {
+    const r = this.game.resources;
+    const parts = [
+      ...Object.entries(a.cost || {}).map(([k, n]) => `${n} ${r.nameOf(k)}`),
+      ...Object.entries(a.gain || {}).map(([k, n]) => `Gives ${n} ${r.nameOf(k)}`),
+    ];
+    return parts.length ? `<div class="tt-cost">${parts.join(' · ')}</div>` : '';
+  }
+
   _placeTip() {
     const tip = this.el.tooltip;
     tip.hidden = false;

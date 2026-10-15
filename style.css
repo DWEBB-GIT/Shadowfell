@@ -408,6 +408,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .dmg.heal { color: #8cbf78; }
 /* enemy mana, for enemies that have it */
 .bar.mp .fill { background: linear-gradient(#5a82c8, #2c4a8a); }
+/* the player's mana and class gauge (Resolve) under the health bar */
+#char-panel .bar.thin { height: 13px; margin-top: 3px; }
+#char-panel .bar.thin .bar-text { font-size: 10px; line-height: 13px; }
+.bar.gauge .fill { background: linear-gradient(#e0a84a, #9a5a1c); }
+.aslot.nores img { filter: saturate(0.35) brightness(0.55) sepia(0.4) hue-rotate(190deg); }
 #target-mana-bar { margin-top: 4px; height: 10px; }
 #target-mana-bar .bar-text { font-size: 9px; line-height: 9px; }
 .emana { height: 3px; margin-top: 1px; background: #0b0908; border: 1px solid #000; }
@@ -539,3 +544,5 @@ body.ghost #prompt { color: #cfe6ff; }
 .skill-tile.unknown .skill-level { font-size: 12px; color: var(--text-dim); font-weight: normal; }
 .skill-bar { height: 4px; width: 90px; margin-top: 3px; background: #000; }
 .skill-bar div { height: 100%; background: #c8a040; }
+.bar[hidden] { display: none; }
+.tt-cost { color: #8fb4f0; font-size: 12px; margin-top: 2px; }

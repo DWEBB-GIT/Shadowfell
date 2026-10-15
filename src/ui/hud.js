@@ -329,6 +329,7 @@ export class Hud {
     const hp = Math.max(0, Math.ceil(player.health));
     this.el.hpFill.style.width = `${(player.health / player.maxHealth) * 100}%`;
     this.el.hpText.textContent = `${hp} / ${player.maxHealth}`;
+    this._refreshResources();
     this.el.xpFill.style.width = `${(progression.xp / progression.xpToNext) * 100}%`;
     // rested experience shows as a pale band ahead of the fill, as in WoW
     const rested = $('xp-rested');
@@ -349,6 +350,25 @@ export class Hud {
   }
 
   // Cooldown sweep per slot, plus the shared GCD sweep on GCD abilities.
+  // mana and the class gauge under the health bar
+  _refreshResources() {
+    const r = this.game.resources;
+    if (!r) return;
+    const mp = $('mp-bar');
+    mp.hidden = !r.maxMana;
+    if (r.maxMana) {
+      $('mp-fill').style.width = `${(r.mana / r.maxMana) * 100}%`;
+      $('mp-text').textContent = `${Math.floor(r.mana)} / ${r.maxMana} mana`;
+    }
+    const g = r.gaugeCfg;
+    const gb = $('gauge-bar');
+    gb.hidden = !g;
+    if (g) {
+      $('gauge-fill').style.width = `${(r.gauge / g.max) * 100}%`;
+      $('gauge-text').textContent = `${Math.floor(r.gauge)} ${g.name}`;
+    }
+  }
+
   _refreshSlots() {
     const gcd = this.game.player.cooldowns.gcd;
     for (const el of this.barSlots) {
@@ -361,6 +381,7 @@ export class Hud {
       el.style.setProperty('--gcd', (showGcd ? gcd / this.game.stats.globalCooldown : 0).toFixed(3));
       el.classList.toggle('cooling', remaining > 0 || showGcd);
       el.classList.toggle('active', a === 'brace' && this.game.player.isBraced);
+      el.classList.toggle('nores', !!(a && ABILITIES[a] && !this.game.resources.canAfford(ABILITIES[a])));
     }
   }
 

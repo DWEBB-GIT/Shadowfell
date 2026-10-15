@@ -24,6 +24,14 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Mana and Resolve
+
+- **Mana** pays for spells. The Warden has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.
+- **Resolve** is the Warden's class gauge (0 to 100), shown under the mana bar. Each landed weapon swing gives 12, each hit you take 6, and a block 10 more. It fades at 8 a second once you have been out of the fight for 6 seconds.
+- **Costs:** Shield Break 25 Resolve, Rend 20, Cleave 30; Hallowed Bolt 20 mana, Smite 15, Hallowed Ground 30, Rebuke 10. Lunge is free and gives 15 Resolve, and Battle Cry gives 25, so both open a fight. Brace, the draught, camp and fishing are free.
+- A slot you can't afford is dimmed, and its tooltip shows the cost. Trying it says "Not enough mana" or "Not enough Resolve".
+- Each class's mana and gauge numbers live in `data/archetypes.json` (`resources`), and ability costs in `data/abilities.json` (`cost`, `gain`). A later class gets its own gauge by giving it a different `gauge` block.
+
 ## Swing timer, layout and key bindings
 
 - **Swing timer.** While you auto attack, a bar where the cast bar sits fills up to the moment your weapon blow lands, with the weapon's name and the seconds left. A spell cast shows its cast bar just above it.

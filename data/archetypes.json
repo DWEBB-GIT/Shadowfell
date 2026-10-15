@@ -1,5 +1,5 @@
 {
-  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and their defensive ability.",
+  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear, their resources (mana from Intellect plus the class gauge built in combat) and their defensive ability.",
   "archetypes": [
     {
       "id": "warden",
@@ -21,7 +21,24 @@
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,
-      "resource": null,
+      "resources": {
+        "mana": {
+          "base": 100,
+          "perIntellect": 10,
+          "regenPerSecond": 1.5,
+          "regenOutOfCombat": 10
+        },
+        "gauge": {
+          "id": "resolve",
+          "name": "Resolve",
+          "max": 100,
+          "perSwing": 12,
+          "perHitTaken": 6,
+          "perBlock": 10,
+          "decayAfter": 6,
+          "decayPerSecond": 8
+        }
+      },
       "defensive": "brace"
     }
   ]
