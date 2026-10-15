@@ -1432,7 +1432,7 @@ def build_town():
     for side in (1, -1):
         b.box((W + 0.8, half / math.cos(math.radians(pitch)), 0.18),
               (0, side * half / 2, H + half / 2 * math.tan(math.radians(pitch))),
-              P["wood_dark"] if side > 0 else P["bark"], rot=(side * pitch, 0, 0), var=0.1)
+              P["wood_dark"] if side > 0 else P["bark"], rot=(-side * pitch, 0, 0), var=0.1)
     for x in (-W / 2, W / 2):                                                          # gable ends
         for i in range(5):
             h = (i + 0.5) * 0.6
@@ -1451,7 +1451,7 @@ def build_town():
     b.box((1.0, 0.1, 1.9), (0.8, -2.52, 0.95), P["wood_dark"], var=0.0)               # door
     b.box((0.8, 0.1, 0.6), (-1.6, -2.52, 1.6), P["flame"], var=0.0, glow=True)        # window
     for side in (1, -1):
-        b.box((6.6, 3.5, 0.16), (0, side * 1.4, 3.5), P["bark"], rot=(side * 38, 0, 0), var=0.1)
+        b.box((6.6, 3.5, 0.16), (0, side * 1.4, 3.5), P["bark"], rot=(-side * 38, 0, 0), var=0.1)
     for x in (-3, 3):
         for i in range(3):
             b.box((0.28, 4.6 * (1 - (i + 0.5) / 3.6), 0.5), (x, 0, 2.85 + i * 0.5), P["ash"], var=0.06)

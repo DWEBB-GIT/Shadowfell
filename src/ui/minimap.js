@@ -1,5 +1,5 @@
 import { DB } from '../data/db.js';
-import { BOUNDS, REGIONS, PROPS, CLEARINGS, SHRINES, WATER, OBSCURED } from '../world/layout.js';
+import { BOUNDS, regionById, PROPS, CLEARINGS, SHRINES, WATER, OBSCURED } from '../world/layout.js';
 
 // A round minimap in the top-right corner, north up (the camera never turns,
 // so up on the map is up on the screen). The ground, roads, trees and props
@@ -64,7 +64,7 @@ export class Minimap {
     this.origin = { minX, minZ };
 
     // ground by region, blended across the border
-    const border = REGIONS[0].minZ;
+    const border = regionById('fallen_road').minZ;
     const grad = g.createLinearGradient(0, Z(border - 6), 0, Z(border + 6));
     grad.addColorStop(0, GROUND.blackwood);
     grad.addColorStop(1, GROUND.fallen_road);

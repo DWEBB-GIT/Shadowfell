@@ -14,6 +14,7 @@ const S = DB.scenery;
 // the HUD names the one the Warden stands in.
 export const BOUNDS = W.bounds;
 export const REGIONS = W.regions.map((r) => ({ ...r, minZ: r.minZ === null ? -Infinity : r.minZ }));
+export const regionById = (id) => REGIONS.find((r) => r.id === id);
 export const regionAt = (z) => REGIONS.find((r) => z >= r.minZ) || REGIONS[REGIONS.length - 1];
 
 const road = (id) => W.roads.find((r) => r.id === id);

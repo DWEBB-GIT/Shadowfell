@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildTerrain, heightAt, distanceToRoad, distanceToMainRoad, seededRandom, blackwoodness } from './terrain.js';
-import { BOUNDS, REGIONS, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS } from './layout.js';
+import { BOUNDS, regionById, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS, PADS } from './layout.js';
 
 const DEG = Math.PI / 180;
 
@@ -153,6 +153,21 @@ export class World {
     return Math.max(0, ...(this.buildings || []).map((b) => b.inside));
   }
 
+  // Not on a building (with room to walk round it), a levelled pad, or a
+  // prop that has a box collider (the cottages).
+  _clearOfTown(x, z) {
+    for (const b of BUILDINGS) {
+      const [w, d] = b.size;
+      if (Math.abs(x - b.position[0]) < w / 2 + 3 && Math.abs(z - b.position[1]) < d / 2 + 3) return false;
+    }
+    for (const [px, pz, r] of PADS) if (Math.hypot(x - px, z - pz) < r + 2) return false;
+    for (const p of PROPS) {
+      const box = p.collider?.box;
+      if (box && Math.abs(x - p.position[0]) < box[0] / 2 + 3 && Math.abs(z - p.position[1]) < box[1] / 2 + 3) return false;
+    }
+    return true;
+  }
+
   _clear(x, z, margin = 0) {
     for (const [cx, cz, r] of CLEARINGS) {
       if (Math.hypot(x - cx, z - cz) < r + margin) return false;
@@ -165,7 +180,7 @@ export class World {
     // The Fallen Road's woodland, laid out exactly as it always has been
     // (same seed, same bounds), less whatever now stands on the forest
     // track or beyond the old northern edge, where the Blackwood begins.
-    const road = REGIONS[0].bounds;
+    const road = regionById('fallen_road').bounds;
     const rand = seededRandom(1999);
     const pines = [];
     const dead = [];
@@ -187,13 +202,14 @@ export class World {
       if (inside && rand() < 0.12) dead.push(entry);
       else pines.push(entry);
     }
-    const keep = (t) => t.z > -47 && distanceToRoad(t.x, t.z) >= 3.4;
+    // (south of z 49 is Brackenford now, which plants its own)
+    const keep = (t) => t.z > -47 && t.z < 49 && distanceToRoad(t.x, t.z) >= 3.4;
     const roadPines = pines.filter(keep);
     const roadDead = dead.filter(keep);
     for (const t of [...roadPines, ...roadDead]) if (t.collide) collision.add(t.x, t.z, 0.45 * t.s);
 
     // The Blackwood: black pines, close-set, with the track the only clear way.
-    const bw = REGIONS[1].bounds;
+    const bw = regionById('blackwood').bounds;
     const rb = seededRandom(2024);
     const black = [];
     const bwDead = [];
@@ -214,9 +230,27 @@ export class World {
       else black.push(entry);
       if (inside || edge > -3) collision.add(x, z, 0.45 * s);
     }
+    // Brackenford: a few pines about the town and a wood at its edges, never
+    // on the road, a pad (the ground levelled for a building) or a building
+    const town = regionById('brackenford').bounds;
+    const rt = seededRandom(1213);
+    const townPines = [];
+    for (let i = 0; i < 2400 && townPines.length < 160; i++) {
+      const x = town.minX - pad + rt() * (town.maxX - town.minX + pad * 2);
+      const z = town.minZ + rt() * (town.maxZ - town.minZ + pad);
+      const inside = x >= town.minX && x <= town.maxX && z <= town.maxZ;
+      const edge = Math.min(x - town.minX, town.maxX - x, town.maxZ - z);
+      if (distanceToMainRoad(x, z) < 4.2 || !this._clear(x, z) || !this._clearOfTown(x, z)) continue;
+      const density = !inside ? 0.85 : edge < 5 ? 0.6 : 0.06;
+      if (rt() > density) continue;
+      if (townPines.some((p) => Math.hypot(p.x - x, p.z - z) < (inside ? 3.2 : 2.1))) continue;
+      const s = 0.8 + rt() * 0.7;
+      townPines.push({ x, z, s, r: rt() * Math.PI * 2 });
+      if (inside || edge > -3) collision.add(x, z, 0.45 * s);
+    }
     // for the minimap
-    this.mapTrees = [...roadPines, ...roadDead, ...bwDead, ...black].map((t) => [t.x, t.z]);
-    this._instanced('pine', roadPines);
+    this.mapTrees = [...roadPines, ...townPines, ...roadDead, ...bwDead, ...black].map((t) => [t.x, t.z]);
+    this._instanced('pine', roadPines.concat(townPines));
     this._instanced('dead_tree', roadDead.concat(bwDead));
     this._instanced('black_pine', black);
   }
