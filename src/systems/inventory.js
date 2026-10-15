@@ -320,6 +320,27 @@ export class Inventory {
     return false;
   }
 
+  // An item used from the spell bar. A torch (or any off-hand item) is
+  // swapped with whatever was in the off hand, and back again on the next
+  // press, so one key lights the way and raises the shield again.
+  useFromBar(id) {
+    const def = ITEMS[id];
+    if (!def) return false;
+    const find = (x) => this.bagLocations().find((l) => this.get(l)?.id === x);
+    if (def.slot === 'offHand' && this.equipment.offHand?.id === id) {
+      const back = this.prevOffHand && find(this.prevOffHand);
+      if (back) return this.move(back, 'e:offHand').ok;
+      return this.use('e:offHand');
+    }
+    const loc = find(id);
+    if (!loc) {
+      this.game.hud.error(`You have no ${def.name.toLowerCase()}.`);
+      return false;
+    }
+    if (def.slot === 'offHand') this.prevOffHand = this.equipment.offHand?.id || null;
+    return this.use(loc);
+  }
+
   // Equip by item id (kept for scripts and tests).
   equip(id) {
     const loc = this.bagLocations().find((l) => this.get(l)?.id === id);

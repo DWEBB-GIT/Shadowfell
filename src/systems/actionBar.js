@@ -1,6 +1,9 @@
 import { DB } from '../data/db.js';
+import { ITEMS } from '../data/items.js';
 
-// The spell bar. Six slots, each with a fixed key (and pad button); the
+// The spell bar. Six combat slots and four utility slots (keys 6-9; on a pad,
+// hold D-pad left and press a face button, like FFXIV's cross hotbar), each
+// with a fixed key (and pad button); the
 // player decides which ability sits in which slot, Diablo style. Abilities
 // can be dragged between slots, dragged off the bar, and put back from the
 // spellbook. A slot location is 'a:<index>', a spellbook entry 'k:<ability>'.
@@ -21,9 +24,27 @@ export const BAR_SLOTS = [
   { kbm: '4', pad: 'LB' },
   { kbm: '5', pad: 'LT' },
   { kbm: 'Space', pad: 'B', defensive: true },
+  { kbm: '6', pad: '◀X', utility: true },
+  { kbm: '7', pad: '◀Y', utility: true },
+  { kbm: '8', pad: '◀A', utility: true },
+  { kbm: '9', pad: '◀B', utility: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rebuke', 'brace'];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null];
+
+// A slot can also hold an item (WoW style), as 'item:<id>': the torch,
+// lockpicks or anything else used from the bags.
+export const itemRef = (a) => (typeof a === 'string' && a.startsWith('item:') ? a.slice(5) : null);
+const validEntry = (a) => (itemRef(a) ? !!ITEMS[itemRef(a)] : !!ABILITIES[a] && ABILITIES[a].bar !== false);
+// what a bar entry is called and shows, ability or item
+export const entryName = (a) => (itemRef(a) ? ITEMS[itemRef(a)]?.name || '' : ABILITIES[a]?.name || '');
+// the first free slot for something new: a utility slot if one is free
+export function freeSlot(slots) {
+  const order = [...BAR_SLOTS.keys()].filter((i) => !BAR_SLOTS[i].defensive).sort((a, b) => !!BAR_SLOTS[b].utility - !!BAR_SLOTS[a].utility);
+  const i = order.find((k) => !slots[k]);
+  return i === undefined ? -1 : i;
+}
+export const UTILITY_ABILITIES = ['fish', 'setCamp'];
 
 // may this ability sit on the bar (and show in the spellbook)?
 export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);
@@ -52,7 +73,7 @@ export class ActionBar {
   // Put an ability in a slot; it leaves any slot it was in, and whatever was
   // in the target slot goes back to the spellbook.
   place(ability, index) {
-    if (!barAbility(this.game, ability)) return;
+    if (!itemRef(ability) && !barAbility(this.game, ability)) return;
     const was = this.slots.indexOf(ability);
     if (was >= 0) this.slots[was] = null;
     this.slots[index] = ability;
@@ -73,11 +94,27 @@ export class ActionBar {
     });
     for (const a of this.clicked) out[a] = true;
     this.clicked.clear();
+    // items on the bar are used straight away
+    for (const a of Object.keys(out)) {
+      if (!itemRef(a)) continue;
+      delete out[a];
+      this.game.inventory.useFromBar(itemRef(a));
+    }
     return out;
   }
 
   _changed() {
     this.game.events.emit('barChanged', {});
+  }
+
+  // Put an item on the bar.
+  placeItem(id, index) {
+    if (!ITEMS[id]) return;
+    const ref = 'item:' + id;
+    const was = this.slots.indexOf(ref);
+    if (was >= 0) this.slots[was] = null;
+    this.slots[index] = ref;
+    this._changed();
   }
 
   serialize() {
@@ -90,7 +127,7 @@ export class ActionBar {
     // the mouse buttons
     let list = slots;
     if (slots.length === 7) {
-      list = [slots[0], slots[1], slots[2], slots[3], null, slots[6]];
+      list = [slots[0], slots[1], slots[2], slots[3], null, slots[6], null, null, null, null];
       for (const a of [slots[5], slots[4]]) {
         const free = list.indexOf(null);
         if (a && free >= 0 && free < BAR_SLOTS.length - 1) list[free] = a;
@@ -98,8 +135,16 @@ export class ActionBar {
     }
     this.slots = BAR_SLOTS.map((_, i) => {
       const a = RENAMED[list[i]] || list[i];
-      return ABILITIES[a] && ABILITIES[a].bar !== false ? a : null;
+      return validEntry(a) ? a : null;
     });
+    // bars saved before the utility slots: move Fishing and Set Camp there
+    if (slots.length < BAR_SLOTS.length) {
+      for (const u of UTILITY_ABILITIES) {
+        const at = this.slots.indexOf(u);
+        const free = this.slots.findIndex((x, k) => !x && BAR_SLOTS[k].utility);
+        if (at >= 0 && !BAR_SLOTS[at].utility && free >= 0) [this.slots[at], this.slots[free]] = [null, u];
+      }
+    }
     this._changed();
   }
 }

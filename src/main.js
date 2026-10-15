@@ -455,7 +455,7 @@ class Game {
     else if (pad.pressed(BUTTONS.UP)) hud.togglePanel('spellbook');
     if (input.consume('KeyK') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
     if (hud.blocksGameplay) return null;
-    if (input.consume('KeyE') || (!padMenu && pad.pressed(BUTTONS.A))) {
+    if (input.consume('KeyE') || (!padMenu && !pad.held(BUTTONS.LEFT) && pad.pressed(BUTTONS.A))) {
       if (this.fishing.active) this.fishing.strike();
       else this.interaction.interact();
     }
@@ -487,13 +487,19 @@ class Game {
     if (input.consumeClick()) this._click('left');
     if (input.consumeRightClick()) this._click('right');
     // each spell-bar slot has a fixed key; whatever ability sits there fires
+    const util = padOn && pad.held(BUTTONS.LEFT);
     const slots = [
-      input.consume('Digit1') || p(BUTTONS.X),
-      input.consume('Digit2') || p(BUTTONS.Y),
+      input.consume('Digit1') || (!util && p(BUTTONS.X)),
+      input.consume('Digit2') || (!util && p(BUTTONS.Y)),
       input.consume('Digit3') || input.consume('KeyQ') || p(BUTTONS.RB),
       input.consume('Digit4') || p(BUTTONS.LB),
       input.consume('Digit5') || p(BUTTONS.LT),
-      input.consume('Space') || p(BUTTONS.B),
+      input.consume('Space') || (!util && p(BUTTONS.B)),
+      // utility slots: 6-9, or D-pad left held with a face button
+      input.consume('Digit6') || (util && p(BUTTONS.X)),
+      input.consume('Digit7') || (util && p(BUTTONS.Y)),
+      input.consume('Digit8') || (util && p(BUTTONS.A)),
+      input.consume('Digit9') || (util && p(BUTTONS.B)),
     ];
     const actions = this.actionBar.actions(slots);
     // Auto attack (WoW): once engaged (right-click, RT, or any ability used

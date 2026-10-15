@@ -1,3 +1,4 @@
+import { freeSlot } from './actionBar.js';
 import { moneyText } from '../ui/money.js';
 import { DB } from '../data/db.js';
 
@@ -48,7 +49,7 @@ export class Skills {
     this.ranks.set(id, 1);
     // what it teaches goes onto an empty slot of the bar, if there is one
     for (const ab of s.teaches || []) {
-      const free = actionBar.slots.findIndex((x, i) => !x && i < actionBar.slots.length - 1);
+      const free = freeSlot(actionBar.slots);
       if (free >= 0) actionBar.place(ab, free);
     }
     const names = (s.teaches || []).map((ab) => DB.abilities[ab].name).join(' and ');

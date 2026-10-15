@@ -6,12 +6,12 @@ import { CONFIG } from '../config.js';
 import { DOCUMENTS, INTRO } from '../data/text.js';
 import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
-import { ABILITIES, BAR_SLOTS } from '../systems/actionBar.js';
+import { ABILITIES, BAR_SLOTS, itemRef, entryName } from '../systems/actionBar.js';
 import { DamageNumbers } from './damageNumbers.js';
 import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
 import { SPELLS } from '../systems/spells.js';
-import { RARITY } from '../data/items.js';
+import { RARITY, ITEMS } from '../data/items.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -143,8 +143,8 @@ export class Hud {
   _buildBar() {
     let html = '';
     BAR_SLOTS.forEach((b, i) => {
-      if (b.defensive) html += '<div class="sep"></div>';
-       html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
+      if (b.defensive || (b.utility && !BAR_SLOTS[i - 1].utility)) html += '<div class="sep"></div>';
+       html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}${b.utility ? ' utility' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
     });
     this.el.actionBar.innerHTML = html;
     this.barSlots = BAR_SLOTS.map((_, i) => $('aslot-' + i));
@@ -158,9 +158,11 @@ export class Hud {
       el.dataset.ability = a || '';
       el.classList.toggle('empty', !a);
       const img = el.querySelector('img');
-      if (a) img.src = this.abilityIcons[a] || '';
+      const item = itemRef(a);
+      const src = item ? ITEMS[item] && this.items.icons[ITEMS[item].model] : this.abilityIcons[a];
+      if (a) img.src = src || '';
       else img.removeAttribute('src');
-      el.querySelector('.aname').textContent = a ? ABILITIES[a].name : '';
+      el.querySelector('.aname').textContent = a ? entryName(a) : '';
     });
     this._applyKeyLabels();
   }
@@ -325,8 +327,12 @@ export class Hud {
     const n = inventory.draughts;
     for (const el of this.barSlots) {
       const isDraught = el.dataset.ability === 'draught';
-      el.querySelector('.count').textContent = isDraught ? n : '';
-      el.classList.toggle('none', isDraught && n === 0);
+      const item = itemRef(el.dataset.ability);
+      // items on the bar show how many you carry (or that one is in hand)
+      const have = item ? inventory.count(item) + (inventory.equipment.offHand?.id === item ? 1 : 0) : 0;
+      el.querySelector('.count').textContent = isDraught ? n : item && ITEMS[item].stack > 1 ? have : '';
+      el.classList.toggle('none', (isDraught && n === 0) || (!!item && have === 0));
+      el.classList.toggle('active-item', !!item && inventory.equipment.offHand?.id === item);
     }
   }
 
@@ -335,7 +341,7 @@ export class Hud {
     const gcd = this.game.player.cooldowns.gcd;
     for (const el of this.barSlots) {
       const a = el.dataset.ability;
-      const [remaining, total, onGcd] = a ? this.cooldowns[a]() : [0, 0, false];
+      const [remaining, total, onGcd] = a && this.cooldowns[a] ? this.cooldowns[a]() : [0, 0, false];
       const own = total > 0 ? remaining / total : 0;
       // whichever finishes later is what the player is waiting on
       const showGcd = onGcd && gcd > remaining;

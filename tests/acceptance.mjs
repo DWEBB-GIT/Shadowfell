@@ -1315,7 +1315,7 @@ async function spellBar(browser) {
   await begin(page, '#continue-btn');
   const bOld = await bar();
   record('Old saves with Dodge on the bar get Brace instead (extra)', bOld[5] === 'brace', bOld.map((a) => a || '—').join(', '));
-  record('Old bars keep Shield Break from the mouse buttons, on number keys, and drop Attack (auto attack is off the bar)', bOld.length === 6 && bOld.includes('shieldBreak') && !bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
+  record('Old bars keep Shield Break from the mouse buttons, on number keys, and drop Attack (auto attack is off the bar)', bOld.length === 10 && bOld.includes('shieldBreak') && !bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
   const noAttack = await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('strike', 2); return g.actionBar.slots.includes('strike'); });
   record('Attack cannot be put on the bar', !noAttack);
 
@@ -3387,8 +3387,46 @@ async function worldBatch(browser) {
   await ctx.close();
 }
 
+async function utilityBar(browser) {
+  current = 'Utility bar';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const r = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const slots = g.actionBar.slots.length;
+    // learning Fishing puts it on the first free utility slot
+    g.inventory.coins = 100;
+    g.dialogue.open(g.npcs.byId('tam'));
+    g.dialogue.choose('train:fishing');
+    g.dialogue.close();
+    const fishAt = g.actionBar.slots.indexOf('fish');
+    // a torch dragged from the bags sits on the bar as an item; key 7 lights it, 7 again puts it away
+    g.inventory.addItem('torch', 1);
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'torch');
+    g.hud.items.dropOn(loc, 'a:7', true);
+    const torchSlot = g.actionBar.slots[7];
+    g.input.pressed.add('Digit7');
+    g.step(1 / 60);
+    const lit = g.inventory.equipment.offHand?.id;
+    g.input.pressed.add('Digit7');
+    g.step(1 / 60);
+    const back = g.inventory.equipment.offHand?.id;
+    // a bar saved before the utility slots (six slots, Fishing on 4)
+    g.actionBar.apply(['lunge', 'shieldBreak', 'draught', 'fish', 'rebuke', 'brace']);
+    const old = [...g.actionBar.slots];
+    g.actionBar.reset();
+    return { slots, fishAt, torchSlot, lit, back, old };
+  });
+  record('The bar has 4 utility slots (keys 6–9); new utility skills land there', r.slots === 10 && r.fishAt >= 6, `Fishing in slot ${r.fishAt + 1}`);
+  record('A torch on the utility bar lights and puts away with one key', r.torchSlot === 'item:torch' && r.lit === 'torch' && r.back === 'kite_shield', `key 7: ${r.torchSlot}; press: ${r.lit}; again: ${r.back}`);
+  record('Old six-slot bars move Fishing to a utility slot', r.old.length === 10 && r.old[3] === null && r.old.indexOf('fish') >= 6, r.old.map((a) => a || '—').join(', '));
+  record('No script errors (utility bar)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

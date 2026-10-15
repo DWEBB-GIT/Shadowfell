@@ -3,7 +3,7 @@ import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durabilit
 import { moneyHTML } from './money.js';
 import { SETTINGS } from '../systems/settings.js';
 import { BUTTONS } from '../core/gamepad.js';
-import { ABILITIES, barAbility } from '../systems/actionBar.js';
+import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
 
@@ -416,6 +416,11 @@ export class ItemUI {
         tip.hidden = true;
         return;
       }
+      if (itemRef(id)) {
+        const d = ITEMS[itemRef(id)];
+        tip.innerHTML = `<div class="tt-name q-${d.rarity}">${d.name}</div><div class="tt-desc">${d.description}</div><div class="tt-hint">Press to use${d.slot === 'offHand' ? ' (again to put it away)' : ''}</div>`;
+        return this._placeTip();
+      }
       tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div><div class="tt-desc">${ABILITIES[id].desc}</div>`;
       return this._placeTip();
     }
@@ -523,7 +528,10 @@ export class ItemUI {
 
   // ------------------------------------------------------------- mouse drag
   _iconForLoc(loc) {
-    if (loc.startsWith('a:')) return this.hud.abilityIcons[this.game.actionBar.slots[+loc.slice(2)]];
+    if (loc.startsWith('a:')) {
+      const a = this.game.actionBar.slots[+loc.slice(2)];
+      return itemRef(a) ? this._iconFor(itemRef(a)) : this.hud.abilityIcons[a];
+    }
     if (loc.startsWith('k:')) return this.hud.abilityIcons[loc.slice(2)];
     const stack = this.game.inventory.get(loc);
     return stack && this._iconFor(stack.id);
@@ -608,14 +616,16 @@ export class ItemUI {
         else bar.place(ability, +to.slice(2));
       } else if (from.startsWith('a:') && !overBar) {
         bar.remove(+from.slice(2)); // dragged off the bar
-        this.game.events.emit('log', { text: `${ABILITIES[ability].name} removed from the bar. Open the spellbook (P) to put it back.`, kind: 'muted', throttle: 'bar-removed' });
+        this.game.events.emit('log', { text: itemRef(ability) ? `${entryName(ability)} removed from the bar.` : `${entryName(ability)} removed from the bar. Open the spellbook (P) to put it back.`, kind: 'muted', throttle: 'bar-removed' });
       }
       return;
     }
     if (to && to.startsWith('a:')) {
-      // a draught dragged from the bags onto the bar
+      // a draught dragged from the bags onto the bar is the Draught ability;
+      // anything else usable (a torch, lockpicks) goes on as an item
       const stack = inv.get(from);
       if (stack && stack.id === ABILITIES.draught.item) bar.place('draught', +to.slice(2));
+      else if (stack && (ITEMS[stack.id].slot || ['consumable', 'document', 'torch', 'tool'].includes(ITEMS[stack.id].kind))) bar.placeItem(stack.id, +to.slice(2));
       return;
     }
     if (to && !to.startsWith('k:')) {

@@ -24,6 +24,11 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Utility bar and camera (Dan's list, part 4)
+
+- **Utility bar.** Four more slots after the combat bar, on keys 6–9 (gamepad: hold D-pad left and press X, Y, A or B, like FFXIV's cross hotbar). They take non-combat skills (Fishing and Set Camp land there when learned) and items dragged from the bags, WoW style: the torch lights on one press and goes away on the next, swapping your shield back in. Old six-slot bars move Fishing and Set Camp across.
+- **Camera.** It stays fixed. Ground telegraphs, click targeting and gamepad aiming all read best from one known angle, as in Diablo IV and Lost Ark. Mouse-wheel zoom is the recommended next step; 90° snap turns are the safe option if turning is ever wanted.
+
 ## The world (Dan's list, part 3)
 
 - **Respawns.** Every enemy type has `respawn` (seconds) in `data/enemies.json`: ghouls 90, hounds 75, archers 120, the brute 300, the seer 0 (never). A killed enemy comes back at its spawn point when its time is up (an unlooted body goes then), so you can grind for experience. Timers run on play time and are saved.
