@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { ITEMS, itemView } from '../data/items.js';
+import { armourK, growth, levelGapFactor, spellScale } from '../data/scaling.js';
 
 // Character stats and the one damage formula every hit goes through.
 // See docs/stats-and-damage.md. The numbers all live in CONFIG.stats, the
@@ -8,11 +9,13 @@ import { ITEMS, itemView } from '../data/items.js';
 const ATTRS = ['stamina', 'strength', 'agility', 'intellect'];
 const S = () => CONFIG.stats;
 
-// percent reduction from armour or resistance against an attacker of a level
-export function mitigation(value, attackerLevel = 1) {
+// Percent reduction from armour or resistance: armour / (armour + K), where
+// K grows with the defender's OWN level (400 + 100 x level), so the number
+// on the character panel is what it stops against everyone. Level gaps are
+// a separate rule (levelGapFactor, in computeHit).
+export function mitigation(value, defenderLevel = 1) {
   if (!value || value <= 0) return 0;
-  const k = S().armourConstant + S().armourPerLevel * attackerLevel;
-  return Math.min(S().mitigationCap, (100 * value) / (value + k));
+  return Math.min(S().mitigationCap, (100 * value) / (value + armourK(defenderLevel)));
 }
 
 // The player's stats: archetype base + level gains + worn gear.
@@ -55,20 +58,31 @@ export class Stats {
     return this.totals.intellect * S().spellPowerPerIntellect;
   }
 
+  // Agility's crit converts by level, so an Agility character keeps about
+  // the same crit as it levels: 0.5% a point at level 1, less later
   get critChance() {
-    return S().critBase + this.totals.agility * S().critPerAgility;
+    return S().critBase + this.totals.agility / this.agilityPerCrit;
+  }
+
+  // Agility for 1% crit at this level: 0.4 x (level + 4)
+  get agilityPerCrit() {
+    return CONFIG.scaling.critAgility * growth(this.game.progression.level);
+  }
+
+  // player spells grow with level, as weapons grow with item level
+  get spellScale() {
+    return spellScale(this.game.progression.level);
   }
 
   get armour() {
     return this.totals.armour;
   }
 
-  // a shield's block chance plus block rating from gear; no shield, no block
+  // a shield's own block chance plus block chance from other gear; no shield, no block
   get blockChance() {
-    const t = this.totals;
     const shield = this.game.inventory.equipment.offHand;
     if (!shield || ITEMS[shield.id].kind !== 'shield') return 0;
-    return Math.min(S().blockCap, (t.block || 0) + (t.blockRating || 0) / S().blockRatingPerPercent);
+    return Math.min(S().blockCap, this.totals.block || 0);
   }
 
   get haste() {
@@ -188,13 +202,15 @@ export function enemyBlock(cfg) {
 
 // The damage formula. `base` is the hit before anything else (a weapon roll
 // plus power, a spell's base plus spell power, or an enemy's damage).
-//   x multiplier -> crit? -> armour or resistance (by attacker level)
-//   -> block? (stops blockReduction % of what is left) -> round
+//   x multiplier x level gap (1.2 per level the attacker is above, /1.2 per
+//   level below) -> crit? -> armour or resistance (by the defender's own
+//   level) -> block? (stops blockReduction % of what is left) -> round, at
+//   least 1
 export function computeHit(rand, attacker, defender, { base, mult = 1, school = 'physical', canCrit = true, canBlock = false }) {
-  let dmg = base * mult;
+  let dmg = base * mult * levelGapFactor(attacker.level, defender.level);
   const crit = canCrit && rand() * 100 < attacker.crit;
   if (crit) dmg *= attacker.critMultiplier;
-  dmg *= 1 - mitigation(school === 'physical' ? defender.armour : defender.resistance, attacker.level) / 100;
+  dmg *= 1 - mitigation(school === 'physical' ? defender.armour : defender.resistance, defender.level) / 100;
   let blocked = 0;
   if (canBlock && defender.block > 0 && rand() * 100 < defender.block) {
     blocked = Math.round((dmg * S().blockReduction) / 100);

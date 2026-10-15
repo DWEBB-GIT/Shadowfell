@@ -23,8 +23,9 @@ import { computeHit, enemyBlock, weaponRoll } from './stats.js';
 //   camp     Set Camp: a cast, then the camp is pitched (systems/camp.js)
 //
 // Damage is either weapon based (`damageMultiplier` / `tickMultiplier` x a
-// weapon roll, as Strike) or a spell's own `damageMin`-`damageMax` plus spell
-// power. Every spell triggers the global cooldown; a spell's own cooldown
+// weapon roll, as Strike) or a spell's own `damageMin`-`damageMax` (at
+// level 1; it grows with level as (level + 4) / 5, see src/data/scaling.js)
+// plus spell power. Every spell triggers the global cooldown; a spell's own cooldown
 // starts when it goes off (after the cast, for cast spells).
 //
 // Enemy spells go to the selected target, or the soft target near your aim
@@ -291,7 +292,7 @@ export class Spells {
   }
 
   _spellBase(t) {
-    return t.damageMin + (t.damageMax - t.damageMin) * this.game.random() + this.game.stats.spellPower;
+    return (t.damageMin + (t.damageMax - t.damageMin) * this.game.random()) * this.game.stats.spellScale + this.game.stats.spellPower;
   }
 
   // One hit of a spell on an enemy: the shared damage formula, the number,

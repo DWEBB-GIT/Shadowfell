@@ -7,7 +7,7 @@ import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
 
-const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility', intellect: 'Intellect', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
+const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility', intellect: 'Intellect', armour: 'armour', resistance: 'resistance', block: '% block chance', haste: '% haste' };
 
 // Bags, the character panel, the spellbook, and the bag slots and spell bar
 // on the bottom bar. None of these pause the game.
@@ -312,12 +312,12 @@ export class ItemUI {
         '<div class="stat-gap"></div>',
         row('Stamina', t.stamina, `+${CONFIG.stats.healthPerStamina} health per point`, 'stamina'),
         row('Strength', t.strength, arch.mainStat === 'strength' ? 'Main attribute: adds to every swing and ability' : '', 'strength'),
-        row('Agility', t.agility, `+${CONFIG.stats.critPerAgility}% crit chance per point`, 'agility'),
+        row('Agility', t.agility, `+${(1 / stats.agilityPerCrit).toFixed(2)}% crit chance per point at level ${lvl}`, 'agility'),
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
         '<div class="stat-gap"></div>',
         row('Haste', `${stats.haste}%`, `Shortens swings, windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
-        row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken from a level ${lvl} foe; higher-level foes get through more`),
-        row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it (shield block chance + block rating / ${CONFIG.stats.blockRatingPerPercent})`, 'block'),
+        row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken, against any foe. A foe above your level hits ${Math.round((CONFIG.scaling.levelGap - 1) * 100)}% harder for each level, one below that much softer`),
+        row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it: the shield's own block chance plus block chance from gear`, 'block'),
         row('Crit', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
         '<div class="stat-gap"></div>',
         row('Weapon', `${stats.swingRange.join('–')} / ${stats.attackCooldown.toFixed(1)}s`, `${inv.weapon.name}: ${stats.weaponRange.join('–')} damage, speed ${stats.weaponSpeed.toFixed(1)}; each auto attack swing adds strength`),
@@ -440,6 +440,7 @@ export class ItemUI {
     }
     const def = itemView(stack);
     const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label : ''}</div>`];
+    if (def.itemLevel) lines.push(`<div class="tt-ilvl">Item level ${def.itemLevel}</div>`);
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);
@@ -514,7 +515,7 @@ export class ItemUI {
       return;
     }
     this.tipFrom = 'world';
-    const health = key.cfg ? `${Math.ceil(key.health)} / ${key.cfg.health}` : '';
+    const health = key.cfg ? `${Math.ceil(key.health)} / ${key.maxHealth}` : '';
     const html = key.cfg
       ? `<div class="tt-name tt-foe">${key.cfg.name}</div><div>Level ${key.cfg.level || 1}${key.cfg.elite ? ' Elite' : ''}</div><div class="tt-kind">${health} health</div>`
       : `<div class="tt-name tt-friend">${key.name}</div>${key.def.title ? `<div class="tt-kind">&lt;${key.def.title}&gt;</div>` : ''}<div>Level ${key.def.level || 1}</div>`;

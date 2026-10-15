@@ -9,9 +9,17 @@
 // rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
 //             legendary | quest (the colour of its name and border)
 // reservedFor: the only loot tables that may drop it (a boss's own weapon)
-// damage:     a weapon's [min, max] per swing
+// itemLevel:  gear only: the level its numbers are worked out for. Its armour,
+//             a shield's block chance, a weapon's damage per swing and its
+//             stat points all come from item level, slot, armour type and
+//             rarity (src/data/scaling.js), so gear is never hand-tuned
+// statSplit:  how its stat points are shared out, e.g. { strength: 1, stamina: 1 }
+//             (shares, not points; white gear has none to share)
 // speed:      a weapon's seconds between auto attack swings (haste shortens it)
-// stats:      attributes, armour, block, block rating, haste it adds
+// damage:     worked out: a weapon's [min, max] per swing (state it only for a special item)
+// stats:      worked out: armour, attributes, block chance and haste it gives;
+//             a stat stated in the data wins (a special item; the data check
+//             flags one more than 10% over budget unless `budgetException`)
 // use:        what using it does, e.g. { heal: 42 }
 // bagSlots:   slots a bag adds
 // light:      a torch's light radius in metres (it lets the Warden into obscured areas)
@@ -23,10 +31,12 @@
 
 import { DB } from './db.js';
 import { STAT_KEYS } from './schema.js';
+import { scaledItem, itemBudget, statCost } from './scaling.js';
 
 export { KINDS, RARITIES, EQUIP_SLOTS, ITEM_SLOTS, DURABLE_KINDS, slotFits, validateItems } from './schema.js';
 import { DURABLE_KINDS } from './schema.js';
-export const ITEMS = DB.items;
+// every item, with gear's numbers worked out from its item level
+export const ITEMS = Object.fromEntries(Object.entries(DB.items).map(([id, d]) => [id, scaledItem(d)]));
 export const RARITY = DB.rarities; // id -> { name, colour, suffix?, drops? }, lowest first
 
 export const BACKPACK_SLOTS = 16;
@@ -36,14 +46,15 @@ export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
 // Gear that drops from enemies rolls a little, Diablo style: its stats and
 // weapon damage move a few points either side of the database values, and
 // pieces that drop at a rarity with `suffix` (enhanced) gain a WoW-style
-// suffix with a bonus attribute ("of the Bear"): their magical property.
+// suffix ("of the Bear"): their magical property, which spends the green
+// stat budget of the item's level and slot.
 // A stack keeps only what differs from the database, as `rolls`:
 //   { stats: { armour: 2 }, damage: [13, 18], suffix: 'bear' }
 // so a balance change to the item still reaches items already in bags.
 
 export const SUFFIXES = DB.suffixes;
 
-const ROLLS = { spread: 0.2, damageSpread: 0.12, suffixMax: 2, valuePerPoint: 4 };
+const ROLLS = { spread: 0.2, damageSpread: 0.12, valuePerPoint: 4 };
 const ROLLED_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 
 // `rarity` is the rarity it dropped at (its own, unless common gear rolled
@@ -67,7 +78,13 @@ export function rollItem(id, rand, rarity = ITEMS[id] && ITEMS[id].rarity) {
   if (RARITY[rarity] && RARITY[rarity].suffix && d.rarity === 'common') {
     const keys = Object.keys(SUFFIXES);
     r.suffix = keys[Math.min(keys.length - 1, Math.floor(rand() * keys.length))];
-    for (const k of SUFFIXES[r.suffix].stats) stats[k] = (stats[k] || 0) + 1 + Math.floor(rand() * ROLLS.suffixMax);
+    // the green budget, shared between the suffix's stats, each +-20%
+    const sfx = SUFFIXES[r.suffix].stats;
+    const points = itemBudget(d, rarity) / sfx.length;
+    for (const k of sfx) {
+      const v = (points / statCost(k, d.itemLevel)) * (1 + ROLLS.spread * (2 * rand() - 1));
+      stats[k] = (stats[k] || 0) + Math.max(1, Math.round(v));
+    }
   }
   if (Object.keys(stats).length) r.stats = stats;
   return Object.keys(r).length ? r : null;
@@ -91,22 +108,26 @@ function rolledView(stack) {
   const stats = { ...(d.stats || {}) };
   for (const [k, v] of Object.entries(r.stats || {})) {
     const key = RENAMED_STATS[k] || k;
+    if (!STAT_KEYS.includes(key)) continue; // block rating, folded into block chance
     stats[key] = (stats[key] || 0) + v;
   }
   for (const k of Object.keys(stats)) if (stats[k] <= 0) delete stats[k];
-  const bonus = Object.values(r.stats || {}).reduce((a, v) => a + Math.max(0, v), 0);
+  // a suffix adds to the price by the stat points its rolls are worth
+  const bonus = Object.entries(r.stats || {}).reduce((a, [k, v]) => a + Math.max(0, v) * statCost(RENAMED_STATS[k] || k, d.itemLevel), 0);
   return {
     ...d,
     name: r.suffix ? `${d.name} ${SUFFIXES[r.suffix].name}` : d.name,
     rarity: r.suffix && d.rarity === 'common' ? 'enhanced' : d.rarity,
     stats,
     damage: r.damage ? swingScale(r.damage, d) : d.damage,
-    price: d.price + (r.suffix ? bonus * ROLLS.valuePerPoint : 0),
+    price: d.price + (r.suffix ? Math.round(bonus * ROLLS.valuePerPoint) : 0),
   };
 }
 
-// Stats renamed after saves held them in rolls (Might, Finesse, Vitality).
+// Stats renamed after saves held them in rolls (Might, Finesse, Vitality),
+// and block rating, which saves may hold but no longer counts.
 const RENAMED_STATS = { might: 'strength', finesse: 'agility', vitality: 'stamina' };
+const RETIRED_STATS = ['blockRating'];
 
 // Weapon damage became per swing when weapons gained a speed; rolls saved
 // before then (a few points either side of the old, smaller numbers) are
@@ -125,8 +146,8 @@ export function validRolls(id, r) {
   if (r === undefined) return true;
   const d = ITEMS[id];
   if (!d || !r || typeof r !== 'object' || !ROLLED_KINDS.includes(d.kind)) return false;
-  const okNum = (v) => Number.isInteger(v) && Math.abs(v) <= 100;
-  if (r.stats !== undefined && !(r.stats && typeof r.stats === 'object' && Object.entries(r.stats).every(([k, v]) => (STAT_KEYS.includes(k) || RENAMED_STATS[k]) && okNum(v)))) return false;
+  const okNum = (v) => Number.isInteger(v) && Math.abs(v) <= 1000;
+  if (r.stats !== undefined && !(r.stats && typeof r.stats === 'object' && Object.entries(r.stats).every(([k, v]) => (STAT_KEYS.includes(k) || RENAMED_STATS[k] || RETIRED_STATS.includes(k)) && okNum(v)))) return false;
   if (r.damage !== undefined && !(Array.isArray(r.damage) && r.damage.length === 2 && r.damage.every((v) => Number.isInteger(v) && v >= 1 && v <= 1000) && r.damage[0] <= r.damage[1])) return false;
   if (r.suffix !== undefined && !SUFFIXES[r.suffix]) return false;
   return true;

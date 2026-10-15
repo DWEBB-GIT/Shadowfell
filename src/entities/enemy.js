@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { Rig, setEmissive, FLASH_RED, FLASH_WHITE } from './rig.js';
 import { heightAt } from '../world/terrain.js';
+import { spawnHealth } from '../data/scaling.js';
 
 // One undead enemy. AI states: idle -> chase -> attack, return home when the
 // player escapes, dead when health reaches zero. Deliberately simple.
@@ -23,7 +24,9 @@ export class Enemy {
     this.position.y = heightAt(this.position.x, this.position.z);
     this.facing = Math.random() * Math.PI * 2;
     this.radius = this.cfg.radius;
-    this.health = this.cfg.health;
+    // each spawn point's enemy is a little leaner or bigger than its type (+-10%)
+    this.maxHealth = this.cfg.type === 'boss' ? this.cfg.health : spawnHealth(this.cfg.health, this.id);
+    this.health = this.maxHealth;
     this.mana = this.cfg.mana || 0; // only enemies whose config gives them mana have any
     this.state = 'idle';
     this.attackTimer = 0.6;
@@ -62,7 +65,7 @@ export class Enemy {
     if (this.dead) return;
     this.position.copy(this.home);
     this.position.y = heightAt(this.home.x, this.home.z);
-    this.health = this.cfg.health;
+    this.health = this.maxHealth;
     this.mana = this.cfg.mana || 0;
     this.state = 'idle';
     this.windup = 0;
@@ -345,7 +348,7 @@ export class Enemy {
     } else if (this.state === 'return' && this.stagger <= 0) {
       this._moveTowards(this.home.x, this.home.z, cfg.speed * 0.8, dt, 0.3);
       speed01 = 0.8;
-      this.health = Math.min(cfg.health, this.health + dt * 6);
+      this.health = Math.min(this.maxHealth, this.health + dt * 6);
     } else if (this.state === 'idle') {
       speed01 = this._idleShuffle(dt);
     }

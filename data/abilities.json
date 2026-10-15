@@ -86,8 +86,8 @@
       "tuning": {
         "castTime": 1.6,
         "cooldown": 0,
-        "damageMin": 8,
-        "damageMax": 11,
+        "damageMin": 3,
+        "damageMax": 4,
         "projectileSpeed": 22
       }
     },
@@ -116,8 +116,8 @@
       "desc": "An instant flash of holy light on your target. Triggers the global cooldown. 6 second cooldown.",
       "tuning": {
         "cooldown": 6,
-        "damageMin": 5,
-        "damageMax": 7
+        "damageMin": 1,
+        "damageMax": 3
       }
     },
     {
@@ -132,8 +132,8 @@
         "radius": 4,
         "duration": 6,
         "tickInterval": 1,
-        "damageMin": 2,
-        "damageMax": 3
+        "damageMin": 1,
+        "damageMax": 1
       }
     },
     {
@@ -199,8 +199,8 @@
       "tuning": {
         "cooldown": 10,
         "lockout": 3,
-        "damageMin": 2,
-        "damageMax": 3,
+        "damageMin": 1,
+        "damageMax": 1,
         "offGlobalCooldown": 1
       }
     }
