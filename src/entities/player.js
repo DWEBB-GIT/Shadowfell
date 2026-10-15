@@ -121,6 +121,14 @@ export class Player {
         this.shield.position.set(0, -0.62, 0.02);
         this.shield.rotation.set(-0.5, 0, 0);
         larm.add(this.shield);
+      } else if (off && off.kind === 'weapon' && this.defaultWeaponMesh) {
+        // a second blade, mirrored into the left hand
+        this.shield = this.game.assets.instance(off.model);
+        this.shieldId = equipment.offHand.id;
+        this.shield.position.copy(this.defaultWeaponMesh.position);
+        this.shield.position.x *= -1;
+        this.shield.quaternion.copy(this.defaultWeaponMesh.quaternion);
+        larm.add(this.shield);
       } else if (off && off.kind === 'shield') {
         this.shield = this.game.assets.instance(off.model);
         this.shieldId = equipment.offHand.id;
@@ -178,8 +186,9 @@ export class Player {
     const { combat, collision } = this.game;
     // the swing clock runs on delta time; if it ran out partway through this
     // frame, the overshoot is kept (capped) so the next swing keeps the rhythm
-    const clock = this.cooldowns.attack - dt;
-    this.swingLate = this.cooldowns.attack > 0 && clock < 0 ? Math.min(-clock, CONFIG.attack.catchUp) : 0;
+    const late = (k) => (this.cooldowns[k] > 0 && this.cooldowns[k] < dt ? Math.min(dt - this.cooldowns[k], CONFIG.attack.catchUp) : 0);
+    this.swingLate = late('attack');
+    this.swingLateOff = late('attackOff');
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
     this.braced = Math.max(0, this.braced - dt);
 
@@ -213,9 +222,18 @@ export class Player {
       if (this.pending.t <= 0) {
         const p = this.pending;
         this.pending = null;
-        if (p.type === 'strike') combat.resolvePlayerStrike(p.aim);
+        if (p.type === 'strike') {
+          this.lastMainImpactAt = this.game.time;
+          combat.resolvePlayerStrike(p.aim);
+        }
         else if (p.type === 'spell') this.game.spells.resolve(p.id);
       }
+    }
+    // the off hand's blow has its own impact frame
+    if (this.pendingOff && (this.pendingOff.t -= dt) <= 0) {
+      const p = this.pendingOff;
+      this.pendingOff = null;
+      combat.resolvePlayerStrike(p.aim, 'off');
     }
 
     let speed01 = 0;
@@ -251,7 +269,10 @@ export class Player {
       const a = controls.actions || {};
       // spells first, so a swing coming due never swallows a key press
       for (const id in a) if (a[id] && SPELLS[id]) this.game.spells.tryCast(id);
-      if (a.strike) this.tryStrike(controls.aim);
+      if (a.strike) {
+        this.tryStrike(controls.aim);
+        this.tryStrikeOff(controls.aim);
+      }
       if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
     }
@@ -296,6 +317,28 @@ export class Player {
     return true;
   }
 
+  // The off hand, when dual wielding: its own clock (cooldowns.attackOff, at
+  // its own weapon's speed), its own animation on the left arm, and its own
+  // impact. The hands stagger: the off hand never lands within `staggerGap`
+  // of the main hand's next blow; if it would, it waits until that has landed.
+  tryStrikeOff(aim) {
+    const stats = this.game.stats;
+    if (!stats.dualWielding || this.cooldowns.attackOff > 0 || this.pendingOff || this.casting || this.lunge) return false;
+    if (this.pending && this.pending.type === 'spell') return false;
+    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    const windup = stats.swingWindupFor('off');
+    const mainImpact = this.pending && this.pending.type === 'strike' ? this.pending.t : this.cooldowns.attack + stats.swingWindupFor('main');
+    const sinceMain = this.game.time + windup - (this.lastMainImpactAt ?? -Infinity);
+    if (Math.abs(mainImpact - windup) < CONFIG.attack.staggerGap || sinceMain < CONFIG.attack.staggerGap) return false;
+    const anim = stats.swingAnimationFor('off');
+    this.cooldowns.attackOff = stats.attackCooldownFor('off') - (this.swingLateOff || 0);
+    this.lastSwingAt = this.game.time;
+    this.pendingOff = { t: windup, aim: aim ? { x: aim.x, z: aim.z } : null };
+    this.rig.playOff(anim, windup / anim);
+    this.game.events.emit('playerSwing', { hand: 'off' });
+    return true;
+  }
+
   // is (x, z) within `halfDegrees` of where the Warden faces? (very close counts)
   facingPoint(x, z, halfDegrees) {
     const dx = x - this.position.x;
@@ -314,6 +357,7 @@ export class Player {
       this.dead = true;
       this.deadTime = 0;
       this.pending = null;
+      this.pendingOff = null;
       this.lunge = null;
       this.casting = null;
       this.braced = 0;
@@ -363,7 +407,7 @@ export class Player {
 
 function freshCooldowns() {
   const spells = Object.fromEntries(Object.keys(SPELLS).map((id) => [id, 0]));
-  return { attack: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0, ...spells };
+  return { attack: 0, attackOff: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0, ...spells };
 }
 
 function turnTowards(current, target, maxStep) {

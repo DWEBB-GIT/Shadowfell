@@ -19,10 +19,10 @@ export class Combat {
   // A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
   // `swing`: an auto attack, which rolls the weapon's own per-swing damage;
   // abilities roll the normalised range (see Stats.abilityWeaponRange).
-  _playerHit(enemy, mult, hurtOpts, { swing = false } = {}) {
+  _playerHit(enemy, mult, hurtOpts, { swing = false, hand = 'main' } = {}) {
     const { stats, events } = this.game;
     const r = this.game.random;
-    const base = swing ? swingRoll(r, stats) : weaponRoll(r, stats);
+    const base = swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats);
     const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
@@ -114,7 +114,8 @@ export class Combat {
     return best;
   }
 
-  resolvePlayerStrike(aim) {
+  // `hand`: 'off' for a dual-wielded off-hand swing, which does less damage
+  resolvePlayerStrike(aim, hand = 'main') {
     const { player, events } = this.game;
     if (player.dead) return null;
     const target = this._selectedInReach(CONFIG.attack.range) || this.selectStrikeTarget(aim);
@@ -122,9 +123,10 @@ export class Combat {
       events.emit('playerMiss', {});
       return null;
     }
-    const hit = this._playerHit(target, 1, { stagger: 0.22, knockFrom: player.position, knockback: 0.3 }, { swing: true });
-    events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true });
-    events.emit('log', { text: `You strike the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
+    const off = hand === 'off';
+    const hit = this._playerHit(target, off ? CONFIG.stats.offHandDamage : 1, { stagger: off ? 0.12 : 0.22, knockFrom: player.position, knockback: off ? 0.15 : 0.3 }, { swing: true, hand });
+    events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true, hand });
+    events.emit('log', { text: `${off ? 'Your off hand strikes' : 'You strike'} the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
     if (target.dead) this.onEnemyDefeated(target);
     return target;
   }

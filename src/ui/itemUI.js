@@ -317,13 +317,14 @@ export class ItemUI {
         row('Agility', t.agility, `+${(1 / stats.agilityPerCrit).toFixed(2)}% crit chance per point at level ${lvl}`, 'agility'),
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
         '<div class="stat-gap"></div>',
-        row('Haste', `${stats.haste}%`, `Shortens swings, windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
+        row('Haste', `${stats.haste}%`, `Shortens the time between swings, ability windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
         row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken, against any foe. A foe above your level hits ${Math.round((CONFIG.scaling.levelGap - 1) * 100)}% harder for each level, one below that much softer`),
         row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it: the shield's own block chance plus block chance from gear`, 'block'),
         row('Crit', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
         '<div class="stat-gap"></div>',
         row('Weapon', `${stats.swingRange.join('–')} / ${stats.attackCooldown.toFixed(1)}s`, `${inv.weapon.name}: ${stats.weaponRange.join('–')} damage, speed ${stats.weaponSpeed.toFixed(1)}; each auto attack swing adds strength`),
-        row('Damage per second', stats.dps.toFixed(1), 'From auto attack alone', 'dps'),
+        ...(stats.dualWielding ? [row('Off hand', `${stats.swingRangeFor('off').join('–')} / ${stats.attackCooldownFor('off').toFixed(1)}s`, `${inv.offWeapon.name}: its own swing timer; off-hand blows do ${Math.round(this.game.config.stats.offHandDamage * 100)}% damage`)] : []),
+        row('Damage per second', stats.dps.toFixed(1), stats.dualWielding ? 'From auto attack alone, both hands' : 'From auto attack alone', 'dps'),
         row('Wears', wears),
       ].join('');
       this.el.hint.textContent = this.hud.padMode
@@ -443,7 +444,7 @@ export class ItemUI {
       return;
     }
     const def = itemView(stack);
-    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + (def.slot === 'oneHand' ? `One-hand${def.weaponType ? ' ' + def.weaponType : ''}` : EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label) : ''}</div>`];
     if (def.itemLevel) lines.push(`<div class="tt-ilvl">Item level ${def.itemLevel}</div>`);
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);

@@ -21,6 +21,7 @@
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,
+      "dualWield": true,
       "resources": {
         "mana": {
           "base": 100,

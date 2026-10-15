@@ -7,7 +7,7 @@
       "name": "Attack",
       "target": "enemy",
       "range": 2.4,
-      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Not on the spell bar.",
+      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Dual wielding, each hand swings on its own clock at its weapon's speed; the off hand does half damage and never lands within 0.2 s of the main hand. Not on the spell bar.",
       "tuning": {
         "range": 2.1,
         "coneDegrees": 110,
@@ -15,7 +15,8 @@
         "swingAnimation": 0.8,
         "abilityWeaponSeconds": 0.6,
         "turnRate": 6,
-        "catchUp": 0.25
+        "catchUp": 0.25,
+        "staggerGap": 0.2
       },
       "bar": false
     },

@@ -72,6 +72,8 @@ export const CONFIG = {
     enemyVariance: 0.15, // enemy blows land within +-15% of their damage
     fistDamage: [1, 2], // bare hands (or a broken weapon), per swing
     fistSpeed: 2.0, // seconds between bare-handed swings
+    offHandDamage: 0.5, // an off-hand weapon's swings do half damage (WoW)
+    offHandResolve: 0.5, // and build half the Resolve of a main-hand swing
   },
   interaction: {
     radius: 2.2,

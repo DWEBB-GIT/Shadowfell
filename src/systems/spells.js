@@ -111,6 +111,7 @@ export class Spells {
       // casting stops the swing: a swing on its way is dropped, and the swing
       // timer starts again when the cast ends (WoW)
       if (player.pending && player.pending.type === 'strike') player.pending = null;
+      player.pendingOff = null;
       player.casting = { id, t: 0, total: stats.hasted(t.castTime), target };
       player.rig.play('brace', player.casting.total, 0.9);
       events.emit('castStart', { id });
@@ -169,6 +170,7 @@ export class Spells {
     player.cooldowns[spell.id] = t.cooldown;
     player.cooldowns.gcd = stats.globalCooldown;
     player.cooldowns.attack = Math.max(player.cooldowns.attack, t.duration + 0.2);
+    player.cooldowns.attackOff = Math.max(player.cooldowns.attackOff, t.duration + 0.2);
     player.lunge = { t: 0, dir, id: spell.id, speed: t.distance / t.duration, duration: t.duration };
     player.rig.play('strike', t.duration + 0.25, 0.7);
     events.emit('playerLunge', {});
@@ -335,6 +337,7 @@ export class Spells {
           this.game.resources.spend(spell);
           player.cooldowns[c.id] = spell.tuning.cooldown;
           player.cooldowns.attack = Math.max(player.cooldowns.attack, this.game.stats.attackCooldown);
+          player.cooldowns.attackOff = Math.max(player.cooldowns.attackOff, this.game.stats.attackCooldownFor('off'));
           events.emit('castEnd', { id: c.id, done: true });
           this._go(spell, c.target);
         }

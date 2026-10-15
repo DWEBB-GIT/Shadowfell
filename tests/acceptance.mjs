@@ -3573,13 +3573,13 @@ async function swingTimer(browser) {
   const table = await page.evaluate(() => {
     const st = window.__shadowfall.stats;
     const keep = { haste: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'haste'), speed: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'weaponSpeed') };
-    Object.defineProperty(st, 'weaponSpeed', { get: () => 2.5, configurable: true });
+    st.handSpeed = () => 2.5;
     const out = [0, 10, 20, 30].map((h) => {
       Object.defineProperty(st, 'haste', { get: () => h, configurable: true });
       return { h, t: +st.attackCooldown.toFixed(3), windup: st.swingWindup, anim: st.swingAnimation };
     });
     delete st.haste;
-    delete st.weaponSpeed;
+    delete st.handSpeed;
     return out;
   });
   record('Time between swings = weapon speed ÷ (1 + haste)', table.map((r) => r.t).join() === '2.5,2.273,2.083,1.923', table.map((r) => `${r.h}% ${r.t}s`).join(', '));
@@ -3649,7 +3649,88 @@ async function swingTimer(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, gearRolls, blackwood, atmosphere };
+async function dualWield(browser) {
+  current = 'Dual wielding';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // a sword in the main hand, a dirk in the off hand (the shield goes back in the bag)
+  const eq = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    inv.addItem('arming_sword', 1, { quiet: true });
+    inv.addItem('rusty_dirk', 1, { quiet: true });
+    inv.equip('arming_sword');
+    const loc = inv.bagLocations().find((l) => inv.get(l)?.id === 'rusty_dirk');
+    const ok = inv.move(loc, 'e:offHand').ok;
+    return { main: inv.equipment.mainHand?.id, off: inv.equipment.offHand?.id, ok, dual: g.stats.dualWielding, shieldInBag: inv.count('kite_shield') };
+  });
+  record('One-handed weapons go in either hand; a dirk can be dual wielded', eq.ok && eq.main === 'arming_sword' && eq.off === 'rusty_dirk' && eq.dual && eq.shieldInBag === 1, JSON.stringify(eq));
+  const refuse = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.stats.archetype;
+    a.dualWield = false;
+    const ok = g.inventory.canWear(g.items.rusty_dirk, 'offHand');
+    a.dualWield = true;
+    return ok;
+  });
+  record('A class without dual wielding cannot put a weapon in the off hand', refuse === false);
+
+  const nums = await page.evaluate(() => {
+    const st = window.__shadowfall.stats;
+    return { main: st.swingRangeFor('main'), off: st.swingRangeFor('off'), tMain: st.attackCooldownFor('main'), tOff: st.attackCooldownFor('off'), dirk: window.__shadowfall.items.rusty_dirk.damage, sword: window.__shadowfall.items.arming_sword.damage };
+  });
+  const offFull = await page.evaluate(() => { const st = window.__shadowfall.stats; const [lo, hi] = st.weaponRangeFor('off'); const p = st.swingPowerFor('off'); return [Math.round(lo + p), Math.round(hi + p)]; });
+  record('Off-hand blows do half damage', near(nums.off[0], offFull[0] / 2, 0.6) && near(nums.off[1], offFull[1] / 2, 0.6), `sword ${nums.sword.join('–')} @ ${nums.tMain}s → ${nums.main.join('–')} a swing; dirk ${nums.dirk.join('–')} @ ${nums.tOff}s → ${nums.off.join('–')} in the off hand (full ${offFull.join('–')})`);
+
+  // each hand swings on its own clock, staggered
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.enemies.byId('ghoul_road').health = 99999;
+    g.__hits = [];
+    // a frozen ghoul does not walk back after knockback, so hold it in place
+    g.events.on('enemyHit', (e) => { if (!e.swing) return; g.__hits.push({ hand: e.hand || 'main', t: +g.time.toFixed(3), dmg: e.damage }); e.enemy.knock.set(0, 0, 0); e.enemy.position.set(0, 0, -1.6); });
+    g.player.lastSwingAt = undefined;
+    g.player.cooldowns.attack = 0;
+    g.player.cooldowns.attackOff = 0;
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+  });
+  await sim(page, 0.6);
+  const bars = await page.evaluate(() => ({ main: !document.getElementById('swing-bar').hidden, off: !document.getElementById('swing-bar-off').hidden, offText: document.getElementById('swing-text-off').textContent }));
+  await sim(page, 12);
+  const hits = await page.evaluate(() => window.__shadowfall.__hits);
+  const main = hits.filter((h) => h.hand === 'main').map((h) => h.t);
+  const off = hits.filter((h) => h.hand === 'off').map((h) => h.t);
+  const gaps = (a) => a.slice(1).map((t, i) => +(t - a[i]).toFixed(2));
+  const closest = Math.min(...off.map((t) => Math.min(...main.map((m) => Math.abs(m - t)))));
+  record('Each hand swings on its own clock at its own weapon speed', main.length >= 4 && off.length >= 5 && gaps(main).every((d) => near(d, nums.tMain, 0.05)) && gaps(off).every((d) => d >= nums.tOff - 0.05) && gaps(off).filter((d) => near(d, nums.tOff, 0.05)).length >= gaps(off).length / 2,
+    `main hand every ${gaps(main).join(', ')}s; off hand every ${gaps(off).join(', ')}s`);
+  record('The two hands are staggered: never within 0.2 s of each other', closest >= 0.19, `closest main/off blows ${closest.toFixed(2)}s apart; main ${main.join(', ')} · off ${off.join(', ')}`);
+  record('Both swing timers show while dual wielding', bars.main && bars.off && /off hand/.test(bars.offText), JSON.stringify(bars));
+  const offDmg = hits.filter((h) => h.hand === 'off').map((h) => h.dmg);
+  const mainDmg = hits.filter((h) => h.hand === 'main').map((h) => h.dmg);
+  record('Off-hand hits land for less', Math.max(...offDmg) < Math.min(...mainDmg), `main ${mainDmg.join(',')} · off ${offDmg.join(',')}`);
+
+  // off-hand swings build half the Resolve
+  await page.evaluate(() => { const g = window.__shadowfall; g.resources.gauge = 0; g.events.emit('enemyHit', { enemy: g.enemies.byId('ghoul_road'), damage: 1, kind: 'strike', swing: true, hand: 'off' }); });
+  const rOff = await page.evaluate(() => window.__shadowfall.resources.gauge);
+  record('Off-hand swings build half the Resolve', rOff === 6, `${rOff} Resolve from one off-hand blow`);
+
+  // tooltip: One-hand dagger
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.inventory.addItem('ghoulbone_knife', 1, { quiet: true }); g.hud.togglePanel('bags'); });
+  await sim(page, 0.1);
+  const loc = await page.evaluate(() => window.__shadowfall.inventory.bagLocations().find((l) => window.__shadowfall.inventory.get(l)?.id === 'ghoulbone_knife'));
+  await page.hover(`[data-loc="${loc}"]`);
+  const tipKind = await page.evaluate(() => document.querySelector('.tt-kind')?.textContent);
+  record('Tooltips name one-handed weapons', /One-hand dagger/.test(tipKind || ''), `"${tipKind}"`);
+
+  record('No script errors (dual wielding)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

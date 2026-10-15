@@ -492,6 +492,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #swing-bar .fill { background: linear-gradient(#c8c4b8, #7c776a); }
 #swing-bar .bar-text { font-size: 10px; line-height: 11px; }
 #swing-bar[hidden], #quick-bind-banner[hidden] { display: none; }
+/* the off hand's swing timer, just under the main hand's, when dual wielding */
+#swing-bar-off { position: absolute; left: 50%; bottom: 98px; transform: translateX(-50%); width: 240px; height: 11px; }
+#swing-bar-off .fill { background: linear-gradient(#a9b4c0, #5d6874); }
+#swing-bar-off .bar-text { font-size: 9px; line-height: 10px; }
+#swing-bar-off[hidden] { display: none; }
 #right-dock { position: absolute; right: 12px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: auto; }
 #right-dock .coins { height: 30px; padding: 0 10px; }
 #bag-dock { padding: 5px 6px 4px; }

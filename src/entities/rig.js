@@ -34,6 +34,12 @@ export class Rig {
     this.action = { type, t: 0, duration, impact };
   }
 
+  // a second weapon's swing on the left arm, on its own timing, layered over
+  // whatever the right arm is doing (dual wielding)
+  playOff(duration, impact = 0.4) {
+    this.offAction = { t: 0, duration, impact };
+  }
+
   hit() {
     this.flinch = 1;
   }
@@ -41,6 +47,7 @@ export class Rig {
   die() {
     this.death = 0;
     this.action = null;
+    this.offAction = null;
   }
 
   revive() {
@@ -95,7 +102,27 @@ export class Rig {
       if (p.Arm_L) p.Arm_L.rotation.x += -0.35;
     }
     if (this.action) this._applyAction(dt);
+    if (this.offAction) this._applyOffAction(dt);
     if (this.death >= 0) this._applyDeath(dt);
+  }
+
+  // the off hand's cut: the same overhand arc as the main hand, on the left
+  _applyOffAction(dt) {
+    const a = this.offAction;
+    a.t += dt;
+    const k = Math.min(1, a.t / a.duration);
+    const up = a.impact * 0.65;
+    let arm;
+    if (k < up) arm = -2.4 * ease(k / up);
+    else if (k < a.impact) arm = -2.4 + 2.0 * ease((k - up) / (a.impact - up));
+    else arm = -0.4 * (1 - ease((k - a.impact) / (1 - a.impact)));
+    const p = this.parts;
+    if (p.Arm_L) {
+      p.Arm_L.rotation.x += arm;
+      p.Arm_L.rotation.y -= 0.3 * Math.min(1, -arm / 2.4);
+    }
+    if (p.Torso) p.Torso.rotation.y -= 0.25 * Math.min(1, -arm / 2.4);
+    if (k >= 1) this.offAction = null;
   }
 
   _applyAction(dt) {

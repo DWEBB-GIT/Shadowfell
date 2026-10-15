@@ -397,18 +397,21 @@ export class Hud {
     }
     // the weapon swing timer (WoW addons' swing timer): fills until the next
     // blow lands, while auto attack is on
+    // (one per hand when dual wielding)
     const tg = this.game.targeting;
-    const sw = $('swing-bar');
-    sw.hidden = !tg.attacking || player.dead;
-    if (!sw.hidden) {
-      const st = this.game.stats;
-      const pend = player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
-      const windup = st.swingWindup;
-      const left = pend || player.cooldowns.attack + windup;
-      const total = st.attackCooldown;
-      $('swing-fill').style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
-      $('swing-text').textContent = `${this.game.inventory.weapon.name}  ${left.toFixed(1)}`;
-    }
+    const st = this.game.stats;
+    const showSwing = (hand, bar, fill, text) => {
+      const el = $(bar);
+      el.hidden = !tg.attacking || player.dead || (hand === 'off' && !st.dualWielding);
+      if (el.hidden) return;
+      const pend = hand === 'off' ? player.pendingOff?.t || 0 : player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
+      const left = pend || player.cooldowns[hand === 'off' ? 'attackOff' : 'attack'] + st.swingWindupFor(hand);
+      const total = st.attackCooldownFor(hand);
+      $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
+      $(text).textContent = `${st.handWeapon(hand).name}${hand === 'off' ? ' (off hand)' : ''}  ${left.toFixed(1)}`;
+    };
+    showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
+    showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
     this._auras($('buffs'), spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
   }

@@ -99,6 +99,14 @@ export class Inventory {
     return v;
   }
 
+  // a working weapon in the off hand (dual wielding), else null
+  get offWeapon() {
+    const s = this.equipment.offHand;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
+  }
+
   get draughts() {
     return this.count('healing_draught');
   }
@@ -221,17 +229,18 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (!p || !def) return false;
-    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def);
+    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def, p.slot);
     if (p.type === 'socket') return p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag';
     if (p.type === 'bag') return !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length;
     return false;
   }
 
-  // Armour types and shields are limited by archetype, as in WoW.
-  canWear(def) {
+  // Armour types, shields and dual wielding are limited by archetype, as in WoW.
+  canWear(def, slot = null) {
     const a = this.game.stats.archetype;
     if (def.armourType && !a.armourTypes.includes(def.armourType)) return false;
     if (def.kind === 'shield' && !a.shields) return false;
+    if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) return false;
     return true;
   }
 
@@ -277,7 +286,8 @@ export class Inventory {
   _why(loc, stack) {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
-    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def)) {
+    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def, p.slot)) {
+      if (def.kind === 'weapon') return `A ${this.game.stats.archetype.name} cannot dual wield.`;
       const what = def.kind === 'shield' ? 'shields' : `${CONFIG.armourTypes[def.armourType].name.toLowerCase()} armour`;
       return `A ${this.game.stats.archetype.name} cannot use ${what}.`;
     }

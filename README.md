@@ -24,6 +24,12 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Dual wielding
+
+- One-handed swords and daggers (the arming sword and rusty dirk from Mara, the militia sword and ghoulbone knife as drops) go in either hand. Drag one onto the off hand to dual wield.
+- Each hand swings on its own timer at its own weapon's speed, with its own animation. The off hand opens half a swing later and never lands within 0.2 s of the main hand, so the blows alternate.
+- Off-hand blows do half damage and build half the Resolve. Two swing bars show while dual wielding, and the character panel shows both hands.
+
 ## Mana and Resolve
 
 - **Mana** pays for spells. The Warden has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.

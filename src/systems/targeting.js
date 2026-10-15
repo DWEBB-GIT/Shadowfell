@@ -133,7 +133,12 @@ export class Targeting {
       const p = this.game.player;
       const T = this.game.stats.attackCooldown;
       const midFight = p.lastSwingAt !== undefined && this.game.time - p.lastSwingAt < T;
-      if (!midFight) p.cooldowns.attack = Math.max(p.cooldowns.attack, T);
+      if (!midFight) {
+        p.cooldowns.attack = Math.max(p.cooldowns.attack, T);
+        // dual wielding, the off hand opens half a main-hand swing later, so
+        // the two blades alternate from the start
+        p.cooldowns.attackOff = Math.max(p.cooldowns.attackOff, this.game.stats.attackCooldownFor('off') + T / 2);
+      }
       this.game.events.emit('autoAttack', { on: true, target: enemy });
     }
     return true;

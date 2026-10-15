@@ -35,6 +35,10 @@
             {
               "item": "mail_chausses",
               "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
             }
           ],
           "enhanced": [
@@ -52,6 +56,14 @@
             },
             {
               "item": "mail_chausses",
+              "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            },
+            {
+              "item": "ghoulbone_knife",
               "weight": 1
             }
           ],
@@ -209,6 +221,10 @@
             {
               "item": "watch_helm",
               "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
             }
           ],
           "enhanced": [
@@ -227,6 +243,14 @@
             {
               "item": "watch_helm",
               "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
+            },
+            {
+              "item": "militia_sword",
+              "weight": 1
             }
           ],
           "rare": [

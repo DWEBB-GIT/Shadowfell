@@ -373,6 +373,73 @@
       "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
     },
     {
+      "id": "arming_sword",
+      "name": "Arming sword",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 2,
+      "speed": 2.4,
+      "stack": 1,
+      "price": 18,
+      "model": "arming_sword",
+      "icon": "arming_sword",
+      "description": "A plain one-handed sword, light enough to carry one in each hand if you have the knack."
+    },
+    {
+      "id": "rusty_dirk",
+      "name": "Rusty dirk",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 2,
+      "speed": 1.6,
+      "stack": 1,
+      "price": 14,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A long knife with more rust than edge. Quick in the off hand."
+    },
+    {
+      "id": "militia_sword",
+      "name": "Militia sword",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 4,
+      "speed": 2.5,
+      "statSplit": {
+        "strength": 1
+      },
+      "stack": 1,
+      "price": 55,
+      "model": "militia_sword",
+      "icon": "militia_sword",
+      "description": "Issued to the road militia before there was no road militia. The red grip is newer than the blade."
+    },
+    {
+      "id": "ghoulbone_knife",
+      "name": "Ghoulbone knife",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 4,
+      "speed": 1.7,
+      "statSplit": {
+        "agility": 1,
+        "haste": 1
+      },
+      "stack": 1,
+      "price": 50,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "Someone ground a ghoul's shin bone to an edge. It is lighter than steel and holds a grudge."
+    },
+    {
       "id": "torch",
       "name": "Pitch torch",
       "kind": "torch",

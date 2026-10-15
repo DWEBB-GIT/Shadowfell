@@ -85,6 +85,25 @@ Auto attack is three separate parts:
 
 When the clock starts: the first swing of a fight waits a full T, so there is no instant opener. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. The swing bar above the spell bar shows the time until the next blow lands.
 
+### Dual wielding
+
+A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:
+
+- **Each hand has its own swing clock** (`cooldowns.attack` and `cooldowns.attackOff`), at its own weapon's speed and the same T = W ÷ (1 + H), its own animation (the left arm) and its own impact frame. A sword at 2.4 s and a dirk at 1.6 s swing 25 and 37.5 times a minute.
+- **Staggered:** when a fight opens, the off hand starts half a main-hand swing later. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, it waits until the main hand has landed and the gap has passed. The main hand is never held.
+- **Off-hand penalty:** off-hand blows do 50% damage (`offHandDamage` in `src/config.js`), knock back half as far and build half the Resolve.
+- Abilities use the main-hand weapon. Casting drops both swings in progress; charges hold both clocks.
+- **Budget:** a one-hand weapon weighs 0.75 of a slot, so two of them carry the same stat points as a main-hand weapon (1) and a shield (0.5). Damage per second is the same formula as any weapon of its item level.
+
+| One-handers | Item level | Speed | Damage a swing |
+|---|---|---|---|
+| Arming sword (white) | 2 | 2.4 s | 4–9 |
+| Rusty dirk (white) | 2 | 1.6 s | 3–6 |
+| Militia sword (green, +Strength) | 4 | 2.5 s | from the formula |
+| Ghoulbone knife (green, +Agility, +haste) | 4 | 1.7 s | from the formula |
+
+Mara sells the arming sword and the dirk; ghouls drop dirks and the ghoulbone knife, archers arming and militia swords.
+
 ## One growth line
 
 Everything that should get bigger with level grows with **(level + 4)**. Percentages, the crit multiplier, cooldowns, weapon speeds, ranges and movement do not grow. Level gaps are the one place that works by a percentage per level, because a gap should feel steep.

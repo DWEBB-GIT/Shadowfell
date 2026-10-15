@@ -37,15 +37,17 @@ export const EQUIP_SLOTS = [
   { id: 'finger2', label: 'Finger', fits: 'finger', col: 'right' },
   { id: 'trinket1', label: 'Trinket', fits: 'trinket', col: 'right' },
   { id: 'trinket2', label: 'Trinket', fits: 'trinket', col: 'right' },
-  { id: 'mainHand', label: 'Main hand', col: 'bottom' },
-  { id: 'offHand', label: 'Off hand', col: 'bottom' },
+  // a one-handed weapon (slot `oneHand`) goes in either hand; the off hand
+  // only for a class that can dual wield
+  { id: 'mainHand', label: 'Main hand', col: 'bottom', also: ['oneHand'] },
+  { id: 'offHand', label: 'Off hand', col: 'bottom', also: ['oneHand'] },
 ];
 // what an item's `slot` may say: a slot id, or a slot type
-export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.map((s) => s.fits || s.id))];
+export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.flatMap((s) => [s.fits || s.id, ...(s.also || [])]))];
 // does an item with this `slot` go in that character slot?
 export const slotFits = (slotId, itemSlot) => {
   const s = EQUIP_SLOTS.find((x) => x.id === slotId);
-  return !!s && (s.id === itemSlot || s.fits === itemSlot);
+  return !!s && (s.id === itemSlot || s.fits === itemSlot || (s.also || []).includes(itemSlot));
 };
 // what wears out: weapons, armour and shields (and jewellery)
 export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];

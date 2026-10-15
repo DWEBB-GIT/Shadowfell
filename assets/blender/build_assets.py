@@ -1250,6 +1250,43 @@ def build_camp_items():
     export("chest")
 
 
+def build_one_handers():
+    """One-handed swords and daggers for dual wielding: grip at the origin, blade +Z."""
+    b = Builder()  # arming sword: plain cross guard, straight blade
+    b.box((0.04, 0.04, 0.17), (0, 0, 0.0), P["leather"])
+    b.box((0.24, 0.05, 0.04), (0, 0, 0.10), P["iron"])
+    b.ball(0.035, (0, 0, -0.10), P["iron"], subdiv=0)
+    b.box((0.06, 0.016, 0.74), (0, 0, 0.49), P["steel"], var=0.05, taper=(0.45, 1))
+    b.to_object("ArmingSword")
+    export("arming_sword")
+    reset_scene()
+
+    b = Builder()  # militia sword: wider blade, brass guard, red grip
+    b.box((0.045, 0.045, 0.17), (0, 0, 0.0), P["cloth_red"])
+    b.box((0.26, 0.06, 0.05), (0, 0, 0.10), P["brass"])
+    b.ball(0.04, (0, 0, -0.10), P["brass"], subdiv=0)
+    b.box((0.075, 0.018, 0.72), (0, 0, 0.48), P["steel_bright"], var=0.04, taper=(0.5, 1))
+    b.box((0.02, 0.02, 0.45), (0, 0, 0.38), P["steel_dark"], var=0.0)
+    b.to_object("MilitiaSword")
+    export("militia_sword")
+    reset_scene()
+
+    b = Builder()  # dirk: short tapering blade
+    b.box((0.035, 0.035, 0.13), (0, 0, 0.0), P["leather_dark"])
+    b.box((0.13, 0.04, 0.03), (0, 0, 0.075), P["iron"])
+    b.box((0.05, 0.014, 0.36), (0, 0, 0.27), P["steel"], var=0.05, taper=(0.2, 1))
+    b.to_object("Dirk")
+    export("dirk")
+    reset_scene()
+
+    b = Builder()  # bone knife: a ghoul's shin bone ground to an edge
+    b.box((0.04, 0.04, 0.14), (0, 0, 0.0), P["rag"])
+    b.ball(0.035, (0, 0, 0.085), P["bone_old"], subdiv=0)
+    b.box((0.055, 0.02, 0.34), (0.01, 0, 0.27), P["bone"], var=0.08, taper=(0.25, 1))
+    b.to_object("BoneKnife")
+    export("bone_knife")
+
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -1259,7 +1296,7 @@ BUILDERS = [
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
     build_mara, build_forge_camp, build_shop_items,
     build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
-    build_loot_items, build_tam, build_camp_items,
+    build_loot_items, build_tam, build_camp_items, build_one_handers,
 ]
 
 if __name__ == "__main__":

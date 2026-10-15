@@ -58,6 +58,10 @@ import bent_arrowhead from '../../assets/models/bent_arrowhead.glb';
 import hound_meat from '../../assets/models/hound_meat.glb';
 import old_watch_helm from '../../assets/models/old_watch_helm.glb';
 import witchbane from '../../assets/models/witchbane.glb';
+import arming_sword from '../../assets/models/arming_sword.glb';
+import militia_sword from '../../assets/models/militia_sword.glb';
+import dirk from '../../assets/models/dirk.glb';
+import bone_knife from '../../assets/models/bone_knife.glb';
 import tam from '../../assets/models/tam.glb';
 import camp from '../../assets/models/camp.glb';
 import torch from '../../assets/models/torch.glb';
@@ -78,6 +82,7 @@ const SOURCES = {
   rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
   tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
+  arming_sword, militia_sword, dirk, bone_knife,
 };
 
 // One shared material per Blender material name keeps draw state small.
