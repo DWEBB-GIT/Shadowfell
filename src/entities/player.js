@@ -255,7 +255,7 @@ export class Player {
     collision.resolve(this.position, this.radius);
     this.position.y = heightAt(this.position.x, this.position.z);
     this.moving = speed01 > 0;
-    this.rig.update(dt, speed01);
+    this.rig.update(dt, speed01 * CONFIG.player.runGait);
     this._sync();
   }
 

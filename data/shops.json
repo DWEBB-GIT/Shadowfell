@@ -26,13 +26,15 @@
       "id": "mara_forge",
       "name": "Mara's forge",
       "vendorType": "smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel", "torch"]
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel", "torch"],
+      "faction": "road_wardens"
     },
     {
       "id": "tam_outfitters",
       "name": "Tam's tackle",
       "vendorType": "outfitter",
-      "stock": ["fishing_rod", "torch", "healing_draught"]
+      "stock": ["fishing_rod", "torch", "healing_draught", "lockpicks"],
+      "faction": "mere_folk"
     }
   ]
 }

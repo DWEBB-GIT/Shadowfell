@@ -21,6 +21,8 @@ export class WorldState {
     this.camp = null; // { x, z } of the Warden's camp, if one is pitched
     this.restPoint = 'shrine'; // where the spirit rises: 'camp' or 'shrine' (the last rested at)
     this.nemesis = null; // the enemy spawn id that last killed the Warden
+    this.time = 0; // seconds of play in this world (respawn timers run on it)
+    this.respawnAt = {}; // enemy spawn id -> world time it comes back
   }
 
   isDefeated(id) {
@@ -59,6 +61,8 @@ export class WorldState {
       camp: this.camp ? { ...this.camp } : null,
       restPoint: this.restPoint,
       nemesis: this.nemesis,
+      time: Math.round(this.time),
+      respawnAt: { ...this.respawnAt },
     };
   }
 
@@ -76,5 +80,7 @@ export class WorldState {
     this.camp = data.camp ? { ...data.camp } : null;
     this.restPoint = data.restPoint === 'camp' && this.camp ? 'camp' : 'shrine';
     this.nemesis = typeof data.nemesis === 'string' ? data.nemesis : null;
+    this.time = Number.isFinite(data.time) ? data.time : 0;
+    this.respawnAt = data.respawnAt && typeof data.respawnAt === 'object' ? Object.fromEntries(Object.entries(data.respawnAt).filter(([, t]) => Number.isFinite(t))) : {};
   }
 }

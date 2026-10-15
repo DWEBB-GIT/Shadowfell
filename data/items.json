@@ -458,6 +458,28 @@
       "model": "old_boot",
       "icon": "old_boot",
       "description": "Somebody's boot. You decide not to wonder where the rest of them is."
+    },
+    {
+      "id": "watch_key",
+      "name": "Watch-post key",
+      "kind": "key",
+      "rarity": "common",
+      "stack": 1,
+      "price": 0,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A heavy iron key on a rotten thong. The watch kept its coffer locked."
+    },
+    {
+      "id": "lockpicks",
+      "name": "Lockpicks",
+      "kind": "tool",
+      "rarity": "common",
+      "stack": 1,
+      "price": 12,
+      "model": "bent_arrowhead",
+      "icon": "bent_arrowhead",
+      "description": "Bent wire and a tension pin. With the Lockpicking skill, they open locks that have lost their keys."
     }
   ]
 }

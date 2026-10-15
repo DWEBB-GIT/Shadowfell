@@ -138,6 +138,7 @@ export class QuestUI {
     const parts = [];
     if (r.coins) parts.push(`<span class="q-reward">${moneyHTML(r.coins)}</span>`);
     if (r.xp) parts.push(`<span class="q-reward">${r.xp} experience</span>`);
+    for (const [f, n] of Object.entries(r.reputation || {})) parts.push(`<span class="q-reward">+${n} ${esc(DB.factions[f].name)}</span>`);
     for (const g of r.items || []) {
       const def = ITEMS[g.item];
       const icon = this.hud.items.icons[def.model];

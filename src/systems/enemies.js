@@ -2,8 +2,10 @@ import { Enemy } from '../entities/enemy.js';
 import { ENEMIES } from '../world/layout.js';
 import { heightAt } from '../world/terrain.js';
 
-// Spawns and updates the region's enemies. Defeated enemies are not spawned
-// again: their defeat lives in the world state and is saved.
+// Spawns and updates the region's enemies. A defeat lives in the world state
+// and is saved; enemies whose type has a `respawn` time (enemies.json) come
+// back at their spawn point once it has passed, WoW style, so the Warden
+// can grind them. Those with 0 (bosses, story enemies) stay dead.
 
 export class EnemyManager {
   constructor(game) {
@@ -52,6 +54,7 @@ export class EnemyManager {
 
   update(dt) {
     const player = this.game.player;
+    this._respawn(dt);
     for (const e of this.list) e.update(dt, player);
     this._separate();
     // a body with loot stays down until looted; then it sinks away
@@ -62,6 +65,30 @@ export class EnemyManager {
         e.materials.forEach((m) => m.dispose());
         this.list.splice(this.list.indexOf(e), 1);
       }
+    }
+  }
+
+  _respawn(dt) {
+    const ws = this.game.worldState;
+    ws.time += dt;
+    for (const [id, at] of Object.entries(ws.respawnAt)) {
+      if (ws.time < at) continue;
+      delete ws.respawnAt[id];
+      const spawn = ENEMIES.find((s) => s.id === id);
+      if (!spawn) continue;
+      // an unlooted body goes when its enemy comes back
+      const old = this.byId(id);
+      if (old) {
+        this.game.scene.remove(old.group);
+        old.materials.forEach((m) => m.dispose());
+        this.list.splice(this.list.indexOf(old), 1);
+      }
+      delete ws.corpses[id];
+      ws.defeated.delete(id);
+      const e = new Enemy(this.game, spawn);
+      this.list.push(e);
+      this.game.scene.add(e.group);
+      this.game.events.emit('enemyRespawned', { enemy: e });
     }
   }
 

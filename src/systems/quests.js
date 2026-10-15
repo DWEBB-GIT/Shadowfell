@@ -141,6 +141,7 @@ export class QuestLog {
     if (r.coins) inventory.addCoins(r.coins, `from ${DB.npcs[q.turnIn].name}`);
     for (const g of gifts) inventory.addItem(g.item, g.count || 1);
     if (r.xp) progression.addXp(r.xp);
+    if (r.reputation) this.game.reputation.addAll(r.reputation);
     this.game.hud?.toast(`Quest complete: ${q.name}`);
     events.emit('questComplete', { id });
     this._changed();

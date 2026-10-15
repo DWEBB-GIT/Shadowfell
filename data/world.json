@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}).",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -333,6 +333,16 @@
       "reward": {
         "coins": 15
       }
+    },
+    {
+      "id": "watch_key",
+      "model": "grave_iron",
+      "position": [-24.5, 9.0],
+      "heightOffset": 0.05,
+      "prompt": "Take the iron key",
+      "reward": {
+        "item": "watch_key"
+      }
     }
   ],
   "dangerZones": [
@@ -363,6 +373,54 @@
       "position": [-27, -90],
       "radius": 6,
       "text": "It is too dark to go further. You will need a light."
+    }
+  ],
+  "chests": [
+    {
+      "id": "roadside_chest",
+      "name": "Traveller's chest",
+      "position": [-9.5, 4.0],
+      "facing": 30,
+      "coins": 15,
+      "items": [
+        {
+          "id": "healing_draught",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "watch_coffer",
+      "name": "Watch-post coffer",
+      "position": [26.5, -48.5],
+      "facing": -90,
+      "coins": 40,
+      "items": [
+        {
+          "id": "iron_gloves",
+          "count": 1
+        }
+      ],
+      "lock": {
+        "key": "watch_key",
+        "pick": 1
+      }
+    },
+    {
+      "id": "blackwood_cache",
+      "name": "Poacher's cache",
+      "position": [-12.5, -106],
+      "facing": 120,
+      "coins": 120,
+      "items": [
+        {
+          "id": "rusted_falchion",
+          "count": 1
+        }
+      ],
+      "lock": {
+        "pick": 3
+      }
     }
   ]
 }

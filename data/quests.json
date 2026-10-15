@@ -12,9 +12,22 @@
       "progress": "Any word of my iron? A cart doesn't vanish. Look it over properly if you find it. A carter keeps papers.",
       "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
       "objectives": [
-        { "id": "manifest", "type": "collect", "target": "manifest", "count": 1, "label": "Recover the cart's manifest", "location": "cart" }
+        {
+          "id": "manifest",
+          "type": "collect",
+          "target": "manifest",
+          "count": 1,
+          "label": "Recover the cart's manifest",
+          "location": "cart"
+        }
       ],
-      "reward": { "coins": 20, "xp": 50 },
+      "reward": {
+        "coins": 20,
+        "xp": 50,
+        "reputation": {
+          "road_wardens": 250
+        }
+      },
       "setsFlag": "manifest_delivered",
       "turnInLog": "You hand Mara the manifest. She reads it twice."
     },
@@ -29,10 +42,29 @@
       "progress": "Still ringing? Then it's still walking.",
       "complete": "A brute in grave-chains, carrying a watchman's blade? Then the watch post didn't just stop answering. Someone emptied it. Take this. You've earned it.",
       "objectives": [
-        { "id": "look", "type": "examine", "target": "hallow_cut", "label": "Look over the graves at Hallow Cut", "location": "hallow_cut" },
-        { "id": "brute", "type": "kill", "target": "brute", "count": 1, "label": "Gravebound Brute slain", "location": "hallow_cut" }
+        {
+          "id": "look",
+          "type": "examine",
+          "target": "hallow_cut",
+          "label": "Look over the graves at Hallow Cut",
+          "location": "hallow_cut"
+        },
+        {
+          "id": "brute",
+          "type": "kill",
+          "target": "brute",
+          "count": 1,
+          "label": "Gravebound Brute slain",
+          "location": "hallow_cut"
+        }
       ],
-      "reward": { "coins": 30, "xp": 80 }
+      "reward": {
+        "coins": 30,
+        "xp": 80,
+        "reputation": {
+          "road_wardens": 250
+        }
+      }
     },
     {
       "id": "the_hound_den",
@@ -45,10 +77,36 @@
       "progress": "The hounds hunt in threes. Don't let them get round you.",
       "complete": "No carters, then. Only bones and a purse. I'd hoped otherwise. The track's safer for it, at least. Take these. You'll want them deeper in.",
       "objectives": [
-        { "id": "search", "type": "examine", "target": "hound_den", "label": "Search the hound den", "location": "hound_den" },
-        { "id": "hounds", "type": "kill", "target": "hound", "count": 3, "label": "Barrow Hounds slain", "location": "hound_den" }
+        {
+          "id": "search",
+          "type": "examine",
+          "target": "hound_den",
+          "label": "Search the hound den",
+          "location": "hound_den"
+        },
+        {
+          "id": "hounds",
+          "type": "kill",
+          "target": "hound",
+          "count": 3,
+          "label": "Barrow Hounds slain",
+          "location": "hound_den"
+        }
       ],
-      "reward": { "coins": 25, "xp": 70, "items": [{ "item": "healing_draught", "count": 2 }] }
+      "reward": {
+        "coins": 25,
+        "xp": 70,
+        "items": [
+          {
+            "item": "healing_draught",
+            "count": 2
+          }
+        ],
+        "reputation": {
+          "mere_folk": 250,
+          "road_wardens": 100
+        }
+      }
     },
     {
       "id": "the_glade_seer",
@@ -61,11 +119,43 @@
       "progress": "The glade is at the end of the track. You'll know the stones.",
       "complete": "It's quieter. I felt it at the anvil before you came up the track. Here, the best shield I've made this year. Keep it between you and whatever comes next.",
       "objectives": [
-        { "id": "archers", "type": "kill", "target": "archer", "count": 2, "label": "Hollow Archers slain", "location": "archer_camp" },
-        { "id": "stones", "type": "examine", "target": "seer_stones", "label": "Find the standing stones in the glade", "location": "seer_glade" },
-        { "id": "seer", "type": "kill", "target": "seer", "count": 1, "label": "Blackwood Seer slain", "location": "seer_glade" }
+        {
+          "id": "archers",
+          "type": "kill",
+          "target": "archer",
+          "count": 2,
+          "label": "Hollow Archers slain",
+          "location": "archer_camp"
+        },
+        {
+          "id": "stones",
+          "type": "examine",
+          "target": "seer_stones",
+          "label": "Find the standing stones in the glade",
+          "location": "seer_glade"
+        },
+        {
+          "id": "seer",
+          "type": "kill",
+          "target": "seer",
+          "count": 1,
+          "label": "Blackwood Seer slain",
+          "location": "seer_glade"
+        }
       ],
-      "reward": { "coins": 50, "xp": 150, "items": [{ "item": "iron_shield", "count": 1 }] }
+      "reward": {
+        "coins": 50,
+        "xp": 150,
+        "items": [
+          {
+            "item": "iron_shield",
+            "count": 1
+          }
+        ],
+        "reputation": {
+          "road_wardens": 500
+        }
+      }
     }
   ]
 }

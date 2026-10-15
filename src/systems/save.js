@@ -102,6 +102,7 @@ export function validateSave(data) {
     const known = (l) => isStrArray(l) && l.every((id) => DB.quests[id]);
     check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
   }
+  if (data.reputation !== undefined) check(data.reputation && typeof data.reputation === 'object' && Object.values(data.reputation).every((n) => Number.isFinite(n)), 'reputation');
   if (data.skills !== undefined) {
     check(data.skills && typeof data.skills === 'object' && Object.entries(data.skills).every(([id, r]) => DB.skills[id] && isInt(r) && r >= 1), 'skills');
   }
@@ -119,6 +120,7 @@ export function validateSave(data) {
     if (w.camp !== undefined) check(w.camp === null || inBounds(w.camp), 'camp position');
     if (w.restPoint !== undefined) check(w.restPoint === 'camp' || w.restPoint === 'shrine', 'rest point');
     if (w.nemesis !== undefined) check(w.nemesis === null || typeof w.nemesis === 'string', 'nemesis');
+    if (w.respawnAt !== undefined) check(w.respawnAt && typeof w.respawnAt === 'object' && Object.values(w.respawnAt).every((t) => Number.isFinite(t)), 'respawn timers');
     if (w.corpses !== undefined) {
       check(w.corpses && typeof w.corpses === 'object' && Object.values(w.corpses).every((c) => inBounds(c) && isInt(c.coins) && c.coins >= 0), 'bodies to loot');
     }
@@ -149,6 +151,7 @@ export class SaveManager {
       bar: this.game.actionBar.serialize(),
       quests: this.game.quests.serialize(),
       skills: this.game.skills.serialize(),
+      reputation: this.game.reputation.serialize(),
     };
   }
 
@@ -213,6 +216,7 @@ export class SaveManager {
     worldState.apply(data.world);
     this.game.quests.apply(data.quests, worldState.flags);
     this.game.skills.apply(data.skills);
+    this.game.reputation.apply(data.reputation);
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);

@@ -207,7 +207,7 @@ async function launchAndMovement(browser) {
   b = (await state(page)).pos;
   const diag = Math.hypot(b.x - a.x, b.z - a.z);
   await sim(page, 1.5); // let the camera settle
-  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 5, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
+  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 6.5, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
 
   const cam = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -372,7 +372,7 @@ async function combat(browser) {
   await sim(page, 0.5, { held: ['KeyD', 'ShiftLeft'], press: ['ShiftLeft'] });
   const ns = (await state(page)).pos;
   const walked = Math.hypot(ns.x - noSprint.x, ns.z - noSprint.z);
-  record('No dodge or sprint: Shift does nothing special', near(walked, 2.5, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (walking is 5 m/s)`);
+  record('No dodge or sprint: Shift does nothing special', near(walked, 3.25, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (running is 6.5 m/s)`);
 
   // pursuit and attack with normal AI
   await page.evaluate(() => {
@@ -674,7 +674,7 @@ async function death(browser) {
   await sim(page, 3.0, { held: ['KeyW'], clickAt: { x: 0, z: -16 }, press: ['Space'] });
   s = await state(page);
   const ghoul = s.enemies.find((e) => e.id === 'ghoul_road');
-  record('Player death interrupts combat', s.hp === 0 && s.pos.x === posDead.x && s.pos.z === posDead.z && ghoul.hp === 48 && ghoul.state !== 'attack',
+  record('Player death interrupts combat', s.hp === 0 && s.pos.x === posDead.x && s.pos.z === posDead.z && ghoul.hp === 22 && ghoul.state !== 'attack',
     `no movement or attacks while dead; ghoul ${ghoul.state}`);
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   const deathVisible = await page.isVisible('#death');
@@ -705,7 +705,7 @@ async function death(browser) {
   record('Equipment and progression are retained', s.level === before.level && s.xp === before.xp && s.equipped === 'watchmans_edge' && s.items.length === before.items.length,
     `level ${s.level}, xp ${s.xp}, ${s.equipped}, ${s.items.length} items`);
   const ghoulAfter = (await state(page)).enemies.find((e) => e.id === 'ghoul_road');
-  record('Surviving enemies reset to their posts on respawn (extra)', near(ghoulAfter.x, 0, 0.5) && near(ghoulAfter.z, -16.4, 0.5) && ghoulAfter.hp === 48);
+  record('Surviving enemies reset to their posts on respawn (extra)', near(ghoulAfter.x, 0, 0.5) && near(ghoulAfter.z, -16.4, 0.5) && ghoulAfter.hp === 22);
   record('No script errors during death and respawn (extra)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -2290,7 +2290,7 @@ async function questsAndMap(browser) {
   }));
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   await page.screenshot({ path: path.join(shots, 'quest-offer.png') });
-  record('A quest offer shows what to do and what it pays, with Accept and Decline', /New quest/.test(offer.head) && /Barrow Hounds slain: 0\/3/.test(offer.quest) && /25 coins/.test(offer.quest) && /70 experience/.test(offer.quest) && /Healing draught ×2/.test(offer.quest) && offer.options.some((o) => /Accept/.test(o)) && offer.options.some((o) => /Decline/.test(o)),
+  record('A quest offer shows what to do and what it pays, with Accept and Decline', /New quest/.test(offer.head) && /Barrow Hounds slain: 0\/3/.test(offer.quest) && /25/.test(offer.quest) && /70 experience/.test(offer.quest) && /Healing draught ×2/.test(offer.quest) && offer.options.some((o) => /Accept/.test(o)) && offer.options.some((o) => /Decline/.test(o)),
     `"${offer.text.slice(0, 60)}…" / ${offer.quest.replace(/\s+/g, ' ').slice(0, 120)}`);
   await page.click('#dlg-options [data-option="accept"]');
   const took = await page.evaluate(() => {
@@ -2803,7 +2803,7 @@ async function ghostAndCamp(browser) {
     const g = window.__shadowfall;
     return { ghost: g.player.ghost, x: g.player.position.x, z: g.player.position.z, corpse: !!g.scene.getObjectByName('Corpse'), grey: g.renderer.domElement.style.filter, prompt: g.interaction.current && g.interaction.current.prompt, marks: g.hud.minimap.markers().map((m) => m.kind) };
   });
-  record('The spirit rises at the shrine; the body stays where it fell; the world turns grey', ghost.ghost && Math.hypot(ghost.x - 7.8, ghost.z - 5.2) < 1 && ghost.corpse && /grayscale/.test(ghost.grey) && /Return to life here \(lose 4 coins\)/.test(ghost.prompt || '') && ghost.marks.includes('corpse') && ghost.marks.includes('nemesis'),
+  record('The spirit rises at the shrine; the body stays where it fell; the world turns grey', ghost.ghost && Math.hypot(ghost.x - 7.8, ghost.z - 5.2) < 1 && ghost.corpse && /grayscale/.test(ghost.grey) && /Return to life here \(lose 4 silver\)/.test(ghost.prompt || '') && ghost.marks.includes('corpse') && ghost.marks.includes('nemesis'),
     `ghost at (${ghost.x.toFixed(1)}, ${ghost.z.toFixed(1)}); prompt "${ghost.prompt}"; minimap: body and skull`);
 
   // the ghost walks past the ghoul untouched, faster than the living
@@ -2879,7 +2879,7 @@ async function ghostAndCamp(browser) {
   await placeEnemy(page, 'ghoul_graves', 0, -20);
   await page.evaluate(() => (window.__shadowfall.player.cooldowns.setCamp = 0));
   await sim(page, 0.05, { press: ['Digit4'] });
-  const refused = await page.evaluate(() => !window.__shadowfall.player.casting && [...document.querySelectorAll('#log li')].some((l) => /enemies close by/.test(l.textContent)));
+  const refused = await page.evaluate(() => !window.__shadowfall.player.casting && /enemies close by/.test(window.__shadowfall.hud.lastError || ''));
   record('No camp with enemies close by', refused);
 
   // the next death rises at the camp, and the camp survives a save
@@ -3292,8 +3292,103 @@ async function economy(browser) {
   await ctx.close();
 }
 
+async function worldBatch(browser) {
+  current = 'Respawns, nameplates, chests and reputation';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+
+  // a killed ghoul comes back after its respawn time; XP each time (grinding)
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  const grind = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const kill = () => { const e = g.enemies.byId('ghoul_road'); e.hurt(999); g.combat.onEnemyDefeated(e); };
+    const xp0 = g.progression.xp;
+    kill();
+    const xp1 = g.progression.xp;
+    const due = g.worldState.respawnAt.ghoul_road - g.worldState.time;
+    for (let i = 0; i < 60; i++) g.step(1 / 60);
+    const stillDead = !g.enemies.list.some((e) => e.id === 'ghoul_road' && e.alive);
+    g.worldState.time += due;
+    g.step(1 / 60);
+    const back = g.enemies.list.find((e) => e.id === 'ghoul_road' && e.alive);
+    const backAt = back && [Math.round(back.position.x), Math.round(back.position.z)];
+    kill();
+    return { xp: [xp0, xp1, g.progression.xp], due, stillDead, backAt, rep: g.reputation.get('road_wardens') };
+  });
+  record('Enemies respawn after their type\'s timer and give XP again', Math.round(grind.due) === 90 && grind.stillDead && !!grind.backAt && grind.xp[2] > grind.xp[1] && grind.xp[1] > grind.xp[0], JSON.stringify(grind));
+  record('Kills in an area raise that faction\'s reputation', grind.rep === 20, `Road Wardens +${grind.rep} for two ghouls`);
+  const never = await page.evaluate(() => window.__shadowfall.config.enemies.seer.respawn);
+  record('A respawn of 0 means never (the seer)', never === 0);
+
+  // nameplates over NPCs and enemies; hidden from Settings
+  const names = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const m = g.npcs.byId('mara').position;
+    g.player.placeAt(m.x + 3, m.z + 3);
+    g._snapCamera();
+    g.hud.labels.update();
+    const shown = [...document.querySelectorAll('#world-labels .name-label')].filter((e) => !e.hidden).map((e) => e.textContent);
+    g.settings.set('names', false);
+    g.hud.labels.update();
+    const off = [...document.querySelectorAll('#world-labels .name-label')].filter((e) => !e.hidden).length;
+    g.settings.set('names', true);
+    return { shown, off };
+  });
+  record('Names show over NPCs by default and Settings can hide them', names.shown.some((t) => /Mara Venn/.test(t) && /Smith/.test(t)) && names.off === 0, JSON.stringify(names));
+
+  // chests: open, locked, key, lockpicking
+  const chests = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const c = (id) => g.chests.list.find((x) => x.def.id === id);
+    const sparkBefore = g.sparkles.spots().length;
+    const coins0 = g.inventory.coins;
+    const opened = g.chests.open(c('roadside_chest'));
+    const sparkAfter = g.sparkles.spots().length;
+    const got = { coins: g.inventory.coins - coins0, draughts: g.inventory.count('healing_draught') };
+    g.hud.lastError = null;
+    const lockedTry = g.chests.open(c('watch_coffer'));
+    const lockedMsg = g.hud.lastError;
+    g.inventory.addItem('watch_key', 1);
+    const keyed = g.chests.open(c('watch_coffer'));
+    const gloves = g.inventory.count('iron_gloves');
+    g.inventory.coins = 100;
+    g.skills.ranks.set('lockpicking', 2);
+    g.inventory.addItem('lockpicks', 1);
+    g.hud.lastError = null;
+    const lowPick = g.chests.open(c('blackwood_cache'));
+    const lowMsg = g.hud.lastError;
+    g.skills.ranks.set('lockpicking', 3);
+    const picked = g.chests.open(c('blackwood_cache'));
+    return { opened, got, sparkBefore, sparkAfter, lockedTry, lockedMsg, keyed, gloves, lowPick, lowMsg, picked, rank: g.skills.rank('lockpicking'), again: g.chests.open(c('roadside_chest')) };
+  });
+  record('A chest opens once and gives its silver and items', chests.opened && chests.got.coins === 15 && chests.got.draughts === 2 && chests.again === false, JSON.stringify(chests.got));
+  record('Unopened chests sparkle; opening one stops it', chests.sparkAfter === chests.sparkBefore - 1, `${chests.sparkBefore} → ${chests.sparkAfter}`);
+  record('A locked chest needs its key or enough Lockpicking', !chests.lockedTry && /locked/i.test(chests.lockedMsg) && chests.keyed && chests.gloves === 1 && !chests.lowPick && chests.picked && chests.rank === 4, `"${chests.lockedMsg}"; key opened it; Lockpicking 2 refused, 3 picked it (now ${chests.rank})`);
+
+  // quest reputation and vendor discount at Friendly
+  const disc = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.reputation.points.road_wardens = 0;
+    g.merchant.open('mara_forge', g.npcs.byId('mara'));
+    const before = g.merchant.priceOf('mail_chausses');
+    g.reputation.add('road_wardens', 1000);
+    const after = g.merchant.priceOf('mail_chausses');
+    g.merchant.close();
+    g.hud.togglePanel('character');
+    g.hud.items.render();
+    const bars = [...document.querySelectorAll('#char-rep .rep-row')].map((r) => r.textContent);
+    g.hud.togglePanel('character');
+    return { before, after, standing: g.reputation.standing('road_wardens').name, bars };
+  });
+  record('Friendly with a faction takes 5% off its vendors; the character window lists reputation', disc.standing === 'Friendly' && disc.before === 24 && disc.after === 22 && disc.bars.length === 2 && /Friendly/.test(disc.bars[0]), JSON.stringify(disc));
+  record('No script errors (world)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

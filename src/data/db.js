@@ -34,6 +34,7 @@ import world from '../../data/world.json';
 import scenery from '../../data/scenery.json';
 import text from '../../data/text.json';
 import skills from '../../data/skills.json';
+import factions from '../../data/factions.json';
 import { validateGameData, indexById } from './schema.js';
 
 export const RAW = {
@@ -51,6 +52,7 @@ export const RAW = {
   'scenery.json': scenery,
   'text.json': text,
   'skills.json': skills,
+  'factions.json': factions,
 };
 
 // Problems found in the data (empty when it is sound). The game logs them at
@@ -79,6 +81,8 @@ export const DB = {
   dialogues: byId(dialogue.dialogues, 'dialogues'),
   locations: byId(world.locations, 'locations'),
   skills: byId(skills.skills, 'skills'),
+  factions: byId(factions.factions, 'factions'),
+  standings: factions.standings,
   water: world.water || [],
   obscured: world.obscured || [],
   world,

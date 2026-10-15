@@ -3,7 +3,8 @@ import { ITEMS, RARITY, itemView } from '../data/items.js';
 
 // Text over things in the world, kept in one pooled HTML layer: the names of
 // items lying on the ground in their rarity colour (as in WoW and Diablo),
-// and (see `sources`) anything else that wants a floating label.
+// and nameplates over townsfolk (with their title) and enemies (until their
+// health bar, which carries the name, takes over). Settings (O) hide either.
 
 const RANGE = 18; // metres from the Warden
 
@@ -14,11 +15,27 @@ export class WorldLabels {
     this.pool = [];
     this.tmp = new THREE.Vector3();
     // each source returns [{ key, text, colour, x, y, z, cls }]
-    this.sources = [() => this._groundItems()];
+    this.sources = [() => this._groundItems(), () => this._names()];
+  }
+
+  _names() {
+    const out = [];
+    const { settings, npcs, enemies, hud, worldState } = this.game;
+    if (!settings.get('names')) return out;
+    for (const n of npcs.list) {
+      const title = n.def.title ? `<${n.def.title}>` : '';
+      out.push({ text: n.name, sub: title, colour: '#9ee070', x: n.position.x, y: n.position.y + 2.15, z: n.position.z, cls: 'name-label friendly' });
+    }
+    for (const e of enemies.list) {
+      if (!e.alive || hud.enemyBars.has(e.id)) continue;
+      out.push({ text: e.cfg.name, colour: e.cfg.elite ? '#ff8a50' : '#e8604a', x: e.position.x, y: e.position.y + (e.cfg.barHeight || (e.cfg.elite ? 3.0 : 2.1)), z: e.position.z, cls: 'name-label hostile' });
+    }
+    return out;
   }
 
   _groundItems() {
     const out = [];
+    if (!this.game.settings.get('lootNames')) return out;
     for (const l of this.game.loot.active) {
       const r = l.def.reward;
       if (!r || !r.item || !ITEMS[r.item]) continue;
@@ -44,7 +61,8 @@ export class WorldLabels {
           el = this.pool[n] = document.createElement('div');
           this.layer.appendChild(el);
         }
-        if (el.textContent !== lab.text) el.textContent = lab.text;
+        const html = lab.sub ? `${esc(lab.text)}<small>${esc(lab.sub)}</small>` : esc(lab.text);
+        if (el._html !== html) el.innerHTML = el._html = html;
         const cls = 'wlabel ' + (lab.cls || '');
         if (el.className !== cls) el.className = cls;
         el.style.color = lab.colour || '';
@@ -56,3 +74,5 @@ export class WorldLabels {
     for (let i = n; i < this.pool.length; i++) this.pool[i].hidden = true;
   }
 }
+
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

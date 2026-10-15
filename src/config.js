@@ -9,7 +9,8 @@ import { DB } from './data/db.js';
 export const CONFIG = {
   player: {
     archetype: 'warden',
-    speed: 5.0, // metres per second
+    speed: 6.5, // metres per second: a run by default, as in WoW (was a 5 m/s walk)
+    runGait: 1.3, // the run animation: quicker, longer strides than a walk
     radius: 0.4,
     startCoins: 8,
     startDraughts: 1,

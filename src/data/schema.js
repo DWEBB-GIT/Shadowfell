@@ -9,7 +9,7 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
-export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'bag', 'consumable', 'material', 'junk', 'document'];
+export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
@@ -147,6 +147,17 @@ export function validateGameData(raw, opts = {}) {
   const suffixes = indexById(itemsF.suffixes, 'items.json suffixes', errors);
   const rarities = indexById(rarF.rarities, 'rarities.json', errors);
   const skills = indexById(skillF.skills, 'skills.json', errors);
+  const facF = need('factions.json');
+  const factions = indexById(facF.factions || [], 'factions.json', errors);
+  if (!Array.isArray(facF.standings) || !facF.standings.length || facF.standings.some((t, i) => !isStr(t.name) || !isNum(t.min) || !isNum(t.discount) || (i && t.min <= facF.standings[i - 1].min))) errors.push('factions.json: standings need a name, a rising min and a discount');
+  const repRefs = (w, map) => {
+    if (map === undefined) return;
+    if (!map || typeof map !== 'object') return errors.push(`${w}: reputation must map faction ids to points`);
+    for (const [f, n] of Object.entries(map)) {
+      ref(w + ' reputation', 'faction', factions, f);
+      if (!isInt(n)) errors.push(`${w}: reputation with ${f} must be a whole number`);
+    }
+  };
   const items = indexById(itemsF.items, 'items.json items', errors);
   const archetypes = indexById(archF.archetypes, 'archetypes.json', errors);
   const abilities = indexById(abilF.abilities, 'abilities.json', errors, ABILITY_ID);
@@ -231,6 +242,8 @@ export function validateGameData(raw, opts = {}) {
     const w = `enemies.json ${id}`;
     if (!isStr(e.name)) errors.push(`${w}: needs a name`);
     model(w, e.model);
+    repRefs(`enemies.json ${e.id}`, e.reputation);
+    if (e.respawn !== undefined && !(isNum(e.respawn) && e.respawn >= 0)) errors.push(`enemies.json ${e.id}: respawn must be seconds (0 = never)`);
     for (const k of ['level', 'health', 'damage', 'attackInterval', 'windup', 'detection', 'meleeRange', 'speed', 'radius', 'xp', 'coins']) {
       if (!isNum(e[k]) || e[k] < 0) errors.push(`${w}: ${k} must be a number of at least 0`);
     }
@@ -301,6 +314,7 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, s] of Object.entries(shops)) {
     const w = `shops.json ${id}`;
     ref(w, 'vendor type', vendorTypes, s.vendorType);
+    if (s.faction !== undefined) ref(w, 'faction', factions, s.faction);
     const vt = vendorTypes[s.vendorType];
     for (const it of s.stock || []) {
       ref(w + ' stock', 'item', items, it);
@@ -360,6 +374,7 @@ export function validateGameData(raw, opts = {}) {
       if (o.location !== undefined) ref(ow, 'location', locations, o.location);
     }
     const r = q.reward || {};
+    repRefs(w, r.reputation);
     if (!(isInt(r.coins ?? 0) && isInt(r.xp ?? 0))) errors.push(`${w}: reward coins and xp must be whole numbers`);
     for (const it of r.items || []) {
       ref(w + ' reward', 'item', items, it.item);
@@ -446,6 +461,18 @@ export function validateGameData(raw, opts = {}) {
     if (!r.item && !r.coins) errors.push(`${w}: reward needs an item or coins`);
     if (r.item) ref(w, 'item', items, r.item);
     if (l.opensDocument && !documents[l.opensDocument]) errors.push(`${w}: names unknown document ${l.opensDocument}`);
+  }
+  for (const [id, c] of Object.entries(indexById(worldF.chests || [], 'world.json chests', errors))) {
+    const w = `world.json chest ${id}`;
+    pos(w, c.position);
+    if (!isStr(c.name)) errors.push(`${w}: needs a name`);
+    for (const it of c.items || []) ref(w, 'item', items, it.id);
+    if (c.coins !== undefined && !(isInt(c.coins) && c.coins >= 0)) errors.push(`${w}: coins must be whole silver`);
+    if (c.lock) {
+      if (!c.lock.key && !c.lock.pick) errors.push(`${w}: a lock needs a key or a pick rank`);
+      if (c.lock.key) ref(w, 'key item', items, c.lock.key);
+      if (c.lock.pick !== undefined && !(isInt(c.lock.pick) && c.lock.pick >= 1)) errors.push(`${w}: pick must be a Lockpicking rank of at least 1`);
+    }
   }
   for (const z of worldF.dangerZones || []) {
     pos('world.json dangerZone', z.position);

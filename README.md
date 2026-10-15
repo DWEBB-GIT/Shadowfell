@@ -24,6 +24,15 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## The world (Dan's list, part 3)
+
+- **Respawns.** Every enemy type has `respawn` (seconds) in `data/enemies.json`: ghouls 90, hounds 75, archers 120, the brute 300, the seer 0 (never). A killed enemy comes back at its spawn point when its time is up (an unlooted body goes then), so you can grind for experience. Timers run on play time and are saved.
+- **Names** float over townsfolk (green, with their title) and enemies (red, until their health bar shows). **Settings** (O, or the ☰ button) can hide names over characters and names of items on the ground.
+- **Running** is the default: 6.5 m/s (was a 5 m/s walk), with a quicker stride.
+- **Chests** (`chests` in `data/world.json`): the Traveller's chest by the cart (open), the Watch-post coffer at the watch post (locked: the Watch-post key, lying by the graves, or Lockpicking 1) and the Poacher's cache in the Blackwood (Lockpicking 3 only). Old Tam teaches **Lockpicking** and sells lockpicks; every lock picked raises the skill. Open with E or a click; contents go to your bags, silver to your purse.
+- **Sparkles.** Gold motes rise from unopened chests, quest items in the world (the manifest) and places still to examine.
+- **Reputation** (`data/factions.json`): the Road Wardens and the Folk of the Mere. Quests (`reward.reputation`) and kills in their area (`reputation` per enemy type) raise it; standings run Hostile, Neutral, Friendly (1000), Honored (3000), Revered (6000), Exalted (12000). A faction's vendors (`faction` on a shop) take 5/10/15/20% off from Friendly up. The character window lists each faction's standing. Gated items and areas can read the standing later.
+
 ## Money, durability and gear (Dan's list, part 2)
 
 - **Gold and silver.** The purse holds silver and shows it as gold and silver with coin icons (100 silver = 1 gold, converted automatically: 1 gold less 1 silver is 99 silver). Prices in the data are in silver. `src/ui/money.js` formats it everywhere: bags, shop, quest rewards, tooltips ("Sell for 3 (coin)") and the log.

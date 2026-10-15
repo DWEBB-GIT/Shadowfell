@@ -21,6 +21,7 @@ export class Interaction {
       list.push({ key: 'loot:' + l.id, x: l.x, z: l.z, bias: -0.4, loot: l, prompt: n > 1 ? `${own} (and ${n - 1} more nearby)` : own, run: () => loot.lootArea(l) });
     }
     list.push(...this.game.npcs.interactions());
+    list.push(...this.game.chests.interactions());
     for (const sh of SHRINES) {
       list.push({
         key: sh.id === 'shrine_road' ? 'shrine' : 'shrine:' + sh.id,

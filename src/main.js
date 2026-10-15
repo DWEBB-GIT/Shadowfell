@@ -15,6 +15,10 @@ import { Combat } from './systems/combat.js';
 import { Spells } from './systems/spells.js';
 import { Afterlife } from './systems/afterlife.js';
 import { Skills } from './systems/skills.js';
+import { Settings } from './systems/settings.js';
+import { Chests } from './systems/chests.js';
+import { Reputation } from './systems/reputation.js';
+import { Sparkles } from './render/sparkles.js';
 import { Camp } from './systems/camp.js';
 import { WaterAndDark } from './world/waterAndDark.js';
 import { Fishing } from './systems/fishing.js';
@@ -90,6 +94,8 @@ class Game {
     this.spells = new Spells(this);
     this.afterlife = new Afterlife(this);
     this.skills = new Skills(this);
+    this.settings = new Settings(this);
+    this.reputation = new Reputation(this);
     this.camp = new Camp(this);
     this.fishing = new Fishing(this);
     this.telegraphs = new Telegraphs(this);
@@ -99,6 +105,8 @@ class Game {
     this.merchant = new Merchant(this);
     this.dialogue = new Dialogue(this);
     this.loot = new LootSystem(this);
+    this.chests = new Chests(this);
+    this.sparkles = new Sparkles(this);
     this.interaction = new Interaction(this);
     this.actionBar = new ActionBar(this);
     this.hud = new Hud(this);
@@ -195,6 +203,7 @@ class Game {
     this.region = null; // named again, quietly, from wherever the Warden stands
     this.afterlife.reset();
     this.skills.reset();
+    this.reputation.reset();
     this.pendingDeath = null;
     this.telegraphs.clear();
     this.hud.numbers.clear();
@@ -221,6 +230,7 @@ class Game {
     this.camp.show();
     this.enemies.spawnAll();
     this.loot.spawnAll();
+    this.chests.spawnAll();
     this.hud.hideTitle();
     this.hud.refreshObjective();
     this.started = true;
@@ -280,6 +290,7 @@ class Game {
       if (e.alive) consider('enemy', e, Math.min(screen(e.position.x, e.position.y + 1, e.position.z), screen(e.position.x, e.position.y + 0.3, e.position.z)) - 6);
     }
     for (const n of npcs.list) consider('npc', n, screen(n.position.x, n.position.y + 1, n.position.z));
+    for (const c of this.chests.list) if (!this.chests.opened(c)) consider('chest', c, screen(c.x, heightAt(c.x, c.z) + 0.4, c.z));
     for (const l of loot.lootables()) {
       const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
       if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
@@ -297,7 +308,7 @@ class Game {
       const o = pick.obj;
       if (pick.kind === 'enemy') c = CURSORS.attack;
       else if (pick.kind === 'npc') c = Math.hypot(o.position.x - p.x, o.position.z - p.z) <= CONFIG.shop.talkRange + 0.5 ? CURSORS.talk : CURSORS.talkFar;
-      else if (pick.kind === 'loot') c = Math.hypot(o.x - p.x, o.z - p.z) <= CONFIG.loot.reach ? CURSORS.loot : CURSORS.lootFar;
+      else if (pick.kind === 'loot' || pick.kind === 'chest') c = Math.hypot(o.x - p.x, o.z - p.z) <= (pick.kind === 'chest' ? 2.4 : CONFIG.loot.reach) ? CURSORS.loot : CURSORS.lootFar;
     }
     if (c !== this.cursor) this.renderer.domElement.style.cursor = this.cursor = c;
   }
@@ -321,7 +332,10 @@ class Game {
     }
     const { player, events, targeting, loot } = this;
     const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
-    if (pick.kind === 'loot') {
+    if (pick.kind === 'chest') {
+      if (far(pick.obj.x, pick.obj.z, 2.4)) this.hud.error('You need to be closer to interact with that target.');
+      else this.chests.open(pick.obj);
+    } else if (pick.kind === 'loot') {
       const l = pick.obj;
       if (far(l.x, l.z, CONFIG.loot.reach)) events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
       else loot.lootArea(l);
@@ -429,6 +443,7 @@ class Game {
     if (input.consume('KeyC') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
     if (input.consume('KeyP')) hud.togglePanel('spellbook');
     if (input.consume('KeyU')) hud.togglePanel('skills');
+    if (input.consume('KeyO')) hud.togglePanel('settings');
     // D-pad right opens and closes the log (it moves the highlight in the bags)
     if (input.consume('KeyL') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
     // With a window open the pad drives the window; the world keeps running
@@ -519,6 +534,7 @@ class Game {
       this.targeting.update(dt, this.rawAim, ABILITIES.strike.range + 1);
       this.interaction.update();
       this.loot.update(dt, this.time);
+      this.sparkles.update(dt);
       this.fx.update(dt);
       this.audio.update(dt);
       if (this.pendingDeath && this.hud.modal !== 'death') {

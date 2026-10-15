@@ -117,6 +117,7 @@ kbd {
 #log li.hit { color: #e2d3ae; }
 #log li.hurt { color: #d98a72; }
 #log li.loot { color: #d8bd73; }
+#log li.rep { color: #9fb6e8; }
 #log li.xp, #log li.level { color: #c9b77a; }
 #log li.heal { color: #a8c08a; }
 #log li.lore { color: #b9b2a0; font-style: italic; }
@@ -308,10 +309,18 @@ kbd {
 .bag-grid { display: grid; grid-template-columns: repeat(4, 42px); gap: 4px; }
 .bag-foot { display: flex; align-items: center; gap: 5px; justify-content: flex-end; margin-top: 6px; font-size: 13px; }
 
-#character-window { left: 12px; top: 136px; width: 330px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#character-window { left: 12px; top: 136px; width: 330px; max-height: calc(100vh - 150px); overflow-y: auto; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 .char-body { display: flex; gap: 10px; }
 .equip-col { display: flex; flex-direction: column; gap: 4px; }
 #character-window .equip-col .islot { width: 38px; height: 38px; }
+#char-rep { margin-top: 8px; }
+#char-rep h3 { font-size: 12px; margin: 0 0 4px; color: var(--gold); font-weight: normal; }
+.rep-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 6px; align-items: center; font-size: 11px; margin-bottom: 3px; }
+.rep-bar { position: relative; height: 14px; background: #1c1712; border: 1px solid #000; }
+.rep-bar > div { height: 100%; background: #4f6d3a; }
+.rep-bar.s-hostile > div { background: #8a3a2a; }
+.rep-bar.s-neutral > div { background: #8a7a3a; }
+.rep-bar b { position: absolute; inset: 0; text-align: center; font-size: 10px; line-height: 14px; font-weight: normal; text-shadow: 0 0 2px #000; }
 .equip-bottom { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
 .islot.worn { box-shadow: inset 0 0 0 2px rgba(230, 170, 40, 0.75); }
 .islot.broken { box-shadow: inset 0 0 0 2px rgba(220, 50, 40, 0.9); }
@@ -385,6 +394,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #world-labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .wlabel { position: absolute; left: 0; top: 0; font-size: 12px; white-space: nowrap; text-shadow: 0 0 3px #000, 1px 1px 0 #000; }
 .wlabel[hidden] { display: none; }
+.name-label { text-align: center; font-size: 12px; }
+.name-label small { display: block; font-size: 10px; opacity: 0.85; }
 .loot-label { padding: 0 4px; background: rgba(10, 8, 6, 0.55); border-radius: 2px; }
 #damage-numbers { position: absolute; inset: 0; overflow: hidden; }
 .dmg { position: absolute; left: 0; top: 0; font-size: 15px; font-weight: bold; color: #e6dcc4; text-shadow: 0 0 3px #000, 1px 1px 0 #000; white-space: nowrap; will-change: transform, opacity; }
@@ -497,6 +508,8 @@ body.ghost #prompt { color: #cfe6ff; }
 
 /* skills, RuneScape style */
 #skills-window { left: 50%; bottom: 140px; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#settings-window { left: 50%; top: 30%; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#settings-list label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
 #skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .skill-tile { display: flex; gap: 8px; align-items: center; padding: 6px; border: 1px solid #3a2f20; background: #0f0c09; }
 .skill-tile img { width: 34px; height: 34px; }

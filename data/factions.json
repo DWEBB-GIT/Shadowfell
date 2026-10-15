@@ -1,0 +1,55 @@
+{
+  "_about": "Factions and reputation, WoW style. Reputation is earned per faction from quest rewards (`reward.reputation` in quests.json) and from activities in its area, such as killing enemies (`reputation` on an enemy type in enemies.json). `standings` are the named tiers, lowest first, each from `min` points; `discount` is percent off at that faction's vendors (shops with a `faction`). Reputation-gated items and areas will use these tiers later.",
+  "standings": [
+    {
+      "id": "hostile",
+      "name": "Hostile",
+      "min": -3000,
+      "discount": 0
+    },
+    {
+      "id": "neutral",
+      "name": "Neutral",
+      "min": 0,
+      "discount": 0
+    },
+    {
+      "id": "friendly",
+      "name": "Friendly",
+      "min": 1000,
+      "discount": 5
+    },
+    {
+      "id": "honored",
+      "name": "Honored",
+      "min": 3000,
+      "discount": 10
+    },
+    {
+      "id": "revered",
+      "name": "Revered",
+      "min": 6000,
+      "discount": 15
+    },
+    {
+      "id": "exalted",
+      "name": "Exalted",
+      "min": 12000,
+      "discount": 20
+    }
+  ],
+  "factions": [
+    {
+      "id": "road_wardens",
+      "name": "The Road Wardens",
+      "region": "fallen_road",
+      "description": "The few who still keep the Fallen Road open: Mara at her forge, the watch that was, and anyone who clears the dead from the way."
+    },
+    {
+      "id": "mere_folk",
+      "name": "Folk of the Mere",
+      "region": "fallen_road",
+      "description": "Old Tam and the families who fish the Stillwater Mere and trap the woods around it."
+    }
+  ]
+}

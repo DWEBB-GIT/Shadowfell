@@ -17,6 +17,15 @@
       "teaches": ["fish"],
       "maxRank": 50,
       "desc": "Cast a line into still water and strike when the bob dips. Rises with every catch."
+    },
+    {
+      "id": "lockpicking",
+      "name": "Lockpicking",
+      "trainer": "tam",
+      "cost": 15,
+      "teaches": [],
+      "maxRank": 50,
+      "desc": "Open locked chests without their key (you need lockpicks). Each lock needs a certain rank; every lock you pick raises it."
     }
   ]
 }

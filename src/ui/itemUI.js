@@ -1,6 +1,7 @@
 import { DB } from '../data/db.js';
 import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durability } from '../data/items.js';
 import { moneyHTML } from './money.js';
+import { SETTINGS } from '../systems/settings.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -30,7 +31,7 @@ export class ItemUI {
     this.game = game;
     this.hud = hud;
     this.openBags = new Set(); // socket indices whose bag window is open
-    this.open = { character: false, spellbook: false, skills: false };
+    this.open = { character: false, spellbook: false, skills: false, settings: false };
     this.icons = {};
     this.drag = null; // { from, x0, y0, moved }
     this.focus = null; // gamepad highlight: a location string
@@ -48,6 +49,7 @@ export class ItemUI {
       spellList: $('spellbook-list'),
       spellHint: $('spellbook-hint'),
       skills: $('skills-window'),
+      settings: $('settings-window'),
       skillList: $('skills-list'),
       shop: $('shop-window'),
       shopName: $('shop-name'),
@@ -63,6 +65,8 @@ export class ItemUI {
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
+    $('btn-settings').addEventListener('click', () => this.toggle('settings'));
+    $('settings-list').addEventListener('change', (e) => game.settings.set(e.target.dataset.setting, e.target.checked));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
     $('shop-repair').addEventListener('click', () => game.inventory.repairAll());
@@ -137,6 +141,7 @@ export class ItemUI {
     game.events.on('levelUp', () => this.render());
     game.events.on('barChanged', () => this.render());
     game.events.on('skillsChanged', () => this.render());
+    game.events.on('reputationChanged', () => this.render());
   }
 
   setIcons(icons) {
@@ -145,7 +150,7 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || !!this.game.merchant.current;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || !!this.game.merchant.current;
   }
 
   // shop slots: m:<item> buys, y:<n> buys back
@@ -200,7 +205,7 @@ export class ItemUI {
   closeAll() {
     const was = this.anyOpen;
     this.openBags.clear();
-    this.open.character = this.open.spellbook = this.open.skills = false;
+    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = false;
     this.shopOpenedBags = false;
     this.game.merchant.close();
     this._afterChange(null);
@@ -282,6 +287,13 @@ export class ItemUI {
       this.el.left.innerHTML = col('left');
       this.el.right.innerHTML = col('right');
       document.getElementById('equip-bottom').innerHTML = col('bottom');
+      // reputation, WoW style: a bar per faction with its standing
+      const rep = this.game.reputation;
+      document.getElementById('char-rep').innerHTML = '<h3>Reputation</h3>' + Object.values(DB.factions).map((f) => {
+        const s = rep.standing(f.id);
+        const pct = s.span ? Math.min(100, (s.into / s.span) * 100) : 100;
+        return `<div class="rep-row" title="${f.description}"><span>${f.name}</span><div class="rep-bar s-${s.id}"><div style="width:${pct}%"></div><b>${s.name}${s.span ? ` ${s.into} / ${s.span}` : ''}</b></div></div>`;
+      }).join('');
       const { player, progression, stats } = this.game;
       const t = stats.totals;
       // stats that rose at the last level-up keep a green "+n" for a while
@@ -346,6 +358,14 @@ export class ItemUI {
       this.el.shopHint.textContent = this.hud.padMode
         ? 'A: buy   Y on a bag item: sell   B: leave'
         : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
+    }
+
+    // settings: one checkbox each
+    this.el.settings.hidden = !this.open.settings;
+    if (this.open.settings) {
+      const list = document.getElementById('settings-list');
+      if (!list.children.length) list.innerHTML = SETTINGS.map((s) => `<label><input type="checkbox" data-setting="${s.id}"> ${s.label}</label>`).join('');
+      for (const box of list.querySelectorAll('input')) box.checked = this.game.settings.get(box.dataset.setting);
     }
 
     // skills, RuneScape style: a tile per skill with its level

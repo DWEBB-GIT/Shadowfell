@@ -76,6 +76,12 @@ export class LootSystem {
     return entry;
   }
 
+  // Leave a stack on the ground at a point (a chest's overflow).
+  dropAt(stack, pos) {
+    this.game.collision.resolve(pos, 0.2);
+    return this._spawnGround(this._addGround(stack, pos));
+  }
+
   _addGround(stack, pos) {
     const ws = this.game.worldState;
     const g = { uid: ws.nextGroundUid++, id: stack.id, count: stack.count, x: +pos.x.toFixed(2), z: +pos.z.toFixed(2) };

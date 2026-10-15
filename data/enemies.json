@@ -1,5 +1,5 @@
 {
-  "_about": "Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns).",
+  "_about": "Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies).",
   "leashDistance": 18,
   "enemies": [
     {
@@ -20,7 +20,11 @@
       "xp": 28,
       "coins": 3,
       "elite": false,
-      "lootTable": "ghoul"
+      "lootTable": "ghoul",
+      "respawn": 90,
+      "reputation": {
+        "road_wardens": 10
+      }
     },
     {
       "id": "brute",
@@ -52,7 +56,11 @@
         "interruptible": false
       },
       "uniqueDrop": "watchmans_edge",
-      "lootTable": "brute"
+      "lootTable": "brute",
+      "respawn": 300,
+      "reputation": {
+        "road_wardens": 40
+      }
     },
     {
       "id": "hound",
@@ -75,7 +83,11 @@
       "pack": 9,
       "barHeight": 1.4,
       "meleeAnim": "bite",
-      "lootTable": "hound"
+      "lootTable": "hound",
+      "respawn": 75,
+      "reputation": {
+        "mere_folk": 10
+      }
     },
     {
       "id": "archer",
@@ -107,7 +119,11 @@
         "speed": 24,
         "interruptible": true
       },
-      "lootTable": "archer"
+      "lootTable": "archer",
+      "respawn": 120,
+      "reputation": {
+        "road_wardens": 15
+      }
     },
     {
       "id": "seer",
@@ -157,7 +173,11 @@
         "school": "shadow",
         "interruptible": true
       },
-      "lootTable": "seer"
+      "lootTable": "seer",
+      "respawn": 0,
+      "reputation": {
+        "road_wardens": 100
+      }
     }
   ]
 }

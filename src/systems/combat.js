@@ -163,9 +163,12 @@ export class Combat {
     const { worldState, progression, inventory, events, loot } = this.game;
     if (worldState.isDefeated(enemy.id)) return;
     worldState.markDefeated(enemy.id);
+    // most enemies come back after their type's respawn time, so there is always something to fight
+    if (enemy.cfg.respawn > 0) worldState.respawnAt[enemy.id] = worldState.time + enemy.cfg.respawn;
     events.emit('enemyDefeated', { enemy });
     events.emit('log', { text: `The ${enemy.cfg.name} falls still.`, kind: 'kill' });
     progression.addXp(enemy.cfg.xp, { kill: true });
+    if (enemy.cfg.reputation) this.game.reputation.addAll(enemy.cfg.reputation);
     // coins stay on the body until looted (click it, or E / A beside it)
     if (enemy.cfg.coins > 0) loot.addCorpse(enemy, enemy.cfg.coins);
     if (enemy.cfg.uniqueDrop) loot.dropUnique(enemy);

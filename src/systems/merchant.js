@@ -49,8 +49,11 @@ export class Merchant {
     if (this.game.player.dead || Math.hypot(p.x - this.npc.position.x, p.z - this.npc.position.z) > CONFIG.shop.leaveRange) this.close();
   }
 
+  // the item's price, less this shop's faction discount (Friendly and up)
   priceOf(id) {
-    return ITEMS[id].price;
+    const shop = this.current && DB.shops[this.current];
+    const off = shop ? this.game.reputation.discount(shop.faction) : 0;
+    return Math.max(off && ITEMS[id].price ? 1 : 0, Math.floor((ITEMS[id].price * (100 - off)) / 100));
   }
 
   buy(id) {
