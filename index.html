@@ -45,6 +45,7 @@
     <ul id="log"></ul>
     <div id="prompt" hidden></div>
     <div id="enemy-bars"></div>
+    <div id="world-labels"></div>
     <div id="damage-numbers"></div>
     <div id="toast"></div>
     <div id="ui-error"></div>
@@ -63,7 +64,7 @@
           <button class="micro" id="btn-skills" title="Skills (U)"><span class="micro-icon">&#9881;</span><span class="key" data-kbm="U" data-pad=""></span></button>
           <button class="micro" id="btn-quests" title="Quest log (L)"><span class="micro-icon">!</span><span class="key" data-kbm="L" data-pad="&#8594;"></span></button>
           <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
-          <div class="coins" title="Coins"><span class="coin-dot"></span><b id="stat-coins">0</b></div>
+          <div class="coins" title="Money"><span id="stat-coins"></span></div>
           <div id="bag-sockets"></div>
         </div>
       </div>
@@ -85,6 +86,7 @@
       </div>
       <div class="equip-col" id="equip-right"></div>
     </div>
+    <div class="equip-bottom" id="equip-bottom"></div>
     <div class="window-hint" id="char-hint"></div>
   </div>
 
@@ -105,7 +107,7 @@
     <div id="shop-stock"></div>
     <div class="shop-sub dim">Buy back</div>
     <div id="shop-buyback"></div>
-    <div class="bag-foot"><span class="coin-dot"></span><b id="shop-coins"></b> coins</div>
+    <div class="bag-foot"><button class="btn small" id="shop-repair" hidden>Repair all</button><span id="shop-coins"></span></div>
     <div class="window-hint" id="shop-hint"></div>
   </div>
 

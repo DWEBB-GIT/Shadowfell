@@ -1,5 +1,6 @@
 import { DB } from '../data/db.js';
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durability } from '../data/items.js';
+import { moneyHTML } from './money.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -64,6 +65,7 @@ export class ItemUI {
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
+    $('shop-repair').addEventListener('click', () => game.inventory.repairAll());
     // a merchant opens your bags with it (and closes the ones it opened)
     game.events.on('merchantOpened', () => {
       this.shopOpenedBags = !this.bagsOpen;
@@ -230,6 +232,9 @@ export class ItemUI {
       inner = icon ? `<img src="${icon}" alt="">` : `<span class="letter">${ITEMS[stack.id].name[0]}</span>`;
       if (stack.count > 1) inner += `<span class="count">${stack.count}</span>`;
       cls.push('filled', 'k-' + ITEMS[stack.id].kind, 'q-' + itemView(stack).rarity);
+      const dur = durability(stack);
+      if (dur === 0) cls.push('broken');
+      else if (dur !== null && dur <= 25) cls.push('worn');
     } else if (placeholder) {
       inner = `<span class="ph">${placeholder}</span>`;
     }
@@ -264,7 +269,7 @@ export class ItemUI {
         html += `<div class="bag-frame panel"><div class="window-head"><h3>${name}</h3><span class="dim">${used}/${s.slots.length}</span><button class="btn small" data-close-bag="${i}" title="Close this bag">&times;</button></div><div class="bag-grid">`;
         s.slots.forEach((st, j) => (html += this._slotHTML(`b:${i}:${j}`, st)));
         html += '</div>';
-        if (i === 0) html += `<div class="bag-foot"><span class="coin-dot"></span><b>${inv.coins}</b> coins</div>`;
+        if (i === 0) html += `<div class="bag-foot">${moneyHTML(inv.coins)}</div>`;
         html += '</div>';
       });
       this.el.frames.innerHTML = html;
@@ -273,10 +278,10 @@ export class ItemUI {
     // character window
     this.el.character.hidden = !this.open.character;
     if (this.open.character) {
-      const half = Math.ceil(EQUIP_SLOTS.length / 2);
-      const col = (list) => list.map((s) => `<div class="equip-row">${this._slotHTML(`e:${s.id}`, inv.equipment[s.id], 'equip', s.label)}</div>`).join('');
-      this.el.left.innerHTML = col(EQUIP_SLOTS.slice(0, half));
-      this.el.right.innerHTML = col(EQUIP_SLOTS.slice(half));
+      const col = (where) => EQUIP_SLOTS.filter((s) => s.col === where).map((s) => `<div class="equip-row">${this._slotHTML(`e:${s.id}`, inv.equipment[s.id], 'equip', s.label)}</div>`).join('');
+      this.el.left.innerHTML = col('left');
+      this.el.right.innerHTML = col('right');
+      document.getElementById('equip-bottom').innerHTML = col('bottom');
       const { player, progression, stats } = this.game;
       const t = stats.totals;
       // stats that rose at the last level-up keep a green "+n" for a while
@@ -324,14 +329,20 @@ export class ItemUI {
         .map((id) => {
           const price = m.priceOf(id);
           const poor = price > inv.coins;
-          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price"><span class="coin-dot"></span>${price}</div></div></div>`;
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}</div></div></div>`;
         })
         .join('');
       const bb = m.buyback;
       this.el.shopBuyback.innerHTML = bb.length
         ? bb.map((b, i) => this._slotHTML('y:' + i, { id: b.id, count: b.count })).join('')
         : '<span class="dim small">Nothing sold yet.</span>';
-      this.el.shopCoins.textContent = inv.coins;
+      this.el.shopCoins.innerHTML = moneyHTML(inv.coins);
+      // smiths mend gear, as in WoW: one button for everything
+      const repair = document.getElementById('shop-repair');
+      const cost = def.repair ? inv.repairAllCost : 0;
+      repair.hidden = !def.repair;
+      repair.disabled = !cost;
+      repair.innerHTML = cost ? `Repair all ${moneyHTML(cost)}` : 'Nothing to repair';
       this.el.shopHint.textContent = this.hud.padMode
         ? 'A: buy   Y on a bag item: sell   B: leave'
         : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
@@ -403,7 +414,7 @@ export class ItemUI {
       return;
     }
     const def = itemView(stack);
-    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label : ''}</div>`];
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);
@@ -421,11 +432,15 @@ export class ItemUI {
     }
     for (const [k, v] of Object.entries(def.stats || {})) lines.push(`<div class="up">+${v} ${STAT_LABEL[k] || k}</div>`);
     if (def.bagSlots) lines.push(`<div>${def.bagSlots} slots</div>`);
+    const dur = durability(stack);
+    if (dur !== null) lines.push(dur === 0 ? '<div class="down">Broken: gives no stats until repaired</div>' : `<div class="${dur <= 25 ? 'down' : ''}">Durability ${dur} / 100</div>`);
     if (stack.count > 1) lines.push(`<div>${stack.count} carried</div>`);
     lines.push(`<div class="tt-desc">${def.description}</div>`);
     const sell = sellPrice(stack, CONFIG.shop.sellFraction);
-    if (shop) lines.push(`<div class="tt-price">Price: ${shop.buy} coin${shop.buy === 1 ? '' : 's'}</div>`);
-    else lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
+    if (shop) lines.push(`<div class="tt-price">Price: ${moneyHTML(shop.buy)}</div>`);
+    else if (def.quest) lines.push('<div class="tt-sell">Quest item</div>');
+    else if (!sell) lines.push('<div class="tt-sell dim">No sell value</div>');
+    else lines.push(`<div class="tt-sell">Sell for ${moneyHTML(sell * stack.count)}${stack.count > 1 ? ` (${moneyHTML(sell)} each)` : ''}</div>`);
     if (shop) {
       if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
       tip.innerHTML = lines.join('');

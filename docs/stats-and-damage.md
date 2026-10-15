@@ -1,5 +1,7 @@
 # Stats and damage: design note
 
+> **Rebalanced 2026-10-15:** weapon damage, armour, block, enemy health and damage were cut (see README, "Money, durability and gear"). The formulas below still hold; worked numbers in this document are from before the change.
+
 Status: built in the prototype on 2026-10-14. The formula constants live in `src/config.js` (`stats`); archetypes are in `data/archetypes.json`, enemies in `data/enemies.json` and item stats in `data/items.json`, so a balance pass never has to touch code.
 
 ## Recommendation

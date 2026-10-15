@@ -3,8 +3,8 @@
 // a merchant pays for it. Fields of an item record:
 //
 // name, description
-// kind:       weapon | armor | shield | torch | tool | bag | consumable | material | junk | document
-// slot:       the character slot an equippable item goes into
+// kind:       weapon | armor | shield | jewellery | torch | tool | bag | consumable | material | junk | document
+// slot:       the character slot an equippable item goes into (or finger / trinket)
 // armourType: an armour type id (who may wear it: see archetypes.json)
 // rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
 //             legendary | quest (the colour of its name and border)
@@ -24,7 +24,8 @@
 import { DB } from './db.js';
 import { STAT_KEYS } from './schema.js';
 
-export { KINDS, RARITIES, EQUIP_SLOTS, validateItems } from './schema.js';
+export { KINDS, RARITIES, EQUIP_SLOTS, ITEM_SLOTS, DURABLE_KINDS, slotFits, validateItems } from './schema.js';
+import { DURABLE_KINDS } from './schema.js';
 export const ITEMS = DB.items;
 export const RARITY = DB.rarities; // id -> { name, colour, suffix?, drops? }, lowest first
 
@@ -43,7 +44,7 @@ export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
 export const SUFFIXES = DB.suffixes;
 
 const ROLLS = { spread: 0.2, damageSpread: 0.12, suffixMax: 2, valuePerPoint: 4 };
-const ROLLED_KINDS = ['weapon', 'armor', 'shield'];
+const ROLLED_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 
 // `rarity` is the rarity it dropped at (its own, unless common gear rolled
 // up to enhanced).
@@ -74,6 +75,16 @@ export function rollItem(id, rand, rarity = ITEMS[id] && ITEMS[id].rarity) {
 
 // What one particular item is: the database entry with its rolls applied.
 export function itemView(stack) {
+  const v = rolledView(stack);
+  // a broken item (durability 0) still shows what it was, but gives nothing
+  if (v && stack.dur === 0 && DURABLE_KINDS.includes(v.kind)) return { ...v, stats: {}, broken: true };
+  return v;
+}
+
+// Durability in percent: a stack keeps `dur` only once it has worn.
+export const durability = (stack) => (stack && DURABLE_KINDS.includes(ITEMS[stack.id]?.kind) ? stack.dur ?? 100 : null);
+
+function rolledView(stack) {
   const d = ITEMS[stack.id];
   const r = stack.rolls;
   if (!d || !r) return d;
@@ -101,6 +112,9 @@ const RENAMED_STATS = { might: 'strength', finesse: 'agility', vitality: 'stamin
 // before then (a few points either side of the old, smaller numbers) are
 // scaled up to match.
 function swingScale(dmg, d) {
+  // the 2026-10-15 rebalance cut weapon damage to an eighth; rolls saved
+  // before it are far above the item and fall back to its own damage
+  if (dmg[0] + dmg[1] > (d.damage[0] + d.damage[1]) * 2) return d.damage;
   if (!d.speed || dmg[0] + dmg[1] > (d.damage[0] + d.damage[1]) * 0.6) return dmg;
   const k = d.speed / 0.6;
   return [Math.round(dmg[0] * k), Math.round(dmg[1] * k)];

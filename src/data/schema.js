@@ -9,21 +9,43 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
-export const KINDS = ['weapon', 'armor', 'shield', 'torch', 'tool', 'bag', 'consumable', 'material', 'junk', 'document'];
+export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'bag', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
-const EQUIPPABLE = ['weapon', 'armor', 'shield', 'torch'];
+const EQUIPPABLE = ['weapon', 'armor', 'shield', 'jewellery', 'torch'];
 export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
+// Character slots, laid out as in WoW: `col` is where the panel shows it.
+// An item's `slot` names the slot it goes in, or a slot type (`fits`) when
+// there are two of them: a ring goes on either finger, a trinket in either
+// trinket slot.
 export const EQUIP_SLOTS = [
-  { id: 'head', label: 'Head' },
-  { id: 'chest', label: 'Chest' },
-  { id: 'hands', label: 'Hands' },
-  { id: 'legs', label: 'Legs' },
-  { id: 'feet', label: 'Feet' },
-  { id: 'mainHand', label: 'Main hand' },
-  { id: 'offHand', label: 'Off hand' },
+  { id: 'head', label: 'Head', col: 'left' },
+  { id: 'neck', label: 'Neck', col: 'left' },
+  { id: 'shoulders', label: 'Shoulders', col: 'left' },
+  { id: 'back', label: 'Back', col: 'left' },
+  { id: 'chest', label: 'Chest', col: 'left' },
+  { id: 'wrists', label: 'Wrists', col: 'left' },
+  { id: 'hands', label: 'Hands', col: 'left' },
+  { id: 'waist', label: 'Waist', col: 'right' },
+  { id: 'legs', label: 'Legs', col: 'right' },
+  { id: 'feet', label: 'Feet', col: 'right' },
+  { id: 'finger1', label: 'Finger', fits: 'finger', col: 'right' },
+  { id: 'finger2', label: 'Finger', fits: 'finger', col: 'right' },
+  { id: 'trinket1', label: 'Trinket', fits: 'trinket', col: 'right' },
+  { id: 'trinket2', label: 'Trinket', fits: 'trinket', col: 'right' },
+  { id: 'mainHand', label: 'Main hand', col: 'bottom' },
+  { id: 'offHand', label: 'Off hand', col: 'bottom' },
 ];
+// what an item's `slot` may say: a slot id, or a slot type
+export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.map((s) => s.fits || s.id))];
+// does an item with this `slot` go in that character slot?
+export const slotFits = (slotId, itemSlot) => {
+  const s = EQUIP_SLOTS.find((x) => x.id === slotId);
+  return !!s && (s.id === itemSlot || s.fits === itemSlot);
+};
+// what wears out: weapons, armour and shields (and jewellery)
+export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
 const SCHOOLS = ['physical', 'shadow', 'holy'];
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
@@ -157,7 +179,7 @@ export function validateGameData(raw, opts = {}) {
     if (!RARITIES.includes(id)) errors.push(`rarities.json ${id}: unknown rarity (the engine knows ${RARITIES.join(', ')})`);
     if (!isStr(r.name) || !/^#[0-9a-f]{6}$/i.test(r.colour || '')) errors.push(`rarities.json ${id}: needs a name and a #rrggbb colour`);
   }
-  for (const e of validateItems(items, EQUIP_SLOTS.map((s) => s.id), Object.keys(armourTypes), Object.keys(rarities))) errors.push('items.json ' + e);
+  for (const e of validateItems(items, ITEM_SLOTS, Object.keys(armourTypes), Object.keys(rarities))) errors.push('items.json ' + e);
   // an item kept for certain loot tables (a boss's own blade) drops from those alone
   for (const [id, d] of Object.entries(items)) for (const t of d.reservedFor || []) ref(`items.json ${id} reservedFor`, 'loot table', lootTables, t);
   for (const [id, d] of Object.entries(items)) {

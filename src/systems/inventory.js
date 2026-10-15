@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, itemView } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, itemView, slotFits, durability } from '../data/items.js';
+import { moneyText } from '../ui/money.js';
 
 // Bags, equipment and currency, laid out the way classic WoW does it:
 //   * four bag sockets; socket 0 is the fixed backpack, the others take bags
@@ -21,7 +22,13 @@ export const parseLoc = (loc) => {
   return null;
 };
 
-const clone = (s) => (s ? (s.rolls ? { id: s.id, count: s.count, rolls: s.rolls } : { id: s.id, count: s.count }) : null);
+const clone = (s) => {
+  if (!s) return null;
+  const c = { id: s.id, count: s.count };
+  if (s.rolls) c.rolls = s.rolls;
+  if (s.dur !== undefined && s.dur < 100) c.dur = s.dur; // durability, once worn
+  return c;
+};
 
 export class Inventory {
   constructor(game) {
@@ -86,7 +93,10 @@ export class Inventory {
 
   get weapon() {
     const s = this.equipment.mainHand;
-    return s ? itemView(s) : { name: 'Bare hands', damage: CONFIG.stats.fistDamage };
+    const v = s && itemView(s);
+    // a broken weapon swings like bare hands until it is mended
+    if (!v || v.broken) return { name: v ? `${v.name} (broken)` : 'Bare hands', damage: CONFIG.stats.fistDamage };
+    return v;
   }
 
   get draughts() {
@@ -211,7 +221,7 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (!p || !def) return false;
-    if (p.type === 'equip') return def.slot === p.slot && this.canWear(def);
+    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def);
     if (p.type === 'socket') return p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag';
     if (p.type === 'bag') return !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length;
     return false;
@@ -267,7 +277,7 @@ export class Inventory {
   _why(loc, stack) {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
-    if (p.type === 'equip' && def.slot === p.slot && !this.canWear(def)) {
+    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def)) {
       const what = def.kind === 'shield' ? 'shields' : `${CONFIG.armourTypes[def.armourType].name.toLowerCase()} armour`;
       return `A ${this.game.stats.archetype.name} cannot use ${what}.`;
     }
@@ -301,7 +311,7 @@ export class Inventory {
       this.game.hud.openDocument(s.id);
       return true;
     }
-    if (def.slot) return this.move(loc, `e:${def.slot}`).ok;
+    if (def.slot) return this.move(loc, `e:${this.slotFor(def)}`).ok;
     if (def.kind === 'bag') {
       const socket = [1, 2, 3].find((i) => !this.sockets[i]);
       if (socket === undefined) return !!this._refuse('All your bag slots are in use.');
@@ -314,7 +324,66 @@ export class Inventory {
   equip(id) {
     const loc = this.bagLocations().find((l) => this.get(l)?.id === id);
     if (!loc) return false;
-    return this.move(loc, `e:${ITEMS[id].slot}`).ok;
+    return this.move(loc, `e:${this.slotFor(ITEMS[id])}`).ok;
+  }
+
+  // Which character slot an item goes in: the empty one of a pair (rings,
+  // trinkets) if there is one, else the first.
+  slotFor(def) {
+    const fits = EQUIP_SLOTS.filter((s) => slotFits(s.id, def.slot));
+    return (fits.find((s) => !this.equipment[s.id]) || fits[0] || { id: def.slot }).id;
+  }
+
+  // ------------------------------------------------------------ durability
+  // Death wears every worn weapon and piece of armour by `percent`; at 0 an
+  // item is broken (gives no stats) until a smith mends it.
+  wear(percent) {
+    const broke = [];
+    for (const s of Object.values(this.equipment)) {
+      const d = durability(s);
+      if (d === null || d === 0) continue;
+      s.dur = Math.max(0, d - percent);
+      if (s.dur === 0) broke.push(itemView(s).name);
+    }
+    for (const name of broke) this.game.events.emit('log', { text: `Your ${name} is broken. Have it repaired by a smith.`, kind: 'muted' });
+    this._equipmentChanged();
+    this._changed();
+    return broke;
+  }
+
+  // What mending one stack costs: its missing share of the item's price,
+  // times CONFIG.durability.repairFraction (at least 1 silver if worn).
+  repairCost(stack) {
+    const d = durability(stack);
+    if (d === null || d >= 100) return 0;
+    const price = itemView(stack).price;
+    return Math.max(1, Math.ceil((price * CONFIG.durability.repairFraction * (100 - d)) / 100));
+  }
+
+  // every worn or carried stack that needs mending
+  _worn() {
+    const all = [...Object.values(this.equipment), ...this.sockets.flatMap((s) => (s ? s.slots : []))];
+    return all.filter((s) => s && this.repairCost(s) > 0);
+  }
+
+  get repairAllCost() {
+    return this._worn().reduce((a, s) => a + this.repairCost(s), 0);
+  }
+
+  repairAll() {
+    const cost = this.repairAllCost;
+    if (!cost) return false;
+    if (this.coins < cost) {
+      this.game.events.emit('log', { text: `You need ${moneyText(cost)} to repair everything.`, kind: 'muted', throttle: 'repair' });
+      return false;
+    }
+    this.coins -= cost;
+    for (const s of this._worn()) delete s.dur;
+    this.game.events.emit('coins', { amount: -cost });
+    this.game.events.emit('log', { text: `Your gear is repaired for ${moneyText(cost)}.`, kind: 'loot' });
+    this._equipmentChanged();
+    this._changed();
+    return true;
   }
 
   _equipmentChanged() {
@@ -335,7 +404,7 @@ export class Inventory {
   addCoins(n, source = '') {
     this.coins += n;
     this.game.events.emit('coins', { amount: n });
-    this.game.events.emit('log', { text: `${n} coin${n === 1 ? '' : 's'}${source ? ' ' + source : ''}.`, kind: 'loot' });
+    this.game.events.emit('log', { text: `${moneyText(n)}${source ? ' ' + source : ''}.`, kind: 'loot' });
     this._changed();
   }
 

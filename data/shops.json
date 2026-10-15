@@ -1,11 +1,12 @@
 {
-  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price.",
+  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price. Vendor types with `repairs` mend gear (Repair all).",
   "vendorTypes": [
     {
       "id": "smith",
       "name": "Smith",
       "sells": ["weapon", "armor", "shield", "material", "consumable", "bag", "torch"],
-      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for."
+      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for.",
+      "repairs": true
     },
     {
       "id": "general",

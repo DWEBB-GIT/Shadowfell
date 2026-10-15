@@ -1,3 +1,4 @@
+import { moneyText } from '../ui/money.js';
 import { CONFIG } from '../config.js';
 import { DB } from '../data/db.js';
 import { conditionHolds } from './quests.js';
@@ -73,7 +74,7 @@ export class Dialogue {
         if (conditionHolds(this.game, t.when)) page.options.push({ id: 'node:' + t.node, text: t.prompt, icon: 'talk' });
       }
       // trainers offer what they teach and the Warden has not learned
-      for (const s of this.game.skills.offeredBy(this.npc.id)) page.options.push({ id: 'train:' + s.id, text: `Teach me ${s.name} (${s.cost} coins).`, icon: 'train' });
+      for (const s of this.game.skills.offeredBy(this.npc.id)) page.options.push({ id: 'train:' + s.id, text: `Teach me ${s.name} (${moneyText(s.cost)}).`, icon: 'train' });
       if (npc.shop) page.options.push({ id: 'shop', text: 'Let me see your wares.', icon: 'shop' });
       page.options.push({ id: 'bye', text: 'Goodbye.', icon: 'bye' });
     } else if (v.kind === 'node') {

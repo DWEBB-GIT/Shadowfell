@@ -57,7 +57,7 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [44, 59],
+      "damage": [3, 7],
       "speed": 2.2,
       "stack": 1,
       "price": 12,
@@ -71,7 +71,7 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [53, 73],
+      "damage": [4, 8],
       "speed": 2.0,
       "stats": {
         "haste": 4
@@ -90,7 +90,7 @@
       "slot": "chest",
       "armourType": "leather",
       "stats": {
-        "armour": 20
+        "armour": 5
       },
       "stack": 1,
       "price": 8,
@@ -106,7 +106,7 @@
       "slot": "head",
       "armourType": "mail",
       "stats": {
-        "armour": 10,
+        "armour": 4,
         "stamina": 1
       },
       "stack": 1,
@@ -122,7 +122,7 @@
       "rarity": "common",
       "slot": "offHand",
       "stats": {
-        "block": 10
+        "block": 5
       },
       "stack": 1,
       "price": 20,
@@ -187,7 +187,7 @@
       "slot": "hands",
       "armourType": "mail",
       "stats": {
-        "armour": 6
+        "armour": 2
       },
       "stack": 1,
       "price": 14,
@@ -203,7 +203,7 @@
       "slot": "feet",
       "armourType": "leather",
       "stats": {
-        "armour": 5,
+        "armour": 2,
         "stamina": 1
       },
       "stack": 1,
@@ -220,7 +220,7 @@
       "slot": "legs",
       "armourType": "mail",
       "stats": {
-        "armour": 12
+        "armour": 5
       },
       "stack": 1,
       "price": 24,
@@ -235,9 +235,9 @@
       "rarity": "enhanced",
       "slot": "offHand",
       "stats": {
-        "block": 15,
-        "blockRating": 20,
-        "armour": 5
+        "block": 8,
+        "blockRating": 10,
+        "armour": 2
       },
       "stack": 1,
       "price": 45,
@@ -251,7 +251,7 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [56, 82],
+      "damage": [5, 10],
       "speed": 2.6,
       "stack": 1,
       "price": 22,
@@ -267,7 +267,7 @@
       "slot": "chest",
       "armourType": "mail",
       "stats": {
-        "armour": 32,
+        "armour": 12,
         "stamina": 1
       },
       "stack": 1,
@@ -284,7 +284,7 @@
       "slot": "feet",
       "armourType": "plate",
       "stats": {
-        "armour": 10
+        "armour": 4
       },
       "stack": 1,
       "price": 30,
@@ -298,7 +298,7 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [84, 121],
+      "damage": [8, 13],
       "speed": 2.8,
       "stats": {
         "strength": 2
@@ -361,7 +361,7 @@
       "slot": "head",
       "armourType": "mail",
       "stats": {
-        "armour": 18,
+        "armour": 8,
         "stamina": 4,
         "strength": 2
       },
@@ -377,7 +377,7 @@
       "kind": "weapon",
       "rarity": "epic",
       "slot": "mainHand",
-      "damage": [104, 136],
+      "damage": [9, 14],
       "speed": 2.4,
       "stats": {
         "strength": 4,

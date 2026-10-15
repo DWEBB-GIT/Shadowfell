@@ -1,3 +1,4 @@
+import { moneyText } from '../ui/money.js';
 import { CONFIG } from '../config.js';
 import { ITEMS, sellPrice, itemView } from '../data/items.js';
 import { DB } from '../data/db.js';
@@ -20,7 +21,8 @@ export class Merchant {
     if (!this.current) return null;
     const shop = DB.shops[this.current];
     const keeper = this.npc && DB.npcs[this.npc.id];
-    return { name: keeper ? keeper.name : shop.name, title: DB.vendorTypes[shop.vendorType].name, stock: shop.stock };
+    const vt = DB.vendorTypes[shop.vendorType];
+    return { name: keeper ? keeper.name : shop.name, title: vt.name, stock: shop.stock, repair: !!vt.repairs };
   }
 
   get stock() {
@@ -57,14 +59,14 @@ export class Merchant {
     const price = this.priceOf(id);
     const name = ITEMS[id].name;
     if (inventory.coins < price) {
-      events.emit('log', { text: `You cannot afford the ${name} (${price} coins).`, kind: 'muted', throttle: 'shop-refuse' });
+      events.emit('log', { text: `You cannot afford the ${name} (${moneyText(price)}).`, kind: 'muted', throttle: 'shop-refuse' });
       return false;
     }
     if (!inventory.addItem(id, 1, { quiet: true })) return false; // bags full: addItem says so
     inventory.coins -= price;
     events.emit('coins', { amount: -price });
     events.emit('itemBought', { id, price });
-    events.emit('log', { text: `Bought: ${name} for ${price} coin${price === 1 ? '' : 's'}.`, kind: 'loot' });
+    events.emit('log', { text: `Bought: ${name} for ${moneyText(price)}.`, kind: 'loot' });
     inventory._changed();
     return true;
   }
@@ -89,7 +91,7 @@ export class Merchant {
     this.buyback.length = Math.min(this.buyback.length, CONFIG.shop.buybackSlots);
     events.emit('coins', { amount: paid });
     events.emit('itemSold', { id: taken.id, count: taken.count, paid });
-    events.emit('log', { text: `Sold: ${def.name}${taken.count > 1 ? ` ×${taken.count}` : ''} for ${paid} coin${paid === 1 ? '' : 's'}.`, kind: 'loot' });
+    events.emit('log', { text: `Sold: ${def.name}${taken.count > 1 ? ` ×${taken.count}` : ''} for ${moneyText(paid)}.`, kind: 'loot' });
     if (loc.startsWith('e:')) inventory._equipmentChanged();
     inventory._changed();
     return true;

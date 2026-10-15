@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls, slotFits } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
 import { ABILITIES, BAR_SLOTS } from './actionBar.js';
 import { DB } from '../data/db.js';
@@ -19,7 +19,7 @@ const isInt = (v) => Number.isInteger(v);
 const isStrArray = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const inBounds = (p) => p && isNum(p.x) && isNum(p.z) && p.x >= BOUNDS.minX - 1 && p.x <= BOUNDS.maxX + 1 && p.z >= BOUNDS.minZ - 1 && p.z <= BOUNDS.maxZ + 1;
 
-const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack && validRolls(s.id, s.rolls);
+const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack && validRolls(s.id, s.rolls) && (s.dur === undefined || (isInt(s.dur) && s.dur >= 0 && s.dur <= 100));
 
 // Upgrade a build-1 save: its flat item list goes into the backpack, its
 // weapon into the main hand. Anything else is returned unchanged.
@@ -66,7 +66,7 @@ function validateInventory(inv, check) {
   if (eq && typeof eq === 'object') {
     for (const [slot, st] of Object.entries(eq)) {
       check(EQUIP_SLOTS.some((s) => s.id === slot), `unknown equipment slot ${slot}`);
-      check(st === null || (isStack(st) && ITEMS[st.id].slot === slot), `equipment in ${slot}`);
+      check(st === null || (isStack(st) && slotFits(slot, ITEMS[st.id].slot)), `equipment in ${slot}`);
     }
   }
 }

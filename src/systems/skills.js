@@ -1,3 +1,4 @@
+import { moneyText } from '../ui/money.js';
 import { DB } from '../data/db.js';
 
 // Skills learned from trainers (data/skills.json): camping and fishing. A
@@ -40,7 +41,7 @@ export class Skills {
     const { inventory, events, actionBar, hud } = this.game;
     if (!s || this.has(id)) return false;
     if (inventory.coins < s.cost) {
-      events.emit('log', { text: `You need ${s.cost} coins to learn ${s.name}.`, kind: 'muted', throttle: 'train-coins' });
+      events.emit('log', { text: `You need ${moneyText(s.cost)} to learn ${s.name}.`, kind: 'muted', throttle: 'train-coins' });
       return false;
     }
     inventory.loseCoins(s.cost);

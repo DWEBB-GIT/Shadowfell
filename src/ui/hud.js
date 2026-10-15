@@ -1,4 +1,6 @@
+import { moneyText, moneyHTML } from './money.js';
 import { Portraits } from './portraits.js';
+import { WorldLabels } from './worldLabels.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { DOCUMENTS, INTRO } from '../data/text.js';
@@ -78,6 +80,7 @@ export class Hud {
     this.abilityIcons = abilityIcons();
     this._buildBar();
     this.items = new ItemUI(game, this);
+    this.labels = new WorldLabels(game, $('world-labels'));
     this.numbers = new DamageNumbers(game, $('damage-numbers'));
     this.quests = new QuestUI(game, this);
     this.minimap = new Minimap(game);
@@ -219,7 +222,7 @@ export class Hud {
     this.modal = 'death';
     const where = destination === 'camp' ? 'by your camp' : destination === 'shrine' ? 'at the last shrine you rested at' : "at the road's end";
     this.el.deathText.textContent =
-      `Your spirit will rise ${where}. Walk back to your body to live again with nothing lost, or return to life where you rise${coinsLost > 0 ? `, ${coinsLost} coin${coinsLost === 1 ? '' : 's'} lighter` : ''}.`;
+      `Your spirit will rise ${where}. Walk back to your body to live again with nothing lost, or return to life where you rise${coinsLost > 0 ? `, ${moneyText(coinsLost)} lighter` : ''}.`;
     this.el.respawnBtn.textContent = 'Release spirit';
     this.el.death.hidden = false;
     this.el.respawnBtn.focus();
@@ -318,7 +321,7 @@ export class Hud {
     rested.style.left = this.el.xpFill.style.width;
     rested.style.width = `${Math.min(100 - (progression.xp / progression.xpToNext) * 100, (progression.rested / progression.xpToNext) * 100)}%`;
     this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience (${Math.floor((progression.xp / progression.xpToNext) * 100)}%)${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
-    this.el.coins.textContent = inventory.coins;
+    this.el.coins.innerHTML = moneyHTML(inventory.coins);
     const n = inventory.draughts;
     for (const el of this.barSlots) {
       const isDraught = el.dataset.ability === 'draught';
@@ -368,6 +371,7 @@ export class Hud {
 
   update(dt = 0) {
     const { interaction, enemies, camera, renderer } = this.game;
+    this.labels.update(dt);
     this.numbers.update(dt);
     if (this.levelUpTime > 0) {
       this.levelUpTime -= dt;

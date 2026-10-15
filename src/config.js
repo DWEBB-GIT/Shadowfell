@@ -56,7 +56,7 @@ export const CONFIG = {
     healthBase: 40,
     healthPerStamina: 6,
     manaPerIntellect: 10,
-    powerPerMainStat: 1, // flat damage added to every weapon hit
+    powerPerMainStat: 0.25, // damage added to every weapon hit (per 0.6 s of swing time)
     spellPowerPerIntellect: 1,
     critBase: 5, // percent
     critPerAgility: 0.5,
@@ -72,11 +72,16 @@ export const CONFIG = {
     hasteCap: 30, // percent; haste divides swing time, windups, casts and the GCD
     gcdFloor: 1.0, // seconds: haste never takes the global cooldown below this
     enemyVariance: 0.15, // enemy blows land within +-15% of their damage
-    fistDamage: [3, 10], // bare hands, per swing
+    fistDamage: [1, 2], // bare hands (or a broken weapon), per swing
     fistSpeed: 2.0, // seconds between bare-handed swings
   },
   interaction: {
     radius: 2.2,
+  },
+  // gear wears when you die; at 0% it is broken (no stats) until mended
+  durability: {
+    deathLoss: 10, // percent off every worn weapon and piece of armour
+    repairFraction: 0.5, // mending 100% costs half the item's price (silver)
   },
   // how a landed blow feels: a camera kick (no hit-stop: the action never pauses)
   impact: {

@@ -24,6 +24,14 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Money, durability and gear (Dan's list, part 2)
+
+- **Gold and silver.** The purse holds silver and shows it as gold and silver with coin icons (100 silver = 1 gold, converted automatically: 1 gold less 1 silver is 99 silver). Prices in the data are in silver. `src/ui/money.js` formats it everywhere: bags, shop, quest rewards, tooltips ("Sell for 3 (coin)") and the log.
+- **Durability.** Weapons, armour and shields start at 100%. Dying takes 10% off everything worn (`CONFIG.durability`). At 0% an item is broken: its icon turns red, it gives no stats, and a broken weapon swings like bare hands. Smiths (vendor types with `repairs` in `data/shops.json`, so Mara) have a **Repair all** button; mending costs half the item's price for the missing share.
+- **Character panel** has every WoW slot: head, neck, shoulders, back, chest, wrists, hands, waist, legs, feet, two rings, two trinkets, main hand and off hand. Items say `slot: "finger"` or `"trinket"` to go in either of a pair; kind `jewellery` covers rings, necks and trinkets. No items use the new slots yet (they need models).
+- **Rebalance.** Weapon damage is about an eighth of what it was (the worn longsword is 3–7 at 2.2 s), power adds 0.25 per point of Strength, starting armour is 5 and the kite shield blocks 5%. Enemy health is 45% of what it was and enemy damage 70%, so a ghoul (22 health) takes three swings. Old saves keep their rolled names; rolled damage from before the change falls back to the item's own.
+- **Ground loot** shows its name in its rarity colour above it.
+
 ## Combat and targeting fixes (Dan's list, part 1)
 
 - Engaging a target waits one full weapon swing before the first hit (2.2 s with the longsword). Casting a spell stops swings, and the swing timer restarts when the cast ends.

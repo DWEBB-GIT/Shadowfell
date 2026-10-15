@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { SHRINES, PLAYER_START } from '../world/layout.js';
 import { heightAt } from '../world/terrain.js';
+import { moneyText } from '../ui/money.js';
 
 // Death, WoW style. When the Warden falls, their body stays where it fell and
 // their spirit rises at the last place they rested: their camp, or the last
@@ -34,6 +35,9 @@ export class Afterlife {
   onDeath(killer, coinLoss) {
     const ws = this.game.worldState;
     this.coinLoss = coinLoss;
+    // dying wears your gear, as in WoW
+    this.game.inventory.wear(CONFIG.durability.deathLoss);
+    this.game.events.emit('log', { text: `Your equipment is damaged (−${CONFIG.durability.deathLoss}% durability).`, kind: 'muted' });
     if (killer && killer.alive && killer.id) {
       ws.nemesis = killer.id;
       this.game.events.emit('log', { text: `The ${killer.cfg.name} will remember this. So will you.`, kind: 'hurt' });
@@ -55,7 +59,7 @@ export class Afterlife {
     player.becomeGhost(dest.x, dest.z);
     this._ghostLook(true);
     this.game.events.emit('ghost', { on: true });
-    this.game.events.emit('log', { text: `Your spirit rises ${dest.label}. Return to your body to live again, or rest here to return at once${this.coinLoss ? `, ${this.coinLoss} coin${this.coinLoss === 1 ? '' : 's'} lighter` : ''}.`, kind: 'lore' });
+    this.game.events.emit('log', { text: `Your spirit rises ${dest.label}. Return to your body to live again, or rest here to return at once${this.coinLoss ? `, ${moneyText(this.coinLoss)} lighter` : ''}.`, kind: 'lore' });
     return true;
   }
 
@@ -78,7 +82,7 @@ export class Afterlife {
     const at = player.position.clone();
     this._end();
     player.revive(at.x, at.z);
-    events.emit('log', { text: `You return to life ${this.restPoint().label}.${lost ? ` ${lost} coin${lost === 1 ? '' : 's'} gone.` : ''}`, kind: 'lore' });
+    events.emit('log', { text: `You return to life ${this.restPoint().label}.${lost ? ` ${moneyText(lost)} gone.` : ''}`, kind: 'lore' });
     return true;
   }
 
@@ -100,7 +104,7 @@ export class Afterlife {
     const out = [];
     if (this.corpse) out.push({ key: 'corpse', x: this.corpse.x, z: this.corpse.z, bias: -1, reach: CONFIG.death.corpseReach, prompt: 'Return to your body', run: () => this.reviveAtCorpse() });
     const r = this.restPoint();
-    out.push({ key: 'revive-here', x: r.x, z: r.z, bias: 0, reach: CONFIG.death.restReach, prompt: this.coinLoss ? `Return to life here (lose ${this.coinLoss} coin${this.coinLoss === 1 ? '' : 's'})` : 'Return to life here', run: () => this.reviveHere() });
+    out.push({ key: 'revive-here', x: r.x, z: r.z, bias: 0, reach: CONFIG.death.restReach, prompt: this.coinLoss ? `Return to life here (lose ${moneyText(this.coinLoss)})` : 'Return to life here', run: () => this.reviveHere() });
     return out;
   }
 

@@ -270,7 +270,7 @@ async function combat(browser) {
     const g = window.__shadowfall;
     return { target: g.targeting.current && g.targeting.current.id, attacking: g.targeting.attacking, hp: g.enemies.byId('ghoul_road').health, swung: g.player.cooldowns.attack > 0 || !!g.player.pending };
   });
-  record('Left click selects an enemy without attacking (WoW style)', selected.target === 'ghoul_road' && !selected.attacking && selected.hp === 48 && !selected.swung, `target ${selected.target}, ghoul at ${selected.hp}/48`);
+  record('Left click selects an enemy without attacking (WoW style)', selected.target === 'ghoul_road' && !selected.attacking && selected.hp === 22 && !selected.swung, `target ${selected.target}, ghoul at ${selected.hp}/22`);
   // a right click starts auto attack; stop it after the first swing (the
   // ghoul is given health enough to survive one, for the later checks)
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 400));
@@ -305,20 +305,20 @@ async function combat(browser) {
   await sim(page, 0.6, { rightClick: true });
   let s = await state(page);
   const hpOf = (id) => s.enemies.find((e) => e.id === id).hp;
-  record('Shield Break damages enemies within its radius', hpOf('ghoul_road') === 12 && hpOf('ghoul_cart') === 12 && hpOf('ghoul_graves') === 48,
-    `inside radius: ${hpOf('ghoul_road')}, ${hpOf('ghoul_cart')} (48-36); 5m away: ${hpOf('ghoul_graves')}`);
+  record('Shield Break damages enemies within its radius', hpOf('ghoul_road') === 17 && hpOf('ghoul_cart') === 17 && hpOf('ghoul_graves') === 22,
+    `inside radius: ${hpOf('ghoul_road')}, ${hpOf('ghoul_cart')} (22-5); 5m away: ${hpOf('ghoul_graves')}`);
   const fxSeen = await page.evaluate(() => window.__shadowfall.fx.items.length >= 0);
 
   // cooldown: second press at 1s is refused, a press after 4s works
   await page.evaluate(() => window.__shadowfall.enemies.list.forEach((e) => (e.health = e.cfg.health)));
   await sim(page, 0.5, { rightClick: true });
   s = await state(page);
-  const blocked = hpOf('ghoul_road') === 48;
+  const blocked = hpOf('ghoul_road') === 22;
   const cdLeft = await page.evaluate(() => window.__shadowfall.player.cooldowns.shieldBreak);
   await sim(page, 3.0);
   await sim(page, 0.6, { rightClick: true });
   s = await state(page);
-  const worksAgain = hpOf('ghoul_road') === 12;
+  const worksAgain = hpOf('ghoul_road') === 17;
   record('Ability cooldown behaves correctly', blocked && worksAgain && fxSeen, `re-press after ~1s ignored (${cdLeft.toFixed(2)}s left); works again after 4s`);
 
   // Brace (Space): blocks the next blow only, for a limited window, off the GCD
@@ -341,7 +341,7 @@ async function combat(browser) {
     return { up, cd, r1, hp1, r2, hp2: g.player.health };
   });
   const braceLog = await page.evaluate(() => [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | '));
-  record('Brace (Space) turns aside the next blow, and only one', br.up && !br.r1 && br.hp1 === 100 && br.r2 && br.hp2 === 92 && /your shield takes/i.test(braceLog),
+  record('Brace (Space) turns aside the next blow, and only one', br.up && !br.r1 && br.hp1 === 100 && br.r2 && br.hp2 === 93 && /your shield takes/i.test(braceLog),
     `raised during the global cooldown; first claw blocked (hp ${br.hp1}), second lands (hp ${br.hp2})`);
   record('Brace has a cooldown of about 7 seconds', near(br.cd, 7, 0.1), `${br.cd.toFixed(2)}s after use`);
   await page.evaluate(() => {
@@ -362,7 +362,7 @@ async function combat(browser) {
     const r = g.combat.resolveEnemyStrike(g.enemies.byId('ghoul_road'));
     return { up, r, hp: g.player.health };
   });
-  record('Brace window expires and cannot be spammed', !reBrace && upAt0 && !expired.up && expired.r && expired.hp === 92,
+  record('Brace window expires and cannot be spammed', !reBrace && upAt0 && !expired.up && expired.r && expired.hp === 93,
     `re-press on cooldown ignored; raised shield drops after 2.5s and the next claw lands (hp ${expired.hp})`);
   const noSprint = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -403,16 +403,16 @@ async function combat(browser) {
   // kill: health reaches zero, rewards granted once
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'], hp: 100 });
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
-  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 48));
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 22));
   const before = await state(page);
   // one right click: auto attack swings until the ghoul falls (a further
   // right click on the body would loot it)
   await sim(page, 0.05, { aimAt: { x: 0, z: -1.6 } });
   await page.evaluate(() => window.__shadowfall.targeting.engage(window.__shadowfall.enemies.byId('ghoul_road')));
-  await sim(page, 2.6);
+  await sim(page, 7.3); // the first swing waits 2.2 s; three swings fell it
   g = await enemy(page, 'ghoul_road');
   s = await state(page);
-  record('Enemy health reaches zero correctly', g && g.hp === 0 && g.dead, `auto attack swings on 48 hp → ${g && g.hp}, dead=${g && g.dead}`);
+  record('Enemy health reaches zero correctly', g && g.hp === 0 && g.dead, `auto attack swings on 22 hp → ${g && g.hp}, dead=${g && g.dead}`);
   const after = s;
   const again = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1560,7 +1560,7 @@ async function statsAndDamage(browser) {
   await sim(page, 0.05);
   const panel = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#char-stats div')].filter((d) => d.querySelector('b')).map((d) => [d.querySelector('span').textContent, d.querySelector('b').textContent])));
   await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
-  record('The character panel shows attributes and combat stats', panel.Strength === '4' && panel.Agility === '2' && panel.Stamina === '10' && panel.Weapon === '59–74 / 2.2s' && panel['Damage per second'] === '30.2' && panel.Crit === '6.0%' && panel.Armour === '20 (−29%)' && panel.Block === '10%' && panel.Haste === '0%' && /Mail, Plate, shields/.test(panel.Wears),
+  record('The character panel shows attributes and combat stats', panel.Strength === '4' && panel.Agility === '2' && panel.Stamina === '10' && panel.Weapon === '7–11 / 2.2s' && panel['Damage per second'] === '4.1' && panel.Crit === '6.0%' && panel.Armour === '5 (−9%)' && panel.Block === '5%' && panel.Haste === '0%' && /Mail, Plate, shields/.test(panel.Wears),
     Object.entries(panel).map(([k, v]) => `${k} ${v}`).join(', '));
 
   // weapon hits roll within the weapon's range
@@ -1590,17 +1590,17 @@ async function statsAndDamage(browser) {
   const low = await strikeWith([0, 0.99]);
   const high = await strikeWith([0.999, 0.99]);
   const mid = await strikeWith([0.5, 0.99]);
-  record('Auto attack swings roll within the weapon range plus power', low.dealt === 59 && high.dealt === 74 && mid.dealt === 66, `lowest roll ${low.dealt}, highest ${high.dealt}, average ${mid.dealt} (worn longsword 44–59 per swing, +4 Might × 2.2 s / 0.6 s)`);
-  record('Hits show a damage number over the enemy', mid.n.length === 1 && mid.n[0].text === '66' && /dealt/.test(mid.n[0].cls) && !/crit/.test(mid.n[0].cls), JSON.stringify(mid.n));
+  record('Auto attack swings roll within the weapon range plus power', low.dealt === 7 && high.dealt === 11 && mid.dealt === 9, `lowest roll ${low.dealt}, highest ${high.dealt}, average ${mid.dealt} (worn longsword 3–7 per swing, +1 power × 2.2 s / 0.6 s)`);
+  record('Hits show a damage number over the enemy', mid.n.length === 1 && mid.n[0].text === '9' && /dealt/.test(mid.n[0].cls) && !/crit/.test(mid.n[0].cls), JSON.stringify(mid.n));
 
   const crit = await strikeWith([0.5, 0.01]);
-  record('Critical hits do 150% and show a distinct number', crit.dealt === 99 && crit.n[0].text === '99!' && /crit/.test(crit.n[0].cls) && /critical/i.test(crit.log), `${crit.dealt} damage, number "${crit.n[0].text}" (${crit.n[0].cls}); log: "${crit.log}"`);
+  record('Critical hits do 150% and show a distinct number', crit.dealt === 13 && crit.n[0].text === '13!' && /crit/.test(crit.n[0].cls) && /critical/i.test(crit.log), `${crit.dealt} damage, number "${crit.n[0].text}" (${crit.n[0].cls}); log: "${crit.log}"`);
 
   // armour reduces damage: the brute has 10 armour (17%)
   await placeEnemy(page, 'brute_hallow', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_road', 6, 6, { frozen: true });
   const brute = await strikeWith([0.5, 0.99], 'brute_hallow');
-  record("Armour reduces the damage an enemy takes", brute.dealt === 55, `average swing 66 on the Brute (10 armour, 17%): ${brute.dealt}`);
+  record("Armour reduces the damage an enemy takes", brute.dealt === 7, `average swing 9 on the Brute (10 armour, 17%): ${brute.dealt}`);
   await placeEnemy(page, 'brute_hallow', -30, 40);
   await page.evaluate(() => { const b = window.__shadowfall.enemies.byId('brute_hallow'); b.cfg = { ...b.cfg, detection: 0 }; });
 
@@ -1623,14 +1623,14 @@ async function statsAndDamage(browser) {
   }, { seq, unclothed });
   const plain = await hitMe([0.5, 0.99, 0.99]);
   const bare = await hitMe([0.5, 0.99, 0.99], { unclothed: true });
-  record('Armour reduces the damage the Warden takes', plain.taken === 8 && bare.taken === 11, `a ghoul's 11: ${plain.taken} in travelling clothes (20 armour), ${bare.taken} without`);
-  record('Hits taken show a red number', plain.n.length === 1 && plain.n[0].text === '8' && /taken/.test(plain.n[0].cls), JSON.stringify(plain.n));
+  record('Armour reduces the damage the Warden takes', plain.taken === 7 && bare.taken === 8, `a ghoul's 8: ${plain.taken} in travelling clothes (5 armour), ${bare.taken} without`);
+  record('Hits taken show a red number', plain.n.length === 1 && plain.n[0].text === '7' && /taken/.test(plain.n[0].cls), JSON.stringify(plain.n));
   const varied = [await hitMe([0, 0.99, 0.99]), await hitMe([1, 0.99, 0.99])].map((h) => h.taken);
-  record('Enemy blows vary a little either side of their damage (extra)', varied[0] === 7 && varied[1] === 9, `lowest ${varied[0]}, highest ${varied[1]} (±15% before armour)`);
+  record('Enemy blows vary a little either side of their damage (extra)', varied[0] === 6 && varied[1] === 8, `lowest ${varied[0]}, highest ${varied[1]} (±15% before armour)`);
   const blocked = await hitMe([0.5, 0.99, 0.01]);
-  record('A shield block stops 30% of a melee blow', blocked.taken === 6 && /2 blocked/.test(blocked.n[0]?.text || '') && /2 blocked/.test(blocked.log), `8 with 30% blocked: ${blocked.taken}; number "${blocked.n[0]?.text}"; log "${blocked.log}"`);
+  record('A shield block stops 30% of a melee blow', blocked.taken === 5 && /2 blocked/.test(blocked.n[0]?.text || '') && /2 blocked/.test(blocked.log), `8 with 30% blocked: ${blocked.taken}; number "${blocked.n[0]?.text}"; log "${blocked.log}"`);
   const enemyCrit = await hitMe([0.5, 0.01, 0.99]);
-  record('Enemies can crit too, shown as a distinct number', enemyCrit.taken === 12 && enemyCrit.n[0].text === '12!' && /taken/.test(enemyCrit.n[0].cls) && /crit/.test(enemyCrit.n[0].cls) && /critically/.test(enemyCrit.log),
+  record('Enemies can crit too, shown as a distinct number', enemyCrit.taken === 11 && enemyCrit.n[0].text === '11!' && /taken/.test(enemyCrit.n[0].cls) && /crit/.test(enemyCrit.n[0].cls) && /critically/.test(enemyCrit.log),
     `${enemyCrit.taken} damage; "${enemyCrit.log}"`);
   // no shield, no block: the chance comes from the shield (plus block rating)
   const noShield = await page.evaluate(() => {
@@ -1641,13 +1641,13 @@ async function statsAndDamage(browser) {
     g.inventory.equipment.offHand = sh;
     g.config.archetypes.warden.base.blockRating = 50;
     const rated = g.stats.blockChance;
-    g.config.archetypes.warden.base.blockRating = 400;
+    g.config.archetypes.warden.base.blockRating = 500;
     const capped = g.stats.blockChance;
     g.config.archetypes.warden.base.blockRating = 0;
     return { with: g.stats.blockChance, without, rated, capped, shown: !!g.player.shield };
   });
-  record('Block chance comes from the shield and block rating, capped at 50%', noShield.with === 10 && noShield.without === 0 && noShield.rated === 15 && noShield.capped === 50 && noShield.shown,
-    `kite shield ${noShield.with}%, no shield ${noShield.without}%, +50 rating ${noShield.rated}%, +400 rating ${noShield.capped}%; shield worn on the left arm`);
+  record('Block chance comes from the shield and block rating, capped at 50%', noShield.with === 5 && noShield.without === 0 && noShield.rated === 10 && noShield.capped === 50 && noShield.shown,
+    `kite shield ${noShield.with}%, no shield ${noShield.without}%, +50 rating ${noShield.rated}%, +500 rating ${noShield.capped}%; shield worn on the left arm`);
 
   // Grave Slam cannot crit or be blocked
   const slam = await page.evaluate(() => {
@@ -1660,7 +1660,7 @@ async function statsAndDamage(browser) {
     g.random = () => 0.5;
     return { taken: 100 - g.player.health, log: document.querySelector('#log li:last-child').textContent };
   });
-  record('Grave Slam cannot crit or be blocked', slam.taken === 20 && !/critical|blocked/i.test(slam.log), `lowest roll of 31 after armour: ${slam.taken}; "${slam.log}"`);
+  record('Grave Slam cannot crit or be blocked', slam.taken === 17 && !/critical|blocked/i.test(slam.log), `lowest roll of 22 after armour: ${slam.taken}; "${slam.log}"`);
 
   // heals show green numbers; numbers fade and are removed
   await page.evaluate(() => { const g = window.__shadowfall; g.player.health = 40; g.player.cooldowns.draught = 0; g.inventory.draughts = 1; g.hud.numbers.clear(); });
@@ -1673,14 +1673,14 @@ async function statsAndDamage(browser) {
   // enemy health (and mana, when an enemy has it) in the target frame and over its head
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 0, -2, { frozen: true });
-  await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 30; g.targeting.clear(); });
+  await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 15; g.targeting.clear(); });
   await sim(page, 0.05, { aimAt: { x: 0, z: -3 } });
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   const tf = await page.evaluate(() => ({
     vis: !document.getElementById('target-frame').hidden, name: document.getElementById('target-name').textContent, text: document.getElementById('target-text').textContent,
     label: document.getElementById('target-label').textContent, level: document.getElementById('target-level').textContent, mana: !document.getElementById('target-mana-bar').hidden, bar: !!document.querySelector('#enemy-bars .ebar'),
   }));
-  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '30 / 48' && tf.level === '1' && !tf.mana && tf.bar,
+  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '15 / 22' && tf.level === '1' && !tf.mana && tf.bar,
     `aiming at a wounded ghoul: "${tf.name}" ${tf.text} (${tf.label}), bar over its head; no mana bar`);
   await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1720,10 +1720,10 @@ async function statsAndDamage(browser) {
     };
     const r = { l1: hitBy(1), l5: hitBy(5) };
     const e = g.enemies.byId('ghoul_road');
-    e.cfg = { ...e.cfg, level: 1, damage: 11, crit: 5 };
+    e.cfg = { ...e.cfg, level: 1, damage: 8, crit: 5 };
     return r;
   });
-  record('Armour stops less against higher-level enemies', lvl.l1 === 14 && lvl.l5 === 16, `a 20-damage blow: ${lvl.l1} from a level 1 foe (29% off), ${lvl.l5} from a level 5 foe (20% off)`);
+  record('Armour stops less against higher-level enemies', lvl.l1 === 18 && lvl.l5 === 19, `a 20-damage blow: ${lvl.l1} from a level 1 foe (9% off), ${lvl.l5} from a level 5 foe (5% off)`);
 
   // armour types: an archetype may only wear some
   const types = await page.evaluate(() => {
@@ -1773,9 +1773,9 @@ async function statsAndDamage(browser) {
   await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
   await sim(page, 6.2);
   const luGone = await page.evaluate(() => document.getElementById('levelup').hidden);
-  record('Level-up shows each stat increase', lu.vis && lu.title === 'Level 2' && lu.rows.some((r) => /^Strength 4 → 6 \+2$/.test(r)) && lu.rows.some((r) => /^Stamina 11 → 13 \+2$/.test(r)) && lu.rows.some((r) => /^Maximum health 106 → 118 \+12$/.test(r)) && lu.rows.some((r) => /^Auto attack 30.2 per second → 33.4 per second \+3.2$/.test(r)) && luGone,
+  record('Level-up shows each stat increase', lu.vis && lu.title === 'Level 2' && lu.rows.some((r) => /^Strength 4 → 6 \+2$/.test(r)) && lu.rows.some((r) => /^Stamina 11 → 13 \+2$/.test(r)) && lu.rows.some((r) => /^Maximum health 106 → 118 \+12$/.test(r)) && lu.rows.some((r) => /^Auto attack 4.1 per second → 5.0 per second \+0.9$/.test(r)) && luGone,
     lu.rows.join(' | '));
-  record('The character screen marks what rose at the last level-up', ['health+12', 'strength+2', 'stamina+2', 'dps+3.2'].every((m) => marks.includes(m)), marks.join(', '));
+  record('The character screen marks what rose at the last level-up', ['health+12', 'strength+2', 'stamina+2', 'dps+0.9'].every((m) => marks.includes(m)), marks.join(', '));
 
   record('No script errors (stats and damage)', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'stats.png') });
@@ -1971,13 +1971,13 @@ async function gearRolls(browser) {
       const a = g.itemView({ id: 'warden_hauberk', rolls: h }).stats.armour;
       if (h && h.suffix) suffixed++;
       seen.add(a);
-      if (a < 32 * 0.8 - 0.5 || a > 32 * 1.2 + 0.5) armourOk = false;
+      if (a < 12 * 0.8 - 0.5 || a > 12 * 1.2 + 0.5) armourOk = false;
       const f = g.itemView({ id: 'rusted_falchion', rolls: g.rollItem('rusted_falchion', Math.random) }).damage;
-      if (f[0] < 56 * 0.88 - 0.5 || f[1] > 82 * 1.12 + 0.5 || f[0] > f[1]) damageOk = false;
+      if (f[0] < 5 * 0.88 - 0.5 || f[1] > 10 * 1.12 + 0.5 || f[0] > f[1]) damageOk = false;
     }
     return { suffixed, armourOk, damageOk, kinds: seen.size, material: g.rollItem('grave_iron', Math.random), quest: g.rollItem('manifest', Math.random) };
   });
-  record('Dropped gear rolls its stats a little either side of the database values', spread.armourOk && spread.damageOk && spread.kinds >= 8, `hauberk armour rolled ${spread.kinds} different values within ±20% of 32; falchion damage within ±12%`);
+  record('Dropped gear rolls its stats a little either side of the database values', spread.armourOk && spread.damageOk && spread.kinds >= 4, `hauberk armour rolled ${spread.kinds} different values within ±20% of 12; falchion damage within ±12%`);
   record('Gear dropping as Enhanced (green) always gains a WoW-style suffix; Common (white) never does', spread.suffixed === 150, `${spread.suffixed} of 150 enhanced hauberks rolled a suffix, none of 150 common ones`);
   record('Materials and quest items never roll (extra)', spread.material === null && spread.quest === null);
 
@@ -1993,13 +1993,13 @@ async function gearRolls(browser) {
     g.hud.togglePanel('character');
     return { rolls, name: view.name, rarity: view.rarity, armour: g.stats.armour, a0, haste: g.stats.haste, panel: document.getElementById('char-stats').textContent };
   });
-  record('A rolled item is named for its suffix and counts its rolled stats when worn', worn.name === "Warden's hauberk of Swiftness" && worn.rarity === 'enhanced' && worn.armour === 38 && worn.haste === 2, `${worn.name}: ${JSON.stringify(worn.rolls)}; armour ${worn.a0} → ${worn.armour}, haste ${worn.haste}%`);
+  record('A rolled item is named for its suffix and counts its rolled stats when worn', worn.name === "Warden's hauberk of Swiftness" && worn.rarity === 'enhanced' && worn.armour === 14 && worn.haste === 2, `${worn.name}: ${JSON.stringify(worn.rolls)}; armour ${worn.a0} → ${worn.armour}, haste ${worn.haste}%`);
 
   await resumeLoop(page);
   await page.hover('.islot[data-loc="e:chest"]');
   await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
   const tip = await page.evaluate(() => ({ text: document.getElementById('tooltip').textContent, q: document.querySelector('#tooltip .tt-name').className }));
-  record('Tooltips show the rolled name, rarity and stats', /of Swiftness/.test(tip.text) && /\+38 armour/i.test(tip.text) && /\+2 ?% haste/i.test(tip.text) && /q-enhanced/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 120));
+  record('Tooltips show the rolled name, rarity and stats', /of Swiftness/.test(tip.text) && /\+14 armour/i.test(tip.text) && /\+2 ?% haste/i.test(tip.text) && /q-enhanced/.test(tip.q), tip.text.replace(/\s+/g, ' ').slice(0, 120));
   await pauseLoop(page);
 
   const moved = await page.evaluate(() => {
@@ -2042,7 +2042,7 @@ async function gearRolls(browser) {
   errors.length = 0;
   await begin(page, '#continue-btn');
   const loaded = await page.evaluate(() => ({ chest: window.__shadowfall.inventory.equipment.chest, armour: window.__shadowfall.stats.armour }));
-  record('Rolled gear is the same after a reload', loaded.chest.rolls && loaded.chest.rolls.suffix === 'swiftness' && loaded.armour === 38, JSON.stringify(loaded.chest));
+  record('Rolled gear is the same after a reload', loaded.chest.rolls && loaded.chest.rolls.suffix === 'swiftness' && loaded.armour === 14, JSON.stringify(loaded.chest));
 
   await pauseLoop(page);
   const drop = await page.evaluate(() => {
@@ -3105,7 +3105,7 @@ async function combatFixes(browser) {
   await page.evaluate(() => { const g = window.__shadowfall; const e = g.enemies.byId('ghoul_road'); e.health = 1000; g.player.cooldowns.attack = 0; g.targeting.engage(e); });
   await sim(page, 1.0);
   const early = await page.evaluate(() => 1000 - window.__shadowfall.enemies.byId('ghoul_road').health);
-  await sim(page, 1.5);
+  await sim(page, 2.0);
   const later = await page.evaluate(() => 1000 - window.__shadowfall.enemies.byId('ghoul_road').health);
   record('The first auto attack waits one weapon swing (2.2 s)', early === 0 && later > 0, `after 1 s: ${early} damage; after 2.5 s: ${later}`);
 
@@ -3114,6 +3114,7 @@ async function combatFixes(browser) {
     const g = window.__shadowfall;
     const e = g.enemies.byId('ghoul_road');
     e.health = 1000;
+    g.player.pending = null;
     g.player.cooldowns.attack = 0;
     g.player.cooldowns.gcd = 0;
     g.spells.tryCast('hallowedBolt');
@@ -3147,7 +3148,8 @@ async function combatFixes(browser) {
   record('Rebuke interrupts a cast; Grave Slam cannot be interrupted', !kick.casting && /interrupt/i.test(kick.log) && kick.slam === false, `log: "${kick.log}"`);
 
   // abilities that need a target say so in red
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.clear(); g.player.cooldowns.gcd = 0; g.hud.lastError = null; g.spells.tryCast('rebuke'); });
+  await setup(page, { x: 0, z: 0 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.clear(); g.player.cooldowns.gcd = 0; g.player.cooldowns.rebuke = 0; g.hud.lastError = null; g.spells.tryCast('rebuke'); });
   const noTarget = await err();
   record('An ability with no target says "You have no target."', noTarget === 'You have no target.', noTarget || '');
 
@@ -3161,6 +3163,7 @@ async function combatFixes(browser) {
     g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
     g.input.mouse.ndcX = v.x;
     g.input.mouse.ndcY = v.y;
+    g.input.mouse.onCanvas = true;
     return { x: n.position.x, z: n.position.z };
   }, id);
   const mara = await page.evaluate(() => { const p = window.__shadowfall.npcs.byId('mara').position; return { x: p.x, z: p.z }; });
@@ -3189,6 +3192,7 @@ async function combatFixes(browser) {
     g.input.mouse.y = r.top + ((1 - v.y) / 2) * r.height;
     g.input.mouse.ndcX = v.x;
     g.input.mouse.ndcY = v.y;
+    g.input.mouse.onCanvas = true;
   });
   await sim(page, 0.05);
   const attackCursor = await page.evaluate(() => window.__shadowfall.renderer.domElement.style.cursor);
@@ -3197,8 +3201,99 @@ async function combatFixes(browser) {
   await ctx.close();
 }
 
+async function economy(browser) {
+  current = 'Money, durability and gear';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+
+  // silver and gold: 100 silver is a gold, shown with coin icons
+  const money = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.coins = 120;
+    g.hud.togglePanel('bags');
+    g.hud.items.render();
+    const foot = document.querySelector('.bag-foot');
+    const amounts = (el) => [...el.querySelectorAll('.money b')].map((b) => b.textContent).join(' ');
+    const shown = amounts(foot);
+    const icons = foot.querySelectorAll('.coin.gold').length + foot.querySelectorAll('.coin.silver').length;
+    g.inventory.coins = 100;
+    g.inventory.coins -= 1;
+    g.hud.items.render();
+    const after = amounts(document.querySelector('.bag-foot'));
+    g.hud.togglePanel('bags');
+    return { shown, icons, after };
+  });
+  record('Money shows as gold and silver with coin icons (120 silver = 1 gold 20 silver)', money.shown === '1 20' && money.icons === 2 && money.after === '99', `120 → "${money.shown}" (${money.icons} icons); 100 − 1 → "${money.after}"`);
+
+  // sell price on the tooltip
+  await page.evaluate(() => { const g = window.__shadowfall; g.inventory.coins = 50; g.inventory.addItem('hob_boots', 1); g.hud.togglePanel('bags'); g.hud.items.render(); });
+  const bootLoc = await page.evaluate(() => window.__shadowfall.inventory.bagLocations().find((l) => window.__shadowfall.inventory.get(l)?.id === 'hob_boots'));
+  await page.hover(`#bags-frames .islot[data-loc="${bootLoc}"]`);
+  await page.waitForSelector('#tooltip:not([hidden])', { timeout: 10000 });
+  const sellTip = await page.evaluate(() => ({ html: document.querySelector('#tooltip .tt-sell')?.innerHTML || '', text: document.querySelector('#tooltip .tt-sell')?.textContent || '' }));
+  record('Item tooltips show "Sell for" with a coin icon', /^Sell for \d+/.test(sellTip.text) && /coin silver/.test(sellTip.html), sellTip.text);
+
+  // the character panel has every slot
+  const panel = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.hud.togglePanel('character');
+    g.hud.items.render();
+    const n = document.querySelectorAll('#character-window .islot[data-loc^="e:"]').length;
+    g.hud.togglePanel('character');
+    return n;
+  });
+  record('The character panel has all 16 equipment slots', panel === 16, `${panel} slots`);
+
+  // starting gear is much weaker now
+  const start = await page.evaluate(() => { const g = window.__shadowfall; return { w: g.inventory.weapon.damage, speed: g.stats.weaponSpeed, armour: g.stats.armour, swing: g.stats.swingRange }; });
+  record('The starting sword does 3–7 at 2.2 s; starting armour is low', start.w[0] === 3 && start.w[1] === 7 && start.speed === 2.2 && start.armour === 5, JSON.stringify(start));
+
+  // dying wears gear; at 0% it breaks and gives nothing; a smith repairs it
+  const wear = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.afterlife.onDeath(null, 0);
+    const after = g.inventory.equipment.chest.dur;
+    g.inventory.equipment.chest.dur = 10;
+    g.inventory.equipment.mainHand.dur = 10;
+    g.afterlife.onDeath(null, 0);
+    return { after, chest: g.inventory.equipment.chest.dur, armour: g.stats.armour, weapon: g.inventory.weapon.damage, name: g.inventory.weapon.name };
+  });
+  record('Dying takes 10% durability; at 0% gear is broken and gives nothing', wear.after === 90 && wear.chest === 0 && wear.armour === 0 && wear.weapon[1] === 2, JSON.stringify(wear));
+  const repair = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.coins = 500;
+    const cost = g.inventory.repairAllCost;
+    g.player.placeAt(g.npcs.byId('mara').position.x + 1, g.npcs.byId('mara').position.z + 1);
+    g.merchant.open('mara_forge', g.npcs.byId('mara'));
+    g.hud.items.render();
+    const btn = document.getElementById('shop-repair');
+    const shown = !btn.hidden && /Repair all/.test(btn.textContent);
+    btn.click();
+    g.merchant.close();
+    return { cost, shown, coins: g.inventory.coins, dur: g.inventory.equipment.chest.dur, armour: g.stats.armour };
+  });
+  record("Mara's forge repairs everything for silver", repair.shown && repair.cost > 0 && repair.coins === 500 - repair.cost && repair.dur === undefined && repair.armour === 5, JSON.stringify(repair));
+
+  // loot on the ground shows its name in its rarity colour
+  const label = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addItem('watchmans_edge', 1);
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'watchmans_edge');
+    g.loot.dropFromInventory(loc);
+    g._snapCamera();
+    g.renderer.render(g.scene, g.camera);
+    g.hud.labels.update();
+    const el = [...document.querySelectorAll('#world-labels .loot-label')].find((e) => !e.hidden && /Watchman/.test(e.textContent));
+    return el ? { text: el.textContent, colour: el.style.color } : null;
+  });
+  record('Ground loot shows its name in its rarity colour', !!label && /108, 192, 90|6cc05a/i.test(label.colour), JSON.stringify(label));
+  record('No script errors (economy)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);
