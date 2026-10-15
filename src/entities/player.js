@@ -348,6 +348,7 @@ export class Player {
     this.rig.revive();
     this.cooldowns = freshCooldowns();
     this.game.spells?.reset();
+    this.game.resources?.reset();
     this.placeAt(x, z, Math.PI);
   }
 }

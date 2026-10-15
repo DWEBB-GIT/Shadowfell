@@ -36,6 +36,9 @@ async function begin(page, which = '#new-btn', { pinRolls = true } = {}) {
   // combat rolls (weapon range, crits, blocks, enemy variance) land on the
   // average unless a check says otherwise, so expected numbers are exact
   if (pinRolls) await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
+  // older checks were written before abilities cost mana or Resolve; the
+  // resources section turns costs back on
+  await page.evaluate(() => (window.__shadowfall.resources.unlimited = true));
 }
 
 const pauseLoop = (page) => page.evaluate(() => window.__shadowfall.renderer.setAnimationLoop(null));
@@ -3492,7 +3495,76 @@ async function uiLayout(browser) {
 }
 
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, gearRolls, blackwood, atmosphere };
+async function resources(browser) {
+  current = 'Mana and Resolve';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  await page.evaluate(() => (window.__shadowfall.resources.unlimited = false));
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  const start = await page.evaluate(() => {
+    const r = window.__shadowfall.resources;
+    return { mana: r.mana, max: r.maxMana, gauge: r.gauge, mpShown: !document.getElementById('mp-bar').hidden, gText: document.getElementById('gauge-text').textContent };
+  });
+  record('The Warden starts with full mana (100 + 10 per Intellect) and no Resolve', start.mana === start.max && start.max === 110 && start.gauge === 0 && start.mpShown, `${start.mana}/${start.max} mana, "${start.gText}"`);
+
+  // Shield Break costs 25 Resolve: refused at 0, slot dimmed
+  await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 999; g.targeting.select(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.05);
+  const dim = await page.evaluate(() => document.querySelector('.aslot[data-ability="shieldBreak"]')?.classList.contains('nores'));
+  const refused = await page.evaluate(() => !window.__shadowfall.spells.tryCast('shieldBreak') && window.__shadowfall.hud.lastError);
+  record('A Resolve ability is refused without enough Resolve, and its slot is dimmed', refused !== false && dim, `Shield Break at 0 Resolve: refused ("${refused}"), slot dimmed ${dim}`);
+
+  // auto attack builds Resolve: 12 a landed swing
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await sim(page, 0.6);
+  const afterSwing = await page.evaluate(() => window.__shadowfall.resources.gauge);
+  record('Each landed weapon swing builds 12 Resolve', afterSwing === 12, `${afterSwing} Resolve after one swing`);
+
+  // hits taken build Resolve
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.resources.gauge = 0; g.combat._enemyHit(g.enemies.byId('ghoul_road'), 4, { canBlock: false }); g.events.emit('playerHurt', { damage: 4 }); });
+  const afterHurt = await page.evaluate(() => window.__shadowfall.resources.gauge);
+  record('Taking a hit builds Resolve', afterHurt === 6, `${afterHurt} Resolve after one hit`);
+
+  // with 30 Resolve, Shield Break goes and spends 25
+  await page.evaluate(() => { const g = window.__shadowfall; g.resources.gauge = 30; g.player.cooldowns.gcd = 0; g.player.pending = null; });
+  const sb = await page.evaluate(() => { const g = window.__shadowfall; return { ok: g.spells.tryCast('shieldBreak'), left: g.resources.gauge }; });
+  record('Shield Break spends 25 Resolve', sb.ok && sb.left === 5, `cast: ${sb.ok}, ${sb.left} Resolve left`);
+
+  // Lunge gives Resolve (an opener)
+  await sim(page, 2);
+  await page.evaluate(() => { const g = window.__shadowfall; g.resources.gauge = 0; Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.placeAt(0, 4); g.enemies.byId('ghoul_road').position.set(0, 0, 0); });
+  const lunge = await page.evaluate(() => { const g = window.__shadowfall; return { ok: g.spells.tryCast('lunge'), r: g.resources.gauge }; });
+  record('Lunge is free and gives 15 Resolve to open a fight', lunge.ok && lunge.r === 15, `cast: ${lunge.ok}, ${lunge.r} Resolve`);
+
+  // Hallowed Bolt costs 20 mana, paid when the cast finishes
+  await sim(page, 2);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; });
+  const castOk = await page.evaluate(() => window.__shadowfall.spells.tryCast('hallowedBolt'));
+  const midCast = await page.evaluate(() => window.__shadowfall.resources.mana);
+  await sim(page, 1.8);
+  const afterCast = await page.evaluate(() => window.__shadowfall.resources.mana);
+  record('Hallowed Bolt costs 20 mana, paid when the cast finishes', castOk && midCast >= 50 && afterCast > 29 && afterCast < 34, `mana 50 → ${midCast.toFixed(1)} while casting → ${afterCast.toFixed(1)} after (regen 1.5/s in combat)`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.resources.mana = 5; });
+  const noMana = await page.evaluate(() => !window.__shadowfall.spells.tryCast('hallowedBolt') && window.__shadowfall.hud.lastError);
+  record('A spell is refused without enough mana', !!noMana && /mana/.test(noMana), `"${noMana}"`);
+
+  // out of combat: mana refills fast, Resolve fades
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); const e = g.enemies.byId('ghoul_road'); e.position.set(-30, 0, -45); e.home.copy(e.position); e.state = 'idle'; g.resources.sinceCombat = 99; g.resources.gauge = 40; g.resources.mana = 10; });
+  await sim(page, 2);
+  const ooc = await page.evaluate(() => ({ m: window.__shadowfall.resources.mana, g: window.__shadowfall.resources.gauge }));
+  record('Out of combat mana refills at 10 a second and Resolve fades at 8 a second', near(ooc.m, 30, 1) && near(ooc.g, 24, 1), `2 s later: ${ooc.m.toFixed(1)} mana, ${ooc.g.toFixed(1)} Resolve`);
+
+  // tooltips show the cost
+  await page.hover('.aslot[data-ability="shieldBreak"]');
+  const tipCost = await page.evaluate(() => document.querySelector('.tt-cost')?.textContent);
+  record('Ability tooltips show the cost', tipCost === '25 Resolve', `"${tipCost}"`);
+  record('No script errors (resources)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

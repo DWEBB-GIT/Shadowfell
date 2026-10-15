@@ -123,7 +123,7 @@ export class Combat {
       return null;
     }
     const hit = this._playerHit(target, 1, { stagger: 0.22, knockFrom: player.position, knockback: 0.3 }, { swing: true });
-    events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike' });
+    events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true });
     events.emit('log', { text: `You strike the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
     if (target.dead) this.onEnemyDefeated(target);
     return target;

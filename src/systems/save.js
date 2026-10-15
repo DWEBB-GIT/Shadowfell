@@ -222,6 +222,7 @@ export class SaveManager {
     inventory.apply(data.inventory);
     this.game.recomputeMaxHealth();
     player.health = Math.min(data.player.health, player.maxHealth);
+    this.game.resources.reset();
     player.placeAt(data.player.position.x, data.player.position.z, data.player.facing);
   }
 

@@ -87,11 +87,13 @@ export class Spells {
       this.game.hud.error("You can't do that while moving");
       return false;
     }
+    if (!this.game.resources.check(spell)) return false;
     let target = null;
     if (spell.kind === 'charge') {
       // a charge goes at the target in range, or towards the cursor without one
       target = this._targetFor(spell, { optional: true });
       if (target === false) return false;
+      this.game.resources.spend(spell);
       return this._charge(spell, target);
     }
     if (spell.target === 'enemy') {
@@ -103,6 +105,8 @@ export class Spells {
     }
     if (!offGcd) player.cooldowns.gcd = stats.globalCooldown;
     const t = spell.tuning;
+    // a cast pays when it finishes (WoW); everything else pays now
+    if (spell.kind !== 'cast' && spell.kind !== 'camp') this.game.resources.spend(spell);
     if (spell.kind === 'cast' || spell.kind === 'camp') {
       // casting stops the swing: a swing on its way is dropped, and the swing
       // timer starts again when the cast ends (WoW)
@@ -326,10 +330,14 @@ export class Spells {
       } else if ((c.t += dt) >= c.total) {
         player.casting = null;
         const spell = SPELLS[c.id];
-        player.cooldowns[c.id] = spell.tuning.cooldown;
-        player.cooldowns.attack = Math.max(player.cooldowns.attack, this.game.stats.attackCooldown);
-        events.emit('castEnd', { id: c.id, done: true });
-        this._go(spell, c.target);
+        if (!this.game.resources.check(spell)) events.emit('castEnd', { id: c.id, done: false });
+        else {
+          this.game.resources.spend(spell);
+          player.cooldowns[c.id] = spell.tuning.cooldown;
+          player.cooldowns.attack = Math.max(player.cooldowns.attack, this.game.stats.attackCooldown);
+          events.emit('castEnd', { id: c.id, done: true });
+          this._go(spell, c.target);
+        }
       }
     }
 

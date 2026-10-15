@@ -47,7 +47,8 @@ export class Stats {
   }
 
   get maxMana() {
-    return this.archetype.resource === 'mana' ? this.totals.intellect * S().manaPerIntellect : 0;
+    const m = this.archetype.resources?.mana;
+    return m ? Math.round(m.base + this.totals.intellect * m.perIntellect) : 0;
   }
 
   get power() {

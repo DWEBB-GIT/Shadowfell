@@ -228,7 +228,12 @@ export function validateGameData(raw, opts = {}) {
     for (const k of Object.keys({ ...a.base, ...a.perLevel })) if (!STAT_KEYS.includes(k)) errors.push(`${w}: unknown stat ${k}`);
     for (const t of a.armourTypes || []) ref(w, 'armour type', armourTypes, t);
     ref(w, 'ability', abilities, a.defensive);
+    const r = a.resources || {};
+    if (r.mana && !['base', 'perIntellect', 'regenPerSecond', 'regenOutOfCombat'].every((k) => isNum(r.mana[k]))) errors.push(`${w}: mana needs base, perIntellect, regenPerSecond and regenOutOfCombat`);
+    if (r.gauge && (!isStr(r.gauge.id) || !isStr(r.gauge.name) || !['max', 'perSwing', 'perHitTaken', 'perBlock', 'decayAfter', 'decayPerSecond'].every((k) => isNum(r.gauge[k])))) errors.push(`${w}: the gauge needs an id, a name and max, perSwing, perHitTaken, perBlock, decayAfter and decayPerSecond`);
   }
+  // every resource some class has: what ability costs may name
+  const RESOURCE_IDS = new Set(['mana', ...Object.values(archetypes).map((a) => a.resources?.gauge?.id).filter(Boolean)]);
 
   // ---- abilities
   if (!isNum(abilF.globalCooldown)) errors.push('abilities.json: globalCooldown must be a number');
@@ -242,6 +247,11 @@ export function validateGameData(raw, opts = {}) {
     if (a.skill) ref(w, 'skill', skills, a.skill);
     if (!a.tuning || typeof a.tuning !== 'object' || !Object.values(a.tuning).every(isNum)) errors.push(`${w}: tuning must be a set of numbers`);
     if (a.school && !SCHOOLS.includes(a.school)) errors.push(`${w}: unknown school ${a.school}`);
+    for (const f of ['cost', 'gain']) {
+      if (a[f] === undefined) continue;
+      if (typeof a[f] !== 'object' || !Object.values(a[f]).every((n) => isNum(n) && n > 0)) errors.push(`${w}: ${f} must be resource amounts above 0`);
+      else for (const k of Object.keys(a[f])) if (!RESOURCE_IDS.has(k)) errors.push(`${w}: ${f} names an unknown resource ${k}`);
+    }
     if (a.kind !== undefined) {
       const k = SPELL_KINDS[a.kind];
       if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);

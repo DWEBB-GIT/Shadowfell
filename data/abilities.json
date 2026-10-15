@@ -1,5 +1,5 @@
 {
-  "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js): cast, dot, instant, aoe, cleave, burst, charge, buff or camp; the rest have their own code.",
+  "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js): cast, dot, instant, aoe, cleave, burst, charge, buff or camp; the rest have their own code. `cost` is what an ability spends ({mana: n} or {resolve: n}, the class gauge); `gain` is what it gives.",
   "globalCooldown": 1.5,
   "abilities": [
     {
@@ -33,6 +33,9 @@
         "stagger": 0.7,
         "knockback": 1.6,
         "interrupts": 1
+      },
+      "cost": {
+        "resolve": 25
       }
     },
     {
@@ -49,6 +52,9 @@
         "distance": 5,
         "duration": 0.26,
         "hitRadius": 1.6
+      },
+      "gain": {
+        "resolve": 15
       }
     },
     {
@@ -89,6 +95,9 @@
         "damageMin": 3,
         "damageMax": 4,
         "projectileSpeed": 22
+      },
+      "cost": {
+        "mana": 20
       }
     },
     {
@@ -104,6 +113,9 @@
         "duration": 10,
         "tickInterval": 2,
         "tickMultiplier": 0.45
+      },
+      "cost": {
+        "resolve": 20
       }
     },
     {
@@ -118,6 +130,9 @@
         "cooldown": 6,
         "damageMin": 1,
         "damageMax": 3
+      },
+      "cost": {
+        "mana": 15
       }
     },
     {
@@ -134,6 +149,9 @@
         "tickInterval": 1,
         "damageMin": 1,
         "damageMax": 1
+      },
+      "cost": {
+        "mana": 30
       }
     },
     {
@@ -150,6 +168,9 @@
         "range": 2.8,
         "maxTargets": 4,
         "windup": 0.22
+      },
+      "cost": {
+        "resolve": 30
       }
     },
     {
@@ -162,6 +183,9 @@
         "cooldown": 45,
         "duration": 15,
         "damageBonus": 20
+      },
+      "gain": {
+        "resolve": 25
       }
     },
     {
@@ -202,6 +226,9 @@
         "damageMin": 1,
         "damageMax": 1,
         "offGlobalCooldown": 1
+      },
+      "cost": {
+        "mana": 10
       }
     }
   ]
