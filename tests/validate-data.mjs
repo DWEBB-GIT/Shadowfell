@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateGameData, findDuplicateKeys } from '../src/data/schema.js';
+import { isScaledItem, itemSpend } from '../src/data/scaling.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -34,6 +35,16 @@ console.log(
     `${count('world.json', 'enemySpawns')} enemy spawns, ${count('scenery.json', 'props')} props`,
 );
 
+// gear with stats: the stat points it spends against its budget (white gear has none)
+const budgets = (raw['items.json']?.items || []).filter((d) => isScaledItem(d) && itemSpend(d).budget > 0);
+if (budgets.length) {
+  console.log('item budgets, stat points spent / budget (src/data/scaling.js):');
+  for (const d of budgets) {
+    const { budget, spent } = itemSpend(d);
+    console.log(`  ${d.id.padEnd(20)} level ${String(d.itemLevel).padEnd(3)} ${d.rarity.padEnd(10)} ${d.slot.padEnd(9)} ${spent.toFixed(1)} / ${budget.toFixed(1)}`);
+  }
+}
+
 // the checks must catch typical mistakes, or they are no use
 const broken = [
   ['a loot table naming an item that does not exist', (d) => (d['loot_tables.json'].lootTables[0].drops.items.common[0].item = 'iron_glvoes'), /unknown item iron_glvoes/],
@@ -51,6 +62,9 @@ const broken = [
   ['a rarity rolled with no items to roll', (d) => (d['loot_tables.json'].lootTables[0].drops.rarity.legendary = 1), /rarity legendary has no items/],
   ['an item with an unknown rarity', (d) => (d['items.json'].items[0].rarity = 'shiny'), /unknown rarity shiny/],
   ['a spell missing a number its kind needs', (d) => delete d['abilities.json'].abilities.find((a) => a.kind === 'cast').tuning.castTime, /needs tuning.castTime/],
+  ['an item spending more than its stat budget', (d) => (d['items.json'].items.find((i) => i.id === 'witchbane').stats = { strength: 20 }), /witchbane: spends 2\d\.\d stat points of its 5\.8/],
+  ['gear without an item level', (d) => delete d['items.json'].items.find((i) => i.id === 'worn_longsword').itemLevel, /worn_longsword: gear needs an itemLevel/],
+  ['an enemy of an unknown type', (d) => (d['enemies.json'].enemies[0].type = 'dragonkin'), /type must be one of/],
 ];
 const selfTest = [];
 for (const [what, breakIt, expect] of broken) {

@@ -5,6 +5,7 @@
 // code reads every number from one place.
 
 import { DB } from './data/db.js';
+import { SCALING, scaledEnemy } from './data/scaling.js';
 
 export const CONFIG = {
   player: {
@@ -52,23 +53,19 @@ export const CONFIG = {
     xpGrowthPerLevel: 60, // level 2 -> 3 needs 160, then 220, ...
   },
   // Stats and damage (see docs/stats-and-damage.md). One formula for every
-  // hit: base x multiplier, then crit, then armour or resistance, then block.
+  // hit: base x multiplier x level gap, then crit, then armour or resistance,
+  // then block. Everything that grows with level (the armour constant, the
+  // level gap, item budgets, the enemy table) is in `scaling` below.
   stats: {
     healthBase: 40,
     healthPerStamina: 6,
     manaPerIntellect: 10,
     powerPerMainStat: 0.25, // damage added to every weapon hit (per 0.6 s of swing time)
-    spellPowerPerIntellect: 1,
-    critBase: 5, // percent
-    critPerAgility: 0.5,
+    spellPowerPerIntellect: 0.25,
+    critBase: 5, // percent, plus Agility / (scaling.critAgility x (level + 4))
     critMultiplier: 1.5,
-    // reduction = armour / (armour + armourConstant + armourPerLevel x attacker
-    // level), as in WoW and Diablo III: armour keeps its worth as levels rise
-    armourConstant: 40,
-    armourPerLevel: 10,
-    mitigationCap: 75, // percent
+    mitigationCap: 75, // percent: armour and resistance never stop more
     blockCap: 50, // percent
-    blockRatingPerPercent: 10, // 10 block rating = +1% block chance
     blockReduction: 30, // a block stops this % of the blow (Brace stops all of it)
     hasteCap: 30, // percent; haste divides swing time, windups, casts and the GCD
     gcdFloor: 1.0, // seconds: haste never takes the global cooldown below this
@@ -125,7 +122,12 @@ Object.assign(CONFIG, {
   globalCooldown: DB.globalCooldown,
   armourTypes: DB.armourTypes,
   archetypes: DB.archetypes,
-  enemies: { ...DB.enemies, leashDistance: DB.leashDistance },
+  // each enemy's numbers from its level and type (src/data/scaling.js)
+  enemies: {
+    ...Object.fromEntries(Object.entries(DB.enemies).map(([id, e]) => [id, scaledEnemy(e, CONFIG.stats, tuning('strike').abilityWeaponSeconds)])),
+    leashDistance: DB.leashDistance,
+  },
+  scaling: SCALING,
 });
 
 export function xpForNextLevel(level) {

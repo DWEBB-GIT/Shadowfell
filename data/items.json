@@ -1,5 +1,5 @@
 {
-  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id. `rarity` is a rarities.json id. `reservedFor` lists the only loot tables that may drop an item (a boss's own weapon).",
+  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id. `rarity` is a rarities.json id. `reservedFor` lists the only loot tables that may drop an item (a boss's own weapon). Gear states its `itemLevel` and a `statSplit` (shares); its armour, weapon damage, block chance and stats are worked out from item level, slot, armour type and rarity (src/data/scaling.js).",
   "armourTypes": [
     {
       "id": "cloth",
@@ -57,7 +57,7 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [3, 7],
+      "itemLevel": 1,
       "speed": 2.2,
       "stack": 1,
       "price": 12,
@@ -71,10 +71,11 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [4, 8],
+      "itemLevel": 3,
       "speed": 2.0,
-      "stats": {
-        "haste": 4
+      "statSplit": {
+        "haste": 2,
+        "strength": 1
       },
       "stack": 1,
       "price": 60,
@@ -89,9 +90,7 @@
       "rarity": "common",
       "slot": "chest",
       "armourType": "leather",
-      "stats": {
-        "armour": 5
-      },
+      "itemLevel": 1,
       "stack": 1,
       "price": 8,
       "model": "clothes",
@@ -105,10 +104,7 @@
       "rarity": "common",
       "slot": "head",
       "armourType": "mail",
-      "stats": {
-        "armour": 4,
-        "stamina": 1
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 25,
       "model": "watch_helm",
@@ -121,9 +117,7 @@
       "kind": "shield",
       "rarity": "common",
       "slot": "offHand",
-      "stats": {
-        "block": 5
-      },
+      "itemLevel": 1,
       "stack": 1,
       "price": 20,
       "model": "kite_shield",
@@ -186,9 +180,7 @@
       "rarity": "common",
       "slot": "hands",
       "armourType": "mail",
-      "stats": {
-        "armour": 2
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 14,
       "model": "iron_gloves",
@@ -202,10 +194,7 @@
       "rarity": "common",
       "slot": "feet",
       "armourType": "leather",
-      "stats": {
-        "armour": 2,
-        "stamina": 1
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 12,
       "model": "hob_boots",
@@ -219,9 +208,7 @@
       "rarity": "common",
       "slot": "legs",
       "armourType": "mail",
-      "stats": {
-        "armour": 5
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 24,
       "model": "mail_chausses",
@@ -234,10 +221,9 @@
       "kind": "shield",
       "rarity": "enhanced",
       "slot": "offHand",
-      "stats": {
-        "block": 8,
-        "blockRating": 10,
-        "armour": 2
+      "itemLevel": 4,
+      "statSplit": {
+        "block": 1
       },
       "stack": 1,
       "price": 45,
@@ -251,7 +237,7 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [5, 10],
+      "itemLevel": 2,
       "speed": 2.6,
       "stack": 1,
       "price": 22,
@@ -266,10 +252,7 @@
       "rarity": "common",
       "slot": "chest",
       "armourType": "mail",
-      "stats": {
-        "armour": 12,
-        "stamina": 1
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 40,
       "model": "warden_hauberk",
@@ -283,9 +266,7 @@
       "rarity": "common",
       "slot": "feet",
       "armourType": "plate",
-      "stats": {
-        "armour": 4
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 30,
       "model": "plate_sabatons",
@@ -298,10 +279,10 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [8, 13],
+      "itemLevel": 4,
       "speed": 2.8,
-      "stats": {
-        "strength": 2
+      "statSplit": {
+        "strength": 1
       },
       "stack": 1,
       "price": 75,
@@ -360,9 +341,9 @@
       "rarity": "rare",
       "slot": "head",
       "armourType": "mail",
-      "stats": {
-        "armour": 8,
-        "stamina": 4,
+      "itemLevel": 5,
+      "statSplit": {
+        "stamina": 3,
         "strength": 2
       },
       "stack": 1,
@@ -377,12 +358,12 @@
       "kind": "weapon",
       "rarity": "epic",
       "slot": "mainHand",
-      "damage": [9, 14],
+      "itemLevel": 5,
       "speed": 2.4,
-      "stats": {
-        "strength": 4,
-        "stamina": 3,
-        "haste": 5
+      "statSplit": {
+        "strength": 1,
+        "stamina": 1,
+        "haste": 1
       },
       "reservedFor": ["seer"],
       "stack": 1,

@@ -350,6 +350,7 @@ kbd {
 .tt-name { font-size: 15px; color: #f0e4c8; }
 .tt-name.k-weapon, .tt-name.k-armor { color: #7fb0ff; }
 .tt-kind { color: var(--text-dim); font-size: 12px; }
+.tt-ilvl { color: #e8c860; font-size: 12px; }
 .tt-desc { color: #d0b878; font-style: italic; margin-top: 4px; }
 .tt-hint { color: #8fbf6a; font-size: 12px; margin-top: 4px; }
 #tooltip .up { color: #8fdf6a; }

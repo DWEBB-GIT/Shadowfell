@@ -456,8 +456,8 @@ export class Hud {
       this.el.targetName.textContent = c.name;
       this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
       this.el.target.classList.toggle('attacking', !!t && tg.attacking);
-      this.el.targetFill.style.width = `${Math.min(100, (shown.health / c.health) * 100)}%`;
-      this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${c.health}`;
+      this.el.targetFill.style.width = `${Math.min(100, (shown.health / shown.maxHealth) * 100)}%`;
+      this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${shown.maxHealth}`;
       this.el.target.classList.toggle('elite', !!c.elite);
       this.el.target.classList.toggle('locked', !!t);
       this.el.targetManaBar.hidden = !c.mana;
@@ -474,7 +474,7 @@ export class Hud {
     for (const e of enemies.list) {
       if (!e.alive) continue;
       const nemesis = this.game.afterlife.isNemesis(e);
-      if (e.engaged <= 0 && e.health >= e.cfg.health && e !== t && e !== shown && !nemesis) continue;
+      if (e.engaged <= 0 && e.health >= e.maxHealth && e !== t && e !== shown && !nemesis) continue;
       seen.add(e.id);
       let bar = this.enemyBars.get(e.id);
       if (!bar) {
@@ -488,7 +488,7 @@ export class Hud {
       const visible = this.tmp.z < 1 && Math.abs(this.tmp.x) < 1.1 && Math.abs(this.tmp.y) < 1.1;
       bar.style.display = visible ? '' : 'none';
       bar.style.transform = `translate(${((this.tmp.x + 1) / 2) * w}px, ${((1 - this.tmp.y) / 2) * h}px) translate(-50%, -100%)`;
-      bar.querySelector('.efill').style.width = `${(e.health / e.cfg.health) * 100}%`;
+      bar.querySelector('.efill').style.width = `${(e.health / e.maxHealth) * 100}%`;
       if (e.cfg.mana) bar.querySelector('.emana-fill').style.width = `${(e.mana / e.cfg.mana) * 100}%`;
       bar.classList.toggle('winding', e.windup > 0 || !!e.casting);
       bar.classList.toggle('targeted', e === t);

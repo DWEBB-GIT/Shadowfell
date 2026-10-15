@@ -1,6 +1,7 @@
 // The shape of the game's data (the JSON files in /data) and the checks that
-// keep it sound. Pure functions with no imports, so the same checks run in
-// the game at start-up and in Node (tests/validate-data.mjs) before a commit.
+// keep it sound. Pure functions that import only the pure scaling formulas,
+// so the same checks run in the game at start-up and in Node
+// (tests/validate-data.mjs) before a commit.
 //
 // The rules, in short:
 //   * every record has a lower_snake_case `id`, unique within its file
@@ -9,12 +10,14 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
+import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
+
 export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
 const EQUIPPABLE = ['weapon', 'armor', 'shield', 'jewellery', 'torch'];
-export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
+export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour', 'resistance', 'block', 'haste'];
 // Character slots, laid out as in WoW: `col` is where the panel shows it.
 // An item's `slot` names the slot it goes in, or a slot type (`fits`) when
 // there are two of them: a ring goes on either finger, a trinket in either
@@ -106,7 +109,21 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (!equips && d.slot) bad('only weapons, armour and shields have a slot');
     if (d.kind === 'armor' && !armourTypes.includes(d.armourType)) bad('armour needs an armour type');
     if (d.armourType && !armourTypes.includes(d.armourType)) bad(`unknown armour type ${d.armourType}`);
-    if (d.kind === 'weapon' && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage[0] <= d.damage[1])) bad('a weapon needs damage [min, max]');
+    // gear's numbers come from its item level (src/data/scaling.js)
+    if (GEAR.includes(d.kind) || d.kind === 'jewellery') {
+      if (!(isInt(d.itemLevel) && d.itemLevel >= 1)) bad('gear needs an itemLevel (a whole number of at least 1)');
+      for (const [k, v] of Object.entries(d.statSplit || {})) {
+        if (!STAT_KEYS.includes(k)) bad(`statSplit names unknown stat ${k}`);
+        else if (!(isNum(v) && v > 0)) bad(`statSplit ${k} must be a share above 0`);
+      }
+      const r = SCALING.rarity[d.rarity];
+      if (d.statSplit && r && !r.budget) bad(`a ${d.rarity} item has no stat points to split`);
+      if (isScaledItem(d) && rarities.includes(d.rarity) && overBudget(d)) {
+        const { budget, spent } = itemSpend(d);
+        bad(`spends ${spent.toFixed(1)} stat points of its ${budget.toFixed(1)} (or states damage above its item level's); mark it budgetException if that is meant`);
+      }
+    }
+    if (d.damage !== undefined && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage.every(isNum) && d.damage[0] <= d.damage[1])) bad('damage must be [min, max]');
     if (d.kind === 'weapon' && !(isNum(d.speed) && d.speed >= 1 && d.speed <= 5)) bad('a weapon needs a swing speed in seconds (1 to 5)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
@@ -244,12 +261,22 @@ export function validateGameData(raw, opts = {}) {
     model(w, e.model);
     repRefs(`enemies.json ${e.id}`, e.reputation);
     if (e.respawn !== undefined && !(isNum(e.respawn) && e.respawn >= 0)) errors.push(`enemies.json ${e.id}: respawn must be seconds (0 = never)`);
+    // a type sizes health, damage, attack speed and armour from the level
+    // (src/data/scaling.js); a number stated in the record wins
+    const type = SCALING.enemyTypes[e.type];
+    if (e.type !== undefined && !type) errors.push(`${w}: type must be one of ${Object.keys(SCALING.enemyTypes).join(', ')}`);
+    if (e.armourClass !== undefined && SCALING.armourClasses[e.armourClass] === undefined) errors.push(`${w}: armourClass must be one of ${Object.keys(SCALING.armourClasses).join(', ')}`);
+    const sized = { health: 'health', damage: 'hit', attackInterval: 'interval' };
     for (const k of ['level', 'health', 'damage', 'attackInterval', 'windup', 'detection', 'meleeRange', 'speed', 'radius', 'xp', 'coins']) {
-      if (!isNum(e[k]) || e[k] < 0) errors.push(`${w}: ${k} must be a number of at least 0`);
+      if (e[k] === undefined && type && type[sized[k]] !== undefined) continue;
+      if (!isNum(e[k]) || e[k] < 0) errors.push(`${w}: ${k} must be a number of at least 0${sized[k] ? ' (or give the enemy a type that sizes it)' : ''}`);
     }
+    if (e.armour !== undefined && !(isNum(e.armour) && e.armour >= 0)) errors.push(`${w}: armour must be a number of at least 0`);
     if (e.lootTable) ref(w, 'loot table', lootTables, e.lootTable);
     if (e.uniqueDrop) ref(w, 'item', items, e.uniqueDrop);
-    if (e.ranged && !(isNum(e.ranged.range) && isNum(e.ranged.damage) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage and windup`);
+    if (e.ranged && !(isNum(e.ranged.range) && (isNum(e.ranged.damage) || type?.hit !== undefined) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage (or a type) and windup`);
+    if (e.special && !(isNum(e.special.damage) || type?.special !== undefined)) errors.push(`${w}: special needs damage (or an elite, heavy or boss type)`);
+    if (e.circle && !isNum(e.circle.damage)) errors.push(`${w}: circle needs damage`);
     for (const att of [e.ranged, e.circle]) if (att && att.school && !SCHOOLS.includes(att.school)) errors.push(`${w}: unknown school ${att.school}`);
     if ((e.ranged?.mana || e.circle?.mana) && !(e.mana > 0)) errors.push(`${w}: spends mana but has none`);
   }

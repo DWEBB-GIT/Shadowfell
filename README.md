@@ -13,7 +13,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 ## New in build 2
 
-- **Ground telegraphs, after Final Fantasy XIV.** The Gravebound Brute paints its attacks on the ground before they land: an amber cone for its ordinary cleave and a large orange cone for **Grave Slam** (24 damage, 1.4 s wind-up). The cone fills as the wind-up runs, a cast bar shows under its health bar, and anyone still inside when it fills is hit. The area is fixed when the wind-up starts, so walk out or Brace. Shield Break interrupts the cleave but not the slam.
+- **Ground telegraphs, after Final Fantasy XIV.** The Gravebound Brute paints its attacks on the ground before they land: an amber cone for its ordinary cleave and a large orange cone for **Grave Slam** (31 damage, 1.4 s wind-up). The cone fills as the wind-up runs, a cast bar shows under its health bar, and anyone still inside when it fills is hit. The area is fixed when the wind-up starts, so walk out or Brace. Shield Break interrupts the cleave but not the slam.
 - **Global cooldown, as in classic WoW.** Shield Break and the new **Lunge** (a 5 m charge that strikes on arrival, 1.5× damage, 8 s cooldown) share a 1.5 s GCD. Strike, Brace and draughts stay off it. The spell bar shows each cooldown as a sweep, and the GCD as a second sweep.
 - **Diablo-style spell bar** along the bottom of the screen, with the experience bar above it, the character and save buttons, coins, and four bag slots.
 - **WoW bags.** The backpack (16 slots) sits in the right-most bag slot; three more slots take bags. A Traveller's Satchel (8 slots) lies in the western ruins. Click a bag slot to open or close that bag; each bag window also has its own ×, and B opens or closes them all. The bags, the character panel and the spellbook are separate windows, and none of them pause the game.
@@ -30,6 +30,17 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Layout.** The spell bar and experience bar sit in the middle of the bottom edge. Coins, the menu and the bag slots are stacked on the far right.
 - **Menu.** Five buttons: Character (C), Spells (P), Talents (N, an empty placeholder), Quest Log (L) and Settings (O). Skills moved into the Spells window header and Save into Settings (K still saves).
 - **Key bindings.** Settings lists every action with its key; click one and press a new key (Backspace clears it, Esc cancels). A key taken from another action moves over. **Quick bind** lets you hover a spell or utility slot and press a key to bind it; Esc ends it. Bindings are saved in the browser and the bar labels and tooltips follow them.
+
+## Armour, item budgets and enemy types
+
+Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-and-damage.md) has the formulas and tables.
+
+- **One growth line.** Everything that grows with level grows with (level + 4): the armour constant, item armour, item stat budgets, weapon damage, player spells, and enemy health and hits. The constants and formulas are in `src/data/scaling.js`.
+- **Armour by your own level.** Damage reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75%, so the character panel's percentage holds against every enemy. Armour numbers are ten times what they were: the travelling clothes have 30, and the Warden starts at 130 (21%).
+- **Level gaps.** Every hit is ×1.2 for each level the attacker is above its target, and ÷1.2 for each level below, with at least 1 damage.
+- **Items are worked out.** Gear states its item level, slot, armour type, rarity and a stat split; the game works out armour (cloth 3, leather 6, mail 9, plate 12 per slot weight), weapon damage (0.45 × (item level + 4) a second, ±40% a swing), a shield's armour and 10% block, and the stat points (0.4 × slot weight × (item level + 4), ×1 green, ×1.3 blue, ×1.6 purple; white has none). Tooltips show the item level. `npm run validate` prints each item's budget and refuses one more than 10% over. Block rating is folded into block chance, and suffixes on green drops spend the green budget.
+- **Enemies by level and type.** No world scaling: each enemy's health, hits, attack speed and armour come from its level and type (fodder, pack beast, normal, skirmisher, armoured, elite, heavy, boss), sized against a par character of its level. Each spawn point's enemy has its own health within ±10%. The ghoul is 18 health and hits for 6; the brute 50 (45 at Hallow Cut) with 140 armour, hits of 9 and a 31 Grave Slam; the archer shoots for 12.
+- **Spells** follow the weapons: Hallowed Bolt 3–4, Smite 1–3, Hallowed Ground 1 a second and Rebuke 1 at level 1, ×(level + 4) ÷ 5, plus 0.25 spell power per Intellect.
 
 ## Utility bar and camera (Dan's list, part 4)
 
@@ -68,13 +79,13 @@ The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in
 - **Four attributes:** Stamina, Strength, Agility and Intellect (renamed from Vitality, Might and Finesse). Each archetype has a main attribute that adds to its damage; the Warden's is Strength. Stamina gives health. The character panel lists them, then Haste, Armour, Block and Crit.
 - **Derived combat stats:**
   - weapon damage ranges;
-  - crit chance (5% plus Agility) at 150% damage;
-  - armour, a capped percentage reduction that weakens against higher-level attackers;
-  - shield block: block chance plus block rating, and each block stops 30% of the hit;
+  - crit chance (5% plus Agility, converted by level) at 150% damage;
+  - armour, a capped percentage reduction by your own level; higher-level attackers hit harder through the level gap instead;
+  - shield block: the shield's own block chance plus block chance from gear, and each block stops 30% of the hit;
   - haste, from gear only, which shortens swings, windups and the global cooldown.
 - **Armour types:** cloth, leather, mail and plate. Each archetype can only wear some types; the Warden can wear all of them and use shields, and starts with a battered kite shield.
 - **No hit rolls and no dodge chance.** Avoiding damage comes from telegraphs and the defensive button.
-- **One formula for every hit:** base × ability multiplier, then crit, then armour, then block.
+- **One formula for every hit:** base × ability multiplier × level gap, then crit, then armour, then block.
 - **Damage numbers** float up for hits dealt (pale), hits taken (red) and heals (green). Crits are larger, amber and marked "!", and blocks read "Block". They stay small and muted, as the design asks.
 - **Enemy health:** the target frame shows the health of the enemy you are locked on to, aiming at or fighting. Enemies with mana also get a blue bar there and over their heads.
 - **Character panel:** shows every stat. Item tooltips show weapon ranges, armour type and stat bonuses.
@@ -129,7 +140,7 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;
-  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (+1–2 Strength and Stamina), *of Swiftness* (haste) or *of Vigour*: that is its magical property. It shows green and sells for a little more.
+  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (Strength and Stamina), *of Swiftness* (haste) or *of Vigour*, which spends the green stat budget of the item's level and slot: that is its magical property. It shows green and sells for a little more.
 - **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
 - **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
 
@@ -208,7 +219,7 @@ Three Ashen Ghouls and the Brute are placed so they are not all visible from the
 
 ## Balance (from section 9.7)
 
-Every number lives in `src/config.js`. At average rolls: player 100 HP, auto attack 66 (59–74) every 2.2 s with the worn longsword, abilities from a normalised strike of 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Strength and +2 Stamina: +12 max HP and more damage, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
+Every number lives in `src/config.js`, `src/data/scaling.js` and the data files. At average rolls: player 100 HP and 130 armour (21%), auto attack 9 (7–11) every 2.2 s with the worn longsword, Shield Break 5, ghoul 18 HP / 5 dmg after armour / 1.35 s, brute 50 HP with 140 armour / 9 dmg (×1.44 two levels up) / 1.2 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Strength and +2 Stamina: +12 max HP and more damage, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 31 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
 
 ## Saving
 
