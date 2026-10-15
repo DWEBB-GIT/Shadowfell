@@ -190,3 +190,7 @@ It should not shorten enemy telegraph timing or Brace's window. Haste fits rogue
   - Grave Slam and other telegraphed specials still cannot be blocked.
 - This replaces today's flat block value of 6, which can stop a weak hit entirely.
 - The Warden would get the block from an actual off-hand shield item rather than from the archetype.
+
+## Auto attack and weapon speed (2026-10-15)
+
+Auto attack now works as in WoW. Each weapon has a `speed`, the seconds between swings, and its `damage` is per swing. A swing does weapon damage + power × speed ÷ 0.6, so Might is worth the same per second on any weapon. Haste divides the swing time. Abilities (Shield Break, Lunge, Rend, Cleave) use the weapon's damage normalised to 0.6 s (`abilityWeaponSeconds`), which keeps them as strong as before whatever the weapon's speed. The weapons' damage per second is unchanged: the worn longsword went from 12–16 every 0.6 s to 44–59 every 2.2 s. Older sections of this page describe the earlier Strike.

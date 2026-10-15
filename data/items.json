@@ -57,7 +57,8 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [12, 16],
+      "damage": [44, 59],
+      "speed": 2.2,
       "stack": 1,
       "price": 12,
       "model": "worn_sword",
@@ -70,7 +71,8 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [16, 22],
+      "damage": [53, 73],
+      "speed": 2.0,
       "stats": {
         "haste": 4
       },
@@ -249,7 +251,8 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [13, 19],
+      "damage": [56, 82],
+      "speed": 2.6,
       "stack": 1,
       "price": 22,
       "model": "rusted_falchion",
@@ -295,7 +298,8 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [18, 26],
+      "damage": [84, 121],
+      "speed": 2.8,
       "stats": {
         "might": 2
       },
@@ -373,7 +377,8 @@
       "kind": "weapon",
       "rarity": "epic",
       "slot": "mainHand",
-      "damage": [26, 34],
+      "damage": [104, 136],
+      "speed": 2.4,
       "stats": {
         "might": 4,
         "vitality": 3,

@@ -322,8 +322,9 @@ export class Inventory {
     player.showEquipment(this.equipment);
     this.game.recomputeMaxHealth();
     events.emit('equipmentChanged', {});
-    const [lo, hi] = this.game.stats.abilityRange(1);
-    events.emit('log', { text: `Strike damage is now ${lo}–${hi} (${this.weapon.name}).`, kind: 'level', throttle: `equip-dmg-${lo}-${hi}` });
+    const st = this.game.stats;
+    const [lo, hi] = st.swingRange;
+    events.emit('log', { text: `Auto attack is now ${lo}–${hi} every ${st.attackCooldown.toFixed(1)}s (${this.weapon.name}).`, kind: 'level', throttle: `equip-dmg-${lo}-${hi}` });
   }
 
   _changed() {

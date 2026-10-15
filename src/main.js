@@ -451,16 +451,14 @@ class Game {
       input.consume('Space') || p(BUTTONS.B),
     ];
     const actions = this.actionBar.actions(slots);
-    // Attack on the bar turns auto attack on or off; auto attack swings
-    // whenever the target is in reach and the weapon is ready
-    if (actions.strike) tg.toggleAttack(rawAim);
+    // Auto attack (WoW): once engaged (right-click, RT, or any ability used
+    // on an enemy) the Warden swings whenever the target is in reach, in
+    // front of him, and his weapon is ready. It is not on the bar.
     actions.strike = tg.attacking && tg.targetInReach;
-    const fighting = tg.attacking && tg.current && tg.current.position.distanceTo(this.player.position) < 6;
     return {
       move,
       aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
       lungeAim: tg.aimFor(rawAim, ABILITIES.lunge.range),
-      lockOn: fighting ? tg.current.position : null,
       rawAim,
       actions,
     };
@@ -545,15 +543,27 @@ class Game {
     // exponential smoothing: the same feel at any frame rate
     const k = 1 - Math.exp(-CONFIG.camera.followSharpness * dt);
     this.cameraTarget.lerp(this.player.position, k);
-    this._placeCamera();
+    this._placeCamera(dt);
   }
 
-  _placeCamera() {
+  // a kick of the camera when a blow lands (see CONFIG.impact)
+  shakeCamera(amount) {
+    this.shake = Math.max(this.shake || 0, amount);
+  }
+
+  _placeCamera(dt = 0) {
     // a fixed isometric view: the scenes are composed for this one angle
     const [ox, oy, oz] = CONFIG.camera.offset;
     const t = this.cameraTarget;
-    this.camera.position.set(t.x + ox, t.y + oy, t.z + oz);
-    this.camera.lookAt(t.x, t.y + 1.0, t.z - 2.4); // look a little ahead, up the road
+    let sx = 0;
+    let sy = 0;
+    if (this.shake > 0.001) {
+      sx = Math.sin(this.time * 71) * this.shake;
+      sy = Math.cos(this.time * 53) * this.shake;
+      this.shake *= Math.exp(-CONFIG.impact.shakeDecay * dt);
+    } else this.shake = 0;
+    this.camera.position.set(t.x + ox + sx, t.y + oy + sy, t.z + oz);
+    this.camera.lookAt(t.x + sx, t.y + 1.0 + sy, t.z - 2.4); // look a little ahead, up the road
     this.sun.position.set(t.x - 14, t.y + 26, t.z + 6);
     this.sun.target.position.set(t.x, t.y, t.z);
     const p = this.player.position;

@@ -463,3 +463,5 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 body.ghost #prompt { color: #cfe6ff; }
 #xp-bar { position: relative; }
 #xp-rested { position: absolute; top: 0; bottom: 0; background: rgba(90, 140, 230, 0.45); pointer-events: none; }
+
+.tt-weapon { display: flex; justify-content: space-between; gap: 18px; }

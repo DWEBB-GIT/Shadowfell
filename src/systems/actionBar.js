@@ -8,8 +8,8 @@ import { DB } from '../data/db.js';
 // Abilities come from data/abilities.json. `target`: 'enemy' abilities go to
 // the selected enemy (or the one nearest your aim) within `range`; 'ground'
 // ones land at the aim point; 'self' ones need no aim. `tuning` holds the
-// numbers each runs on. Attack (id `strike`) turns auto attack on and off;
-// right-clicking an enemy does the same without the bar.
+// numbers each runs on. Abilities with `bar: false` (auto attack, id
+// `strike`) never go on the bar or in the spellbook.
 export const ABILITIES = DB.abilities;
 
 // Key labels for keyboard/mouse and gamepad, in slot order. The last slot is
@@ -23,7 +23,10 @@ export const BAR_SLOTS = [
   { kbm: 'Space', pad: 'B', defensive: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'strike', 'brace'];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rend', 'brace'];
+
+// may this ability sit on the bar (and show in the spellbook)?
+export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);
 
 // abilities that no longer exist, mapped to what replaced them (old saves)
 const RENAMED = { dodge: 'brace' };
@@ -49,7 +52,7 @@ export class ActionBar {
   // Put an ability in a slot; it leaves any slot it was in, and whatever was
   // in the target slot goes back to the spellbook.
   place(ability, index) {
-    if (!ABILITIES[ability] || !this.game.skills.knowsAbility(ability)) return;
+    if (!barAbility(this.game, ability)) return;
     const was = this.slots.indexOf(ability);
     if (was >= 0) this.slots[was] = null;
     this.slots[index] = ability;
@@ -95,7 +98,7 @@ export class ActionBar {
     }
     this.slots = BAR_SLOTS.map((_, i) => {
       const a = RENAMED[list[i]] || list[i];
-      return ABILITIES[a] ? a : null;
+      return ABILITIES[a] && ABILITIES[a].bar !== false ? a : null;
     });
     this._changed();
   }

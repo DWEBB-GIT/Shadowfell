@@ -1,3 +1,4 @@
+import { CONFIG } from '../config.js';
 import { heightAt } from '../world/terrain.js';
 import * as THREE from 'three';
 
@@ -15,7 +16,16 @@ export class Effects {
 
     const ev = game.events;
     ev.on('shieldBreak', ({ position, radius }) => this.shockwave(position, radius));
-    ev.on('enemyHit', ({ enemy, kind }) => this.sparks(enemy.position, kind === 'strike' ? 5 : 8));
+    ev.on('enemyHit', ({ enemy, kind, crit }) => this.sparks(enemy.position, crit ? 14 : kind === 'strike' ? 7 : 8));
+    // the weight of a landed blow: both bodies hold for a beat, the camera kicks
+    ev.on('hitImpact', ({ enemy, crit, heavy }) => {
+      if (!heavy && !crit) return;
+      const hold = CONFIG.impact.hitStop * (crit ? 1.8 : 1);
+      enemy.rig.freeze(hold);
+      this.game.player.rig.freeze(hold * 0.8);
+      this.game.shakeCamera(crit ? CONFIG.impact.critShake : CONFIG.impact.shake);
+    });
+    ev.on('playerHurt', ({ heavy }) => this.game.shakeCamera(heavy ? CONFIG.impact.critShake : CONFIG.impact.shake * 0.6));
     ev.on('playerHurt', () => this.game.hud.flashDamage());
     ev.on('levelUp', () => this.pillar(this.game.player.position));
     ev.on('enemyDefeated', ({ enemy }) => this.dust(enemy.position, 10));

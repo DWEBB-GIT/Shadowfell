@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { computeHit, enemyBlock, weaponRoll, enemyRoll } from './stats.js';
+import { computeHit, enemyBlock, weaponRoll, swingRoll, enemyRoll } from './stats.js';
 
 // Combat rules: who a blow hits, how much it hurts, and what follows from a
 // defeat. Entities ask; this system decides.
@@ -24,12 +24,16 @@ export class Combat {
   }
 
   // A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
-  _playerHit(enemy, mult, hurtOpts) {
+  // `swing`: an auto attack, which rolls the weapon's own per-swing damage;
+  // abilities roll the normalised range (see Stats.abilityWeaponRange).
+  _playerHit(enemy, mult, hurtOpts, { swing = false } = {}) {
     const { stats, events } = this.game;
     const r = this.game.random;
-    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base: weaponRoll(r, stats), mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
+    const base = swing ? swingRoll(r, stats) : weaponRoll(r, stats);
+    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
+    events.emit('hitImpact', { enemy, crit: hit.crit, heavy: !!(hurtOpts && hurtOpts.heavy) || swing });
     return hit;
   }
 
@@ -66,6 +70,7 @@ export class Combat {
       return null;
     }
     player.faceTowards(best.position.x, best.position.z);
+    this.game.targeting.engage(best);
     const hit = this._playerHit(best, CONFIG.lunge.damageMultiplier, { stagger: 0.3, knockFrom: player.position, knockback: 0.4 });
     events.emit('enemyHit', { enemy: best, damage: hit.amount, crit: hit.crit, kind: 'strike' });
     events.emit('log', { text: `You lunge into the ${best.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
@@ -150,7 +155,7 @@ export class Combat {
       events.emit('playerMiss', {});
       return null;
     }
-    const hit = this._playerHit(target, 1, { stagger: 0.12, knockFrom: player.position, knockback: 0.15 });
+    const hit = this._playerHit(target, 1, { stagger: 0.22, knockFrom: player.position, knockback: 0.3 }, { swing: true });
     events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike' });
     events.emit('log', { text: `You strike the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
     if (target.dead) this.onEnemyDefeated(target);
@@ -171,6 +176,10 @@ export class Combat {
       dealt.push(hit.amount);
     }
     const dmg = dealt.length ? Math.max(...dealt) : 0;
+    // striking engages: auto attack the target, or the first foe hit
+    const tg = this.game.targeting;
+    const alive = hits.filter((e) => e.alive);
+    if (alive.length) tg.engage(tg.current && alive.includes(tg.current) ? tg.current : alive[0]);
     events.emit('shieldBreak', { position: player.position.clone(), radius: CONFIG.shieldBreak.radius, hits });
     if (hits.length) {
       const names = hits.length === 1 ? `the ${hits[0].cfg.name}` : `${hits.length} foes`;

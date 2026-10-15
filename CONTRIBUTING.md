@@ -64,6 +64,7 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
 
 ## Recipes
 
+- **A new weapon:** give it `damage` [min, max] per swing and `speed` (seconds between auto attack swings). Keep damage per second, (min + max) / 2 / speed, in line with weapons of its rarity: abilities use the weapon's damage normalised to `abilityWeaponSeconds` (strike tuning), so a slow weapon has bigger swings but no stronger abilities.
 - **A new item:**
   1. Add a record to `items.json`.
   2. If it needs its own look, add a builder to `assets/blender/build_assets.py`, run `npm run assets`, and register the model in `src/assets/assets.js`.

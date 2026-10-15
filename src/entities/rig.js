@@ -27,6 +27,13 @@ export class Rig {
     this.flinch = 0;
     this.death = -1; // -1 alive, otherwise seconds since death
     this.lean = 0;
+    this.pose = null; // a held pose ('fish') when no action plays
+    this.frozen = 0; // hit-stop: the pose holds for a moment when a blow lands
+  }
+
+  // hold the current pose for `seconds` (the weight of a landed blow)
+  freeze(seconds) {
+    this.frozen = Math.max(this.frozen, seconds);
   }
 
   play(type, duration, impact = 0.5) {
@@ -56,6 +63,10 @@ export class Rig {
   }
 
   update(dt, speed01) {
+    if (this.frozen > 0 && this.death < 0) {
+      this.frozen -= dt;
+      return;
+    }
     this.time += dt;
     this.move += (speed01 - this.move) * Math.min(1, dt * 10);
     const stride = this.style === 'brute' ? 6 : this.style === 'ghoul' ? 7 : this.style === 'hound' ? 13 : 9;
@@ -88,6 +99,11 @@ export class Rig {
       p.Torso.rotation.x -= 0.08;
     }
 
+    // a held pose under any action: the rod out over the water
+    if (this.pose === 'fish' && !this.action) {
+      if (p.Arm_R) p.Arm_R.rotation.x += -1.0;
+      if (p.Arm_L) p.Arm_L.rotation.x += -0.35;
+    }
     if (this.action) this._applyAction(dt);
     if (this.death >= 0) this._applyDeath(dt);
   }
@@ -151,6 +167,11 @@ export class Rig {
           p.Arm_R.rotation.z += 0.5 * raise;
         }
         if (p.Torso) p.Torso.rotation.y += 0.35 * raise;
+        break;
+      case 'castLine': // fishing: rod back over the shoulder, then flicked out
+        if (p.Arm_R) p.Arm_R.rotation.x += -1.0 - 1.7 * raise;
+        if (p.Arm_L) p.Arm_L.rotation.x += -0.35;
+        if (p.Torso) p.Torso.rotation.x += -0.12 * raise + 0.1 * swing * (1 - k);
         break;
       case 'cast': // seer: staff and free hand raised, then thrust down
         if (p.Arm_R) p.Arm_R.rotation.x += -2.2 * raise + 0.6 * swing * (1 - k);

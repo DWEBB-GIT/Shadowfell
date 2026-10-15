@@ -43,7 +43,11 @@ export class AudioSystem {
     const ev = this.game.events;
     ev.on('playerSwing', () => this.whoosh(0.18, 900));
     ev.on('playerMiss', () => {});
-    ev.on('enemyHit', ({ kind }) => (kind === 'strike' ? this.impact() : null));
+    ev.on('enemyHit', ({ kind, crit }) => {
+      if (kind !== 'strike') return;
+      this.impact();
+      if (crit) this.thud(90, 0.3); // a crit lands with a deeper crunch
+    });
     ev.on('shieldBreak', () => this.shieldBreak());
     ev.on('playerBrace', () => this.thud(180, 0.12));
     ev.on('braceBlock', () => {

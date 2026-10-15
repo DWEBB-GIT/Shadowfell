@@ -1,6 +1,6 @@
 import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView } from '../data/items.js';
 import { BUTTONS } from '../core/gamepad.js';
-import { ABILITIES } from '../systems/actionBar.js';
+import { ABILITIES, barAbility } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
 
@@ -269,8 +269,9 @@ export class ItemUI {
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
         row('Vitality', t.vitality, '+6 health per point', 'vitality'),
         '<div class="stat-gap"></div>',
-        row('Weapon', `${inv.weapon.name} (${stats.weaponRange.join('–')})`),
-        row('Strike', range(1), '', 'strike'),
+        row('Weapon', `${inv.weapon.name} (${stats.weaponRange.join('–')}, speed ${stats.weaponSpeed.toFixed(1)})`),
+        row('Auto attack', `${stats.swingRange.join('–')} every ${stats.attackCooldown.toFixed(2)}s`, 'Weapon damage plus might, each swing; haste shortens the swing time', 'dps'),
+        row('Damage per second', stats.dps.toFixed(1), 'From auto attack alone'),
         row('Shield Break', range(CONFIG.shieldBreak.damageMultiplier)),
         row('Lunge', range(CONFIG.lunge.damageMultiplier)),
         row('Critical chance', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
@@ -318,7 +319,7 @@ export class ItemUI {
       const bar = this.game.actionBar;
       const icons = this.hud.abilityIcons;
       this.el.spellList.innerHTML = Object.entries(ABILITIES)
-        .filter(([id]) => this.game.skills.knowsAbility(id))
+        .filter(([id]) => barAbility(this.game, id))
         .map(([id, a]) => {
           const at = bar.slots.indexOf(id);
           return `<div class="spell-row"><div class="islot spell filled${this.carry === 'k:' + id ? ' carried' : ''}" data-loc="k:${id}"><img src="${icons[id] || ''}" alt=""></div><div><div class="spell-name">${a.name}</div><div class="dim spell-where">${at >= 0 ? 'On the bar' : 'Not on the bar'}</div></div></div>`;
@@ -366,10 +367,15 @@ export class ItemUI {
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);
     }
     if (def.damage) {
-      const avg = (d) => (d[0] + d[1]) / 2;
-      const diff = avg(def.damage) - avg(this.game.stats.weaponRange);
-      const cmp = loc.startsWith('e:') || diff === 0 ? '' : ` <span class="${diff > 0 ? 'up' : 'down'}">(${diff > 0 ? '+' : ''}${diff} average)</span>`;
-      lines.push(`<div>${def.damage[0]}–${def.damage[1]} damage${cmp}</div>`);
+      // weapons compare by damage per second, as in WoW
+      const st = this.game.stats;
+      const dps = (d, sp) => (d[0] + d[1]) / 2 / sp;
+      const speed = def.speed || CONFIG.stats.fistSpeed;
+      const mine = dps(def.damage, speed);
+      const diff = Math.round((mine - dps(st.weaponRange, st.weaponSpeed)) * 10) / 10;
+      const cmp = loc.startsWith('e:') || diff === 0 ? '' : ` <span class="${diff > 0 ? 'up' : 'down'}">(${diff > 0 ? '+' : ''}${diff})</span>`;
+      lines.push(`<div class="tt-weapon"><span>${def.damage[0]}–${def.damage[1]} damage</span><span>Speed ${speed.toFixed(2)}</span></div>`);
+      lines.push(`<div>(${mine.toFixed(1)} damage per second${cmp})</div>`);
     }
     for (const [k, v] of Object.entries(def.stats || {})) lines.push(`<div class="up">+${v} ${STAT_LABEL[k] || k}</div>`);
     if (def.bagSlots) lines.push(`<div>${def.bagSlots} slots</div>`);

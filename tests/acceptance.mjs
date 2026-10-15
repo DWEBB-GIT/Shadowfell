@@ -73,6 +73,8 @@ async function sim(page, seconds, { held = [], press = [], clickAt = null, aimAt
     const n = Math.round(seconds * fps);
     for (let i = 0; i < n; i++) {
       g.step(dt);
+      // rightClick tests Shield Break on its own: the auto attack it starts is stopped
+      if (rightClick) g.targeting.stopAttack();
       if (oneSwing && g.player.cooldowns.attack > cd) {
         g.targeting.stopAttack();
         oneSwing = false;
@@ -269,7 +271,9 @@ async function combat(browser) {
     return { target: g.targeting.current && g.targeting.current.id, attacking: g.targeting.attacking, hp: g.enemies.byId('ghoul_road').health, swung: g.player.cooldowns.attack > 0 || !!g.player.pending };
   });
   record('Left click selects an enemy without attacking (WoW style)', selected.target === 'ghoul_road' && !selected.attacking && selected.hp === 48 && !selected.swung, `target ${selected.target}, ghoul at ${selected.hp}/48`);
-  // a right click starts auto attack; stop it after the first swing
+  // a right click starts auto attack; stop it after the first swing (the
+  // ghoul is given health enough to survive one, for the later checks)
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 400));
   await page.mouse.click(pt.x, pt.y, { button: 'right' });
   // software WebGL runs slowly, so wait for the swing to start and finish in game time
   await page.waitForFunction(() => window.__shadowfall.player.pending !== null, null, { timeout: 15000 });
@@ -280,7 +284,9 @@ async function combat(browser) {
   }, null, { timeout: 15000 });
   await pauseLoop(page);
   let g = await enemy(page, 'ghoul_road');
-  record('Basic attack damages a nearby enemy', g.hp === 30, `ghoul 1.6m away: 48 → ${g.hp} from a real right click (auto attack)`);
+  // one auto attack swing: the worn longsword's 44–59 plus swing power, less the ghoul's armour
+  const swingHit = await page.evaluate(() => window.__shadowfall.stats.swingRange);
+  record('Basic attack damages a nearby enemy', g.hp <= 400 - swingHit[0] * 0.6 && g.hp > 400 - swingHit[1] * 1.6, `ghoul 1.6m away: 400 → ${g.hp} from one swing of ${swingHit.join('–')} (a real right click, auto attack)`);
 
   // a ghoul 6m away must not be hit
   await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
@@ -399,10 +405,14 @@ async function combat(browser) {
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 48));
   const before = await state(page);
-  for (let i = 0; i < 3; i++) await sim(page, 0.65, { clickAt: { x: 0, z: -1.6 } });
+  // one right click: auto attack swings until the ghoul falls (a further
+  // right click on the body would loot it)
+  await sim(page, 0.05, { aimAt: { x: 0, z: -1.6 } });
+  await page.evaluate(() => window.__shadowfall.targeting.engage(window.__shadowfall.enemies.byId('ghoul_road')));
+  await sim(page, 2.6);
   g = await enemy(page, 'ghoul_road');
   s = await state(page);
-  record('Enemy health reaches zero correctly', g && g.hp === 0 && g.dead, `three strikes of 18 on 48 hp → ${g && g.hp}, dead=${g && g.dead}`);
+  record('Enemy health reaches zero correctly', g && g.hp === 0 && g.dead, `auto attack swings on 48 hp → ${g && g.hp}, dead=${g && g.dead}`);
   const after = s;
   const again = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -915,6 +925,7 @@ async function abilities(browser) {
   const lungeBlocked = await page.evaluate(() => window.__shadowfall.player.lunge === null && window.__shadowfall.player.cooldowns.lunge === 0);
   const gcdSweep = await page.evaluate(() => parseFloat(document.getElementById('aslot-0').style.getPropertyValue('--gcd')));
   await placeEnemy(page, 'ghoul_road', 0, 18.4, { frozen: true });
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 500)); // survives the swing
   await sim(page, 0.05, { clickAt: { x: 0, z: 18.4 } });
   const strikeOk = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike' || window.__shadowfall.player.cooldowns.attack > 0);
   record('Global cooldown is shared by Shield Break and Lunge (WoW-style)', afterSB.gcd > 1.4 && lungeBlocked && gcdSweep > 0, `GCD ${afterSB.gcd.toFixed(2)}s left just after Shield Break; Lunge pressed 0.45s later was refused; Lunge slot shows the GCD sweep (${gcdSweep.toFixed(2)})`);
@@ -1281,7 +1292,7 @@ async function spellBar(browser) {
   await dragSlot(page, '#aslot-5', '#aslot-4');
   await page.waitForTimeout(150);
   const b4 = await bar();
-  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[5] === 'strike', 'Brace on 5, Attack on Space');
+  record('Swapping two spells swaps their keys (extra)', b4[4] === 'brace' && b4[5] === 'rend', 'Brace on 5, Rend on Space');
 
   // the bar layout is saved
   await page.evaluate(() => window.__shadowfall.manualSave());
@@ -1304,7 +1315,9 @@ async function spellBar(browser) {
   await begin(page, '#continue-btn');
   const bOld = await bar();
   record('Old saves with Dodge on the bar get Brace instead (extra)', bOld[5] === 'brace', bOld.map((a) => a || '—').join(', '));
-  record('Old bars with Strike and Shield Break on the mouse buttons keep both, on number keys', bOld.length === 6 && bOld.includes('shieldBreak') && bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
+  record('Old bars keep Shield Break from the mouse buttons, on number keys, and drop Attack (auto attack is off the bar)', bOld.length === 6 && bOld.includes('shieldBreak') && !bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
+  const noAttack = await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('strike', 2); return g.actionBar.slots.includes('strike'); });
+  record('Attack cannot be put on the bar', !noAttack);
 
   // gamepad: d-pad up opens the spellbook; A carries a spell to a slot; Y removes it
   await pauseLoop(page);
@@ -1547,7 +1560,7 @@ async function statsAndDamage(browser) {
   await sim(page, 0.05);
   const panel = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#char-stats div')].filter((d) => d.querySelector('b')).map((d) => [d.querySelector('span').textContent, d.querySelector('b').textContent])));
   await page.evaluate(() => window.__shadowfall.hud.togglePanel('character'));
-  record('The character panel shows attributes and combat stats', panel.Might === '4' && panel.Finesse === '2' && panel.Vitality === '10' && panel.Strike === '16–20' && panel['Critical chance'] === '6.0%' && panel.Armour === '20 (−29%)' && panel.Block === '10%, stops 30%' && panel.Haste.startsWith('0%') && /Mail, Plate, shields/.test(panel.Wears),
+  record('The character panel shows attributes and combat stats', panel.Might === '4' && panel.Finesse === '2' && panel.Vitality === '10' && panel['Auto attack'] === '59–74 every 2.20s' && panel['Damage per second'] === '30.2' && panel['Critical chance'] === '6.0%' && panel.Armour === '20 (−29%)' && panel.Block === '10%, stops 30%' && panel.Haste.startsWith('0%') && /Mail, Plate, shields/.test(panel.Wears),
     Object.entries(panel).map(([k, v]) => `${k} ${v}`).join(', '));
 
   // weapon hits roll within the weapon's range
@@ -1557,33 +1570,35 @@ async function statsAndDamage(browser) {
     await page.evaluate((id) => {
       const g = window.__shadowfall;
       const e = g.enemies.byId(id);
-      e.health = e.cfg.health;
+      e.health = 1000; // enough to take any one swing
       e.engaged = 0;
       g.player.cooldowns.attack = 0;
       g.hud.numbers.clear();
     }, id);
     await rolls(seq);
-    await sim(page, 0.3, { clickAt: { x: 0, z: -1.6 } });
+    await sim(page, 0.45, { clickAt: { x: 0, z: -1.6 } });
     return page.evaluate((id) => {
       const e = window.__shadowfall.enemies.byId(id);
       const n = [...document.querySelectorAll('#damage-numbers .dmg')].map((d) => ({ text: d.textContent, cls: d.className }));
-      return { dealt: e.cfg.health - e.health, n, log: document.querySelector('#log li:last-child').textContent };
+      const dealt = 1000 - e.health;
+      e.health = e.cfg.health;
+      return { dealt, n, log: document.querySelector('#log li:last-child').textContent };
     }, id);
   };
   const low = await strikeWith([0, 0.99]);
   const high = await strikeWith([0.999, 0.99]);
   const mid = await strikeWith([0.5, 0.99]);
-  record('Weapon hits roll within the weapon range plus power', low.dealt === 16 && high.dealt === 20 && mid.dealt === 18, `lowest roll ${low.dealt}, highest ${high.dealt}, average ${mid.dealt} (worn longsword 12–16, +4 from Might)`);
-  record('Hits show a damage number over the enemy', mid.n.length === 1 && mid.n[0].text === '18' && /dealt/.test(mid.n[0].cls) && !/crit/.test(mid.n[0].cls), JSON.stringify(mid.n));
+  record('Auto attack swings roll within the weapon range plus power', low.dealt === 59 && high.dealt === 74 && mid.dealt === 66, `lowest roll ${low.dealt}, highest ${high.dealt}, average ${mid.dealt} (worn longsword 44–59 per swing, +4 Might × 2.2 s / 0.6 s)`);
+  record('Hits show a damage number over the enemy', mid.n.length === 1 && mid.n[0].text === '66' && /dealt/.test(mid.n[0].cls) && !/crit/.test(mid.n[0].cls), JSON.stringify(mid.n));
 
   const crit = await strikeWith([0.5, 0.01]);
-  record('Critical hits do 150% and show a distinct number', crit.dealt === 27 && crit.n[0].text === '27!' && /crit/.test(crit.n[0].cls) && /critical/i.test(crit.log), `${crit.dealt} damage, number "${crit.n[0].text}" (${crit.n[0].cls}); log: "${crit.log}"`);
+  record('Critical hits do 150% and show a distinct number', crit.dealt === 99 && crit.n[0].text === '99!' && /crit/.test(crit.n[0].cls) && /critical/i.test(crit.log), `${crit.dealt} damage, number "${crit.n[0].text}" (${crit.n[0].cls}); log: "${crit.log}"`);
 
   // armour reduces damage: the brute has 10 armour (17%)
   await placeEnemy(page, 'brute_hallow', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_road', 6, 6, { frozen: true });
   const brute = await strikeWith([0.5, 0.99], 'brute_hallow');
-  record("Armour reduces the damage an enemy takes", brute.dealt === 15, `average strike 18 on the Brute (10 armour): ${brute.dealt}`);
+  record("Armour reduces the damage an enemy takes", brute.dealt === 55, `average swing 66 on the Brute (10 armour, 17%): ${brute.dealt}`);
   await placeEnemy(page, 'brute_hallow', -30, 40);
   await page.evaluate(() => { const b = window.__shadowfall.enemies.byId('brute_hallow'); b.cfg = { ...b.cfg, detection: 0 }; });
 
@@ -1740,7 +1755,7 @@ async function statsAndDamage(browser) {
     g.config.archetypes.warden.base.haste = 0;
     return { base, fast, used, capped };
   });
-  record('Haste shortens swings, windups and the global cooldown', near(haste.fast.swing, 0.5, 0.001) && near(haste.fast.gcd, 1.25, 0.001) && near(haste.used.cd, 0.5, 0.001) && near(haste.used.windup, 0.16 / 1.2, 0.001) && haste.capped.haste === 30 && near(haste.capped.gcd, 1.154, 0.001),
+  record('Haste shortens swings, windups and the global cooldown', near(haste.fast.swing, 2.2 / 1.2, 0.001) && near(haste.fast.gcd, 1.25, 0.001) && near(haste.used.cd, 2.2 / 1.2, 0.001) && near(haste.used.windup, 0.32 / 1.2, 0.001) && haste.capped.haste === 30 && near(haste.capped.gcd, 1.154, 0.001),
     `20% haste: swing ${haste.base.swing}s → ${haste.fast.swing.toFixed(2)}s, GCD ${haste.base.gcd}s → ${haste.fast.gcd.toFixed(2)}s; 80% is capped at ${haste.capped.haste}% (GCD ${haste.capped.gcd.toFixed(2)}s, floor 1s)`);
 
   // a level-up shows every stat that rose, old to new, here and on the character screen
@@ -1758,7 +1773,7 @@ async function statsAndDamage(browser) {
   const luGone = await page.evaluate(() => document.getElementById('levelup').hidden);
   record('Level-up shows each stat increase', lu.vis && lu.title === 'Level 2' && lu.rows.some((r) => /^Might 4 → 6 \+2$/.test(r)) && lu.rows.some((r) => /^Vitality 11 → 13 \+2$/.test(r)) && lu.rows.some((r) => /^Maximum health 106 → 118 \+12$/.test(r)) && lu.rows.some((r) => /^Strike 16–20 → 18–22 \+2$/.test(r)) && luGone,
     lu.rows.join(' | '));
-  record('The character screen marks what rose at the last level-up', ['health+12', 'might+2', 'vitality+2', 'strike+2'].every((m) => marks.includes(m)), marks.join(', '));
+  record('The character screen marks what rose at the last level-up', ['health+12', 'might+2', 'vitality+2', 'dps+3.2'].every((m) => marks.includes(m)), marks.join(', '));
 
   record('No script errors (stats and damage)', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'stats.png') });
@@ -1825,7 +1840,7 @@ async function forge(browser) {
     g.step(1 / 60);
     return { current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, talking: g.dialogue.isOpen };
   }));
-  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 6 && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
+  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 7 && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -1956,7 +1971,7 @@ async function gearRolls(browser) {
       seen.add(a);
       if (a < 32 * 0.8 - 0.5 || a > 32 * 1.2 + 0.5) armourOk = false;
       const f = g.itemView({ id: 'rusted_falchion', rolls: g.rollItem('rusted_falchion', Math.random) }).damage;
-      if (f[0] < 13 * 0.88 - 0.5 || f[1] > 19 * 1.12 + 0.5 || f[0] > f[1]) damageOk = false;
+      if (f[0] < 56 * 0.88 - 0.5 || f[1] > 82 * 1.12 + 0.5 || f[0] > f[1]) damageOk = false;
     }
     return { suffixed, armourOk, damageOk, kinds: seen.size, material: g.rollItem('grave_iron', Math.random), quest: g.rollItem('manifest', Math.random) };
   });
@@ -2478,13 +2493,33 @@ async function clickTargeting(browser) {
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_cart', 2.5, 1, { frozen: true });
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 150));
   await rightClickOn('ghoul_road');
   await sim(page, 1.3);
-  const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent }));
+  const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent, cd: window.__shadowfall.player.cooldowns.attack }));
   await sim(page, 1.4);
+  const second = await page.evaluate(() => window.__shadowfall.enemies.byId('ghoul_road').health);
+  await sim(page, 2.4);
   const end = await page.evaluate(() => ({ dead: window.__shadowfall.enemies.byId('ghoul_road').dead, attacking: window.__shadowfall.targeting.attacking, target: window.__shadowfall.targeting.current }));
-  record('Right click starts auto attack, which keeps swinging until the target falls', mid.hp === 12 && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
-    `48 → ${mid.hp} after 1.3s of swings (frame: "${mid.label}"); then it fell and auto attack stopped`);
+  record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp === 84 && mid.attacking && mid.label === 'Attacking' && second === 18 && end.dead && !end.attacking && !end.target,
+    `150 → ${mid.hp} after 1.3s (one swing; next in ${mid.cd.toFixed(2)}s of the longsword's 2.2s) → ${second} after 2.7s (frame: "${mid.label}"); then it fell and auto attack stopped`);
+
+  // right-clicking does not snap the Warden round: moving, he faces where he
+  // walks and holds his swing; standing still, he turns to the target
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_cart'] });
+  await placeEnemy(page, 'ghoul_cart', 0, -1.6, { frozen: true });
+  await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_cart').health = 500; g.player.facing = 0; g.player.cooldowns.attack = 0; });
+  await rightClickOn('ghoul_cart');
+  await sim(page, 0.05);
+  const snap = await page.evaluate(() => ({ facing: window.__shadowfall.player.facing, swung: !!window.__shadowfall.player.pending || window.__shadowfall.player.cooldowns.attack > 0 }));
+  await sim(page, 0.1);
+  const turning = await page.evaluate(() => window.__shadowfall.player.facing);
+  await sim(page, 1.0);
+  const faced = await page.evaluate(() => ({ facing: window.__shadowfall.player.facing, hp: window.__shadowfall.enemies.byId('ghoul_cart').health }));
+  const off = (a) => Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI)));
+  record('Right-clicking an enemy behind you does not snap you round; standing still you turn to it and swing', off(snap.facing) > 2.8 && !snap.swung && off(turning) > 1.5 && off(faced.facing) < 0.6 && faced.hp < 500,
+    `facing ${(off(snap.facing) * 57.3).toFixed(0)}° from it on the click, ${(off(turning) * 57.3).toFixed(0)}° 0.15s later, ${(off(faced.facing) * 57.3).toFixed(0)}° after 1.15s; ghoul 500 → ${faced.hp}`);
+  await page.evaluate(() => window.__shadowfall.targeting.clear());
 
   // picking another target stops auto attack; Tab cycles; Esc clears
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_cart').health = 48));
@@ -2502,13 +2537,9 @@ async function clickTargeting(browser) {
   record('Picking another target stops auto attack; Tab cycles targets; Esc clears', before && afterTab.target && afterTab.target !== 'ghoul_cart' && !afterTab.attacking && tab2 && tab2 !== afterTab.target && !cleared,
     `Tab: ghoul_cart → ${afterTab.target} → ${tab2}; Esc cleared it`);
 
-  // Attack on the bar (5) toggles auto attack on the target
-  await page.evaluate(() => window.__shadowfall.targeting.select(window.__shadowfall.enemies.byId('ghoul_cart')));
-  await sim(page, 0.05, { press: ['Digit5'] });
-  const on = await page.evaluate(() => window.__shadowfall.targeting.attacking);
-  await sim(page, 0.05, { press: ['Digit5'] });
-  const off = await page.evaluate(() => window.__shadowfall.targeting.attacking);
-  record('Attack (key 5) turns auto attack on and off', on && !off);
+  // auto attack is not a spell: it is not on the bar or in the spellbook
+  const offBar = await page.evaluate(() => ({ bar: window.__shadowfall.actionBar.slots }));
+  record('Auto attack is not on the bar (key 5 is Rend)', !offBar.bar.includes('strike') && offBar.bar[4] === 'rend', offBar.bar.map((a) => a || '—').join(', '));
 
   // abilities go to the target wherever the cursor is
   await setup(page, { x: 0, z: 0, keep: ['ghoul_graves'] });
@@ -2601,12 +2632,16 @@ async function spells(browser) {
   await sim(page, 0.05, { press: ['Digit4'] });
   const smite = 500 - (await hp('ghoul_road'));
   const smiteCd = await page.evaluate(() => [window.__shadowfall.player.cooldowns.smite, window.__shadowfall.player.cooldowns.gcd]);
+  const engaged = await page.evaluate(() => window.__shadowfall.targeting.attacking && window.__shadowfall.targeting.current?.id === 'ghoul_road');
+  record('A spell on an enemy engages it: auto attack follows (WoW)', engaged);
   record('Smite: instant damage on the target, its own 6s cooldown and the GCD', smite > 0 && smiteCd[0] > 5.5 && smiteCd[1] > 1, `hit for ${smite}; cooldown ${smiteCd[0].toFixed(1)}s, GCD ${smiteCd[1].toFixed(1)}s`);
   await slot('rend');
   await sim(page, 0.05, { press: ['Digit4'] });
   const blocked = await page.evaluate(() => window.__shadowfall.spells.dots.length === 0);
   record('The GCD stops a second spell straight after the first', blocked, 'Rend pressed during Smite\'s GCD: nothing');
 
+  // the bleed and burn numbers below are the spells' own: auto attack is held off
+  await page.evaluate(() => { const t = window.__shadowfall.targeting; t.stopAttack(); t._engage = t.engage; t.engage = () => false; });
   // bleed
   await ready([['ghoul_road', 0, 1.6]]);
   await select('ghoul_road');
@@ -2627,6 +2662,7 @@ async function spells(browser) {
   await sim(page, 6.5);
   const ground = [500 - (await hp('ghoul_road')), 500 - (await hp('ghoul_cart')), 500 - (await hp('ghoul_graves'))];
   const zoneGone = await page.evaluate(() => window.__shadowfall.spells.zones.length === 0);
+  await page.evaluate(() => { const t = window.__shadowfall.targeting; t.engage = t._engage; });
   record('Hallowed Ground: burns every enemy inside it each second for 6s, not those outside', ground[0] > 0 && ground[1] === ground[0] && ground[2] === 0 && zoneGone, `inside ${ground[0]} and ${ground[1]}, outside ${ground[2]}`);
 
   // cleave

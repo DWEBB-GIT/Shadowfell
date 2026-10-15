@@ -103,13 +103,15 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Old Tam**, the fisher by the Stillwater Mere west of the road, teaches Camping (10 coins) and Fishing (5 coins), and sells rods and torches.
 - **Set Camp.** A 3 second cast, standing still, with no enemies near. The camp (▲ on the minimap) becomes where your spirit rises. Resting by its fire builds rested experience (the pale band on the experience bar), which doubles kill experience until spent.
 - **Torches and the dark.** Some places are too dark to enter. Equip a torch in the off hand (it replaces the shield, so no block) to walk in. The Barrow Hollow, west of the hound den in the Blackwood, holds a strongbox and a purse.
-- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
+- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). The Warden puts his sword away and holds the rod out, with the line running to the bob. Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
 
 ## Controls
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
 
-**Targeting and auto attack (WoW style).** Left-click an enemy to select it: a red ring and the frame at the top of the screen mark it. Right-click an enemy to select it and start **auto attack**: the Warden swings at it every time his weapon is ready while it is in reach, until it falls, you pick another target, or you stop (Attack on the bar, or Esc). The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby; **RT** on a pad starts auto attack on your target, or on whoever is ahead. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+**Targeting and auto attack (WoW style).** Left-click an enemy to select it: a red ring and the frame at the top of the screen mark it. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it: the Warden then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Might. Right-clicking does not turn the Warden: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+
+**Weight.** A landed swing, a crit or a heavy blow holds both bodies for a split second (hit-stop), kicks the camera and knocks the enemy back a little; crits hold longer, shake harder and land with a deeper crunch. The numbers are in `impact` in `src/config.js`.
 
 **No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warden's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
 
@@ -121,12 +123,12 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | Mouse | Right stick | Aim (with no stick input, you aim the way you face) |
 | Tab | R3 (stick click) | Next target |
 | Left click | | Select an enemy or townsperson; loot a body or drop |
-| Right click | RT | Auto attack an enemy; talk to a townsperson; loot |
+| Right click | RT | Engage an enemy (auto attack); talk to a townsperson; loot |
 | 1 | X | Lunge (slot 1) |
 | 2 | Y | Shield Break (slot 2) |
 | 3 or Q | RB | Healing draught (slot 3) |
 | 4 | LB | Hallowed Bolt (slot 4) |
-| 5 | LT | Attack: auto attack on or off (slot 5) |
+| 5 | LT | Spell-bar slot 5 (Rend by default) |
 | Space | B | Brace, the defensive slot |
 | E | A | Interact, examine, loot everything nearby |
 | B (or I) | Start | Bags |
@@ -163,7 +165,7 @@ Three Ashen Ghouls and the Brute are placed so they are not all visible from the
 
 ## Balance (from section 9.7)
 
-Every number lives in `src/config.js`. At average rolls: player 100 HP, strike 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Might and +2 Vitality: +12 max HP and +2 strike, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
+Every number lives in `src/config.js`. At average rolls: player 100 HP, auto attack 66 (59–74) every 2.2 s with the worn longsword, abilities from a normalised strike of 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Might and +2 Vitality: +12 max HP and +2 strike, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
 
 ## Saving
 

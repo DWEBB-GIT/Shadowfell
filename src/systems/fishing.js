@@ -48,10 +48,11 @@ export class Fishing {
     const water = spot && waterAt(spot.x, spot.z, 0.3);
     if (!water) return say('Face open water to fish.', 'fish-water'), false;
     player.faceTowards(spot.x, spot.z);
-    player.rig.play('strike', 0.7, 0.5);
+    player.holdRod(true);
+    player.rig.play('castLine', 0.7, 0.45);
     const cfg = CONFIG.fishing;
     const wait = cfg.biteMin + (cfg.biteMax - cfg.biteMin) * this.game.random();
-    this.state = { phase: 'cast', t: 0, wait, x: spot.x, z: spot.z, water, bob: this._makeBob(), from: p.clone() };
+    this.state = { phase: 'cast', t: 0, wait, x: spot.x, z: spot.z, water, bob: this._makeBob(), line: this._makeLine(), from: p.clone() };
     events.emit('fishCast', { x: spot.x, z: spot.z });
     return true;
   }
@@ -106,7 +107,10 @@ export class Fishing {
   stop(quiet = false) {
     if (!this.state) return;
     this.game.scene.remove(this.state.bob);
+    this.game.scene.remove(this.state.line);
+    this.state.line.geometry.dispose();
     this.state = null;
+    this.game.player.holdRod(false);
     if (!quiet) this.game.events.emit('fishEnd', {});
   }
 
@@ -144,8 +148,35 @@ export class Fishing {
       if (s.t >= cfg.biteWindow) {
         events.emit('log', { text: 'The bob rises again. It got away.', kind: 'muted' });
         this.stop();
+        return;
       }
     }
+    this._drawLine(s, s.phase === 'cast' ? 0.1 : s.phase === 'bite' ? 0.05 : 0.35);
+  }
+
+  // the line, from the rod tip to the bob, sagging a little when slack
+  _drawLine(s, sag) {
+    const a = this.game.player.rodTipPosition(this._tip || (this._tip = new THREE.Vector3()));
+    const b = s.bob.position;
+    const pos = s.line.geometry.attributes.position;
+    const n = pos.count - 1;
+    for (let i = 0; i <= n; i++) {
+      const k = i / n;
+      const droop = Math.sin(k * Math.PI) * sag * a.distanceTo(b) * 0.25;
+      pos.setXYZ(i, a.x + (b.x - a.x) * k, a.y + (b.y + 0.08 - a.y) * k - droop, a.z + (b.z - a.z) * k);
+    }
+    pos.needsUpdate = true;
+    s.line.geometry.computeBoundingSphere();
+  }
+
+  _makeLine() {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xd8d2c0, transparent: true, opacity: 0.75 }));
+    line.name = 'FishingLine';
+    line.frustumCulled = false;
+    this.game.scene.add(line);
+    return line;
   }
 
   // the bob's place on screen, for clicking it

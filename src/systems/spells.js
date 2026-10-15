@@ -81,6 +81,8 @@ export class Spells {
       target = this._targetFor(spell);
       if (!target) return false;
       player.faceTowards(target.position.x, target.position.z);
+      // a spell at an enemy engages it: auto attack follows once in reach
+      this.game.targeting.engage(target);
     }
     player.cooldowns.gcd = stats.globalCooldown;
     const t = spell.tuning;
@@ -202,8 +204,11 @@ export class Spells {
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
     events.emit('enemyHit', { enemy, damage: hit.amount, crit: hit.crit, kind: 'spell' });
+    events.emit('hitImpact', { enemy, crit: hit.crit, heavy: (hurtOpts.knockback || 0) > 0 });
     if (line) events.emit('log', { text: line.replace('{name}', enemy.cfg.name).replace('{n}', hit.amount) + (hit.crit ? ' A critical blow!' : ''), kind: 'hit' });
     if (enemy.dead) combat.onEnemyDefeated(enemy);
+    // hitting an enemy with nothing engaged starts auto attack on it
+    else if (spell.kind !== 'dot' && !this.game.targeting.attacking) this.game.targeting.engage(enemy);
     return hit;
   }
 

@@ -9,10 +9,12 @@ import { heightAt } from '../world/terrain.js';
 // frame. Left-clicking a townsperson selects them as a friendly target.
 // Escape clears the target.
 //
-// Auto attack: right-click an enemy (RT on a pad, or the Attack ability) to
-// select it and start swinging. The Warden swings at it each time his weapon
-// is ready while it is in reach, until it falls, you pick another target, or
-// you stop (Attack again, or Escape).
+// Auto attack: right-click an enemy (RT on a pad), or use any ability on it,
+// to engage it. The Warden swings at it each time his weapon is ready (its
+// speed, less haste) while it is in reach and in front of him, until it
+// falls, you pick another target, or you clear it (Escape). Right-clicking
+// selects without turning him: standing still he turns to it at a walk's
+// pace; moving, he faces where he goes.
 //
 // Abilities go to the selected enemy; with nothing selected they go to the
 // enemy nearest your aim (the cursor, or ahead of you on a pad), which a faint
@@ -133,12 +135,6 @@ export class Targeting {
     if (!this.attacking) return;
     this.attacking = false;
     this.game.events.emit('autoAttack', { on: false });
-  }
-
-  // The Attack ability: start on the target (or whoever is ahead), or stop.
-  toggleAttack(aim) {
-    if (this.attacking) return this.stopAttack();
-    return this.engage(this.current || this.softTarget(aim, CONFIG.targeting.range) || this._nearest());
   }
 
   // Is the target close enough to hit with a swing?

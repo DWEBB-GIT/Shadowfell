@@ -9,7 +9,8 @@
 // rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
 //             legendary | quest (the colour of its name and border)
 // reservedFor: the only loot tables that may drop it (a boss's own weapon)
-// damage:     a weapon's [min, max]
+// damage:     a weapon's [min, max] per swing
+// speed:      a weapon's seconds between auto attack swings (haste shortens it)
 // stats:      attributes, armour, block, block rating, haste it adds
 // use:        what using it does, e.g. { heal: 42 }
 // bagSlots:   slots a bag adds
@@ -85,9 +86,18 @@ export function itemView(stack) {
     name: r.suffix ? `${d.name} ${SUFFIXES[r.suffix].name}` : d.name,
     rarity: r.suffix && d.rarity === 'common' ? 'enhanced' : d.rarity,
     stats,
-    damage: r.damage || d.damage,
+    damage: r.damage ? swingScale(r.damage, d) : d.damage,
     price: d.price + (r.suffix ? bonus * ROLLS.valuePerPoint : 0),
   };
+}
+
+// Weapon damage became per swing when weapons gained a speed; rolls saved
+// before then (a few points either side of the old, smaller numbers) are
+// scaled up to match.
+function swingScale(dmg, d) {
+  if (!d.speed || dmg[0] + dmg[1] > (d.damage[0] + d.damage[1]) * 0.6) return dmg;
+  const k = d.speed / 0.6;
+  return [Math.round(dmg[0] * k), Math.round(dmg[1] * k)];
 }
 
 // Are these rolls well formed? (saves are checked before they are applied)

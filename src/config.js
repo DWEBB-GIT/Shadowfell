@@ -72,10 +72,18 @@ export const CONFIG = {
     hasteCap: 30, // percent; haste divides swing time, windups, casts and the GCD
     gcdFloor: 1.0, // seconds: haste never takes the global cooldown below this
     enemyVariance: 0.15, // enemy blows land within +-15% of their damage
-    fistDamage: [1, 3],
+    fistDamage: [3, 10], // bare hands, per swing
+    fistSpeed: 2.0, // seconds between bare-handed swings
   },
   interaction: {
     radius: 2.2,
+  },
+  // how a landed blow feels: a short hit-stop on both bodies, a camera kick
+  impact: {
+    hitStop: 0.07, // seconds; crits hold longer
+    shake: 0.07, // metres of camera kick
+    critShake: 0.16,
+    shakeDecay: 9, // per second
   },
   fog: { color: 0x3a4244, near: 14, far: 40 }, // linear view-distance fog, in metres from the camera
   // the Blackwood closes in: nearer, darker fog and dimmer light under the pines

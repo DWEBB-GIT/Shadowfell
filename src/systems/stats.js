@@ -84,27 +84,61 @@ export class Stats {
     return seconds / this.speed;
   }
 
+  // Auto attack swings once every weapon speed seconds, shortened by haste.
   get attackCooldown() {
-    return this.hasted(CONFIG.attack.cooldown);
+    return this.hasted(this.weaponSpeed);
+  }
+
+  get weaponSpeed() {
+    return this.game.inventory.weapon.speed || S().fistSpeed;
   }
 
   get globalCooldown() {
     return Math.max(S().gcdFloor, this.hasted(CONFIG.globalCooldown));
   }
 
+  // the weapon's damage per swing
   get weaponRange() {
     const w = this.game.inventory.weapon;
     return w.damage || S().fistDamage;
   }
 
+  // Abilities use the weapon's damage normalised, as in WoW: a slow, heavy
+  // weapon and a quick light one of the same damage per second make Shield
+  // Break, Lunge and the rest hit equally hard. They hit for
+  // `abilityWeaponSeconds` (strike tuning) worth of the weapon's damage.
+  get abilityWeaponRange() {
+    const k = CONFIG.attack.abilityWeaponSeconds / this.weaponSpeed;
+    const [lo, hi] = this.weaponRange;
+    return [lo * k, hi * k];
+  }
+
+  // Power adds to every swing in proportion to the weapon's speed, so it is
+  // worth the same per second on a slow weapon as on a quick one.
+  get swingPower() {
+    return (this.power * this.weaponSpeed) / CONFIG.attack.abilityWeaponSeconds;
+  }
+
+  // what an auto attack swing does before crits and the target's armour
+  get swingRange() {
+    const [lo, hi] = this.weaponRange;
+    return [Math.round(lo + this.swingPower), Math.round(hi + this.swingPower)];
+  }
+
+  // damage per second from auto attack, haste included
+  get dps() {
+    const [lo, hi] = this.swingRange;
+    return (lo + hi) / 2 / this.attackCooldown;
+  }
+
   // what a weapon ability does before crits and the target's armour
   abilityRange(mult = 1) {
-    const [lo, hi] = this.weaponRange;
+    const [lo, hi] = this.abilityWeaponRange;
     return [Math.round((lo + this.power) * mult), Math.round((hi + this.power) * mult)];
   }
 
   abilityAverage(mult = 1) {
-    const [lo, hi] = this.weaponRange;
+    const [lo, hi] = this.abilityWeaponRange;
     return Math.round(((lo + hi) / 2 + this.power) * mult);
   }
 
@@ -120,6 +154,7 @@ export class Stats {
       health: { label: 'Maximum health', v: this.maxHealth },
       mana: { label: 'Maximum mana', v: this.maxMana },
       strike: { label: 'Strike', v: (lo + hi) / 2, text: `${lo}–${hi}` },
+      dps: { label: 'Auto attack', v: this.dps, text: `${this.dps.toFixed(1)} per second` },
       crit: { label: 'Critical chance', v: this.critChance, text: `${this.critChance.toFixed(1)}%` },
       spellPower: { label: 'Spell power', v: this.spellPower },
       block: { label: 'Block chance', v: this.blockChance, text: `${this.blockChance}%` },
@@ -170,10 +205,16 @@ export function computeHit(rand, attacker, defender, { base, mult = 1, school = 
   return { amount, crit, blocked, school };
 }
 
-// A weapon roll for the player: anywhere in the weapon's range, plus power.
+// A weapon roll for an ability: anywhere in the normalised weapon range, plus power.
 export function weaponRoll(rand, stats) {
-  const [lo, hi] = stats.weaponRange;
+  const [lo, hi] = stats.abilityWeaponRange;
   return lo + (hi - lo) * rand() + stats.power;
+}
+
+// An auto attack swing: anywhere in the weapon's own range, plus swing power.
+export function swingRoll(rand, stats) {
+  const [lo, hi] = stats.weaponRange;
+  return lo + (hi - lo) * rand() + stats.swingPower;
 }
 
 // An enemy blow's raw damage, varied a little either side.

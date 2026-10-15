@@ -132,6 +132,37 @@ export class Player {
     }
   }
 
+  // Fishing: the rod in the right hand (the weapon put away) and the
+  // fishing pose; off again puts the weapon back.
+  holdRod(on) {
+    const arm = this.model.getObjectByName('Arm_R');
+    if (!arm) return;
+    if (on && !this.rod) {
+      this.rod = this.game.assets.instance('fishing_rod');
+      this.rod.name = 'HeldRod';
+      this.rod.position.set(0, -0.62, 0.04);
+      this.rod.rotation.set(1.875, 0, 0); // out and up over the water once the arm is raised
+      this.rodTip = new THREE.Object3D();
+      this.rodTip.position.set(0, 1.42, 0);
+      this.rod.add(this.rodTip);
+      arm.add(this.rod);
+    } else if (!on && this.rod) {
+      arm.remove(this.rod);
+      this.rod = null;
+      this.rodTip = null;
+    }
+    this.rig.pose = on ? 'fish' : null;
+    if (on && this.weaponPart) this.weaponPart.visible = false; // the sword is put away
+    else if (!on) this.showEquipment(this.game.inventory.equipment);
+  }
+
+  // where the line leaves the rod, in world space
+  rodTipPosition(out = new THREE.Vector3()) {
+    if (!this.rodTip) return out.copy(this.position).setY(this.position.y + 1.8);
+    this.group.updateMatrixWorld(true);
+    return this.rodTip.getWorldPosition(out);
+  }
+
   // kept for older callers
   showWeapon(id) {
     this.showEquipment({ mainHand: id ? { id, count: 1 } : null, head: this.helm ? { id: 'watch_helm' } : null, offHand: this.shield ? { id: this.shieldId } : null });
@@ -200,19 +231,20 @@ export class Player {
       speed01 = 1;
     } else if (controls) {
       const move = controls.move;
-      const attacking = this.pending || (this.rig.action && this.rig.action.type !== 'drink');
+      // abilities slow the Warden while they play out; auto attack swings
+      // do not (as in WoW, you can swing on the move)
+      const swinging = this.pending ? this.pending.type === 'strike' : this.rig.action && this.rig.action.type === 'strike' && this.rig.action.auto;
+      const attacking = !swinging && (this.pending || (this.rig.action && this.rig.action.type !== 'drink'));
       const slow = attacking ? 0.35 : 1;
       const mag = Math.min(1, Math.hypot(move.x, move.z)); // analogue sticks can walk slowly
       if (mag > 0) {
         this.position.x += move.x * CONFIG.player.speed * slow * dt;
         this.position.z += move.z * CONFIG.player.speed * slow * dt;
-        if (!attacking && !controls.lockOn) this.facing = turnTowards(this.facing, Math.atan2(move.x, move.z), dt * 14);
+        if (!attacking) this.facing = turnTowards(this.facing, Math.atan2(move.x, move.z), dt * 14);
         speed01 = slow * mag;
-      }
-      // a hard lock keeps the Warden facing the target, strafing as he moves
-      if (controls.lockOn && !this.pending) {
-        const l = controls.lockOn;
-        this.facing = turnTowards(this.facing, Math.atan2(l.x - this.position.x, l.z - this.position.z), dt * 12);
+      } else if (controls.actions && controls.actions.strike && controls.aim && !this.pending) {
+        // standing still in a fight, the Warden turns (not snaps) to his target
+        this.facing = turnTowards(this.facing, Math.atan2(controls.aim.x - this.position.x, controls.aim.z - this.position.z), dt * CONFIG.attack.turnRate);
       }
 
       const a = controls.actions || {};
@@ -255,18 +287,30 @@ export class Player {
     return true;
   }
 
+  // An auto attack swing, when the weapon is ready and the target is in
+  // front of the Warden (he does not snap round to it).
   tryStrike(aim) {
     if (this.cooldowns.attack > 0 || this.pending || this.casting) return false;
-    if (aim) this.faceTowards(aim.x, aim.z);
-    // haste shortens the swing and its windup alike
+    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    // haste shortens the swing timer, the windup and the swing itself
     const stats = this.game.stats;
-    const swing = stats.attackCooldown;
     const windup = stats.hasted(CONFIG.attack.windup);
-    this.cooldowns.attack = swing;
+    const anim = Math.max(windup + 0.2, stats.hasted(CONFIG.attack.swingAnimation));
+    this.cooldowns.attack = stats.attackCooldown;
     this.pending = { type: 'strike', t: windup, aim: aim ? { x: aim.x, z: aim.z } : null };
-    this.rig.play('strike', swing * 0.85, windup / (swing * 0.85));
+    this.rig.play('strike', anim, windup / anim);
+    this.rig.action.auto = true;
     this.game.events.emit('playerSwing', {});
     return true;
+  }
+
+  // is (x, z) within `halfDegrees` of where the Warden faces? (very close counts)
+  facingPoint(x, z, halfDegrees) {
+    const dx = x - this.position.x;
+    const dz = z - this.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.8) return true;
+    return (dx * Math.sin(this.facing) + dz * Math.cos(this.facing)) / d >= Math.cos((halfDegrees * Math.PI) / 180);
   }
 
   _gcdReady(name) {
