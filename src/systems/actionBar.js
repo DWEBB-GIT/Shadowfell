@@ -23,7 +23,7 @@ export const BAR_SLOTS = [
   { kbm: 'Space', pad: 'B', defensive: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', null, 'strike', 'brace'];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'strike', 'brace'];
 
 // abilities that no longer exist, mapped to what replaced them (old saves)
 const RENAMED = { dodge: 'brace' };

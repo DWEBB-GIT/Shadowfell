@@ -27,7 +27,7 @@ export class Combat {
   _playerHit(enemy, mult, hurtOpts) {
     const { stats, events } = this.game;
     const r = this.game.random;
-    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base: weaponRoll(r, stats), mult });
+    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base: weaponRoll(r, stats), mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
     return hit;

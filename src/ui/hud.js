@@ -7,6 +7,7 @@ import { ABILITIES, BAR_SLOTS } from '../systems/actionBar.js';
 import { DamageNumbers } from './damageNumbers.js';
 import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
+import { SPELLS } from '../systems/spells.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -70,6 +71,8 @@ export class Hud {
       brace: () => [P().brace, CONFIG.brace.cooldown, false],
       draught: () => [P().draught, CONFIG.draught.cooldown, false],
     };
+    // spells from the spell engine: their own cooldown, and all on the GCD
+    for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
     this.abilityIcons = abilityIcons();
     this._buildBar();
     this.items = new ItemUI(game, this);
@@ -309,6 +312,29 @@ export class Hud {
     }
   }
 
+  // The cast bar, buffs under the health bar, and your effects on the target.
+  _refreshSpells() {
+    const { player, spells } = this.game;
+    const c = player.casting;
+    const bar = $('cast-bar');
+    bar.hidden = !c;
+    if (c) {
+      $('cast-fill').style.width = `${Math.min(100, (c.t / c.total) * 100)}%`;
+      $('cast-text').textContent = `${SPELLS[c.id].name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
+    }
+    this._auras($('buffs'), spells.buffList(), '');
+    this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
+  }
+
+  _auras(el, list, cls) {
+    const key = list.map((a) => a.id).join(',');
+    if (el.dataset.key !== key) {
+      el.dataset.key = key;
+      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || ''}"><span></span></div>`).join('');
+    }
+    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = Math.ceil(a.left)));
+  }
+
   update(dt = 0) {
     const { interaction, enemies, camera, renderer } = this.game;
     this.numbers.update(dt);
@@ -321,6 +347,7 @@ export class Hud {
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
     this.refreshStats();
     this._refreshSlots();
+    this._refreshSpells();
     this.quests.updateMarks();
     this.minimap.draw();
 

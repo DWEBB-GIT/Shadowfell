@@ -19,12 +19,14 @@
     <div id="char-panel" class="panel">
       <div class="row"><span class="label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
       <div class="bar hp"><div id="hp-fill" class="fill"></div><span id="hp-text" class="bar-text"></span></div>
+      <div id="buffs" class="auras"></div>
     </div>
 
     <div id="target-frame" class="panel" hidden>
       <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
       <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
       <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
+      <div id="target-auras" class="auras"></div>
     </div>
 
     <!-- top right: the minimap, and the tracked quests under it -->
@@ -46,6 +48,7 @@
     <div id="mute-indicator" hidden>Sound off (M)</div>
 
     <!-- bottom of the screen: experience, spell bar, menus and bag slots -->
+    <div id="cast-bar" class="bar cast" hidden><div id="cast-fill" class="fill"></div><span id="cast-text" class="bar-text"></span></div>
     <div id="bottom-bar">
       <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><span id="xp-text" class="bar-text"></span></div>
       <div id="bar-row">

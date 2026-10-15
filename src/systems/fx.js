@@ -38,6 +38,14 @@ export class Effects {
       const pos = new THREE.Vector3(x, heightAt(x, z), z);
       this.shockwave(pos, radius, 0x9a7cff);
     });
+    // spells (src/systems/spells.js)
+    ev.on('spellFlash', ({ position }) => this.flash(position, 0xffe08a));
+    ev.on('zone', ({ x, z, radius, duration }) => this.zone(x, z, radius, duration));
+    ev.on('cleave', ({ position, facing, range }) => {
+      const r = range * 0.5;
+      this.shockwave(new THREE.Vector3(position.x + Math.sin(facing) * r, position.y, position.z + Math.cos(facing) * r), range * 0.7, 0xffc890);
+    });
+    ev.on('buff', () => this.pillar(this.game.player.position, 0xff9a5a));
     ev.on('itemDropped', ({ item }) => this.dust({ x: item.x, y: this.game.player.position.y, z: item.z }, 4, 0.2));
   }
 
@@ -102,9 +110,9 @@ export class Effects {
 
   // An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
   projectile({ kind, from, to, speed }) {
-    const bolt = kind === 'bolt';
+    const bolt = kind === 'bolt' || kind === 'holy';
     const obj = bolt
-      ? new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color: 0x9a7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
+      ? new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color: kind === 'holy' ? 0xffd98a : 0x9a7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
       : new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.7), new THREE.MeshBasicMaterial({ color: 0xd8c8a0 }));
     if (bolt) obj.scale.setScalar(0.6);
     const y1 = heightAt(to.x, to.z) + 1.0;
@@ -129,8 +137,30 @@ export class Effects {
     });
   }
 
-  pillar(pos) {
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
+  // a quick burst of light on a target (Smite)
+  flash(pos, color) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this._add(s, 0.4, (o, k) => {
+      o.position.set(pos.x, pos.y + 1.2 + k * 0.6, pos.z);
+      o.scale.setScalar(1.6 * (1 - k * 0.5));
+      o.material.opacity = 1 - k;
+    });
+  }
+
+  // consecrated ground: a glowing ring that stays for the spell's duration
+  zone(x, z, radius, duration) {
+    const mat = new THREE.MeshBasicMaterial({ map: this.game.textures.ring, color: 0xffd070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const ring = new THREE.Mesh(this.ringGeo, mat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, heightAt(x, z) + 0.1, z);
+    ring.scale.setScalar(radius * 2);
+    this._add(ring, duration, (o, k) => {
+      o.material.opacity = (0.55 + 0.25 * Math.sin(k * duration * Math.PI * 2)) * Math.min(1, (1 - k) * 6);
+    });
+  }
+
+  pillar(pos, color = 0xffe2a8) {
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
     const col = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 4, 10, 1, true), mat);
     col.position.set(pos.x, pos.y + 2, pos.z);
     this._add(col, 1.4, (o, k) => {

@@ -105,7 +105,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | 1 | X | Lunge (slot 1) |
 | 2 | Y | Shield Break (slot 2) |
 | 3 or Q | RB | Healing draught (slot 3) |
-| 4 | LB | Slot 4 (empty to start) |
+| 4 | LB | Hallowed Bolt (slot 4) |
 | 5 | LT | Attack: auto attack on or off (slot 5) |
 | Space | B | Brace, the defensive slot |
 | E | A | Interact, examine, loot everything nearby |
@@ -115,6 +115,17 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | K | D-pad down | Save |
 | Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
+
+**Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
+
+| Spell | Kind | What it does |
+|---|---|---|
+| Hallowed Bolt | Ranged cast | 1.6 s cast with a cast bar (moving interrupts it), then a holy bolt hits a target up to 20 m away |
+| Rend | Bleed | Your target bleeds 5 times over 10 s; shown on the target frame; using it again refreshes it |
+| Smite | Instant | Instant holy damage on a target up to 12 m away; 6 s cooldown |
+| Hallowed Ground | Local AoE | Consecrates the ground around you: enemies in it burn every second for 6 s; 15 s cooldown |
+| Cleave | Cleave | A wide swing hitting up to 4 enemies in front of you; 5 s cooldown |
+| Battle Cry | Self buff | +20% to all your damage for 15 s, shown under your health bar; 45 s cooldown |
 
 The spell-bar rows above are the default layout; keys belong to slots, so moving a spell moves its key. Clicks never move the Warden, and a click on open ground does nothing, so no swing is wasted.
 
@@ -158,7 +169,8 @@ src/
   world/                  layout data, terrain, collision, world builder
   entities/               player, enemy, procedural rig animation
   systems/                combat, telegraphs, enemies, loot, interaction,
-                          targeting, action bar, stats (the damage formula),
+                          targeting, action bar, spells (the spell engine),
+                          stats (the damage formula),
                           inventory (bags/equipment), progression,
                           world state, save, effects, audio
   ui/hud.js               HUD, spell bar, modals (reads state, requests actions)
@@ -204,6 +216,6 @@ npm run assets       # rebuild the models (Blender 4.2 or later on PATH; tested 
 - Enemies use simple circle collision and do not path around large obstacles.
 - The watch post is a landmark only and cannot be entered (as the design specifies).
 - Animation is procedural, not keyframed.
-- The Warden has no ranged or ground-targeted spells yet; targeting already supports both (`Targeting.aimFor` with `'enemy'` or `'ground'`).
+- The Warden has no mana or rage yet, so spells cost nothing but their cooldowns. Ground-targeted spells (placed at the cursor) are not built yet.
 - The Blackwood joins the Fallen Road as one continuous map rather than a separate zone with a loading step; the region name, fog and light change as you cross.
 - Mara Venn, dialogue and a reward for the manifest are outside this build's scope.

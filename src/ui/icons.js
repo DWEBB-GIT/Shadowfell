@@ -141,5 +141,98 @@ export function abilityIcons() {
       g.lineTo(44, 28);
       g.stroke();
     }),
+    hallowedBolt: glyph((g) => {
+      // a mote of gold fire with its trail
+      g.strokeStyle = 'rgba(255,210,120,0.55)';
+      g.lineWidth = 6;
+      g.beginPath();
+      g.moveTo(10, 54);
+      g.lineTo(36, 28);
+      g.stroke();
+      const r = g.createRadialGradient(40, 24, 2, 40, 24, 16);
+      r.addColorStop(0, '#fff6d0');
+      r.addColorStop(0.5, '#ffc850');
+      r.addColorStop(1, 'rgba(255,160,40,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(40, 24, 16, 0, Math.PI * 2);
+      g.fill();
+    }),
+    rend: glyph((g) => {
+      // three claw tears and drops of blood
+      g.strokeStyle = '#c03a2a';
+      g.lineWidth = 4;
+      for (const x of [18, 30, 42]) {
+        g.beginPath();
+        g.moveTo(x, 12);
+        g.quadraticCurveTo(x - 6, 30, x - 2, 46);
+        g.stroke();
+      }
+      g.fillStyle = '#8a1a14';
+      for (const [x, y] of [[16, 54], [28, 56], [40, 53]]) {
+        g.beginPath();
+        g.arc(x, y, 3, 0, Math.PI * 2);
+        g.fill();
+      }
+    }),
+    smite: glyph((g) => {
+      // a star of light
+      g.fillStyle = '#ffe9a8';
+      g.beginPath();
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2 - Math.PI / 2;
+        const r = i % 2 ? 7 : i % 4 ? 18 : 26;
+        g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+      }
+      g.closePath();
+      g.fill();
+    }),
+    hallowedGround: glyph((g) => {
+      // a glowing ring on the ground with a rune inside
+      g.strokeStyle = '#ffd070';
+      g.lineWidth = 4;
+      g.beginPath();
+      g.ellipse(32, 38, 24, 12, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.strokeStyle = 'rgba(255,220,140,0.7)';
+      g.lineWidth = 2;
+      for (const x of [20, 32, 44]) {
+        g.beginPath();
+        g.moveTo(x, 36);
+        g.lineTo(x, 14 + Math.abs(x - 32) * 0.5);
+        g.stroke();
+      }
+    }),
+    cleave: glyph((g) => {
+      // a broad arc of a swing
+      g.strokeStyle = '#d8d0c0';
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(32, 46, 26, -2.6, -0.55);
+      g.stroke();
+      g.strokeStyle = 'rgba(230,180,110,0.6)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(32, 46, 18, -2.4, -0.75);
+      g.stroke();
+      g.fillStyle = '#8a6a3a';
+      g.fillRect(28, 44, 8, 14);
+    }),
+    battleCry: glyph((g) => {
+      // sound waves from a shout
+      g.strokeStyle = '#ff9a5a';
+      g.lineWidth = 3;
+      for (const r of [8, 16, 24]) {
+        g.beginPath();
+        g.arc(14, 32, r, -0.8, 0.8);
+        g.stroke();
+      }
+      g.fillStyle = '#e0c070';
+      g.beginPath();
+      g.moveTo(8, 26);
+      g.lineTo(16, 32);
+      g.lineTo(8, 38);
+      g.fill();
+    }),
   };
 }

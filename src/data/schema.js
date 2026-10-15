@@ -22,7 +22,17 @@ export const EQUIP_SLOTS = [
   { id: 'offHand', label: 'Off hand' },
 ];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
-const SCHOOLS = ['physical', 'shadow'];
+const SCHOOLS = ['physical', 'shadow', 'holy'];
+// Spells run by the generic spell engine (src/systems/spells.js): the tuning
+// numbers each kind needs, and whether it goes on an enemy.
+export const SPELL_KINDS = {
+  cast: { enemy: true, tuning: ['castTime', 'damageMin', 'damageMax', 'projectileSpeed'] },
+  dot: { enemy: true, tuning: ['duration', 'tickInterval', 'tickMultiplier'] },
+  instant: { enemy: true, tuning: ['damageMin', 'damageMax'] },
+  aoe: { enemy: false, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] },
+  cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
+  buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
+};
 const ID = /^[a-z][a-z0-9_]*$/;
 const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved spell bars use them
 
@@ -156,6 +166,16 @@ export function validateGameData(raw, opts = {}) {
     if (a.target === 'enemy' && !isNum(a.range)) errors.push(`${w}: an enemy-targeted ability needs a range`);
     if (a.item) ref(w, 'item', items, a.item);
     if (!a.tuning || typeof a.tuning !== 'object' || !Object.values(a.tuning).every(isNum)) errors.push(`${w}: tuning must be a set of numbers`);
+    if (a.school && !SCHOOLS.includes(a.school)) errors.push(`${w}: unknown school ${a.school}`);
+    if (a.kind !== undefined) {
+      const k = SPELL_KINDS[a.kind];
+      if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);
+      else {
+        if (k.enemy !== (a.target === 'enemy')) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : 'self'}`);
+        for (const t of ['cooldown', ...k.tuning]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
+        if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
+      }
+    }
   }
 
   // ---- enemies and loot tables

@@ -11,6 +11,7 @@ import { PLAYER_START, SHRINE, SHRINES, REGIONS, regionAt } from './world/layout
 import { blackwoodness } from './world/terrain.js';
 import { Player } from './entities/player.js';
 import { Combat } from './systems/combat.js';
+import { Spells } from './systems/spells.js';
 import { EnemyManager } from './systems/enemies.js';
 import { LootSystem } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
@@ -76,6 +77,7 @@ class Game {
     this.inventory = new Inventory(this);
     this.quests = new QuestLog(this);
     this.combat = new Combat(this);
+    this.spells = new Spells(this);
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
@@ -443,6 +445,7 @@ class Game {
     if (!paused) {
       this.time += dt;
       this.player.update(dt, controls);
+      this.spells.update(dt);
       this.enemies.update(dt);
       this.npcs.update(dt);
       this.merchant.update();

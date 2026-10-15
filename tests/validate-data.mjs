@@ -47,6 +47,7 @@ const broken = [
   ['a quest needing more kills than the world has enemies', (d) => (d['quests.json'].quests[2].objectives[1].count = 9), /world only has/],
   ['quests that require each other', (d) => d['quests.json'].quests[0].requires = ['the_glade_seer'], /loop back/],
   ['a dialogue reply leading to a missing node', (d) => (d['dialogue.json'].dialogues[0].nodes[0].replies[0].node = 'nowhere'), /unknown node nowhere/],
+  ['a spell missing a number its kind needs', (d) => delete d['abilities.json'].abilities.find((a) => a.kind === 'cast').tuning.castTime, /needs tuning.castTime/],
 ];
 const selfTest = [];
 for (const [what, breakIt, expect] of broken) {

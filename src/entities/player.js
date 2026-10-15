@@ -4,6 +4,7 @@ import { ITEMS } from '../data/items.js';
 import { Rig } from './rig.js';
 import { heightAt } from '../world/terrain.js';
 import { PLAYER_START } from '../world/layout.js';
+import { SPELLS } from '../systems/spells.js';
 
 // Player controller: movement, facing, Brace and the timing of abilities.
 // Whether an attack hits is decided by the combat system, not here.
@@ -15,6 +16,10 @@ import { PLAYER_START } from '../world/layout.js';
 // There is one defensive button (Space), filled by the archetype: the
 // Warden's Brace raises the shield and turns aside the next blow. There is
 // no dodge roll or sprint.
+//
+// Spells (abilities with a `kind` in data/abilities.json) are run by the
+// spell engine (src/systems/spells.js); the player only holds the cast in
+// progress, so nothing else can start while it fills.
 
 export class Player {
   constructor(game) {
@@ -46,6 +51,7 @@ export class Player {
     this.braced = 0; // seconds left with the shield raised
     this.lunge = null; // { t, dir }
     this.pending = null; // queued attack waiting for its impact frame
+    this.casting = null; // a spell being cast: { id, t, total, target }
     this.moving = false;
 
     this.placeAt(PLAYER_START.position[0], PLAYER_START.position[1], PLAYER_START.facing * (Math.PI / 180));
@@ -57,6 +63,7 @@ export class Player {
     this.lunge = null;
     this.braced = 0;
     this.pending = null;
+    this.casting = null;
     this._sync();
   }
 
@@ -140,6 +147,7 @@ export class Player {
         this.pending = null;
         if (p.type === 'strike') combat.resolvePlayerStrike(p.aim);
         else if (p.type === 'lunge') combat.resolveLunge();
+        else if (p.type === 'spell') this.game.spells.resolve(p.id);
         else combat.resolveShieldBreak();
       }
     }
@@ -180,6 +188,7 @@ export class Player {
       else if (a.lunge) this.tryLunge(controls.lungeAim || controls.aim);
       else if (a.strike) this.tryStrike(controls.aim);
       if (a.draught) this.game.inventory.useDraught();
+      for (const id in a) if (a[id] && SPELLS[id]) this.game.spells.tryCast(id);
     }
 
     collision.resolve(this.position, this.radius);
@@ -213,7 +222,7 @@ export class Player {
   }
 
   tryStrike(aim) {
-    if (this.cooldowns.attack > 0 || this.pending) return false;
+    if (this.cooldowns.attack > 0 || this.pending || this.casting) return false;
     if (aim) this.faceTowards(aim.x, aim.z);
     // haste shortens the swing and its windup alike
     const stats = this.game.stats;
@@ -237,7 +246,7 @@ export class Player {
   }
 
   tryShieldBreak() {
-    if (this.pending || this.lunge) return false;
+    if (this.pending || this.lunge || this.casting) return false;
     if (!this._gcdReady('shieldBreak')) return false;
     const windup = this.game.stats.hasted(CONFIG.shieldBreak.windup);
     this.cooldowns.shieldBreak = CONFIG.shieldBreak.cooldown;
@@ -250,7 +259,7 @@ export class Player {
 
   // Lunge: a short charge towards the aim point that strikes on arrival.
   tryLunge(aim) {
-    if (this.pending || this.lunge) return false;
+    if (this.pending || this.lunge || this.casting) return false;
     if (!this._gcdReady('lunge')) return false;
     let dir = { x: Math.sin(this.facing), z: Math.cos(this.facing) };
     if (aim) {
@@ -278,6 +287,7 @@ export class Player {
       this.deadTime = 0;
       this.pending = null;
       this.lunge = null;
+      this.casting = null;
       this.braced = 0;
       this.rig.die();
     }
@@ -295,12 +305,14 @@ export class Player {
     this.health = this.maxHealth;
     this.rig.revive();
     this.cooldowns = freshCooldowns();
+    this.game.spells?.reset();
     this.placeAt(x, z, Math.PI);
   }
 }
 
 function freshCooldowns() {
-  return { attack: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0 };
+  const spells = Object.fromEntries(Object.keys(SPELLS).map((id) => [id, 0]));
+  return { attack: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0, ...spells };
 }
 
 function turnTowards(current, target, maxStep) {

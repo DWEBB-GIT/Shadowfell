@@ -1252,8 +1252,8 @@ async function spellBar(browser) {
   await dragSlot(page, '#aslot-0', '#aslot-3');
   await page.waitForTimeout(150);
   const b1 = await bar();
-  const iconMoved = await page.evaluate(() => document.querySelector('#aslot-3').dataset.ability === 'lunge' && document.querySelector('#aslot-0').classList.contains('empty'));
-  record('Spells can be dragged to another slot on the bar', b1[3] === 'lunge' && b1[0] === null && iconMoved, `Lunge moved from slot 1 to slot 4 (bar was ${b0.map((a) => a || '—').join(', ')})`);
+  const iconMoved = await page.evaluate(() => document.querySelector('#aslot-3').dataset.ability === 'lunge' && document.querySelector('#aslot-0').dataset.ability === 'hallowedBolt');
+  record('Spells can be dragged to another slot on the bar', b1[3] === 'lunge' && b1[0] === 'hallowedBolt' && iconMoved, `Lunge and Hallowed Bolt swapped slots 1 and 4 (bar was ${b0.map((a) => a || '—').join(', ')})`);
 
   await pauseLoop(page);
   await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: 0, z: 14 } });
@@ -1261,7 +1261,7 @@ async function spellBar(browser) {
   await sim(page, 2);
   await sim(page, 0.05, { press: ['Digit1'] });
   const nothing = await page.evaluate(() => window.__shadowfall.player.lunge === null && window.__shadowfall.player.cooldowns.gcd === 0);
-  record('A moved spell fires from its new key', lunged && nothing, 'key 4 now lunges; key 1 does nothing');
+  record('A moved spell fires from its new key', lunged && nothing, 'key 4 now lunges; key 1 no longer does (Hallowed Bolt, with no target in range)');
   await resumeLoop(page);
 
   await dragSlot(page, '#aslot-3', { x: 640, y: 300 });
@@ -2539,8 +2539,127 @@ async function clickTargeting(browser) {
   await ctx.close();
 }
 
+async function spells(browser) {
+  current = 'Example spells';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // tough, rooted ghouls so nothing dies and nothing wanders
+  const ready = (list) => page.evaluate((list) => {
+    const g = window.__shadowfall;
+    g.player.health = 5000;
+    for (const k of Object.keys(g.player.cooldowns)) g.player.cooldowns[k] = 0;
+    g.spells.reset();
+    g.targeting.clear();
+    g.enemies.list.forEach((e, i) => {
+      const at = list.find((l) => l[0] === e.id);
+      e.cfg = { ...e.cfg, health: 500, speed: 0, detection: 3, damage: 0.01 };
+      e.health = 500;
+      e.position.set(at ? at[1] : -30 + i * 3, 0, at ? at[2] : -45);
+      e.home.copy(e.position);
+      e.state = 'idle';
+      e.stagger = 0;
+    });
+    g.player.placeAt(0, 0, 0);
+  }, list);
+  const hp = (id) => page.evaluate((id) => window.__shadowfall.enemies.byId(id).health, id);
+  const slot = (id) => page.evaluate((id) => window.__shadowfall.actionBar.place(id, 3), id);
+  const select = (id) => page.evaluate((id) => window.__shadowfall.targeting.select(window.__shadowfall.enemies.byId(id)), id);
+
+  const book = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const ids = ['hallowedBolt', 'rend', 'smite', 'hallowedGround', 'cleave', 'battleCry'];
+    return { ids: ids.filter((id) => g.hud.abilityIcons[id] && g.player.cooldowns[id] === 0), bar: g.actionBar.slots[3] };
+  });
+  record('Six example spells exist, with icons, cooldowns, and Hallowed Bolt on key 4 by default', book.ids.length === 6 && book.bar === 'hallowedBolt', book.ids.join(', '));
+
+  // ranged cast: a cast bar, then a bolt
+  await ready([['ghoul_road', 0, 12]]);
+  await select('ghoul_road');
+  await slot('hallowedBolt');
+  await sim(page, 0.6, { press: ['Digit4'] });
+  const mid = await page.evaluate(() => ({ casting: !!window.__shadowfall.player.casting, bar: !document.getElementById('cast-bar').hidden, text: document.getElementById('cast-text').textContent, gcd: window.__shadowfall.player.cooldowns.gcd }));
+  const hpMid = await hp('ghoul_road');
+  await sim(page, 1.8);
+  const bolt = 500 - (await hp('ghoul_road'));
+  record('Hallowed Bolt: a 1.6s cast with a cast bar, then a bolt hits the target 12 m away', mid.casting && mid.bar && mid.gcd > 0 && hpMid === 500 && bolt > 0, `cast bar "${mid.text}"; bolt hit for ${bolt}`);
+  await sim(page, 0.05, { press: ['Digit4'] });
+  await sim(page, 0.4, { held: ['KeyS'] });
+  const broke = await page.evaluate(() => !window.__shadowfall.player.casting);
+  await sim(page, 1.5);
+  record('Moving interrupts a cast', broke && (await hp('ghoul_road')) === 500 - bolt, 'walked away mid-cast: no bolt');
+
+  // instant
+  await ready([['ghoul_road', 0, 8]]);
+  await select('ghoul_road');
+  await slot('smite');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const smite = 500 - (await hp('ghoul_road'));
+  const smiteCd = await page.evaluate(() => [window.__shadowfall.player.cooldowns.smite, window.__shadowfall.player.cooldowns.gcd]);
+  record('Smite: instant damage on the target, its own 6s cooldown and the GCD', smite > 0 && smiteCd[0] > 5.5 && smiteCd[1] > 1, `hit for ${smite}; cooldown ${smiteCd[0].toFixed(1)}s, GCD ${smiteCd[1].toFixed(1)}s`);
+  await slot('rend');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const blocked = await page.evaluate(() => window.__shadowfall.spells.dots.length === 0);
+  record('The GCD stops a second spell straight after the first', blocked, 'Rend pressed during Smite\'s GCD: nothing');
+
+  // bleed
+  await ready([['ghoul_road', 0, 1.6]]);
+  await select('ghoul_road');
+  await slot('rend');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const auras = await page.evaluate(() => document.querySelectorAll('#target-auras .aura').length);
+  await sim(page, 2.0);
+  const tick = 500 - (await hp('ghoul_road'));
+  await sim(page, 8.5);
+  const total = 500 - (await hp('ghoul_road'));
+  const gone = await page.evaluate(() => window.__shadowfall.spells.dots.length === 0);
+  record('Rend: a bleed that ticks 5 times over 10s, shown on the target frame', auras === 1 && tick > 0 && total === tick * 5 && gone, `${tick} per tick, ${total} in all`);
+
+  // local AoE
+  await ready([['ghoul_road', 2, 0], ['ghoul_cart', -2, 1], ['ghoul_graves', 0, 8]]);
+  await slot('hallowedGround');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  await sim(page, 6.5);
+  const ground = [500 - (await hp('ghoul_road')), 500 - (await hp('ghoul_cart')), 500 - (await hp('ghoul_graves'))];
+  const zoneGone = await page.evaluate(() => window.__shadowfall.spells.zones.length === 0);
+  record('Hallowed Ground: burns every enemy inside it each second for 6s, not those outside', ground[0] > 0 && ground[1] === ground[0] && ground[2] === 0 && zoneGone, `inside ${ground[0]} and ${ground[1]}, outside ${ground[2]}`);
+
+  // cleave
+  await ready([['ghoul_road', 1, 1.8], ['ghoul_cart', -1, 1.8], ['ghoul_graves', 0, -2]]);
+  await slot('cleave');
+  await sim(page, 0.5, { press: ['Digit4'] });
+  const cl = [500 - (await hp('ghoul_road')), 500 - (await hp('ghoul_cart')), 500 - (await hp('ghoul_graves'))];
+  record('Cleave: hits every enemy in the arc in front, not the one behind', cl[0] > 0 && cl[1] > 0 && cl[2] === 0, `front ${cl[0]} and ${cl[1]}, behind ${cl[2]}`);
+
+  // buff
+  await ready([['ghoul_road', 0, 8]]);
+  await select('ghoul_road');
+  await slot('battleCry');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const buffed = await page.evaluate(() => ({ n: document.querySelectorAll('#buffs .aura').length, scale: window.__shadowfall.spells.damageScale }));
+  await page.evaluate(() => { const c = window.__shadowfall.player.cooldowns; c.gcd = 0; c.smite = 0; });
+  await slot('smite');
+  await sim(page, 0.05, { press: ['Digit4'] });
+  const smite2 = 500 - (await hp('ghoul_road'));
+  if (process.env.SHOTS) {
+    // a picture of the cast bar, the buff and a bleed on the target
+    await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.spells.dots.push({ enemy: g.enemies.byId('ghoul_road'), id: 'rend', left: 7, next: 2 }); });
+    await slot('hallowedBolt');
+    await sim(page, 0.8, { press: ['Digit4'] });
+    await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
+    await page.screenshot({ path: process.env.SHOTS + '/spells.png' });
+    await sim(page, 1.5);
+  }
+  await sim(page, 15.5);
+  const after = await page.evaluate(() => ({ n: document.querySelectorAll('#buffs .aura').length, scale: window.__shadowfall.spells.damageScale }));
+  record('Battle Cry: +20% damage for 15s, shown under the health bar', buffed.n === 1 && Math.abs(buffed.scale - 1.2) < 1e-9 && Math.abs(smite2 - smite * 1.2) <= 1 && after.n === 0 && after.scale === 1, `Smite ${smite} → ${smite2} while it lasts; gone after 15s`);
+
+  record('No script errors (spells)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
 // `node tests/acceptance.mjs gamepad telegraphs` runs only those sections
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, gearRolls, blackwood, atmosphere };
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

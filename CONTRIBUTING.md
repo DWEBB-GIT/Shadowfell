@@ -79,6 +79,15 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
   2. Give it `objectives`: `kill` an enemy type (counted from every one defeated, since enemies do not return), `collect` an item (taken on hand-in unless `keep`), or `examine` a world point. Add a `location` so the minimap shows where to go.
   3. Write what the giver says: `offer`, `progress` and `complete`, plus the `summary` the quest log shows.
   4. The giver shows a gold ! when it can be taken, a grey ? while it is in hand, and a gold ? when it is ready.
+- **A new spell:** add an `abilities.json` record with a `kind` and the spell engine (`src/systems/spells.js`) runs it with no new code. Kinds and the `tuning` numbers each needs (all need `cooldown`):
+  - `cast` (target `enemy`): `castTime`, `damageMin`, `damageMax`, `projectileSpeed`
+  - `dot` (target `enemy`): `duration`, `tickInterval`, `tickMultiplier` (× a weapon roll per tick)
+  - `instant` (target `enemy`): `damageMin`, `damageMax`
+  - `aoe` (target `self`): `radius`, `duration`, `tickInterval`, `damageMin`, `damageMax`
+  - `cleave` (target `self`): `damageMultiplier`, `coneDegrees`, `range`, `maxTargets`, `windup`
+  - `buff` (target `self`): `duration`, `damageBonus` (percent)
+
+  `damageMin`-`damageMax` is a spell's own damage, plus spell power; `school` (`physical`, `holy`, `shadow`) says whether armour or resistance reduces it. Add an icon to `abilityIcons()` in `src/ui/icons.js`. Every spell is on the global cooldown and appears in the spellbook.
 - **New things for someone to say:** add `topics` and `nodes` to their `dialogue.json` record. A `when` such as `{ "quest": "missing_delivery", "status": "done" }` holds a line back until the story gets there.
 - **A new place:**
   1. Add props to `scenery.json`, with examine text in `text.json`.
