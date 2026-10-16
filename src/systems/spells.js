@@ -1,5 +1,5 @@
 import { DB } from '../data/db.js';
-import { computeHit, enemyBlock, weaponRoll } from './stats.js';
+import { computeHit, enemyBlock, weaponRoll, swingRoll } from './stats.js';
 
 // The spell engine. Abilities in data/abilities.json with a `kind` are run
 // here from their data alone, so a new spell is a new record, not new code:
@@ -27,6 +27,11 @@ import { computeHit, enemyBlock, weaponRoll } from './stats.js';
 // level 1; it grows with level as (level + 4) / 5, see src/data/scaling.js)
 // plus spell power. Every spell triggers the global cooldown; a spell's own cooldown
 // starts when it goes off (after the cast, for cast spells).
+//
+// `ranged: true` makes an instant or dot a bow shot (Quick Shot, Venom
+// Arrow): it needs a bow in the ranged slot and an arrow, reaches as far
+// as the bow does, and lands when its arrow arrives. Its damage is a bow
+// roll (with the arrow's own damage) x `damageMultiplier` / `tickMultiplier`.
 //
 // Enemy spells go to the selected target, or the soft target near your aim
 // (which then becomes selected), as in WoW.
@@ -105,6 +110,14 @@ export class Spells {
       this.game.hud.error("You can't do that while moving");
       return false;
     }
+    if (spell.ranged && !stats.hasRanged) {
+      this.game.hud.error('You need a bow in your ranged slot');
+      return false;
+    }
+    if (spell.ranged && !this.game.inventory.ammo) {
+      this.game.hud.error('You have no arrows');
+      return false;
+    }
     if (!this.game.resources.check(spell)) return false;
     let target = null;
     if (spell.kind === 'charge') {
@@ -156,14 +169,15 @@ export class Spells {
   // `optional`: no target is fine (null); out of range is still refused (false).
   _targetFor(spell, { optional = false } = {}) {
     const { targeting, player } = this.game;
-    const inRange = (e) => e && e.alive && Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) <= spell.range + e.radius * 0.6;
+    const range = spell.ranged ? this.game.stats.rangedReach : spell.range;
+    const inRange = (e) => e && e.alive && Math.hypot(e.position.x - player.position.x, e.position.z - player.position.z) <= range + e.radius * 0.6;
     const cur = targeting.current;
     if (cur && cur.alive) {
       if (inRange(cur)) return cur;
       this.game.hud.error('Out of range');
       return optional ? false : null;
     }
-    const soft = targeting.softTarget(this.game.rawAim || player.position, spell.range);
+    const soft = targeting.softTarget(this.game.rawAim || player.position, range);
     if (inRange(soft)) {
       targeting.select(soft);
       return soft;
@@ -201,6 +215,7 @@ export class Spells {
   _go(spell, target) {
     const { player, events } = this.game;
     const t = spell.tuning;
+    if (spell.ranged) return this._shoot(spell, target);
     if (spell.kind === 'cast') {
       const d = Math.hypot(target.position.x - player.position.x, target.position.z - player.position.z);
       this.bolts.push({ enemy: target, id: spell.id, t: d / t.projectileSpeed });
@@ -211,12 +226,7 @@ export class Spells {
       this._damage(spell, target, this._spellBase(t), `Your ${spell.name} hits the {name} for {n}.`);
     } else if (spell.kind === 'dot') {
       player.rig.play('strike', 0.45, 0.4);
-      const had = this.dots.find((d) => d.enemy === target && d.id === spell.id);
-      if (had) had.left = t.duration;
-      else this.dots.push({ enemy: target, id: spell.id, left: t.duration, next: t.tickInterval });
-      target.hurt(0, { stagger: 0.1 }); // they notice
-      events.emit('enemyHit', { enemy: target, damage: 0, kind: 'strike' });
-      events.emit('log', { text: had ? `${spell.name} refreshed on the ${target.cfg.name}.` : `The ${target.cfg.name} is afflicted by ${spell.name}.`, kind: 'hit' });
+      this._applyDot(spell, target);
     } else if (spell.kind === 'aoe') {
       player.rig.play('slam', 0.5, 0.5);
       this.zones.push({ id: spell.id, x: player.position.x, z: player.position.z, left: t.duration, next: 0 });
@@ -245,6 +255,48 @@ export class Spells {
       events.emit('buff', { id: spell.id });
       events.emit('log', { text: `${spell.name}: your damage is raised by ${t.damageBonus}% for ${t.duration} seconds.`, kind: 'hit' });
     }
+  }
+
+  // a dot takes hold (or is refreshed)
+  _applyDot(spell, target, ammo = null) {
+    const { events } = this.game;
+    const t = spell.tuning;
+    const had = this.dots.find((d) => d.enemy === target && d.id === spell.id);
+    if (had) Object.assign(had, { left: t.duration, ammo });
+    else this.dots.push({ enemy: target, id: spell.id, left: t.duration, next: t.tickInterval, ammo });
+    target.hurt(0, { stagger: 0.1 }); // they notice
+    events.emit('enemyHit', { enemy: target, damage: 0, kind: 'strike' });
+    events.emit('log', { text: had ? `${spell.name} refreshed on the ${target.cfg.name}.` : `The ${target.cfg.name} is afflicted by ${spell.name}.`, kind: 'hit' });
+  }
+
+  // A bow ability: the bow comes to hand, one arrow is loosed, and the
+  // spell's effect lands when it arrives. The Auto Shot timer is left alone.
+  _shoot(spell, target) {
+    const { player, events, inventory } = this.game;
+    const ammo = inventory.ammo;
+    inventory.removeCount(ammo, 1);
+    player.pendingShot = null;
+    player.holdBow(true);
+    player.rig.play('shoot', 0.45, 0.25);
+    const from = { x: player.position.x + Math.sin(player.facing) * 0.4, y: player.position.y + 1.35, z: player.position.z + Math.cos(player.facing) * 0.4 };
+    const speed = this.game.config.autoShot.arrowSpeed;
+    const life = Math.hypot(target.position.x - from.x, target.position.z - from.z) / speed;
+    this.bolts.push({ enemy: target, id: spell.id, t: life, ammo });
+    events.emit('projectile', { kind: 'arrow', from, to: target.position, follow: target, speed, life });
+    events.emit('playerShot', {});
+  }
+
+  // a bow roll plus the arrow's own damage (as Auto Shot's)
+  _bowRoll(ammo) {
+    const { stats } = this.game;
+    return swingRoll(this.game.random, stats, 'ranged') + ((ammo && DB.items[ammo]?.ammoDps) || 0) * stats.handSpeed('ranged');
+  }
+
+  // a bow ability's arrow has arrived
+  _arrowLands(spell, enemy, ammo) {
+    this.game.events.emit('spellFlash', { position: enemy.position, school: spell.school });
+    if (spell.kind === 'dot') this._applyDot(spell, enemy, ammo);
+    else this._damage(spell, enemy, this._bowRoll(ammo), `Your ${spell.name} hits the {name} for {n}.`, spell.tuning.damageMultiplier, { stagger: 0.15, knockFrom: this.game.player.position, knockback: 0.1 });
   }
 
   // Called by the player when a pending spell blow lands (cleave, burst, charge).
@@ -388,7 +440,9 @@ export class Spells {
       const b = this.bolts[i];
       if ((b.t -= dt) > 0) continue;
       this.bolts.splice(i, 1);
-      if (b.enemy.alive) this._damage(SPELLS[b.id], b.enemy, this._spellBase(SPELLS[b.id].tuning), `Your ${SPELLS[b.id].name} hits the {name} for {n}.`);
+      if (!b.enemy.alive) continue;
+      if (SPELLS[b.id].ranged) this._arrowLands(SPELLS[b.id], b.enemy, b.ammo);
+      else this._damage(SPELLS[b.id], b.enemy, this._spellBase(SPELLS[b.id].tuning), `Your ${SPELLS[b.id].name} hits the {name} for {n}.`);
     }
 
     for (const [id, b] of this.buffs) {
@@ -409,7 +463,7 @@ export class Spells {
       d.next -= dt;
       if (d.next <= 1e-6) {
         d.next += spell.tuning.tickInterval;
-        this._damage(spell, d.enemy, weaponRoll(this.game.random, this.game.stats), null, spell.tuning.tickMultiplier, { stagger: 0 });
+        this._damage(spell, d.enemy, spell.ranged ? this._bowRoll(d.ammo) : weaponRoll(this.game.random, this.game.stats), null, spell.tuning.tickMultiplier, { stagger: 0 });
       }
       if (d.left <= 1e-6) this.dots.splice(i, 1);
     }

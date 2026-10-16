@@ -38,6 +38,42 @@
       "desc": "Looses an arrow from your ranged weapon at your target whenever its timer is ready, while the target is beyond your melee reach. On the move too. Starts with auto attack."
     },
     {
+      "id": "quickShot",
+      "name": "Quick Shot",
+      "kind": "instant",
+      "ranged": true,
+      "school": "physical",
+      "target": "enemy",
+      "range": 26,
+      "desc": "An instant arrow from your bow at your target, for 120% of a bow shot. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown. 6 second cooldown.",
+      "tuning": {
+        "cooldown": 6,
+        "damageMultiplier": 1.2
+      },
+      "cost": {
+        "mana": 10
+      }
+    },
+    {
+      "id": "venomArrow",
+      "name": "Venom Arrow",
+      "kind": "dot",
+      "ranged": true,
+      "school": "nature",
+      "target": "enemy",
+      "range": 26,
+      "desc": "An instant poisoned arrow: your target takes nature damage every 3 seconds for 15 seconds (5 ticks of 30% of a bow shot). Using it again refreshes the poison. Needs a bow in your ranged slot and uses one arrow. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 15,
+        "tickInterval": 3,
+        "tickMultiplier": 0.3
+      },
+      "cost": {
+        "mana": 15
+      }
+    },
+    {
       "id": "shieldBreak",
       "name": "Shield Break",
       "kind": "burst",

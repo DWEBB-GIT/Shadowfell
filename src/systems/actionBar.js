@@ -31,6 +31,8 @@ export const BAR_SLOTS = [
 ];
 
 export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null];
+// the bow abilities go onto free slots the first time a bow is equipped
+export const BOW_ABILITIES = ['quickShot', 'venomArrow'];
 
 // A slot can also hold an item (WoW style), as 'item:<id>': the torch,
 // lockpicks or anything else used from the bags.
@@ -57,6 +59,21 @@ export class ActionBar {
     this.game = game;
     this.slots = [...DEFAULT_BAR];
     this.clicked = new Set(); // abilities clicked on the bar this frame
+    // a bow coming into the ranged slot brings its abilities to the bar
+    this.hadBow = false;
+    game.events.on('equipmentChanged', () => {
+      const bow = !!game.stats?.hasRanged;
+      if (bow && !this.hadBow) this.addBowAbilities();
+      this.hadBow = bow;
+    });
+  }
+
+  addBowAbilities() {
+    for (const ab of BOW_ABILITIES) {
+      if (this.slots.includes(ab) || !barAbility(this.game, ab)) continue;
+      const free = freeSlot(this.slots);
+      if (free >= 0) this.place(ab, free);
+    }
   }
 
   reset() {

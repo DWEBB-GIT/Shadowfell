@@ -45,7 +45,7 @@ export class Effects {
       this.shockwave(pos, radius, 0x9a7cff);
     });
     // spells (src/systems/spells.js)
-    ev.on('spellFlash', ({ position }) => this.flash(position, 0xffe08a));
+    ev.on('spellFlash', ({ position, school }) => this.flash(position, school === 'nature' ? 0x8ad04a : school === 'physical' ? 0xe8dcc0 : 0xffe08a));
     ev.on('zone', ({ x, z, radius, duration }) => this.zone(x, z, radius, duration));
     ev.on('cleave', ({ position, facing, range }) => {
       const r = range * 0.5;

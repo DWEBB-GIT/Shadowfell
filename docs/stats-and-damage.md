@@ -100,6 +100,8 @@ A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bo
 
 **Arrows** (Dan, 2026-10-16: Classic style, with a quiver). Each shot uses one arrow; with none, Auto Shot does not fire and the log says so. Arrows (`kind: "ammo"`) stack to 200 and are sold by the hundred (`buyCount`): rough arrows (1 silver, Mara and Tam) and barbed arrows (6 silver, Tam). Each adds `ammoDps` damage for every second of bow speed (rough +0.5, barbed +1.5). Auto Shot uses the best arrows you carry. A **quiver** (Tam, 25 silver) goes in a bag slot like a bag, holds only arrows (`holds: "ammo"`, six stacks), takes new arrows first, and makes Auto Shot 10% faster (`rangedHaste`, on top of haste).
 
+**Bow abilities** (2026-10-16, for testing the bow). Abilities with `ranged: true` are bow shots: they need a bow in the ranged slot and an arrow, reach as far as the bow, use one arrow, and land when the arrow arrives. They don't touch the Auto Shot clock (as WoW's Arcane Shot). Their damage is a bow roll plus the arrow's damage. **Quick Shot**: instant, 120% of a bow shot, 6 s cooldown, 10 mana. **Venom Arrow**: an instant nature poison, 30% of a bow shot every 3 s for 15 s, 15 mana; using it again refreshes it. Both go onto free bar slots (keys 6 and 7) the first time a bow is equipped.
+
 ### Dual wielding
 
 A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:

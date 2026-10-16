@@ -4024,6 +4024,48 @@ async function wowCombat(browser) {
   });
   record('Better arrows hit harder', dmg.barbed > dmg.rough, `rough ${dmg.rough}, barbed ${dmg.barbed}`);
 
+  // bow abilities: Quick Shot (instant) and Venom Arrow (instant poison)
+  const onBar = await page.evaluate(() => ['quickShot', 'venomArrow'].map((a) => window.__shadowfall.actionBar.slots.indexOf(a)));
+  record('Equipping a bow puts Quick Shot and Venom Arrow on the bar', onBar.every((i) => i >= 0), `slots ${onBar.join(', ')}`);
+  const shot = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    const p = g.player.position;
+    const e = g.enemies.byId('ghoul_road');
+    e.position.set(p.x, 0, p.z - 15);
+    Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+    g.resources.add?.('mana', 1000);
+    g.__bowHits = [];
+    g.events.on('enemyHit', (x) => { if (!x.hand && x.damage > 0) g.__bowHits.push({ t: +g.time.toFixed(3), kind: x.kind, n: x.damage }); });
+    const arrows = g.inventory.count('rough_arrow');
+    g.player.cooldowns.ranged = 1.5;
+    const ok = g.spells.tryCast('quickShot');
+    return { ok, t0: +g.time.toFixed(3), used: arrows - g.inventory.count('rough_arrow'), ranged: g.player.cooldowns.ranged, cd: g.player.cooldowns.quickShot };
+  });
+  await sim(page, 0.7);
+  const qs = await page.evaluate(() => window.__shadowfall.__bowHits.slice());
+  record('Quick Shot: an instant arrow at range that uses one arrow, hits on arrival and leaves Auto Shot alone', shot.ok && shot.used === 1 && shot.ranged === 1.5 && shot.cd === 6 && qs.length === 1 && qs[0].t - shot.t0 > 0.2, `${JSON.stringify(shot)}; hits ${JSON.stringify(qs)}`);
+  const venom = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    g.player.cooldowns.gcd = 0;
+    g.__bowHits = [];
+    const ok = g.spells.tryCast('venomArrow');
+    g.targeting.stopAttack();
+    return { ok, t0: +g.time.toFixed(3) };
+  });
+  await sim(page, 16);
+  const ticks = await page.evaluate(() => ({ hits: window.__shadowfall.__bowHits.slice(), dots: window.__shadowfall.spells.dots.length }));
+  record('Venom Arrow: an instant poisoned arrow, 5 nature ticks over 15 seconds', venom.ok && ticks.hits.length === 5 && ticks.hits.every((h) => h.kind === 'spell') && ticks.dots === 0, `ticks at ${ticks.hits.map((h) => (h.t - venom.t0).toFixed(1)).join(', ')} for ${ticks.hits.map((h) => h.n).join(', ')}`);
+  const noArrows = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.removeAll('rough_arrow');
+    g.inventory.removeAll('barbed_arrow');
+    Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+    return g.spells.tryCast('quickShot');
+  });
+  record('Bow abilities need arrows', noArrows === false, `cast with no arrows: ${noArrows}`);
+
   record('No script errors (WoW combat)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }

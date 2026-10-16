@@ -193,6 +193,69 @@ export function abilityIcons() {
         g.fill();
       }
     }),
+    quickShot: glyph((g) => {
+      // an arrow in flight with speed lines
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#c8c4b8';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#a04a2a';
+      g.lineWidth = 3;
+      for (const [x, y] of [[12, 52], [17, 47]]) {
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x - 4, y - 8);
+        g.moveTo(x, y);
+        g.lineTo(x + 8, y + 4);
+        g.stroke();
+      }
+      g.strokeStyle = 'rgba(255,230,170,0.6)';
+      g.lineWidth = 2;
+      for (const o of [-10, 10]) {
+        g.beginPath();
+        g.moveTo(16 + o, 36 + o);
+        g.lineTo(30 + o, 22 + o);
+        g.stroke();
+      }
+    }),
+    venomArrow: glyph((g) => {
+      // an arrow dripping green venom
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#7ad04a';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#5aa83a';
+      for (const [x, y, r] of [[44, 30, 3.5], [40, 40, 3], [46, 46, 2.5]]) {
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        g.fill();
+      }
+      const r = g.createRadialGradient(48, 16, 1, 48, 16, 14);
+      r.addColorStop(0, 'rgba(160,255,110,0.7)');
+      r.addColorStop(1, 'rgba(90,200,60,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(48, 16, 14, 0, Math.PI * 2);
+      g.fill();
+    }),
     smite: glyph((g) => {
       // a star of light
       g.fillStyle = '#ffe9a8';

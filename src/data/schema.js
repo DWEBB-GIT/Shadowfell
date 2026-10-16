@@ -54,7 +54,7 @@ export const slotFits = (slotId, itemSlot) => {
 // what wears out: weapons, armour and shields (and jewellery)
 export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
-const SCHOOLS = ['physical', 'shadow', 'holy'];
+const SCHOOLS = ['physical', 'shadow', 'holy', 'nature'];
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
 export const SPELL_KINDS = {
@@ -270,7 +270,11 @@ export function validateGameData(raw, opts = {}) {
       if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);
       else {
         if (k.enemy !== (a.target === 'enemy')) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : 'self'}`);
-        for (const t of ['cooldown', ...k.tuning]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
+        // a bow ability (`ranged`) is an instant or dot from a bow roll:
+        // an instant needs damageMultiplier instead of its own damage range
+        if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant and dot spells`);
+        const need = a.ranged === true && a.kind === 'instant' ? ['damageMultiplier'] : k.tuning;
+        for (const t of ['cooldown', ...need]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
         if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
       }
     }

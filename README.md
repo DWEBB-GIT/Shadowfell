@@ -45,6 +45,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
 - **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer, on the move too; arrows fly and hit on arrival. In melee reach the sword takes over.
 - **Arrows and quivers:** each shot uses an arrow (sold by the hundred: rough from Mara or Tam, barbed from Tam, which hit harder). Tam's leather quiver goes in a bag slot, holds only arrows and makes Auto Shot 10% faster.
+- **Bow abilities:** Quick Shot (instant arrow, 120% of a bow shot) and Venom Arrow (instant poison, 5 ticks over 15 s). Both use an arrow and appear on keys 6 and 7 when you first equip a bow.
 
 ## Mana and Resolve
 
