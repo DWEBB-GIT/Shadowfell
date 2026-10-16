@@ -38,6 +38,13 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
 - **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Recipes live in `data/recipes.json`.
 
+## Combat feel (WoW)
+
+- Auto attack opens with an instant blow the moment you reach the target, then swings on the weapon's timer. The swing bar fills as each blow lands.
+- No animation lock: you move at full speed while swinging, shooting and using abilities, and a swing on its way never eats a key press. Abilities pressed in the last 0.4 s of the global cooldown are queued.
+- Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
+- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer, on the move too; arrows fly and hit on arrival. In melee reach the sword takes over.
+
 ## Mana and Resolve
 
 - **Mana** pays for spells. The Warden has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.

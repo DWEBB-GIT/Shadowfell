@@ -440,6 +440,22 @@
       "description": "Someone ground a ghoul's shin bone to an edge. It is lighter than steel and holds a grudge."
     },
     {
+      "id": "hunting_bow",
+      "name": "Hunting bow",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "ranged",
+      "weaponType": "bow",
+      "itemLevel": 2,
+      "speed": 2.8,
+      "range": 26,
+      "stack": 1,
+      "price": 20,
+      "model": "hunting_bow",
+      "icon": "hunting_bow",
+      "description": "A yew self bow, fit for deer and anything that has stopped being one. Goes in the ranged slot: Auto Shot looses an arrow at a target beyond the reach of your sword."
+    },
+    {
       "id": "torch",
       "name": "Pitch torch",
       "kind": "torch",

@@ -107,6 +107,14 @@ export class Inventory {
     return v.broken ? null : v;
   }
 
+  // a working bow in the ranged slot (Auto Shot), else null
+  get rangedWeapon() {
+    const s = this.equipment.ranged;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
+  }
+
   get draughts() {
     return this.count('healing_draught');
   }

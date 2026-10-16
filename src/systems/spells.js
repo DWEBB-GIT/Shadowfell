@@ -37,6 +37,16 @@ export class Spells {
   constructor(game) {
     this.game = game;
     this.reset();
+    // pushback (WoW Classic): a blow taken while casting sets the cast bar
+    // back by `castPushback` seconds, at most `maxPushbacks` times a cast
+    game.events.on('playerHurt', (e) => {
+      const c = game.player?.casting;
+      const cfg = game.config;
+      if (!c || !(e.damage > 0) || c.pushbacks >= cfg.maxPushbacks) return;
+      c.t = Math.max(0, c.t - cfg.castPushback);
+      c.pushbacks += 1;
+      game.events.emit('castPushback', { id: c.id });
+    });
   }
 
   reset() {
@@ -44,6 +54,8 @@ export class Spells {
     this.dots = []; // { enemy, id, left, next }
     this.zones = []; // { id, x, z, left, next }
     this.bolts = []; // { enemy, id, t }
+    this.blows = []; // cleaves and bursts on their way to the impact frame: { id, t }
+    this.queued = null; // a spell pressed in the queue window: { id, left }
   }
 
   // ---------------------------------------------------------- state for the HUD
@@ -70,15 +82,21 @@ export class Spells {
   tryCast(id) {
     const { player, events, stats } = this.game;
     const spell = SPELLS[id];
-    // off-GCD spells (Brace, Rebuke) go even mid-swing
-    if (!spell || player.dead || player.lunge || player.casting || (player.pending && !spell.tuning.offGlobalCooldown)) return false;
+    // Nothing about auto attack blocks an ability: a swing or a shot on its
+    // way never eats a key press (WoW). Only another cast, a charge in
+    // flight, or the global cooldown does.
+    if (!spell || player.dead || player.lunge || player.casting) return false;
     if (!this.game.skills.knowsAbility(id)) return false;
     const offGcd = !!spell.tuning.offGlobalCooldown;
-    if (!offGcd && player.cooldowns.gcd > 0) return false; // queued out silently, as in WoW
-    if (player.cooldowns[id] > 0) {
-      this.game.hud.error(`${spell.name} is not ready yet`);
+    // WoW's spell queue: pressed in the last moments of the global cooldown
+    // (or its own), it goes off the instant it can, with no error
+    const wait = Math.max(offGcd ? 0 : player.cooldowns.gcd, player.cooldowns[id] || 0);
+    if (wait > 0) {
+      if (wait <= this.game.config.spellQueueWindow) this.queued = { id, left: wait + 0.05 };
+      else if (player.cooldowns[id] > 0) this.game.hud.error(`${spell.name} is not ready yet`);
       return false;
     }
+    if (this.queued?.id === id) this.queued = null;
     if (spell.kind === 'camp' && this.game.camp.enemiesNear) {
       this.game.hud.error('You cannot make camp with enemies close by');
       return false;
@@ -108,21 +126,23 @@ export class Spells {
     // a cast pays when it finishes (WoW); everything else pays now
     if (spell.kind !== 'cast' && spell.kind !== 'camp') this.game.resources.spend(spell);
     if (spell.kind === 'cast' || spell.kind === 'camp') {
-      // casting stops the swing: a swing on its way is dropped, and the swing
-      // timer starts again when the cast ends (WoW)
+      // casting stops the swing: a swing or shot on its way is dropped, and
+      // the timers start again when the cast ends (WoW Classic)
       if (player.pending && player.pending.type === 'strike') player.pending = null;
       player.pendingOff = null;
-      player.casting = { id, t: 0, total: stats.hasted(t.castTime), target };
+      player.pendingShot = null;
+      player.holdBow(false);
+      player.casting = { id, t: 0, total: stats.hasted(t.castTime), target, pushbacks: 0 };
       player.rig.play('brace', player.casting.total, 0.9);
       events.emit('castStart', { id });
       return true;
     }
     if (spell.kind === 'cleave' || spell.kind === 'burst') {
-      // the blow lands after its windup, like a swing
+      // the blow lands at its animation's impact frame, a moment after the
+      // key press; it locks nothing and leaves the swing timer alone (WoW)
       const windup = stats.hasted(t.windup);
       const anim = spell.kind === 'burst' ? windup + 0.35 : windup + 0.3;
-      player.pending = { type: 'spell', id, t: windup };
-      player.cooldowns.attack = Math.max(player.cooldowns.attack, windup + 0.2);
+      this.blows.push({ id, t: windup });
       player.rig.play(spell.kind === 'burst' ? 'slam' : 'strike', anim, windup / anim);
       player.cooldowns[id] = t.cooldown;
       return true;
@@ -184,7 +204,7 @@ export class Spells {
     if (spell.kind === 'cast') {
       const d = Math.hypot(target.position.x - player.position.x, target.position.z - player.position.z);
       this.bolts.push({ enemy: target, id: spell.id, t: d / t.projectileSpeed });
-      events.emit('projectile', { kind: 'holy', from: { x: player.position.x, y: player.position.y + 1.3, z: player.position.z }, to: target.position, speed: t.projectileSpeed });
+      events.emit('projectile', { kind: 'holy', from: { x: player.position.x, y: player.position.y + 1.3, z: player.position.z }, to: target.position, speed: t.projectileSpeed, follow: target, life: d / t.projectileSpeed });
     } else if (spell.kind === 'instant') {
       player.rig.play('strike', 0.4, 0.4);
       events.emit('spellFlash', { position: target.position, school: spell.school });
@@ -338,9 +358,29 @@ export class Spells {
           player.cooldowns[c.id] = spell.tuning.cooldown;
           player.cooldowns.attack = Math.max(player.cooldowns.attack, this.game.stats.attackCooldown);
           player.cooldowns.attackOff = Math.max(player.cooldowns.attackOff, this.game.stats.attackCooldownFor('off'));
+          if (this.game.stats.hasRanged) player.cooldowns.ranged = Math.max(player.cooldowns.ranged, this.game.stats.attackCooldownFor('ranged'));
           events.emit('castEnd', { id: c.id, done: true });
           this._go(spell, c.target);
         }
+      }
+    }
+
+    // cleaves and bursts land at their impact frame
+    for (let i = this.blows.length - 1; i >= 0; i--) {
+      const b = this.blows[i];
+      if ((b.t -= dt) > 1e-6) continue;
+      this.blows.splice(i, 1);
+      this.resolve(b.id);
+    }
+
+    // the spell queue: a spell pressed just before it was ready goes now
+    if (this.queued && !player.casting && !player.lunge) {
+      const q = this.queued;
+      if ((q.left -= dt) <= 0) this.queued = null;
+      const wait = Math.max(SPELLS[q.id].tuning.offGlobalCooldown ? 0 : player.cooldowns.gcd, player.cooldowns[q.id] || 0);
+      if (wait <= 0) {
+        this.queued = null;
+        this.tryCast(q.id);
       }
     }
 

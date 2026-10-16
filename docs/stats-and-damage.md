@@ -81,9 +81,22 @@ Auto attack is three separate parts, timed the way WoW times them: the swing tim
 
 1. **The swing clock** (`player.cooldowns.attack`) counts down, on delta time, to the moment of the next blow, so the rhythm is the same at 30, 60 or 144 fps. When a blow lands the clock restarts at T. If it ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst.
 2. **The animation** (0.8 s, impact frame 0.32 s in) starts 0.32 s *before* the clock runs out, so its impact frame and the hit are the same moment. It only starts if the target is in reach and in front of you. Haste does not speed it up.
-3. **The damage** resolves at the impact frame, when the clock runs out. Reach and target are checked then: if the target has stepped out of reach there is no blow, the swing is called off, and the clock waits at zero. You swing the moment you are back in reach (a short 0.15 s windup, `readyWindup`), then every T. Moving does not cancel a swing.
+3. **The damage** resolves at the impact frame, when the clock runs out. Reach and target are checked then: if the target has stepped out of reach there is no blow, the swing is called off, and the clock waits at zero. You swing the moment you are back in reach (a short 0.12 s windup, `readyWindup`), then every T. Moving does not cancel a swing.
 
-When the clock starts: the first blow of a fight lands a full T after you **first reach** the target (no instant opener, as Dan asked). While you close in, the clock does not run and the swing bar is hidden. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. Stopping auto attack before a blow lands calls it off.
+When the clock starts: as in WoW, a fresh fight opens with an **instant blow** the moment you reach the target (Dan, 2026-10-16); nothing runs while you close in. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. Stopping auto attack before a blow lands calls it off.
+
+### Combat feel, as in WoW
+
+- **No animation lock.** Swings, shots and abilities play on the upper body; you move at full speed through all of them. Only a charge (Lunge) carries you, and moving breaks a cast.
+- **Nothing eats a key press.** A swing or shot on its way never blocks an ability; only another cast, a charge in flight or the global cooldown does. Instant abilities do not touch the swing timer. Cleave and Shield Break land at their own impact frame without delaying your next swing.
+- **Spell queue.** An ability pressed in the last 0.4 s of the global cooldown (or of its own cooldown) goes off the moment it can, with no error (`spellQueueWindow` in `data/abilities.json`).
+- **Facing.** Swings and shots need the target within the front 180° (`coneDegrees`). While you fight, you keep the target in front of you as you move (strafing), so attacks carry on; standing still you turn to it.
+- **Melee leeway.** While you and the target are both moving, melee reach stretches by 1 m (`movingLeeway`), so a chase does not drop swings.
+- **Casts.** A cast bar, broken by moving. Each hit taken while casting sets it back 0.5 s, at most twice (Classic pushback: `castPushback`, `maxPushbacks`). Bolts home in on the target and hit on arrival.
+
+### Bows and Auto Shot
+
+A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.8 s, 26 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You can shoot on the move. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
 
 ### Dual wielding
 

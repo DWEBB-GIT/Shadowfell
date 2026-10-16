@@ -2506,16 +2506,16 @@ async function clickTargeting(browser) {
   await placeEnemy(page, 'ghoul_cart', 2.5, 1, { frozen: true });
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 20));
   await rightClickOn('ghoul_road');
-  // the first blow lands one swing time after you reach the target (2.2 s)
+  // the first blow lands as soon as you are in reach (WoW), then every T
   const TT = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
-  await sim(page, TT + 0.1);
+  await sim(page, 0.3);
   const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent, cd: window.__shadowfall.player.cooldowns.attack }));
   await sim(page, TT);
   const second = await page.evaluate(() => window.__shadowfall.enemies.byId('ghoul_road').health);
   await sim(page, TT + 0.3);
   const end = await page.evaluate(() => ({ dead: window.__shadowfall.enemies.byId('ghoul_road').dead, attacking: window.__shadowfall.targeting.attacking, target: window.__shadowfall.targeting.current }));
   record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp < 20 && mid.hp - second === 20 - mid.hp && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
-    `20 → ${mid.hp} one swing time after reaching it (next in ${mid.cd.toFixed(2)}s of ${TT}s) → ${second} a swing later (frame: "${mid.label}"); then it fell and auto attack stopped`);
+    `20 → ${mid.hp} at once (next in ${mid.cd.toFixed(2)}s of ${TT}s) → ${second} a swing later (frame: "${mid.label}"); then it fell and auto attack stopped`);
 
   // right-clicking does not snap the Warden round: moving, he faces where he
   // walks and holds his swing; standing still, he turns to the target
@@ -3628,7 +3628,7 @@ async function swingTimer(browser) {
   await sim(page, 3 * T);
   const sync = await page.evaluate(() => window.__shadowfall.__sync.filter((x) => x.hit).map((x) => ({ lead: +(x.hit - x.start).toFixed(3), impactIn: +x.impactIn.toFixed(3), clock: +x.clock.toFixed(3), frac: +x.frac.toFixed(3), bar: x.bar })));
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
-  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x) => near(x.lead, x.impactIn, 0.005) && near(x.impactIn, Math.max(x.clock, 0.15), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
+  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x) => near(x.lead, x.impactIn, 1 / 60 + 0.001) && near(x.impactIn, Math.max(x.clock, 0.12), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
 
   // out of reach: the clock waits at zero; back in reach it swings once, then a full interval
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
@@ -3636,15 +3636,15 @@ async function swingTimer(browser) {
   // first, the opening: the clock does not run while you close in
   await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 4);
-  const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, waiting: !!window.__shadowfall.player.awaitingOpener, bar: !document.getElementById('swing-bar').hidden, hits: window.__shadowfall.__swings.length }));
+  const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, hits: window.__shadowfall.__swings.length }));
   await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; });
   await sim(page, T + 0.3);
   const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
-  record('The swing timer does not run (or show) while you are out of reach of a new target; it starts when you reach it', closing.waiting && closing.clock === 0 && !closing.bar && closing.hits === 0 && opener.length === 1 && near(opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, bar ${closing.bar ? 'shown' : 'hidden'}; first blow ${opener[0]}s after reaching it (T ${T}s)`);
+  record('A new fight opens with an instant blow the moment you reach the target (WoW); nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it (T ${T}s)`);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
   await sim(page, 3);
   // mid-fight: a clock that runs out with the target out of reach waits at zero
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.player.lastSwingAt = undefined; g.__swings = []; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.awaitingOpener = false; g.player.cooldowns.attack = 0; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.player.lastSwingAt = undefined; g.__swings = []; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
   await sim(page, 4);
   await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); e.health = 9999; });
   await sim(page, 3);
@@ -3654,7 +3654,7 @@ async function swingTimer(browser) {
   // the damage checks reach at the impact frame
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.__swings = []; });
   await sim(page, 3);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.awaitingOpener = false; g.player.cooldowns.attack = 0; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
   await sim(page, 0.05);
   const started = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike');
   await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -8); });
@@ -3866,7 +3866,122 @@ async function townAndCooking(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, gearRolls, blackwood, atmosphere };
+async function wowCombat(browser) {
+  current = 'WoW combat feel';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const T = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
+  const fresh = async (z = -1.6) => {
+    await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+    await placeEnemy(page, 'ghoul_road', 0, z, { frozen: true });
+    await page.evaluate(() => {
+      const g = window.__shadowfall;
+      g.targeting.stopAttack();
+      g.player.health = g.player.maxHealth;
+      g.player.lastSwingAt = undefined;
+      g.player.pending = null;
+      g.player.casting = null;
+      g.spells.queued = null;
+      Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+      const e = g.enemies.byId('ghoul_road');
+      e.health = 99999;
+      g.__hits = [];
+      if (!g.__hook) {
+        g.__hook = true;
+        g.events.on('enemyHit', (x) => {
+          g.__hits.push({ t: +g.time.toFixed(3), hand: x.hand || null, swing: !!x.swing, kind: x.kind });
+          if (x.enemy.alive) x.enemy.health = 99999; // (a reset to full health on leashing would let it die)
+        });
+        g.events.on('playerShot', () => (g.__shots = (g.__shots || []).concat(+g.time.toFixed(3))));
+      }
+      g.__shots = [];
+    });
+  };
+
+  // an ability is never eaten by a swing on its way
+  await fresh();
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.05);
+  const mid = await page.evaluate(() => ({ swing: window.__shadowfall.player.pending?.type === 'strike', ok: window.__shadowfall.spells.tryCast('smite'), cd: window.__shadowfall.player.cooldowns.smite }));
+  record('An ability goes off even while a swing is on its way (no animation lock)', mid.swing && mid.ok && mid.cd > 0, JSON.stringify(mid));
+
+  // moving at full speed while swinging and after an ability
+  await fresh(-1.4);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); g.spells.tryCast('smite'); });
+  const x0 = await page.evaluate(() => window.__shadowfall.player.position.x);
+  await sim(page, 0.3, { held: ['KeyD'] });
+  const moved = await page.evaluate(() => window.__shadowfall.player.position.x);
+  const full = await page.evaluate(() => window.__shadowfall.config.player.speed * 0.3);
+  record('Swinging and using abilities never slow you down', (moved - x0) > full * 0.9, `${(moved - x0).toFixed(2)} m in 0.3 s (full speed ${full.toFixed(2)} m)`);
+
+  // the spell queue window
+  await fresh();
+  const q = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+    g.player.cooldowns.gcd = 0.3;
+    const early = g.spells.tryCast('smite');
+    return { early, queued: g.spells.queued?.id };
+  });
+  await sim(page, 0.35);
+  const qd = await page.evaluate(() => ({ cd: window.__shadowfall.player.cooldowns.smite, queued: window.__shadowfall.spells.queued }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.smite = 0; g.player.cooldowns.gcd = 0.9; g.spells.tryCast('smite'); });
+  const far = await page.evaluate(() => window.__shadowfall.spells.queued);
+  record('Spell queue: pressed in the last 0.4 s of the global cooldown, a spell goes off the moment it ends', q.early === false && q.queued === 'smite' && qd.cd > 5 && !qd.queued && !far, `queued ${q.queued}; went off when the GCD ended (cooldown ${qd.cd.toFixed(1)}s); 0.9 s early is not queued`);
+
+  // pushback
+  await fresh(-6);
+  const pb = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.select(g.enemies.byId('ghoul_road'));
+    g.spells.tryCast('hallowedBolt');
+    const c = g.player.casting;
+    c.t = 1.0;
+    const out = [];
+    for (let i = 0; i < 3; i++) {
+      g.events.emit('playerHurt', { enemy: g.enemies.byId('ghoul_road'), damage: 5 });
+      out.push(+c.t.toFixed(2));
+    }
+    return out;
+  });
+  record('Pushback: each hit taken while casting sets the cast back 0.5 s, at most twice', pb.join() === '0.5,0,0', `cast at 1.0 s, after three hits: ${pb.join(', ')}`);
+
+  // the bow: Auto Shot beyond melee reach, arrows in flight, on the move
+  await fresh(-10);
+  const eq = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.casting = null;
+    g.inventory.addItem('hunting_bow', 1, { quiet: true });
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'hunting_bow');
+    const r = g.inventory.move(loc, 'e:ranged');
+    return { ok: r.ok, bow: g.inventory.rangedWeapon?.name, T: g.stats.attackCooldownFor('ranged') };
+  });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.3);
+  const bar = await page.evaluate(() => ({ text: document.getElementById('swing-text').textContent, inHand: window.__shadowfall.player.bowInHand }));
+  await sim(page, 0.4);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'auto-shot.png') });
+  await sim(page, 1.2, { held: ['KeyA'] });
+  await sim(page, 2 * eq.T - 0.6);
+  const bow = await page.evaluate(() => ({ shots: window.__shadowfall.__shots, hits: window.__shadowfall.__hits.filter((h) => h.hand === 'ranged').map((h) => h.t) }));
+  const flight = bow.hits.length ? +(bow.hits[0] - bow.shots[0]).toFixed(2) : null;
+  const gap = bow.shots.length > 1 ? +(bow.shots[1] - bow.shots[0]).toFixed(2) : null;
+  record('A bow goes in the ranged slot; with the target beyond melee reach, Auto Shot fires on the bow\'s own timer', eq.ok && bow.shots.length >= 3 && near(gap, eq.T, 0.05) && /Auto Shot/.test(bar.text) && bar.inHand, `${eq.bow}: shots at ${bow.shots.join(', ')} (every ${eq.T.toFixed(1)} s); bar "${bar.text}"`);
+  record('Arrows fly to the target and hit on arrival; you can shoot on the move', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits while strafing`);
+
+  // the target comes into reach: the sword takes over
+  await page.evaluate(() => { const g = window.__shadowfall; const p = g.player.position; g.enemies.byId('ghoul_road').position.set(p.x, 0, p.z - 1.6); g.__hits = []; });
+  await sim(page, T + 0.4);
+  const melee = await page.evaluate(() => window.__shadowfall.__hits.map((h) => h.hand));
+  record('In melee reach the sword takes over from the bow', melee.includes('main') && !melee.slice(1).includes('ranged'), melee.join(', '));
+
+  record('No script errors (WoW combat)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

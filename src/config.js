@@ -118,11 +118,18 @@ export const CONFIG = {
 const tuning = (id) => DB.abilities[id].tuning;
 Object.assign(CONFIG, {
   attack: tuning('strike'),
+  autoShot: tuning('autoShot'),
   shieldBreak: tuning('shieldBreak'),
   lunge: tuning('lunge'),
   brace: tuning('brace'),
   draught: tuning('draught'),
   globalCooldown: DB.globalCooldown,
+  // WoW's spell queue: an ability pressed this close to the end of the global
+  // cooldown (or its own) goes off the moment it can
+  spellQueueWindow: DB.spellQueueWindow,
+  // being hit while casting sets the cast bar back (WoW Classic's pushback)
+  castPushback: DB.castPushback,
+  maxPushbacks: DB.maxPushbacks,
   armourTypes: DB.armourTypes,
   archetypes: DB.archetypes,
   // each enemy's numbers from its level and type (src/data/scaling.js)

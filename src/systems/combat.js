@@ -7,6 +7,7 @@ import { computeHit, enemyBlock, weaponRoll, swingRoll, enemyRoll } from './stat
 export class Combat {
   constructor(game) {
     this.game = game;
+    this.arrows = []; // Auto Shot arrows in flight: { target, t }
   }
 
   // average damage of each weapon ability before the target's armour (for
@@ -131,6 +132,32 @@ export class Combat {
     return target;
   }
 
+
+  // Auto Shot: an arrow from the bow to the target. It flies (following the
+  // target, as WoW's do) and does its damage when it arrives.
+  loosePlayerArrow(target) {
+    const { player, events } = this.game;
+    const from = { x: player.position.x + Math.sin(player.facing) * 0.4, y: player.position.y + 1.35, z: player.position.z + Math.cos(player.facing) * 0.4 };
+    const d = Math.hypot(target.position.x - from.x, target.position.z - from.z);
+    const t = d / CONFIG.autoShot.arrowSpeed;
+    this.arrows.push({ target, t });
+    events.emit('projectile', { kind: 'arrow', from, to: target.position, follow: target, speed: CONFIG.autoShot.arrowSpeed, life: t });
+    events.emit('playerShot', {});
+  }
+
+  updateArrows(dt) {
+    for (let i = this.arrows.length - 1; i >= 0; i--) {
+      const a = this.arrows[i];
+      if ((a.t -= dt) > 1e-6) continue;
+      this.arrows.splice(i, 1);
+      const e = a.target;
+      if (!e.alive || this.game.player.dead) continue;
+      const hit = this._playerHit(e, 1, { stagger: 0.12, knockFrom: this.game.player.position, knockback: 0.1 }, { swing: true, hand: 'ranged' });
+      this.game.events.emit('enemyHit', { enemy: e, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true, hand: 'ranged' });
+      this.game.events.emit('log', { text: `Your arrow hits the ${e.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
+      if (e.dead) this.onEnemyDefeated(e);
+    }
+  }
 
   resolveEnemyStrike(enemy) {
     const { player, events } = this.game;

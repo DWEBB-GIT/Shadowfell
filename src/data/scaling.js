@@ -29,6 +29,7 @@ export const SCALING = {
   slotWeights: {
     head: 1, chest: 1, legs: 1, mainHand: 1,
     oneHand: 0.75, // two of them weigh as much as a main-hand weapon and a shield
+    ranged: 0.5, // a bow: a second weapon, for range
     shoulders: 0.75, hands: 0.75, waist: 0.75, feet: 0.75,
     wrists: 0.5, back: 0.5, neck: 0.5, finger: 0.5, offHand: 0.5,
     trinket: 0, // trinkets carry effects only, outside the budget

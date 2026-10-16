@@ -410,17 +410,20 @@ export class Hud {
     // (one per hand when dual wielding)
     const tg = this.game.targeting;
     const st = this.game.stats;
+    // with the target beyond melee reach and a bow on your back, the bar is
+    // Auto Shot's
+    const shooting = tg.targetInShot;
     const showSwing = (hand, bar, fill, text) => {
       const el = $(bar);
-      // (hidden until you first reach the target: the clock is not running)
-      el.hidden = !tg.attacking || player.dead || player.awaitingOpener || (hand === 'off' && !st.dualWielding);
+      el.hidden = !tg.attacking || player.dead || (hand === 'off' && (shooting || !st.dualWielding));
       if (el.hidden) return;
-      // the bar fills on the blow itself
-      const pend = hand === 'off' ? player.pendingOff?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
-      const left = Math.max(0, pend ?? player.cooldowns[hand === 'off' ? 'attackOff' : 'attack']);
-      const total = st.attackCooldownFor(hand);
+      const h = hand === 'main' && shooting ? 'ranged' : hand;
+      // the bar fills on the blow (or the arrow's release) itself
+      const pend = h === 'off' ? player.pendingOff?.t : h === 'ranged' ? player.pendingShot?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
+      const left = Math.max(0, pend ?? player.cooldowns[h === 'off' ? 'attackOff' : h === 'ranged' ? 'ranged' : 'attack']);
+      const total = st.attackCooldownFor(h);
       $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
-      $(text).textContent = `${st.handWeapon(hand).name}${hand === 'off' ? ' (off hand)' : ''}  ${left.toFixed(1)}`;
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}  ${left.toFixed(1)}`;
     };
     showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
     showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
@@ -490,7 +493,7 @@ export class Hud {
     if (shown) {
       const c = shown.cfg;
       this.el.targetName.textContent = c.name;
-      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
+      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach || tg.targetInShot ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
       this.el.target.classList.toggle('attacking', !!t && tg.attacking);
       this.el.targetFill.style.width = `${Math.min(100, (shown.health / shown.maxHealth) * 100)}%`;
       this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${shown.maxHealth}`;

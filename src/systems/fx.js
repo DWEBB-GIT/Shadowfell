@@ -117,19 +117,29 @@ export class Effects {
   }
 
   // An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
-  projectile({ kind, from, to, speed }) {
+  // With `follow` (an enemy), it homes in on it as it moves, as WoW's
+  // arrows and bolts do, and arrives after `life` seconds.
+  projectile({ kind, from, to, speed, follow = null, life = null }) {
     const bolt = kind === 'bolt' || kind === 'holy';
+    const model = !bolt && follow && this.game.assets.instance?.('arrow');
     const obj = bolt
       ? new THREE.Sprite(new THREE.SpriteMaterial({ map: this.game.textures.glint, color: kind === 'holy' ? 0xffd98a : 0x9a7cff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }))
-      : new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.7), new THREE.MeshBasicMaterial({ color: 0xd8c8a0 }));
+      : model || new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.7), new THREE.MeshBasicMaterial({ color: 0xd8c8a0 }));
     if (bolt) obj.scale.setScalar(0.6);
-    const y1 = heightAt(to.x, to.z) + 1.0;
     const a = new THREE.Vector3(from.x, from.y, from.z);
-    const b = new THREE.Vector3(to.x, y1, to.z);
+    const b = new THREE.Vector3(to.x, heightAt(to.x, to.z) + 1.0, to.z);
     obj.position.copy(a);
     if (!bolt) obj.lookAt(b);
-    const life = Math.max(0.08, a.distanceTo(b) / speed);
-    this._add(obj, life, (o, k) => o.position.lerpVectors(a, b, k));
+    const time = life ?? Math.max(0.08, a.distanceTo(b) / speed);
+    this._add(obj, Math.max(0.05, time), (o, k) => {
+      if (follow) b.set(follow.position.x, heightAt(follow.position.x, follow.position.z) + 1.0, follow.position.z);
+      o.position.lerpVectors(a, b, k);
+      // a slight arc for arrows
+      if (!bolt) {
+        o.position.y += Math.sin(k * Math.PI) * Math.min(1.2, a.distanceTo(b) * 0.04);
+        o.lookAt(b);
+      }
+    });
   }
 
   // a pale shield of light in front of the Warden while Brace is up

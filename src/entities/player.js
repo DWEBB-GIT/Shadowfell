@@ -69,6 +69,7 @@ export class Player {
     this.lunge = null;
     this.braced = 0;
     this.pending = null;
+    this.pendingShot = null;
     this.casting = null;
     this._sync();
   }
@@ -138,6 +139,7 @@ export class Player {
         larm.add(this.shield);
       }
     }
+    this.holdBow(false);
   }
 
   // Fishing: the rod in the right hand (the weapon put away) and the
@@ -228,6 +230,12 @@ export class Player {
       this.pendingOff = null;
       this._impact('off', p, dt);
     }
+    // and Auto Shot its moment of release
+    if (this.pendingShot && (this.pendingShot.t -= dt) <= 1e-6) {
+      const p = this.pendingShot;
+      this.pendingShot = null;
+      this._release(p, dt);
+    }
 
     let speed01 = 0;
     if (this.lunge) {
@@ -243,18 +251,20 @@ export class Player {
       speed01 = 1;
     } else if (controls) {
       const move = controls.move;
-      // abilities slow the Warden while they play out; auto attack swings
-      // do not (as in WoW, you can swing on the move)
-      const swinging = this.pending ? this.pending.type === 'strike' : this.rig.action && this.rig.action.type === 'strike' && this.rig.action.auto;
-      const attacking = !swinging && (this.pending || (this.rig.action && this.rig.action.type !== 'drink'));
-      const slow = attacking ? 0.35 : 1;
+      // No animation lock (WoW): swings, shots and abilities play on the
+      // upper body while the legs keep going, at full speed. Only a charge
+      // carries you, and a cast is broken by moving.
       const mag = Math.min(1, Math.hypot(move.x, move.z)); // analogue sticks can walk slowly
       if (mag > 0) {
-        this.position.x += move.x * CONFIG.player.speed * slow * dt;
-        this.position.z += move.z * CONFIG.player.speed * slow * dt;
-        if (!attacking) this.facing = turnTowards(this.facing, Math.atan2(move.x, move.z), dt * 14);
-        speed01 = slow * mag;
-      } else if (controls.actions && controls.actions.strike && controls.aim && !this.pending) {
+        this.position.x += move.x * CONFIG.player.speed * dt;
+        this.position.z += move.z * CONFIG.player.speed * dt;
+        // fighting, you keep your target in front of you as you move (strafe),
+        // so swings and shots carry on; otherwise you face where you go
+        const acts = controls.actions || {};
+        const look = (acts.strike || acts.shoot) && controls.aim ? Math.atan2(controls.aim.x - this.position.x, controls.aim.z - this.position.z) : Math.atan2(move.x, move.z);
+        this.facing = turnTowards(this.facing, look, dt * 14);
+        speed01 = mag;
+      } else if (controls.actions && (controls.actions.strike || controls.actions.shoot) && controls.aim) {
         // standing still in a fight, the Warden turns (not snaps) to his target
         this.facing = turnTowards(this.facing, Math.atan2(controls.aim.x - this.position.x, controls.aim.z - this.position.z), dt * CONFIG.attack.turnRate);
       }
@@ -266,6 +276,7 @@ export class Player {
         this.tryStrike(controls.aim);
         this.tryStrikeOff(controls.aim);
       }
+      if (a.shoot) this.tryShoot(controls.aim);
       if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
       if (a.cook) this.game.hud.items.toggle('cooking');
@@ -295,27 +306,22 @@ export class Player {
   // moment the blow lands, so the swing timer bar fills exactly on the hit.
   // The animation starts its windup early, so its impact frame is that same
   // moment; it only starts if the target is in reach and in front of you.
-  // If the target is out of reach when the clock runs out, there is no
-  // swing: the clock waits, full, and you swing the moment you are back in
-  // reach (after a short windup). It restarts from the blow, keeping any
-  // overshoot (capped by `catchUp`) so the rhythm holds at low frame rates.
-  // The first blow of a fight comes a full swing time after you first reach
-  // the target; its clock does not run while you close in.
+  // A fresh fight's clocks start ready: the first blow lands the moment you
+  // reach the target (after a short `readyWindup`), then every T. If the
+  // target is out of reach when the clock runs out there is no swing: the
+  // clock waits, full, and you swing the moment you are back in reach. It
+  // restarts from the blow, keeping any overshoot (capped by `catchUp`) so
+  // the rhythm holds at low frame rates. Swinging never blocks movement or
+  // abilities.
   tryStrike(aim) {
     if (this.pending || this.casting) return false;
     const stats = this.game.stats;
-    if (this.awaitingOpener) {
-      this.awaitingOpener = false;
-      this.cooldowns.attack = Math.max(this.cooldowns.attack, stats.attackCooldown);
-      // dual wielding, the off hand opens half a main-hand swing later
-      if (stats.dualWielding) this.cooldowns.attackOff = Math.max(this.cooldowns.attackOff, stats.attackCooldownFor('off') + stats.attackCooldown / 2);
-      return false;
-    }
     const windup = stats.swingWindup;
     if (this.cooldowns.attack > windup) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
     const t = Math.max(this.cooldowns.attack, Math.min(windup, CONFIG.attack.readyWindup));
     const anim = stats.swingAnimation;
+    if (this.bowInHand) this.holdBow(false);
     this.pending = { type: 'strike', t, aim: aim ? { x: aim.x, z: aim.z } : null };
     this.rig.play('strike', anim, t / anim);
     this.rig.action.auto = true;
@@ -329,7 +335,7 @@ export class Player {
   // back until just after that blow.
   tryStrikeOff(aim) {
     const stats = this.game.stats;
-    if (!stats.dualWielding || this.awaitingOpener || this.pendingOff || this.casting || this.lunge) return false;
+    if (!stats.dualWielding || this.pendingOff || this.casting || this.lunge) return false;
     if (this.pending && this.pending.type === 'spell') return false;
     const windup = stats.swingWindupFor('off');
     if (this.cooldowns.attackOff > windup) return false;
@@ -369,6 +375,70 @@ export class Player {
     this.lastSwingAt = this.game.time;
     if (!off) this.lastMainImpactAt = this.game.time;
     this.game.combat.resolvePlayerStrike(p.aim, hand);
+  }
+
+  // Auto Shot (WoW): with a bow in the ranged slot, while the target is
+  // beyond melee reach and within the bow's range, an arrow is loosed each
+  // time the ranged clock (cooldowns.ranged, T = bow speed / (1 + haste))
+  // runs out. The draw starts early so the arrow leaves the string as the
+  // clock runs out; it flies to the target and does its damage on arrival.
+  // You can shoot on the move, and nothing locks you in place.
+  tryShoot(aim) {
+    if (this.pendingShot || this.casting || this.lunge) return false;
+    const stats = this.game.stats;
+    const draw = Math.min(CONFIG.autoShot.draw, stats.attackCooldownFor('ranged') * 0.4);
+    if (this.cooldowns.ranged > draw) return false;
+    if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
+    const t = Math.max(this.cooldowns.ranged, Math.min(draw, CONFIG.attack.readyWindup * 2));
+    this.pendingShot = { t };
+    this.holdBow(true);
+    this.rig.play('shoot', t + 0.35, t / (t + 0.35));
+    this.rig.action.auto = true;
+    return true;
+  }
+
+  // The arrow leaves the string, if the target is still beyond melee reach
+  // and within the bow's (else the shot is called off and the clock waits).
+  _release(p, dt) {
+    const tg = this.game.targeting;
+    if (!tg.attacking || !tg.targetInShot) {
+      if (this.rig.action?.type === 'shoot') this.rig.action = null;
+      this.holdBow(false);
+      return;
+    }
+    const late = Math.min(-p.t, dt, CONFIG.attack.catchUp);
+    this.cooldowns.ranged = Math.max(0, this.game.stats.attackCooldownFor('ranged') - late);
+    this.lastSwingAt = this.game.time;
+    this.game.combat.loosePlayerArrow(tg.current);
+  }
+
+  // The bow rides on the back, and comes to the left hand to shoot (the
+  // blade and shield are put away until the next swing).
+  holdBow(inHand) {
+    const torso = this.model.getObjectByName('Torso');
+    const larm = this.model.getObjectByName('Arm_L');
+    const id = this.game.inventory.equipment.ranged?.id;
+    const want = id && ITEMS[id].kind === 'weapon' ? id : null;
+    if (this.bow && (this.bowId !== want || this.bowInHand !== !!inHand)) {
+      this.bow.parent?.remove(this.bow);
+      this.bow = null;
+    }
+    if (want && !this.bow) {
+      this.bow = this.game.assets.instance(ITEMS[want].model);
+      this.bowId = want;
+      this.bowInHand = !!inHand;
+      if (inHand && larm) {
+        this.bow.position.set(0, -0.62, 0.02);
+        this.bow.rotation.set(-Math.PI / 2, 0, 0);
+        larm.add(this.bow);
+      } else if (torso) {
+        this.bow.position.set(0, 0.25, -0.2);
+        this.bow.rotation.set(0, 0, 0.7);
+        torso.add(this.bow);
+      }
+    }
+    if (this.weaponPart) this.weaponPart.visible = !inHand && (this.weaponPart !== this.defaultWeaponMesh || this.game.inventory.equipment.mainHand?.id === 'worn_longsword');
+    if (this.shield) this.shield.visible = !inHand;
   }
 
   // is (x, z) within `halfDegrees` of where the Warden faces? (very close counts)
@@ -439,7 +509,7 @@ export class Player {
 
 function freshCooldowns() {
   const spells = Object.fromEntries(Object.keys(SPELLS).map((id) => [id, 0]));
-  return { attack: 0, attackOff: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0, ...spells };
+  return { attack: 0, attackOff: 0, ranged: 0, shieldBreak: 0, lunge: 0, brace: 0, draught: 0, gcd: 0, ...spells };
 }
 
 function turnTowards(current, target, maxStep) {

@@ -515,9 +515,11 @@ class Game {
     // on an enemy) the Warden swings whenever the target is in reach, in
     // front of him, and his weapon is ready. It is not on the bar.
     actions.strike = tg.attacking && tg.targetInReach;
+    // beyond it, with a bow in the ranged slot, Auto Shot
+    actions.shoot = tg.attacking && tg.targetInShot;
     return {
       move,
-      aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
+      aim: actions.strike || actions.shoot ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
       rawAim,
       actions,
     };
@@ -538,6 +540,7 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.spells.update(dt);
+      this.combat.updateArrows(dt);
       this.resources.update(dt);
       this.camp.update(dt, this.time);
       this.fishing.update(dt);

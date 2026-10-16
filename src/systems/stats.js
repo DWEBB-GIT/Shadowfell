@@ -138,8 +138,19 @@ export class Stats {
     return !!this.game.inventory.offWeapon;
   }
 
+  // `hand`: 'main', 'off' (dual wielding) or 'ranged' (the bow)
   handWeapon(hand) {
-    return hand === 'off' ? this.game.inventory.offWeapon : this.game.inventory.weapon;
+    const inv = this.game.inventory;
+    return hand === 'off' ? inv.offWeapon : hand === 'ranged' ? inv.rangedWeapon : inv.weapon;
+  }
+
+  // ---- the ranged slot: Auto Shot at targets beyond melee reach
+  get hasRanged() {
+    return !!this.game.inventory.rangedWeapon;
+  }
+
+  get rangedReach() {
+    return this.game.inventory.rangedWeapon?.range || 0;
   }
 
   handSpeed(hand) {

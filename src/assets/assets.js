@@ -61,6 +61,8 @@ import witchbane from '../../assets/models/witchbane.glb';
 import arming_sword from '../../assets/models/arming_sword.glb';
 import militia_sword from '../../assets/models/militia_sword.glb';
 import dirk from '../../assets/models/dirk.glb';
+import hunting_bow from '../../assets/models/hunting_bow.glb';
+import arrow from '../../assets/models/arrow.glb';
 import bone_knife from '../../assets/models/bone_knife.glb';
 import cooked_fish from '../../assets/models/cooked_fish.glb';
 import steak from '../../assets/models/steak.glb';
@@ -92,7 +94,7 @@ const SOURCES = {
   rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
   tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
-  arming_sword, militia_sword, dirk, bone_knife,
+  arming_sword, militia_sword, dirk, bone_knife, hunting_bow, arrow,
   cooked_fish, steak, stew, innkeeper, inn_shell, inn_front, inn_roof, cottage, well, lamp_post,
 };
 

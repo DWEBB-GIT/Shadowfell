@@ -1,6 +1,9 @@
 {
   "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js): cast, dot, instant, aoe, cleave, burst, charge, buff or camp; the rest have their own code. `cost` is what an ability spends ({mana: n} or {resolve: n}, the class gauge); `gain` is what it gives.",
   "globalCooldown": 1.5,
+  "spellQueueWindow": 0.4,
+  "castPushback": 0.5,
+  "maxPushbacks": 2,
   "abilities": [
     {
       "id": "strike",
@@ -10,16 +13,29 @@
       "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Dual wielding, each hand swings on its own clock at its weapon's speed; the off hand does half damage and never lands within 0.2 s of the main hand. Not on the spell bar.",
       "tuning": {
         "range": 2.1,
-        "coneDegrees": 110,
+        "coneDegrees": 180,
         "windup": 0.32,
         "swingAnimation": 0.8,
         "abilityWeaponSeconds": 0.6,
         "turnRate": 6,
         "catchUp": 0.25,
-        "readyWindup": 0.15,
-        "staggerGap": 0.2
+        "readyWindup": 0.12,
+        "staggerGap": 0.2,
+        "movingLeeway": 1.0
       },
       "bar": false
+    },
+    {
+      "id": "autoShot",
+      "name": "Auto Shot",
+      "range": 26,
+      "target": "enemy",
+      "tuning": {
+        "draw": 0.45,
+        "arrowSpeed": 30
+      },
+      "bar": false,
+      "desc": "Looses an arrow from your ranged weapon at your target whenever its timer is ready, while the target is beyond your melee reach. On the move too. Starts with auto attack."
     },
     {
       "id": "shieldBreak",

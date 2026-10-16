@@ -1287,6 +1287,29 @@ def build_one_handers():
     export("bone_knife")
 
 
+def build_bows():
+    """Bows for the ranged slot: grip at the origin, limbs along +Z and -Z,
+    the string behind the grip (-Y), the belly facing +Y."""
+    b = Builder()  # hunting bow: a plain self bow, leather grip
+    b.box((0.045, 0.05, 0.14), (0, 0, 0), P["leather_dark"])
+    for sz in (1, -1):
+        b.box((0.035, 0.04, 0.42), (0, 0.035, sz * 0.27), P["wood"], rot=(sz * 10, 0, 0), var=0.06)
+        b.box((0.03, 0.035, 0.26), (0, 0.10, sz * 0.58), P["wood_dark"], rot=(sz * 24, 0, 0), var=0.06)
+        b.box((0.03, 0.03, 0.03), (0, 0.15, sz * 0.70), P["bone_old"], var=0.0)
+    b.box((0.006, 0.006, 1.38), (0, -0.0, 0), P["parchment"], var=0.0)  # the string
+    b.to_object("HuntingBow")
+    export("hunting_bow")
+    reset_scene()
+
+    b = Builder()  # an arrow: shaft along -Y (the game's +Z, which lookAt aims), head at -Y
+    b.box((0.014, 0.7, 0.014), (0, 0, 0), P["wood"], var=0.0)
+    b.box((0.035, 0.08, 0.012), (0, -0.37, 0), P["iron"], var=0.0)
+    b.box((0.06, 0.1, 0.004), (0, 0.3, 0), P["cloth_red"], var=0.0)
+    b.box((0.004, 0.1, 0.06), (0, 0.3, 0), P["cloth_red"], var=0.0)
+    b.to_object("Arrow")
+    export("arrow")
+
+
 def build_cooking_items():
     """Cooked food: grilled fish and a steak on a trencher, a bowl of stew."""
     def plate(b):
@@ -1491,7 +1514,7 @@ BUILDERS = [
     build_mara, build_forge_camp, build_shop_items,
     build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
     build_loot_items, build_tam, build_camp_items, build_one_handers,
-    build_cooking_items, build_innkeeper, build_town,
+    build_cooking_items, build_innkeeper, build_town, build_bows,
 ]
 
 if __name__ == "__main__":

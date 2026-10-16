@@ -41,6 +41,8 @@ export const EQUIP_SLOTS = [
   // only for a class that can dual wield
   { id: 'mainHand', label: 'Main hand', col: 'bottom', also: ['oneHand'] },
   { id: 'offHand', label: 'Off hand', col: 'bottom', also: ['oneHand'] },
+  // a bow, for Auto Shot at targets beyond melee reach (any class, as in WoW)
+  { id: 'ranged', label: 'Ranged', col: 'bottom' },
 ];
 // what an item's `slot` may say: a slot id, or a slot type
 export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.flatMap((s) => [s.fits || s.id, ...(s.also || [])]))];
@@ -127,6 +129,7 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     }
     if (d.damage !== undefined && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage.every(isNum) && d.damage[0] <= d.damage[1])) bad('damage must be [min, max]');
     if (d.kind === 'weapon' && !(isNum(d.speed) && d.speed >= 1 && d.speed <= 5)) bad('a weapon needs a swing speed in seconds (1 to 5)');
+    if (d.slot === 'ranged' && !(isNum(d.range) && d.range >= 8 && d.range <= 40)) bad('a ranged weapon needs a range in metres (8 to 40)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
     if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
@@ -240,6 +243,7 @@ export function validateGameData(raw, opts = {}) {
 
   // ---- abilities
   if (!isNum(abilF.globalCooldown)) errors.push('abilities.json: globalCooldown must be a number');
+  for (const k of ['spellQueueWindow', 'castPushback', 'maxPushbacks']) if (!isNum(abilF[k]) || abilF[k] < 0) errors.push(`abilities.json: ${k} must be a number of at least 0`);
   for (const [id, a] of Object.entries(abilities)) {
     const w = `abilities.json ${id}`;
     if (!isStr(a.name) || !isStr(a.desc)) errors.push(`${w}: needs a name and a desc`);
