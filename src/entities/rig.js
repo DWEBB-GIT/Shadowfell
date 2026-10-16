@@ -10,7 +10,7 @@ export class Rig {
   constructor(model, style = 'warden') {
     this.model = model;
     model.rotation.order = 'YXZ'; // yaw outermost, so falls happen in the character's own frame
-    this.style = style; // 'warden' | 'ghoul' | 'brute' | 'hound' | 'archer' | 'seer'
+    this.style = style; // 'warden' (the humanoid rig the player and townsfolk share) | 'ghoul' | 'brute' | 'hound' | 'archer' | 'seer'
     this.parts = {};
     this.base = {};
     for (const name of PART_NAMES) {

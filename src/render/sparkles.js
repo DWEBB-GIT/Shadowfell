@@ -8,7 +8,7 @@ import { heightAt } from '../world/terrain.js';
 
 const PER = 9; // motes per thing
 const MAX = 40; // things at once
-const RANGE = 30; // metres from the Warden
+const RANGE = 30; // metres from the Warrior
 
 export class Sparkles {
   constructor(game) {

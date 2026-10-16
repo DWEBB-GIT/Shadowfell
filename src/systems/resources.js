@@ -1,5 +1,5 @@
 // What abilities are paid with: mana, drawn from Intellect, refilling slowly
-// (fast out of combat), and the class gauge (the Warden's Resolve), built by
+// (fast out of combat), and the class gauge (the Warrior's Resolve), built by
 // weapon blows, blocks and hits taken, fading once the fight is over.
 // Amounts and rates live in data/archetypes.json; ability costs in
 // data/abilities.json (`cost`, and `gain` for openers such as Lunge).

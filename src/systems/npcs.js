@@ -5,7 +5,7 @@ import { Rig } from '../entities/rig.js';
 import { heightAt } from '../world/terrain.js';
 
 // Townsfolk. Each NPC stands at its post, works (Mara hammers at her anvil)
-// and turns to face the Warden when they come close. Talking to one opens a
+// and turns to face the Warrior when they come close. Talking to one opens a
 // conversation (src/systems/dialogue.js), which leads to quests and the shop.
 
 const DEG = Math.PI / 180;

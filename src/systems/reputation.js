@@ -1,7 +1,7 @@
 import { DB } from '../data/db.js';
 
 // Reputation, WoW style: points with each faction (data/factions.json),
-// earned from quests and from what the Warden does in a faction's area
+// earned from quests and from what the Warrior does in a faction's area
 // (killing the dead on the road earns the Road Wardens' thanks). Standings
 // are named tiers; a faction's vendors give a discount from Friendly up.
 // Reputation-gated stock and places will read `standing()` later.

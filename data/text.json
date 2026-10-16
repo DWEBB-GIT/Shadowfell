@@ -33,11 +33,11 @@
     "maxCharacters": 10,
     "classes": [
       {
-        "id": "warden",
-        "name": "Warden",
-        "archetype": "warden",
+        "id": "warrior",
+        "name": "Warrior",
+        "archetype": "warrior",
         "role": "Shield and steel",
-        "blurb": "A sworn guard of the old roads. Wears any armour, carries a shield or a second weapon, and builds Resolve by trading blows.",
+        "blurb": "A soldier of the old roads. Wears any armour, carries a shield or a second weapon, and builds Resolve by trading blows.",
         "traits": [
           "Strength",
           "Plate, mail, leather, cloth",

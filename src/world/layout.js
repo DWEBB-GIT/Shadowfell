@@ -11,7 +11,7 @@ const S = DB.scenery;
 
 // The whole walkable world, and the regions within it. Regions are bands
 // along the road (each holds from its minZ northwards to the previous one);
-// the HUD names the one the Warden stands in.
+// the HUD names the one the Warrior stands in.
 export const BOUNDS = W.bounds;
 export const REGIONS = W.regions.map((r) => ({ ...r, minZ: r.minZ === null ? -Infinity : r.minZ }));
 export const regionById = (id) => REGIONS.find((r) => r.id === id);

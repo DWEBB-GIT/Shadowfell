@@ -22,7 +22,7 @@
 //             flags one more than 10% over budget unless `budgetException`)
 // use:        what using it does, e.g. { heal: 42 }
 // bagSlots:   slots a bag adds
-// light:      a torch's light radius in metres (it lets the Warden into obscured areas)
+// light:      a torch's light radius in metres (it lets the Warrior into obscured areas)
 // bait:       percent added to the fishing catch chance (one is used per strike)
 // stack:      how many fit in one bag slot (1 = does not stack)
 // price:      what a merchant asks; merchants pay CONFIG.shop.sellFraction of it

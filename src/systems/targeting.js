@@ -10,7 +10,7 @@ import { heightAt } from '../world/terrain.js';
 // Escape clears the target.
 //
 // Auto attack: right-click an enemy (RT on a pad), or use any ability on it,
-// to engage it. The Warden swings at it each time his weapon is ready (its
+// to engage it. The Warrior swings at it each time his weapon is ready (its
 // speed, less haste) while it is in reach and in front of him, until it
 // falls, you pick another target, or you clear it (Escape). Right-clicking
 // selects without turning him: standing still he turns to it at a walk's
@@ -66,7 +66,7 @@ export class Targeting {
     let az = aim ? aim.z - p.z : Math.cos(player.facing);
     const al = Math.hypot(ax, az);
     if (al < 0.6) {
-      ax = Math.sin(player.facing); // cursor on the Warden: use facing
+      ax = Math.sin(player.facing); // cursor on the Warrior: use facing
       az = Math.cos(player.facing);
     } else {
       ax /= al;

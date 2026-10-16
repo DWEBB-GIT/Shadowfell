@@ -4,7 +4,7 @@ import { heightAt } from '../world/terrain.js';
 
 // Spawns and updates the region's enemies. A defeat lives in the world state
 // and is saved; enemies whose type has a `respawn` time (enemies.json) come
-// back at their spawn point once it has passed, WoW style, so the Warden
+// back at their spawn point once it has passed, WoW style, so the Warrior
 // can grind them. Those with 0 (bosses, story enemies) stay dead.
 
 export class EnemyManager {

@@ -5,10 +5,10 @@ import { heightAt, waterLevel } from './terrain.js';
 // Ponds and dark places, both from data/world.json.
 //
 // Water: a still surface over a bowl in the ground (terrain.js dips the land
-// under it), which the Warden cannot walk into. Fishing casts into it.
+// under it), which the Warrior cannot walk into. Fishing casts into it.
 //
 // Obscured areas: a dome of darkness. Without a torch in the off hand the
-// Warden cannot enter (the dark pushes them back); with one, the dark thins
+// Warrior cannot enter (the dark pushes them back); with one, the dark thins
 // and the torch lights what was hidden inside.
 
 export class WaterAndDark {
@@ -53,7 +53,7 @@ export class WaterAndDark {
     return this;
   }
 
-  // the Warden carries a light (a torch in the off hand)
+  // the Warrior carries a light (a torch in the off hand)
   get hasLight() {
     return this.game.player.lightRadius > 0;
   }

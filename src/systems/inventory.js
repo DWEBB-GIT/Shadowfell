@@ -531,7 +531,7 @@ export class Inventory {
     this.coins = data.coins;
     this.sockets = data.sockets.map((s) => (s ? { id: s.id, slots: s.slots.map(clone) } : null));
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.id, clone(data.equipment[s.id] || null)]));
-    // saves from before shields existed: hand the Warden theirs, once
+    // saves from before shields existed: hand the Warrior theirs, once
     if (!(data.granted || []).includes('kite_shield')) {
       if (!this.equipment.offHand) this.equipment.offHand = { id: 'kite_shield', count: 1 };
       else this._insert('kite_shield', 1);

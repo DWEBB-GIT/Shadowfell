@@ -3,14 +3,14 @@ import { SHRINES, PLAYER_START, BUILDINGS } from '../world/layout.js';
 import { heightAt } from '../world/terrain.js';
 import { moneyText } from '../ui/money.js';
 
-// Death, WoW style. When the Warden falls, their body stays where it fell and
+// Death, WoW style. When the Warrior falls, their body stays where it fell and
 // their spirit rises at the last place they rested: their camp, or the last
 // shrine. From there the ghost (fast, unseen by enemies, unable to fight) can
 // either run back to the body and rise there for free, or return to life at
 // once where it stands, a few coins lighter.
 //
-// The enemy that killed the Warden is remembered (`worldState.nemesis`): it
-// carries a skull over its head and on the minimap, the Warden deals extra
+// The enemy that killed the Warrior is remembered (`worldState.nemesis`): it
+// carries a skull over its head and on the minimap, the Warrior deals extra
 // damage to it, and killing it pays a revenge bonus.
 
 export class Afterlife {

@@ -7,7 +7,7 @@ import { ITEMS, RARITY, itemView } from '../data/items.js';
 // health bar, which carries the name, takes over), and your own name over
 // your character. Settings (O) hide each.
 
-const RANGE = 18; // metres from the Warden
+const RANGE = 18; // metres from the Warrior
 
 export class WorldLabels {
   constructor(game, layer) {

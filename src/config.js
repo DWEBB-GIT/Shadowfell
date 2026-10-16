@@ -9,7 +9,7 @@ import { SCALING, scaledEnemy } from './data/scaling.js';
 
 export const CONFIG = {
   player: {
-    archetype: 'warden',
+    archetype: 'warrior',
     speed: 5.6, // metres per second: a run (Dan, 2026-10-16: 6.5 felt too fast)
     runGait: 1.3, // the run animation: quicker, longer strides than a walk
     radius: 0.4,
@@ -115,7 +115,7 @@ export const CONFIG = {
   loot: {
     areaRadius: 5, // looting one thing also loots everything this close to it
     clickRadius: 40, // pixels: how close a click must be to a corpse or drop
-    reach: 3.2, // how close the Warden must be to loot by clicking
+    reach: 3.2, // how close the Warrior must be to loot by clicking
   },
 };
 

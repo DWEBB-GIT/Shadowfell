@@ -13,7 +13,7 @@ A balance pass changes a constant, not every item and enemy.
 ## In short
 
 - **Four attributes:** Strength, Agility, Intellect and Stamina.
-  - Each archetype has a main attribute that feeds its damage; the Warden's is Strength.
+  - Each archetype has a main attribute that feeds its damage; the Warrior's is Strength.
   - Stamina gives everyone health.
 - **One growth line:** everything that gets bigger with level grows in a straight line with **n = level + 4**. That covers the armour constant, the armour on items, every item's stat budget, weapon damage, player spells, and the enemy table's health and hits. Level 1 is 5, level 10 is 14 and level 40 is 44.
 - **Armour** reduces damage by armour ÷ (armour + 400 + 100 × your own level), capped at 75%. The reduction on the character panel is what you get against everyone.
@@ -21,14 +21,14 @@ A balance pass changes a constant, not every item and enemy.
 - **No world scaling:** an enemy's health, damage and armour come from its own level and type, never from yours.
 - **Items are worked out, not hand-typed:** armour, weapon damage, a shield's block chance and the stat points come from item level, slot, armour type and rarity.
 - **Left out on purpose:** hit chance and misses, dodge and parry, and penetration. Avoiding damage is the player's job (telegraphs and the defensive button), so tanks stack armour, block and Stamina.
-- **Resources:** health, plus one resource per archetype. The Warden has none; a caster would have mana from Intellect. Enemies can have mana too, shown as a blue bar.
+- **Resources:** health, plus one resource per archetype. The Warrior has none; a caster would have mana from Intellect. Enemies can have mana too, shown as a blue bar.
 - **Damage numbers** float up from whoever is hit. They stay small, serif and muted: dealt in parchment white, taken in dull red, crits larger and amber with a "!", blocks show how much was stopped, heals in green.
 
 ## The stats
 
 | Stat | Comes from | What it does |
 |---|---|---|
-| Strength | Archetype, level, gear | The Warden's main attribute: 0.25 power a point |
+| Strength | Archetype, level, gear | The Warrior's main attribute: 0.25 power a point |
 | Agility | Archetype, level, gear | Crit chance: 1% per 0.4 × (level + 4) Agility (0.5% a point at level 1); a rogue's main attribute later |
 | Intellect | Archetype, level, gear | 0.25 spell power and 10 mana a point (mana for archetypes that use it) |
 | Stamina | Archetype, level, gear | 40 health + 6 a point |
@@ -96,7 +96,7 @@ When the clock starts: as in WoW, a fresh fight opens with an **instant blow** t
 
 ### Bows and Auto Shot
 
-A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.8 s, 20 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You must stand still to shoot (WoW Classic; Dan, 2026-10-16, because shooting on the move made melee pointless): moving calls off a draw and holds Auto Shot until you stop. A bow is a pulling weapon for the Warden: bows have half a melee weapon's weapon damage (`rangedDamage` 0.5 in scaling.js), and ranged power comes from Agility at half the main-stat rate (`rangedPowerShare`), never from Strength. The hunting bow reaches 20 m. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
+A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.8 s, 20 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You must stand still to shoot (WoW Classic; Dan, 2026-10-16, because shooting on the move made melee pointless): moving calls off a draw and holds Auto Shot until you stop. A bow is a pulling weapon for the Warrior: bows have half a melee weapon's weapon damage (`rangedDamage` 0.5 in scaling.js), and ranged power comes from Agility at half the main-stat rate (`rangedPowerShare`), never from Strength. The hunting bow reaches 20 m. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
 
 **Arrows** (Dan, 2026-10-16: Classic style, with a quiver). Each shot uses one arrow; with none, Auto Shot does not fire and the log says so. Arrows (`kind: "ammo"`) stack to 200 and are sold by the hundred (`buyCount`): rough arrows (1 silver, Mara and Tam) and barbed arrows (6 silver, Tam). Each adds `ammoDps` damage for every second of bow speed (rough +0.25, barbed +0.75). Auto Shot uses the best arrows you carry. A **quiver** (Tam, 25 silver) goes in a bag slot like a bag, holds only arrows (`holds: "ammo"`, six stacks), takes new arrows first, and makes Auto Shot 10% faster (`rangedHaste`, on top of haste).
 
@@ -104,7 +104,7 @@ A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bo
 
 ### Dual wielding
 
-A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:
+A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warrior can). As in modern WoW:
 
 - **Each hand has its own swing clock** (`cooldowns.attack` and `cooldowns.attackOff`), at its own weapon's speed and the same T = W ÷ (1 + H), its own animation (the left arm) and its own impact frame. A sword at 2.4 s and a dirk at 1.6 s swing 25 and 37.5 times a minute.
 - **Staggered:** when a fight opens, the off hand's first blow comes half a main-hand swing after the main hand's. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, its clock is pushed back to just after that blow. The main hand is never held.
@@ -125,7 +125,7 @@ Mara sells the arming sword and the dirk; ghouls drop dirks and the ghoulbone kn
 
 Everything that should get bigger with level grows with **(level + 4)**. Percentages, the crit multiplier, cooldowns, weapon speeds, ranges and movement do not grow. Level gaps are the one place that works by a percentage per level, because a gap should feel steep.
 
-- **Numbers stay small.** A level 60 Warden has 800 to 1,600 health and swings its sword for about 38 to 89 plus Strength.
+- **Numbers stay small.** A level 60 Warrior has 800 to 1,600 health and swings its sword for about 38 to 89 plus Strength.
 - **Steepness is tuned on its own.** A percentage per level on everything (+8% a level) would put level 60 at about 90 times level 1; a straight line gives 13 times, and the gap rule sets how steep levels feel. Either can change without the other.
 - **The cost:** early levels are bigger steps than late ones (level 1 to 2 is +20%, level 40 to 41 is +2%), so a gap bites a little harder at level 10 than at level 40. That suits short early zones.
 
@@ -238,7 +238,7 @@ A green is a white item with a suffix spending the green budget: common gear tha
 | 40 | 17.6 | 22.9 | 28.2 | 13.2 | 17.2 | 21.1 | 8.8 | 11.4 | 14.1 |
 | 60 | 25.6 | 33.3 | 41.0 | 19.2 | 25.0 | 30.7 | 12.8 | 16.6 | 20.5 |
 
-A full set of on-level greens gives 4 × (level + 4) points, about what the Warden's own levels give.
+A full set of on-level greens gives 4 × (level + 4) points, about what the Warrior's own levels give.
 
 What a point buys:
 
@@ -276,11 +276,11 @@ A slow weapon swings harder and a quick one more often, for the same damage over
 
 - **Haste** (gear only, cap 30%) reads "+X% haste" on gear. A full set of greens could reach the cap by spending half its points on it.
 - **Block** (cap 50%): every shield has 10% of its own (more on blue and up), and more comes from gear as "+X% block chance". Block rating is gone: a fixed "10 rating = 1%" cannot survive budgets that grow with level, and pricing block chance by item level reads more simply.
-- **Crit** = 5% + Agility ÷ (0.4 × (character level + 4)), so an Agility character keeps about the same crit as it levels. The Warden stays near 5%.
+- **Crit** = 5% + Agility ÷ (0.4 × (character level + 4)), so an Agility character keeps about the same crit as it levels. The Warrior stays near 5%.
 - **Fixed percentages, not WoW-style ratings:** a rating that converts by your level shrinks every time you level ("my haste went down"). A fixed "+4% haste" means what it says for ever.
-- **Strength and spell power:** each point of Strength gives 0.25 power and each point of Intellect 0.25 spell power. That makes Strength about 40% of a level 1 Warden's damage and about 60% from level 10 on, close to how attack power works in WoW.
+- **Strength and spell power:** each point of Strength gives 0.25 power and each point of Intellect 0.25 spell power. That makes Strength about 40% of a level 1 Warrior's damage and about 60% from level 10 on, close to how attack power works in WoW.
 
-## What a Warden looks like by level
+## What a Warrior looks like by level
 
 Each pair is **par** (its own attributes and white gear) / **with a full set of on-level greens**, split evenly between Strength and Stamina. Auto attack is an on-level weapon's damage a second plus Strength ÷ 2.4, before crits. Armour is on-level plate and shield.
 
@@ -301,7 +301,7 @@ From level 10 up, a full set of greens adds about 70% to damage and 80–95% to 
 
 An enemy's health, damage and armour come from its own level and its type, and never look at the player: a level 10 ghoul is the same whether a level 5 or a level 50 walks up to it. A high-level character crushes a low zone, and a low-level one dies in a high zone, through the level-gap rule.
 
-Each level's **normal** enemy is sized once against **par**, a character of that level with only its own attributes (the Warden's) and white gear. Par is a yardstick for writing the table, not something the game reads in play; anything better is the player's edge.
+Each level's **normal** enemy is sized once against **par**, a character of that level with only its own attributes (the Warrior's) and white gear. Par is a yardstick for writing the table, not something the game reads in play; anything better is the player's edge.
 
 ```
 par damage   = an on-level white weapon's damage a second + Strength ÷ 2.4   (3.9 a second at level 1)
@@ -355,11 +355,11 @@ Each enemy in `data/enemies.json` has a `type`, which multiplies its level's nor
 | 1 heavy (ogre) | 8.8 |
 | 2 heavies | 26.5 |
 
-**Capacity** is how much danger a character can take before it dies, using its auto attack and abilities. Because everything grows on one line, it is the same at every level: a par character in cloth 9.8, in leather 11.4, a par Warden in plate and shield 16.2, and the same Warden in full on-level greens 40 to 45. Brace and potions add to it.
+**Capacity** is how much danger a character can take before it dies, using its auto attack and abilities. Because everything grows on one line, it is the same at every level: a par character in cloth 9.8, in leather 11.4, a par Warrior in plate and shield 16.2, and the same Warrior in full on-level greens 40 to 45. Brace and potions add to it.
 
 The most you can pull at once and win:
 
-| Type | Par, cloth | Par Warden, plate and shield | Full greens, plate and shield |
+| Type | Par, cloth | Par Warrior, plate and shield | Full greens, plate and shield |
 |---|---|---|---|
 | Fodder | 8 | 10 | 17 |
 | Pack beast | 5 | 7 | 12 |
@@ -369,15 +369,15 @@ The most you can pull at once and win:
 | Elite | 2 | 2 | 4 |
 | Heavy (ogre) | 1 | 1 | 2 |
 
-So a par Warden in plate beats a pack of four wolves for a quarter to a third of its health, or one ogre for about half, and two ogres kill anyone not in full greens.
+So a par Warrior in plate beats a pack of four wolves for a quarter to a third of its health, or one ogre for about half, and two ogres kill anyone not in full greens.
 
 ### Fight length
 
-The first swing waits for the weapon's speed, so a fight opens with Shield Break and Cleave and the first swing lands 2.2 s in. A par Warden in plate and shield (an on-level white sword, Shield Break, then Cleave, then Rend on each global cooldown) against enemies of its own level; each cell is how long the fight lasts, how many times you swing, and the share of your health it costs:
+The first swing waits for the weapon's speed, so a fight opens with Shield Break and Cleave and the first swing lands 2.2 s in. A par Warrior in plate and shield (an on-level white sword, Shield Break, then Cleave, then Rend on each global cooldown) against enemies of its own level; each cell is how long the fight lasts, how many times you swing, and the share of your health it costs:
 
 | | One normal | 4 wolves | 6 wolves | One elite | One ogre | Two ogres |
 |---|---|---|---|---|---|---|
-| Par Warden, plate and shield | 4.4 s, 2 swings, 8% | 4.8 s, 2 swings, 28% | 7.8 s, 3 swings, 53% | 6.6 s, 3 swings, 23% | 13 s, 6 swings, 50% | you die |
+| Par Warrior, plate and shield | 4.4 s, 2 swings, 8% | 4.8 s, 2 swings, 28% | 7.8 s, 3 swings, 53% | 6.6 s, 3 swings, 23% | 13 s, 6 swings, 50% | you die |
 | Par character in cloth (health cost) | 14% | 47% | 88% | 38% | 83% | you die |
 
 Moving to WoW-length fights later (health ×2 and hits ×½ again: a normal enemy about 7 seconds, an ogre half a minute) is one pair of numbers, `enemyHealthSeconds` and `enemyHitShare`, at about the same danger.
@@ -390,9 +390,9 @@ damage × 1.2 ^ (attacker's level − target's level)
 
 An enemy 5 levels above you hits 2.5 times as hard and takes 2.5 times as long to kill; one 5 levels below does the reverse. A hit always does at least 1 damage.
 
-A par Warden in plate and shield, with its abilities, against one normal enemy. Each cell is its hits to kill you / the seconds you need to kill it, then the share of your health the fight costs:
+A par Warrior in plate and shield, with its abilities, against one normal enemy. Each cell is its hits to kill you / the seconds you need to kill it, then the share of your health the fight costs:
 
-| Enemy | Its hits on you | Level 10 Warden | Level 20 | Level 40 |
+| Enemy | Its hits on you | Level 10 Warrior | Level 20 | Level 40 |
 |---|---|---|---|---|
 | 10 below | ×0.16 | | 328 / 0.3 s, 0% | 282 / 0.4 s, 0% |
 | 5 below | ×0.4 | 126 / 0.7 s, 0% | 109 / 0.9 s, 1% | 100 / 1.1 s, 1% |
@@ -404,8 +404,8 @@ A par Warden in plate and shield, with its abilities, against one normal enemy. 
 | 15 above | ×15.4 | 1.2 / 101 s, you die | 1.5 / 77 s, you die | 1.8 / 62 s, you die |
 
 - **3 levels up** is hard work: one enemy at a time, about a quarter of your health each.
-- **5 levels up** is a fight you plan: one normal enemy costs a Warden in plate half to two-thirds of its health, and a cloth wearer most or all of it.
-- **10 levels up** kills a Warden in plate in four or five hits and a cloth wearer in three.
+- **5 levels up** is a fight you plan: one normal enemy costs a Warrior in plate half to two-thirds of its health, and a cloth wearer most or all of it.
+- **10 levels up** kills a Warrior in plate in four or five hits and a cloth wearer in three.
 - **Each level of gap** makes an enemy about 1.5 times as dangerous, so 4 wolves two levels up are as dangerous as 6 or 7 at your level.
 
 One average hit from full health kills you at these gaps, from a normal enemy / an ogre:
@@ -413,10 +413,10 @@ One average hit from full health kills you at these gaps, from a normal enemy / 
 | Character | Level 5 | Level 10 | Level 20 | Level 40 |
 |---|---|---|---|---|
 | Par, cloth | +13 / +9 | +14 / +9 | +15 / +10 | +16 / +10 |
-| Par Warden, plate and shield | +16 / +11 | +17 / +11 | +17 / +12 | +18 / +13 |
+| Par Warrior, plate and shield | +16 / +11 | +17 / +11 | +17 / +12 | +18 / +13 |
 | Full greens, plate and shield | +18 / +13 | +19 / +14 | +21 / +15 | +22 / +16 |
 
-**Why 1.2.** It keeps 3 levels up hard work and 5 up a fight you plan. At 1.25, one normal enemy 5 levels up kills a level 10 Warden in plate and any cloth wearer; at 1.15, a Warden in full greens wins a fight 10 levels up from level 15 on. Changing it is one number (`levelGap`).
+**Why 1.2.** It keeps 3 levels up hard work and 5 up a fight you plan. At 1.25, one normal enemy 5 levels up kills a level 10 Warrior in plate and any cloth wearer; at 1.15, a Warrior in full greens wins a fight 10 levels up from level 15 on. Changing it is one number (`levelGap`).
 
 ## Today's items and enemies
 
@@ -440,7 +440,7 @@ Weapons show damage per swing at their own speed; armour is on the ×10 scale.
 | Battered kite shield (white) | 1 | 100 armour, 10% block |
 | Iron-faced kite shield (green) | 4 | 160 armour, 20% block |
 
-The Warden starts with 130 armour (21% at level 1) and reaches 444 in the full kit (47% at level 1, 33% at level 5).
+The Warrior starts with 130 armour (21% at level 1) and reaches 444 in the full kit (47% at level 1, 33% at level 5).
 
 | Enemy | Level and type | Health | Hits | Armour |
 |---|---|---|---|---|
@@ -450,7 +450,7 @@ The Warden starts with 130 armour (21% at level 1) and reaches 444 in the full k
 | Gravebound Brute | 3, elite | 50 (45 at Hallow Cut) | 9 every 1.2 s; Grave Slam 31 | 140 (17%) |
 | Blackwood Seer | 5, elite, light armour | 69 (72 in the glade) | Staff 6 every 1.3 s; Rot Bolt 10, Grasping Dark 17 | 90 (9%); resistance 200 (18%) |
 
-Played in order, the Warden tends to meet the brute and the seer a level or two under them, and each level under makes their hits 20% harder and their health last 20% longer. If that is too much in play, drop them a level.
+Played in order, the Warrior tends to meet the brute and the seer a level or two under them, and each level under makes their hits 20% harder and their health last 20% longer. If that is too much in play, drop them a level.
 
 ## Spells
 
