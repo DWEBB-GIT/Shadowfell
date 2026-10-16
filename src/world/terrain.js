@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOUNDS, ROAD, TRACK, ROAD_HALF_WIDTH, WATER } from './layout.js';
+import { BOUNDS, ROAD, TRACK, ROAD_HALF_WIDTH, WATER, PADS } from './layout.js';
 
 // Analytic terrain so gameplay code can ask for the ground height anywhere
 // without raycasting. The mesh is built from the same function.
@@ -67,8 +67,21 @@ export function waterLevel(w) {
   return w.level;
 }
 
+// level ground under a building: the land's height at its centre, easing
+// back into the hills over three metres
+const padLevel = new Map();
+function padHeight(p) {
+  if (!padLevel.has(p)) padLevel.set(p, landHeight(p[0], p[1]));
+  return padLevel.get(p);
+}
+
 export function heightAt(x, z) {
   let h = landHeight(x, z);
+  for (const p of PADS) {
+    const d = Math.hypot(x - p[0], z - p[1]);
+    if (d > p[2] + 3) continue;
+    h = THREE.MathUtils.lerp(padHeight(p), h, THREE.MathUtils.smoothstep(d, p[2], p[2] + 3));
+  }
   for (const w of WATER) {
     const d = Math.hypot(x - w.position[0], z - w.position[1]);
     if (d > w.radius + 1) continue;

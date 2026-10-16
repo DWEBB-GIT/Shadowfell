@@ -24,14 +24,14 @@ const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility
 // Every action is a request to the Inventory, which decides what is allowed.
 
 const $ = (id) => document.getElementById(id);
-const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
+const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', ammo: 'Arrows', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
 
 export class ItemUI {
   constructor(game, hud) {
     this.game = game;
     this.hud = hud;
     this.openBags = new Set(); // socket indices whose bag window is open
-    this.open = { character: false, spellbook: false, skills: false, settings: false, talents: false };
+    this.open = { character: false, spellbook: false, skills: false, settings: false, talents: false, cooking: false };
     this.icons = {};
     this.drag = null; // { from, x0, y0, moved }
     this.focus = null; // gamepad highlight: a location string
@@ -51,6 +51,10 @@ export class ItemUI {
       skills: $('skills-window'),
       settings: $('settings-window'),
       talents: $('talents-window'),
+      cooking: $('cooking-window'),
+      cookList: $('cooking-list'),
+      cookRank: $('cooking-rank'),
+      cookFire: $('cooking-fire'),
       skillList: $('skills-list'),
       shop: $('shop-window'),
       shopName: $('shop-name'),
@@ -68,6 +72,12 @@ export class ItemUI {
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
     $('btn-settings').addEventListener('click', () => this.toggle('settings'));
     $('btn-talents').addEventListener('click', () => this.toggle('talents'));
+    // cooking: Cook / Cook all on a recipe row
+    $('cooking-list').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cook]');
+      if (b) game.cooking.start(b.dataset.cook, b.dataset.all ? Infinity : 1);
+    });
+    for (const ev of ['craftEnd', 'craftStart', 'campPitched']) game.events.on(ev, () => this.open.cooking && this.render());
     $('settings-list').addEventListener('change', (e) => game.settings.set(e.target.dataset.setting, e.target.checked));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
@@ -152,7 +162,7 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || this.open.talents || !!this.game.merchant.current;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || this.open.talents || this.open.cooking || !!this.game.merchant.current;
   }
 
   // shop slots: m:<item> buys, y:<n> buys back
@@ -207,7 +217,7 @@ export class ItemUI {
   closeAll() {
     const was = this.anyOpen;
     this.openBags.clear();
-    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = this.open.talents = false;
+    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = this.open.talents = this.open.cooking = false;
     this.shopOpenedBags = false;
     this.game.merchant.close();
     this._afterChange(null);
@@ -223,6 +233,31 @@ export class ItemUI {
     this.render();
     if (this.anyOpen && (!this.focus || !this._visibleLocs().includes(this.focus))) this.focus = this._defaultFocus(which);
     this._paintFocus();
+  }
+
+  // Cooking: every recipe you know, coloured by how much it can still teach
+  // you (WoW's orange / yellow / green / grey), with its ingredients.
+  _renderCooking() {
+    const open = this.open.cooking;
+    this.el.cooking.hidden = !open;
+    if (!open) return;
+    const ck = this.game.cooking;
+    const inv = this.game.inventory;
+    const rank = ck.rank('cooking');
+    const max = DB.skills.cooking.maxRank;
+    this.el.cookRank.innerHTML = `Cooking ${rank} / ${max}<div class="skill-bar"><div style="width:${(rank / max) * 100}%"></div></div>`;
+    const fire = ck.nearFire;
+    this.el.cookFire.textContent = fire ? `Cooking at ${fire}.` : 'You need a fire: your camp or a hearth.';
+    this.el.cookFire.classList.toggle('bad', !fire);
+    const busy = ck.crafting;
+    const rows = ck.known('cooking').map((r) => {
+      const out = ITEMS[r.output.item];
+      const n = ck.canMake(r);
+      const need = r.inputs.map((x) => `<span class="${inv.count(x.item) >= x.count ? '' : 'bad'}">${ITEMS[x.item].name} ${inv.count(x.item)}/${x.count}</span>`).join(', ');
+      const ok = n > 0 && fire && !busy && rank >= r.rank;
+      return `<div class="recipe ${ck.colour(r)}" data-tip-item="${r.output.item}"><img src="${this._iconFor(r.output.item)}" alt=""><div class="recipe-body"><div class="recipe-name">${out.name}${n ? ` [${n}]` : ''}</div><div class="recipe-need dim">${need}</div></div><button class="btn small" data-cook="${r.id}" ${ok ? '' : 'disabled'}>Cook</button><button class="btn small" data-cook="${r.id}" data-all="1" ${ok && n > 1 ? '' : 'disabled'}>All</button></div>`;
+    });
+    this.el.cookList.innerHTML = rows.join('') || '<p class="dim">You know no recipes. Hester at the Ford Inn teaches Cooking.</p>';
   }
 
   // ------------------------------------------------------------- render
@@ -317,13 +352,14 @@ export class ItemUI {
         row('Agility', t.agility, `+${(1 / stats.agilityPerCrit).toFixed(2)}% crit chance per point at level ${lvl}`, 'agility'),
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
         '<div class="stat-gap"></div>',
-        row('Haste', `${stats.haste}%`, `Shortens swings, windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
+        row('Haste', `${stats.haste}%`, `Shortens the time between swings, ability windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
         row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken, against any foe. A foe above your level hits ${Math.round((CONFIG.scaling.levelGap - 1) * 100)}% harder for each level, one below that much softer`),
         row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it: the shield's own block chance plus block chance from gear`, 'block'),
         row('Crit', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
         '<div class="stat-gap"></div>',
         row('Weapon', `${stats.swingRange.join('–')} / ${stats.attackCooldown.toFixed(1)}s`, `${inv.weapon.name}: ${stats.weaponRange.join('–')} damage, speed ${stats.weaponSpeed.toFixed(1)}; each auto attack swing adds strength`),
-        row('Damage per second', stats.dps.toFixed(1), 'From auto attack alone', 'dps'),
+        ...(stats.dualWielding ? [row('Off hand', `${stats.swingRangeFor('off').join('–')} / ${stats.attackCooldownFor('off').toFixed(1)}s`, `${inv.offWeapon.name}: its own swing timer; off-hand blows do ${Math.round(this.game.config.stats.offHandDamage * 100)}% damage`)] : []),
+        row('Damage per second', stats.dps.toFixed(1), stats.dualWielding ? 'From auto attack alone, both hands' : 'From auto attack alone', 'dps'),
         row('Wears', wears),
       ].join('');
       this.el.hint.textContent = this.hud.padMode
@@ -343,7 +379,8 @@ export class ItemUI {
         .map((id) => {
           const price = m.priceOf(id);
           const poor = price > inv.coins;
-          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}</div></div></div>`;
+          const n = ITEMS[id].buyCount || 1; // arrows come by the hundred
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: n })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}${n > 1 ? ` <span class="dim small">for ${n}</span>` : ''}</div></div></div>`;
         })
         .join('');
       const bb = m.buyback;
@@ -363,6 +400,7 @@ export class ItemUI {
     }
 
     this.el.talents.hidden = !this.open.talents;
+    this._renderCooking();
     // settings: one checkbox each, then the key bindings
     this.el.settings.hidden = !this.open.settings;
     if (this.open.settings) {
@@ -443,7 +481,7 @@ export class ItemUI {
       return;
     }
     const def = itemView(stack);
-    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + (def.slot === 'oneHand' ? `One-hand${def.weaponType ? ' ' + def.weaponType : ''}` : EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label) : ''}</div>`];
     if (def.itemLevel) lines.push(`<div class="tt-ilvl">Item level ${def.itemLevel}</div>`);
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);

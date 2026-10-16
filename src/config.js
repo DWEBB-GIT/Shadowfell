@@ -72,6 +72,8 @@ export const CONFIG = {
     enemyVariance: 0.15, // enemy blows land within +-15% of their damage
     fistDamage: [1, 2], // bare hands (or a broken weapon), per swing
     fistSpeed: 2.0, // seconds between bare-handed swings
+    offHandDamage: 0.5, // an off-hand weapon's swings do half damage (WoW)
+    offHandResolve: 0.5, // and build half the Resolve of a main-hand swing
   },
   interaction: {
     radius: 2.2,
@@ -92,6 +94,7 @@ export const CONFIG = {
   blackwood: { fogColor: 0x1d2725, fogNear: 9, fogFar: 32, light: 0.68 },
   camera: {
     offset: [0, 11, 10],
+    indoorZoom: 0.22, // how much closer the camera comes inside a building
     fov: 45,
     followSharpness: 8, // higher = tighter follow
     renderScale: 0.62, // chunky, period-appropriate pixels
@@ -115,11 +118,18 @@ export const CONFIG = {
 const tuning = (id) => DB.abilities[id].tuning;
 Object.assign(CONFIG, {
   attack: tuning('strike'),
+  autoShot: tuning('autoShot'),
   shieldBreak: tuning('shieldBreak'),
   lunge: tuning('lunge'),
   brace: tuning('brace'),
   draught: tuning('draught'),
   globalCooldown: DB.globalCooldown,
+  // WoW's spell queue: an ability pressed this close to the end of the global
+  // cooldown (or its own) goes off the moment it can
+  spellQueueWindow: DB.spellQueueWindow,
+  // being hit while casting sets the cast bar back (WoW Classic's pushback)
+  castPushback: DB.castPushback,
+  maxPushbacks: DB.maxPushbacks,
   armourTypes: DB.armourTypes,
   archetypes: DB.archetypes,
   // each enemy's numbers from its level and type (src/data/scaling.js)

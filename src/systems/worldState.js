@@ -78,7 +78,7 @@ export class WorldState {
     this.nextGroundUid = this.ground.reduce((m, g) => Math.max(m, g.uid + 1), 1);
     this.flags = new Set(Array.isArray(data.flags) ? data.flags.filter((f) => typeof f === 'string') : []);
     this.camp = data.camp ? { ...data.camp } : null;
-    this.restPoint = data.restPoint === 'camp' && this.camp ? 'camp' : 'shrine';
+    this.restPoint = data.restPoint === 'camp' && this.camp ? 'camp' : typeof data.restPoint === 'string' && data.restPoint.startsWith('inn:') ? data.restPoint : 'shrine';
     this.nemesis = typeof data.nemesis === 'string' ? data.nemesis : null;
     this.time = Number.isFinite(data.time) ? data.time : 0;
     this.respawnAt = data.respawnAt && typeof data.respawnAt === 'object' ? Object.fromEntries(Object.entries(data.respawnAt).filter(([, t]) => Number.isFinite(t))) : {};

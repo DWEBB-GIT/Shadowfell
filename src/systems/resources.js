@@ -14,7 +14,7 @@ export class Resources {
     const fight = () => (this.sinceCombat = 0);
     ev.on('enemyHit', (e) => {
       fight();
-      if (e.swing) this.add(this.gaugeCfg?.id, this.gaugeCfg?.perSwing);
+      if (e.swing) this.add(this.gaugeCfg?.id, this.gaugeCfg?.perSwing * (e.hand === 'off' ? this.game.config.stats.offHandResolve : 1));
     });
     ev.on('playerHurt', (e) => {
       fight();

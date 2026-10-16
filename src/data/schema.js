@@ -12,7 +12,7 @@
 
 import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
 
-export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'consumable', 'material', 'junk', 'document'];
+export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'ammo', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
@@ -37,20 +37,24 @@ export const EQUIP_SLOTS = [
   { id: 'finger2', label: 'Finger', fits: 'finger', col: 'right' },
   { id: 'trinket1', label: 'Trinket', fits: 'trinket', col: 'right' },
   { id: 'trinket2', label: 'Trinket', fits: 'trinket', col: 'right' },
-  { id: 'mainHand', label: 'Main hand', col: 'bottom' },
-  { id: 'offHand', label: 'Off hand', col: 'bottom' },
+  // a one-handed weapon (slot `oneHand`) goes in either hand; the off hand
+  // only for a class that can dual wield
+  { id: 'mainHand', label: 'Main hand', col: 'bottom', also: ['oneHand'] },
+  { id: 'offHand', label: 'Off hand', col: 'bottom', also: ['oneHand'] },
+  // a bow, for Auto Shot at targets beyond melee reach (any class, as in WoW)
+  { id: 'ranged', label: 'Ranged', col: 'bottom' },
 ];
 // what an item's `slot` may say: a slot id, or a slot type
-export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.map((s) => s.fits || s.id))];
+export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.flatMap((s) => [s.fits || s.id, ...(s.also || [])]))];
 // does an item with this `slot` go in that character slot?
 export const slotFits = (slotId, itemSlot) => {
   const s = EQUIP_SLOTS.find((x) => x.id === slotId);
-  return !!s && (s.id === itemSlot || s.fits === itemSlot);
+  return !!s && (s.id === itemSlot || s.fits === itemSlot || (s.also || []).includes(itemSlot));
 };
 // what wears out: weapons, armour and shields (and jewellery)
 export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
-const SCHOOLS = ['physical', 'shadow', 'holy'];
+const SCHOOLS = ['physical', 'shadow', 'holy', 'nature'];
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
 export const SPELL_KINDS = {
@@ -125,7 +129,14 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     }
     if (d.damage !== undefined && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage.every(isNum) && d.damage[0] <= d.damage[1])) bad('damage must be [min, max]');
     if (d.kind === 'weapon' && !(isNum(d.speed) && d.speed >= 1 && d.speed <= 5)) bad('a weapon needs a swing speed in seconds (1 to 5)');
+    if (d.slot === 'ranged' && !(isNum(d.range) && d.range >= 8 && d.range <= 40)) bad('a ranged weapon needs a range in metres (8 to 40)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
+    // a quiver: a bag that holds only arrows and quickens Auto Shot
+    if (d.holds !== undefined && !(d.kind === 'bag' && KINDS.includes(d.holds))) bad('holds must name an item kind, on a bag');
+    if (d.rangedHaste !== undefined && !(d.holds === 'ammo' && isNum(d.rangedHaste) && d.rangedHaste > 0 && d.rangedHaste <= 30)) bad('rangedHaste (percent, up to 30) is for a quiver (a bag that holds ammo)');
+    // arrows: used one a shot, adding `ammoDps` damage a second of bow speed
+    if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
+    if (d.buyCount !== undefined && !(isInt(d.buyCount) && d.buyCount > 1 && d.buyCount <= d.stack)) bad('buyCount (how many a vendor sells at the price) must be a whole number from 2 to the stack size');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
     if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
     for (const [k, v] of Object.entries(d.stats || {})) {
@@ -213,7 +224,8 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, d] of Object.entries(items)) {
     model(`items.json ${id}`, d.model);
     model(`items.json ${id} icon`, d.icon);
-    if (d.use && !(isNum(d.use.heal) && d.use.heal > 0)) errors.push(`items.json ${id}: use must say what it does, e.g. { "heal": 42 }`);
+    const food = d.use?.food;
+    if (d.use && !((isNum(d.use.heal) && d.use.heal > 0) || (food && isNum(food.heal) && food.heal > 0 && isNum(food.seconds) && food.seconds > 0))) errors.push(`items.json ${id}: use must say what it does, e.g. { "heal": 42 } or { "food": { "heal": 60, "seconds": 15 } }`);
   }
   for (const [id, s] of Object.entries(suffixes)) {
     if (!isStr(s.name)) errors.push(`items.json suffix ${id}: needs a name`);
@@ -237,6 +249,7 @@ export function validateGameData(raw, opts = {}) {
 
   // ---- abilities
   if (!isNum(abilF.globalCooldown)) errors.push('abilities.json: globalCooldown must be a number');
+  for (const k of ['spellQueueWindow', 'castPushback', 'maxPushbacks']) if (!isNum(abilF[k]) || abilF[k] < 0) errors.push(`abilities.json: ${k} must be a number of at least 0`);
   for (const [id, a] of Object.entries(abilities)) {
     const w = `abilities.json ${id}`;
     if (!isStr(a.name) || !isStr(a.desc)) errors.push(`${w}: needs a name and a desc`);
@@ -257,7 +270,11 @@ export function validateGameData(raw, opts = {}) {
       if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);
       else {
         if (k.enemy !== (a.target === 'enemy')) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : 'self'}`);
-        for (const t of ['cooldown', ...k.tuning]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
+        // a bow ability (`ranged`) is an instant or dot from a bow roll:
+        // an instant needs damageMultiplier instead of its own damage range
+        if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant and dot spells`);
+        const need = a.ranged === true && a.kind === 'instant' ? ['damageMultiplier'] : k.tuning;
+        for (const t of ['cooldown', ...need]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
         if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
       }
     }
@@ -523,9 +540,46 @@ export function validateGameData(raw, opts = {}) {
     pos(w, p.position);
     if (p.examine && !examine[p.examine]) errors.push(`${w}: names unknown examine text ${p.examine}`);
     const c = p.collider;
-    if (!(c === undefined || isNum(c) || (Array.isArray(c) && c.every((x) => Array.isArray(x) && x.length === 3 && x.every(isNum))))) errors.push(`${w}: collider must be a radius or a list of [x, z, radius]`);
+    const box = c && !Array.isArray(c) && typeof c === 'object' && Array.isArray(c.box) && c.box.length === 2 && c.box.every((v) => isNum(v) && v > 0);
+    if (!(c === undefined || isNum(c) || box || (Array.isArray(c) && c.every((x) => Array.isArray(x) && x.length === 3 && x.every(isNum))))) errors.push(`${w}: collider must be a radius, a list of [x, z, radius] or { "box": [width, depth] }`);
   });
   for (const l of sceneF.lights || []) pos('scenery.json light', l.position);
+
+  // ---- buildings you can enter, cooking stations, levelled ground
+  for (const b of worldF.buildings || []) {
+    const w = `world.json building ${b.id}`;
+    pos(w, b.position);
+    for (const m of [b.shell, b.front, b.roof]) model(w, m);
+    if (!(Array.isArray(b.size) && b.size.length === 2 && b.size.every((v) => isNum(v) && v > 0))) errors.push(`${w}: size must be [width, depth]`);
+    if (!Array.isArray(b.walls) || !b.walls.every((s) => Array.isArray(s) && s.length === 4 && s.every(isNum))) errors.push(`${w}: walls must be a list of [x1, z1, x2, z2] segments`);
+    for (const f of b.furniture || []) if (!(Array.isArray(f) && f.length === 3 && f.every(isNum))) errors.push(`${w}: furniture must be [x, z, radius] circles`);
+  }
+  for (const s of worldF.stations || []) {
+    pos(`world.json station ${s.id}`, s.position);
+    if (s.kind !== 'fire') errors.push(`world.json station ${s.id}: kind must be fire`);
+  }
+  for (const p of worldF.pads || []) if (!(Array.isArray(p) && p.length === 3 && p.every(isNum))) errors.push('world.json pads: each must be [x, z, radius]');
+
+  // ---- recipes (crafting skills: cooking)
+  const recF = raw['recipes.json'] || { recipes: [] };
+  const recipes = indexById(recF.recipes, 'recipes.json', errors);
+  for (const [id, r] of Object.entries(recipes)) {
+    const w = `recipes.json ${id}`;
+    ref(w, 'skill', skills, r.skill);
+    if (skills[r.skill] && !skills[r.skill].maxRank) errors.push(`${w}: its skill ${r.skill} has no ranks`);
+    if (!(isInt(r.rank) && r.rank >= 1)) errors.push(`${w}: rank must be a whole number of at least 1`);
+    if (!(Array.isArray(r.skillUp) && r.skillUp.length === 3 && r.skillUp.every(isInt) && r.skillUp[0] > r.rank && r.skillUp[0] < r.skillUp[1] && r.skillUp[1] < r.skillUp[2])) errors.push(`${w}: skillUp must be three rising ranks (yellow, green, grey) above its rank`);
+    if (!Array.isArray(r.inputs) || !r.inputs.length) errors.push(`${w}: needs inputs`);
+    for (const x of [...(r.inputs || []), r.output || {}]) {
+      ref(w, 'item', items, x.item);
+      if (!(isInt(x.count) && x.count >= 1)) errors.push(`${w}: counts must be whole numbers of at least 1`);
+    }
+    if (r.station !== 'fire') errors.push(`${w}: station must be fire`);
+    if (r.trainer !== undefined) {
+      ref(w, 'trainer npc', npcs, r.trainer);
+      if (!(isInt(r.cost) && r.cost >= 0)) errors.push(`${w}: a taught recipe needs a cost in coins`);
+    }
+  }
 
   // ---- text
   if (!isStr(textF.intro)) errors.push('text.json: needs an intro');

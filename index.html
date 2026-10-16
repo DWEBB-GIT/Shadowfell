@@ -58,6 +58,7 @@
     <div id="cast-bar" class="bar cast" hidden><div id="cast-fill" class="fill"></div><span id="cast-text" class="bar-text"></span></div>
     <!-- the weapon swing timer sits where the cast bar does (the cast bar shows above it) -->
     <div id="swing-bar" class="bar swing" hidden><div id="swing-fill" class="fill"></div><span id="swing-text" class="bar-text"></span></div>
+    <div id="swing-bar-off" class="bar swing" hidden><div id="swing-fill-off" class="fill"></div><span id="swing-text-off" class="bar-text"></span></div>
     <!-- centre: experience and the spell and utility bars -->
     <div id="bottom-bar">
       <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><div id="xp-rested"></div><span id="xp-text" class="bar-text"></span></div>
@@ -123,6 +124,13 @@
   <div id="talents-window" class="window panel" hidden>
     <div class="window-head"><h2>Talents</h2><button class="btn small" data-close-panel="talents">&times;</button></div>
     <p class="dim">Talent trees arrive in a later build. You will earn a point each level from 10 and spend them here.</p>
+  </div>
+
+  <div id="cooking-window" class="window panel" hidden>
+    <div class="window-head"><h2>Cooking</h2><button class="btn small" data-close-panel="cooking">&times;</button></div>
+    <div id="cooking-rank"></div>
+    <div id="cooking-fire" class="dim"></div>
+    <div id="cooking-list"></div>
   </div>
 
   <div id="quick-bind-banner" hidden>Quick bind: hover a spell or utility bar slot and press a key. Esc when done.</div>

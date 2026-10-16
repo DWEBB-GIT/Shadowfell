@@ -279,12 +279,9 @@ async function combat(browser) {
   await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 400));
   await page.mouse.click(pt.x, pt.y, { button: 'right' });
   // software WebGL runs slowly, so wait for the swing to start and finish in game time
-  await page.waitForFunction(() => window.__shadowfall.player.pending !== null, null, { timeout: 15000 });
+  // (a blow lands when the swing clock runs out; stopping before then calls it off)
+  await page.waitForFunction(() => window.__shadowfall.enemies.byId('ghoul_road').health < 400, null, { timeout: 15000 });
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
-  await page.waitForFunction(() => {
-    const p = window.__shadowfall.player;
-    return p.cooldowns.attack === 0 && !p.pending;
-  }, null, { timeout: 15000 });
   await pauseLoop(page);
   let g = await enemy(page, 'ghoul_road');
   // one auto attack swing: the worn longsword's 44–59 plus swing power, less the ghoul's armour
@@ -1853,7 +1850,8 @@ async function forge(browser) {
     g.step(1 / 60);
     return { current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, talking: g.dialogue.isOpen };
   }));
-  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 7 && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
+  const maraStock = await page.evaluate(() => window.__shadowfall.db.shops.mara_forge.stock.length); // (from data/shops.json)
+  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === maraStock && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -2507,16 +2505,18 @@ async function clickTargeting(browser) {
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_cart', 2.5, 1, { frozen: true });
-  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 150));
+  await page.evaluate(() => (window.__shadowfall.enemies.byId('ghoul_road').health = 20));
   await rightClickOn('ghoul_road');
-  await sim(page, 1.3);
+  // the first blow lands as soon as you are in reach (WoW), then every T
+  const TT = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
+  await sim(page, 0.3);
   const mid = await page.evaluate(() => ({ hp: window.__shadowfall.enemies.byId('ghoul_road').health, attacking: window.__shadowfall.targeting.attacking, label: document.getElementById('target-label').textContent, cd: window.__shadowfall.player.cooldowns.attack }));
-  await sim(page, 1.4);
+  await sim(page, TT);
   const second = await page.evaluate(() => window.__shadowfall.enemies.byId('ghoul_road').health);
-  await sim(page, 2.4);
+  await sim(page, TT + 0.3);
   const end = await page.evaluate(() => ({ dead: window.__shadowfall.enemies.byId('ghoul_road').dead, attacking: window.__shadowfall.targeting.attacking, target: window.__shadowfall.targeting.current }));
-  record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp === 84 && mid.attacking && mid.label === 'Attacking' && second === 18 && end.dead && !end.attacking && !end.target,
-    `150 → ${mid.hp} after 1.3s (one swing; next in ${mid.cd.toFixed(2)}s of the longsword's 2.2s) → ${second} after 2.7s (frame: "${mid.label}"); then it fell and auto attack stopped`);
+  record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp < 20 && mid.hp - second === 20 - mid.hp && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
+    `20 → ${mid.hp} at once (next in ${mid.cd.toFixed(2)}s of ${TT}s) → ${second} a swing later (frame: "${mid.label}"); then it fell and auto attack stopped`);
 
   // right-clicking does not snap the Warden round: moving, he faces where he
   // walks and holds his swing; standing still, he turns to the target
@@ -2584,7 +2584,8 @@ async function clickTargeting(browser) {
   await rightClickOn('mara');
   await sim(page, 0.05);
   const talking = await page.evaluate(() => window.__shadowfall.dialogue.isOpen);
-  record('Left click selects a townsperson; right click talks to them', friend.f === 'mara' && friend.frame === 'Mara Venn' && !friend.talking && talking, `target frame "${friend.frame}"; right click opened the conversation`);
+  // (either button selects a townsperson and talks to them, as src/main.js _click says)
+  record('Clicking a townsperson selects and talks to them, with either button', friend.f === 'mara' && friend.frame === 'Mara Venn' && friend.talking && talking, `target frame "${friend.frame}"; left click talking: ${friend.talking}, right click talking: ${talking}`);
   record('No script errors (click targeting)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3573,13 +3574,13 @@ async function swingTimer(browser) {
   const table = await page.evaluate(() => {
     const st = window.__shadowfall.stats;
     const keep = { haste: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'haste'), speed: Object.getOwnPropertyDescriptor(Object.getPrototypeOf(st), 'weaponSpeed') };
-    Object.defineProperty(st, 'weaponSpeed', { get: () => 2.5, configurable: true });
+    st.handSpeed = () => 2.5;
     const out = [0, 10, 20, 30].map((h) => {
       Object.defineProperty(st, 'haste', { get: () => h, configurable: true });
       return { h, t: +st.attackCooldown.toFixed(3), windup: st.swingWindup, anim: st.swingAnimation };
     });
     delete st.haste;
-    delete st.weaponSpeed;
+    delete st.handSpeed;
     return out;
   });
   record('Time between swings = weapon speed ÷ (1 + haste)', table.map((r) => r.t).join() === '2.5,2.273,2.083,1.923', table.map((r) => `${r.h}% ${r.t}s`).join(', '));
@@ -3613,12 +3614,40 @@ async function swingTimer(browser) {
   record('The swing rhythm is the same at 30, 60 and 144 fps (delta time)', steady(at30) && steady(at60) && steady(at144) && at30.length === at144.length, `${T}s weapon: 30 fps ${at30.join(', ')} | 60 fps ${at60.join(', ')} | 144 fps ${at144.join(', ')}`);
   record('A long frame does not lose the rhythm or cause a burst', at4.length === at60.length && at4.every((t, i) => near(t, i * T, 0.3)), `at 4 fps: ${at4.join(', ')}`);
 
+  // the animation's impact frame, the hit and the bar filling are one moment
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.__sync = [];
+    g.enemies.byId('ghoul_road').health = 9999;
+    g.events.on('playerSwing', (e) => { if (!e.hand) g.__sync.push({ start: g.time, impactIn: g.player.pending.t, clock: g.player.cooldowns.attack, frac: g.player.rig.action.impact * g.player.rig.action.duration }); });
+    g.events.on('enemyHit', (e) => { if (e.swing && g.__sync.length) Object.assign(g.__sync[g.__sync.length - 1], { hit: g.time, bar: document.getElementById('swing-fill').style.width }); });
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+  });
+  await sim(page, 0.1);
+  await sim(page, 3 * T);
+  const sync = await page.evaluate(() => window.__shadowfall.__sync.filter((x) => x.hit).map((x) => ({ lead: +(x.hit - x.start).toFixed(3), impactIn: +x.impactIn.toFixed(3), clock: +x.clock.toFixed(3), frac: +x.frac.toFixed(3), bar: x.bar })));
+  await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
+  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x) => near(x.lead, x.impactIn, 1 / 60 + 0.001) && near(x.impactIn, Math.max(x.clock, 0.12), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
+
   // out of reach: the clock waits at zero; back in reach it swings once, then a full interval
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
   await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  // first, the opening: the clock does not run while you close in
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 4);
-  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); });
+  const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, hits: window.__shadowfall.__swings.length }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; });
+  await sim(page, T + 0.3);
+  const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
+  record('A new fight opens with an instant blow the moment you reach the target (WoW); nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it (T ${T}s)`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
+  await sim(page, 3);
+  // mid-fight: a clock that runs out with the target out of reach waits at zero
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.player.lastSwingAt = undefined; g.__swings = []; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await sim(page, 4);
+  await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -1.6); e.health = 9999; });
   await sim(page, 3);
   const back = await page.evaluate(() => { const s = window.__shadowfall.__swings; return s.map((t) => +(t - s[0]).toFixed(2)); });
   record('Out of reach the swing waits; back in reach it swings once, then a full interval later (no burst)', back.length === 2 && near(back[1], T, 0.05), `swings after stepping back in: ${back.join(', ')}`);
@@ -3626,7 +3655,7 @@ async function swingTimer(browser) {
   // the damage checks reach at the impact frame
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.__swings = []; });
   await sim(page, 3);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
   await sim(page, 0.05);
   const started = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike');
   await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -8); });
@@ -3649,7 +3678,399 @@ async function swingTimer(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, gearRolls, blackwood, atmosphere };
+async function dualWield(browser) {
+  current = 'Dual wielding';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // a sword in the main hand, a dirk in the off hand (the shield goes back in the bag)
+  const eq = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    inv.addItem('arming_sword', 1, { quiet: true });
+    inv.addItem('rusty_dirk', 1, { quiet: true });
+    inv.equip('arming_sword');
+    const loc = inv.bagLocations().find((l) => inv.get(l)?.id === 'rusty_dirk');
+    const ok = inv.move(loc, 'e:offHand').ok;
+    return { main: inv.equipment.mainHand?.id, off: inv.equipment.offHand?.id, ok, dual: g.stats.dualWielding, shieldInBag: inv.count('kite_shield') };
+  });
+  record('One-handed weapons go in either hand; a dirk can be dual wielded', eq.ok && eq.main === 'arming_sword' && eq.off === 'rusty_dirk' && eq.dual && eq.shieldInBag === 1, JSON.stringify(eq));
+  const refuse = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const a = g.stats.archetype;
+    a.dualWield = false;
+    const ok = g.inventory.canWear(g.items.rusty_dirk, 'offHand');
+    a.dualWield = true;
+    return ok;
+  });
+  record('A class without dual wielding cannot put a weapon in the off hand', refuse === false);
+
+  const nums = await page.evaluate(() => {
+    const st = window.__shadowfall.stats;
+    return { main: st.swingRangeFor('main'), off: st.swingRangeFor('off'), tMain: st.attackCooldownFor('main'), tOff: st.attackCooldownFor('off'), dirk: window.__shadowfall.items.rusty_dirk.damage, sword: window.__shadowfall.items.arming_sword.damage };
+  });
+  const offFull = await page.evaluate(() => { const st = window.__shadowfall.stats; const [lo, hi] = st.weaponRangeFor('off'); const p = st.swingPowerFor('off'); return [Math.round(lo + p), Math.round(hi + p)]; });
+  record('Off-hand blows do half damage', near(nums.off[0], offFull[0] / 2, 0.6) && near(nums.off[1], offFull[1] / 2, 0.6), `sword ${nums.sword.join('–')} @ ${nums.tMain}s → ${nums.main.join('–')} a swing; dirk ${nums.dirk.join('–')} @ ${nums.tOff}s → ${nums.off.join('–')} in the off hand (full ${offFull.join('–')})`);
+
+  // each hand swings on its own clock, staggered
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.enemies.byId('ghoul_road').health = 99999;
+    g.__hits = [];
+    // a frozen ghoul does not walk back after knockback, so hold it in place
+    g.events.on('enemyHit', (e) => { if (!e.swing) return; g.__hits.push({ hand: e.hand || 'main', t: +g.time.toFixed(3), dmg: e.damage }); e.enemy.knock.set(0, 0, 0); e.enemy.position.set(0, 0, -1.6); });
+    g.player.lastSwingAt = undefined;
+    g.player.cooldowns.attack = 0;
+    g.player.cooldowns.attackOff = 0;
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+  });
+  await sim(page, 0.6);
+  const bars = await page.evaluate(() => ({ main: !document.getElementById('swing-bar').hidden, off: !document.getElementById('swing-bar-off').hidden, offText: document.getElementById('swing-text-off').textContent }));
+  await sim(page, 12);
+  const hits = await page.evaluate(() => window.__shadowfall.__hits);
+  const main = hits.filter((h) => h.hand === 'main').map((h) => h.t);
+  const off = hits.filter((h) => h.hand === 'off').map((h) => h.t);
+  const gaps = (a) => a.slice(1).map((t, i) => +(t - a[i]).toFixed(2));
+  const closest = Math.min(...off.map((t) => Math.min(...main.map((m) => Math.abs(m - t)))));
+  record('Each hand swings on its own clock at its own weapon speed', main.length >= 4 && off.length >= 5 && gaps(main).every((d) => near(d, nums.tMain, 0.05)) && gaps(off).every((d) => d >= nums.tOff - 0.05) && gaps(off).filter((d) => near(d, nums.tOff, 0.05)).length >= gaps(off).length / 2,
+    `main hand every ${gaps(main).join(', ')}s; off hand every ${gaps(off).join(', ')}s`);
+  record('The two hands are staggered: never within 0.2 s of each other', closest >= 0.19, `closest main/off blows ${closest.toFixed(2)}s apart; main ${main.join(', ')} · off ${off.join(', ')}`);
+  record('Both swing timers show while dual wielding', bars.main && bars.off && /off hand/.test(bars.offText), JSON.stringify(bars));
+  const offDmg = hits.filter((h) => h.hand === 'off').map((h) => h.dmg);
+  const mainDmg = hits.filter((h) => h.hand === 'main').map((h) => h.dmg);
+  record('Off-hand hits land for less', Math.max(...offDmg) < Math.min(...mainDmg), `main ${mainDmg.join(',')} · off ${offDmg.join(',')}`);
+
+  // off-hand swings build half the Resolve
+  await page.evaluate(() => { const g = window.__shadowfall; g.resources.gauge = 0; g.events.emit('enemyHit', { enemy: g.enemies.byId('ghoul_road'), damage: 1, kind: 'strike', swing: true, hand: 'off' }); });
+  const rOff = await page.evaluate(() => window.__shadowfall.resources.gauge);
+  record('Off-hand swings build half the Resolve', rOff === 6, `${rOff} Resolve from one off-hand blow`);
+
+  // tooltip: One-hand dagger
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.inventory.addItem('ghoulbone_knife', 1, { quiet: true }); g.hud.togglePanel('bags'); });
+  await sim(page, 0.1);
+  const loc = await page.evaluate(() => window.__shadowfall.inventory.bagLocations().find((l) => window.__shadowfall.inventory.get(l)?.id === 'ghoulbone_knife'));
+  await page.hover(`[data-loc="${loc}"]`);
+  const tipKind = await page.evaluate(() => document.querySelector('.tt-kind')?.textContent);
+  record('Tooltips name one-handed weapons', /One-hand dagger/.test(tipKind || ''), `"${tipKind}"`);
+
+  record('No script errors (dual wielding)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+async function townAndCooking(browser) {
+  current = 'Town, inn and cooking';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  // Hester teaches Cooking, then a recipe that needs rank 10
+  const learn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addCoins(500);
+    g.dialogue.open(g.npcs.byId('hester'));
+    const opts = g.dialogue.page.options.map((o) => o.id);
+    const ok = g.dialogue.choose('train:cooking');
+    const after = g.dialogue.page.options.map((o) => o.id);
+    const early = g.cooking.learnRecipe('hound_steak');
+    g.dialogue.close();
+    return { opts, ok, after, early, rank: g.skills.rank('cooking'), known: g.cooking.known().map((r) => r.id) };
+  });
+  record('Hester, the innkeeper, teaches Cooking; the starter recipes come with it', learn.opts.includes('train:cooking') && learn.opts.includes('home') && learn.ok && learn.rank === 1 && learn.known.join() === 'grilled_perch,roast_dace', JSON.stringify(learn));
+  record('She offers taught recipes once you can cook, but not before your rank allows', learn.after.includes('recipe:hound_steak') && learn.early === false, learn.after.join(', '));
+
+  // cook at the hearth: needs a fire, takes a cast, raises the skill (orange)
+  await setup(page, { x: 30, z: 60 });
+  await page.evaluate(() => window.__shadowfall.inventory.addItem('gloomwater_perch', 3, { quiet: true }));
+  const noFire = await page.evaluate(() => ({ ok: window.__shadowfall.cooking.start('grilled_perch'), why: window.__shadowfall.cooking.blocked(window.__shadowfall.db.recipes.grilled_perch) }));
+  await setup(page, { x: 4.6, z: 69.6 });
+  await sim(page, 0.2);
+  const prompt = await page.evaluate(() => { const g = window.__shadowfall; g.interaction.update(); return g.interaction.current?.prompt; });
+  await page.evaluate(() => window.__shadowfall.interaction.interact());
+  await sim(page, 0.1);
+  const winOpen = await page.evaluate(() => !document.getElementById('cooking-window').hidden && document.querySelectorAll('#cooking-list .recipe').length);
+  record('Cooking needs a fire; E at the inn hearth opens the cooking window', noFire.ok === false && /fire/.test(noFire.why) && /hearth/.test(prompt || '') && winOpen === 2, `away: "${noFire.why}"; prompt "${prompt}"; ${winOpen} recipes listed`);
+  await page.click('#cooking-list [data-cook="grilled_perch"][data-all]');
+  await sim(page, 1.2);
+  const mid = await page.evaluate(() => ({ cast: !document.getElementById('cast-bar').hidden, text: document.getElementById('cast-text').textContent, made: window.__shadowfall.inventory.count('grilled_perch') }));
+  await sim(page, 7);
+  const done = await page.evaluate(() => ({ made: window.__shadowfall.inventory.count('grilled_perch'), raw: window.__shadowfall.inventory.count('gloomwater_perch'), rank: window.__shadowfall.skills.rank('cooking') }));
+  record('Cook all makes each dish after a 2.5 s cast, shown on the cast bar', mid.cast && /Cooking Grilled perch/i.test(mid.text) && mid.made === 0 && done.made === 3 && done.raw === 0, `${mid.text}; then ${done.made} cooked, ${done.raw} raw left`);
+  record('Orange recipes always raise the skill', done.rank === 4, `Cooking ${done.rank}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'cooking.png') });
+  // moving stops cooking
+  await page.evaluate(() => { const g = window.__shadowfall; g.inventory.addItem('silver_dace', 2, { quiet: true }); g.cooking.start('roast_dace', Infinity); });
+  await sim(page, 0.8, { held: ['KeyD'] });
+  const stopped = await page.evaluate(() => ({ c: window.__shadowfall.cooking.crafting, n: window.__shadowfall.inventory.count('roast_dace') }));
+  record('Moving stops cooking', !stopped.c && stopped.n === 0, JSON.stringify(stopped));
+
+  // eat: sit, heal over time, stop on moving; refused in a fight
+  const eat = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.health = 20;
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    g.inventory.use(loc);
+    return { eating: !!g.player.eating, pose: g.player.rig.pose, hp: g.player.health };
+  });
+  await sim(page, 5);
+  const ate = await page.evaluate(() => ({ hp: window.__shadowfall.player.health, eating: !!window.__shadowfall.player.eating }));
+  await sim(page, 0.4, { held: ['KeyW'] });
+  const moved = await page.evaluate(() => ({ eating: !!window.__shadowfall.player.eating, pose: window.__shadowfall.player.rig.pose }));
+  record('Eating sits you down and heals over time; moving stops it', eat.eating && eat.pose === 'sit' && ate.hp > 30 && ate.eating && !moved.eating && moved.pose !== 'sit', `${eat.hp} → ${ate.hp} hp in 5 s; after moving: ${JSON.stringify(moved)}`);
+  const fight = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    Object.defineProperty(g.resources, 'inCombat', { value: true, configurable: true });
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    const ok = g.cooking.eat(loc);
+    delete g.resources.inCombat;
+    return ok;
+  });
+  record("You can't eat in a fight", fight === false);
+
+  // indoors: walls block, the roof and front wall fade, the camera comes in
+  await page.evaluate(() => { window.__shadowfall.hud.items.closeAll(); document.getElementById('ui-error').classList.remove('show'); });
+  await setup(page, { x: -7, z: 74 });
+  await sim(page, 1.5);
+  const out = await page.evaluate(() => { const g = window.__shadowfall; return { cam: g.camera.position.distanceTo(g.player.position), blend: g.world.indoorBlend }; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'town.png') });
+  await setup(page, { x: 8, z: 70 });
+  await sim(page, 1.5);
+  const inn = await page.evaluate(() => { const g = window.__shadowfall; const b = g.world.indoors; return { cam: g.camera.position.distanceTo(g.player.position), blend: g.world.indoorBlend, name: b?.def.name, roof: b?.fade[1].mats[0].opacity, front: b?.fade[0].mats[0].opacity, roofVis: b?.fade[1].obj.visible }; });
+  record('Inside the inn the roof hides, the front wall fades and the camera comes closer', inn.name && inn.blend > 0.95 && out.blend < 0.05 && inn.roofVis === false && inn.front < 0.3 && inn.cam < out.cam * 0.85, `outside ${out.cam.toFixed(1)} m, inside ${inn.cam.toFixed(1)} m; roof ${inn.roof?.toFixed(2)}, front ${inn.front?.toFixed(2)}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'inn.png') });
+  // walls are solid: walk north into the north wall
+  await sim(page, 3, { held: ['KeyW'] });
+  const z = await page.evaluate(() => window.__shadowfall.player.position.z);
+  record('The inn walls are solid', z > 67.6, `stopped at z ${z.toFixed(2)} (north wall at 67.5)`);
+  // resting at the inn builds rested XP
+  await page.evaluate(() => { window.__shadowfall.progression.rested = 0; });
+  await sim(page, 2);
+  const rested = await page.evaluate(() => ({ r: window.__shadowfall.progression.rested, where: window.__shadowfall.camp.resting }));
+  record('Resting inside the inn builds rested experience', rested.r > 0 && rested.where === 'inn', JSON.stringify(rested));
+  // make it your home: you wake here after a death, and it saves
+  const home = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.open(g.npcs.byId('hester'));
+    g.dialogue.choose('home');
+    g.dialogue.close();
+    const rp = g.afterlife.restPoint();
+    const saved = JSON.parse(JSON.stringify(g.worldState.serialize()));
+    g.worldState.apply(saved);
+    return { point: g.worldState.restPoint, rp, again: g.worldState.restPoint };
+  });
+  record('Make this inn your home: you wake by its hearth, and it is saved', home.point === 'inn:hester' && home.rp.kind === 'inn' && home.again === 'inn:hester', JSON.stringify(home));
+
+  record('No script errors (town and cooking)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+async function wowCombat(browser) {
+  current = 'WoW combat feel';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const T = await page.evaluate(() => window.__shadowfall.stats.attackCooldown);
+  const fresh = async (z = -1.6) => {
+    await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+    await placeEnemy(page, 'ghoul_road', 0, z, { frozen: true });
+    await page.evaluate(() => {
+      const g = window.__shadowfall;
+      g.targeting.stopAttack();
+      g.player.health = g.player.maxHealth;
+      g.player.lastSwingAt = undefined;
+      g.player.pending = null;
+      g.player.casting = null;
+      g.spells.queued = null;
+      Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+      const e = g.enemies.byId('ghoul_road');
+      e.health = 99999;
+      g.__hits = [];
+      if (!g.__hook) {
+        g.__hook = true;
+        g.events.on('enemyHit', (x) => {
+          g.__hits.push({ t: +g.time.toFixed(3), hand: x.hand || null, swing: !!x.swing, kind: x.kind });
+          if (x.enemy.alive) x.enemy.health = 99999; // (a reset to full health on leashing would let it die)
+        });
+        g.events.on('playerShot', () => (g.__shots = (g.__shots || []).concat(+g.time.toFixed(3))));
+      }
+      g.__shots = [];
+    });
+  };
+
+  // an ability is never eaten by a swing on its way
+  await fresh();
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.05);
+  const mid = await page.evaluate(() => ({ swing: window.__shadowfall.player.pending?.type === 'strike', ok: window.__shadowfall.spells.tryCast('smite'), cd: window.__shadowfall.player.cooldowns.smite }));
+  record('An ability goes off even while a swing is on its way (no animation lock)', mid.swing && mid.ok && mid.cd > 0, JSON.stringify(mid));
+
+  // moving at full speed while swinging and after an ability
+  await fresh(-1.4);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); g.spells.tryCast('smite'); });
+  const x0 = await page.evaluate(() => window.__shadowfall.player.position.x);
+  await sim(page, 0.3, { held: ['KeyD'] });
+  const moved = await page.evaluate(() => window.__shadowfall.player.position.x);
+  const full = await page.evaluate(() => window.__shadowfall.config.player.speed * 0.3);
+  record('Swinging and using abilities never slow you down', (moved - x0) > full * 0.9, `${(moved - x0).toFixed(2)} m in 0.3 s (full speed ${full.toFixed(2)} m)`);
+
+  // the spell queue window
+  await fresh();
+  const q = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+    g.player.cooldowns.gcd = 0.3;
+    const early = g.spells.tryCast('smite');
+    return { early, queued: g.spells.queued?.id };
+  });
+  await sim(page, 0.35);
+  const qd = await page.evaluate(() => ({ cd: window.__shadowfall.player.cooldowns.smite, queued: window.__shadowfall.spells.queued }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.smite = 0; g.player.cooldowns.gcd = 0.9; g.spells.tryCast('smite'); });
+  const far = await page.evaluate(() => window.__shadowfall.spells.queued);
+  record('Spell queue: pressed in the last 0.4 s of the global cooldown, a spell goes off the moment it ends', q.early === false && q.queued === 'smite' && qd.cd > 5 && !qd.queued && !far, `queued ${q.queued}; went off when the GCD ended (cooldown ${qd.cd.toFixed(1)}s); 0.9 s early is not queued`);
+
+  // pushback
+  await fresh(-6);
+  const pb = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.select(g.enemies.byId('ghoul_road'));
+    g.spells.tryCast('hallowedBolt');
+    const c = g.player.casting;
+    c.t = 1.0;
+    const out = [];
+    for (let i = 0; i < 3; i++) {
+      g.events.emit('playerHurt', { enemy: g.enemies.byId('ghoul_road'), damage: 5 });
+      out.push(+c.t.toFixed(2));
+    }
+    return out;
+  });
+  record('Pushback: each hit taken while casting sets the cast back 0.5 s, at most twice', pb.join() === '0.5,0,0', `cast at 1.0 s, after three hits: ${pb.join(', ')}`);
+
+  // the bow: Auto Shot beyond melee reach, arrows in flight, on the move
+  await fresh(-10);
+  const eq = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.casting = null;
+    g.inventory.addItem('hunting_bow', 1, { quiet: true });
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'hunting_bow');
+    const r = g.inventory.move(loc, 'e:ranged');
+    return { ok: r.ok, bow: g.inventory.rangedWeapon?.name, T: g.stats.attackCooldownFor('ranged') };
+  });
+  // no arrows, no shots
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 1);
+  const dry = await page.evaluate(() => ({ shots: window.__shadowfall.__shots.length, text: document.getElementById('swing-text').textContent, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).filter((t) => /no arrows/.test(t)).length }));
+  record('Auto Shot needs arrows: with none it does not fire, and says so', dry.shots === 0 && /no arrows/.test(dry.text) && dry.log > 0, `${dry.shots} shots; bar "${dry.text}"`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.inventory.addItem('rough_arrow', 100, { quiet: true }); g.player.cooldowns.ranged = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 0.3);
+  const bar = await page.evaluate(() => ({ text: document.getElementById('swing-text').textContent, inHand: window.__shadowfall.player.bowInHand }));
+  await sim(page, 0.4);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'auto-shot.png') });
+  await sim(page, 1.2, { held: ['KeyA'] });
+  await sim(page, 2 * eq.T - 0.6);
+  const bow = await page.evaluate(() => ({ shots: window.__shadowfall.__shots, hits: window.__shadowfall.__hits.filter((h) => h.hand === 'ranged').map((h) => h.t) }));
+  const flight = bow.hits.length ? +(bow.hits[0] - bow.shots[0]).toFixed(2) : null;
+  const left = await page.evaluate(() => window.__shadowfall.inventory.count('rough_arrow'));
+  record('Each shot uses one arrow', left === 100 - bow.shots.length, `${bow.shots.length} shots, ${left} of 100 arrows left`);
+  const gap = bow.shots.length > 1 ? +(bow.shots[1] - bow.shots[0]).toFixed(2) : null;
+  record('A bow goes in the ranged slot; with the target beyond melee reach, Auto Shot fires on the bow\'s own timer', eq.ok && bow.shots.length >= 3 && near(gap, eq.T, 0.05) && /Auto Shot/.test(bar.text) && bar.inHand, `${eq.bow}: shots at ${bow.shots.join(', ')} (every ${eq.T.toFixed(1)} s); bar "${bar.text}"`);
+  record('Arrows fly to the target and hit on arrival; you can shoot on the move', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits while strafing`);
+
+  // the target comes into reach: the sword takes over
+  await page.evaluate(() => { const g = window.__shadowfall; const p = g.player.position; g.enemies.byId('ghoul_road').position.set(p.x, 0, p.z - 1.6); g.__hits = []; });
+  await sim(page, T + 0.4);
+  const melee = await page.evaluate(() => window.__shadowfall.__hits.map((h) => h.hand));
+  record('In melee reach the sword takes over from the bow', melee.includes('main') && !melee.slice(1).includes('ranged'), melee.join(', '));
+
+  // arrows by the hundred from a vendor, and a quiver
+  const shop = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    g.inventory.removeAll('rough_arrow');
+    g.inventory.addCoins(500);
+    const before = g.inventory.coins;
+    g.merchant.open('tam_outfitters', g.npcs.byId('tam'));
+    g.merchant.buy('rough_arrow');
+    const arrows = g.inventory.count('rough_arrow');
+    const paid = before - g.inventory.coins;
+    const T0 = g.stats.attackCooldownFor('ranged');
+    g.merchant.buy('leather_quiver');
+    const qloc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'leather_quiver');
+    const socket = [1, 2, 3].find((i) => !g.inventory.sockets[i]);
+    const placed = g.inventory.move(qloc, `s:${socket}`).ok;
+    const T1 = g.stats.attackCooldownFor('ranged');
+    g.inventory.removeAll('rough_arrow');
+    g.merchant.buy('rough_arrow');
+    const inQuiver = g.inventory.sockets[socket].slots.filter((x) => x?.id === 'rough_arrow').reduce((n, x) => n + x.count, 0);
+    // anything else is refused
+    g.inventory.addItem('healing_draught', 1, { quiet: true });
+    const dloc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'healing_draught' && !l.startsWith(`b:${socket}:`));
+    const refused = !g.inventory.move(dloc, `b:${socket}:5`).ok;
+    g.merchant.close();
+    return { arrows, paid, placed, T0: +T0.toFixed(3), T1: +T1.toFixed(3), inQuiver, refused };
+  });
+  record('Arrows are sold by the hundred (1 silver)', shop.arrows === 100 && shop.paid === 1, `${shop.arrows} arrows for ${shop.paid} silver`);
+  record('A quiver goes in a bag slot, holds only arrows (new arrows go there first) and makes Auto Shot 10% faster', shop.placed && shop.inQuiver >= 100 && shop.refused && near(shop.T1, shop.T0 / 1.1, 0.002), `quiver holds ${shop.inQuiver} arrows; a draught refused: ${shop.refused}; Auto Shot ${shop.T0}s → ${shop.T1}s`);
+  const dmg = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    let got = 0;
+    g.events.on('enemyHit', (x) => { if (x.hand === 'ranged') got = x.damage; });
+    const hit = (ammo) => { g.combat.arrows.push({ target: e, t: 0, ammo }); g.combat.updateArrows(0.01); return got; };
+    return { rough: hit('rough_arrow'), barbed: hit('barbed_arrow') };
+  });
+  record('Better arrows hit harder', dmg.barbed > dmg.rough, `rough ${dmg.rough}, barbed ${dmg.barbed}`);
+
+  // bow abilities: Quick Shot (instant) and Venom Arrow (instant poison)
+  const onBar = await page.evaluate(() => ['quickShot', 'venomArrow'].map((a) => window.__shadowfall.actionBar.slots.indexOf(a)));
+  record('Equipping a bow puts Quick Shot and Venom Arrow on the bar', onBar.every((i) => i >= 0), `slots ${onBar.join(', ')}`);
+  const shot = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    const p = g.player.position;
+    const e = g.enemies.byId('ghoul_road');
+    e.position.set(p.x, 0, p.z - 15);
+    Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+    g.resources.add?.('mana', 1000);
+    g.__bowHits = [];
+    g.events.on('enemyHit', (x) => { if (!x.hand && x.damage > 0) g.__bowHits.push({ t: +g.time.toFixed(3), kind: x.kind, n: x.damage }); });
+    const arrows = g.inventory.count('rough_arrow');
+    g.player.cooldowns.ranged = 1.5;
+    const ok = g.spells.tryCast('quickShot');
+    return { ok, t0: +g.time.toFixed(3), used: arrows - g.inventory.count('rough_arrow'), ranged: g.player.cooldowns.ranged, cd: g.player.cooldowns.quickShot };
+  });
+  await sim(page, 0.7);
+  const qs = await page.evaluate(() => window.__shadowfall.__bowHits.slice());
+  record('Quick Shot: an instant arrow at range that uses one arrow, hits on arrival and leaves Auto Shot alone', shot.ok && shot.used === 1 && shot.ranged === 1.5 && shot.cd === 6 && qs.length === 1 && qs[0].t - shot.t0 > 0.2, `${JSON.stringify(shot)}; hits ${JSON.stringify(qs)}`);
+  const venom = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    g.player.cooldowns.gcd = 0;
+    g.__bowHits = [];
+    const ok = g.spells.tryCast('venomArrow');
+    g.targeting.stopAttack();
+    return { ok, t0: +g.time.toFixed(3) };
+  });
+  await sim(page, 16);
+  const ticks = await page.evaluate(() => ({ hits: window.__shadowfall.__bowHits.slice(), dots: window.__shadowfall.spells.dots.length }));
+  record('Venom Arrow: an instant poisoned arrow, 5 nature ticks over 15 seconds', venom.ok && ticks.hits.length === 5 && ticks.hits.every((h) => h.kind === 'spell') && ticks.dots === 0, `ticks at ${ticks.hits.map((h) => (h.t - venom.t0).toFixed(1)).join(', ')} for ${ticks.hits.map((h) => h.n).join(', ')}`);
+  const noArrows = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.removeAll('rough_arrow');
+    g.inventory.removeAll('barbed_arrow');
+    Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+    return g.spells.tryCast('quickShot');
+  });
+  record('Bow abilities need arrows', noArrows === false, `cast with no arrows: ${noArrows}`);
+
+  record('No script errors (WoW combat)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

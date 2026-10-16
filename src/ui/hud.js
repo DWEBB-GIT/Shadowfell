@@ -13,6 +13,7 @@ import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
 import { SPELLS } from '../systems/spells.js';
 import { RARITY, ITEMS } from '../data/items.js';
+import { DB } from '../data/db.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -388,27 +389,46 @@ export class Hud {
   // The cast bar, buffs under the health bar, and your effects on the target.
   _refreshSpells() {
     const { player, spells } = this.game;
-    const c = player.casting;
+    // a spell, a dish on the fire, or a meal (which empties as you eat)
+    const k = this.game.cooking?.crafting;
+    const e = player.eating;
+    const c = player.casting
+      ? { t: player.casting.t, total: player.casting.total, name: SPELLS[player.casting.id].name }
+      : k
+        ? { t: k.t, total: k.total, name: `Cooking ${ITEMS[DB.recipes[k.id].output.item].name}${k.left > 1 ? ` (${k.left})` : ''}` }
+        : e
+          ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
+          : null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
       $('cast-fill').style.width = `${Math.min(100, (c.t / c.total) * 100)}%`;
-      $('cast-text').textContent = `${SPELLS[c.id].name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
+      $('cast-text').textContent = `${c.name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
     }
     // the weapon swing timer (WoW addons' swing timer): fills until the next
     // blow lands, while auto attack is on
+    // (one per hand when dual wielding)
     const tg = this.game.targeting;
-    const sw = $('swing-bar');
-    sw.hidden = !tg.attacking || player.dead;
-    if (!sw.hidden) {
-      const st = this.game.stats;
-      const pend = player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
-      const windup = st.swingWindup;
-      const left = pend || player.cooldowns.attack + windup;
-      const total = st.attackCooldown;
-      $('swing-fill').style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
-      $('swing-text').textContent = `${this.game.inventory.weapon.name}  ${left.toFixed(1)}`;
-    }
+    const st = this.game.stats;
+    // with the target beyond melee reach and a bow on your back, the bar is
+    // Auto Shot's
+    const shooting = tg.targetInShot;
+    const showSwing = (hand, bar, fill, text) => {
+      const el = $(bar);
+      el.hidden = !tg.attacking || player.dead || (hand === 'off' && (shooting || !st.dualWielding));
+      if (el.hidden) return;
+      const h = hand === 'main' && shooting ? 'ranged' : hand;
+      // the bar fills on the blow (or the arrow's release) itself
+      const pend = h === 'off' ? player.pendingOff?.t : h === 'ranged' ? player.pendingShot?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
+      const left = Math.max(0, pend ?? player.cooldowns[h === 'off' ? 'attackOff' : h === 'ranged' ? 'ranged' : 'attack']);
+      const total = st.attackCooldownFor(h);
+      $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
+      const ammo = h === 'ranged' ? this.game.inventory.ammo : null;
+      const arrows = h === 'ranged' ? (ammo ? ` · ${this.game.inventory.count(ammo)} arrows` : ' · no arrows') : '';
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}  ${left.toFixed(1)}`;
+    };
+    showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
+    showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
     this._auras($('buffs'), spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
   }
@@ -475,7 +495,7 @@ export class Hud {
     if (shown) {
       const c = shown.cfg;
       this.el.targetName.textContent = c.name;
-      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
+      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach || tg.targetInShot ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
       this.el.target.classList.toggle('attacking', !!t && tg.attacking);
       this.el.targetFill.style.width = `${Math.min(100, (shown.health / shown.maxHealth) * 100)}%`;
       this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${shown.maxHealth}`;

@@ -124,7 +124,7 @@ export class LootSystem {
   _spawn(def, x, z) {
     const group = new THREE.Group();
     const model = this.game.assets.instance(def.model);
-    if (['watchmans_edge', 'worn_sword', 'rusted_falchion', 'blackwood_cleaver'].includes(def.model)) {
+    if (def.kind === 'weapon') {
       model.rotation.set(Math.PI / 2, 0, 0.6); // lying on the ground
       model.position.y = 0.06;
     }

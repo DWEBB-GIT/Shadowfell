@@ -14,6 +14,7 @@ const S = DB.scenery;
 // the HUD names the one the Warden stands in.
 export const BOUNDS = W.bounds;
 export const REGIONS = W.regions.map((r) => ({ ...r, minZ: r.minZ === null ? -Infinity : r.minZ }));
+export const regionById = (id) => REGIONS.find((r) => r.id === id);
 export const regionAt = (z) => REGIONS.find((r) => z >= r.minZ) || REGIONS[REGIONS.length - 1];
 
 const road = (id) => W.roads.find((r) => r.id === id);
@@ -48,5 +49,12 @@ export const WITCHLIGHTS = S.witchlights;
 // ponds to fish (`fishTable` names a loot table) and places too dark to enter without a torch
 export const WATER = DB.water;
 export const OBSCURED = DB.obscured;
+
+// Buildings you can walk into (the Ford Inn): footprint, models, walls.
+export const BUILDINGS = W.buildings || [];
+// Places that count as a cooking fire (the inn's hearth); a pitched camp counts too.
+export const STATIONS = W.stations || [];
+// Ground flattened for a building: [x, z, radius].
+export const PADS = W.pads || [];
 
 export const DANGER_ZONES = W.dangerZones.map((z) => ({ position: z.position, radius: z.radius, enemy: z.enemySpawn }));

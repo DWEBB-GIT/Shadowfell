@@ -27,7 +27,7 @@ export function renderItemIcons(assets, size = 64) {
   for (const name of models) {
     const obj = assets.instance(name);
     // long items (swords) are shown diagonally, the classic RPG way
-    if (['worn_sword', 'watchmans_edge', 'rusted_falchion', 'blackwood_cleaver', 'witchbane'].includes(name)) obj.rotation.set(0, 0, -Math.PI / 4);
+    if (Object.values(ITEMS).some((i) => i.model === name && i.kind === 'weapon')) obj.rotation.set(0, 0, -Math.PI / 4);
     else if (name === 'kite_shield' || name === 'iron_shield') obj.rotation.set(0.15, 0.35, 0);
     else obj.rotation.set(0.5, -0.6, 0);
     scene.add(obj);
@@ -193,6 +193,69 @@ export function abilityIcons() {
         g.fill();
       }
     }),
+    quickShot: glyph((g) => {
+      // an arrow in flight with speed lines
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#c8c4b8';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#a04a2a';
+      g.lineWidth = 3;
+      for (const [x, y] of [[12, 52], [17, 47]]) {
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x - 4, y - 8);
+        g.moveTo(x, y);
+        g.lineTo(x + 8, y + 4);
+        g.stroke();
+      }
+      g.strokeStyle = 'rgba(255,230,170,0.6)';
+      g.lineWidth = 2;
+      for (const o of [-10, 10]) {
+        g.beginPath();
+        g.moveTo(16 + o, 36 + o);
+        g.lineTo(30 + o, 22 + o);
+        g.stroke();
+      }
+    }),
+    venomArrow: glyph((g) => {
+      // an arrow dripping green venom
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#7ad04a';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#5aa83a';
+      for (const [x, y, r] of [[44, 30, 3.5], [40, 40, 3], [46, 46, 2.5]]) {
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        g.fill();
+      }
+      const r = g.createRadialGradient(48, 16, 1, 48, 16, 14);
+      r.addColorStop(0, 'rgba(160,255,110,0.7)');
+      r.addColorStop(1, 'rgba(90,200,60,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(48, 16, 14, 0, Math.PI * 2);
+      g.fill();
+    }),
     smite: glyph((g) => {
       // a star of light
       g.fillStyle = '#ffe9a8';
@@ -262,6 +325,30 @@ export function abilityIcons() {
       g.lineTo(44, 52);
       g.moveTo(20, 52);
       g.lineTo(44, 58);
+      g.stroke();
+    }),
+    cook: glyph((g) => {
+      // a pot over flames
+      g.fillStyle = '#e07a2a';
+      for (const [x, h] of [[22, 16], [32, 22], [42, 16]]) {
+        g.beginPath();
+        g.moveTo(x - 6, 58);
+        g.quadraticCurveTo(x - 4, 58 - h * 0.6, x, 58 - h);
+        g.quadraticCurveTo(x + 4, 58 - h * 0.6, x + 6, 58);
+        g.fill();
+      }
+      g.fillStyle = '#4a4440';
+      g.beginPath();
+      g.ellipse(32, 30, 18, 12, 0, 0, Math.PI);
+      g.fill();
+      g.fillRect(14, 26, 36, 5);
+      g.strokeStyle = 'rgba(220,220,210,0.6)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(26, 22);
+      g.quadraticCurveTo(22, 15, 27, 8);
+      g.moveTo(37, 22);
+      g.quadraticCurveTo(41, 15, 36, 8);
       g.stroke();
     }),
     fish: glyph((g) => {

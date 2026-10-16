@@ -65,11 +65,12 @@ export class Merchant {
       events.emit('log', { text: `You cannot afford the ${name} (${moneyText(price)}).`, kind: 'muted', throttle: 'shop-refuse' });
       return false;
     }
-    if (!inventory.addItem(id, 1, { quiet: true })) return false; // bags full: addItem says so
+    const n = ITEMS[id].buyCount || 1; // arrows come by the hundred
+    if (!inventory.addItem(id, n, { quiet: true })) return false; // bags full: addItem says so
     inventory.coins -= price;
     events.emit('coins', { amount: -price });
     events.emit('itemBought', { id, price });
-    events.emit('log', { text: `Bought: ${name} for ${moneyText(price)}.`, kind: 'loot' });
+    events.emit('log', { text: `Bought: ${name}${n > 1 ? ` ×${n}` : ''} for ${moneyText(price)}.`, kind: 'loot' });
     inventory._changed();
     return true;
   }

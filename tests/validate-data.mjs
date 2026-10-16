@@ -65,6 +65,7 @@ const broken = [
   ['an item spending more than its stat budget', (d) => (d['items.json'].items.find((i) => i.id === 'witchbane').stats = { strength: 20 }), /witchbane: spends 2\d\.\d stat points of its 5\.8/],
   ['gear without an item level', (d) => delete d['items.json'].items.find((i) => i.id === 'worn_longsword').itemLevel, /worn_longsword: gear needs an itemLevel/],
   ['an ability costing a resource no class has', (d) => (d['abilities.json'].abilities.find((a) => a.id === 'smite').cost = { rage: 10 }), /unknown resource rage/],
+  ['a recipe cooking an item that does not exist', (d) => (d['recipes.json'].recipes[0].output.item = 'grilled_prech'), /unknown item grilled_prech/],
   ['an enemy of an unknown type', (d) => (d['enemies.json'].enemies[0].type = 'dragonkin'), /type must be one of/],
 ];
 const selfTest = [];

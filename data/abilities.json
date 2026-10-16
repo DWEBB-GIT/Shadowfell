@@ -1,23 +1,77 @@
 {
   "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js): cast, dot, instant, aoe, cleave, burst, charge, buff or camp; the rest have their own code. `cost` is what an ability spends ({mana: n} or {resolve: n}, the class gauge); `gain` is what it gives.",
   "globalCooldown": 1.5,
+  "spellQueueWindow": 0.4,
+  "castPushback": 0.5,
+  "maxPushbacks": 2,
   "abilities": [
     {
       "id": "strike",
       "name": "Attack",
       "target": "enemy",
       "range": 2.4,
-      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Not on the spell bar.",
+      "desc": "Auto attack. Right-click an enemy (RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Dual wielding, each hand swings on its own clock at its weapon's speed; the off hand does half damage and never lands within 0.2 s of the main hand. Not on the spell bar.",
       "tuning": {
         "range": 2.1,
-        "coneDegrees": 110,
+        "coneDegrees": 180,
         "windup": 0.32,
         "swingAnimation": 0.8,
         "abilityWeaponSeconds": 0.6,
         "turnRate": 6,
-        "catchUp": 0.25
+        "catchUp": 0.25,
+        "readyWindup": 0.12,
+        "staggerGap": 0.2,
+        "movingLeeway": 1.0
       },
       "bar": false
+    },
+    {
+      "id": "autoShot",
+      "name": "Auto Shot",
+      "range": 26,
+      "target": "enemy",
+      "tuning": {
+        "draw": 0.45,
+        "arrowSpeed": 30
+      },
+      "bar": false,
+      "desc": "Looses an arrow from your ranged weapon at your target whenever its timer is ready, while the target is beyond your melee reach. On the move too. Starts with auto attack."
+    },
+    {
+      "id": "quickShot",
+      "name": "Quick Shot",
+      "kind": "instant",
+      "ranged": true,
+      "school": "physical",
+      "target": "enemy",
+      "range": 26,
+      "desc": "An instant arrow from your bow at your target, for 120% of a bow shot. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown. 6 second cooldown.",
+      "tuning": {
+        "cooldown": 6,
+        "damageMultiplier": 1.2
+      },
+      "cost": {
+        "mana": 10
+      }
+    },
+    {
+      "id": "venomArrow",
+      "name": "Venom Arrow",
+      "kind": "dot",
+      "ranged": true,
+      "school": "nature",
+      "target": "enemy",
+      "range": 26,
+      "desc": "An instant poisoned arrow: your target takes nature damage every 3 seconds for 15 seconds (5 ticks of 30% of a bow shot). Using it again refreshes the poison. Needs a bow in your ranged slot and uses one arrow. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 15,
+        "tickInterval": 3,
+        "tickMultiplier": 0.3
+      },
+      "cost": {
+        "mana": 15
+      }
     },
     {
       "id": "shieldBreak",
@@ -230,6 +284,17 @@
       },
       "cost": {
         "mana": 10
+      }
+    },
+    {
+      "id": "cook",
+      "name": "Cooking",
+      "skill": "cooking",
+      "target": "self",
+      "desc": "Open your cookbook: the recipes you know, what each needs and how many you can make. Cooking needs a fire close by: your camp or the inn's hearth.",
+      "tuning": {
+        "castTime": 2.5,
+        "fireRange": 3
       }
     }
   ]

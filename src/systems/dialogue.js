@@ -75,6 +75,12 @@ export class Dialogue {
       }
       // trainers offer what they teach and the Warden has not learned
       for (const s of this.game.skills.offeredBy(this.npc.id)) page.options.push({ id: 'train:' + s.id, text: `Teach me ${s.name} (${moneyText(s.cost)}).`, icon: 'train' });
+      // recipes, once you know the skill (the rank they need is shown)
+      for (const r of this.game.cooking.offeredBy(this.npc.id)) {
+        const name = DB.items[r.output.item].name;
+        page.options.push({ id: 'recipe:' + r.id, text: `Teach me to make ${name} (${DB.skills[r.skill].name} ${r.rank}, ${moneyText(r.cost)}).`, icon: 'train' });
+      }
+      if (npc.innkeeper && this.game.worldState.restPoint !== 'inn:' + this.npc.id) page.options.push({ id: 'home', text: 'Make this inn your home.', icon: 'talk' });
       if (npc.shop) page.options.push({ id: 'shop', text: 'Let me see your wares.', icon: 'shop' });
       page.options.push({ id: 'bye', text: 'Goodbye.', icon: 'bye' });
     } else if (v.kind === 'node') {
@@ -113,6 +119,12 @@ export class Dialogue {
       return true;
     } else if (id.startsWith('train:')) {
       if (!this.game.skills.learn(id.slice(6))) return false;
+    } else if (id.startsWith('recipe:')) {
+      if (!this.game.cooking.learnRecipe(id.slice(7))) return false;
+    } else if (id === 'home') {
+      this.game.worldState.restPoint = 'inn:' + this.npc.id;
+      events.emit('log', { text: `${DB.npcs[this.npc.id].name} keeps a bed for you. If you fall, you will wake at the inn.`, kind: 'heal' });
+      this.game.hud.toast('This inn is now your home');
     } else if (id.startsWith('quest:')) this.view = { kind: 'quest', id: id.slice(6) };
     else if (id.startsWith('node:')) this.view = { kind: 'node', id: id.slice(5) };
     else if (id === 'accept' && v.kind === 'quest') {

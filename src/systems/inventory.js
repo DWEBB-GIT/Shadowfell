@@ -99,6 +99,38 @@ export class Inventory {
     return v;
   }
 
+  // a working weapon in the off hand (dual wielding), else null
+  get offWeapon() {
+    const s = this.equipment.offHand;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
+  }
+
+  // the arrows Auto Shot will use: the best you carry (most damage)
+  get ammo() {
+    let best = null;
+    for (const loc of this.bagLocations()) {
+      const s = this.get(loc);
+      const d = s && ITEMS[s.id];
+      if (d?.kind === 'ammo' && (!best || d.ammoDps > ITEMS[best].ammoDps)) best = s.id;
+    }
+    return best;
+  }
+
+  // a quiver in a bag slot quickens Auto Shot (percent; the best one counts)
+  get quiverHaste() {
+    return Math.max(0, ...this.sockets.map((s) => (s && ITEMS[s.id]?.rangedHaste) || 0));
+  }
+
+  // a working bow in the ranged slot (Auto Shot), else null
+  get rangedWeapon() {
+    const s = this.equipment.ranged;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
+  }
+
   get draughts() {
     return this.count('healing_draught');
   }
@@ -123,11 +155,29 @@ export class Inventory {
     }
   }
 
+  // What a bag slot may hold: a quiver (`holds: 'ammo'`) takes only arrows.
+  _bagHolds(socket) {
+    const s = this.sockets[socket];
+    return (s && ITEMS[s.id]?.holds) || null;
+  }
+
+  // The bag slots an item can go in, best first: arrows into a quiver
+  // before the ordinary bags.
+  _slotsFor(id) {
+    const kind = ITEMS[id].kind;
+    const locs = this.bagLocations().filter((l) => {
+      const h = this._bagHolds(+l.split(':')[1]);
+      return !h || h === kind;
+    });
+    const special = (l) => (this._bagHolds(+l.split(':')[1]) === kind ? 0 : 1);
+    return locs.sort((a, b) => special(a) - special(b));
+  }
+
   // Put `count` of `id` into bags; returns how many did not fit.
   _insert(id, count, rolls = null) {
     const def = ITEMS[id];
     let left = count;
-    const locs = this.bagLocations();
+    const locs = this._slotsFor(id);
     for (const loc of locs) {
       const s = this.get(loc);
       if (left > 0 && !rolls && s && s.id === id && !s.rolls && s.count < def.stack) {
@@ -168,7 +218,7 @@ export class Inventory {
   roomFor(id) {
     const def = ITEMS[id];
     let room = 0;
-    for (const loc of this.bagLocations()) {
+    for (const loc of this._slotsFor(id)) {
       const s = this.get(loc);
       if (!s) room += def.stack;
       else if (s.id === id) room += def.stack - s.count;
@@ -221,17 +271,21 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (!p || !def) return false;
-    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def);
+    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def, p.slot);
     if (p.type === 'socket') return p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag';
-    if (p.type === 'bag') return !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length;
+    if (p.type === 'bag') {
+      const h = this._bagHolds(p.socket);
+      return !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length && (!h || h === def.kind);
+    }
     return false;
   }
 
-  // Armour types and shields are limited by archetype, as in WoW.
-  canWear(def) {
+  // Armour types, shields and dual wielding are limited by archetype, as in WoW.
+  canWear(def, slot = null) {
     const a = this.game.stats.archetype;
     if (def.armourType && !a.armourTypes.includes(def.armourType)) return false;
     if (def.kind === 'shield' && !a.shields) return false;
+    if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) return false;
     return true;
   }
 
@@ -277,12 +331,14 @@ export class Inventory {
   _why(loc, stack) {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
-    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def)) {
+    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def, p.slot)) {
+      if (def.kind === 'weapon') return `A ${this.game.stats.archetype.name} cannot dual wield.`;
       const what = def.kind === 'shield' ? 'shields' : `${CONFIG.armourTypes[def.armourType].name.toLowerCase()} armour`;
       return `A ${this.game.stats.archetype.name} cannot use ${what}.`;
     }
     if (p.type === 'equip') return `The ${def.name} does not go there.`;
     if (p.type === 'socket') return p.socket === 0 ? 'The backpack cannot be removed.' : 'Only bags go in bag slots.';
+    if (p.type === 'bag' && this._bagHolds(p.socket)) return `Only arrows go in the ${ITEMS[this.sockets[p.socket].id].name.toLowerCase()}.`;
     return 'That will not fit there.';
   }
 
@@ -306,6 +362,7 @@ export class Inventory {
       if (!free) return !!this._refuse('Your bags are full.');
       return this.move(loc, free).ok;
     }
+    if (def.use?.food) return this.game.cooking.eat(loc);
     if (def.kind === 'consumable') return this.useDraught(loc);
     if (def.kind === 'document') {
       this.game.hud.openDocument(s.id);

@@ -492,6 +492,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #swing-bar .fill { background: linear-gradient(#c8c4b8, #7c776a); }
 #swing-bar .bar-text { font-size: 10px; line-height: 11px; }
 #swing-bar[hidden], #quick-bind-banner[hidden] { display: none; }
+/* the off hand's swing timer, just under the main hand's, when dual wielding */
+#swing-bar-off { position: absolute; left: 50%; bottom: 98px; transform: translateX(-50%); width: 240px; height: 11px; }
+#swing-bar-off .fill { background: linear-gradient(#a9b4c0, #5d6874); }
+#swing-bar-off .bar-text { font-size: 9px; line-height: 10px; }
+#swing-bar-off[hidden] { display: none; }
 #right-dock { position: absolute; right: 12px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: auto; }
 #right-dock .coins { height: 30px; padding: 0 10px; }
 #bag-dock { padding: 5px 6px 4px; }
@@ -546,3 +551,21 @@ body.ghost #prompt { color: #cfe6ff; }
 .skill-bar div { height: 100%; background: #c8a040; }
 .bar[hidden] { display: none; }
 .tt-cost { color: #8fb4f0; font-size: 12px; margin-top: 2px; }
+
+/* cooking window: recipes coloured by how much skill they still give */
+#cooking-window { left: 50%; top: 22%; transform: translateX(-50%); width: 380px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#cooking-rank { font-size: 13px; color: #f0d070; margin-bottom: 4px; }
+#cooking-rank .skill-bar { width: 100%; }
+#cooking-fire { font-size: 12px; margin: 4px 0 8px; }
+#cooking-fire.bad, .recipe-need .bad { color: #d06a50; }
+.recipe { display: flex; gap: 8px; align-items: center; padding: 4px; border-bottom: 1px solid #2a2218; }
+.recipe img { width: 30px; height: 30px; }
+.recipe-body { flex: 1; min-width: 0; }
+.recipe-name { font-size: 13px; }
+.recipe-need { font-size: 11px; }
+.recipe.orange .recipe-name { color: #ff8040; }
+.recipe.yellow .recipe-name { color: #ffe040; }
+.recipe.green .recipe-name { color: #40c040; }
+.recipe.grey .recipe-name { color: #909090; }
+.recipe.red .recipe-name { color: #c03030; }
+.recipe button[disabled] { opacity: 0.4; cursor: default; }

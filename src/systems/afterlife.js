@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { SHRINES, PLAYER_START } from '../world/layout.js';
+import { SHRINES, PLAYER_START, BUILDINGS } from '../world/layout.js';
 import { heightAt } from '../world/terrain.js';
 import { moneyText } from '../ui/money.js';
 
@@ -26,6 +26,9 @@ export class Afterlife {
   restPoint() {
     const ws = this.game.worldState;
     if (ws.restPoint === 'camp' && ws.camp) return { x: ws.camp.x + 1.4, z: ws.camp.z, label: 'by your camp', kind: 'camp' };
+    // an inn you made your home: you wake by its hearth
+    const inn = ws.restPoint?.startsWith('inn:') && BUILDINGS.find((b) => b.rest);
+    if (inn) return { x: inn.position[0] + inn.light[0] + 1.2, z: inn.position[1] + inn.light[1] + 1.4, label: `at ${inn.name}`, kind: 'inn' };
     const sh = SHRINES.find((x) => x.id === ws.shrineActivated) || SHRINES[0];
     if (ws.respawn) return { x: ws.respawn.x, z: ws.respawn.z, label: sh.label, kind: 'shrine' };
     return { x: PLAYER_START.position[0], z: PLAYER_START.position[1], label: "at the road's end", kind: 'start' };

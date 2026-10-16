@@ -24,6 +24,7 @@ import { Sparkles } from './render/sparkles.js';
 import { Camp } from './systems/camp.js';
 import { WaterAndDark } from './world/waterAndDark.js';
 import { Fishing } from './systems/fishing.js';
+import { Cooking } from './systems/cooking.js';
 import { EnemyManager } from './systems/enemies.js';
 import { LootSystem } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
@@ -104,6 +105,7 @@ class Game {
     this.reputation = new Reputation(this);
     this.camp = new Camp(this);
     this.fishing = new Fishing(this);
+    this.cooking = new Cooking(this);
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
@@ -513,9 +515,11 @@ class Game {
     // on an enemy) the Warden swings whenever the target is in reach, in
     // front of him, and his weapon is ready. It is not on the bar.
     actions.strike = tg.attacking && tg.targetInReach;
+    // beyond it, with a bow in the ranged slot, Auto Shot
+    actions.shoot = tg.attacking && tg.targetInShot;
     return {
       move,
-      aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
+      aim: actions.strike || actions.shoot ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
       rawAim,
       actions,
     };
@@ -536,9 +540,11 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.spells.update(dt);
+      this.combat.updateArrows(dt);
       this.resources.update(dt);
       this.camp.update(dt, this.time);
       this.fishing.update(dt);
+      this.cooking.update(dt);
       this.waterAndDark.update(dt, this.time);
       this.enemies.update(dt);
       this.npcs.update(dt);
@@ -560,6 +566,7 @@ class Game {
     }
     this.world.update(dt, performance.now() / 1000);
     this._updateRegion();
+    this.world.updateIndoors(dt, this.player.position);
     this._updateCamera(dt);
     if (this.started) this.hud.update(dt);
   }
@@ -595,6 +602,7 @@ class Game {
 
   _snapCamera() {
     this.cameraTarget.copy(this.player.position);
+    this.world.updateIndoors?.(0, this.player.position);
     this._placeCamera();
   }
 
@@ -612,7 +620,9 @@ class Game {
 
   _placeCamera(dt = 0) {
     // a fixed isometric view: the scenes are composed for this one angle
-    const [ox, oy, oz] = CONFIG.camera.offset;
+    // indoors the camera closes in a little, under where the roof was
+    const zoom = 1 - CONFIG.camera.indoorZoom * (this.world.indoorBlend || 0);
+    const [ox, oy, oz] = CONFIG.camera.offset.map((v) => v * zoom);
     const t = this.cameraTarget;
     let sx = 0;
     let sy = 0;

@@ -101,23 +101,80 @@ export class Stats {
 
   // The swing timer (Dan's formula): T = W / (1 + H), W the weapon's speed
   // and H haste as a fraction. 2.5 s at 20% haste swings every 2.083 s.
+  // Each hand has its own: `hand` is 'main' or 'off' (dual wielding).
   get attackCooldown() {
-    return this.weaponSpeed / this.speed;
+    return this.attackCooldownFor('main');
+  }
+
+  attackCooldownFor(hand) {
+    // a quiver quickens Auto Shot on top of haste (as in WoW Classic)
+    const quiver = hand === 'ranged' ? 1 + this.game.inventory.quiverHaste / 100 : 1;
+    return this.handSpeed(hand) / this.speed / quiver;
   }
 
   // Seconds from the start of a swing to its impact frame. Haste shortens the
   // time between swings, not the swing itself: the animation keeps its own
   // timing unless the interval is too short for it, then it is squeezed in.
   get swingWindup() {
-    return Math.min(CONFIG.attack.windup, this.attackCooldown * 0.4);
+    return this.swingWindupFor('main');
+  }
+
+  swingWindupFor(hand) {
+    return Math.min(CONFIG.attack.windup, this.attackCooldownFor(hand) * 0.4);
   }
 
   get swingAnimation() {
-    return Math.min(CONFIG.attack.swingAnimation, this.attackCooldown * 0.9);
+    return this.swingAnimationFor('main');
+  }
+
+  swingAnimationFor(hand) {
+    return Math.min(CONFIG.attack.swingAnimation, this.attackCooldownFor(hand) * 0.9);
   }
 
   get weaponSpeed() {
-    return this.game.inventory.weapon.speed || S().fistSpeed;
+    return this.handSpeed('main');
+  }
+
+  // ---- dual wielding: a working one-handed weapon in the off hand
+  get dualWielding() {
+    return !!this.game.inventory.offWeapon;
+  }
+
+  // `hand`: 'main', 'off' (dual wielding) or 'ranged' (the bow)
+  handWeapon(hand) {
+    const inv = this.game.inventory;
+    return hand === 'off' ? inv.offWeapon : hand === 'ranged' ? inv.rangedWeapon : inv.weapon;
+  }
+
+  // ---- the ranged slot: Auto Shot at targets beyond melee reach
+  get hasRanged() {
+    return !!this.game.inventory.rangedWeapon;
+  }
+
+  get rangedReach() {
+    return this.game.inventory.rangedWeapon?.range || 0;
+  }
+
+  handSpeed(hand) {
+    return this.handWeapon(hand)?.speed || S().fistSpeed;
+  }
+
+  // a hand's weapon damage per swing, before power (the off hand's penalty
+  // applies to the whole blow, in combat)
+  weaponRangeFor(hand) {
+    return this.handWeapon(hand)?.damage || S().fistDamage;
+  }
+
+  swingPowerFor(hand) {
+    return (this.power * this.handSpeed(hand)) / CONFIG.attack.abilityWeaponSeconds;
+  }
+
+  // what one swing of that hand does before crits and armour
+  swingRangeFor(hand) {
+    const [lo, hi] = this.weaponRangeFor(hand);
+    const p = this.swingPowerFor(hand);
+    const k = hand === 'off' ? S().offHandDamage : 1;
+    return [Math.round((lo + p) * k), Math.round((hi + p) * k)];
   }
 
   get globalCooldown() {
@@ -152,10 +209,13 @@ export class Stats {
     return [Math.round(lo + this.swingPower), Math.round(hi + this.swingPower)];
   }
 
-  // damage per second from auto attack, haste included
+  // damage per second from auto attack, haste and the off hand included
   get dps() {
-    const [lo, hi] = this.swingRange;
-    return (lo + hi) / 2 / this.attackCooldown;
+    const per = (hand) => {
+      const [lo, hi] = this.swingRangeFor(hand);
+      return (lo + hi) / 2 / this.attackCooldownFor(hand);
+    };
+    return per('main') + (this.dualWielding ? per('off') : 0);
   }
 
   // what a weapon ability does before crits and the target's armour
@@ -238,10 +298,10 @@ export function weaponRoll(rand, stats) {
   return lo + (hi - lo) * rand() + stats.power;
 }
 
-// An auto attack swing: anywhere in the weapon's own range, plus swing power.
-export function swingRoll(rand, stats) {
-  const [lo, hi] = stats.weaponRange;
-  return lo + (hi - lo) * rand() + stats.swingPower;
+// An auto attack swing: anywhere in that hand's weapon range, plus swing power.
+export function swingRoll(rand, stats, hand = 'main') {
+  const [lo, hi] = stats.weaponRangeFor(hand);
+  return lo + (hi - lo) * rand() + stats.swingPowerFor(hand);
 }
 
 // An enemy blow's raw damage, varied a little either side.

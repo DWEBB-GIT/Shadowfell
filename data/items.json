@@ -373,6 +373,129 @@
       "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
     },
     {
+      "id": "arming_sword",
+      "name": "Arming sword",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 2,
+      "speed": 2.4,
+      "stack": 1,
+      "price": 18,
+      "model": "arming_sword",
+      "icon": "arming_sword",
+      "description": "A plain one-handed sword, light enough to carry one in each hand if you have the knack."
+    },
+    {
+      "id": "rusty_dirk",
+      "name": "Rusty dirk",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 2,
+      "speed": 1.6,
+      "stack": 1,
+      "price": 14,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A long knife with more rust than edge. Quick in the off hand."
+    },
+    {
+      "id": "militia_sword",
+      "name": "Militia sword",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 4,
+      "speed": 2.5,
+      "statSplit": {
+        "strength": 1
+      },
+      "stack": 1,
+      "price": 55,
+      "model": "militia_sword",
+      "icon": "militia_sword",
+      "description": "Issued to the road militia before there was no road militia. The red grip is newer than the blade."
+    },
+    {
+      "id": "ghoulbone_knife",
+      "name": "Ghoulbone knife",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 4,
+      "speed": 1.7,
+      "statSplit": {
+        "agility": 1,
+        "haste": 1
+      },
+      "stack": 1,
+      "price": 50,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "Someone ground a ghoul's shin bone to an edge. It is lighter than steel and holds a grudge."
+    },
+    {
+      "id": "hunting_bow",
+      "name": "Hunting bow",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "ranged",
+      "weaponType": "bow",
+      "itemLevel": 2,
+      "speed": 2.8,
+      "range": 26,
+      "stack": 1,
+      "price": 20,
+      "model": "hunting_bow",
+      "icon": "hunting_bow",
+      "description": "A yew self bow, fit for deer and anything that has stopped being one. Goes in the ranged slot: Auto Shot looses an arrow at a target beyond the reach of your sword."
+    },
+    {
+      "id": "rough_arrow",
+      "name": "Rough arrow",
+      "kind": "ammo",
+      "rarity": "common",
+      "ammoDps": 0.5,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 1,
+      "model": "arrow_bundle",
+      "icon": "arrow_bundle",
+      "description": "Ash shafts, goose fletching, iron heads hammered out by the hundred. Auto Shot uses one an arrow. Sold by the hundred."
+    },
+    {
+      "id": "barbed_arrow",
+      "name": "Barbed arrow",
+      "kind": "ammo",
+      "rarity": "enhanced",
+      "ammoDps": 1.5,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 6,
+      "model": "arrow_bundle_barbed",
+      "icon": "arrow_bundle_barbed",
+      "description": "Arrows with cruel backward hooks. Each shot hits harder than with rough arrows. Sold by the hundred."
+    },
+    {
+      "id": "leather_quiver",
+      "name": "Leather quiver",
+      "kind": "bag",
+      "rarity": "common",
+      "bagSlots": 6,
+      "holds": "ammo",
+      "rangedHaste": 10,
+      "stack": 1,
+      "price": 25,
+      "model": "quiver",
+      "icon": "quiver",
+      "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
+    },
+    {
       "id": "torch",
       "name": "Pitch torch",
       "kind": "torch",
@@ -428,6 +551,91 @@
       "model": "eel",
       "icon": "eel",
       "description": "Black as the mere's bottom and nearly as old. Tam has caught two in forty years."
+    },
+    {
+      "id": "grilled_perch",
+      "name": "Grilled perch",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 60,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 6,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Charred at the edges, sweet in the middle. Restores 60 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "roast_dace",
+      "name": "Roast dace",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 70,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 7,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Small, bright and gone in three bites. Restores 70 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "hound_steak",
+      "name": "Hound steak",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 90,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 8,
+      "model": "steak",
+      "icon": "steak",
+      "description": "Tough as a boot and twice as filling. Restores 90 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "travellers_stew",
+      "name": "Traveller's stew",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 120,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 12,
+      "model": "stew",
+      "icon": "stew",
+      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "smoked_eel",
+      "name": "Smoked barrow eel",
+      "kind": "consumable",
+      "rarity": "rare",
+      "use": {
+        "food": {
+          "heal": 200,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 40,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Black, rich and faintly sinister. Restores 200 health over 15 seconds while you sit and eat."
     },
     {
       "id": "old_boot",

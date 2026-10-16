@@ -1250,6 +1250,292 @@ def build_camp_items():
     export("chest")
 
 
+def build_one_handers():
+    """One-handed swords and daggers for dual wielding: grip at the origin, blade +Z."""
+    b = Builder()  # arming sword: plain cross guard, straight blade
+    b.box((0.04, 0.04, 0.17), (0, 0, 0.0), P["leather"])
+    b.box((0.24, 0.05, 0.04), (0, 0, 0.10), P["iron"])
+    b.ball(0.035, (0, 0, -0.10), P["iron"], subdiv=0)
+    b.box((0.06, 0.016, 0.74), (0, 0, 0.49), P["steel"], var=0.05, taper=(0.45, 1))
+    b.to_object("ArmingSword")
+    export("arming_sword")
+    reset_scene()
+
+    b = Builder()  # militia sword: wider blade, brass guard, red grip
+    b.box((0.045, 0.045, 0.17), (0, 0, 0.0), P["cloth_red"])
+    b.box((0.26, 0.06, 0.05), (0, 0, 0.10), P["brass"])
+    b.ball(0.04, (0, 0, -0.10), P["brass"], subdiv=0)
+    b.box((0.075, 0.018, 0.72), (0, 0, 0.48), P["steel_bright"], var=0.04, taper=(0.5, 1))
+    b.box((0.02, 0.02, 0.45), (0, 0, 0.38), P["steel_dark"], var=0.0)
+    b.to_object("MilitiaSword")
+    export("militia_sword")
+    reset_scene()
+
+    b = Builder()  # dirk: short tapering blade
+    b.box((0.035, 0.035, 0.13), (0, 0, 0.0), P["leather_dark"])
+    b.box((0.13, 0.04, 0.03), (0, 0, 0.075), P["iron"])
+    b.box((0.05, 0.014, 0.36), (0, 0, 0.27), P["steel"], var=0.05, taper=(0.2, 1))
+    b.to_object("Dirk")
+    export("dirk")
+    reset_scene()
+
+    b = Builder()  # bone knife: a ghoul's shin bone ground to an edge
+    b.box((0.04, 0.04, 0.14), (0, 0, 0.0), P["rag"])
+    b.ball(0.035, (0, 0, 0.085), P["bone_old"], subdiv=0)
+    b.box((0.055, 0.02, 0.34), (0.01, 0, 0.27), P["bone"], var=0.08, taper=(0.25, 1))
+    b.to_object("BoneKnife")
+    export("bone_knife")
+
+
+def build_bows():
+    """Bows for the ranged slot: grip at the origin, limbs along +Z and -Z,
+    the string behind the grip (-Y), the belly facing +Y."""
+    b = Builder()  # hunting bow: a plain self bow, leather grip
+    b.box((0.045, 0.05, 0.14), (0, 0, 0), P["leather_dark"])
+    for sz in (1, -1):
+        b.box((0.035, 0.04, 0.42), (0, 0.035, sz * 0.27), P["wood"], rot=(sz * 10, 0, 0), var=0.06)
+        b.box((0.03, 0.035, 0.26), (0, 0.10, sz * 0.58), P["wood_dark"], rot=(sz * 24, 0, 0), var=0.06)
+        b.box((0.03, 0.03, 0.03), (0, 0.15, sz * 0.70), P["bone_old"], var=0.0)
+    b.box((0.006, 0.006, 1.38), (0, -0.0, 0), P["parchment"], var=0.0)  # the string
+    b.to_object("HuntingBow")
+    export("hunting_bow")
+    reset_scene()
+
+    b = Builder()  # an arrow: shaft along -Y (the game's +Z, which lookAt aims), head at -Y
+    b.box((0.014, 0.7, 0.014), (0, 0, 0), P["wood"], var=0.0)
+    b.box((0.035, 0.08, 0.012), (0, -0.37, 0), P["iron"], var=0.0)
+    b.box((0.06, 0.1, 0.004), (0, 0.3, 0), P["cloth_red"], var=0.0)
+    b.box((0.004, 0.1, 0.06), (0, 0.3, 0), P["cloth_red"], var=0.0)
+    b.to_object("Arrow")
+    export("arrow")
+    reset_scene()
+
+    def bundle(b, fletch):  # a bundle of arrows tied with twine, lying down
+        for i, (x, z) in enumerate([(-0.03, 0.03), (0.0, 0.035), (0.03, 0.03), (-0.015, 0.06), (0.015, 0.06)]):
+            b.box((0.014, 0.5, 0.014), (x, 0, z), P["wood"], var=0.05)
+            b.box((0.03, 0.05, 0.012), (x, -0.27, z), P["iron"], var=0.0)
+            b.box((0.04, 0.08, 0.006), (x, 0.22, z), fletch, var=0.05)
+        b.box((0.1, 0.03, 0.06), (0, 0.05, 0.045), P["rag"], var=0.0)
+
+    b = Builder()
+    bundle(b, P["cloth_red"])
+    b.to_object("ArrowBundle")
+    export("arrow_bundle")
+    reset_scene()
+
+    b = Builder()
+    bundle(b, P["black"])
+    b.box((0.11, 0.03, 0.065), (0, -0.12, 0.045), P["iron"], var=0.0)
+    b.to_object("ArrowBundleBarbed")
+    export("arrow_bundle_barbed")
+    reset_scene()
+
+    b = Builder()  # a leather quiver with fletchings showing at the top
+    b.cyl(0.07, 0.06, 0.55, (0, 0, 0.275), P["leather"], segs=10, var=0.06)
+    b.cyl(0.075, 0.075, 0.04, (0, 0, 0.53), P["leather_dark"], segs=10, var=0.0)
+    b.cyl(0.075, 0.075, 0.04, (0, 0, 0.05), P["leather_dark"], segs=10, var=0.0)
+    for x, y in [(-0.03, 0.0), (0.02, 0.03), (0.02, -0.03), (0.0, 0.0)]:
+        b.box((0.012, 0.012, 0.16), (x, y, 0.62), P["wood"], var=0.0)
+        b.box((0.035, 0.004, 0.07), (x, y, 0.66), P["cloth_red"], var=0.0)
+    b.box((0.02, 0.09, 0.5), (0, -0.075, 0.3), P["leather_dark"], var=0.0)  # strap
+    b.to_object("Quiver")
+    export("quiver")
+
+
+def build_cooking_items():
+    """Cooked food: grilled fish and a steak on a trencher, a bowl of stew."""
+    def plate(b):
+        b.cyl(0.16, 0.15, 0.025, (0, 0, 0.012), P["wood"], segs=10)
+
+    b = Builder()  # grilled fish
+    plate(b)
+    b.ball(0.05, (0, 0, 0.07), P["rust"], scale=(2.6, 0.9, 0.8), subdiv=1, var=0.1)
+    b.box((0.02, 0.07, 0.07), (-0.15, 0, 0.07), P["leather_dark"], var=0.0)
+    b.box((0.10, 0.01, 0.01), (0.02, -0.03, 0.11), P["black"], var=0.0)  # grill marks
+    b.box((0.10, 0.01, 0.01), (-0.04, -0.03, 0.11), P["black"], var=0.0)
+    b.to_object("CookedFish")
+    export("cooked_fish")
+    reset_scene()
+
+    b = Builder()  # steak
+    plate(b)
+    b.ball(0.08, (0, 0, 0.06), P["leather_dark"], scale=(1.4, 1, 0.45), subdiv=1, var=0.12)
+    b.ball(0.03, (0.06, 0.02, 0.08), P["bone"], scale=(1, 1, 0.6), subdiv=0)
+    b.to_object("Steak")
+    export("steak")
+    reset_scene()
+
+    b = Builder()  # stew in a bowl
+    b.cyl(0.12, 0.08, 0.09, (0, 0, 0.045), P["wood_dark"], segs=10)
+    b.cyl(0.11, 0.11, 0.01, (0, 0, 0.085), P["rust"], segs=10, var=0.1)
+    b.ball(0.025, (0.03, 0.02, 0.09), P["moss"], subdiv=0)
+    b.ball(0.02, (-0.04, -0.01, 0.09), P["bone"], subdiv=0)
+    b.to_object("Stew")
+    export("stew")
+
+
+def build_innkeeper():
+    """Hester Vale, keeper of the Ford Inn: same joint layout as the Warden."""
+    root = empty("Innkeeper")
+
+    def legs(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.16, 0.18, 0.48), (0, 0, -0.26), P["cloth_red"])
+            b.box((0.15, 0.17, 0.40), (0, 0.01, -0.66), P["cloth"])
+            b.box((0.16, 0.24, 0.09), (0, -0.04, -0.88), P["leather_dark"])
+        return part("Leg_" + side, root, (0.11 * s, 0, 0.93), fn)
+
+    legs("L")
+    legs("R")
+
+    def torso(b):
+        b.box((0.44, 0.27, 0.30), (0, 0, 0.10), P["cloth_red"])
+        b.box((0.44, 0.27, 0.40), (0, 0, 0.42), P["cloth_red"], taper=(1.0, 0.92), var=0.1)
+        b.box((0.36, 0.03, 0.58), (0, -0.14, 0.18), P["parchment"], var=0.06)   # apron
+        b.box((0.46, 0.29, 0.05), (0, 0, 0.28), P["leather_dark"])              # apron string
+        b.box((0.10, 0.06, 0.12), (0.18, -0.17, 0.12), P["brass"], var=0.0)    # keys
+    t = part("Torso", root, (0, 0, 0.92), torso)
+
+    def head(b):
+        b.box((0.08, 0.08, 0.08), (0, 0, 0.03), P["skin"])
+        b.box((0.21, 0.23, 0.25), (0, 0, 0.19), P["skin"], taper=(0.92, 0.9))
+        b.box((0.18, 0.03, 0.03), (0, -0.12, 0.22), P["black"], var=0.0)
+        b.box((0.24, 0.25, 0.12), (0, 0.02, 0.33), P["hair"], var=0.1)          # hair
+        b.ball(0.08, (0, 0.13, 0.30), P["hair"], subdiv=0)                       # bun
+    part("Head", t, (0, 0, 0.66), head)
+
+    def arm(side):
+        s = 1 if side == "L" else -1
+
+        def fn(b):
+            b.box((0.13, 0.14, 0.40), (0, 0, -0.18), P["cloth_red"])
+            b.box((0.10, 0.11, 0.14), (0, -0.01, -0.46), P["skin"])
+        return part("Arm_" + side, t, (0.28 * s, 0, 0.56), fn)
+
+    arm("L")
+    arm("R")
+    export("innkeeper")
+
+
+def build_town():
+    """Brackenford: the Ford Inn (shell, the wall facing the camera, roof),
+    cottages, a well and lamp posts. Game +Z (south, towards the camera) is
+    Blender -Y."""
+    W, D, H = 12.0, 9.0, 3.0
+    b = Builder()  # the inn's shell: floor, north/east/west walls, fittings
+    b.box((W, D, 0.12), (0, 0, 0.06), P["wood"], var=0.06)
+    for i in range(-5, 6):
+        b.box((0.04, D - 0.4, 0.005), (i, 0, 0.123), P["wood_dark"], var=0.0)        # floorboards
+    b.box((W, 0.3, H), (0, D / 2, H / 2), P["wood_grey"], var=0.08)                    # north
+    b.box((0.3, D, H), (W / 2, 0, H / 2), P["wood_grey"], var=0.08)                    # east
+    for y0, y1 in ((-D / 2, -0.9), (0.9, D / 2)):                                      # west, door gap
+        b.box((0.3, y1 - y0, H), (-W / 2, (y0 + y1) / 2, H / 2), P["wood_grey"], var=0.08)
+    b.box((0.3, 1.8, 0.8), (-W / 2, 0, H - 0.4), P["wood_grey"])                       # over the door
+    for x in (-W / 2, -2, 2, W / 2):                                                   # timber frame
+        b.box((0.36, 0.36, H), (x, D / 2, H / 2), P["wood_dark"], var=0.0)
+    b.box((W + 0.2, 0.36, 0.25), (0, D / 2, H - 0.12), P["wood_dark"], var=0.0)
+    b.box((0.36, D + 0.2, 0.25), (W / 2, 0, H - 0.12), P["wood_dark"], var=0.0)
+    b.box((0.36, D + 0.2, 0.25), (-W / 2, 0, H - 0.12), P["wood_dark"], var=0.0)
+    # hearth on the north wall, west end, with a chimney through the roof
+    b.box((2.2, 0.9, 1.3), (-3.8, D / 2 - 0.55, 0.65), P["stone"], var=0.1)
+    b.box((1.2, 0.5, 0.7), (-3.8, D / 2 - 0.85, 0.45), P["black"], var=0.0)            # fire mouth
+    b.ball(0.22, (-3.8, D / 2 - 0.9, 0.35), P["flame"], scale=(1.4, 0.8, 1.1), subdiv=1, glow=True)
+    b.box((1.4, 0.8, 4.0), (-3.8, D / 2 - 0.4, 3.0), P["stone_dark"], var=0.1)
+    b.cyl(0.03, 0.03, 0.8, (-3.4, D / 2 - 1.0, 1.0), P["iron"], segs=5)                 # spit post
+    b.ball(0.18, (-3.9, D / 2 - 1.0, 0.55), P["iron"], scale=(1, 1, 0.8), subdiv=1)     # pot
+    # the bar along the north wall, east end, and kegs behind it
+    b.box((3.6, 0.6, 1.05), (3.2, D / 2 - 1.6, 0.52), P["wood_dark"], var=0.06)
+    b.box((3.8, 0.7, 0.08), (3.2, D / 2 - 1.6, 1.08), P["wood"], var=0.04)
+    for x in (2.2, 3.2, 4.2):
+        b.cyl(0.3, 0.3, 0.7, (x, D / 2 - 0.5, 0.5), P["wood"], segs=10, rot=(90, 0, 0))
+        b.cyl(0.31, 0.31, 0.06, (x, D / 2 - 0.5, 0.5), P["iron"], segs=10, rot=(90, 0, 0))
+    # tables and stools
+    for (tx, ty) in ((-2.2, -1.2), (1.4, -2.4), (-1.0, 1.4)):
+        b.box((1.4, 0.9, 0.08), (tx, ty, 0.76), P["wood"], var=0.06)
+        b.box((0.12, 0.12, 0.72), (tx, ty, 0.38), P["wood_dark"])
+        for dx in (-0.9, 0.9):
+            b.cyl(0.18, 0.18, 0.45, (tx + dx, ty, 0.23), P["wood_dark"], segs=8)
+    # beds against the east wall, south end
+    for by in (-3.4, -1.6):
+        b.box((2.0, 1.0, 0.45), (W / 2 - 1.3, by, 0.23), P["wood_dark"])
+        b.box((1.8, 0.9, 0.15), (W / 2 - 1.35, by, 0.52), P["parchment"], var=0.05)
+        b.box((1.0, 0.92, 0.12), (W / 2 - 1.75, by, 0.55), P["cloth_red"], var=0.05)
+        b.box((0.3, 0.6, 0.12), (W / 2 - 0.5, by, 0.62), P["candle"], var=0.0)            # pillow
+    # a lantern by the door
+    b.ball(0.12, (-W / 2 - 0.3, 1.2, 2.2), P["flame"], subdiv=1, glow=True)
+    b.to_object("InnShell")
+    export("inn_shell")
+    reset_scene()
+
+    b = Builder()  # the south wall, which fades when you are inside
+    b.box((W, 0.3, H), (0, -D / 2, H / 2), P["wood_grey"], var=0.08)
+    for x in (-W / 2, -2, 2, W / 2):
+        b.box((0.36, 0.36, H), (x, -D / 2, H / 2), P["wood_dark"], var=0.0)
+    b.box((W + 0.2, 0.36, 0.25), (0, -D / 2, H - 0.12), P["wood_dark"], var=0.0)
+    for x in (-4, 0, 4):                                                               # lit windows
+        b.box((1.0, 0.34, 0.8), (x, -D / 2, 1.7), P["flame"], var=0.0, glow=True)
+        b.box((1.15, 0.38, 0.1), (x, -D / 2, 2.15), P["wood_dark"], var=0.0)
+    b.to_object("InnFront")
+    export("inn_front")
+    reset_scene()
+
+    b = Builder()  # the roof (gabled, ridge east-west) and the sign
+    pitch = 34
+    half = D / 2 + 0.6
+    for side in (1, -1):
+        b.box((W + 0.8, half / math.cos(math.radians(pitch)), 0.18),
+              (0, side * half / 2, H + half / 2 * math.tan(math.radians(pitch))),
+              P["wood_dark"] if side > 0 else P["bark"], rot=(-side * pitch, 0, 0), var=0.1)
+    for x in (-W / 2, W / 2):                                                          # gable ends
+        for i in range(5):
+            h = (i + 0.5) * 0.6
+            wdt = (D + 0.2) * (1 - (i + 0.5) / 5.5)
+            b.box((0.3, wdt, 0.6), (x, 0, H + h), P["wood_grey"], var=0.06)
+    b.box((1.6, 0.06, 0.7), (-W / 2 - 0.9, 0.6, 2.4), P["wood"], var=0.05)             # sign board
+    b.box((0.06, 0.06, 1.0), (-W / 2 - 0.5, 0.6, 2.9), P["iron"], var=0.0)
+    b.to_object("InnRoof")
+    export("inn_roof")
+    reset_scene()
+
+    b = Builder()  # a cottage, closed up
+    b.box((6, 5, 2.6), (0, 0, 1.3), P["ash"], var=0.08)
+    for x in (-3, 3):
+        b.box((0.3, 5.1, 2.6), (x, 0, 1.3), P["wood_dark"], var=0.0)
+    b.box((1.0, 0.1, 1.9), (0.8, -2.52, 0.95), P["wood_dark"], var=0.0)               # door
+    b.box((0.8, 0.1, 0.6), (-1.6, -2.52, 1.6), P["flame"], var=0.0, glow=True)        # window
+    for side in (1, -1):
+        b.box((6.6, 3.5, 0.16), (0, side * 1.4, 3.5), P["bark"], rot=(-side * 38, 0, 0), var=0.1)
+    for x in (-3, 3):
+        for i in range(3):
+            b.box((0.28, 4.6 * (1 - (i + 0.5) / 3.6), 0.5), (x, 0, 2.85 + i * 0.5), P["ash"], var=0.06)
+    b.box((0.6, 0.6, 1.6), (2.0, 1.2, 4.2), P["stone_dark"], var=0.1)                 # chimney
+    b.to_object("Cottage")
+    export("cottage")
+    reset_scene()
+
+    b = Builder()  # the village well
+    b.cyl(0.9, 0.95, 0.8, (0, 0, 0.4), P["stone"], segs=12, var=0.1)
+    b.cyl(0.7, 0.7, 0.05, (0, 0, 0.78), P["black"], segs=12, var=0.0)
+    for x in (-0.85, 0.85):
+        b.box((0.14, 0.14, 1.9), (x, 0, 1.3), P["wood_dark"])
+    b.box((2.2, 1.4, 0.12), (0, 0, 2.3), P["bark"], rot=(0, 0, 0), var=0.1)
+    b.cyl(0.08, 0.08, 1.7, (0, 0, 1.7), P["wood"], segs=6, rot=(0, 90, 0))
+    b.cyl(0.14, 0.12, 0.2, (0.2, 0, 1.3), P["wood"], segs=8)                          # bucket
+    b.to_object("Well")
+    export("well")
+    reset_scene()
+
+    b = Builder()  # a lamp post
+    b.box((0.14, 0.14, 2.6), (0, 0, 1.3), P["wood_dark"])
+    b.box((0.6, 0.08, 0.08), (0.25, 0, 2.55), P["iron"], var=0.0)
+    b.box((0.22, 0.22, 0.3), (0.5, 0, 2.3), P["iron"], var=0.0)
+    b.ball(0.09, (0.5, 0, 2.3), P["flame"], subdiv=1, glow=True)
+    b.to_object("LampPost")
+    export("lamp_post")
+
+
 BUILDERS = [
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
@@ -1259,7 +1545,8 @@ BUILDERS = [
     build_ruin_wall, build_waymarker, build_fence, build_items, build_equipment,
     build_mara, build_forge_camp, build_shop_items,
     build_hound, build_archer, build_seer, build_blackwood_props, build_blackwood_items,
-    build_loot_items, build_tam, build_camp_items,
+    build_loot_items, build_tam, build_camp_items, build_one_handers,
+    build_cooking_items, build_innkeeper, build_town, build_bows,
 ]
 
 if __name__ == "__main__":
