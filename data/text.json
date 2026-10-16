@@ -25,5 +25,92 @@
     "seer_stones": "A ring of stones lit with witchlight. Grave-iron bars have been driven into the earth at its heart, nine of them, in a circle. So this is where Mara's iron went.",
     "shrine_first": "The candles are fresh and someone has left bread in the bowl this morning. Whoever keeps this shrine is not far away.",
     "well": "The well is deep and the water sweet. Someone has scratched the names of the drowned along the rim; the list stops forty years ago."
+  },
+  "title": {
+    "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "build": "Alpha 0.1",
+    "tagline": "The Fallen Road",
+    "maxCharacters": 10,
+    "classes": [
+      {
+        "id": "warden",
+        "name": "Warden",
+        "archetype": "warden",
+        "role": "Shield and steel",
+        "blurb": "A sworn guard of the old roads. Wears any armour, carries a shield or a second weapon, and builds Resolve by trading blows.",
+        "traits": [
+          "Strength",
+          "Plate, mail, leather, cloth",
+          "Mana and Resolve"
+        ]
+      },
+      {
+        "id": "ranger",
+        "name": "Ranger",
+        "role": "Bow and blade",
+        "blurb": "A hunter of the Blackwood fringe who keeps the dead at arrow's length and builds Focus with every clean shot.",
+        "traits": [
+          "Agility",
+          "Leather, cloth",
+          "Focus"
+        ]
+      },
+      {
+        "id": "occultist",
+        "name": "Occultist",
+        "role": "Forbidden lore",
+        "blurb": "A reader of the grave-iron script, who spends mana freely and courts Corruption for greater power.",
+        "traits": [
+          "Intellect",
+          "Cloth",
+          "Mana and Corruption"
+        ]
+      }
+    ],
+    "names": {
+      "first": [
+        "Aldric",
+        "Bryn",
+        "Cael",
+        "Dorrin",
+        "Edda",
+        "Fenn",
+        "Garrow",
+        "Hale",
+        "Isolde",
+        "Jory",
+        "Kestrel",
+        "Lorne",
+        "Maud",
+        "Nessa",
+        "Osric",
+        "Perrin",
+        "Quill",
+        "Rowan",
+        "Sable",
+        "Tamsin",
+        "Ulric",
+        "Vesna",
+        "Wren",
+        "Yorick"
+      ],
+      "last": [
+        "Ashford",
+        "Blackmere",
+        "Coldwater",
+        "Duskhollow",
+        "Emberly",
+        "Fallowe",
+        "Greyholt",
+        "Hollin",
+        "Ironside",
+        "Marsh",
+        "Nettle",
+        "Ravenscar",
+        "Stour",
+        "Thorne",
+        "Wexley"
+      ]
+    }
   }
 }

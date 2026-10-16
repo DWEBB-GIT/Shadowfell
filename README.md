@@ -5,7 +5,15 @@ A small dark fantasy action RPG prototype built to the *Shadowfall Game Design &
 ## Launch
 
 1. Open `index.html` in Chrome or Edge (double-click it, or drag it into the browser window).
-2. Choose **Begin**, or **Continue** if you have a save.
+2. Choose **New character**, or **Continue** to play your last character.
+
+### Title screen and characters (alpha)
+
+- **Title screen:** Continue (names your last character), Characters, New character and Controls.
+- **Character creation:** pick a class (the Warden for now; the Ranger and Occultist are shown as coming later), type a name or roll one with the dice (gamepad Y), then **Create and enter**. Names are one or two words of letters and must be unique.
+- **Character select:** your characters with their level, class and where they stand, latest first. Enter world (or double-click), Create new, or Delete (asks first, and removes that save). Up to 10 characters.
+- **Saves:** each character has its own save in the browser. The first character keeps the old save key, so a save from before this build shows up as a character called Warden. **Settings → Save and return to characters** logs out.
+- The keyboard (arrows, Enter, Esc, Del) and the gamepad (D-pad or stick, A, B, Y) drive every screen. Title text, classes and the name lists are in `data/text.json` under `title`.
 
 No install, web server or internet connection is needed. Three.js and every Blender model are bundled into `dist/shadowfall.js`, so the game also runs offline.
 

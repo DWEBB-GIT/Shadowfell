@@ -76,6 +76,7 @@ const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved s
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
 const isStr = (v) => typeof v === 'string' && v.length > 0;
+const isStrList = (v) => Array.isArray(v) && v.every(isStr);
 const isVec2 = (v) => Array.isArray(v) && v.length === 2 && v.every(isNum);
 
 // Turn a list of records into a map by id, noting missing and repeated ids.
@@ -583,6 +584,25 @@ export function validateGameData(raw, opts = {}) {
 
   // ---- text
   if (!isStr(textF.intro)) errors.push('text.json: needs an intro');
+  const ttl = textF.title;
+  if (!ttl || typeof ttl !== 'object') errors.push('text.json: needs a title section (title screen and character creation)');
+  else {
+    if (!isStr(ttl.build) || !isStr(ttl.tagline)) errors.push('text.json title: needs a build label and a tagline');
+    if (!(isInt(ttl.maxCharacters) && ttl.maxCharacters >= 1)) errors.push('text.json title: maxCharacters must be a whole number of at least 1');
+    const classes = Array.isArray(ttl.classes) ? ttl.classes : [];
+    if (!classes.some((c) => c.archetype)) errors.push('text.json title: at least one class needs a playable archetype');
+    const seen = new Set();
+    for (const c of classes) {
+      const w = `text.json title class ${c.id}`;
+      if (!isStr(c.id) || seen.has(c.id)) errors.push(`${w}: needs a unique id`);
+      seen.add(c.id);
+      if (!isStr(c.name) || !isStr(c.role) || !isStr(c.blurb) || !isStrList(c.traits)) errors.push(`${w}: needs a name, role, blurb and a list of traits`);
+      if (c.archetype !== undefined && !archetypes[c.archetype]) errors.push(`${w}: names unknown archetype ${c.archetype}`);
+    }
+    const n = ttl.names || {};
+    if (!isStrList(n.first) || !n.first.length || !isStrList(n.last) || !n.last.length) errors.push('text.json title: names needs non-empty first and last lists');
+    else if ([...n.first, ...n.last].some((x) => !/^[A-Z][a-z]{1,11}$/.test(x))) errors.push('text.json title: every name must be a capitalised word of 2 to 12 letters');
+  }
   for (const [id, d] of Object.entries(documents)) if (!isStr(d.title) || !Array.isArray(d.body)) errors.push(`text.json document ${id}: needs a title and a body (a list of paragraphs)`);
 
   return errors;

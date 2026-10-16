@@ -98,6 +98,7 @@ export const CONFIG = {
     fov: 45,
     followSharpness: 8, // higher = tighter follow
     renderScale: 0.62, // chunky, period-appropriate pixels
+    showcase: { distance: 5.2, side: 1.3, height: 1.7, lookHeight: 1.0 }, // character select: in front of the character, a little to one side
   },
   targeting: {
     range: 26, // Tab / R3 cycle through enemies this close
