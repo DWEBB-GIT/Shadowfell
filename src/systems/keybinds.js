@@ -1,7 +1,7 @@
 // Key bindings (Settings, O). Every action has one or more keys; players can
 // change them in the Settings window, or use Quick bind (as WoW's /kb): hover
 // a spell or utility bar slot and press a key. Bindings are kept in the
-// browser with the other settings. Movement stays on WASD.
+// browser with the other settings. Movement stays on WASD and the arrow keys.
 
 const KEY = 'shadowfall.keys';
 
@@ -29,7 +29,7 @@ export const KEY_ACTIONS = [
 ];
 
 // keys nobody may take: movement, Escape and the mouse
-const RESERVED = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Escape']);
+const RESERVED = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape']);
 
 // how a key code reads on a button: Digit1 -> 1, KeyQ -> Q, Space -> Space
 export function keyLabel(code) {

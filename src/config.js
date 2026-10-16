@@ -10,7 +10,7 @@ import { SCALING, scaledEnemy } from './data/scaling.js';
 export const CONFIG = {
   player: {
     archetype: 'warden',
-    speed: 6.5, // metres per second: a run by default, as in WoW (was a 5 m/s walk)
+    speed: 5.6, // metres per second: a run (Dan, 2026-10-16: 6.5 felt too fast)
     runGait: 1.3, // the run animation: quicker, longer strides than a walk
     radius: 0.4,
     startCoins: 8,
@@ -60,6 +60,7 @@ export const CONFIG = {
     healthBase: 40,
     healthPerStamina: 6,
     manaPerIntellect: 10,
+    rangedPowerShare: 0.5, // bows: Agility x powerPerMainStat x this is ranged power
     powerPerMainStat: 0.25, // damage added to every weapon hit (per 0.6 s of swing time)
     spellPowerPerIntellect: 0.25,
     critBase: 5, // percent, plus Agility / (scaling.critAgility x (level + 4))

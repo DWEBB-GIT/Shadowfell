@@ -276,7 +276,10 @@ export class Player {
         this.tryStrike(controls.aim);
         this.tryStrikeOff(controls.aim);
       }
-      if (a.shoot) this.tryShoot(controls.aim);
+      // Auto Shot needs you to stand still (WoW Classic): moving calls off a
+      // draw, and the next one starts once you stop
+      if (speed01 > 0 && this.pendingShot) this._cancelShot();
+      if (a.shoot && speed01 === 0) this.tryShoot(controls.aim);
       if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
       if (a.cook) this.game.hud.items.toggle('cooking');
@@ -382,7 +385,8 @@ export class Player {
   // time the ranged clock (cooldowns.ranged, T = bow speed / (1 + haste))
   // runs out. The draw starts early so the arrow leaves the string as the
   // clock runs out; it flies to the target and does its damage on arrival.
-  // You can shoot on the move, and nothing locks you in place.
+  // You must stand still to shoot (WoW Classic; Dan, 2026-10-16), but
+  // nothing locks you in place: moving just calls the draw off.
   tryShoot(aim) {
     if (this.pendingShot || this.casting || this.lunge) return false;
     const stats = this.game.stats;
@@ -400,6 +404,11 @@ export class Player {
     this.rig.play('shoot', t + 0.35, t / (t + 0.35));
     this.rig.action.auto = true;
     return true;
+  }
+
+  _cancelShot() {
+    this.pendingShot = null;
+    if (this.rig.action?.type === 'shoot') this.rig.action = null;
   }
 
   // The arrow leaves the string, if the target is still beyond melee reach

@@ -28,7 +28,7 @@
     {
       "id": "autoShot",
       "name": "Auto Shot",
-      "range": 26,
+      "range": 20,
       "target": "enemy",
       "tuning": {
         "draw": 0.45,
@@ -44,7 +44,7 @@
       "ranged": true,
       "school": "physical",
       "target": "enemy",
-      "range": 26,
+      "range": 20,
       "desc": "An instant arrow from your bow at your target, for 120% of a bow shot. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown. 6 second cooldown.",
       "tuning": {
         "cooldown": 6,
@@ -61,7 +61,7 @@
       "ranged": true,
       "school": "nature",
       "target": "enemy",
-      "range": 26,
+      "range": 20,
       "desc": "An instant poisoned arrow: your target takes nature damage every 3 seconds for 15 seconds (5 ticks of 30% of a bow shot). Using it again refreshes the poison. Needs a bow in your ranged slot and uses one arrow. Triggers the global cooldown.",
       "tuning": {
         "cooldown": 0,

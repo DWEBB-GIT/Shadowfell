@@ -2,7 +2,7 @@
 // one-shot presses, so a press is never processed twice.
 
 const GAME_KEYS = new Set([
-  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight',
+  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight',
   'KeyQ', 'KeyE', 'KeyI', 'KeyK', 'KeyM', 'KeyB', 'KeyC', 'KeyP', 'Tab', 'Escape', 'Enter',
   'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyL',
 ]);
@@ -81,14 +81,15 @@ export class Input {
     this.mouse.rightClicked = false;
   }
 
-  // Movement axis in world space: W is north (-z), D is east (+x).
+  // Movement axis in world space: W is north (-z), D is east (+x); the
+  // arrow keys move too.
   moveAxis() {
     let x = 0;
     let z = 0;
-    if (this.isHeld('KeyW')) z -= 1;
-    if (this.isHeld('KeyS')) z += 1;
-    if (this.isHeld('KeyA')) x -= 1;
-    if (this.isHeld('KeyD')) x += 1;
+    if (this.isHeld('KeyW') || this.isHeld('ArrowUp')) z -= 1;
+    if (this.isHeld('KeyS') || this.isHeld('ArrowDown')) z += 1;
+    if (this.isHeld('KeyA') || this.isHeld('ArrowLeft')) x -= 1;
+    if (this.isHeld('KeyD') || this.isHeld('ArrowRight')) x += 1;
     const len = Math.hypot(x, z);
     if (len > 0) {
       x /= len; // diagonal input is normalised

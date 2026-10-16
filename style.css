@@ -138,6 +138,11 @@ kbd {
 .etrack { height: 6px; background: #0b0908; border: 1px solid #000; outline: 1px solid var(--border-dim); }
 .ebar.elite .etrack { height: 8px; outline-color: var(--border); }
 .efill { height: 100%; width: 100%; background: #8e2a20; }
+.etrack { position: relative; }
+.ehp { display: none; position: absolute; inset: -4px 0 0 0; font-size: 10px; line-height: 14px; color: #f4ead0; text-shadow: 0 0 2px #000, 0 0 2px #000; white-space: nowrap; }
+.ebar.targeted { width: 96px; }
+.ebar.targeted .etrack { height: 12px; }
+.ebar.targeted .ehp { display: block; inset: 0; line-height: 12px; }
 .ebar.winding .etrack { outline-color: #d0a050; }
 /* cast bar under a telegraphing enemy, as in FFXIV */
 .ecast { display: none; position: relative; height: 9px; margin-top: 3px; background: #0b0908; border: 1px solid #000; outline: 1px solid #6b5532; }

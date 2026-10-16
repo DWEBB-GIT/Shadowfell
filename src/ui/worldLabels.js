@@ -4,7 +4,8 @@ import { ITEMS, RARITY, itemView } from '../data/items.js';
 // Text over things in the world, kept in one pooled HTML layer: the names of
 // items lying on the ground in their rarity colour (as in WoW and Diablo),
 // and nameplates over townsfolk (with their title) and enemies (until their
-// health bar, which carries the name, takes over). Settings (O) hide either.
+// health bar, which carries the name, takes over), and your own name over
+// your character. Settings (O) hide each.
 
 const RANGE = 18; // metres from the Warden
 
@@ -20,7 +21,10 @@ export class WorldLabels {
 
   _names() {
     const out = [];
-    const { settings, npcs, enemies, hud, worldState } = this.game;
+    const { settings, npcs, enemies, hud, player, character } = this.game;
+    if (settings.get('playerName') && character?.name && !player.dead) {
+      out.push({ text: character.name, colour: '#f0e6c8', x: player.position.x, y: player.position.y + 2.15, z: player.position.z, cls: 'name-label player' });
+    }
     if (!settings.get('names')) return out;
     for (const n of npcs.list) {
       const title = n.def.title ? `<${n.def.title}>` : '';

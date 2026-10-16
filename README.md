@@ -51,7 +51,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - Auto attack opens with an instant blow the moment you reach the target, then swings on the weapon's timer. The swing bar fills as each blow lands.
 - No animation lock: you move at full speed while swinging, shooting and using abilities, and a swing on its way never eats a key press. Abilities pressed in the last 0.4 s of the global cooldown are queued.
 - Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
-- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer, on the move too; arrows fly and hit on arrival. In melee reach the sword takes over.
+- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer while you stand still; arrows fly and hit on arrival. In melee reach the sword takes over.
 - **Arrows and quivers:** each shot uses an arrow (sold by the hundred: rough from Mara or Tam, barbed from Tam, which hit harder). Tam's leather quiver goes in a bag slot, holds only arrows and makes Auto Shot 10% faster.
 - **Bow abilities:** Quick Shot (instant arrow, 120% of a bow shot) and Venom Arrow (instant poison, 5 ticks over 15 s). Both use an arrow and appear on keys 6 and 7 when you first equip a bow.
 
@@ -206,7 +206,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 
 | Keyboard and mouse | Gamepad | Action |
 |---|---|---|
-| WASD | Left stick | Move |
+| WASD or arrow keys | Left stick | Move |
 | Mouse | Right stick | Aim (with no stick input, you aim the way you face) |
 | Tab | R3 (stick click) | Next target |
 | Left click | | Select an enemy or townsperson; loot a body or drop |
@@ -229,7 +229,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
 
-Every keyboard key above except WASD, Esc and M can be changed in Settings (O).
+Every keyboard key above except WASD, the arrow keys, Esc and M can be changed in Settings (O).
 
 **Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
 

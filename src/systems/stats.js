@@ -55,6 +55,13 @@ export class Stats {
     return this.totals[this.archetype.mainStat] * S().powerPerMainStat;
   }
 
+  // Ranged attack power comes from Agility, at half the rate of a main stat
+  // (a WoW warrior's 1 per Agility against a hunter's 2): a Strength
+  // fighter's bow is for pulling, not for killing
+  get rangedPower() {
+    return this.totals.agility * S().powerPerMainStat * S().rangedPowerShare;
+  }
+
   get spellPower() {
     return this.totals.intellect * S().spellPowerPerIntellect;
   }
@@ -166,7 +173,7 @@ export class Stats {
   }
 
   swingPowerFor(hand) {
-    return (this.power * this.handSpeed(hand)) / CONFIG.attack.abilityWeaponSeconds;
+    return ((hand === 'ranged' ? this.rangedPower : this.power) * this.handSpeed(hand)) / CONFIG.attack.abilityWeaponSeconds;
   }
 
   // what one swing of that hand does before crits and armour

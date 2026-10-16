@@ -213,7 +213,7 @@ async function launchAndMovement(browser) {
   b = (await state(page)).pos;
   const diag = Math.hypot(b.x - a.x, b.z - a.z);
   await sim(page, 1.5); // let the camera settle
-  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 6.5, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
+  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 5.6, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
 
   const cam = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -236,7 +236,7 @@ async function launchAndMovement(browser) {
 
   // world boundaries: walk into each edge for a long time
   const edges = [
-    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 42], [['KeyW'], -6, -112],
+    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 96], [['KeyW'], -6, -112],
   ];
   const out = [];
   let inside = true;
@@ -244,7 +244,7 @@ async function launchAndMovement(browser) {
     await setup(page, { x, z });
     await sim(page, 6, { held: keys, fps: 30 });
     const s = await state(page);
-    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -125 && s.pos.z <= 47;
+    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -125 && s.pos.z <= 100;
     inside = inside && ok;
     out.push(`${keys[0].slice(3)}→(${s.pos.x.toFixed(1)}, ${s.pos.z.toFixed(1)})`);
   }
@@ -376,7 +376,7 @@ async function combat(browser) {
   await sim(page, 0.5, { held: ['KeyD', 'ShiftLeft'], press: ['ShiftLeft'] });
   const ns = (await state(page)).pos;
   const walked = Math.hypot(ns.x - noSprint.x, ns.z - noSprint.z);
-  record('No dodge or sprint: Shift does nothing special', near(walked, 3.25, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (running is 6.5 m/s)`);
+  record('No dodge or sprint: Shift does nothing special', near(walked, 2.8, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (running is 5.6 m/s)`);
 
   // pursuit and attack with normal AI
   await page.evaluate(() => {
@@ -1377,7 +1377,7 @@ async function controls(browser) {
     const [ox, oy, oz] = g.config.camera.offset;
     return { yaw: g.camYaw, off: [c.x - t.x - ox, c.y - t.y - oy, c.z - t.z - oz].map((v) => Math.abs(v)) };
   });
-  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -6.5, 0.2) && near(b.x - a.x, 0, 0.2),
+  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -5.6, 0.2) && near(b.x - a.x, 0, 0.2),
     `camera holds its isometric offset; W moved (${(b.x - a.x).toFixed(2)}, ${(b.z - a.z).toFixed(2)}), straight up the screen`);
 
   // nothing selected: a faint ring shows who an ability would go to
@@ -3977,15 +3977,20 @@ async function wowCombat(browser) {
   await sim(page, 0.4);
   await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'auto-shot.png') });
-  await sim(page, 1.2, { held: ['KeyA'] });
-  await sim(page, 2 * eq.T - 0.6);
+  // moving holds Auto Shot (WoW Classic): no arrow leaves while you walk
+  const walkFrom = await page.evaluate(() => window.__shadowfall.__shots.length);
+  await sim(page, (eq.T + 0.4) / 2, { held: ['ArrowLeft'] });
+  await sim(page, (eq.T + 0.4) / 2, { held: ['ArrowRight'] });
+  const walkShots = (await page.evaluate(() => window.__shadowfall.__shots.length)) - walkFrom;
+  await sim(page, 2 * eq.T + 0.6);
   const bow = await page.evaluate(() => ({ shots: window.__shadowfall.__shots, hits: window.__shadowfall.__hits.filter((h) => h.hand === 'ranged').map((h) => h.t) }));
   const flight = bow.hits.length ? +(bow.hits[0] - bow.shots[0]).toFixed(2) : null;
   const left = await page.evaluate(() => window.__shadowfall.inventory.count('rough_arrow'));
   record('Each shot uses one arrow', left === 100 - bow.shots.length, `${bow.shots.length} shots, ${left} of 100 arrows left`);
-  const gap = bow.shots.length > 1 ? +(bow.shots[1] - bow.shots[0]).toFixed(2) : null;
+  const gap = bow.shots.length > 2 ? +(bow.shots.at(-1) - bow.shots.at(-2)).toFixed(2) : null;
   record('A bow goes in the ranged slot; with the target beyond melee reach, Auto Shot fires on the bow\'s own timer', eq.ok && bow.shots.length >= 3 && near(gap, eq.T, 0.05) && /Auto Shot/.test(bar.text) && bar.inHand, `${eq.bow}: shots at ${bow.shots.join(', ')} (every ${eq.T.toFixed(1)} s); bar "${bar.text}"`);
-  record('Arrows fly to the target and hit on arrival; you can shoot on the move', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits while strafing`);
+  record('Arrows fly to the target and hit on arrival', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits`);
+  record('Auto Shot needs you to stand still: walking (arrow keys) holds it, and it resumes when you stop', walkShots === 0 && bow.shots.length >= walkFrom + 2, `${walkShots} shots while walking ${(eq.T + 0.4).toFixed(1)} s; ${bow.shots.length} shots in all`);
 
   // the target comes into reach: the sword takes over
   await page.evaluate(() => { const g = window.__shadowfall; const p = g.player.position; g.enemies.byId('ghoul_road').position.set(p.x, 0, p.z - 1.6); g.__hits = []; });
@@ -4031,6 +4036,12 @@ async function wowCombat(browser) {
     return { rough: hit('rough_arrow'), barbed: hit('barbed_arrow') };
   });
   record('Better arrows hit harder', dmg.barbed > dmg.rough, `rough ${dmg.rough}, barbed ${dmg.barbed}`);
+  const dps = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const per = (h) => { const [lo, hi] = g.stats.swingRangeFor(h); return +((lo + hi) / 2 / g.stats.attackCooldownFor(h)).toFixed(1); };
+    return { sword: per('main'), bow: per('ranged'), ghoul: g.enemies.byId('ghoul_road').maxHealth };
+  });
+  record("A Warden's bow is for pulling: well under half the sword's damage a second (Agility, not Strength, powers it)", dps.bow < dps.sword * 0.5, `sword ${dps.sword}/s, bow ${dps.bow}/s (ghoul health ${dps.ghoul})`);
 
   // bow abilities: Quick Shot (instant) and Venom Arrow (instant poison)
   const onBar = await page.evaluate(() => ['quickShot', 'venomArrow'].map((a) => window.__shadowfall.actionBar.slots.indexOf(a)));
@@ -4191,7 +4202,43 @@ async function titleAndCharacters(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
+async function playtest3(browser) {
+  current = 'Playtest batch 3';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -4, { frozen: true });
+  const heads = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.select(g.enemies.byId('ghoul_road'));
+    g.events.emit('damageNumber', { target: g.player, amount: 7, kind: 'taken' });
+    g.events.emit('damageNumber', { target: g.enemies.byId('ghoul_road'), amount: 5, kind: 'dealt' });
+    return true;
+  });
+  await sim(page, 0.1);
+  const ui = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const hp = [...document.querySelectorAll('.ebar.targeted .ehp')].map((e) => e.textContent);
+    const taken = [...document.querySelectorAll('#damage-numbers .dmg.taken')].map((e) => e.textContent);
+    const dealt = [...document.querySelectorAll('#damage-numbers .dmg.dealt')].map((e) => e.textContent);
+    const name = [...document.querySelectorAll('.wlabel.player')].filter((e) => !e.hidden).map((e) => e.textContent);
+    g.settings.set('playerName', false);
+    return { hp, taken, dealt, name, who: g.character?.name };
+  });
+  await sim(page, 0.05);
+  const off = await page.evaluate(() => { const n = [...document.querySelectorAll('.wlabel.player')].filter((e) => !e.hidden).length; window.__shadowfall.settings.set('playerName', true); return n; });
+  record('The selected enemy shows its health in numbers on its bar', ui.hp.length === 1 && /^\d+ \/ \d+$/.test(ui.hp[0]), JSON.stringify(ui.hp));
+  record('Damage you take shows with a minus sign; damage you deal does not', ui.taken.includes('-7') && ui.dealt.includes('5'), `taken ${ui.taken}, dealt ${ui.dealt}`);
+  record('Your name shows over your character, and Settings turns it off', ui.name.length === 1 && ui.name[0] === ui.who && off === 0, `${JSON.stringify(ui.name)} (character ${ui.who}); with the setting off: ${off}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'names-and-health.png') });
+
+  record('No script errors (playtest batch 3)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

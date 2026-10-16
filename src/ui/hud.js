@@ -416,7 +416,8 @@ export class Hud {
       $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
       const ammo = h === 'ranged' ? this.game.inventory.ammo : null;
       const arrows = h === 'ranged' ? (ammo ? ` · ${this.game.inventory.count(ammo)} arrows` : ' · no arrows') : '';
-      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}  ${left.toFixed(1)}`;
+      const still = h === 'ranged' && player.moving && ammo ? ' · stand still to shoot' : '';
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}${still}  ${left.toFixed(1)}`;
     };
     showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
     showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
@@ -512,7 +513,7 @@ export class Hud {
       if (!bar) {
         bar = document.createElement('div');
         bar.className = 'ebar' + (e.cfg.elite ? ' elite' : '');
-        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
+        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div><span class="ehp"></span></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
         this.el.bars.appendChild(bar);
         this.enemyBars.set(e.id, bar);
       }
@@ -524,6 +525,12 @@ export class Hud {
       if (e.cfg.mana) bar.querySelector('.emana-fill').style.width = `${(e.mana / e.cfg.mana) * 100}%`;
       bar.classList.toggle('winding', e.windup > 0 || !!e.casting);
       bar.classList.toggle('targeted', e === t);
+      // the selected enemy's bar shows its health in numbers (WoW)
+      if (e === t) {
+        const hp = `${Math.ceil(e.health)} / ${e.maxHealth}`;
+        const el = bar.querySelector('.ehp');
+        if (el.textContent !== hp) el.textContent = hp;
+      }
       bar.classList.toggle('nemesis', nemesis);
       // FFXIV-style cast bar under the name while a telegraphed attack winds up
       const cast = e.casting;
