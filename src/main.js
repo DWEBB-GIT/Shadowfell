@@ -288,6 +288,7 @@ class Game {
     this.hud.hideTitle();
     this.hud.refreshObjective();
     this.started = true;
+    this.hud._layoutBottom(); // the spell bar settles before the first frame
     this._snapCamera();
     if (resumed) this.hud.log('You take up the road again.', 'lore');
     else this.hud.log('The Fallen Road. Somewhere ahead lies the old watch post.', 'lore');

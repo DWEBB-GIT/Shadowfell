@@ -3032,11 +3032,11 @@ async function targetAndUi(browser) {
   // skills panel
   await page.evaluate(() => { const g = window.__shadowfall; g.skills.ranks.set('fishing', 7); g.events.emit('skillsChanged', {}); });
   await sim(page, 0.05, { press: ['KeyU'] });
-  const skills = await page.evaluate(() => [...document.querySelectorAll('#skills-list .skill-tile')].map((t) => t.textContent));
+  const skills = await page.evaluate(() => [...document.querySelectorAll('#skills-list .prof-row')].map((t) => t.querySelector('.prof-top').textContent));
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'skills-and-target.png') });
   await sim(page, 0.05, { press: ['KeyU'] });
-  record('The skills panel (U) shows each skill and its level', skills.some((t) => /Fishing7 \/ 50/.test(t)) && skills.some((t) => /CampingNot learned/.test(t)), skills.join(' | '));
+  record('The Professions panel (U) shows each profession and its level', skills.some((t) => /Fishing7 \/ 50/.test(t)) && skills.some((t) => /CampingNot learned/.test(t)), skills.join(' | '));
   record('No script errors (targets, tooltips, stats and skills)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3502,12 +3502,13 @@ async function uiLayout(browser) {
     const coins = document.querySelector('#right-dock .coins').getBoundingClientRect();
     return {
       menus: [...document.querySelectorAll('#micro-bar .micro')].map((b) => b.dataset.tip),
-      centred: Math.abs((bar.left + bar.right) / 2 - innerWidth / 2) < 2,
+      // centred, or moved left just enough to clear the bottom-right dock
+      centred: Math.abs((bar.left + bar.right) / 2 - innerWidth / 2) < 2 || r('right-dock').left - document.getElementById('bottom-bar').getBoundingClientRect().right < 14,
       coinsRight: innerWidth - coins.right < 20,
       overlap: bar.right > r('right-dock').left,
     };
   });
-  record('The spell bar is centred; money sits on the far right; the menu is Character, Spells, Talents, Quest Log, Settings', layout.centred && layout.coinsRight && !layout.overlap && layout.menus.map((t) => t.replace(/ \(.*\)$/, '')).join(',') === 'Character,Spells,Talents,Quest Log,Settings', JSON.stringify(layout));
+  record('The spell bar is centred (or just clear of the bottom-right dock); money sits on the far right; the menu is Character, Spells, Professions, Talents, Quest Log, Settings', layout.centred && layout.coinsRight && !layout.overlap && layout.menus.map((t) => t.replace(/ \(.*\)$/, '')).join(',') === 'Character,Spells,Professions,Talents,Quest Log,Settings', JSON.stringify(layout));
 
   // rebinding: slot 1 to Z, then Z casts what is in slot 1
   const rebind = await page.evaluate(() => {
