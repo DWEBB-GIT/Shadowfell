@@ -86,6 +86,8 @@ import dace from '../../assets/models/dace.glb';
 import eel from '../../assets/models/eel.glb';
 import old_boot from '../../assets/models/old_boot.glb';
 import chest from '../../assets/models/chest.glb';
+import signpost from '../../assets/models/signpost.glb';
+import sign_arm from '../../assets/models/sign_arm.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
@@ -98,6 +100,7 @@ const SOURCES = {
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
   tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
   arming_sword, militia_sword, dirk, bone_knife, hunting_bow, arrow, arrow_bundle, arrow_bundle_barbed, quiver,
+  signpost, sign_arm,
   cooked_fish, steak, stew, innkeeper, inn_shell, inn_front, inn_roof, cottage, well, lamp_post,
 };
 

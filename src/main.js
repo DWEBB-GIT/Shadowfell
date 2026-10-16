@@ -1,4 +1,5 @@
 import { CURSORS } from './ui/cursors.js';
+import { SIGNPOSTS } from './world/signposts.js';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Events } from './core/events.js';
@@ -343,6 +344,11 @@ class Game {
     }
     for (const n of npcs.list) consider('npc', n, screen(n.position.x, n.position.y + 1, n.position.z));
     for (const c of this.chests.list) if (!this.chests.opened(c)) consider('chest', c, screen(c.x, heightAt(c.x, c.z) + 0.4, c.z));
+    for (const sp of SIGNPOSTS) {
+      const [x, z] = sp.position;
+      const y = heightAt(x, z);
+      consider('sign', sp, Math.min(screen(x, y + 1.0, z), screen(x, y + 1.9, z)));
+    }
     for (const l of loot.lootables()) {
       const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
       if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
@@ -388,7 +394,9 @@ class Game {
     }
     const { player, events, targeting, loot } = this;
     const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
-    if (pick.kind === 'chest') {
+    if (pick.kind === 'sign') {
+      this.hud.showSignpost(pick.obj);
+    } else if (pick.kind === 'chest') {
       if (far(pick.obj.x, pick.obj.z, 2.4)) this.hud.error('You need to be closer to interact with that target.');
       else this.chests.open(pick.obj);
     } else if (pick.kind === 'loot') {

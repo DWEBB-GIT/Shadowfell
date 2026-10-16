@@ -648,3 +648,12 @@ body.ghost #prompt { color: #cfe6ff; }
 #title-create #class-detail { position: fixed; right: 28px; top: 50%; transform: translateY(-50%); width: 320px; }
 #title-create .select-actions .btn { flex: none; }
 @media (max-width: 1000px) { #title-create #class-detail { position: static; transform: none; width: min(460px, 90vw); } }
+
+/* signposts: the card when read, and the hover tooltip's lines */
+#signpost-card { position: absolute; left: 50%; top: 16%; transform: translateX(-50%); min-width: 260px; padding: 10px 16px 12px; background: rgba(28, 20, 12, 0.94); border: 1px solid var(--border); box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0, 0, 0, 0.6); pointer-events: none; }
+#signpost-card[hidden] { display: none; }
+.sign-head { text-align: center; color: var(--gold); letter-spacing: 2px; font-size: 13px; text-transform: uppercase; margin-bottom: 6px; }
+.sign-line { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
+.sign-arrow { width: 18px; text-align: center; color: var(--gold); font-size: 16px; }
+.sign-to { flex: 1; color: var(--text); }
+.sign-far { color: var(--text-dim, #9a8f7a); font-size: 12px; }

@@ -1,4 +1,5 @@
 import { DB } from '../data/db.js';
+import { signpostLines } from '../world/signposts.js';
 import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durability } from '../data/items.js';
 import { moneyHTML } from './money.js';
 import { SETTINGS } from '../systems/settings.js';
@@ -557,7 +558,7 @@ export class ItemUI {
   // pick (or null). Item and button tooltips come first.
   worldTip(pick) {
     if (this.tipFrom === 'ui' && !this.el.tooltip.hidden) return;
-    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc') ? pick.obj : null;
+    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc' || pick.kind === 'sign') ? pick.obj : null;
     if (!key) {
       if (this.tipFrom === 'world') {
         this.el.tooltip.hidden = true;
@@ -568,7 +569,9 @@ export class ItemUI {
     }
     this.tipFrom = 'world';
     const health = key.cfg ? `${Math.ceil(key.health)} / ${key.maxHealth}` : '';
-    const html = key.cfg
+    const html = pick.kind === 'sign'
+      ? `<div class="tt-name">Signpost</div>${signpostLines(key).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span> ${l.label} <span class="tt-kind">${l.metres} m ${l.dir}</span></div>`).join('')}`
+      : key.cfg
       ? `<div class="tt-name tt-foe">${key.cfg.name}</div><div>Level ${key.cfg.level || 1}${key.cfg.elite ? ' Elite' : ''}</div><div class="tt-kind">${health} health</div>`
       : `<div class="tt-name tt-friend">${key.name}</div>${key.def.title ? `<div class="tt-kind">&lt;${key.def.title}&gt;</div>` : ''}<div>Level ${key.def.level || 1}</div>`;
     if (this.tipKey !== key || this.tipHtml !== html) {

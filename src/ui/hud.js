@@ -1,4 +1,5 @@
 import { moneyText, moneyHTML } from './money.js';
+import { signpostLines } from '../world/signposts.js';
 import { Portraits } from './portraits.js';
 import { WorldLabels } from './worldLabels.js';
 import { KeybindUI } from './keybindUI.js';
@@ -249,8 +250,13 @@ export class Hud {
       if (force) this.items.closeAll();
       return true;
     }
+    const sign = !!this.signpost;
+    if (sign) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
     const talk = this.quests.closeAll();
-    return this.items.closeAll() || talk;
+    return this.items.closeAll() || talk || sign;
   }
 
   // ------------------------------------------------------------- feedback
@@ -282,6 +288,32 @@ export class Hud {
 
   // A WoW-style error in red in the middle of the screen ("Out of range"):
   // it shows at once and fades; the same message again only restarts it.
+  // A signpost read (E, or a click on it): where its arms point, on screen
+  // until you walk away from it.
+  showSignpost(sp) {
+    let el = document.getElementById('signpost-card');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'signpost-card';
+      document.getElementById('hud').appendChild(el);
+    }
+    el.innerHTML = `<div class="sign-head">Signpost</div>${signpostLines(sp).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span><span class="sign-to">${l.label}</span><span class="sign-far">${l.metres} m ${l.dir}</span></div>`).join('')}`;
+    el.hidden = false;
+    this.signpost = { sp, at: this.game.player.position.clone() };
+    this.game.events.emit('signpostRead', { id: sp.id });
+  }
+
+  _updateSignpost() {
+    if (!this.signpost) return;
+    const { player } = this.game;
+    const [x, z] = this.signpost.sp.position;
+    const near = Math.hypot(player.position.x - x, player.position.z - z) < 6 || player.position.distanceTo(this.signpost.at) < 3;
+    if (!near) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
+  }
+
   error(text) {
     const el = document.getElementById('ui-error');
     el.textContent = text;
@@ -448,6 +480,7 @@ export class Hud {
       if (this.levelUpTime <= 0) lu.hidden = true;
     }
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
+    this._updateSignpost();
     this.refreshStats();
     this._refreshSlots();
     this._refreshSpells();

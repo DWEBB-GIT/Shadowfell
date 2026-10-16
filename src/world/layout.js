@@ -54,6 +54,8 @@ export const OBSCURED = DB.obscured;
 export const BUILDINGS = W.buildings || [];
 // Places that count as a cooking fire (the inn's hearth); a pitched camp counts too.
 export const STATIONS = W.stations || [];
+// road signposts: each arm points to a location (data/world.json `signposts`)
+export const SIGNPOSTS = W.signposts || [];
 // Ground flattened for a building: [x, z, radius].
 export const PADS = W.pads || [];
 

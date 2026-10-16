@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildTerrain, heightAt, distanceToRoad, distanceToMainRoad, seededRandom, blackwoodness } from './terrain.js';
 import { BOUNDS, regionById, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS, PADS } from './layout.js';
+import { SIGNPOSTS, signpostLines } from './signposts.js';
 
 const DEG = Math.PI / 180;
 
@@ -42,6 +43,7 @@ export class World {
     }
 
     this._buildBuildings();
+    this._buildSignposts();
     this._scatterWoodland();
     this._scatterGroundCover();
     this._addLights();
@@ -91,6 +93,25 @@ export class World {
   // Buildings you can walk into: the shell (floor, back walls, fittings), the
   // wall facing the camera and the roof, which fade away while you are inside
   // so the fixed camera can see in (see updateIndoors).
+  // a post, and an arm turned towards each place it names
+  _buildSignposts() {
+    const { assets, collision } = this.game;
+    for (const sp of SIGNPOSTS) {
+      const [x, z] = sp.position;
+      const y = heightAt(x, z);
+      const post = assets.instance('signpost');
+      post.position.set(x, y, z);
+      this.group.add(post);
+      signpostLines(sp).forEach((l, i) => {
+        const arm = assets.instance('sign_arm');
+        arm.position.set(x, y + 2.05 - i * 0.27, z);
+        arm.rotation.y = l.angle;
+        this.group.add(arm);
+      });
+      collision.add(x, z, 0.3);
+    }
+  }
+
   _buildBuildings() {
     const { assets } = this.game;
     this.buildings = [];

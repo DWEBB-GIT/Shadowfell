@@ -4316,6 +4316,36 @@ async function playtest3(browser) {
   record('Hovering over the fishing bob shows a fishing hook cursor', hook && /7 11/.test(cur.over) && !/7 11/.test(cur.away), `over the bob: ${cur.over.slice(-12)}; away: "${cur.away.slice(-12)}"`);
   await page.evaluate(() => window.__shadowfall.fishing.stop());
 
+  // signposts: hover for where they point, E to read them
+  await setup(page, { x: -4.6, z: 56 });
+  await sim(page, 0.2);
+  const sign = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.interaction.update();
+    const prompt = g.interaction.current?.prompt;
+    g.interaction.interact();
+    const card = document.getElementById('signpost-card');
+    const r = g.renderer.domElement.getBoundingClientRect();
+    const v = g.player.position.clone().set(-4.6, g.player.position.y + 1.5, 54).project(g.camera);
+    Object.assign(g.input.mouse, { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height, onCanvas: true });
+    const pick = g._pickUnderCursor();
+    g.hud.items.worldTip(pick);
+    return { prompt, card: card && !card.hidden ? card.innerText : null, pick: pick?.kind, tip: document.getElementById('tooltip')?.innerText || '' };
+  });
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'signpost.png') });
+  await sim(page, 1.6, { held: ['KeyS'] });
+  const gone = await page.evaluate(() => document.getElementById('signpost-card').hidden);
+  record('Signposts by the road: hovering shows where each arm points, and E reads it on screen until you walk on', sign.prompt === 'Read the signpost' && /Brackenford/.test(sign.card || '') && /Stillwater Mere/.test(sign.card || '') && sign.pick === 'sign' && /Signpost/.test(sign.tip) && gone, `prompt "${sign.prompt}"; card: ${(sign.card || '').replace(/\n/g, ' | ')}; hover: ${sign.pick}`);
+
+  // doors and signs: a look at the town
+  for (const [x, z, name] of [[-1, 72, 'inn-west'], [-4, 80, 'town-south']]) {
+    await setup(page, { x, z });
+    await sim(page, 0.3);
+    await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+    await page.screenshot({ path: path.join(HERE, 'screenshots', `${name}.png`) });
+  }
+
   record('No script errors (playtest batch 3)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }

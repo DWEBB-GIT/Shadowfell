@@ -505,5 +505,75 @@
     [-22, 62, 4.5],
     [-23, 82, 4.5],
     [20, 88, 4.5]
+  ],
+  "signposts": [
+    {
+      "id": "sign_brackenford",
+      "position": [-4.6, 54],
+      "points": [
+        {
+          "to": "brackenford"
+        },
+        {
+          "to": "cart",
+          "label": "The Fallen Road"
+        },
+        {
+          "to": "stillwater_mere"
+        }
+      ]
+    },
+    {
+      "id": "sign_mere",
+      "position": [8.6, 3],
+      "points": [
+        {
+          "to": "brackenford"
+        },
+        {
+          "to": "stillwater_mere"
+        },
+        {
+          "to": "watch_post"
+        }
+      ]
+    },
+    {
+      "id": "sign_fork",
+      "position": [9.6, -22.5],
+      "points": [
+        {
+          "to": "watch_post"
+        },
+        {
+          "to": "hound_den",
+          "label": "The Blackwood"
+        },
+        {
+          "to": "hallow_cut"
+        },
+        {
+          "to": "brackenford"
+        }
+      ]
+    },
+    {
+      "id": "sign_blackwood",
+      "position": [7.4, -47],
+      "points": [
+        {
+          "to": "hound_den"
+        },
+        {
+          "to": "barrow_hollow"
+        },
+        {
+          "to": "watch_post"
+        },
+        {
+          "to": "brackenford"
+        }
+      ]
+    }
   ]
 }

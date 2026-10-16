@@ -560,6 +560,15 @@ export function validateGameData(raw, opts = {}) {
     pos(`world.json station ${s.id}`, s.position);
     if (s.kind !== 'fire') errors.push(`world.json station ${s.id}: kind must be fire`);
   }
+  for (const s of worldF.signposts || []) {
+    const w = `world.json signpost ${s.id}`;
+    pos(w, s.position);
+    if (!Array.isArray(s.points) || !s.points.length || s.points.length > 4) errors.push(`${w}: points must list 1 to 4 places`);
+    for (const p of s.points || []) {
+      ref(w, 'location', locations, p.to);
+      if (p.label !== undefined && !isStr(p.label)) errors.push(`${w}: a label must be text`);
+    }
+  }
   for (const p of worldF.pads || []) if (!(Array.isArray(p) && p.length === 3 && p.every(isNum))) errors.push('world.json pads: each must be [x, z, radius]');
 
   // ---- recipes (crafting skills: cooking)

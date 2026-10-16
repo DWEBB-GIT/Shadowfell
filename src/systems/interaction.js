@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { SHRINES, STATIONS } from '../world/layout.js';
+import { SIGNPOSTS } from '../world/signposts.js';
 import { EXAMINE } from '../data/text.js';
 
 // Finds the nearest thing the player can act on and runs it when E is
@@ -39,6 +40,9 @@ export class Interaction {
         if (st.kind !== 'fire') continue;
         list.push({ key: 'station:' + st.id, x: st.position[0], z: st.position[1], bias: 0.3, reach: st.radius, prompt: `Cook at ${st.name}`, run: () => this.game.hud.items.show('cooking') });
       }
+    }
+    for (const sp of SIGNPOSTS) {
+      list.push({ key: 'sign:' + sp.id, x: sp.position[0], z: sp.position[1], bias: 0.3, reach: 2.6, prompt: 'Read the signpost', run: () => this.game.hud.showSignpost(sp) });
     }
     for (const p of world.examinePoints) {
       const seen = worldState.examined.has(p.id);
