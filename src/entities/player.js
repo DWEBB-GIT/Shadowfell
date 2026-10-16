@@ -386,6 +386,11 @@ export class Player {
   tryShoot(aim) {
     if (this.pendingShot || this.casting || this.lunge) return false;
     const stats = this.game.stats;
+    // each shot uses an arrow; with none, Auto Shot does nothing
+    if (!this.game.inventory.ammo) {
+      this.game.events.emit('log', { text: 'You have no arrows. Buy them from Mara or Tam.', kind: 'muted', throttle: 'no-ammo' });
+      return false;
+    }
     const draw = Math.min(CONFIG.autoShot.draw, stats.attackCooldownFor('ranged') * 0.4);
     if (this.cooldowns.ranged > draw) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
@@ -406,10 +411,18 @@ export class Player {
       this.holdBow(false);
       return;
     }
+    const inv = this.game.inventory;
+    const ammo = inv.ammo;
+    if (!ammo) {
+      if (this.rig.action?.type === 'shoot') this.rig.action = null;
+      this.holdBow(false);
+      return;
+    }
+    inv.removeCount(ammo, 1);
     const late = Math.min(-p.t, dt, CONFIG.attack.catchUp);
     this.cooldowns.ranged = Math.max(0, this.game.stats.attackCooldownFor('ranged') - late);
     this.lastSwingAt = this.game.time;
-    this.game.combat.loosePlayerArrow(tg.current);
+    this.game.combat.loosePlayerArrow(tg.current, ammo);
   }
 
   // The bow rides on the back, and comes to the left hand to shoot (the

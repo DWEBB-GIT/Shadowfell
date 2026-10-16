@@ -423,7 +423,9 @@ export class Hud {
       const left = Math.max(0, pend ?? player.cooldowns[h === 'off' ? 'attackOff' : h === 'ranged' ? 'ranged' : 'attack']);
       const total = st.attackCooldownFor(h);
       $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
-      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}  ${left.toFixed(1)}`;
+      const ammo = h === 'ranged' ? this.game.inventory.ammo : null;
+      const arrows = h === 'ranged' ? (ammo ? ` · ${this.game.inventory.count(ammo)} arrows` : ' · no arrows') : '';
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}  ${left.toFixed(1)}`;
     };
     showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
     showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');

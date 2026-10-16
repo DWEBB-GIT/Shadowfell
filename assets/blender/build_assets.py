@@ -1308,6 +1308,38 @@ def build_bows():
     b.box((0.004, 0.1, 0.06), (0, 0.3, 0), P["cloth_red"], var=0.0)
     b.to_object("Arrow")
     export("arrow")
+    reset_scene()
+
+    def bundle(b, fletch):  # a bundle of arrows tied with twine, lying down
+        for i, (x, z) in enumerate([(-0.03, 0.03), (0.0, 0.035), (0.03, 0.03), (-0.015, 0.06), (0.015, 0.06)]):
+            b.box((0.014, 0.5, 0.014), (x, 0, z), P["wood"], var=0.05)
+            b.box((0.03, 0.05, 0.012), (x, -0.27, z), P["iron"], var=0.0)
+            b.box((0.04, 0.08, 0.006), (x, 0.22, z), fletch, var=0.05)
+        b.box((0.1, 0.03, 0.06), (0, 0.05, 0.045), P["rag"], var=0.0)
+
+    b = Builder()
+    bundle(b, P["cloth_red"])
+    b.to_object("ArrowBundle")
+    export("arrow_bundle")
+    reset_scene()
+
+    b = Builder()
+    bundle(b, P["black"])
+    b.box((0.11, 0.03, 0.065), (0, -0.12, 0.045), P["iron"], var=0.0)
+    b.to_object("ArrowBundleBarbed")
+    export("arrow_bundle_barbed")
+    reset_scene()
+
+    b = Builder()  # a leather quiver with fletchings showing at the top
+    b.cyl(0.07, 0.06, 0.55, (0, 0, 0.275), P["leather"], segs=10, var=0.06)
+    b.cyl(0.075, 0.075, 0.04, (0, 0, 0.53), P["leather_dark"], segs=10, var=0.0)
+    b.cyl(0.075, 0.075, 0.04, (0, 0, 0.05), P["leather_dark"], segs=10, var=0.0)
+    for x, y in [(-0.03, 0.0), (0.02, 0.03), (0.02, -0.03), (0.0, 0.0)]:
+        b.box((0.012, 0.012, 0.16), (x, y, 0.62), P["wood"], var=0.0)
+        b.box((0.035, 0.004, 0.07), (x, y, 0.66), P["cloth_red"], var=0.0)
+    b.box((0.02, 0.09, 0.5), (0, -0.075, 0.3), P["leather_dark"], var=0.0)  # strap
+    b.to_object("Quiver")
+    export("quiver")
 
 
 def build_cooking_items():

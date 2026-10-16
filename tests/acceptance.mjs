@@ -1850,7 +1850,8 @@ async function forge(browser) {
     g.step(1 / 60);
     return { current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, talking: g.dialogue.isOpen };
   }));
-  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === 7 && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
+  const maraStock = await page.evaluate(() => window.__shadowfall.db.shops.mara_forge.stock.length); // (from data/shops.json)
+  record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === maraStock && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -3957,7 +3958,12 @@ async function wowCombat(browser) {
     const r = g.inventory.move(loc, 'e:ranged');
     return { ok: r.ok, bow: g.inventory.rangedWeapon?.name, T: g.stats.attackCooldownFor('ranged') };
   });
+  // no arrows, no shots
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await sim(page, 1);
+  const dry = await page.evaluate(() => ({ shots: window.__shadowfall.__shots.length, text: document.getElementById('swing-text').textContent, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).filter((t) => /no arrows/.test(t)).length }));
+  record('Auto Shot needs arrows: with none it does not fire, and says so', dry.shots === 0 && /no arrows/.test(dry.text) && dry.log > 0, `${dry.shots} shots; bar "${dry.text}"`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.inventory.addItem('rough_arrow', 100, { quiet: true }); g.player.cooldowns.ranged = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 0.3);
   const bar = await page.evaluate(() => ({ text: document.getElementById('swing-text').textContent, inHand: window.__shadowfall.player.bowInHand }));
   await sim(page, 0.4);
@@ -3967,6 +3973,8 @@ async function wowCombat(browser) {
   await sim(page, 2 * eq.T - 0.6);
   const bow = await page.evaluate(() => ({ shots: window.__shadowfall.__shots, hits: window.__shadowfall.__hits.filter((h) => h.hand === 'ranged').map((h) => h.t) }));
   const flight = bow.hits.length ? +(bow.hits[0] - bow.shots[0]).toFixed(2) : null;
+  const left = await page.evaluate(() => window.__shadowfall.inventory.count('rough_arrow'));
+  record('Each shot uses one arrow', left === 100 - bow.shots.length, `${bow.shots.length} shots, ${left} of 100 arrows left`);
   const gap = bow.shots.length > 1 ? +(bow.shots[1] - bow.shots[0]).toFixed(2) : null;
   record('A bow goes in the ranged slot; with the target beyond melee reach, Auto Shot fires on the bow\'s own timer', eq.ok && bow.shots.length >= 3 && near(gap, eq.T, 0.05) && /Auto Shot/.test(bar.text) && bar.inHand, `${eq.bow}: shots at ${bow.shots.join(', ')} (every ${eq.T.toFixed(1)} s); bar "${bar.text}"`);
   record('Arrows fly to the target and hit on arrival; you can shoot on the move', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits while strafing`);
@@ -3976,6 +3984,45 @@ async function wowCombat(browser) {
   await sim(page, T + 0.4);
   const melee = await page.evaluate(() => window.__shadowfall.__hits.map((h) => h.hand));
   record('In melee reach the sword takes over from the bow', melee.includes('main') && !melee.slice(1).includes('ranged'), melee.join(', '));
+
+  // arrows by the hundred from a vendor, and a quiver
+  const shop = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    g.inventory.removeAll('rough_arrow');
+    g.inventory.addCoins(500);
+    const before = g.inventory.coins;
+    g.merchant.open('tam_outfitters', g.npcs.byId('tam'));
+    g.merchant.buy('rough_arrow');
+    const arrows = g.inventory.count('rough_arrow');
+    const paid = before - g.inventory.coins;
+    const T0 = g.stats.attackCooldownFor('ranged');
+    g.merchant.buy('leather_quiver');
+    const qloc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'leather_quiver');
+    const socket = [1, 2, 3].find((i) => !g.inventory.sockets[i]);
+    const placed = g.inventory.move(qloc, `s:${socket}`).ok;
+    const T1 = g.stats.attackCooldownFor('ranged');
+    g.inventory.removeAll('rough_arrow');
+    g.merchant.buy('rough_arrow');
+    const inQuiver = g.inventory.sockets[socket].slots.filter((x) => x?.id === 'rough_arrow').reduce((n, x) => n + x.count, 0);
+    // anything else is refused
+    g.inventory.addItem('healing_draught', 1, { quiet: true });
+    const dloc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'healing_draught' && !l.startsWith(`b:${socket}:`));
+    const refused = !g.inventory.move(dloc, `b:${socket}:5`).ok;
+    g.merchant.close();
+    return { arrows, paid, placed, T0: +T0.toFixed(3), T1: +T1.toFixed(3), inQuiver, refused };
+  });
+  record('Arrows are sold by the hundred (1 silver)', shop.arrows === 100 && shop.paid === 1, `${shop.arrows} arrows for ${shop.paid} silver`);
+  record('A quiver goes in a bag slot, holds only arrows (new arrows go there first) and makes Auto Shot 10% faster', shop.placed && shop.inQuiver >= 100 && shop.refused && near(shop.T1, shop.T0 / 1.1, 0.002), `quiver holds ${shop.inQuiver} arrows; a draught refused: ${shop.refused}; Auto Shot ${shop.T0}s → ${shop.T1}s`);
+  const dmg = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    let got = 0;
+    g.events.on('enemyHit', (x) => { if (x.hand === 'ranged') got = x.damage; });
+    const hit = (ammo) => { g.combat.arrows.push({ target: e, t: 0, ammo }); g.combat.updateArrows(0.01); return got; };
+    return { rough: hit('rough_arrow'), barbed: hit('barbed_arrow') };
+  });
+  record('Better arrows hit harder', dmg.barbed > dmg.rough, `rough ${dmg.rough}, barbed ${dmg.barbed}`);
 
   record('No script errors (WoW combat)', errors.length === 0, errors.join(' | '));
   await ctx.close();

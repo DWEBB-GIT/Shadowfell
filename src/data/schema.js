@@ -12,7 +12,7 @@
 
 import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
 
-export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'consumable', 'material', 'junk', 'document'];
+export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'ammo', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
@@ -131,6 +131,12 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.kind === 'weapon' && !(isNum(d.speed) && d.speed >= 1 && d.speed <= 5)) bad('a weapon needs a swing speed in seconds (1 to 5)');
     if (d.slot === 'ranged' && !(isNum(d.range) && d.range >= 8 && d.range <= 40)) bad('a ranged weapon needs a range in metres (8 to 40)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
+    // a quiver: a bag that holds only arrows and quickens Auto Shot
+    if (d.holds !== undefined && !(d.kind === 'bag' && KINDS.includes(d.holds))) bad('holds must name an item kind, on a bag');
+    if (d.rangedHaste !== undefined && !(d.holds === 'ammo' && isNum(d.rangedHaste) && d.rangedHaste > 0 && d.rangedHaste <= 30)) bad('rangedHaste (percent, up to 30) is for a quiver (a bag that holds ammo)');
+    // arrows: used one a shot, adding `ammoDps` damage a second of bow speed
+    if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
+    if (d.buyCount !== undefined && !(isInt(d.buyCount) && d.buyCount > 1 && d.buyCount <= d.stack)) bad('buyCount (how many a vendor sells at the price) must be a whole number from 2 to the stack size');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
     if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
     for (const [k, v] of Object.entries(d.stats || {})) {

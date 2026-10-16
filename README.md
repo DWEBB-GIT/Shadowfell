@@ -44,6 +44,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - No animation lock: you move at full speed while swinging, shooting and using abilities, and a swing on its way never eats a key press. Abilities pressed in the last 0.4 s of the global cooldown are queued.
 - Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
 - **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer, on the move too; arrows fly and hit on arrival. In melee reach the sword takes over.
+- **Arrows and quivers:** each shot uses an arrow (sold by the hundred: rough from Mara or Tam, barbed from Tam, which hit harder). Tam's leather quiver goes in a bag slot, holds only arrows and makes Auto Shot 10% faster.
 
 ## Mana and Resolve
 

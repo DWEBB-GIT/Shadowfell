@@ -107,7 +107,9 @@ export class Stats {
   }
 
   attackCooldownFor(hand) {
-    return this.handSpeed(hand) / this.speed;
+    // a quiver quickens Auto Shot on top of haste (as in WoW Classic)
+    const quiver = hand === 'ranged' ? 1 + this.game.inventory.quiverHaste / 100 : 1;
+    return this.handSpeed(hand) / this.speed / quiver;
   }
 
   // Seconds from the start of a swing to its impact frame. Haste shortens the

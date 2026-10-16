@@ -24,7 +24,7 @@ const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility
 // Every action is a request to the Inventory, which decides what is allowed.
 
 const $ = (id) => document.getElementById(id);
-const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
+const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', ammo: 'Arrows', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
 
 export class ItemUI {
   constructor(game, hud) {
@@ -379,7 +379,8 @@ export class ItemUI {
         .map((id) => {
           const price = m.priceOf(id);
           const poor = price > inv.coins;
-          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}</div></div></div>`;
+          const n = ITEMS[id].buyCount || 1; // arrows come by the hundred
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: n })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}${n > 1 ? ` <span class="dim small">for ${n}</span>` : ''}</div></div></div>`;
         })
         .join('');
       const bb = m.buyback;

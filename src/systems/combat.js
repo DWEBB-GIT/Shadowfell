@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { computeHit, enemyBlock, weaponRoll, swingRoll, enemyRoll } from './stats.js';
+import { ITEMS } from '../data/items.js';
 
 // Combat rules: who a blow hits, how much it hurts, and what follows from a
 // defeat. Entities ask; this system decides.
@@ -20,10 +21,10 @@ export class Combat {
   // A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
   // `swing`: an auto attack, which rolls the weapon's own per-swing damage;
   // abilities roll the normalised range (see Stats.abilityWeaponRange).
-  _playerHit(enemy, mult, hurtOpts, { swing = false, hand = 'main' } = {}) {
+  _playerHit(enemy, mult, hurtOpts, { swing = false, hand = 'main', bonus = 0 } = {}) {
     const { stats, events } = this.game;
     const r = this.game.random;
-    const base = swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats);
+    const base = (swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats)) + bonus;
     const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
     enemy.hurt(hit.amount, hurtOpts);
     events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
@@ -135,12 +136,12 @@ export class Combat {
 
   // Auto Shot: an arrow from the bow to the target. It flies (following the
   // target, as WoW's do) and does its damage when it arrives.
-  loosePlayerArrow(target) {
+  loosePlayerArrow(target, ammo = null) {
     const { player, events } = this.game;
     const from = { x: player.position.x + Math.sin(player.facing) * 0.4, y: player.position.y + 1.35, z: player.position.z + Math.cos(player.facing) * 0.4 };
     const d = Math.hypot(target.position.x - from.x, target.position.z - from.z);
     const t = d / CONFIG.autoShot.arrowSpeed;
-    this.arrows.push({ target, t });
+    this.arrows.push({ target, t, ammo });
     events.emit('projectile', { kind: 'arrow', from, to: target.position, follow: target, speed: CONFIG.autoShot.arrowSpeed, life: t });
     events.emit('playerShot', {});
   }
@@ -152,7 +153,9 @@ export class Combat {
       this.arrows.splice(i, 1);
       const e = a.target;
       if (!e.alive || this.game.player.dead) continue;
-      const hit = this._playerHit(e, 1, { stagger: 0.12, knockFrom: this.game.player.position, knockback: 0.1 }, { swing: true, hand: 'ranged' });
+      // the arrow adds its own damage: ammoDps for each second of bow speed
+      const bonus = ((a.ammo && ITEMS[a.ammo].ammoDps) || 0) * this.game.stats.handSpeed('ranged');
+      const hit = this._playerHit(e, 1, { stagger: 0.12, knockFrom: this.game.player.position, knockback: 0.1 }, { swing: true, hand: 'ranged', bonus });
       this.game.events.emit('enemyHit', { enemy: e, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true, hand: 'ranged' });
       this.game.events.emit('log', { text: `Your arrow hits the ${e.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
       if (e.dead) this.onEnemyDefeated(e);

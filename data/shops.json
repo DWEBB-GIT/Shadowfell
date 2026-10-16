@@ -4,7 +4,7 @@
     {
       "id": "smith",
       "name": "Smith",
-      "sells": ["weapon", "armor", "shield", "material", "consumable", "bag", "torch"],
+      "sells": ["weapon", "ammo", "armor", "shield", "material", "consumable", "bag", "torch"],
       "description": "A frontier smith: arms and armour, and the road supplies travellers ask for.",
       "repairs": true
     },
@@ -17,7 +17,7 @@
     {
       "id": "outfitter",
       "name": "Outfitter",
-      "sells": ["tool", "torch", "consumable", "material"],
+      "sells": ["tool", "ammo", "torch", "consumable", "material", "bag"],
       "description": "Rods, lights and the things a traveller forgets."
     },
     {
@@ -32,14 +32,14 @@
       "id": "mara_forge",
       "name": "Mara's forge",
       "vendorType": "smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "arming_sword", "rusty_dirk", "hunting_bow", "travellers_satchel", "torch"],
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "arming_sword", "rusty_dirk", "hunting_bow", "rough_arrow", "travellers_satchel", "torch"],
       "faction": "road_wardens"
     },
     {
       "id": "tam_outfitters",
       "name": "Tam's tackle",
       "vendorType": "outfitter",
-      "stock": ["fishing_rod", "torch", "healing_draught", "lockpicks"],
+      "stock": ["fishing_rod", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
       "faction": "mere_folk"
     },
     {

@@ -98,6 +98,8 @@ When the clock starts: as in WoW, a fresh fight opens with an **instant blow** t
 
 A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.8 s, 26 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You can shoot on the move. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
 
+**Arrows** (Dan, 2026-10-16: Classic style, with a quiver). Each shot uses one arrow; with none, Auto Shot does not fire and the log says so. Arrows (`kind: "ammo"`) stack to 200 and are sold by the hundred (`buyCount`): rough arrows (1 silver, Mara and Tam) and barbed arrows (6 silver, Tam). Each adds `ammoDps` damage for every second of bow speed (rough +0.5, barbed +1.5). Auto Shot uses the best arrows you carry. A **quiver** (Tam, 25 silver) goes in a bag slot like a bag, holds only arrows (`holds: "ammo"`, six stacks), takes new arrows first, and makes Auto Shot 10% faster (`rangedHaste`, on top of haste).
+
 ### Dual wielding
 
 A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:

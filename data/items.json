@@ -456,6 +456,46 @@
       "description": "A yew self bow, fit for deer and anything that has stopped being one. Goes in the ranged slot: Auto Shot looses an arrow at a target beyond the reach of your sword."
     },
     {
+      "id": "rough_arrow",
+      "name": "Rough arrow",
+      "kind": "ammo",
+      "rarity": "common",
+      "ammoDps": 0.5,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 1,
+      "model": "arrow_bundle",
+      "icon": "arrow_bundle",
+      "description": "Ash shafts, goose fletching, iron heads hammered out by the hundred. Auto Shot uses one an arrow. Sold by the hundred."
+    },
+    {
+      "id": "barbed_arrow",
+      "name": "Barbed arrow",
+      "kind": "ammo",
+      "rarity": "enhanced",
+      "ammoDps": 1.5,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 6,
+      "model": "arrow_bundle_barbed",
+      "icon": "arrow_bundle_barbed",
+      "description": "Arrows with cruel backward hooks. Each shot hits harder than with rough arrows. Sold by the hundred."
+    },
+    {
+      "id": "leather_quiver",
+      "name": "Leather quiver",
+      "kind": "bag",
+      "rarity": "common",
+      "bagSlots": 6,
+      "holds": "ammo",
+      "rangedHaste": 10,
+      "stack": 1,
+      "price": 25,
+      "model": "quiver",
+      "icon": "quiver",
+      "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
+    },
+    {
       "id": "torch",
       "name": "Pitch torch",
       "kind": "torch",
