@@ -128,9 +128,12 @@ export class Targeting {
     if (!this.select(enemy)) return false;
     if (!this.attacking) {
       this.attacking = true;
-      // the first swing waits a full swing time, as Dan asked: no instant opener
+      // the first swing of a fight waits a full swing time, as Dan asked: no
+      // instant opener. Switching targets mid-fight keeps the running clock.
       const p = this.game.player;
-      p.cooldowns.attack = Math.max(p.cooldowns.attack, this.game.stats.attackCooldown);
+      const T = this.game.stats.attackCooldown;
+      const midFight = p.lastSwingAt !== undefined && this.game.time - p.lastSwingAt < T;
+      if (!midFight) p.cooldowns.attack = Math.max(p.cooldowns.attack, T);
       this.game.events.emit('autoAttack', { on: true, target: enemy });
     }
     return true;

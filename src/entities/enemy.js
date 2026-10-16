@@ -247,10 +247,12 @@ export class Enemy {
     const reach = cfg.meleeRange + player.radius + this.radius * 0.5;
     let speed01 = 0;
 
-    // knockback slides
+    // knockback slides, easing out exponentially so the distance is the same
+    // at any frame rate
     if (this.knock.lengthSq() > 0.001) {
-      this.position.addScaledVector(this.knock, dt);
-      this.knock.multiplyScalar(Math.max(0, 1 - dt * 9));
+      const fade = Math.exp(-9 * dt);
+      this.position.addScaledVector(this.knock, (1 - fade) / 9);
+      this.knock.multiplyScalar(fade);
     }
 
     if (this.stagger > 0) {

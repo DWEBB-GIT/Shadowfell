@@ -176,6 +176,10 @@ export class Player {
 
   update(dt, controls) {
     const { combat, collision } = this.game;
+    // the swing clock runs on delta time; if it ran out partway through this
+    // frame, the overshoot is kept (capped) so the next swing keeps the rhythm
+    const clock = this.cooldowns.attack - dt;
+    this.swingLate = this.cooldowns.attack > 0 && clock < 0 ? Math.min(-clock, CONFIG.attack.catchUp) : 0;
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
     this.braced = Math.max(0, this.braced - dt);
 
@@ -272,15 +276,19 @@ export class Player {
   }
 
   // An auto attack swing, when the weapon is ready and the target is in
-  // front of the Warden (he does not snap round to it).
+  // front of the Warden (he does not snap round to it). Three parts:
+  // the swing clock (cooldowns.attack, T = W / (1 + H)), the animation, and
+  // the damage, which resolves at the impact frame (combat checks reach and
+  // target then). A clock that ran out while the target was out of reach
+  // just waits at zero: no debt, so no burst when you get back in range.
   tryStrike(aim) {
     if (this.cooldowns.attack > 0 || this.pending || this.casting) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
-    // haste shortens the swing timer, the windup and the swing itself
     const stats = this.game.stats;
-    const windup = stats.hasted(CONFIG.attack.windup);
-    const anim = Math.max(windup + 0.2, stats.hasted(CONFIG.attack.swingAnimation));
-    this.cooldowns.attack = stats.attackCooldown;
+    const windup = stats.swingWindup;
+    const anim = stats.swingAnimation;
+    this.cooldowns.attack = stats.attackCooldown - (this.swingLate || 0);
+    this.lastSwingAt = this.game.time;
     this.pending = { type: 'strike', t: windup, aim: aim ? { x: aim.x, z: aim.z } : null };
     this.rig.play('strike', anim, windup / anim);
     this.rig.action.auto = true;

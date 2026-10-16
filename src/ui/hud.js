@@ -403,7 +403,7 @@ export class Hud {
     if (!sw.hidden) {
       const st = this.game.stats;
       const pend = player.pending && player.pending.type === 'strike' ? player.pending.t : 0;
-      const windup = st.hasted(this.game.config.attack.windup);
+      const windup = st.swingWindup;
       const left = pend || player.cooldowns.attack + windup;
       const total = st.attackCooldown;
       $('swing-fill').style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;

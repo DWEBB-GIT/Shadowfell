@@ -39,7 +39,7 @@ A balance pass changes a constant, not every item and enemy.
 | Armour | Gear | Physical reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75% |
 | Resistance | Gear (later) | The same curve, against spells |
 | Block chance | A shield (10% of its own), plus block chance on gear | Chance to stop 30% of a melee blow, capped at 50%. Brace is a guaranteed full block |
-| Haste | Gear only | Divides swing time, windups, casts and the global cooldown (floor 1 s), capped at 30% |
+| Haste | Gear only | Shortens the time between swings (T = W ÷ (1 + H)), ability windups, casts and the global cooldown (floor 1 s), capped at 30%. The swing animation keeps its own timing |
 
 ## The formula
 
@@ -58,6 +58,32 @@ then, for every hit:
 ```
 
 Ability multipliers: Shield Break 2.0, Lunge 1.5, Cleave 1.2, Rend 0.45 a tick. Enemies' normal attacks can crit; Grave Slam cannot.
+
+## The swing timer
+
+Dan's formula (2026-10-15):
+
+```
+T = W ÷ (1 + H)
+T  seconds between swings
+W  the weapon's speed
+H  haste as a fraction (20% = 0.20), gear only, capped at 0.30
+```
+
+| Haste | 2.5 s weapon | Swings a minute |
+|---|---|---|
+| 0% | 2.500 s | 24.0 |
+| 10% | 2.273 s | 26.4 |
+| 20% | 2.083 s | 28.8 |
+| 30% (cap) | 1.923 s | 31.2 |
+
+Auto attack is three separate parts:
+
+1. **The swing clock** (`player.cooldowns.attack`) counts down on delta time, so the rhythm is the same at 30, 60 or 144 fps. When it reaches zero and the target is in reach and in front of you, a swing starts and the clock is set to T. If the clock ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst. A clock that runs out while you are out of reach waits at zero: stepping back in gives one swing, then a full T.
+2. **The animation** plays from the swing's start at its own length (0.8 s, impact at 0.32 s). Haste does not speed it up. Only if T is shorter than the animation (not possible with today's weapons) is it squeezed to fit, so swings never overlap.
+3. **The damage** resolves at the impact frame. Reach and target are checked then, so an enemy that steps away mid-swing is missed. Moving does not cancel a swing, and you can reposition during the recovery.
+
+When the clock starts: the first swing of a fight waits a full T, so there is no instant opener. Switching target mid-fight keeps the running clock. A cast drops a swing in progress and restarts the clock when it ends, and charges such as Lunge hold the clock until they land. The swing bar above the spell bar shows the time until the next blow lands.
 
 ## One growth line
 
@@ -423,5 +449,5 @@ Each one is an `archetypes` entry: base attributes, gains per level, main attrib
 
 - **No misses and no dodge chance.** Misses feel bad in action combat, where the player has already aimed; WoW removed hit rating for the same reason. Avoidance is the player's skill (telegraphs and Brace). A rogue could later get a small passive dodge as part of its kit.
 - **A block stops a percentage of the hit** (30%), as in WoW since Cataclysm and Diablo IV, rather than a flat value that stops whole hits early and nothing later. Brace stays a guaranteed full block, and telegraphed specials such as Grave Slam cannot be blocked.
-- **Haste** divides swing time, windups, casts and the global cooldown (floor 1 s), capped at 30%. It does not shorten enemy telegraphs or Brace's window.
+- **Haste** divides the time between swings, ability windups, casts and the global cooldown (floor 1 s), capped at 30%. It does not speed up the swing animation (since 2026-10-15, see The swing timer), enemy telegraphs or Brace's window.
 - **No server for now.** The game is single-player and saves in the browser. The damage formula is one pure function (`src/systems/stats.js`) fed by config and data, and the growth formulas are plain functions too, so they could run on a server or in Unity unchanged.
