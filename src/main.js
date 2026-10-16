@@ -33,6 +33,8 @@ import { Stats } from './systems/stats.js';
 import { Progression } from './systems/progression.js';
 import { WorldState } from './systems/worldState.js';
 import { SaveManager, validateSave } from './systems/save.js';
+import { Roster } from './systems/characters.js';
+import { TitleScreen } from './ui/titleUI.js';
 import { Effects } from './systems/fx.js';
 import { AudioSystem } from './systems/audio.js';
 import { Telegraphs } from './systems/telegraphs.js';
@@ -122,6 +124,8 @@ class Game {
     this.fx = new Effects(this);
     this.audio = new AudioSystem(this);
     this.save = new SaveManager(this);
+    this.roster = new Roster();
+    this.title = new TitleScreen(this);
 
     this._bindLifecycle();
     this._snapCamera();
@@ -183,20 +187,60 @@ class Game {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') this.save.autosave();
     });
-    document.getElementById('continue-btn').addEventListener('click', () => this.startGame(true));
-    document.getElementById('new-btn').addEventListener('click', () => this.startGame(false));
+    document.getElementById('btn-logout').addEventListener('click', () => this.logOut());
   }
 
+  // The title screen and character select. Unreadable saves are copied
+  // aside and never overwritten; the character keeps its place in the list.
   _showTitle() {
-    const result = this.save.read();
-    this.bootSave = result;
+    this.bootSave = { status: 'none' };
+    const { legacyUnreadable } = this.roster.load((key) => this.save.read(key));
     let note = '';
-    if (result.status === 'invalid') {
-      this.save.quarantine(result.raw);
-      note = 'Your previous save could not be read. It has been kept aside and will not be overwritten unless you save manually (K).';
-      console.warn('Save rejected:', result.errors);
+    if (legacyUnreadable) note = 'Your previous save could not be read. It has been kept aside and will not be overwritten.';
+    for (const c of this.roster.list) {
+      const r = this.save.read(c.key);
+      if (r.status === 'invalid') {
+        this.save.quarantine(r.raw, c.key);
+        console.warn(`Save for ${c.name} rejected:`, r.errors);
+      }
     }
-    this.hud.showTitle({ hasSave: result.status === 'ok', note });
+    if (legacyUnreadable) this.save.quarantine(this.save.read(this.save.key).raw, this.save.key);
+    let view = 'main';
+    try {
+      if (sessionStorage.getItem('shadowfall.toSelect')) view = 'select';
+      sessionStorage.removeItem('shadowfall.toSelect');
+    } catch {
+      /* the main title it is */
+    }
+    this.title.open({ note, view });
+  }
+
+  // Play as a character from the roster: their own save, or a fresh start.
+  enterWorld(id) {
+    const c = this.roster.byId(id);
+    if (!c || this.started) return;
+    this.save.key = c.key;
+    this.save.autosaveEnabled = true;
+    this.bootSave = this.save.read();
+    if (this.bootSave.status === 'invalid') return; // the select screen does not offer it
+    this.character = c;
+    this.roster.touch(id);
+    this.hud.setCharacter(c);
+    this.startGame(this.bootSave.status === 'ok');
+  }
+
+  // Back to character select. A fresh page is the simplest clean slate.
+  logOut() {
+    if (this.player.dead) return this.hud.toast('You cannot leave while defeated.');
+    const r = this.save.save({ manual: true });
+    if (!r.ok) return this.hud.toast(r.reason);
+    this.save.autosaveEnabled = false; // just saved; nothing to add on the way out
+    try {
+      sessionStorage.setItem('shadowfall.toSelect', '1');
+    } catch {
+      /* the main title then */
+    }
+    location.reload();
   }
 
   startGame(resume) {
@@ -434,11 +478,11 @@ class Game {
     if (input.pressed.size || input.mouse.clicked) hud.setPadMode(false);
 
     if (input.consume('KeyM')) hud.setMuted(this.audio.toggleMute());
-    if (input.consume('Escape') && !hud.closeModal()) this.targeting.clear();
     if (hud.modal === 'title') {
-      if (pad.pressed(BUTTONS.A)) this.startGame(this.bootSave.status === 'ok');
+      this.title.update(dt);
       return null;
     }
+    if (input.consume('Escape') && !hud.closeModal()) this.targeting.clear();
     if (hud.modal === 'death') {
       if (input.consume('Enter') || this.keys.pressed('interact') || pad.pressed(BUTTONS.A)) this.releaseSpirit();
       return null;
@@ -618,7 +662,24 @@ class Game {
     this.shake = Math.max(this.shake || 0, amount);
   }
 
+  // character select and creation: the camera stands in front of the
+  // character, low, so they fill the middle of the screen
+  _placeShowcase() {
+    const p = this.player.position;
+    const f = this.player.facing;
+    const fx = Math.sin(f);
+    const fz = Math.cos(f);
+    const d = CONFIG.camera.showcase;
+    this.camera.position.set(p.x + fx * d.distance - fz * d.side, p.y + d.height, p.z + fz * d.distance + fx * d.side);
+    this.camera.lookAt(p.x - fz * d.side * 0.5, p.y + d.lookHeight, p.z + fx * d.side * 0.5);
+    this.sun.position.set(p.x - 14, p.y + 26, p.z + 6);
+    this.sun.target.position.set(p.x, p.y, p.z);
+    this.playerLight.position.set(p.x + fx * 1.5, p.y + 2.2, p.z + fz * 1.5);
+    this.world.setCutaway(this.camera.position, p.clone().setY(p.y + 1.2));
+  }
+
   _placeCamera(dt = 0) {
+    if (!this.started && this.title?.view && this.title.view !== 'main') return this._placeShowcase();
     // a fixed isometric view: the scenes are composed for this one angle
     // indoors the camera closes in a little, under where the roof was
     const zoom = 1 - CONFIG.camera.indoorZoom * (this.world.indoorBlend || 0);

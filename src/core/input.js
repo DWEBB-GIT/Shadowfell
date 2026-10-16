@@ -22,6 +22,8 @@ export class Input {
         if (!e.repeat) this.capture(e);
         return;
       }
+      // typing in a text field (the character name) is not a game key
+      if (e.target instanceof HTMLInputElement) return;
       if (GAME_KEYS.has(e.code) || this.isBound(e.code)) e.preventDefault();
       if (!e.repeat) this.pressed.add(e.code);
       this.held.add(e.code);

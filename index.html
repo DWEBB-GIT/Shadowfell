@@ -17,7 +17,7 @@
     </div>
 
     <div id="char-panel" class="panel">
-      <div class="row"><span class="label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
+      <div class="row"><span class="label" id="char-name-label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
       <div class="bar hp"><div id="hp-fill" class="fill"></div><span id="hp-text" class="bar-text"></span></div>
       <div id="mp-bar" class="bar mp thin"><div id="mp-fill" class="fill"></div><span id="mp-text" class="bar-text"></span></div>
       <div id="gauge-bar" class="bar gauge thin"><div id="gauge-fill" class="fill"></div><span id="gauge-text" class="bar-text"></span></div>
@@ -86,7 +86,7 @@
   </div>
 
   <div id="character-window" class="window panel" hidden>
-    <div class="window-head"><h2>Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
+    <div class="window-head"><h2 id="character-title">Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
     <div class="char-body">
       <div class="equip-col" id="equip-left"></div>
       <div class="char-figure">
@@ -118,7 +118,7 @@
     <h3 class="set-head">Key bindings</h3>
     <div class="set-buttons"><button class="btn small" id="quick-bind">Quick bind</button><button class="btn small" id="keys-reset">Reset to defaults</button></div>
     <div id="keybind-list"></div>
-    <div class="set-buttons"><button class="btn small" id="btn-save">Save the game</button></div>
+    <div class="set-buttons"><button class="btn small" id="btn-save">Save the game</button><button class="btn small" id="btn-logout">Save and return to characters</button></div>
   </div>
 
   <div id="talents-window" class="window panel" hidden>
@@ -178,43 +178,100 @@
     </div>
   </div>
 
-  <div id="title-screen" class="modal dark" hidden>
-    <div class="title-panel">
-      <h1>SHADOWFALL</h1>
-      <div class="sub">The Fallen Road &middot; first playable</div>
-      <p id="intro-text"></p>
-      <p id="title-note" class="warn" hidden></p>
-      <div class="title-buttons">
-        <button id="continue-btn" class="btn" hidden>Continue</button>
-        <button id="new-btn" class="btn">Begin</button>
+  <!-- the title screen, character select and character creation: one modal,
+       three views (src/ui/titleUI.js). The world stays paused behind it. -->
+  <div id="title-screen" class="modal title-modal" hidden>
+    <div id="title-main" class="title-view">
+      <div class="title-panel">
+        <div class="title-crest">&#10016;</div>
+        <h1>SHADOWFALL</h1>
+        <div class="sub"><span id="title-tagline"></span> &middot; <span id="title-build"></span></div>
+        <p id="intro-text"></p>
+        <p id="title-note" class="warn" hidden></p>
+        <div class="title-menu">
+          <button id="continue-btn" class="btn title-btn" data-nav hidden><span class="tb-main">Continue</span><span class="tb-sub" id="continue-who"></span></button>
+          <button id="chars-btn" class="btn title-btn" data-nav hidden><span class="tb-main">Characters</span></button>
+          <button id="new-btn" class="btn title-btn" data-nav><span class="tb-main">New character</span></button>
+          <button id="controls-btn" class="btn title-btn" data-nav><span class="tb-main">Controls</span></button>
+        </div>
+        <div id="title-controls" hidden>
+        <div class="controls-wrap">
+          <table class="controls">
+            <tr><th colspan="2">Keyboard and mouse</th></tr>
+            <tr><td>WASD</td><td>Move</td></tr>
+            <tr><td>Left click</td><td>Select an enemy or person; loot</td></tr>
+            <tr><td>Right click</td><td>Auto attack an enemy; talk; loot</td></tr>
+            <tr><td>1 &middot; 2 &middot; 3 / Q</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
+            <tr><td>5</td><td>Attack (auto attack on / off)</td></tr>
+            <tr><td>Space</td><td>Brace (blocks the next blow)</td></tr>
+            <tr><td>Tab</td><td>Next target</td></tr>
+            <tr><td>E</td><td>Interact / loot everything nearby</td></tr>
+            <tr><td>B &middot; C &middot; P &middot; L</td><td>Bags &middot; Character &middot; Spellbook &middot; Quest log</td></tr>
+            <tr><td>K &middot; M &middot; Esc</td><td>Save &middot; Sound &middot; Close / clear target</td></tr>
+          </table>
+          <table class="controls">
+            <tr><th colspan="2">Gamepad</th></tr>
+            <tr><td>Left stick</td><td>Move</td></tr>
+            <tr><td>Right stick</td><td>Aim</td></tr>
+            <tr><td>RT</td><td>Auto attack the target (or who is ahead)</td></tr>
+            <tr><td>R3 (stick click)</td><td>Next target</td></tr>
+            <tr><td>X &middot; Y &middot; RB</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
+            <tr><td>LB &middot; LT</td><td>Spell-bar slots 4 and 5</td></tr>
+            <tr><td>B</td><td>Brace</td></tr>
+            <tr><td>A</td><td>Interact / loot / confirm</td></tr>
+            <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
+            <tr><td>D-pad up &middot; down &middot; right</td><td>Spellbook &middot; Save &middot; Quest log</td></tr>
+          </table>
+        </div>
+        </div>
       </div>
-      <div class="controls-wrap">
-        <table class="controls">
-          <tr><th colspan="2">Keyboard and mouse</th></tr>
-          <tr><td>WASD</td><td>Move</td></tr>
-          <tr><td>Left click</td><td>Select an enemy or person; loot</td></tr>
-          <tr><td>Right click</td><td>Auto attack an enemy; talk; loot</td></tr>
-          <tr><td>1 &middot; 2 &middot; 3 / Q</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
-          <tr><td>5</td><td>Attack (auto attack on / off)</td></tr>
-          <tr><td>Space</td><td>Brace (blocks the next blow)</td></tr>
-          <tr><td>Tab</td><td>Next target</td></tr>
-          <tr><td>E</td><td>Interact / loot everything nearby</td></tr>
-          <tr><td>B &middot; C &middot; P &middot; L</td><td>Bags &middot; Character &middot; Spellbook &middot; Quest log</td></tr>
-          <tr><td>K &middot; M &middot; Esc</td><td>Save &middot; Sound &middot; Close / clear target</td></tr>
-        </table>
-        <table class="controls">
-          <tr><th colspan="2">Gamepad</th></tr>
-          <tr><td>Left stick</td><td>Move</td></tr>
-          <tr><td>Right stick</td><td>Aim</td></tr>
-          <tr><td>RT</td><td>Auto attack the target (or who is ahead)</td></tr>
-          <tr><td>R3 (stick click)</td><td>Next target</td></tr>
-          <tr><td>X &middot; Y &middot; RB</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
-          <tr><td>LB &middot; LT</td><td>Spell-bar slots 4 and 5</td></tr>
-          <tr><td>B</td><td>Brace</td></tr>
-          <tr><td>A</td><td>Interact / loot / confirm</td></tr>
-          <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
-          <tr><td>D-pad up &middot; down &middot; right</td><td>Spellbook &middot; Save &middot; Quest log</td></tr>
-        </table>
+      <div class="title-foot"><span id="title-foot-build"></span> &middot; saves are kept in this browser &middot; <span class="key-hint" data-kbm="&#8593;&#8595; Enter" data-pad="D-pad &middot; A"></span></div>
+    </div>
+
+    <div id="title-select" class="title-view" hidden>
+      <div class="select-side panel">
+        <h2>Characters</h2>
+        <div id="char-count" class="dim"></div>
+        <div id="char-list"></div>
+        <div class="select-actions">
+          <button id="create-new-btn" class="btn" data-nav>Create new</button>
+          <button id="delete-btn" class="btn" data-nav>Delete</button>
+          <button id="select-back" class="btn" data-nav>Back</button>
+        </div>
+        <div id="delete-confirm" hidden>
+          <p id="delete-text"></p>
+          <div class="select-actions">
+            <button id="delete-yes" class="btn danger" data-nav>Delete for ever</button>
+            <button id="delete-no" class="btn" data-nav>Keep</button>
+          </div>
+        </div>
+      </div>
+      <div class="select-center">
+        <div id="sel-name" class="hero-name"></div>
+        <div id="sel-line" class="hero-line"></div>
+        <button id="enter-btn" class="btn enter-btn" data-nav>Enter world</button>
+        <div class="key-hint" data-kbm="&#8593;&#8595; choose &middot; Enter play &middot; Del delete &middot; Esc back" data-pad="D-pad choose &middot; A play &middot; Y delete &middot; B back"></div>
+      </div>
+    </div>
+
+    <div id="title-create" class="title-view" hidden>
+      <div class="create-side panel">
+        <h2>Create a character</h2>
+        <div class="field-label">Class</div>
+        <div id="class-list"></div>
+      </div>
+      <div class="select-center">
+        <div id="class-detail" class="panel"></div>
+        <div class="name-row">
+          <input id="char-name" maxlength="25" spellcheck="false" autocomplete="off" placeholder="Name" data-nav>
+          <button id="name-random" class="btn" data-nav title="Random name">&#9860;</button>
+        </div>
+        <div id="create-error" class="warn"></div>
+        <div class="select-actions center">
+          <button id="create-back" class="btn" data-nav>Back</button>
+          <button id="create-confirm" class="btn enter-btn" data-nav>Create and enter</button>
+        </div>
+        <div class="key-hint" data-kbm="Type a name &middot; Enter create &middot; Esc back" data-pad="D-pad choose &middot; A select &middot; Y random name &middot; B back"></div>
       </div>
     </div>
   </div>

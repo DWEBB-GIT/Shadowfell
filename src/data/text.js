@@ -4,5 +4,6 @@
 import { DB } from './db.js';
 
 export const INTRO = DB.text.intro;
+export const TITLE = DB.text.title;
 export const EXAMINE = DB.text.examine;
 export const DOCUMENTS = Object.fromEntries(Object.entries(DB.text.documents).map(([id, d]) => [id, { title: d.title, body: d.body.join('') }]));

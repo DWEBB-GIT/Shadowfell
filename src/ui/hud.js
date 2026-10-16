@@ -4,7 +4,7 @@ import { WorldLabels } from './worldLabels.js';
 import { KeybindUI } from './keybindUI.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { DOCUMENTS, INTRO } from '../data/text.js';
+import { DOCUMENTS } from '../data/text.js';
 import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
 import { ABILITIES, BAR_SLOTS, itemRef, entryName } from '../systems/actionBar.js';
@@ -62,13 +62,8 @@ export class Hud {
 
       respawnBtn: $('respawn-btn'),
       title: $('title-screen'),
-      continueBtn: $('continue-btn'),
-      newBtn: $('new-btn'),
-      titleNote: $('title-note'),
-      intro: $('intro-text'),
       mute: $('mute-indicator'),
     };
-    this.el.intro.textContent = INTRO;
     const P = () => game.player.cooldowns;
     this.cooldowns = {
       strike: () => [P().attack, game.stats.attackCooldown, false],
@@ -198,19 +193,15 @@ export class Hud {
   }
 
   // ---------------------------------------------------------------- modals
-  showTitle({ hasSave, note }) {
-    this.modal = 'title';
-    this.el.title.hidden = false;
-    $('hud').hidden = true;
-    this.el.continueBtn.hidden = !hasSave;
-    this.el.newBtn.textContent = hasSave ? 'Begin a new journey' : 'Begin';
-    this.el.titleNote.textContent = note || '';
-    this.el.titleNote.hidden = !note;
-    (hasSave ? this.el.continueBtn : this.el.newBtn).focus();
+  // the character being played: their name on the HUD and character window
+  setCharacter(c) {
+    $('char-name-label').textContent = c.name;
+    $('character-title').textContent = c.name;
   }
 
+  // the title screen itself is src/ui/titleUI.js
   hideTitle() {
-    this.el.title.hidden = true;
+    this.game.title?.close();
     $('hud').hidden = false;
     this.modal = null;
     this.items.render();

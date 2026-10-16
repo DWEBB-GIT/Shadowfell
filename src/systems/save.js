@@ -133,6 +133,7 @@ export class SaveManager {
   constructor(game) {
     this.game = game;
     this.autosaveEnabled = true;
+    this.key = SAVE_KEY; // each character saves under its own key (see characters.js)
   }
 
   serialize() {
@@ -164,8 +165,8 @@ export class SaveManager {
     let text;
     try {
       text = JSON.stringify(this.serialize());
-      localStorage.setItem(SAVE_KEY, text);
-      if (localStorage.getItem(SAVE_KEY) !== text) throw new Error('read-back mismatch');
+      localStorage.setItem(this.key, text);
+      if (localStorage.getItem(this.key) !== text) throw new Error('read-back mismatch');
     } catch (err) {
       console.warn('Save failed', err);
       return { ok: false, reason: 'The game could not be saved. Browser storage may be full or disabled.' };
@@ -176,17 +177,17 @@ export class SaveManager {
 
   hasSave() {
     try {
-      return localStorage.getItem(SAVE_KEY) !== null;
+      return localStorage.getItem(this.key) !== null;
     } catch {
       return false;
     }
   }
 
   // Returns { status: 'none' | 'ok' | 'invalid', data?, errors? }
-  read() {
+  read(key = this.key) {
     let text;
     try {
-      text = localStorage.getItem(SAVE_KEY);
+      text = localStorage.getItem(key);
     } catch (err) {
       return { status: 'invalid', errors: ['storage unavailable'] };
     }
@@ -204,12 +205,12 @@ export class SaveManager {
   }
 
   // Keep an unreadable save safe, and stop autosave from replacing it.
-  quarantine(raw) {
-    this.autosaveEnabled = false;
+  quarantine(raw, key = this.key) {
+    if (key === this.key) this.autosaveEnabled = false;
     try {
-      if (raw != null) localStorage.setItem(BACKUP_KEY, raw);
+      if (raw != null) localStorage.setItem(key === SAVE_KEY ? BACKUP_KEY : `${key}.unreadable`, raw);
     } catch {
-      /* the original is still under SAVE_KEY, untouched */
+      /* the original is still under its key, untouched */
     }
   }
 

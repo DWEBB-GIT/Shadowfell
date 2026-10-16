@@ -30,8 +30,11 @@ async function freshGame(browser, { noAudio = false } = {}) {
   return { ctx, page, errors };
 }
 
+// '#new-btn' makes a new character (with the random name the create screen
+// offers) and enters the world; '#continue-btn' plays the last character.
 async function begin(page, which = '#new-btn', { pinRolls = true } = {}) {
   await page.click(which);
+  if (which === '#new-btn') await page.click('#create-confirm');
   await page.waitForFunction(() => window.__shadowfall.started);
   // combat rolls (weapon range, crits, blocks, enemy variance) land on the
   // average unless a check says otherwise, so expected numbers are exact
@@ -813,7 +816,11 @@ async function persistence(browser) {
     await page.reload();
     await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden);
     const note = await page.isVisible('#title-note');
-    const cont = await page.isVisible('#continue-btn');
+    // Continue may offer another character, never the one whose save is bad
+    const cont = await page.evaluate(() => {
+      const c = window.__shadowfall.roster.list.find((x) => x.key === 'shadowfall.save');
+      return !document.getElementById('continue-btn').hidden && (!c || document.getElementById('continue-who').textContent.startsWith(c.name + ' ·'));
+    });
     await begin(page);
     await page.waitForTimeout(300);
     // closing the page would normally autosave: it must not replace the bad save
@@ -1050,10 +1057,11 @@ async function gamepad(browser) {
   await ctx.addInitScript(PAD_STUB);
   const { page, errors } = await openGame(ctx);
   await pauseLoop(page);
-  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // New character
+  await padSim(page, 0.05, { tap: [PAD.A] }); // Create and enter
   const started = await page.evaluate(() => window.__shadowfall.started);
   await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
-  record('A starts the game from the title screen', started);
+  record('A starts the game from the title screen (new character, then create)', started);
 
   await setup(page, { x: -6, z: 30 });
   let a = (await state(page)).pos;
@@ -4070,7 +4078,120 @@ async function wowCombat(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
+async function titleAndCharacters(browser) {
+  current = 'Title screen and characters';
+  const reopen = async (page) => {
+    await page.reload();
+    await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden);
+  };
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  let { page, errors } = await openGame(ctx);
+  const first = await page.evaluate(() => ({
+    cont: !document.getElementById('continue-btn').hidden,
+    chars: !document.getElementById('chars-btn').hidden,
+    build: document.getElementById('title-build').textContent,
+  }));
+  record('A fresh browser offers New character only', !first.cont && !first.chars && /Alpha/.test(first.build), JSON.stringify(first));
+
+  await page.click('#new-btn');
+  const create = await page.evaluate(() => ({
+    view: !document.getElementById('title-create').hidden,
+    name: document.getElementById('char-name').value,
+    classes: [...document.querySelectorAll('.class-card')].map((c) => c.textContent.replace(/\s+/g, ' ').trim()),
+    locked: document.querySelectorAll('.class-card.locked').length,
+  }));
+  record('Create screen: a random name, Warden playable, other classes shown as coming later', create.view && /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(create.name) && create.locked === 2 && /Warden/.test(create.classes[0]), `${create.name}; ${create.classes.join(' / ')}`);
+
+  const bad = [];
+  for (const n of ['', 'x', 'R2D2', 'a very long name indeed']) {
+    await page.fill('#char-name', n);
+    await page.click('#create-confirm');
+    bad.push(await page.textContent('#create-error'));
+  }
+  const stillTitle = await page.evaluate(() => !window.__shadowfall.started);
+  record('Bad names are refused with a reason', stillTitle && bad.every((t) => t.length > 5), bad.join(' | '));
+
+  // typing a game key into the name field must not move or open anything
+  await page.fill('#char-name', '');
+  await page.click('#char-name');
+  await page.keyboard.type('mara bcm');
+  const typed = await page.inputValue('#char-name');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__shadowfall.started);
+  const inWorld = await page.evaluate(() => ({ label: document.getElementById('char-name-label').textContent, key: window.__shadowfall.save.key, bags: !document.getElementById('bags-window').hidden }));
+  record('Typing a name and pressing Enter creates the character and enters the world', typed === 'mara bcm' && inWorld.label === 'Mara Bcm' && inWorld.key === 'shadowfall.save' && !inWorld.bags, `typed "${typed}", HUD shows ${inWorld.label}, saves to ${inWorld.key}`);
+
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(-2, 20);
+    g.progression.apply({ level: 3, xp: 0 });
+    g.manualSave();
+  });
+  await reopen(page);
+  const back = await page.evaluate(() => ({ cont: document.getElementById('continue-who').textContent, chars: !document.getElementById('chars-btn').hidden }));
+  record('Continue names the last character and their level', /Mara Bcm · level 3 Warden/.test(back.cont) && back.chars, back.cont);
+
+  // a second character, then the list
+  await page.click('#new-btn');
+  await page.fill('#char-name', 'Mara Bcm');
+  await page.click('#create-confirm');
+  const dup = await page.textContent('#create-error');
+  await page.fill('#char-name', 'Osric');
+  await page.click('#create-confirm');
+  await page.waitForFunction(() => window.__shadowfall.started);
+  const second = await page.evaluate(() => ({ key: window.__shadowfall.save.key, lvl: window.__shadowfall.progression.level }));
+  record('Names are unique; a second character gets its own save and starts fresh', /already/.test(dup) && second.key !== 'shadowfall.save' && second.lvl === 1, `"${dup}", ${second.key}, level ${second.lvl}`);
+  await page.evaluate(() => window.__shadowfall.manualSave());
+
+  // log out goes to the select screen
+  await page.evaluate(() => document.getElementById('btn-logout').click());
+  await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden && !document.getElementById('title-select').hidden);
+  const sel = await page.evaluate(() => ({
+    cards: [...document.querySelectorAll('.char-card .cc-name')].map((c) => c.textContent),
+    name: document.getElementById('sel-name').textContent,
+    showcase: document.getElementById('title-screen').classList.contains('showcase'),
+  }));
+  record('Logging out returns to character select, latest character first', sel.cards.join() === 'Osric,Mara Bcm' && sel.name === 'Osric' && sel.showcase, JSON.stringify(sel));
+
+  // keyboard: down to Mara, Enter plays her where she was
+  await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => document.getElementById('sel-name').textContent === 'Mara Bcm', null, { timeout: 5000 }).catch(() => {});
+  const picked = await page.textContent('#sel-name');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__shadowfall.started);
+  const mara = await page.evaluate(() => ({ lvl: window.__shadowfall.progression.level, x: window.__shadowfall.player.position.x, z: window.__shadowfall.player.position.z }));
+  record('Arrow keys and Enter pick a character and resume their save', picked === 'Mara Bcm' && mara.lvl === 3 && Math.abs(mara.x + 2) < 0.01 && Math.abs(mara.z - 20) < 0.01, `picked ${picked}: level ${mara.lvl} at (${mara.x}, ${mara.z})`);
+
+  // delete Osric (with the confirm step)
+  await page.evaluate(() => document.getElementById('btn-logout').click());
+  await page.waitForFunction(() => window.__shadowfall && document.getElementById('loading').hidden && !document.getElementById('title-select').hidden);
+  await page.click('.char-card:has-text("Osric")');
+  await page.click('#delete-btn');
+  const asked = await page.isVisible('#delete-yes');
+  await page.click('#delete-yes');
+  const after = await page.evaluate(() => ({
+    cards: [...document.querySelectorAll('.char-card .cc-name')].map((c) => c.textContent),
+    keys: Object.keys(localStorage).filter((k) => k.startsWith('shadowfall.save')).sort(),
+  }));
+  record('Delete asks first, then removes the character and their save', asked && after.cards.join() === 'Mara Bcm' && after.keys.join() === 'shadowfall.save', JSON.stringify(after));
+  await page.close();
+
+  // a save from before the roster becomes a character
+  ({ page, errors: errors } = await openGame(ctx));
+  const legacy = await page.evaluate(() => {
+    const save = localStorage.getItem('shadowfall.save');
+    localStorage.clear();
+    localStorage.setItem('shadowfall.save', save);
+    return !!save;
+  });
+  await reopen(page);
+  const adopted = await page.evaluate(() => document.getElementById('continue-who').textContent);
+  record('A save from before characters existed shows up as a character', legacy && /^Warden · level 3/.test(adopted), adopted);
+  record('No script errors (title and characters)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);
