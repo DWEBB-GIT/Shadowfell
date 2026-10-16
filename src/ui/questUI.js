@@ -16,7 +16,11 @@ import { QuestLog, MAX_TRACKED } from '../systems/quests.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const MARK = { ready: '?', available: '!', active: '?' };
-const OPTION_ICON = { ready: '?', available: '!', active: '?', talk: '&#10077;', shop: '&#9878;', bye: '&#10005;', accept: '&#10003;', back: '&#8617;', train: '&#9733;' };
+// each kind of choice has its own badge, so speech, buying and training read
+// apart at a glance (Dan, 2026-10-16)
+const OPTION_ICON = { ready: '?', available: '!', active: '?', talk: '&#10077;', shop: '&#9878;', bye: '&#10005;', accept: '&#10003;', back: '&#8617;', train: '&#9733;', home: '&#8962;' };
+const GROUP_HEAD = { quest: 'Quests', talk: 'Ask about', service: 'Services' };
+const TRAIN_STATE = { known: 'Known', locked: '', poor: 'Not enough money', learn: '' };
 
 export class QuestUI {
   constructor(game, hud) {
@@ -43,10 +47,22 @@ export class QuestUI {
       logCount: $('ql-count'),
       logHint: $('ql-hint'),
       tracker: $('objective'),
+      trainer: $('trainer-window'),
+      trainName: $('train-name'),
+      trainText: $('train-text'),
+      trainList: $('train-list'),
+      trainCoins: $('train-coins'),
+      trainHint: $('train-hint'),
       marks: $('npc-marks'),
     };
 
     $('dlg-close').addEventListener('click', () => game.dialogue.close());
+    $('train-close').addEventListener('click', () => game.dialogue.close());
+    $('train-back').addEventListener('click', () => game.dialogue.back());
+    this.el.trainList.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-option]');
+      if (b && !b.disabled) game.dialogue.choose(b.dataset.option);
+    });
     $('ql-close').addEventListener('click', () => this.toggleLog(false));
     $('btn-quests').addEventListener('click', () => this.toggleLog());
     this.el.dlgOptions.addEventListener('click', (e) => {
@@ -150,8 +166,11 @@ export class QuestUI {
   // ---------------------------------------------------------- dialogue
   renderDialogue() {
     const page = this.game.dialogue.page;
-    this.el.dialogue.hidden = !page;
+    this.el.dialogue.hidden = !page || !!page.train;
+    this.el.trainer.hidden = !page || !page.train;
     if (!page) return;
+    this.choice = Math.min(this.choice, page.options.length - 1);
+    if (page.train) return this._renderTrainer(page);
     this.el.dlgName.textContent = page.name;
     this.el.dlgTitle.textContent = page.title;
     this.el.dlgText.textContent = page.text;
@@ -165,11 +184,37 @@ export class QuestUI {
       this.el.dlgQuest.innerHTML = '';
     }
     this.el.dlgHead.hidden = this.el.dlgQuest.hidden = !q;
-    this.choice = Math.min(this.choice, page.options.length - 1);
+    let group = null;
     this.el.dlgOptions.innerHTML = page.options
-      .map((o, i) => `<button class="dlg-option ${o.icon}${this.hud.padMode && i === this.choice ? ' focus' : ''}" data-option="${esc(o.id)}"><span class="dlg-icon">${OPTION_ICON[o.icon] || ''}</span>${esc(o.text)}</button>`)
+      .map((o, i) => {
+        // a heading over each kind of choice (Goodbye stands apart)
+        const head = o.group && o.group !== group ? (o.group === 'bye' ? '<div class="dlg-gap"></div>' : `<div class="dlg-head">${GROUP_HEAD[o.group]}</div>`) : '';
+        group = o.group || group;
+        return `${head}<button class="dlg-option ${o.icon}${this.hud.padMode && i === this.choice ? ' focus' : ''}" data-option="${esc(o.id)}"><span class="dlg-icon">${OPTION_ICON[o.icon] || ''}</span>${esc(o.text)}</button>`;
+      })
       .join('');
     this.el.dlgHint.textContent = this.hud.padMode ? 'A: choose   B: back' : 'Click a choice. Esc or walking away ends the conversation.';
+  }
+
+  // The trainer window, like the shop's: a row per skill or recipe with
+  // what it needs and costs, Learn, and Back to the conversation.
+  _renderTrainer(page) {
+    const items = this.hud.items;
+    this.el.trainName.textContent = page.name;
+    this.el.trainText.textContent = page.text;
+    this.el.trainList.innerHTML = page.train
+      .map((r, i) => {
+        const icon = r.item ? items._iconFor(r.item) : this.hud.abilityIcons[r.ability] || '';
+        const note = TRAIN_STATE[r.state] || r.need;
+        const focus = this.hud.padMode && i === this.choice ? ' focus' : '';
+        const tip = r.item ? `data-tip-item="${r.item}"` : `data-tip-head="${esc(r.name)}" data-tip="${esc(r.desc || '')}"`;
+        return `<div class="train-row ${r.state}${focus}" ${tip}><img src="${icon}" alt=""><div class="train-body"><div class="train-name">${esc(r.name)}</div><div class="train-kind dim">${esc(r.kind)}${note ? ` · <span class="train-need">${esc(note)}</span>` : ''}</div></div><div class="train-cost">${r.state === 'known' ? '' : moneyHTML(r.cost)}</div><button class="btn small" data-option="${esc(r.id)}" ${r.state === 'learn' ? '' : 'disabled'}>${r.state === 'known' ? 'Known' : 'Learn'}</button></div>`;
+      })
+      .join('');
+    this.el.trainCoins.innerHTML = moneyHTML(this.game.inventory.coins);
+    const back = this.choice === page.options.length - 1 && this.hud.padMode;
+    document.getElementById('train-back').classList.toggle('focus', back);
+    this.el.trainHint.textContent = this.hud.padMode ? 'A: learn   B: back' : 'Back returns to the conversation. Walking away ends it.';
   }
 
   // --------------------------------------------------------- quest log

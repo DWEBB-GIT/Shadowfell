@@ -1948,7 +1948,8 @@ async function forge(browser) {
   await ctx.addInitScript(PAD_STUB);
   ({ page, errors } = await openGame(ctx));
   await pauseLoop(page);
-  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // New character
+  await padSim(page, 0.05, { tap: [PAD.A] }); // Create and enter
   await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
   await setup(page, { x: 16.2, z: -40.5 });
   await page.evaluate(() => (window.__shadowfall.inventory.coins = 20));
@@ -2442,7 +2443,8 @@ async function questsAndMap(browser) {
   await ctx.addInitScript(PAD_STUB);
   ({ page, errors } = await openGame(ctx));
   await pauseLoop(page);
-  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // New character
+  await padSim(page, 0.05, { tap: [PAD.A] }); // Create and enter
   await setup(page, { x: 0, z: 20 });
   await padSim(page, 0.05, { tap: [PAD.RIGHT] });
   const padLog = await page.evaluate(() => ({ open: window.__shadowfall.hud.quests.logOpen, sel: window.__shadowfall.hud.quests.selected }));
@@ -2867,14 +2869,15 @@ async function ghostAndCamp(browser) {
     g.inventory.coins = 30;
     g.player.placeAt(-18.2, -14.2);
     g.npcs.talk(g.npcs.byId('tam'));
+    g.dialogue.choose('train');
     const opts = g.dialogue.page.options.map((o) => o.id);
     const before = g.skills.knowsAbility('setCamp');
     g.dialogue.choose('train:camping');
     g.dialogue.close();
-    return { opts, before, after: g.skills.knowsAbility('setCamp'), coins: g.inventory.coins, bar: g.actionBar.slots.includes('setCamp'), book: (g.hud.togglePanel('spellbook'), !!document.querySelector('[data-loc="k:setCamp"]')) };
+    return { opts, before, after: g.skills.knowsAbility('setCamp'), coins: g.inventory.coins, bar: g.actionBar.slots.includes('setCamp'), book: (g.hud.togglePanel('skills'), !!document.querySelector('#skills-window [data-loc="k:setCamp"]')) };
   });
-  await page.evaluate(() => window.__shadowfall.hud.togglePanel('spellbook'));
-  record('Old Tam teaches Camping for coins; Set Camp then appears in the spellbook', learn.opts.includes('train:camping') && learn.opts.includes('train:fishing') && !learn.before && learn.after && learn.coins === 20 && learn.book, `options: ${learn.opts.join(', ')}; 30 → ${learn.coins} coins`);
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('skills'));
+  record('Old Tam teaches Camping for coins (in his trainer window); Set Camp then appears under Professions', learn.opts.includes('train:camping') && learn.opts.includes('train:fishing') && !learn.before && learn.after && learn.coins === 20 && learn.book, `options: ${learn.opts.join(', ')}; 30 → ${learn.coins} coins`);
   await setup(page, { x: -10, z: 22 });
   await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('setCamp', 3); g.player.cooldowns.gcd = 0; });
   await sim(page, 0.05, { press: ['Digit4'] });
@@ -3809,7 +3812,9 @@ async function townAndCooking(browser) {
     const g = window.__shadowfall;
     g.inventory.addCoins(500);
     g.dialogue.open(g.npcs.byId('hester'));
-    const opts = g.dialogue.page.options.map((o) => o.id);
+    const menu = g.dialogue.page.options.map((o) => o.id);
+    g.dialogue.choose('train');
+    const opts = [...menu, ...g.dialogue.page.options.map((o) => o.id)];
     const ok = g.dialogue.choose('train:cooking');
     const after = g.dialogue.page.options.map((o) => o.id);
     const early = g.cooking.learnRecipe('hound_steak');
@@ -4337,6 +4342,55 @@ async function playtest3(browser) {
   await sim(page, 1.6, { held: ['KeyS'] });
   const gone = await page.evaluate(() => document.getElementById('signpost-card').hidden);
   record('Signposts by the road: hovering shows where each arm points, and E reads it on screen until you walk on', sign.prompt === 'Read the signpost' && /Brackenford/.test(sign.card || '') && /Stillwater Mere/.test(sign.card || '') && sign.pick === 'sign' && /Signpost/.test(sign.tip) && gone, `prompt "${sign.prompt}"; card: ${(sign.card || '').replace(/\n/g, ' | ')}; hover: ${sign.pick}`);
+
+  // talking to townsfolk: each kind of choice marked, training in its own
+  // window, Back from the shop and the trainer to the conversation
+  await setup(page, { x: 8, z: 70 });
+  const talk = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addCoins(500);
+    g.npcs.talk(g.npcs.byId('hester'));
+    const heads = [...document.querySelectorAll('#dlg-options .dlg-head')].map((e) => e.textContent);
+    const kinds = [...document.querySelectorAll('#dlg-options .dlg-option')].map((e) => e.className.replace('dlg-option ', ''));
+    g.dialogue.choose('train');
+    const trainOpen = !document.getElementById('trainer-window').hidden && document.getElementById('dialogue-window').hidden;
+    const rows = [...document.querySelectorAll('#train-list .train-row')].map((e) => e.querySelector('.train-name').textContent + ':' + e.className.split(' ').pop());
+    document.querySelector('#train-list [data-option="train:cooking"]').click();
+    const learned = g.skills.has('cooking');
+    const after = [...document.querySelectorAll('#train-list .train-row')].map((e) => e.className.split(' ').pop());
+    document.getElementById('train-back').click();
+    const backToTalk = !document.getElementById('dialogue-window').hidden && document.getElementById('trainer-window').hidden;
+    g.dialogue.close();
+    g.npcs.talk(g.npcs.byId('tam'));
+    g.dialogue.choose('shop');
+    const shopBack = !document.getElementById('shop-back').hidden;
+    document.getElementById('shop-back').click();
+    const fromShop = !g.merchant.current && g.dialogue.isOpen && g.dialogue.npc.id === 'tam';
+    g.dialogue.close();
+    return { heads, kinds, trainOpen, rows, learned, after, backToTalk, shopBack, fromShop };
+  });
+  record('Talking to someone: quests, things to ask and services each have a heading and their own badge', talk.heads.includes('Services') && talk.kinds.includes('train') && talk.kinds.includes('home') && talk.kinds.includes('bye'), `headings ${talk.heads.join(', ')}; badges ${talk.kinds.join(', ')}`);
+  record('Train opens a trainer window like the shop: each skill and recipe, its cost and Learn', talk.trainOpen && talk.rows.length >= 4 && talk.learned && talk.after.includes('known'), talk.rows.join(', '));
+  record('Back takes you from the trainer window or the shop to the conversation', talk.backToTalk && talk.shopBack && talk.fromShop, JSON.stringify({ trainer: talk.backToTalk, shop: talk.fromShop }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.npcs.talk(g.npcs.byId('hester')); g.dialogue.choose('train'); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'trainer-window.png') });
+  await page.evaluate(() => { const g = window.__shadowfall; g.dialogue.back(); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'npc-talk.png') });
+  const prof = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.close();
+    g.skills.learn('fishing');
+    g.hud.items.show('skills');
+    const rows = [...document.querySelectorAll('#skills-list .prof-row')].map((e) => e.dataset.skill);
+    const drag = [...document.querySelectorAll('#skills-list .islot')].map((e) => e.dataset.loc);
+    g.hud.items.show('spellbook');
+    const book = [...document.querySelectorAll('#spellbook-list .islot')].map((e) => e.dataset.loc);
+    return { rows, drag, book };
+  });
+  record('Professions (U) has its own window with ranks and abilities; the spellbook keeps to spells', prof.rows.includes('cooking') && prof.drag.includes('k:fish') && prof.drag.includes('k:cook') && !prof.book.includes('k:fish') && !prof.book.includes('k:cook') && prof.book.includes('k:lunge'), `professions ${prof.rows.join(', ')} (${prof.drag.join(', ')}); spellbook ${prof.book.join(', ')}`);
+  await page.evaluate(() => window.__shadowfall.hud.items.show('skills'));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'professions.png') });
+  await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
 
   // doors and signs: a look at the town
   for (const [x, z, name] of [[-1, 72, 'inn-west'], [-4, 80, 'town-south']]) {

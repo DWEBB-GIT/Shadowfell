@@ -464,9 +464,20 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .q-reward { display: inline-flex; align-items: center; gap: 5px; }
 .q-item img { width: 26px; height: 26px; border: 1px solid var(--border-dim); background: #0b0908; }
 #dlg-options { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; border-top: 1px solid var(--border-dim); padding-top: 6px; }
+.dlg-head { margin: 6px 0 2px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); }
+.dlg-head:first-child { margin-top: 0; }
+.dlg-gap { height: 6px; border-bottom: 1px solid var(--border-dim); margin-bottom: 4px; }
 .dlg-option { display: flex; align-items: center; gap: 8px; text-align: left; padding: 5px 6px; font: inherit; font-size: 14px; color: var(--text); background: none; border: 1px solid transparent; cursor: pointer; }
 .dlg-option:hover, .dlg-option.focus { background: rgba(201, 164, 92, 0.12); border-color: var(--border-dim); }
-.dlg-icon { width: 18px; text-align: center; font: bold 16px Georgia, serif; color: var(--text-dim); }
+.dlg-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: bold 13px Georgia, serif; color: var(--text-dim); background: rgba(0, 0, 0, 0.45); border: 1px solid #000; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+/* a badge per kind: speech, buying, training, the inn, quests */
+.dlg-option.talk .dlg-icon { color: #e8dcc0; background: #3a3226; }
+.dlg-option.shop .dlg-icon { color: #ffe08a; background: #5a4410; }
+.dlg-option.train .dlg-icon { color: #bfe0ff; background: #1e3a5a; }
+.dlg-option.home .dlg-icon { color: #ffc890; background: #5a2e12; }
+.dlg-option.ready .dlg-icon, .dlg-option.available .dlg-icon { background: #3a3008; }
+.dlg-option.shop { color: #f0e0a8; }
+.dlg-option.train { color: #cfe4f8; }
 .dlg-option.ready .dlg-icon, .dlg-option.available .dlg-icon { color: #ffd23c; }
 .dlg-option.active .dlg-icon { color: #a8a8a8; }
 .dlg-option.ready, .dlg-option.available { color: #f0d890; }
@@ -657,3 +668,34 @@ body.ghost #prompt { color: #cfe6ff; }
 .sign-arrow { width: 18px; text-align: center; color: var(--gold); font-size: 16px; }
 .sign-to { flex: 1; color: var(--text); }
 .sign-far { color: var(--text-dim, #9a8f7a); font-size: 12px; }
+
+/* the trainer window (Dan, 2026-10-16: like the shop's) */
+#trainer-window { left: 12px; top: 136px; width: 360px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#trainer-window[hidden] { display: none; }
+#train-text { margin: 0 0 8px; font-size: 13px; }
+#train-list { display: flex; flex-direction: column; gap: 4px; max-height: 360px; overflow-y: auto; }
+.train-row { display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid transparent; }
+.train-row.focus { border-color: var(--border); background: rgba(201, 164, 92, 0.12); }
+.train-row img { width: 36px; height: 36px; border: 1px solid #000; outline: 1px solid var(--border-dim); }
+.train-row.known img, .train-row.locked img { filter: grayscale(0.8) brightness(0.7); }
+.train-body { flex: 1; min-width: 0; }
+.train-name { font-size: 14px; color: var(--text); }
+.train-row.known .train-name { color: var(--text-dim); }
+.train-kind { font-size: 11px; }
+.train-row.locked .train-need, .train-row.poor .train-need { color: #d06048; }
+.train-cost { font-size: 12px; color: #d8c890; white-space: nowrap; }
+#train-back.focus { outline: 1px solid var(--gold); }
+#shop-back[hidden] { display: none; }
+
+/* Professions (U) */
+#skills-window { width: 360px; }
+#skills-list { display: flex; flex-direction: column; gap: 6px; }
+.prof-row { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border: 1px solid #3a2f20; background: #0f0c09; }
+.prof-row.unknown { opacity: 0.55; }
+.prof-body { flex: 1; min-width: 0; }
+.prof-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.prof-abilities { display: flex; gap: 4px; align-items: center; }
+.prof-abilities .islot { width: 36px; height: 36px; }
+.prof-how { font-size: 11px; margin-top: 2px; }
+.prof-sub { margin: 6px 0 0; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+.train-row .btn:disabled { opacity: 0.4; cursor: default; }

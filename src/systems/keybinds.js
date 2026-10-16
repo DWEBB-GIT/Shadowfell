@@ -24,7 +24,7 @@ export const KEY_ACTIONS = [
   { id: 'quests', label: 'Quest log', group: 'Menus', keys: ['KeyL'] },
   { id: 'settings', label: 'Settings', group: 'Menus', keys: ['KeyO'] },
   { id: 'bags', label: 'Bags', group: 'Menus', keys: ['KeyB', 'KeyI'] },
-  { id: 'skills', label: 'Skills', group: 'Menus', keys: ['KeyU'] },
+  { id: 'skills', label: 'Professions', group: 'Menus', keys: ['KeyU'] },
   { id: 'save', label: 'Save the game', group: 'Menus', keys: ['KeyK'] },
 ];
 

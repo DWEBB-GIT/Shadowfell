@@ -1,13 +1,16 @@
-import { moneyText } from '../ui/money.js';
 import { CONFIG } from '../config.js';
 import { DB } from '../data/db.js';
 import { conditionHolds } from './quests.js';
 
-// Talking to townsfolk, in the WoW gossip style: a greeting with a list of
-// choices (quests first, then things to ask, the shop, and Goodbye). A quest
-// opens its own page: the offer with objectives and rewards and Accept, or
-// the hand-in with Complete quest. Topics open small dialogue trees from
-// data/dialogue.json.
+// Talking to townsfolk, in the WoW gossip style: a greeting with its choices
+// grouped and marked by kind (Dan, 2026-10-16: each action clear at a
+// glance): quests (! and ?), things to ask, then services (the shop, the
+// trainer, the inn) and Goodbye. A quest opens its own page: the offer with
+// objectives and rewards and Accept, or the hand-in with Complete quest.
+// Topics open small dialogue trees from data/dialogue.json. Training opens
+// the trainer window (view 'train'): every skill and recipe this person
+// teaches, with what it needs and costs. The shop and the trainer window
+// both have Back, to the greeting.
 //
 // This system owns where the conversation is; the HUD (questUI) shows it and
 // passes choices back. Walking away ends it, as with a shop.
@@ -16,7 +19,7 @@ export class Dialogue {
   constructor(game) {
     this.game = game;
     this.npc = null; // the Npc spoken to
-    this.view = null; // { kind: 'menu' } | { kind: 'node', id } | { kind: 'quest', id }
+    this.view = null; // { kind: 'menu' } | { kind: 'node', id } | { kind: 'quest', id } | { kind: 'train' }
   }
 
   get isOpen() {
@@ -57,7 +60,26 @@ export class Dialogue {
     return id ? DB.dialogues[id] : null;
   }
 
-  // What the window shows now: { name, title, text, quest?, options: [{ id, text, icon }] }
+  // Everything this person teaches, for the trainer window:
+  // [{ id: 'train:x' | 'recipe:y', name, kind, icon, need, cost, state }],
+  // state 'learn' | 'known' | 'locked' (with `need` saying why).
+  trainRows(npcId = this.npc?.id) {
+    const { skills, cooking, inventory } = this.game;
+    const rows = [];
+    for (const s of Object.values(DB.skills).filter((x) => x.trainer === npcId)) {
+      const known = skills.has(s.id);
+      rows.push({ id: 'train:' + s.id, name: s.name, kind: 'Skill', ability: (s.teaches || [])[0], desc: s.desc, need: known ? '' : 'Teaches a new skill', cost: s.cost, state: known ? 'known' : inventory.coins < s.cost ? 'poor' : 'learn' });
+    }
+    for (const r of Object.values(DB.recipes).filter((x) => x.trainer === npcId)) {
+      const skill = DB.skills[r.skill];
+      const known = cooking.learned.has(r.id);
+      const locked = !skills.has(r.skill) ? `Requires ${skill.name}` : cooking.rank(r.skill) < r.rank ? `Requires ${skill.name} ${r.rank}` : '';
+      rows.push({ id: 'recipe:' + r.id, name: DB.items[r.output.item].name, kind: `${skill.name} recipe`, item: r.output.item, need: locked || `${skill.name} ${r.rank}`, cost: r.cost, state: known ? 'known' : locked ? 'locked' : inventory.coins < r.cost ? 'poor' : 'learn' });
+    }
+    return rows;
+  }
+
+  // What the window shows now: { name, title, text, quest?, options: [{ id, text, icon, group }] }
   get page() {
     if (!this.npc) return null;
     const npc = DB.npcs[this.npc.id];
@@ -68,21 +90,25 @@ export class Dialogue {
       const greet = d ? d.greetings.filter((g) => conditionHolds(this.game, g.when)) : [];
       page.text = greet.length ? greet[greet.length - 1].text : '';
       for (const q of this.game.quests.forNpc(this.npc.id)) {
-        page.options.push({ id: 'quest:' + q.id, text: DB.quests[q.id].name, icon: q.status });
+        page.options.push({ id: 'quest:' + q.id, text: DB.quests[q.id].name, icon: q.status, group: 'quest' });
       }
       for (const t of d ? d.topics || [] : []) {
-        if (conditionHolds(this.game, t.when)) page.options.push({ id: 'node:' + t.node, text: t.prompt, icon: 'talk' });
+        if (conditionHolds(this.game, t.when)) page.options.push({ id: 'node:' + t.node, text: t.prompt, icon: 'talk', group: 'talk' });
       }
-      // trainers offer what they teach and the Warden has not learned
-      for (const s of this.game.skills.offeredBy(this.npc.id)) page.options.push({ id: 'train:' + s.id, text: `Teach me ${s.name} (${moneyText(s.cost)}).`, icon: 'train' });
-      // recipes, once you know the skill (the rank they need is shown)
-      for (const r of this.game.cooking.offeredBy(this.npc.id)) {
-        const name = DB.items[r.output.item].name;
-        page.options.push({ id: 'recipe:' + r.id, text: `Teach me to make ${name} (${DB.skills[r.skill].name} ${r.rank}, ${moneyText(r.cost)}).`, icon: 'train' });
+      if (npc.shop) page.options.push({ id: 'shop', text: 'Browse goods', icon: 'shop', group: 'service' });
+      // a trainer: one way in to the trainer window, saying what is new
+      const rows = this.trainRows();
+      if (rows.length) {
+        const n = rows.filter((r) => r.state === 'learn' || r.state === 'poor').length;
+        page.options.push({ id: 'train', text: n ? `Train (${n} to learn)` : 'Train', icon: 'train', group: 'service' });
       }
-      if (npc.innkeeper && this.game.worldState.restPoint !== 'inn:' + this.npc.id) page.options.push({ id: 'home', text: 'Make this inn your home.', icon: 'talk' });
-      if (npc.shop) page.options.push({ id: 'shop', text: 'Let me see your wares.', icon: 'shop' });
-      page.options.push({ id: 'bye', text: 'Goodbye.', icon: 'bye' });
+      if (npc.innkeeper && this.game.worldState.restPoint !== 'inn:' + this.npc.id) page.options.push({ id: 'home', text: 'Make this inn your home', icon: 'home', group: 'service' });
+      page.options.push({ id: 'bye', text: 'Goodbye', icon: 'bye', group: 'bye' });
+    } else if (v.kind === 'train') {
+      page.train = this.trainRows();
+      page.text = page.train.some((r) => r.state === 'learn') ? 'What would you learn?' : 'There is nothing more I can teach you just now.';
+      for (const r of page.train) page.options.push({ id: r.id, text: r.name, icon: 'train', disabled: r.state !== 'learn' });
+      page.options.push({ id: 'menu', text: 'Back', icon: 'back' });
     } else if (v.kind === 'node') {
       const node = d.nodes.find((n) => n.id === v.id);
       page.text = node.text;
@@ -112,6 +138,7 @@ export class Dialogue {
     const v = this.view;
     if (id === 'bye') return this.close();
     if (id === 'menu') this.view = { kind: 'menu' };
+    else if (id === 'train') this.view = { kind: 'train' };
     else if (id === 'shop') {
       const npc = this.npc;
       this.close();

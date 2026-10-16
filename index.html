@@ -72,6 +72,7 @@
       <div id="micro-bar" class="panel">
         <button class="micro" id="btn-character" data-tip="Character"><span class="micro-icon">&#9876;</span><span class="key" data-key-action="character" data-kbm="C" data-pad="View"></span></button>
         <button class="micro" id="btn-spellbook" data-tip="Spells"><span class="micro-icon">&#10022;</span><span class="key" data-key-action="spellbook" data-kbm="P" data-pad="&#8593;"></span></button>
+        <button class="micro" id="btn-skills" data-tip="Professions"><span class="micro-icon">&#9874;</span><span class="key" data-key-action="skills" data-kbm="U" data-pad=""></span></button>
         <button class="micro" id="btn-talents" data-tip="Talents"><span class="micro-icon">&#10048;</span><span class="key" data-key-action="talents" data-kbm="N" data-pad=""></span></button>
         <button class="micro" id="btn-quests" data-tip="Quest Log"><span class="micro-icon">!</span><span class="key" data-key-action="quests" data-kbm="L" data-pad="&#8594;"></span></button>
         <button class="micro" id="btn-settings" data-tip="Settings"><span class="micro-icon">&#9776;</span><span class="key" data-key-action="settings" data-kbm="O" data-pad=""></span></button>
@@ -101,15 +102,15 @@
   </div>
 
   <div id="spellbook-window" class="window panel" hidden>
-    <div class="window-head"><h2>Spells</h2><button class="btn small" id="btn-skills" data-tip="Skills (fishing, lockpicking…)">Skills</button><button class="btn small" data-close-panel="spellbook">&times;</button></div>
+    <div class="window-head"><h2>Spells</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
     <div id="spellbook-list"></div>
     <div class="window-hint" id="spellbook-hint"></div>
   </div>
 
   <div id="skills-window" class="window panel" hidden>
-    <div class="window-head"><h2>Skills</h2><button class="btn small" data-close-panel="skills">&times;</button></div>
+    <div class="window-head"><h2>Professions</h2><button class="btn small" data-close-panel="skills">&times;</button></div>
     <div id="skills-list"></div>
-    <div class="window-hint">Skills are learned from trainers and rise as you use them.</div>
+    <div class="window-hint">Professions are learned from trainers and rise as you use them. Drag an ability onto your bar.</div>
   </div>
 
   <div id="settings-window" class="window panel" hidden>
@@ -140,8 +141,17 @@
     <div id="shop-stock"></div>
     <div class="shop-sub dim">Buy back</div>
     <div id="shop-buyback"></div>
-    <div class="bag-foot"><button class="btn small" id="shop-repair" hidden>Repair all</button><span id="shop-coins"></span></div>
+    <div class="bag-foot"><button class="btn small" id="shop-back" hidden>&#8617; Back</button><button class="btn small" id="shop-repair" hidden>Repair all</button><span id="shop-coins"></span></div>
     <div class="window-hint" id="shop-hint"></div>
+  </div>
+
+  <!-- a trainer's window, like the shop: what they teach, its cost, Learn -->
+  <div id="trainer-window" class="window panel" hidden>
+    <div class="window-head"><h2 id="train-name"></h2><span class="dim">Trainer</span><button class="btn small" id="train-close">&times;</button></div>
+    <p id="train-text" class="dim"></p>
+    <div id="train-list"></div>
+    <div class="bag-foot"><button class="btn small" id="train-back">&#8617; Back</button><span id="train-coins"></span></div>
+    <div class="window-hint" id="train-hint"></div>
   </div>
 
   <!-- WoW-style conversation: greeting, quests, things to ask, the shop -->
