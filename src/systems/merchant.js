@@ -1,5 +1,6 @@
 import { moneyText } from '../ui/money.js';
 import { CONFIG } from '../config.js';
+import { AMMO_LOC } from './inventory.js';
 import { ITEMS, sellPrice, itemView } from '../data/items.js';
 import { DB } from '../data/db.js';
 
@@ -80,7 +81,7 @@ export class Merchant {
     const { inventory, events } = this.game;
     if (!this.current) return false;
     const stack = inventory.get(loc);
-    if (!stack || loc.startsWith('s:')) return false;
+    if (!stack || loc.startsWith('s:') || loc === AMMO_LOC) return false;
     const def = itemView(stack);
     if (def.quest) {
       events.emit('log', { text: `${this.def.name} has no use for that, and you should not part with it.`, kind: 'muted', throttle: 'shop-refuse' });

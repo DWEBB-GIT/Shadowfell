@@ -587,6 +587,7 @@ class Game {
     const dt = Math.min(this.clock.getDelta(), 0.1); // clamp long stalls
     this.step(dt);
     this.renderer.render(this.scene, this.camera);
+    if (this.hud.items.open.character) this.hud.items.preview.render(); // the character panel's live figure
   }
 
   // One simulation step. Exposed so tests can advance time deterministically.

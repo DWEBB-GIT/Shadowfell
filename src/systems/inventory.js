@@ -13,6 +13,8 @@ import { moneyText } from '../ui/money.js';
 //   'b:<socket>:<slot>'  a slot inside a bag
 //   'e:<slotId>'         a character equipment slot
 //   's:<socket>'         a bag socket (1-3; the bag item itself)
+//   'e:ammo'             the ammo slot: which arrows Auto Shot uses. It
+//                        names an arrow type; the arrows stay in the bags.
 
 export const parseLoc = (loc) => {
   const [t, a, b] = loc.split(':');
@@ -30,6 +32,8 @@ const clone = (s) => {
   return c;
 };
 
+export const AMMO_LOC = 'e:ammo';
+
 export class Inventory {
   constructor(game) {
     this.game = game;
@@ -44,12 +48,14 @@ export class Inventory {
     this.equipment.chest = { id: 'travelling_clothes', count: 1 };
     this.equipment.offHand = { id: 'kite_shield', count: 1 };
     this.sockets[0].slots[0] = { id: 'healing_draught', count: CONFIG.player.startDraughts };
+    this.ammoChoice = null; // the arrow type in the ammo slot
   }
 
   // ------------------------------------------------------------ queries
   get(loc) {
     const p = parseLoc(loc);
     if (!p) return null;
+    if (loc === AMMO_LOC) return this.ammoChoice ? { id: this.ammoChoice, count: this.count(this.ammoChoice) } : null;
     if (p.type === 'bag') return this.sockets[p.socket]?.slots[p.slot] ?? null;
     if (p.type === 'equip') return this.equipment[p.slot] ?? null;
     if (p.type === 'socket') {
@@ -107,8 +113,15 @@ export class Inventory {
     return v.broken ? null : v;
   }
 
-  // the arrows Auto Shot will use: the best you carry (most damage)
+  // the arrows Auto Shot will use: those in the ammo slot (kept filled by
+  // _refillAmmo while you carry any)
   get ammo() {
+    if (this.ammoChoice && this.count(this.ammoChoice) > 0) return this.ammoChoice;
+    return this.bestAmmo();
+  }
+
+  // the best arrows you carry (most damage)
+  bestAmmo() {
     let best = null;
     for (const loc of this.bagLocations()) {
       const s = this.get(loc);
@@ -116,6 +129,36 @@ export class Inventory {
       if (d?.kind === 'ammo' && (!best || d.ammoDps > ITEMS[best].ammoDps)) best = s.id;
     }
     return best;
+  }
+
+  // How many arrows a bag holds (shown on a quiver's bag slot).
+  arrowsIn(socket) {
+    const s = this.sockets[socket];
+    return s ? s.slots.reduce((n, st) => n + (st && ITEMS[st.id]?.kind === 'ammo' ? st.count : 0), 0) : 0;
+  }
+
+  // The ammo slot, as in WoW: arrows dragged onto it choose the type Auto
+  // Shot uses (they stay in the bags). When that type runs out the slot
+  // takes the next arrows you carry, best first; an empty slot fills itself
+  // as soon as you have arrows.
+  setAmmo(id) {
+    if (!ITEMS[id] || ITEMS[id].kind !== 'ammo') return this._refuse('Only arrows go in the ammo slot.');
+    if (this.ammoChoice !== id) {
+      this.ammoChoice = id;
+      this.game.events.emit('log', { text: `Auto Shot now uses ${ITEMS[id].name.toLowerCase()}s.`, kind: 'muted', throttle: 'ammo-set' });
+    }
+    this._changed();
+    return { ok: true };
+  }
+
+  _refillAmmo() {
+    const had = this.ammoChoice;
+    if (had && this.count(had) > 0) return;
+    const next = this.bestAmmo();
+    if (next === had) return;
+    this.ammoChoice = next;
+    if (had && next) this.game.events.emit('log', { text: `Out of ${ITEMS[had].name.toLowerCase()}s. Auto Shot now uses ${ITEMS[next].name.toLowerCase()}s.`, kind: 'muted' });
+    else if (had) this.game.events.emit('log', { text: `You are out of arrows.`, kind: 'muted', throttle: 'no-ammo' });
   }
 
   // a quiver in a bag slot quickens Auto Shot (percent; the best one counts)
@@ -248,6 +291,7 @@ export class Inventory {
 
   // Remove up to `count` from one location; returns the removed stack.
   take(loc, count = Infinity) {
+    if (loc === AMMO_LOC) return null; // the arrows themselves stay in the bags
     const s = this.get(loc);
     if (!s) return null;
     const p = parseLoc(loc);
@@ -271,6 +315,7 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (!p || !def) return false;
+    if (loc === AMMO_LOC) return def.kind === 'ammo';
     if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def, p.slot);
     if (p.type === 'socket') return p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag';
     if (p.type === 'bag') {
@@ -292,6 +337,9 @@ export class Inventory {
   // Move or swap the stacks at two locations. Returns { ok, reason }.
   move(from, to) {
     if (from === to) return { ok: false, reason: '' };
+    // arrows onto the ammo slot choose them; nothing is moved
+    if (to === AMMO_LOC) return this.get(from) ? this.setAmmo(this.get(from).id) : { ok: false, reason: '' };
+    if (from === AMMO_LOC) return this._refuse('Drag other arrows onto the ammo slot to change them.');
     const a = this.get(from);
     const b = this.get(to);
     if (!a) return { ok: false, reason: '' };
@@ -357,6 +405,8 @@ export class Inventory {
     if (!s) return false;
     const def = ITEMS[s.id];
     const p = parseLoc(loc);
+    if (loc === AMMO_LOC) return false;
+    if (def.kind === 'ammo') return this.setAmmo(s.id).ok;
     if (p.type === 'equip' || p.type === 'socket') {
       const free = this.firstFree();
       if (!free) return !!this._refuse('Your bags are full.');
@@ -475,6 +525,7 @@ export class Inventory {
   }
 
   _changed() {
+    this._refillAmmo();
     this.game.events.emit('inventoryChanged', {});
   }
 
@@ -524,6 +575,7 @@ export class Inventory {
       sockets: this.sockets.map((s) => (s ? { id: s.id, slots: s.slots.map(clone) } : null)),
       equipment: Object.fromEntries(Object.entries(this.equipment).map(([k, v]) => [k, clone(v)])),
       granted: ['kite_shield'],
+      ammo: this.ammoChoice,
     };
   }
 
@@ -531,6 +583,7 @@ export class Inventory {
     this.coins = data.coins;
     this.sockets = data.sockets.map((s) => (s ? { id: s.id, slots: s.slots.map(clone) } : null));
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.id, clone(data.equipment[s.id] || null)]));
+    this.ammoChoice = ITEMS[data.ammo] ? data.ammo : null;
     // saves from before shields existed: hand the Warden theirs, once
     if (!(data.granted || []).includes('kite_shield')) {
       if (!this.equipment.offHand) this.equipment.offHand = { id: 'kite_shield', count: 1 };

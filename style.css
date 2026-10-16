@@ -314,10 +314,11 @@ kbd {
 .bag-grid { display: grid; grid-template-columns: repeat(4, 42px); gap: 4px; }
 .bag-foot { display: flex; align-items: center; gap: 5px; justify-content: flex-end; margin-top: 6px; font-size: 13px; }
 
-#character-window { left: 12px; top: 136px; width: 330px; max-height: calc(100vh - 150px); overflow-y: auto; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
+#character-window { left: 12px; top: 136px; width: 470px; max-height: calc(100vh - 150px); overflow-y: auto; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 .char-body { display: flex; gap: 10px; }
 .equip-col { display: flex; flex-direction: column; gap: 4px; }
-#character-window .equip-col .islot { width: 38px; height: 38px; }
+#character-window .islot.equip { width: 48px; height: 48px; }
+#character-window .islot.equip .ph { font-size: 9px; letter-spacing: 0; }
 #char-rep { margin-top: 8px; }
 #char-rep h3 { font-size: 12px; margin: 0 0 4px; color: var(--gold); font-weight: normal; }
 .rep-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 6px; align-items: center; font-size: 11px; margin-bottom: 3px; }
@@ -333,16 +334,23 @@ kbd {
 .islot.broken img { filter: grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3) brightness(0.7); }
 #shop-repair { margin-right: auto; display: inline-flex; gap: 6px; align-items: center; }
 #shop-repair[hidden] { display: none; }
-.char-figure { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.char-figure {
+  position: relative; flex: 1; min-height: 356px; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 88%, rgba(120, 90, 50, 0.28), transparent 55%), radial-gradient(ellipse at 50% 40%, #241d15, #0d0b09 75%);
+  border: 1px solid rgba(107, 85, 50, 0.45); box-shadow: inset 0 0 18px #000;
+}
+#char-model { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; }
 .figure-shape {
-  width: 78px; height: 120px; opacity: 0.5;
+  display: none; width: 78px; height: 120px; opacity: 0.5;
   background:
     radial-gradient(circle at 50% 14%, #3a3024 0 13px, transparent 14px),
     linear-gradient(#3a3024, #3a3024) 50% 30px / 40px 52px no-repeat,
     linear-gradient(#3a3024, #3a3024) 32% 84px / 13px 36px no-repeat,
     linear-gradient(#3a3024, #3a3024) 68% 84px / 13px 36px no-repeat;
 }
-#char-stats { width: 100%; font-size: 13px; }
+.char-figure.no-model .figure-shape { display: block; }
+#char-stats { margin-top: 10px; font-size: 13px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
+#char-stats .stat-gap { grid-column: 1 / -1; height: 4px; border: 0; }
 #char-stats div { display: flex; justify-content: space-between; padding: 1px 0; border-bottom: 1px solid rgba(107, 85, 50, 0.2); }
 #char-stats span { color: var(--text-dim); }
 .window-hint { margin-top: 8px; font-size: 11px; color: var(--text-dim); line-height: 1.4; }
@@ -405,11 +413,12 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .name-label small { display: block; font-size: 10px; opacity: 0.85; }
 .loot-label { padding: 0 4px; background: rgba(10, 8, 6, 0.55); border-radius: 2px; }
 #damage-numbers { position: absolute; inset: 0; overflow: hidden; }
-.dmg { position: absolute; left: 0; top: 0; font-size: 15px; font-weight: bold; color: #e6dcc4; text-shadow: 0 0 3px #000, 1px 1px 0 #000; white-space: nowrap; will-change: transform, opacity; }
+.dmg { position: absolute; left: 0; top: 0; font-size: 22px; font-weight: bold; color: #e6dcc4; text-shadow: 0 0 3px #000, 1px 1px 0 #000; white-space: nowrap; will-change: transform, opacity; }
 .dmg.taken { color: #c8524a; }
-.dmg.crit { font-size: 21px; color: #e8a84a; letter-spacing: 1px; }
+.dmg.crit { color: #e8a84a; letter-spacing: 1px; }
+.dmg.crit.big { color: #ffc25a; text-shadow: 0 0 3px #000, 1px 1px 0 #000, 0 0 12px rgba(255, 140, 40, 0.75); }
 .dmg.taken.crit { color: #e0603c; }
-.dmg.block { color: #a8a8a0; font-size: 13px; font-style: italic; }
+.dmg.block { color: #a8a8a0; font-style: italic; }
 .dmg.heal { color: #8cbf78; }
 /* enemy mana, for enemies that have it */
 .bar.mp .fill { background: linear-gradient(#5a82c8, #2c4a8a); }
@@ -440,7 +449,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 
 /* merchant window, WoW style: left of the screen, beside the character panel if open */
 #shop-window { left: 12px; top: 136px; width: 330px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
-#shop-window.beside-character { left: 354px; }
+#shop-window.beside-character { left: 494px; }
 #shop-window .window-head h2 { margin-right: 8px; }
 #shop-stock { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .shop-row { display: flex; gap: 6px; align-items: center; }
@@ -551,6 +560,10 @@ body.ghost #prompt { color: #cfe6ff; }
 .tt-friend { color: #a8e08c; }
 .bag-free { position: absolute; right: 2px; bottom: 1px; font-size: 12px; font-weight: bold; color: #f0e4c8; text-shadow: 0 0 2px #000, 1px 1px 0 #000; pointer-events: none; }
 .islot.full .bag-free { color: #ff6a50; }
+/* a quiver's arrow count, over its bag slot; the ammo slot's count */
+.arrow-count { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: 13px; font-weight: bold; color: #f0e4c8; text-shadow: 0 0 2px #000, 1px 1px 0 #000, -1px -1px 0 #000; pointer-events: none; }
+.arrow-count.none, .islot .count.none { color: #ff6a50; }
+#character-window .islot.equip .count { font-size: 13px; font-weight: bold; }
 #ui-error { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); font-size: 20px; letter-spacing: 1px; color: #ff3a2a; text-shadow: 0 0 3px #000, 1px 1px 0 #000; opacity: 0; transition: opacity 0.6s; pointer-events: none; white-space: nowrap; }
 #ui-error.show { opacity: 1; transition: none; }
 

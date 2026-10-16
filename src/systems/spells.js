@@ -379,7 +379,7 @@ export class Spells {
     const { stats, events, combat } = this.game;
     const hit = computeHit(this.game.random, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * this.damageScale * this.game.afterlife.damageScaleAgainst(enemy), school: spell.school || 'physical' });
     enemy.hurt(hit.amount, hurtOpts);
-    events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
+    events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt', hand: spell.ranged ? 'ranged' : 'main' });
     events.emit('enemyHit', { enemy, damage: hit.amount, crit: hit.crit, kind: (spell.school || 'physical') === 'physical' ? 'strike' : 'spell' });
     events.emit('hitImpact', { enemy, crit: hit.crit, heavy: (hurtOpts.knockback || 0) > 0 });
     if (line) events.emit('log', { text: line.replace('{name}', enemy.cfg.name).replace('{n}', hit.amount) + (hit.crit ? ' A critical blow!' : ''), kind: 'hit' });

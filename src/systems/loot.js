@@ -3,6 +3,7 @@ import { LOOT, UNIQUE_DROPS, ITEMS, RARITY, itemView, rollItem, rollLoot } from 
 import { DB } from '../data/db.js';
 import { heightAt } from '../world/terrain.js';
 import { CONFIG } from '../config.js';
+import { AMMO_LOC } from './inventory.js';
 
 // Loot represented in the world. Collected loot is removed from the scene and
 // recorded in the world state so it never reappears.
@@ -54,7 +55,7 @@ export class LootSystem {
     const { inventory, player, worldState, events, collision } = this.game;
     if (player.dead) return null;
     const stack = inventory.get(loc);
-    if (!stack) return null;
+    if (!stack || loc === AMMO_LOC) return null; // the ammo slot only names arrows
     if (ITEMS[stack.id].quest) {
       events.emit('log', { text: `You keep hold of the ${ITEMS[stack.id].name}. Someone will want it.`, kind: 'muted', throttle: 'inv-refuse' });
       return null;
