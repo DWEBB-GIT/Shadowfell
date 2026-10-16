@@ -32,6 +32,14 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Playtest batch, 2026-10-16 (Dan's list)
+
+- **Townsfolk.** A conversation groups its choices under Quests, Ask about and Services. Each kind has its own badge: speech, goods (Browse goods), training (Train) and the inn (Make this inn your home). **Train** opens a trainer window like the shop. It lists every skill and recipe that person teaches, with what it needs, its cost and Learn. The shop and the trainer window both have **Back** to the conversation.
+- **Professions (U).** Professions have their own window with your rank in each, and their abilities (Fishing, Cooking, Set Camp) to drag onto the bar. The spellbook (P) now keeps to spells. There is also a Professions button with the menu buttons.
+- **Bottom right.** The menu buttons sit in one row with the bag slots, and your money is in the corner. On a narrow screen the spell bar moves left to stay clear of them.
+- **On screen.** Damage you take shows as "-n". The selected enemy's bar shows its health in numbers. Your name shows over your character, and Settings (O) can turn it off.
+- Bows, signposts, cooking, Well Fed and fishing are under their own headings below.
+
 ## Dual wielding
 
 - One-handed swords and daggers (the arming sword and rusty dirk from Mara, the militia sword and ghoulbone knife as drops) go in either hand. Drag one onto the off hand to dual wield.

@@ -303,6 +303,21 @@ export class Hud {
     this.game.events.emit('signpostRead', { id: sp.id });
   }
 
+  // On a narrow screen the spell bar moves left of centre, so it stays
+  // clear of the menus, bags and money in the bottom-right corner.
+  _layoutBottom() {
+    const bar = document.getElementById('bottom-bar');
+    const dock = document.getElementById('right-dock');
+    if (!bar || !dock) return;
+    const was = parseFloat(bar.style.marginLeft) || 0;
+    const b = bar.getBoundingClientRect();
+    const d = dock.getBoundingClientRect();
+    const centred = b.left - was;
+    const over = centred + b.width + 10 - d.left;
+    const shift = over > 0 ? -Math.min(over, Math.max(0, centred - 12)) : 0;
+    if (shift !== was) bar.style.marginLeft = `${shift}px`;
+  }
+
   _updateSignpost() {
     if (!this.signpost) return;
     const { player } = this.game;
@@ -481,6 +496,10 @@ export class Hud {
     }
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
     this._updateSignpost();
+    if ((this.layoutClock = (this.layoutClock || 0) - dt) <= 0) {
+      this.layoutClock = 0.5;
+      this._layoutBottom();
+    }
     this.refreshStats();
     this._refreshSlots();
     this._refreshSpells();

@@ -4392,6 +4392,22 @@ async function playtest3(browser) {
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'professions.png') });
   await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
 
+  // the bottom right: menus, then bags, then money in the corner, clear of the spell bar
+  const dock = async () => page.evaluate(() => {
+    const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+    const micro = r('#micro-bar'), bags = r('#bag-dock'), coins = r('#right-dock .coins'), bar = r('#bottom-bar');
+    return { inline: Math.abs(micro.bottom - bags.bottom) < 2 && micro.right <= bags.left && bags.right <= coins.left, corner: window.innerWidth - coins.right < 20 && window.innerHeight - coins.bottom < 20, clear: bar.right <= micro.left, bar: [Math.round(bar.left), Math.round(bar.right)], micro: Math.round(micro.left), w: window.innerWidth };
+  });
+  const d1 = await dock();
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await sim(page, 0.05);
+  const d2 = await dock();
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'hud-1080p.png') });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await sim(page, 0.05);
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'hud-720p.png') });
+  record('Menu buttons sit in a row with the bag slots, money in the bottom-right corner, clear of the spell bar (720p and 1080p)', d1.inline && d1.corner && d1.clear && d2.inline && d2.corner && d2.clear, JSON.stringify([d1, d2]));
+
   // doors and signs: a look at the town
   for (const [x, z, name] of [[-1, 72, 'inn-west'], [-4, 80, 'town-south']]) {
     await setup(page, { x, z });

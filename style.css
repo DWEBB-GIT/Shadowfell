@@ -513,8 +513,10 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #swing-bar-off .fill { background: linear-gradient(#a9b4c0, #5d6874); }
 #swing-bar-off .bar-text { font-size: 9px; line-height: 10px; }
 #swing-bar-off[hidden] { display: none; }
-#right-dock { position: absolute; right: 12px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: auto; }
-#right-dock .coins { height: 30px; padding: 0 10px; }
+#right-dock { position: absolute; right: 12px; bottom: 8px; display: flex; flex-direction: row; align-items: flex-end; gap: 6px; pointer-events: auto; }
+#right-dock .coins { height: 52px; padding: 0 10px; box-sizing: border-box; flex-direction: column; justify-content: center; }
+#right-dock #micro-bar { padding: 4px 5px; gap: 4px; }
+#right-dock .micro { width: 32px; height: 42px; font-size: 16px; }
 #bag-dock { padding: 5px 6px 4px; }
 #settings-window { top: 70px; max-height: calc(100vh - 220px); overflow-y: auto; }
 .set-head { font-size: 13px; color: var(--gold); font-weight: normal; margin: 10px 0 4px; }
