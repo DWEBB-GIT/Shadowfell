@@ -3585,13 +3585,13 @@ async function resources(browser) {
 
   // Hallowed Bolt costs 20 mana, paid when the cast finishes
   await sim(page, 2);
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; const e = g.enemies.byId('ghoul_road'); e.windup = 0; e.attackTimer = 30; });
   const castOk = await page.evaluate(() => window.__shadowfall.spells.tryCast('hallowedBolt'));
   const midCast = await page.evaluate(() => window.__shadowfall.resources.mana);
   await sim(page, 1.8);
   const afterCast = await page.evaluate(() => window.__shadowfall.resources.mana);
   record('Hallowed Bolt costs 20 mana, paid when the cast finishes', castOk && midCast >= 50 && afterCast > 29 && afterCast < 34, `mana 50 → ${midCast.toFixed(1)} while casting → ${afterCast.toFixed(1)} after (regen 1.5/s in combat)`);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.resources.mana = 5; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.player.casting = null; g.hud.lastError = null; g.resources.mana = 5; });
   const noMana = await page.evaluate(() => !window.__shadowfall.spells.tryCast('hallowedBolt') && window.__shadowfall.hud.lastError);
   record('A spell is refused without enough mana', !!noMana && /mana/.test(noMana), `"${noMana}"`);
 
