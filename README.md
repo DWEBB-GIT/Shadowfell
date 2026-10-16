@@ -44,7 +44,8 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Indoors.** Walk in through the inn's west door. Its walls are solid; inside, the roof hides, the front wall fades to a ghost, and the camera comes in about a fifth closer. All of it eases back as you step out.
 - **Hester Vale**, the innkeeper, sells food, teaches Cooking (10 coins) and its recipes, and can make the inn your home: if you fall, you wake by her hearth. Standing inside the inn with no enemy near builds rested experience, as by your camp fire.
 - **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
-- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Recipes live in `data/recipes.json`.
+- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Eat for 10 seconds (even at full health) to become **Well Fed**: +2 Stamina for 15 minutes. Recipes live in `data/recipes.json`.
+- **Fishing.** Each cast runs a 20-second fishing bar. Whether anything bites is rolled when you cast, and the chance rises with your Fishing skill: your rank, plus your best rod (Tam's yew rod +10) and bait (cut bait +5, one used per cast). If the bar runs out without a bite, nothing was biting. The cursor turns into a hook over your bob.
 
 ## Combat feel (WoW)
 

@@ -294,7 +294,10 @@
       "desc": "Open your cookbook: the recipes you know, what each needs and how many you can make. Cooking needs a fire close by: your camp or the inn's hearth.",
       "tuning": {
         "castTime": 2.5,
-        "fireRange": 3
+        "fireRange": 3,
+        "wellFedAfter": 10,
+        "wellFedStamina": 2,
+        "wellFedSeconds": 900
       }
     }
   ]

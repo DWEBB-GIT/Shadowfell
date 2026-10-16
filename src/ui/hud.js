@@ -389,7 +389,9 @@ export class Hud {
         ? { t: k.t, total: k.total, name: `Cooking ${ITEMS[DB.recipes[k.id].output.item].name}${k.left > 1 ? ` (${k.left})` : ''}` }
         : e
           ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
-          : null;
+          : this.game.fishing?.bar
+            ? { ...this.game.fishing.bar, name: 'Fishing' }
+            : null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
@@ -421,7 +423,8 @@ export class Hud {
     };
     showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
     showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
-    this._auras($('buffs'), spells.buffList(), '');
+    const fed = this.game.cooking.wellFedAura;
+    this._auras($('buffs'), fed ? [...spells.buffList(), fed] : spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
   }
 
@@ -429,9 +432,9 @@ export class Hud {
     const key = list.map((a) => a.id).join(',');
     if (el.dataset.key !== key) {
       el.dataset.key = key;
-      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || ''}"><span></span></div>`).join('');
+      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${a.name || ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || this.abilityIcons.cook || ''}"><span></span></div>`).join('');
     }
-    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = Math.ceil(a.left)));
+    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = a.left > 60 ? `${Math.ceil(a.left / 60)}m` : Math.ceil(a.left)));
   }
 
   update(dt = 0) {

@@ -139,7 +139,8 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
     if (d.buyCount !== undefined && !(isInt(d.buyCount) && d.buyCount > 1 && d.buyCount <= d.stack)) bad('buyCount (how many a vendor sells at the price) must be a whole number from 2 to the stack size');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
-    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
+    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus to fishing skill above 0');
+    if (d.fishingSkill !== undefined && !(isNum(d.fishingSkill) && d.fishingSkill > 0)) bad('fishingSkill must be a bonus to fishing skill above 0');
     for (const [k, v] of Object.entries(d.stats || {})) {
       if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
       else if (!isNum(v)) bad(`stat ${k} must be a number`);

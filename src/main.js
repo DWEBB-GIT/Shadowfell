@@ -350,12 +350,22 @@ class Game {
     return best;
   }
 
+  // is the mouse on (or near) the fishing bob?
+  _overBob() {
+    const bob = this.fishing.bobPosition;
+    if (!bob) return false;
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const v = bob.clone().project(this.camera);
+    return Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top)) < CONFIG.fishing.clickRadius;
+  }
+
   // The mouse cursor says what a click would do (WoW): a sword over an
   // enemy, a speech bubble over a townsperson (grey until you are close
-  // enough to talk), a hand over loot.
+  // enough to talk), a hand over loot, a hook over your fishing bob.
   _cursorFor(pick) {
     let c = '';
-    if (pick) {
+    if (this.input.mouse.onCanvas && this._overBob()) c = CURSORS.fish;
+    else if (pick) {
       const p = this.player.position;
       const o = pick.obj;
       if (pick.kind === 'enemy') c = CURSORS.attack;
@@ -369,13 +379,7 @@ class Game {
   // auto attack, on a townsperson talks, and either button loots.
   _click(button) {
     // a click on (or near) the fishing bob strikes
-    const bob = this.fishing.bobPosition;
-    if (bob) {
-      const r = this.renderer.domElement.getBoundingClientRect();
-      const v = bob.clone().project(this.camera);
-      const d = Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top));
-      if (d < CONFIG.fishing.clickRadius) return this.fishing.strike();
-    }
+    if (this._overBob()) return this.fishing.strike();
     const pick = this._pickUnderCursor();
     // a left click on the ground lets go of the target; a right click does not
     if (!pick) {

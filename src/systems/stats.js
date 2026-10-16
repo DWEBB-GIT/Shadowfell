@@ -39,6 +39,7 @@ export class Stats {
       if (st) for (const [k, v] of Object.entries(st)) t[k] = (t[k] || 0) + v;
     }
     for (const k of ATTRS) t[k] = t[k] || 0;
+    t.stamina += this.game.cooking?.wellFedStamina || 0;
     return t;
   }
 

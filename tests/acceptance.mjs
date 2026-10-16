@@ -3087,6 +3087,7 @@ async function torchAndFishing(browser) {
   await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
   await sim(page, 1.0);
   const waiting = await page.evaluate(() => ({ phase: window.__shadowfall.fishing.state && window.__shadowfall.fishing.state.phase, bob: window.__shadowfall.fishing.bobPosition && window.__shadowfall.fishing.bobPosition.x }));
+  await page.evaluate(() => Object.assign(window.__shadowfall.fishing.state, { wait: 6, skill: 60 })); // this cast gets a bite, 6 s after the bob lands, and lands it
   await sim(page, 6.0);
   const biting = await page.evaluate(() => window.__shadowfall.fishing.biting);
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
@@ -3109,6 +3110,37 @@ async function torchAndFishing(browser) {
     return g.fishing.cast({ x: 0, z: 24 });
   });
   record('You can only fish facing water', noWater === false);
+
+  // the fishing bar, and casts where nothing bites
+  await setup(page, { x: -16.8, z: -14 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.facing = -Math.PI / 2; g.player.cooldowns.gcd = 0; });
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
+  const barNow = await page.evaluate(() => { const g = window.__shadowfall; g.fishing.state.wait = Infinity; return { hidden: document.getElementById('cast-bar').hidden, text: document.getElementById('cast-text').textContent }; });
+  await sim(page, 0.5);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'fishing-bar.png') });
+  await sim(page, 20);
+  const nothing = await page.evaluate(() => ({ active: window.__shadowfall.fishing.active, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).find((t) => /Nothing is biting/.test(t)) }));
+  record('Each cast runs a fishing bar; if it runs out with no bite, nothing was biting', !barNow.hidden && /Fishing/.test(barNow.text) && !nothing.active && !!nothing.log, `bar "${barNow.text}"; ${nothing.log}`);
+  const odds = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.removeAll('cut_bait');
+    const at = () => +g.fishing.biteChanceFor().toFixed(1);
+    const rank = g.skills.rank('fishing');
+    const base = at();
+    g.inventory.addItem('yew_fishing_rod', 1, { quiet: true });
+    const rod = at();
+    g.inventory.addItem('cut_bait', 3, { quiet: true });
+    const bait = at();
+    g.fishing.cast({ x: -22, z: -14 });
+    const used = 3 - g.inventory.count('cut_bait');
+    g.fishing.stop();
+    g.skills.raise('fishing');
+    g.inventory.removeAll('cut_bait');
+    g.inventory.removeAll('yew_fishing_rod');
+    return { rank, base, rod, bait, used, ranked: at() };
+  });
+  record('The chance of a bite rises with Fishing rank, a better rod and bait (used one per cast)', odds.rod > odds.base && odds.bait > odds.rod && odds.ranked > odds.base && odds.used === 1, `rank ${odds.rank}: ${odds.base}%; Tam's yew rod ${odds.rod}%; with bait ${odds.bait}% (${odds.used} used); one rank higher ${odds.ranked}%`);
   record('No script errors (torch and fishing)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3813,6 +3845,19 @@ async function townAndCooking(browser) {
   const stopped = await page.evaluate(() => ({ c: window.__shadowfall.cooking.crafting, n: window.__shadowfall.inventory.count('roast_dace') }));
   record('Moving stops cooking', !stopped.c && stopped.n === 0, JSON.stringify(stopped));
 
+  // cook one, then the next from the same window, without reopening it
+  await setup(page, { x: 4.6, z: 69.6 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.inventory.addItem('gloomwater_perch', 2, { quiet: true }); g.hud.items.closeAll(); g.hud.items.toggle('cooking'); });
+  await sim(page, 0.1);
+  await page.click('#cooking-list [data-cook="grilled_perch"]:not([data-all])');
+  await sim(page, 2.8);
+  const again = await page.evaluate(() => { const b = document.querySelector('#cooking-list [data-cook="grilled_perch"]:not([data-all])'); return { disabled: b.disabled, busy: !!window.__shadowfall.cooking.crafting }; });
+  if (!again.disabled) await page.click('#cooking-list [data-cook="grilled_perch"]:not([data-all])');
+  await sim(page, 2.8);
+  const twice = await page.evaluate(() => window.__shadowfall.inventory.count('gloomwater_perch'));
+  record('Cooking: after one dish the window offers the next at once (no closing and reopening)', !again.disabled && !again.busy && twice === 0, `Cook button enabled after the first: ${!again.disabled}; raw perch left ${twice}`);
+  await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
+
   // eat: sit, heal over time, stop on moving; refused in a fight
   const eat = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -3835,6 +3880,19 @@ async function townAndCooking(browser) {
     return ok;
   });
   record("You can't eat in a fight", fight === false);
+
+  // Well Fed: eat for 10 seconds, even at full health
+  const fed0 = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.health = g.player.maxHealth;
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    return { ok: g.cooking.eat(loc), hp: g.player.maxHealth, stam: g.stats.totals.stamina };
+  });
+  await sim(page, 9.5);
+  const fed1 = await page.evaluate(() => !!window.__shadowfall.cooking.wellFedAura);
+  await sim(page, 0.7);
+  const fed2 = await page.evaluate(() => { const g = window.__shadowfall; return { aura: g.cooking.wellFedAura, eating: !!g.player.eating, hp: g.player.maxHealth, stam: g.stats.totals.stamina, buffs: document.querySelectorAll('#buffs .aura').length }; });
+  record('Eating for 10 seconds makes you Well Fed: a little Stamina for 15 minutes (shown with your buffs)', fed0.ok && !fed1 && fed2.aura && fed2.stam === fed0.stam + 2 && fed2.hp > fed0.hp && !fed2.eating && fed2.buffs >= 1, `Stamina ${fed0.stam} → ${fed2.stam}, health ${fed0.hp} → ${fed2.hp}; ${Math.round(fed2.aura?.left)} s left`);
 
   // indoors: walls block, the roof and front wall fade, the camera comes in
   await page.evaluate(() => { window.__shadowfall.hud.items.closeAll(); document.getElementById('ui-error').classList.remove('show'); });
@@ -4233,6 +4291,30 @@ async function playtest3(browser) {
   record('Your name shows over your character, and Settings turns it off', ui.name.length === 1 && ui.name[0] === ui.who && off === 0, `${JSON.stringify(ui.name)} (character ${ui.who}); with the setting off: ${off}`);
   await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'names-and-health.png') });
+
+  // a fishing hook cursor over the bob
+  await setup(page, { x: -16.8, z: -14 });
+  const hook = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.skills.ranks.set('fishing', 1);
+    g.inventory.addItem('fishing_rod', 1, { quiet: true });
+    g.player.facing = -Math.PI / 2;
+    return g.fishing.cast({ x: -22, z: -14 });
+  });
+  await sim(page, 1);
+  const cur = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const r = g.renderer.domElement.getBoundingClientRect();
+    const v = g.fishing.bobPosition.clone().project(g.camera);
+    Object.assign(g.input.mouse, { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height, onCanvas: true });
+    g._cursorFor(null);
+    const over = g.renderer.domElement.style.cursor;
+    g.input.mouse.x += 200;
+    g._cursorFor(null);
+    return { over, away: g.renderer.domElement.style.cursor };
+  });
+  record('Hovering over the fishing bob shows a fishing hook cursor', hook && /7 11/.test(cur.over) && !/7 11/.test(cur.away), `over the bob: ${cur.over.slice(-12)}; away: "${cur.away.slice(-12)}"`);
+  await page.evaluate(() => window.__shadowfall.fishing.stop());
 
   record('No script errors (playtest batch 3)', errors.length === 0, errors.join(' | '));
   await ctx.close();
