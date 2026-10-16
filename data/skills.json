@@ -1,5 +1,5 @@
 {
-  "_about": "Skills the Warden can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
+  "_about": "Skills the Warrior can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
   "skills": [
     {
       "id": "camping",

@@ -25,13 +25,13 @@ export class Skills {
     return this.ranks.get(id) || 0;
   }
 
-  // May the Warden use this ability? Abilities with no `skill` always.
+  // May the Warrior use this ability? Abilities with no `skill` always.
   knowsAbility(ability) {
     const a = DB.abilities[ability];
     return !!a && (!a.skill || this.has(a.skill));
   }
 
-  // What a trainer offers that the Warden has not learned.
+  // What a trainer offers that the Warrior has not learned.
   offeredBy(npcId) {
     return Object.values(DB.skills).filter((s) => s.trainer === npcId && !this.has(s.id));
   }

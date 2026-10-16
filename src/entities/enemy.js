@@ -10,7 +10,7 @@ import { spawnHealth } from '../data/scaling.js';
 // What an enemy can do comes from its config: a melee swing (every enemy),
 // a telegraphed cleave and special (the brute), a pack that wakes together
 // (hounds), an aimed shot down a painted line that keeps its distance
-// (archers, and the seer's bolt), and a circle cast under the Warden's feet
+// (archers, and the seer's bolt), and a circle cast under the Warrior's feet
 // that costs mana (the seer). Out of mana, a caster closes to melee.
 
 export class Enemy {
@@ -139,7 +139,7 @@ export class Enemy {
     }
   }
 
-  // An aimed shot: a line is painted towards the Warden; when it fills, the
+  // An aimed shot: a line is painted towards the Warrior; when it fills, the
   // arrow (or bolt) flies down it and hits whoever is still on it.
   _startShot(player) {
     const r = this.cfg.ranged;
@@ -157,7 +157,7 @@ export class Enemy {
         const end = { x: shape.x + Math.sin(angle) * shape.length, z: shape.z + Math.cos(angle) * shape.length };
         const p = this.game.player.position;
         const onLine = shape.contains(p.x, p.z, this.game.player.radius);
-        // the shot stops at the Warden if it hits, otherwise flies on
+        // the shot stops at the Warrior if it hits, otherwise flies on
         const to = onLine ? { x: p.x, z: p.z } : end;
         this.game.events.emit('projectile', { kind: r.projectile, from: { x: this.position.x, z: this.position.z, y: this.position.y + 1.3 }, to, speed: r.speed });
         this.game.combat.resolveTelegraph(this, shape, r.damage, r.name, { canCrit: true, canBlock: true, school: r.school || 'physical' });
@@ -170,7 +170,7 @@ export class Enemy {
     this.game.events.emit('enemyWindup', { enemy: this });
   }
 
-  // A circle under the Warden's feet that fills, then strikes; walk out of it.
+  // A circle under the Warrior's feet that fills, then strikes; walk out of it.
   _startCircle(player) {
     const c = this.cfg.circle;
     this.facing = Math.atan2(player.position.x - this.position.x, player.position.z - this.position.z);
@@ -308,7 +308,7 @@ export class Enemy {
         this._startCircle(player);
       } else if (canShoot && fighting && dist > reach) {
         // a ranged enemy holds its distance: closes to range, backs off
-        // when the Warden gets close, and shoots when it is ready
+        // when the Warrior gets close, and shoots when it is ready
         this.facing = Math.atan2(dx, dz);
         if (dist > rg.range * 0.9) {
           this._moveTowards(player.position.x, player.position.z, cfg.speed, dt, rg.range * 0.8);

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { heightAt } from '../world/terrain.js';
 
-// The Warden's camp (Set Camp, learned from Old Tam). One camp at a time:
+// The Warrior's camp (Set Camp, learned from Old Tam). One camp at a time:
 // pitching a new one strikes the old. The camp is where the spirit rises
 // after a death, and resting beside it, with no enemy near, builds rested
 // experience: kills then pay double until the rested pool is spent, as in WoW.
@@ -14,7 +14,7 @@ export class Camp {
     this.light = null;
   }
 
-  // Is anything hostile close enough to stop the Warden making camp?
+  // Is anything hostile close enough to stop the Warrior making camp?
   get enemiesNear() {
     const p = this.game.player.position;
     return this.game.enemies.list.some((e) => e.alive && (e.engaged > 0 || Math.hypot(e.position.x - p.x, e.position.z - p.z) < CONFIG.camp.clearRadius));

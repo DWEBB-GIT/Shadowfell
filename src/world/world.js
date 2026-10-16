@@ -148,7 +148,7 @@ export class World {
     this.indoors = null;
   }
 
-  // Which building (if any) the Warden stands in; fade its front wall and
+  // Which building (if any) the Warrior stands in; fade its front wall and
   // roof towards hidden while inside, back again outside.
   updateIndoors(dt, pos) {
     this.indoors = null;

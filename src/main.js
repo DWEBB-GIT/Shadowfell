@@ -157,7 +157,7 @@ class Game {
     this.camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, window.innerWidth / window.innerHeight, 0.5, CONFIG.fog.far + 6);
     this.cameraTarget = new THREE.Vector3();
 
-    // dusk: a cool sky fill, a low amber sun and a warm glow around the Warden
+    // dusk: a cool sky fill, a low amber sun and a warm glow around the Warrior
     this.hemi = new THREE.HemisphereLight(0x8a9aa8, 0x2c2418, 2.1);
     this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xf0c890, 2.3);
@@ -254,7 +254,7 @@ class Game {
     this.merchant.close();
     this.merchant.buyback = [];
     this.quests.startNew();
-    this.region = null; // named again, quietly, from wherever the Warden stands
+    this.region = null; // named again, quietly, from wherever the Warrior stands
     this.afterlife.reset();
     this.skills.reset();
     this.reputation.reset();
@@ -570,7 +570,7 @@ class Game {
     ];
     const actions = this.actionBar.actions(slots);
     // Auto attack (WoW): once engaged (right-click, RT, or any ability used
-    // on an enemy) the Warden swings whenever the target is in reach, in
+    // on an enemy) the Warrior swings whenever the target is in reach, in
     // front of him, and his weapon is ready. It is not on the bar.
     actions.strike = tg.attacking && tg.targetInReach;
     // beyond it, with a bow in the ranged slot, Auto Shot
@@ -629,7 +629,7 @@ class Game {
     if (this.started) this.hud.update(dt);
   }
 
-  // Which region the Warden is in, and the air there: the fog and light
+  // Which region the Warrior is in, and the air there: the fog and light
   // shade smoothly from the Fallen Road's dusk into the Blackwood's gloom.
   _updateRegion() {
     const z = this.player.position.z;

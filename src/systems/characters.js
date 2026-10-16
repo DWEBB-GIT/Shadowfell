@@ -7,7 +7,7 @@ import { TITLE } from '../data/text.js';
 //
 // The first character takes the original save key, so a save made before the
 // roster existed becomes a character of its own the first time the title
-// screen opens (named "Warden" until there is a way to rename).
+// screen opens (named "Warrior" until there is a way to rename).
 
 export const ROSTER_KEY = 'shadowfall.characters';
 export const NAME_RULE = /^[A-Z][a-z]{1,11}( [A-Z][a-z]{1,11})?$/;
@@ -48,13 +48,15 @@ export class Roster {
     }
     const ok = data && Array.isArray(data.list) && data.list.every((c) => c && typeof c.id === 'string' && typeof c.name === 'string' && typeof c.key === 'string');
     this.list = ok ? data.list : [];
+    // the Warrior class was renamed the Warrior (2026-10-16)
+    for (const c of this.list) if (c.classId === 'warden') c.classId = 'warrior';
     this.last = ok && this.byId(data.last) ? data.last : this.list[0]?.id || null;
 
     // adopt a save made before the roster existed
     let legacyUnreadable = false;
     if (!this.list.some((c) => c.key === SAVE_KEY) && this._has(SAVE_KEY)) {
       if (readSave(SAVE_KEY).status === 'ok') {
-        const c = { id: this._newId(), name: 'Warden', classId: 'warden', key: SAVE_KEY, createdAt: Date.now(), lastPlayed: Date.now() };
+        const c = { id: this._newId(), name: 'Warrior', classId: 'warrior', key: SAVE_KEY, createdAt: Date.now(), lastPlayed: Date.now() };
         this.list.unshift(c);
         this.last = c.id;
         this._write();

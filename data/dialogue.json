@@ -22,7 +22,7 @@
           }
         },
         {
-          "text": "Back again, Warden? The forge is hot if you need it.",
+          "text": "Back again? The forge is hot if you need it.",
           "when": {
             "quest": "missing_delivery",
             "status": "done"

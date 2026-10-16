@@ -14,7 +14,7 @@ import { SPELLS } from '../systems/spells.js';
 // of its own cooldown. Auto attack, Brace and draughts are off the GCD.
 //
 // There is one defensive button (Space), filled by the archetype: the
-// Warden's Brace raises the shield and turns aside the next blow. There is
+// Warrior's Brace raises the shield and turns aside the next blow. There is
 // no dodge roll or sprint.
 //
 // Spells (abilities with a `kind` in data/abilities.json) are run by the
@@ -239,7 +239,7 @@ export class Player {
 
     let speed01 = 0;
     if (this.lunge) {
-      // a charge spell (Lunge) carries the Warden, then strikes on arrival
+      // a charge spell (Lunge) carries the Warrior, then strikes on arrival
       const d = this.lunge;
       d.t += dt;
       this.position.x += d.dir.x * d.speed * dt;
@@ -265,7 +265,7 @@ export class Player {
         this.facing = turnTowards(this.facing, look, dt * 14);
         speed01 = mag;
       } else if (controls.actions && (controls.actions.strike || controls.actions.shoot) && controls.aim) {
-        // standing still in a fight, the Warden turns (not snaps) to his target
+        // standing still in a fight, the Warrior turns (not snaps) to his target
         this.facing = turnTowards(this.facing, Math.atan2(controls.aim.x - this.position.x, controls.aim.z - this.position.z), dt * CONFIG.attack.turnRate);
       }
 
@@ -463,7 +463,7 @@ export class Player {
     if (this.shield) this.shield.visible = !inHand;
   }
 
-  // is (x, z) within `halfDegrees` of where the Warden faces? (very close counts)
+  // is (x, z) within `halfDegrees` of where the Warrior faces? (very close counts)
   facingPoint(x, z, halfDegrees) {
     const dx = x - this.position.x;
     const dz = z - this.position.z;

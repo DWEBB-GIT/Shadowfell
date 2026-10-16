@@ -176,7 +176,7 @@ export class Telegraphs {
     return this._start(owner, shape, lineGeometry(shape), { duration, color, onComplete });
   }
 
-  // A circle on the ground anywhere (a spell under the Warden's feet).
+  // A circle on the ground anywhere (a spell under the Warrior's feet).
   circle(owner, { x, z, radius, duration, color = 0x9a5cff, heavy = true, onComplete }) {
     const shape = new CircleShape(x, z, radius);
     return this._start(owner, shape, sectorGeometry(shape, 10, 32), { duration, heavy, color, onComplete });

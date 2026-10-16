@@ -64,7 +64,7 @@ export class Spells {
   }
 
   // ---------------------------------------------------------- state for the HUD
-  // all damage the Warden deals is scaled by active buffs
+  // all damage the Warrior deals is scaled by active buffs
   get damageScale() {
     let s = 1;
     for (const id of this.buffs.keys()) s *= 1 + (SPELLS[id].tuning.damageBonus || 0) / 100;

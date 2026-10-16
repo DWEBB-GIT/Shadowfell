@@ -18,9 +18,9 @@ export class WorldState {
     this.corpses = {}; // enemyId -> { x, z, coins } for bodies not yet looted
     this.nextGroundUid = 1;
     this.flags = new Set(); // story facts, e.g. 'manifest_delivered'
-    this.camp = null; // { x, z } of the Warden's camp, if one is pitched
+    this.camp = null; // { x, z } of the Warrior's camp, if one is pitched
     this.restPoint = 'shrine'; // where the spirit rises: 'camp' or 'shrine' (the last rested at)
-    this.nemesis = null; // the enemy spawn id that last killed the Warden
+    this.nemesis = null; // the enemy spawn id that last killed the Warrior
     this.time = 0; // seconds of play in this world (respawn timers run on it)
     this.respawnAt = {}; // enemy spawn id -> world time it comes back
   }

@@ -4,9 +4,9 @@ import { BOUNDS, regionById, PROPS, CLEARINGS, SHRINES, WATER, OBSCURED } from '
 // A round minimap in the top-right corner, north up (the camera never turns,
 // so up on the map is up on the screen). The ground, roads, trees and props
 // are painted once into a picture of the whole world; each frame draws the
-// part around the Warden, then the markers on top: townsfolk with their
+// part around the Warrior, then the markers on top: townsfolk with their
 // quest marks, shrines, the places current objectives point to, and the
-// Warden as an arrow. Quest marks out of range sit on the rim, pointing the way.
+// Warrior as an arrow. Quest marks out of range sit on the rim, pointing the way.
 
 const SIZE = 168; // CSS pixels across
 const PX = 4; // picture pixels per metre
@@ -179,7 +179,7 @@ export class Minimap {
     ctx.clip();
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, SIZE, SIZE);
-    // the painted world around the Warden
+    // the painted world around the Warrior
     const k = scale / PX;
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.picture, R - (p.position.x - this.origin.minX) * scale, R - (p.position.z - this.origin.minZ) * scale, this.picture.width * k, this.picture.height * k);
@@ -243,7 +243,7 @@ export class Minimap {
         else this._rim(s, R, '#cfe6ff', null);
       }
     }
-    // the Warden, at the centre, pointing the way they face
+    // the Warrior, at the centre, pointing the way they face
     ctx.save();
     ctx.translate(R, R);
     ctx.rotate(Math.PI - p.facing);

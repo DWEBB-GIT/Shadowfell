@@ -1070,7 +1070,7 @@ async function gamepad(browser) {
   const half = (await state(page)).pos;
   await padSim(page, 1, { axes: [0.5, 0, 0, 0] });
   const c = (await state(page)).pos;
-  record('Left stick moves the Warden, with analogue speed', near(a.z - b.z, 5, 0.15) && c.x - half.x > 1 && c.x - half.x < 2.5,
+  record('Left stick moves the Warrior, with analogue speed', near(a.z - b.z, 5, 0.15) && c.x - half.x > 1 && c.x - half.x < 2.5,
     `full stick north: ${(a.z - b.z).toFixed(2)}m in 1s; half stick east: ${(c.x - half.x).toFixed(2)}m`);
   const labels = await page.evaluate(() => [document.querySelector('#aslot-0 .key').textContent, document.querySelector('#aslot-4 .key').textContent, document.body.classList.contains('pad')]);
   record('Button prompts switch to the gamepad', labels[0] === 'X' && labels[1] === 'LT' && labels[2], `spell bar shows ${labels[0]}, ${labels[1]}`);
@@ -1113,7 +1113,7 @@ async function gamepad(browser) {
   const pos0 = (await state(page)).pos;
   await padSim(page, 0.3, { axes: [0, -1, 0, 0] });
   const pos1 = (await state(page)).pos;
-  record('The stick does not move the Warden while a panel is open (extra)', pos0.z === pos1.z);
+  record('The stick does not move the Warrior while a panel is open (extra)', pos0.z === pos1.z);
   await padSim(page, 0.05, { tap: [PAD.X] });
   let inv = await page.evaluate(() => ({ head: window.__shadowfall.inventory.equipment.head?.id, max: window.__shadowfall.player.maxHealth }));
   record('X equips the highlighted item', inv.head === 'watch_helm' && inv.max === 106, `helm worn; maximum health ${inv.max}`);
@@ -1197,7 +1197,7 @@ async function bagsAndGround(browser) {
   record('Each bag opens and closes on its own, and two open bags do not freeze the game', tB > tA && one.length === 1 && one[0] === "Traveller's satchel" && two === 2,
     `game time advanced ${(tB - tA).toFixed(2)}s with both bags and the character panel open; closing the backpack left: ${one.join(', ')}`);
 
-  // drag out of the window onto the world: dropped at the Warden's feet
+  // drag out of the window onto the world: dropped at the Warrior's feet
   await dragSlot(page, '.islot[data-loc="b:1:3"]', { x: 560, y: 300 });
   await page.waitForTimeout(300);
   st = await page.evaluate(() => {
@@ -1205,7 +1205,7 @@ async function bagsAndGround(browser) {
     const gr = g.worldState.ground[0];
     return { gr, has: g.inventory.has('watch_helm'), entry: g.loot.active.some((l) => l.def.ground === gr), dist: gr ? Math.hypot(gr.x - g.player.position.x, gr.z - g.player.position.z) : 99 };
   });
-  record('Dragging an item out of the bag drops it on the ground (RuneScape-style)', st.gr && st.gr.id === 'watch_helm' && !st.has && st.entry && st.dist < 1.5, `helm lies ${st.dist.toFixed(2)}m from the Warden and is shown in the world`);
+  record('Dragging an item out of the bag drops it on the ground (RuneScape-style)', st.gr && st.gr.id === 'watch_helm' && !st.has && st.entry && st.dist < 1.5, `helm lies ${st.dist.toFixed(2)}m from the Warrior and is shown in the world`);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
   const prompt = await page.evaluate(() => window.__shadowfall.interaction.current?.prompt);
@@ -1419,14 +1419,14 @@ async function controls(browser) {
   record('Tab targets the enemy you aim at; Tab again moves to the next', t1 === 'ghoul_cart' && t2 === 'ghoul_road' && frame.vis && frame.marker,
     `targeted ${t1} (frame "${frame.name}", red ring), then ${t2}`);
 
-  // auto attacking, the Warden faces the target and blows go to it
+  // auto attacking, the Warrior faces the target and blows go to it
   const t3 = await page.evaluate(() => window.__shadowfall.targeting.current?.id);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.targeting.current); g.player.cooldowns.attack = 0; });
   await sim(page, 0.55, { aimAt: { x: -4, z: 0 } });
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
   const facing = await page.evaluate(() => window.__shadowfall.player.facing);
   gh = await enemy(page, 'ghoul_road');
-  record('Auto attack keeps the Warden facing the target and hits it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp < 22,
+  record('Auto attack keeps the Warrior facing the target and hits it wherever the cursor is', t3 === 'ghoul_road' && Math.cos(facing) > 0.9 && gh.hp < 22,
     `facing ${(facing * 180 / Math.PI).toFixed(0)}° (towards the ghoul); cursor off to the west: ghoul 22 → ${gh.hp}`);
   await sim(page, 0.05, { press: ['Escape'] });
   const cleared = await page.evaluate(() => window.__shadowfall.targeting.current === null && document.getElementById('target-label').textContent !== 'Locked');
@@ -1638,7 +1638,7 @@ async function statsAndDamage(browser) {
   }, { seq, unclothed });
   const plain = await hitMe([0.5, 0.99, 0.99]);
   const bare = await hitMe([0.5, 0.99, 0.99], { unclothed: true });
-  record('Armour reduces the damage the Warden takes', plain.taken === 16 && bare.taken === 20, `a 20-damage blow: ${plain.taken} in travelling clothes and kite shield (130 armour, 21% at level 1), ${bare.taken} with neither`);
+  record('Armour reduces the damage the Warrior takes', plain.taken === 16 && bare.taken === 20, `a 20-damage blow: ${plain.taken} in travelling clothes and kite shield (130 armour, 21% at level 1), ${bare.taken} with neither`);
   record('Hits taken show a red number', plain.n.length === 1 && plain.n[0].text === '16' && /taken/.test(plain.n[0].cls), JSON.stringify(plain.n));
   const varied = [await hitMe([0, 0.99, 0.99]), await hitMe([1, 0.99, 0.99])].map((h) => h.taken);
   record('Enemy blows vary a little either side of their damage (extra)', varied[0] === 13 && varied[1] === 18, `lowest ${varied[0]}, highest ${varied[1]} (±15% before armour)`);
@@ -1654,11 +1654,11 @@ async function statsAndDamage(browser) {
     g.inventory.equipment.offHand = null;
     const without = g.stats.blockChance;
     g.inventory.equipment.offHand = sh;
-    g.config.archetypes.warden.base.block = 5;
+    g.config.archetypes.warrior.base.block = 5;
     const geared = g.stats.blockChance;
-    g.config.archetypes.warden.base.block = 500;
+    g.config.archetypes.warrior.base.block = 500;
     const capped = g.stats.blockChance;
-    g.config.archetypes.warden.base.block = 0;
+    g.config.archetypes.warrior.base.block = 0;
     return { with: g.stats.blockChance, without, geared, capped, shown: !!g.player.shield };
   });
   record('Block chance comes from the shield and gear, capped at 50%', noShield.with === 10 && noShield.without === 0 && noShield.geared === 15 && noShield.capped === 50 && noShield.shown,
@@ -1744,7 +1744,7 @@ async function statsAndDamage(browser) {
   // armour types: an archetype may only wear some
   const types = await page.evaluate(() => {
     const g = window.__shadowfall;
-    const w = g.config.archetypes.warden;
+    const w = g.config.archetypes.warrior;
     const keep = w.armourTypes;
     g.inventory.addItem('watch_helm');
     const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'watch_helm');
@@ -1755,22 +1755,22 @@ async function statsAndDamage(browser) {
     const worn = g.inventory.move(loc, 'e:head').ok;
     return { refused, log, worn, head: g.inventory.equipment.head?.id };
   });
-  record('Armour types limit what an archetype can wear', types.refused && /cannot use mail armour/.test(types.log) && types.worn, `mail helm on a cloth-and-leather wearer: "${types.log}"; the Warden (all types) wears it`);
+  record('Armour types limit what an archetype can wear', types.refused && /cannot use mail armour/.test(types.log) && types.worn, `mail helm on a cloth-and-leather wearer: "${types.log}"; the Warrior (all types) wears it`);
 
   // haste shortens the swing, the windups and the GCD (to its floor)
   const haste = await page.evaluate(() => {
     const g = window.__shadowfall;
     const base = { swing: g.stats.attackCooldown, gcd: g.stats.globalCooldown };
-    g.config.archetypes.warden.base.haste = 20;
+    g.config.archetypes.warrior.base.haste = 20;
     const fast = { swing: g.stats.attackCooldown, gcd: g.stats.globalCooldown };
     g.player.cooldowns.attack = 0;
     g.player.pending = null;
     g.player.tryStrike(null);
     const used = { cd: g.player.cooldowns.attack, windup: g.player.pending?.t };
     g.player.pending = null;
-    g.config.archetypes.warden.base.haste = 80;
+    g.config.archetypes.warrior.base.haste = 80;
     const capped = { haste: g.stats.haste, gcd: g.stats.globalCooldown };
-    g.config.archetypes.warden.base.haste = 0;
+    g.config.archetypes.warrior.base.haste = 0;
     return { base, fast, used, capped };
   });
   record('Haste shortens the time between swings (not the swing itself) and the global cooldown', near(haste.fast.swing, 2.2 / 1.2, 0.001) && near(haste.fast.gcd, 1.25, 0.001) && near(haste.used.cd, 2.2 / 1.2, 0.001) && near(haste.used.windup, 0.32, 0.001) && haste.capped.haste === 30 && near(haste.capped.gcd, 1.154, 0.001),
@@ -1870,7 +1870,7 @@ async function forge(browser) {
     return { ok, paid: c0 - c1, have: g.inventory.count('iron_gloves'), refused, shields: g.inventory.count('iron_shield'), coins: g.inventory.coins, log: document.querySelector('#log li:last-child').textContent };
   });
   record('Buying takes the price in coins and puts the item in the bags', buy.ok && buy.paid === 14 && buy.have === 1, `iron-studded gloves for ${buy.paid} coins`);
-  record('A merchant refuses a sale the Warden cannot afford', buy.refused && buy.shields === 0 && buy.coins === 16, `"${buy.log}"`);
+  record('A merchant refuses a sale the Warrior cannot afford', buy.refused && buy.shields === 0 && buy.coins === 16, `"${buy.log}"`);
 
   const sell = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -2221,7 +2221,7 @@ async function blackwood(browser) {
     for (let i = 0; i < 110; i++) g.step(1 / 60);
     return { kind, under, mana, max: s.cfg.mana, bar, braced, escaped, taken: hp2 - g.player.health, log: document.querySelector('#log li:last-child').textContent };
   });
-  record('The Blackwood Seer spends mana on a dark circle cast under the Warden', seer.kind === 'circle' && seer.under && seer.mana === seer.max - 25 && seer.bar, `mana ${seer.max} → ${seer.mana}; a mana bar shows over her health`);
+  record('The Blackwood Seer spends mana on a dark circle cast under the Warrior', seer.kind === 'circle' && seer.under && seer.mana === seer.max - 25 && seer.bar, `mana ${seer.max} → ${seer.mana}; a mana bar shows over her health`);
   record('Brace or walking out of the circle avoids it; standing in it hurts and cannot be blocked', seer.braced === 0 && seer.escaped === 0 && seer.taken >= 18, `braced: 0, walked out: 0, stood in it: ${seer.taken} ("${seer.log}")`);
 
   const loot = await page.evaluate(() => {
@@ -2252,7 +2252,7 @@ async function atmosphere(browser) {
     return { type: fog.isFog && !fog.isFogExp2, near: fog.near, far: fog.far, camFar: g.camera.far, bg: g.scene.background.getHex() === fog.color.getHex(), light: g.playerLight.intensity, braziers, mist, cfg: g.config.fog };
   });
   record('View-distance fog fades the world out with distance', f.type && f.near === f.cfg.near && f.far === f.cfg.far && f.bg && f.camFar <= f.far + 10, `linear fog ${f.near}–${f.far}m in the sky colour; nothing drawn past ${f.camFar}m`);
-  record('Atmospheric lighting: a warm light on the Warden, braziers and ground mist', f.light > 0 && f.braziers === 2 && f.mist > 0, `${f.braziers} braziers at the watch post, ${f.mist} mist layers`);
+  record('Atmospheric lighting: a warm light on the Warrior, braziers and ground mist', f.light > 0 && f.braziers === 2 && f.mist > 0, `${f.braziers} braziers at the watch post, ${f.mist} mist layers`);
   record('No script errors (atmosphere)', errors.length === 0, errors.join(' | '));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'fog.png') });
   await ctx.close();
@@ -2423,7 +2423,7 @@ async function questsAndMap(browser) {
   });
   const white = (p) => p[0] > 200 && p[1] > 200 && p[2] > 200;
   record('A round minimap sits in the top-right corner', map.box.right < 30 && map.box.top < 30 && map.box.w > 120, `${map.box.w}px across, ${map.box.right.toFixed(0)}px from the right`);
-  record('The Warden is an arrow pointing the way they face (north up)', white(map.east) && !white(map.north), `facing east: right of centre ${map.east.slice(0, 3)}, above centre ${map.north.slice(0, 3)}`);
+  record('The Warrior is an arrow pointing the way they face (north up)', white(map.east) && !white(map.north), `facing east: right of centre ${map.east.slice(0, 3)}, above centre ${map.north.slice(0, 3)}`);
   record('Quest markers on the map: ! and ? on quest givers, and the places objectives point to', map.mara && map.mara.kind === map.maraMark && map.mara.kind === 'active' && map.areas.includes('Hallow Cut') && map.shrines === 2,
     `Mara: ${map.mara && map.mara.kind}; objective areas: ${map.areas.join(', ')}`);
   await page.evaluate(() => {
@@ -2528,7 +2528,7 @@ async function clickTargeting(browser) {
   record('Right click starts auto attack, which swings on the weapon speed until the target falls', mid.hp < 20 && mid.hp - second === 20 - mid.hp && mid.attacking && mid.label === 'Attacking' && end.dead && !end.attacking && !end.target,
     `20 → ${mid.hp} at once (next in ${mid.cd.toFixed(2)}s of ${TT}s) → ${second} a swing later (frame: "${mid.label}"); then it fell and auto attack stopped`);
 
-  // right-clicking does not snap the Warden round: moving, he faces where he
+  // right-clicking does not snap the Warrior round: moving, he faces where he
   // walks and holds his swing; standing still, he turns to the target
   await setup(page, { x: 0, z: 0, keep: ['ghoul_cart'] });
   await placeEnemy(page, 'ghoul_cart', 0, -1.6, { frozen: true });
@@ -3552,7 +3552,7 @@ async function resources(browser) {
     const r = window.__shadowfall.resources;
     return { mana: r.mana, max: r.maxMana, gauge: r.gauge, mpShown: !document.getElementById('mp-bar').hidden, gText: document.getElementById('gauge-text').textContent };
   });
-  record('The Warden starts with full mana (100 + 10 per Intellect) and no Resolve', start.mana === start.max && start.max === 110 && start.gauge === 0 && start.mpShown, `${start.mana}/${start.max} mana, "${start.gText}"`);
+  record('The Warrior starts with full mana (100 + 10 per Intellect) and no Resolve', start.mana === start.max && start.max === 110 && start.gauge === 0 && start.mpShown, `${start.mana}/${start.max} mana, "${start.gText}"`);
 
   // Shield Break costs 25 Resolve: refused at 0, slot dimmed
   await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 999; g.targeting.select(g.enemies.byId('ghoul_road')); });
@@ -4105,7 +4105,7 @@ async function wowCombat(browser) {
     const per = (h) => { const [lo, hi] = g.stats.swingRangeFor(h); return +((lo + hi) / 2 / g.stats.attackCooldownFor(h)).toFixed(1); };
     return { sword: per('main'), bow: per('ranged'), ghoul: g.enemies.byId('ghoul_road').maxHealth };
   });
-  record("A Warden's bow is for pulling: well under half the sword's damage a second (Agility, not Strength, powers it)", dps.bow < dps.sword * 0.5, `sword ${dps.sword}/s, bow ${dps.bow}/s (ghoul health ${dps.ghoul})`);
+  record("A Warrior's bow is for pulling: well under half the sword's damage a second (Agility, not Strength, powers it)", dps.bow < dps.sword * 0.5, `sword ${dps.sword}/s, bow ${dps.bow}/s (ghoul health ${dps.ghoul})`);
 
   // bow abilities: Quick Shot (instant) and Venom Arrow (instant poison)
   const onBar = await page.evaluate(() => ['quickShot', 'venomArrow'].map((a) => window.__shadowfall.actionBar.slots.indexOf(a)));
@@ -4175,7 +4175,7 @@ async function titleAndCharacters(browser) {
     classes: [...document.querySelectorAll('.class-card')].map((c) => c.textContent.replace(/\s+/g, ' ').trim()),
     locked: document.querySelectorAll('.class-card.locked').length,
   }));
-  record('Create screen: a random name, Warden playable, other classes shown as coming later', create.view && /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(create.name) && create.locked === 2 && /Warden/.test(create.classes[0]), `${create.name}; ${create.classes.join(' / ')}`);
+  record('Create screen: a random name, Warrior playable, other classes shown as coming later', create.view && /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(create.name) && create.locked === 2 && /Warrior/.test(create.classes[0]), `${create.name}; ${create.classes.join(' / ')}`);
 
   const bad = [];
   for (const n of ['', 'x', 'R2D2', 'a very long name indeed']) {
@@ -4204,7 +4204,7 @@ async function titleAndCharacters(browser) {
   });
   await reopen(page);
   const back = await page.evaluate(() => ({ cont: document.getElementById('continue-who').textContent, chars: !document.getElementById('chars-btn').hidden }));
-  record('Continue names the last character and their level', /Mara Bcm · level 3 Warden/.test(back.cont) && back.chars, back.cont);
+  record('Continue names the last character and their level', /Mara Bcm · level 3 Warrior/.test(back.cont) && back.chars, back.cont);
 
   // a second character, then the list
   await page.click('#new-btn');
@@ -4261,7 +4261,7 @@ async function titleAndCharacters(browser) {
   });
   await reopen(page);
   const adopted = await page.evaluate(() => document.getElementById('continue-who').textContent);
-  record('A save from before characters existed shows up as a character', legacy && /^Warden · level 3/.test(adopted), adopted);
+  record('A save from before characters existed shows up as a character', legacy && /^Warrior · level 3/.test(adopted), adopted);
   record('No script errors (title and characters)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }

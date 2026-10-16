@@ -115,7 +115,7 @@
       "turnIn": "mara",
       "requires": ["bells_at_hallow_cut", "the_hound_den"],
       "summary": "Someone is calling the dead up out of the Blackwood. Hunters speak of a seer among the standing stones in the far glade, and of archers camped on the way. Go deep and end it.",
-      "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
+      "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep. End it.",
       "progress": "The glade is at the end of the track. You'll know the stones.",
       "complete": "It's quieter. I felt it at the anvil before you came up the track. Here, the best shield I've made this year. Keep it between you and whatever comes next.",
       "objectives": [

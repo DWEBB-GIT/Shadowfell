@@ -63,7 +63,7 @@ export const SCALING = {
 
   // ---- enemies: fixed by their own level and type, never by the player's
   // Each level's normal enemy is sized against "par": a character of that
-  // level with only its own attributes (the Warden's) and white gear.
+  // level with only its own attributes (the Warrior's) and white gear.
   par: { mainStat: 4, mainStatPerLevel: 2, stamina: 10, staminaPerLevel: 2 },
   enemyHealthSeconds: 4.5, // a normal enemy has the health of 4.5 s of par damage
   enemyHitShare: 18, // ...hits for par health / 18...

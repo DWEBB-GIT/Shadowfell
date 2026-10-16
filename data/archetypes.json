@@ -2,8 +2,8 @@
   "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear, their resources (mana from Intellect plus the class gauge built in combat) and their defensive ability.",
   "archetypes": [
     {
-      "id": "warden",
-      "name": "Warden",
+      "id": "warrior",
+      "name": "Warrior",
       "mainStat": "strength",
       "base": {
         "strength": 4,

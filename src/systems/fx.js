@@ -142,7 +142,7 @@ export class Effects {
     });
   }
 
-  // a pale shield of light in front of the Warden while Brace is up
+  // a pale shield of light in front of the Warrior while Brace is up
   braceGlow() {
     const player = this.game.player;
     const mat = new THREE.SpriteMaterial({ map: this.game.textures.glint, color: 0x9cc4ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });

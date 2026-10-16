@@ -10,9 +10,9 @@ A small dark fantasy action RPG prototype built to the *Shadowfall Game Design &
 ### Title screen and characters (alpha)
 
 - **Title screen:** Continue (names your last character), Characters, New character and Controls.
-- **Character creation:** pick a class (the Warden for now; the Ranger and Occultist are shown as coming later), type a name or roll one with the dice (gamepad Y), then **Create and enter**. Names are one or two words of letters and must be unique.
+- **Character creation:** pick a class (the Warrior for now; the Ranger and Occultist are shown as coming later), type a name or roll one with the dice (gamepad Y), then **Create and enter**. Names are one or two words of letters and must be unique.
 - **Character select:** your characters with their level, class and where they stand, latest first. Enter world (or double-click), Create new, or Delete (asks first, and removes that save). Up to 10 characters.
-- **Saves:** each character has its own save in the browser. The first character keeps the old save key, so a save from before this build shows up as a character called Warden. **Settings → Save and return to characters** logs out.
+- **Saves:** each character has its own save in the browser. The first character keeps the old save key, so a save from before this build shows up as a character called Warrior. **Settings → Save and return to characters** logs out.
 - The keyboard (arrows, Enter, Esc, Del) and the gamepad (D-pad or stick, A, B, Y) drive every screen. Title text, classes and the name lists are in `data/text.json` under `title`.
 
 No install, web server or internet connection is needed. Three.js and every Blender model are bundled into `dist/shadowfall.js`, so the game also runs offline.
@@ -27,9 +27,9 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **WoW bags.** The backpack (16 slots) sits in the right-most bag slot; three more slots take bags. A Traveller's Satchel (8 slots) lies in the western ruins. Click a bag slot to open or close that bag; each bag window also has its own ×, and B opens or closes them all. The bags, the character panel and the spellbook are separate windows, and none of them pause the game.
 - **Editable spell bar.** Each of the seven slots has a fixed key (1, 2/Q, 3, 4, left click, right click, Space). Drag spells along the bar to rearrange them, or drag one off the bar to remove it. The spellbook (P) lists every spell to drag back on, a healing draught can be dragged from the bags onto the bar, and clicking a slot uses it. The layout is saved.
 - **Drag and drop.** Drag an item from a bag onto the character panel to equip it, and back to unequip. Right-click equips or uses. Drag an item out of the windows onto the world to drop it on the ground, RuneScape style; it stays there (and in your save) until you pick it up.
-- **More to wear.** Seven equipment slots. A dented watch helm (+8 maximum health) lies among the rocks near the watch post, and shows on the Warden when worn.
+- **More to wear.** Seven equipment slots. A dented watch helm (+8 maximum health) lies among the rocks near the watch post, and shows on the Warrior when worn.
 - **Gamepad support** (Xbox or PlayStation pads in Chrome or Edge), including the bags and character panel.
-- **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
+- **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warrior carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
 ## Playtest batch, 2026-10-16 (Dan's list)
@@ -67,8 +67,8 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 ## Mana and Resolve
 
-- **Mana** pays for spells. The Warden has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.
-- **Resolve** is the Warden's class gauge (0 to 100), shown under the mana bar. Each landed weapon swing gives 12, each hit you take 6, and a block 10 more. It fades at 8 a second once you have been out of the fight for 6 seconds.
+- **Mana** pays for spells. The Warrior has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.
+- **Resolve** is the Warrior's class gauge (0 to 100), shown under the mana bar. Each landed weapon swing gives 12, each hit you take 6, and a block 10 more. It fades at 8 a second once you have been out of the fight for 6 seconds.
 - **Costs:** Shield Break 25 Resolve, Rend 20, Cleave 30; Hallowed Bolt 20 mana, Smite 15, Hallowed Ground 30, Rebuke 10. Lunge is free and gives 15 Resolve, and Battle Cry gives 25, so both open a fight. Brace, the draught, camp and fishing are free.
 - A slot you can't afford is dimmed, and its tooltip shows the cost. Trying it says "Not enough mana" or "Not enough Resolve".
 - Each class's mana and gauge numbers live in `data/archetypes.json` (`resources`), and ability costs in `data/abilities.json` (`cost`, `gain`). A later class gets its own gauge by giving it a different `gauge` block.
@@ -85,7 +85,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-and-damage.md) has the formulas and tables.
 
 - **One growth line.** Everything that grows with level grows with (level + 4): the armour constant, item armour, item stat budgets, weapon damage, player spells, and enemy health and hits. The constants and formulas are in `src/data/scaling.js`.
-- **Armour by your own level.** Damage reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75%, so the character panel's percentage holds against every enemy. Armour numbers are ten times what they were: the travelling clothes have 30, and the Warden starts at 130 (21%).
+- **Armour by your own level.** Damage reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75%, so the character panel's percentage holds against every enemy. Armour numbers are ten times what they were: the travelling clothes have 30, and the Warrior starts at 130 (21%).
 - **Level gaps.** Every hit is ×1.2 for each level the attacker is above its target, and ÷1.2 for each level below, with at least 1 damage.
 - **Items are worked out.** Gear states its item level, slot, armour type, rarity and a stat split; the game works out armour (cloth 3, leather 6, mail 9, plate 12 per slot weight), weapon damage (0.45 × (item level + 4) a second, ±40% a swing), a shield's armour and 10% block, and the stat points (0.4 × slot weight × (item level + 4), ×1 green, ×1.3 blue, ×1.6 purple; white has none). Tooltips show the item level. `npm run validate` prints each item's budget and refuses one more than 10% over. Block rating is folded into block chance, and suffixes on green drops spend the green budget.
 - **Enemies by level and type.** No world scaling: each enemy's health, hits, attack speed and armour come from its level and type (fodder, pack beast, normal, skirmisher, armoured, elite, heavy, boss), sized against a par character of its level. Each spawn point's enemy has its own health within ±10%. The ghoul is 18 health and hits for 6; the brute 50 (45 at Hallow Cut) with 140 armour, hits of 9 and a 31 Grave Slam; the archer shoots for 12.
@@ -125,14 +125,14 @@ Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-an
 
 The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in [docs/stats-and-damage.md](docs/stats-and-damage.md). In short:
 
-- **Four attributes:** Stamina, Strength, Agility and Intellect (renamed from Vitality, Might and Finesse). Each archetype has a main attribute that adds to its damage; the Warden's is Strength. Stamina gives health. The character panel lists them, then Haste, Armour, Block and Crit.
+- **Four attributes:** Stamina, Strength, Agility and Intellect (renamed from Vitality, Might and Finesse). Each archetype has a main attribute that adds to its damage; the Warrior's is Strength. Stamina gives health. The character panel lists them, then Haste, Armour, Block and Crit.
 - **Derived combat stats:**
   - weapon damage ranges;
   - crit chance (5% plus Agility, converted by level) at 150% damage;
   - armour, a capped percentage reduction by your own level; higher-level attackers hit harder through the level gap instead;
   - shield block: the shield's own block chance plus block chance from gear, and each block stops 30% of the hit;
   - haste, from gear only, which shortens swings, windups and the global cooldown.
-- **Armour types:** cloth, leather, mail and plate. Each archetype can only wear some types; the Warden can wear all of them and use shields, and starts with a battered kite shield.
+- **Armour types:** cloth, leather, mail and plate. Each archetype can only wear some types; the Warrior can wear all of them and use shields, and starts with a battered kite shield.
 - **No hit rolls and no dodge chance.** Avoiding damage comes from telegraphs and the defensive button.
 - **One formula for every hit:** base × ability multiplier × level gap, then crit, then armour, then block.
 - **Damage numbers** float up for hits dealt (pale), hits taken (red) and heals (green). Crits are larger, amber and marked "!", and blocks read "Block". They stay small and muted, as the design asks.
@@ -161,7 +161,7 @@ All content lives in `data/`, one JSON file per part of the game: items, item ra
 
 ## The Blackwood (second region)
 
-A forest track leaves the Fallen Road below the watch post, passes west of Mara's forge and runs north into the **Blackwood**. The HUD names the region you are in. Under the black pines the fog closes in and the light dims. The Blackwood is meant for a Warden of level 3 or so.
+A forest track leaves the Fallen Road below the watch post, passes west of Mara's forge and runs north into the **Blackwood**. The HUD names the region you are in. Under the black pines the fog closes in and the light dims. The Blackwood is meant for a Warrior of level 3 or so.
 
 - **A shrine at the forest edge** heals you and becomes your respawn point, so a death deep in the wood does not send you back down the road.
 - **Barrow Hounds** (level 3) are fast and hunt as a pack: wake one and every hound near it comes too. They drop pelts that Mara buys.
@@ -200,17 +200,17 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Old Tam**, the fisher by the Stillwater Mere west of the road, teaches Camping (10 coins) and Fishing (5 coins), and sells rods and torches.
 - **Set Camp.** A 3 second cast, standing still, with no enemies near. The camp (▲ on the minimap) becomes where your spirit rises. Resting by its fire builds rested experience (the pale band on the experience bar), which doubles kill experience until spent.
 - **Torches and the dark.** Some places are too dark to enter. Equip a torch in the off hand (it replaces the shield, so no block) to walk in. The Barrow Hollow, west of the hound den in the Blackwood, holds a strongbox and a purse.
-- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). The Warden puts his sword away and holds the rod out, with the line running to the bob. Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
+- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). The Warrior puts his sword away and holds the rod out, with the line running to the bob. Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
 
 ## Controls
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
 
-**Targeting and auto attack (WoW style).** Left-click anyone to select them: a yellow ring and the frame at the top of the screen (with their portrait and level) mark them. Left-clicking the ground lets go; right-clicking the ground does not. Hovering over anyone shows who they are in the bottom-right corner, where every tooltip now shows. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it (the ring turns red): the Warden then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Strength. Engaging an enemy out of reach, or using a spell on one, says "Out of range" in red mid-screen. Right-clicking does not turn the Warden: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+**Targeting and auto attack (WoW style).** Left-click anyone to select them: a yellow ring and the frame at the top of the screen (with their portrait and level) mark them. Left-clicking the ground lets go; right-clicking the ground does not. Hovering over anyone shows who they are in the bottom-right corner, where every tooltip now shows. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it (the ring turns red): the Warrior then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Strength. Engaging an enemy out of reach, or using a spell on one, says "Out of range" in red mid-screen. Right-clicking does not turn the Warrior: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
 
 **Weight.** A landed swing, a crit or a heavy blow kicks the camera and knocks the enemy back a little; crits shake harder and land with a deeper crunch. Nothing pauses: the action stays fluid. The numbers are in `impact` in `src/config.js`.
 
-**No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warden's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
+**No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warrior's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
 
 **Looting.** Defeated enemies give experience at once, but their coins stay on the body until you loot it. Click (either button) a body or anything lying on the ground (within a few metres) to loot it, or press E / A when the prompt shows. Either way it also loots every other body and dropped item within 5 m, so after a fight one click picks up the lot; the prompt says how many ("Loot the Ashen Ghoul (and 2 more nearby)"). Things placed in the world, such as the manifest, are still taken one at a time. Looted bodies sink away; unlooted ones are kept in your save.
 
@@ -241,7 +241,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 
 Every keyboard key above except WASD, the arrow keys, Esc and M can be changed in Settings (O).
 
-**Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
+**Example spells.** The Warrior has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
 
 | Spell | Kind | What it does |
 |---|---|---|
@@ -252,7 +252,7 @@ Every keyboard key above except WASD, the arrow keys, Esc and M can be changed i
 | Cleave | Cleave | A wide swing hitting up to 4 enemies in front of you; 5 s cooldown |
 | Battle Cry | Self buff | +20% to all your damage for 15 s, shown under your health bar; 45 s cooldown |
 
-The spell-bar rows above are the default layout; keys belong to slots, so moving a spell moves its key. Clicks never move the Warden, and a click on open ground does nothing, so no swing is wasted.
+The spell-bar rows above are the default layout; keys belong to slots, so moving a spell moves its key. Clicks never move the Warrior, and a click on open ground does nothing, so no swing is wasted.
 
 **Windows on a gamepad:** while a window is open the pad drives it (the world keeps running). The d-pad or left stick moves a highlight. A picks an item or spell up and puts it down (to move, swap, equip, unequip, or place a spell on the bar), X equips or uses an item, Y drops an item on the ground or removes a spell from the bar, LB/RB jump between the bags, character panel, spellbook and spell bar, and B cancels or closes.
 
@@ -341,6 +341,6 @@ npm run assets       # rebuild the models (Blender 4.2 or later on PATH; tested 
 - Enemies use simple circle collision and do not path around large obstacles.
 - The watch post is a landmark only and cannot be entered (as the design specifies).
 - Animation is procedural, not keyframed.
-- The Warden has no mana or rage yet, so spells cost nothing but their cooldowns. Ground-targeted spells (placed at the cursor) are not built yet.
+- The Warrior has no mana or rage yet, so spells cost nothing but their cooldowns. Ground-targeted spells (placed at the cursor) are not built yet.
 - The Blackwood joins the Fallen Road as one continuous map rather than a separate zone with a loading step; the region name, fog and light change as you cross.
 - Mara Venn, dialogue and a reward for the manifest are outside this build's scope.
