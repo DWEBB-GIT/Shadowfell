@@ -1463,6 +1463,13 @@ def build_town():
         b.box((1.8, 0.9, 0.15), (W / 2 - 1.35, by, 0.52), P["parchment"], var=0.05)
         b.box((1.0, 0.92, 0.12), (W / 2 - 1.75, by, 0.55), P["cloth_red"], var=0.05)
         b.box((0.3, 0.6, 0.12), (W / 2 - 0.5, by, 0.62), P["candle"], var=0.0)            # pillow
+    # the door stands open, swung right back flat against the inside of the
+    # west wall (Dan, 2026-10-16: it must not stick out of the building)
+    b.box((0.08, 1.7, 2.1), (-W / 2 + 0.2, 0.9 + 0.85, 1.05), P["wood_dark"], var=0.04)
+    for z in (0.4, 1.7):
+        b.box((0.1, 1.5, 0.08), (-W / 2 + 0.23, 0.9 + 0.85, z), P["iron"], var=0.0)    # strap hinges
+    b.box((0.36, 0.12, 2.25), (-W / 2, 0.92, 1.1), P["wood_dark"], var=0.0)              # door jambs
+    b.box((0.36, 0.12, 2.25), (-W / 2, -0.92, 1.1), P["wood_dark"], var=0.0)
     # a lantern by the door
     b.ball(0.12, (-W / 2 - 0.3, 1.2, 2.2), P["flame"], subdiv=1, glow=True)
     b.to_object("InnShell")
@@ -1493,8 +1500,10 @@ def build_town():
             h = (i + 0.5) * 0.6
             wdt = (D + 0.2) * (1 - (i + 0.5) / 5.5)
             b.box((0.3, wdt, 0.6), (x, 0, H + h), P["wood_grey"], var=0.06)
-    b.box((1.6, 0.06, 0.7), (-W / 2 - 0.9, 0.6, 2.4), P["wood"], var=0.05)             # sign board
-    b.box((0.06, 0.06, 1.0), (-W / 2 - 0.5, 0.6, 2.9), P["iron"], var=0.0)
+    # the sign board, flat on the wall over the door (hung out on a bracket
+    # it read as a door sticking out of the building)
+    b.box((0.08, 1.8, 0.55), (-W / 2 - 0.2, 0, H - 0.4), P["wood"], var=0.05)
+    b.box((0.04, 1.4, 0.12), (-W / 2 - 0.25, 0, H - 0.4), P["parchment"], var=0.0)
     b.to_object("InnRoof")
     export("inn_roof")
     reset_scene()
@@ -1536,7 +1545,30 @@ def build_town():
     export("lamp_post")
 
 
+def build_signposts():
+    """A road signpost: the post (with a stone footing and a little roof),
+    and one arm, a board pointing along game +Z (Blender -Y) from the post's
+    side; the game turns an arm towards each place it names."""
+    b = Builder()
+    b.cyl(0.32, 0.38, 0.25, (0, 0, 0.12), P["stone"], segs=8, var=0.1)
+    b.box((0.16, 0.16, 2.3), (0, 0, 1.15), P["wood_dark"], var=0.05)
+    b.box((0.34, 0.34, 0.08), (0, 0, 2.32), P["bark"], var=0.04)
+    b.box((0.2, 0.2, 0.1), (0, 0, 2.4), P["bark"], var=0.04)
+    b.to_object("Signpost")
+    export("signpost")
+    reset_scene()
+
+    b = Builder()
+    b.box((0.05, 0.85, 0.24), (0, -0.52, 0), P["wood"], var=0.05)
+    b.box((0.05, 0.17, 0.17), (0, -0.94, 0), P["wood"], rot=(45, 0, 0), var=0.05)  # the point
+    b.box((0.06, 0.6, 0.03), (0, -0.5, 0.04), P["parchment"], var=0.0)                # chalked name
+    b.box((0.06, 0.4, 0.03), (0, -0.45, -0.04), P["parchment"], var=0.0)
+    b.to_object("SignArm")
+    export("sign_arm")
+
+
 BUILDERS = [
+    build_signposts,
     build_warden, build_ghoul, build_brute, build_cart,
     lambda: build_crate(False), lambda: build_crate(True), build_wheel,
     build_shrine, build_watch_post, build_pine, build_dead_tree,

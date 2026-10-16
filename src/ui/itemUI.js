@@ -1,6 +1,7 @@
 import { DB } from '../data/db.js';
+import { signpostLines } from '../world/signposts.js';
 import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durability } from '../data/items.js';
-import { moneyHTML } from './money.js';
+import { moneyText, moneyHTML } from './money.js';
 import { SETTINGS } from '../systems/settings.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
@@ -70,6 +71,7 @@ export class ItemUI {
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
+    this.el.skillList.addEventListener('click', (e) => e.target.closest('[data-open-cooking]') && this.show('cooking'));
     $('btn-settings').addEventListener('click', () => this.toggle('settings'));
     $('btn-talents').addEventListener('click', () => this.toggle('talents'));
     // cooking: Cook / Cook all on a recipe row
@@ -81,6 +83,12 @@ export class ItemUI {
     $('settings-list').addEventListener('change', (e) => game.settings.set(e.target.dataset.setting, e.target.checked));
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
+    // Back: from the shop to the conversation with its keeper
+    $('shop-back').addEventListener('click', () => {
+      const npc = game.merchant.npc;
+      game.merchant.close();
+      if (npc) game.npcs.talk(npc);
+    });
     $('shop-repair').addEventListener('click', () => game.inventory.repairAll());
     // a merchant opens your bags with it (and closes the ones it opened)
     game.events.on('merchantOpened', () => {
@@ -374,6 +382,7 @@ export class ItemUI {
     if (m.current) {
       const def = m.def;
       this.el.shopName.textContent = def.name;
+      document.getElementById('shop-back').hidden = !m.npc;
       this.el.shopTitle.textContent = def.title;
       this.el.shopStock.innerHTML = m.stock
         .map((id) => {
@@ -410,22 +419,28 @@ export class ItemUI {
       this.hud.keybindUI.render();
     }
 
-    // skills, RuneScape style: a tile per skill with its level
+    // Professions (U), apart from the spellbook (Dan, 2026-10-16): each
+    // profession with its rank, and its abilities to drag onto the bar
     this.el.skills.hidden = !this.open.skills;
     if (this.open.skills) {
       const sk = this.game.skills;
-      this.el.skillList.innerHTML = Object.values(DB.skills)
-        .map((d) => {
-          const icon = this.hud.abilityIcons[(d.teaches || [])[0]] || '';
-          const known = sk.has(d.id);
-          const max = d.maxRank || 1;
-          const level = known ? (d.maxRank ? `${sk.rank(d.id)} / ${max}` : 'Learned') : 'Not learned';
-          const trainer = DB.npcs[d.trainer];
-          const tip = `${d.desc}${known ? '' : ` ${trainer ? trainer.name : 'A trainer'} teaches it for ${d.cost} coins.`}`;
-          const fill = known ? (sk.rank(d.id) / max) * 100 : 0;
-          return `<div class="skill-tile${known ? '' : ' unknown'}" data-skill="${d.id}" data-tip="${tip.replace(/"/g, '&quot;')}" data-tip-head="${d.name}"><img src="${icon}" alt=""><div><div class="skill-name">${d.name}</div><div class="skill-level">${level}</div><div class="skill-bar"><div style="width:${fill}%"></div></div></div></div>`;
-        })
-        .join('');
+      const icons = this.hud.abilityIcons;
+      const row = (d) => {
+        const known = sk.has(d.id);
+        const max = d.maxRank || 1;
+        const level = known ? (d.maxRank ? `${sk.rank(d.id)} / ${max}` : 'Learned') : 'Not learned';
+        const trainer = DB.npcs[d.trainer];
+        const tip = `${d.desc}${known ? '' : ` ${trainer ? trainer.name : 'A trainer'} teaches it for ${moneyText(d.cost)}.`}`;
+        const fill = known ? (sk.rank(d.id) / max) * 100 : 0;
+        const abilities = known ? (d.teaches || []).filter((a) => barAbility(this.game, a)).map((a) => `<div class="islot spell filled${this.carry === 'k:' + a ? ' carried' : ''}" data-loc="k:${a}" title="${ABILITIES[a].name}: drag onto the bar"><img src="${icons[a] || ''}" alt=""></div>`).join('') : '';
+        const extra = known && d.id === 'cooking' ? '<button class="btn small" data-open-cooking>Cookbook</button>' : '';
+        const how = known ? '' : `<div class="prof-how dim">${trainer ? trainer.name : 'A trainer'} teaches it</div>`;
+        return `<div class="prof-row${known ? '' : ' unknown'}" data-skill="${d.id}" data-tip="${tip.replace(/"/g, '&quot;')}" data-tip-head="${d.name}"><div class="prof-body"><div class="prof-top"><span class="skill-name">${d.name}</span><span class="skill-level">${level}</span></div><div class="skill-bar"><div style="width:${fill}%"></div></div>${how}</div><div class="prof-abilities">${abilities}${extra}</div></div>`;
+      };
+      const all = Object.values(DB.skills);
+      const learned = all.filter((d) => sk.has(d.id));
+      const not = all.filter((d) => !sk.has(d.id));
+      this.el.skillList.innerHTML = (learned.length ? learned.map(row).join('') : '<p class="dim">You have no professions yet. Trainers in town teach them.</p>') + (not.length ? `<div class="prof-sub dim">Not yet learned</div>${not.map(row).join('')}` : '');
     }
 
     // spellbook: every ability, ready to drag onto the bar
@@ -433,8 +448,9 @@ export class ItemUI {
     if (this.open.spellbook) {
       const bar = this.game.actionBar;
       const icons = this.hud.abilityIcons;
+      // professions' abilities (fishing, cooking, camp) live in Professions (U)
       this.el.spellList.innerHTML = Object.entries(ABILITIES)
-        .filter(([id]) => barAbility(this.game, id))
+        .filter(([id, a]) => barAbility(this.game, id) && !a.skill)
         .map(([id, a]) => {
           const at = bar.slots.indexOf(id);
           return `<div class="spell-row"><div class="islot spell filled${this.carry === 'k:' + id ? ' carried' : ''}" data-loc="k:${id}"><img src="${icons[id] || ''}" alt=""></div><div><div class="spell-name">${a.name}</div><div class="dim spell-where">${at >= 0 ? 'On the bar' : 'Not on the bar'}</div></div></div>`;
@@ -557,7 +573,7 @@ export class ItemUI {
   // pick (or null). Item and button tooltips come first.
   worldTip(pick) {
     if (this.tipFrom === 'ui' && !this.el.tooltip.hidden) return;
-    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc') ? pick.obj : null;
+    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc' || pick.kind === 'sign') ? pick.obj : null;
     if (!key) {
       if (this.tipFrom === 'world') {
         this.el.tooltip.hidden = true;
@@ -568,7 +584,9 @@ export class ItemUI {
     }
     this.tipFrom = 'world';
     const health = key.cfg ? `${Math.ceil(key.health)} / ${key.maxHealth}` : '';
-    const html = key.cfg
+    const html = pick.kind === 'sign'
+      ? `<div class="tt-name">Signpost</div>${signpostLines(key).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span> ${l.label} <span class="tt-kind">${l.metres} m ${l.dir}</span></div>`).join('')}`
+      : key.cfg
       ? `<div class="tt-name tt-foe">${key.cfg.name}</div><div>Level ${key.cfg.level || 1}${key.cfg.elite ? ' Elite' : ''}</div><div class="tt-kind">${health} health</div>`
       : `<div class="tt-name tt-friend">${key.name}</div>${key.def.title ? `<div class="tt-kind">&lt;${key.def.title}&gt;</div>` : ''}<div>Level ${key.def.level || 1}</div>`;
     if (this.tipKey !== key || this.tipHtml !== html) {
@@ -669,7 +687,7 @@ export class ItemUI {
         else bar.place(ability, +to.slice(2));
       } else if (from.startsWith('a:') && !overBar) {
         bar.remove(+from.slice(2)); // dragged off the bar
-        this.game.events.emit('log', { text: itemRef(ability) ? `${entryName(ability)} removed from the bar.` : `${entryName(ability)} removed from the bar. Open the spellbook (P) to put it back.`, kind: 'muted', throttle: 'bar-removed' });
+        this.game.events.emit('log', { text: itemRef(ability) ? `${entryName(ability)} removed from the bar.` : `${entryName(ability)} removed from the bar. Open ${ABILITIES[ability]?.skill ? 'Professions (U)' : 'the spellbook (P)'} to put it back.`, kind: 'muted', throttle: 'bar-removed' });
       }
       return;
     }
@@ -691,7 +709,7 @@ export class ItemUI {
 
   // ------------------------------------------------------------- gamepad
   _visibleLocs() {
-    return [...document.querySelectorAll('#shop-window .islot, #bags-window .islot, #character-window .islot, #spellbook-window .islot, #bag-sockets .islot, #action-bar .aslot')]
+    return [...document.querySelectorAll('#shop-window .islot, #bags-window .islot, #character-window .islot, #spellbook-window .islot, #skills-window .islot, #bag-sockets .islot, #action-bar .aslot')]
       .filter((el) => el.offsetParent !== null && el.dataset.loc !== 's:0')
       .map((el) => el.dataset.loc);
   }

@@ -448,7 +448,7 @@
       "weaponType": "bow",
       "itemLevel": 2,
       "speed": 2.8,
-      "range": 26,
+      "range": 20,
       "stack": 1,
       "price": 20,
       "model": "hunting_bow",
@@ -460,7 +460,7 @@
       "name": "Rough arrow",
       "kind": "ammo",
       "rarity": "common",
-      "ammoDps": 0.5,
+      "ammoDps": 0.25,
       "stack": 200,
       "buyCount": 100,
       "price": 1,
@@ -473,7 +473,7 @@
       "name": "Barbed arrow",
       "kind": "ammo",
       "rarity": "enhanced",
-      "ammoDps": 1.5,
+      "ammoDps": 0.75,
       "stack": 200,
       "buyCount": 100,
       "price": 6,
@@ -517,7 +517,31 @@
       "price": 10,
       "model": "fishing_rod",
       "icon": "fishing_rod",
-      "description": "Ash and horsehair line. Keep it in your bags to fish, once someone has shown you how."
+      "description": "Ash and horsehair line. Keep it in your bags to fish, once someone has shown you how. Better rods and bait raise your Fishing skill."
+    },
+    {
+      "id": "yew_fishing_rod",
+      "name": "Yew fishing rod",
+      "kind": "tool",
+      "rarity": "enhanced",
+      "fishingSkill": 10,
+      "stack": 1,
+      "price": 60,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is in your bags, so fish bite more often and are landed more often."
+    },
+    {
+      "id": "cut_bait",
+      "name": "Cut bait",
+      "kind": "material",
+      "rarity": "common",
+      "bait": 5,
+      "stack": 20,
+      "price": 1,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "Strips of hound meat for the hook. +5 Fishing skill for one cast; one is used each time you cast."
     },
     {
       "id": "gloomwater_perch",
@@ -567,7 +591,7 @@
       "price": 6,
       "model": "cooked_fish",
       "icon": "cooked_fish",
-      "description": "Charred at the edges, sweet in the middle. Restores 60 health over 15 seconds while you sit and eat."
+      "description": "Charred at the edges, sweet in the middle. Restores 60 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "roast_dace",
@@ -584,7 +608,7 @@
       "price": 7,
       "model": "cooked_fish",
       "icon": "cooked_fish",
-      "description": "Small, bright and gone in three bites. Restores 70 health over 15 seconds while you sit and eat."
+      "description": "Small, bright and gone in three bites. Restores 70 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "hound_steak",
@@ -601,7 +625,7 @@
       "price": 8,
       "model": "steak",
       "icon": "steak",
-      "description": "Tough as a boot and twice as filling. Restores 90 health over 15 seconds while you sit and eat."
+      "description": "Tough as a boot and twice as filling. Restores 90 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "travellers_stew",
@@ -618,7 +642,7 @@
       "price": 12,
       "model": "stew",
       "icon": "stew",
-      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat."
+      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "smoked_eel",
@@ -635,7 +659,7 @@
       "price": 40,
       "model": "cooked_fish",
       "icon": "cooked_fish",
-      "description": "Black, rich and faintly sinister. Restores 200 health over 15 seconds while you sit and eat."
+      "description": "Black, rich and faintly sinister. Restores 200 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "old_boot",

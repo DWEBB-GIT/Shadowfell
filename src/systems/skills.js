@@ -53,7 +53,7 @@ export class Skills {
       if (free >= 0) actionBar.place(ab, free);
     }
     const names = (s.teaches || []).map((ab) => DB.abilities[ab].name).join(' and ');
-    events.emit('log', { text: `You learn ${s.name}.${names ? ` ${names} is in your spellbook (P).` : ''}`, kind: 'level' });
+    events.emit('log', { text: `You learn ${s.name}.${names ? ` ${names} is under Professions (U).` : ''}`, kind: 'level' });
     hud?.toast(`Learned: ${s.name}`);
     events.emit('skillsChanged', { id });
     return true;

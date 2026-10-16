@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Floating damage numbers. Restrained, as the design asks: small serif
 // figures in muted colours that drift up and fade, not bright arcade text.
-//   dealt  parchment white      taken  dull red
+//   dealt  parchment white      taken  dull red "-n"
 //   crit   larger amber, "!"    block  grey "Block"     heal  green "+n"
 
 const LIFE = 1.1; // seconds on screen
@@ -28,7 +28,7 @@ export class DamageNumbers {
       text = 'Block';
       cls = 'block';
     } else {
-      text = `${amount}${crit ? '!' : ''}`;
+      text = `${kind === 'taken' ? '-' : ''}${amount}${crit ? '!' : ''}`;
       if (blocked) text += ` (${blocked} blocked)`;
     }
     if (crit) cls += ' crit';

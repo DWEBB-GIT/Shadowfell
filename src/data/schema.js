@@ -139,7 +139,8 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
     if (d.buyCount !== undefined && !(isInt(d.buyCount) && d.buyCount > 1 && d.buyCount <= d.stack)) bad('buyCount (how many a vendor sells at the price) must be a whole number from 2 to the stack size');
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
-    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus in percent above 0');
+    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus to fishing skill above 0');
+    if (d.fishingSkill !== undefined && !(isNum(d.fishingSkill) && d.fishingSkill > 0)) bad('fishingSkill must be a bonus to fishing skill above 0');
     for (const [k, v] of Object.entries(d.stats || {})) {
       if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
       else if (!isNum(v)) bad(`stat ${k} must be a number`);
@@ -558,6 +559,15 @@ export function validateGameData(raw, opts = {}) {
   for (const s of worldF.stations || []) {
     pos(`world.json station ${s.id}`, s.position);
     if (s.kind !== 'fire') errors.push(`world.json station ${s.id}: kind must be fire`);
+  }
+  for (const s of worldF.signposts || []) {
+    const w = `world.json signpost ${s.id}`;
+    pos(w, s.position);
+    if (!Array.isArray(s.points) || !s.points.length || s.points.length > 4) errors.push(`${w}: points must list 1 to 4 places`);
+    for (const p of s.points || []) {
+      ref(w, 'location', locations, p.to);
+      if (p.label !== undefined && !isStr(p.label)) errors.push(`${w}: a label must be text`);
+    }
   }
   for (const p of worldF.pads || []) if (!(Array.isArray(p) && p.length === 3 && p.every(isNum))) errors.push('world.json pads: each must be [x, z, radius]');
 

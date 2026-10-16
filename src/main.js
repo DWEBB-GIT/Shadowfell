@@ -1,4 +1,5 @@
 import { CURSORS } from './ui/cursors.js';
+import { SIGNPOSTS } from './world/signposts.js';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Events } from './core/events.js';
@@ -177,6 +178,7 @@ class Game {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+      this.hud?._layoutBottom();
     });
   }
 
@@ -286,6 +288,7 @@ class Game {
     this.hud.hideTitle();
     this.hud.refreshObjective();
     this.started = true;
+    this.hud._layoutBottom(); // the spell bar settles before the first frame
     this._snapCamera();
     if (resumed) this.hud.log('You take up the road again.', 'lore');
     else this.hud.log('The Fallen Road. Somewhere ahead lies the old watch post.', 'lore');
@@ -343,6 +346,11 @@ class Game {
     }
     for (const n of npcs.list) consider('npc', n, screen(n.position.x, n.position.y + 1, n.position.z));
     for (const c of this.chests.list) if (!this.chests.opened(c)) consider('chest', c, screen(c.x, heightAt(c.x, c.z) + 0.4, c.z));
+    for (const sp of SIGNPOSTS) {
+      const [x, z] = sp.position;
+      const y = heightAt(x, z);
+      consider('sign', sp, Math.min(screen(x, y + 1.0, z), screen(x, y + 1.9, z)));
+    }
     for (const l of loot.lootables()) {
       const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
       if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
@@ -350,12 +358,22 @@ class Game {
     return best;
   }
 
+  // is the mouse on (or near) the fishing bob?
+  _overBob() {
+    const bob = this.fishing.bobPosition;
+    if (!bob) return false;
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const v = bob.clone().project(this.camera);
+    return Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top)) < CONFIG.fishing.clickRadius;
+  }
+
   // The mouse cursor says what a click would do (WoW): a sword over an
   // enemy, a speech bubble over a townsperson (grey until you are close
-  // enough to talk), a hand over loot.
+  // enough to talk), a hand over loot, a hook over your fishing bob.
   _cursorFor(pick) {
     let c = '';
-    if (pick) {
+    if (this.input.mouse.onCanvas && this._overBob()) c = CURSORS.fish;
+    else if (pick) {
       const p = this.player.position;
       const o = pick.obj;
       if (pick.kind === 'enemy') c = CURSORS.attack;
@@ -369,13 +387,7 @@ class Game {
   // auto attack, on a townsperson talks, and either button loots.
   _click(button) {
     // a click on (or near) the fishing bob strikes
-    const bob = this.fishing.bobPosition;
-    if (bob) {
-      const r = this.renderer.domElement.getBoundingClientRect();
-      const v = bob.clone().project(this.camera);
-      const d = Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top));
-      if (d < CONFIG.fishing.clickRadius) return this.fishing.strike();
-    }
+    if (this._overBob()) return this.fishing.strike();
     const pick = this._pickUnderCursor();
     // a left click on the ground lets go of the target; a right click does not
     if (!pick) {
@@ -384,7 +396,9 @@ class Game {
     }
     const { player, events, targeting, loot } = this;
     const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
-    if (pick.kind === 'chest') {
+    if (pick.kind === 'sign') {
+      this.hud.showSignpost(pick.obj);
+    } else if (pick.kind === 'chest') {
       if (far(pick.obj.x, pick.obj.z, 2.4)) this.hud.error('You need to be closer to interact with that target.');
       else this.chests.open(pick.obj);
     } else if (pick.kind === 'loot') {

@@ -10,7 +10,7 @@ import { SCALING, scaledEnemy } from './data/scaling.js';
 export const CONFIG = {
   player: {
     archetype: 'warden',
-    speed: 6.5, // metres per second: a run by default, as in WoW (was a 5 m/s walk)
+    speed: 5.6, // metres per second: a run (Dan, 2026-10-16: 6.5 felt too fast)
     runGait: 1.3, // the run animation: quicker, longer strides than a walk
     radius: 0.4,
     startCoins: 8,
@@ -35,11 +35,15 @@ export const CONFIG = {
   },
   fishing: {
     castTime: 0.6, // the bob's flight
-    biteMin: 3, // seconds before a bite, at least...
-    biteMax: 9, // ...and at most
+    duration: 20, // seconds a cast lasts (the fishing bar); no bite by then and nothing was biting
+    biteMin: 3, // a bite comes this many seconds into the cast, at least...
+    biteMax: 16, // ...and at most
     biteWindow: 1.4, // how long the bob stays under: strike now
+    biteBase: 35, // percent chance a cast gets a bite at all...
+    bitePerSkill: 1.2, // ...plus this per point of fishing skill (rank + rod + bait), up to biteCap
+    biteCap: 95,
     baseChance: 65, // percent chance to land it on a timely strike...
-    chancePerRank: 0.6, // ...plus this per rank of Fishing (bait adds its own)
+    chancePerRank: 0.6, // ...plus this per point of fishing skill
     clickRadius: 60, // pixels: a click this close to the bob strikes
   },
   camp: {
@@ -60,6 +64,7 @@ export const CONFIG = {
     healthBase: 40,
     healthPerStamina: 6,
     manaPerIntellect: 10,
+    rangedPowerShare: 0.5, // bows: Agility x powerPerMainStat x this is ranged power
     powerPerMainStat: 0.25, // damage added to every weapon hit (per 0.6 s of swing time)
     spellPowerPerIntellect: 0.25,
     critBase: 5, // percent, plus Agility / (scaling.critAgility x (level + 4))

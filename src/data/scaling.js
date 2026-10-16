@@ -40,6 +40,7 @@ export const SCALING = {
   shieldArmour: 20, // x n x rarity main
   shieldBlock: 10, // percent block chance built into every shield, x rarity main
   weaponDps: 0.45, // weapon damage a second = 0.45 x n x rarity main
+  rangedDamage: 0.5, // a bow's weapon damage is half a melee weapon's at the same item level
   weaponSpread: 0.4, // a swing (dps x speed) rolls within +-40% of its average
   // `budget` scales an item's stat points; `main` its armour, weapon damage
   // and a shield's block chance. White (common) gear has no stats.
@@ -129,7 +130,7 @@ export function itemMain(d) {
     stats.armour = Math.round(S.shieldArmour * n * main);
     stats.block = Math.round(S.shieldBlock * main);
   } else if (d.kind === 'weapon') {
-    const swing = S.weaponDps * n * main * d.speed;
+    const swing = S.weaponDps * n * main * d.speed * (d.slot === 'ranged' ? S.rangedDamage : 1);
     damage = [Math.max(1, Math.round(swing * (1 - S.weaponSpread))), Math.max(1, Math.round(swing * (1 + S.weaponSpread)))];
   }
   return { stats, damage };

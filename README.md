@@ -32,6 +32,14 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Playtest batch, 2026-10-16 (Dan's list)
+
+- **Townsfolk.** A conversation groups its choices under Quests, Ask about and Services. Each kind has its own badge: speech, goods (Browse goods), training (Train) and the inn (Make this inn your home). **Train** opens a trainer window like the shop. It lists every skill and recipe that person teaches, with what it needs, its cost and Learn. The shop and the trainer window both have **Back** to the conversation.
+- **Professions (U).** Professions have their own window with your rank in each, and their abilities (Fishing, Cooking, Set Camp) to drag onto the bar. The spellbook (P) now keeps to spells. There is also a Professions button with the menu buttons.
+- **Bottom right.** The menu buttons sit in one row with the bag slots, and your money is in the corner. On a narrow screen the spell bar moves left to stay clear of them.
+- **On screen.** Damage you take shows as "-n". The selected enemy's bar shows its health in numbers. Your name shows over your character, and Settings (O) can turn it off.
+- Bows, signposts, cooking, Well Fed and fishing are under their own headings below.
+
 ## Dual wielding
 
 - One-handed swords and daggers (the arming sword and rusty dirk from Mara, the militia sword and ghoulbone knife as drops) go in either hand. Drag one onto the off hand to dual wield.
@@ -44,14 +52,16 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Indoors.** Walk in through the inn's west door. Its walls are solid; inside, the roof hides, the front wall fades to a ghost, and the camera comes in about a fifth closer. All of it eases back as you step out.
 - **Hester Vale**, the innkeeper, sells food, teaches Cooking (10 coins) and its recipes, and can make the inn your home: if you fall, you wake by her hearth. Standing inside the inn with no enemy near builds rested experience, as by your camp fire.
 - **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
-- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Recipes live in `data/recipes.json`.
+- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Eat for 10 seconds (even at full health) to become **Well Fed**: +2 Stamina for 15 minutes. Recipes live in `data/recipes.json`.
+- **Signposts.** Four posts along the road (outside Brackenford, by the mere turning, at the fork for the watch post and the Blackwood, and inside the Blackwood). Hover over one to see where its arms point, with distance and direction, or press E (or click it) to read it on screen until you walk on. They live in `data/world.json` `signposts`.
+- **Fishing.** Each cast runs a 20-second fishing bar. Whether anything bites is rolled when you cast, and the chance rises with your Fishing skill: your rank, plus your best rod (Tam's yew rod +10) and bait (cut bait +5, one used per cast). If the bar runs out without a bite, nothing was biting. The cursor turns into a hook over your bob.
 
 ## Combat feel (WoW)
 
 - Auto attack opens with an instant blow the moment you reach the target, then swings on the weapon's timer. The swing bar fills as each blow lands.
 - No animation lock: you move at full speed while swinging, shooting and using abilities, and a swing on its way never eats a key press. Abilities pressed in the last 0.4 s of the global cooldown are queued.
 - Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
-- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer, on the move too; arrows fly and hit on arrival. In melee reach the sword takes over.
+- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer while you stand still; arrows fly and hit on arrival. In melee reach the sword takes over.
 - **Arrows and quivers:** each shot uses an arrow (sold by the hundred: rough from Mara or Tam, barbed from Tam, which hit harder). Tam's leather quiver goes in a bag slot, holds only arrows and makes Auto Shot 10% faster.
 - **Bow abilities:** Quick Shot (instant arrow, 120% of a bow shot) and Venom Arrow (instant poison, 5 ticks over 15 s). Both use an arrow and appear on keys 6 and 7 when you first equip a bow.
 
@@ -206,7 +216,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 
 | Keyboard and mouse | Gamepad | Action |
 |---|---|---|
-| WASD | Left stick | Move |
+| WASD or arrow keys | Left stick | Move |
 | Mouse | Right stick | Aim (with no stick input, you aim the way you face) |
 | Tab | R3 (stick click) | Next target |
 | Left click | | Select an enemy or townsperson; loot a body or drop |
@@ -229,7 +239,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | Esc | B (in a window) | Close windows, then clear the target |
 | M | | Sound on or off |
 
-Every keyboard key above except WASD, Esc and M can be changed in Settings (O).
+Every keyboard key above except WASD, the arrow keys, Esc and M can be changed in Settings (O).
 
 **Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
 

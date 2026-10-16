@@ -12,7 +12,9 @@ import { moneyText } from '../ui/money.js';
 //   * a recipe is orange, yellow, green or grey by how easy it now is for
 //     you, and so how likely making it is to raise your skill.
 // Food is eaten sitting down: it restores health over its time while you
-// stay still and out of the fight.
+// stay still and out of the fight. Eating for `wellFedAfter` seconds (cook
+// tuning) makes you Well Fed (as in WoW): +`wellFedStamina` Stamina for
+// `wellFedSeconds`. You keep eating at full health until you are.
 
 const SKILL_UP_CHANCE = { orange: 1, yellow: 0.75, green: 0.25, grey: 0 };
 
@@ -21,6 +23,7 @@ export class Cooking {
     this.game = game;
     this.learned = new Set(); // taught recipes (the starters need no learning)
     this.crafting = null; // { id, t, total, left }
+    this.wellFed = 0; // seconds of Well Fed left
     game.events.on('playerHurt', () => this.stopEating('You stop eating.'));
     game.events.on('playerDied', () => {
       this.crafting = null;
@@ -31,6 +34,23 @@ export class Cooking {
   reset() {
     this.learned = new Set();
     this.crafting = null;
+    this.wellFed = 0;
+  }
+
+  // Stamina from being Well Fed (added to your stats)
+  get wellFedStamina() {
+    return this.wellFed > 0 ? this.ability.tuning.wellFedStamina : 0;
+  }
+
+  // the buff row's entry
+  get wellFedAura() {
+    return this.wellFed > 0 ? { id: 'wellFed', name: 'Well Fed', left: this.wellFed, total: this.ability.tuning.wellFedSeconds } : null;
+  }
+
+  _setWellFed(seconds) {
+    const was = this.wellFed > 0;
+    this.wellFed = seconds;
+    if (was !== seconds > 0) this.game.recomputeMaxHealth();
   }
 
   get ability() {
@@ -145,7 +165,6 @@ export class Cooking {
     events.emit('log', { text: `You cook ${r.output.count > 1 ? r.output.count + ' ' : ''}${name}.`, kind: 'loot' });
     const chance = SKILL_UP_CHANCE[this.colour(r)] || 0;
     if (chance > 0 && this.game.random() < chance) skills.raise(r.skill);
-    events.emit('craftEnd', { id: r.id, done: true });
   }
 
   update(dt) {
@@ -161,7 +180,14 @@ export class Cooking {
           c.t = 0;
           player.rig.play('brace', c.total, 0.9);
         } else this.crafting = null;
+        // after the state is settled, so the window can offer the next dish
+        // at once (it used to stay greyed out until it was reopened)
+        this.game.events.emit('craftEnd', { id: r.id, done: true });
       }
+    }
+    if (this.wellFed > 0 && (this.wellFed -= dt) <= 0) {
+      this._setWellFed(0);
+      this.game.events.emit('log', { text: 'Well Fed fades.', kind: 'muted' });
     }
     // eating: health over time while sitting still, out of the fight
     const e = player.eating;
@@ -174,9 +200,18 @@ export class Cooking {
         const whole = Math.floor(e.carry);
         if (whole > 0) {
           e.carry -= whole;
-          player.heal(whole);
+          if (player.health < player.maxHealth) player.heal(whole);
         }
-        if (e.left <= 0 || player.health >= player.maxHealth) this.stopEating(player.health >= player.maxHealth ? 'You feel full.' : null);
+        const t = this.ability.tuning;
+        if (!e.fed && e.total - e.left >= t.wellFedAfter - 1e-6) {
+          e.fed = true;
+          this._setWellFed(t.wellFedSeconds);
+          this.game.events.emit('log', { text: `You are Well Fed: +${t.wellFedStamina} Stamina for ${Math.round(t.wellFedSeconds / 60)} minutes.`, kind: 'level' });
+          this.game.hud?.toast('Well Fed');
+        }
+        // full and fed: get up
+        const full = player.health >= player.maxHealth;
+        if (e.left <= 0 || (full && e.fed)) this.stopEating(full ? 'You feel full.' : null);
       }
     }
   }
@@ -192,7 +227,8 @@ export class Cooking {
       this.game.hud.error("You can't eat while fighting.");
       return false;
     }
-    if (player.health >= player.maxHealth) {
+    // at full health you still eat for Well Fed, unless you already are
+    if (player.health >= player.maxHealth && this.wellFed > 0) {
       events.emit('log', { text: 'You are not hungry.', kind: 'muted', throttle: 'not-hungry' });
       return false;
     }
@@ -214,11 +250,12 @@ export class Cooking {
 
   // ------------------------------------------------------------ saving
   serialize() {
-    return { recipes: [...this.learned] };
+    return { recipes: [...this.learned], wellFed: Math.round(this.wellFed) };
   }
 
   apply(data) {
     this.reset();
     for (const id of data?.recipes || []) if (DB.recipes[id]?.trainer) this.learned.add(id);
+    if (data?.wellFed > 0) this._setWellFed(data.wellFed);
   }
 }

@@ -213,7 +213,7 @@ async function launchAndMovement(browser) {
   b = (await state(page)).pos;
   const diag = Math.hypot(b.x - a.x, b.z - a.z);
   await sim(page, 1.5); // let the camera settle
-  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 6.5, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
+  record('Diagonal movement is normalised', near(diag, straight, 0.05) && near(straight, 5.6, 0.1), `1s straight ${straight.toFixed(2)}m, 1s diagonal ${diag.toFixed(2)}m`);
 
   const cam = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -236,7 +236,7 @@ async function launchAndMovement(browser) {
 
   // world boundaries: walk into each edge for a long time
   const edges = [
-    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 42], [['KeyW'], -6, -112],
+    [['KeyA'], -30, 0], [['KeyD'], 30, 0], [['KeyS'], 0, 96], [['KeyW'], -6, -112],
   ];
   const out = [];
   let inside = true;
@@ -244,7 +244,7 @@ async function launchAndMovement(browser) {
     await setup(page, { x, z });
     await sim(page, 6, { held: keys, fps: 30 });
     const s = await state(page);
-    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -125 && s.pos.z <= 47;
+    const ok = s.pos.x >= -36 && s.pos.x <= 36 && s.pos.z >= -125 && s.pos.z <= 100;
     inside = inside && ok;
     out.push(`${keys[0].slice(3)}→(${s.pos.x.toFixed(1)}, ${s.pos.z.toFixed(1)})`);
   }
@@ -376,7 +376,7 @@ async function combat(browser) {
   await sim(page, 0.5, { held: ['KeyD', 'ShiftLeft'], press: ['ShiftLeft'] });
   const ns = (await state(page)).pos;
   const walked = Math.hypot(ns.x - noSprint.x, ns.z - noSprint.z);
-  record('No dodge or sprint: Shift does nothing special', near(walked, 3.25, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (running is 6.5 m/s)`);
+  record('No dodge or sprint: Shift does nothing special', near(walked, 2.8, 0.2), `${walked.toFixed(2)}m in 0.5s holding D and Shift (running is 5.6 m/s)`);
 
   // pursuit and attack with normal AI
   await page.evaluate(() => {
@@ -1377,7 +1377,7 @@ async function controls(browser) {
     const [ox, oy, oz] = g.config.camera.offset;
     return { yaw: g.camYaw, off: [c.x - t.x - ox, c.y - t.y - oy, c.z - t.z - oz].map((v) => Math.abs(v)) };
   });
-  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -6.5, 0.2) && near(b.x - a.x, 0, 0.2),
+  record('The camera is fixed (no free rotation)', cam.yaw === undefined && Math.max(...cam.off) < 0.01 && near(b.z - a.z, -5.6, 0.2) && near(b.x - a.x, 0, 0.2),
     `camera holds its isometric offset; W moved (${(b.x - a.x).toFixed(2)}, ${(b.z - a.z).toFixed(2)}), straight up the screen`);
 
   // nothing selected: a faint ring shows who an ability would go to
@@ -1948,7 +1948,8 @@ async function forge(browser) {
   await ctx.addInitScript(PAD_STUB);
   ({ page, errors } = await openGame(ctx));
   await pauseLoop(page);
-  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // New character
+  await padSim(page, 0.05, { tap: [PAD.A] }); // Create and enter
   await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
   await setup(page, { x: 16.2, z: -40.5 });
   await page.evaluate(() => (window.__shadowfall.inventory.coins = 20));
@@ -2442,7 +2443,8 @@ async function questsAndMap(browser) {
   await ctx.addInitScript(PAD_STUB);
   ({ page, errors } = await openGame(ctx));
   await pauseLoop(page);
-  await padSim(page, 0.05, { tap: [PAD.A] });
+  await padSim(page, 0.05, { tap: [PAD.A] }); // New character
+  await padSim(page, 0.05, { tap: [PAD.A] }); // Create and enter
   await setup(page, { x: 0, z: 20 });
   await padSim(page, 0.05, { tap: [PAD.RIGHT] });
   const padLog = await page.evaluate(() => ({ open: window.__shadowfall.hud.quests.logOpen, sel: window.__shadowfall.hud.quests.selected }));
@@ -2867,14 +2869,15 @@ async function ghostAndCamp(browser) {
     g.inventory.coins = 30;
     g.player.placeAt(-18.2, -14.2);
     g.npcs.talk(g.npcs.byId('tam'));
+    g.dialogue.choose('train');
     const opts = g.dialogue.page.options.map((o) => o.id);
     const before = g.skills.knowsAbility('setCamp');
     g.dialogue.choose('train:camping');
     g.dialogue.close();
-    return { opts, before, after: g.skills.knowsAbility('setCamp'), coins: g.inventory.coins, bar: g.actionBar.slots.includes('setCamp'), book: (g.hud.togglePanel('spellbook'), !!document.querySelector('[data-loc="k:setCamp"]')) };
+    return { opts, before, after: g.skills.knowsAbility('setCamp'), coins: g.inventory.coins, bar: g.actionBar.slots.includes('setCamp'), book: (g.hud.togglePanel('skills'), !!document.querySelector('#skills-window [data-loc="k:setCamp"]')) };
   });
-  await page.evaluate(() => window.__shadowfall.hud.togglePanel('spellbook'));
-  record('Old Tam teaches Camping for coins; Set Camp then appears in the spellbook', learn.opts.includes('train:camping') && learn.opts.includes('train:fishing') && !learn.before && learn.after && learn.coins === 20 && learn.book, `options: ${learn.opts.join(', ')}; 30 → ${learn.coins} coins`);
+  await page.evaluate(() => window.__shadowfall.hud.togglePanel('skills'));
+  record('Old Tam teaches Camping for coins (in his trainer window); Set Camp then appears under Professions', learn.opts.includes('train:camping') && learn.opts.includes('train:fishing') && !learn.before && learn.after && learn.coins === 20 && learn.book, `options: ${learn.opts.join(', ')}; 30 → ${learn.coins} coins`);
   await setup(page, { x: -10, z: 22 });
   await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('setCamp', 3); g.player.cooldowns.gcd = 0; });
   await sim(page, 0.05, { press: ['Digit4'] });
@@ -3029,11 +3032,11 @@ async function targetAndUi(browser) {
   // skills panel
   await page.evaluate(() => { const g = window.__shadowfall; g.skills.ranks.set('fishing', 7); g.events.emit('skillsChanged', {}); });
   await sim(page, 0.05, { press: ['KeyU'] });
-  const skills = await page.evaluate(() => [...document.querySelectorAll('#skills-list .skill-tile')].map((t) => t.textContent));
+  const skills = await page.evaluate(() => [...document.querySelectorAll('#skills-list .prof-row')].map((t) => t.querySelector('.prof-top').textContent));
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'skills-and-target.png') });
   await sim(page, 0.05, { press: ['KeyU'] });
-  record('The skills panel (U) shows each skill and its level', skills.some((t) => /Fishing7 \/ 50/.test(t)) && skills.some((t) => /CampingNot learned/.test(t)), skills.join(' | '));
+  record('The Professions panel (U) shows each profession and its level', skills.some((t) => /Fishing7 \/ 50/.test(t)) && skills.some((t) => /CampingNot learned/.test(t)), skills.join(' | '));
   record('No script errors (targets, tooltips, stats and skills)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3087,6 +3090,7 @@ async function torchAndFishing(browser) {
   await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
   await sim(page, 1.0);
   const waiting = await page.evaluate(() => ({ phase: window.__shadowfall.fishing.state && window.__shadowfall.fishing.state.phase, bob: window.__shadowfall.fishing.bobPosition && window.__shadowfall.fishing.bobPosition.x }));
+  await page.evaluate(() => Object.assign(window.__shadowfall.fishing.state, { wait: 6, skill: 60 })); // this cast gets a bite, 6 s after the bob lands, and lands it
   await sim(page, 6.0);
   const biting = await page.evaluate(() => window.__shadowfall.fishing.biting);
   await page.evaluate(() => window.__shadowfall.renderer.render(window.__shadowfall.scene, window.__shadowfall.camera));
@@ -3109,6 +3113,37 @@ async function torchAndFishing(browser) {
     return g.fishing.cast({ x: 0, z: 24 });
   });
   record('You can only fish facing water', noWater === false);
+
+  // the fishing bar, and casts where nothing bites
+  await setup(page, { x: -16.8, z: -14 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.facing = -Math.PI / 2; g.player.cooldowns.gcd = 0; });
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: -22, z: -14 } });
+  const barNow = await page.evaluate(() => { const g = window.__shadowfall; g.fishing.state.wait = Infinity; return { hidden: document.getElementById('cast-bar').hidden, text: document.getElementById('cast-text').textContent }; });
+  await sim(page, 0.5);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'fishing-bar.png') });
+  await sim(page, 20);
+  const nothing = await page.evaluate(() => ({ active: window.__shadowfall.fishing.active, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).find((t) => /Nothing is biting/.test(t)) }));
+  record('Each cast runs a fishing bar; if it runs out with no bite, nothing was biting', !barNow.hidden && /Fishing/.test(barNow.text) && !nothing.active && !!nothing.log, `bar "${barNow.text}"; ${nothing.log}`);
+  const odds = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.removeAll('cut_bait');
+    const at = () => +g.fishing.biteChanceFor().toFixed(1);
+    const rank = g.skills.rank('fishing');
+    const base = at();
+    g.inventory.addItem('yew_fishing_rod', 1, { quiet: true });
+    const rod = at();
+    g.inventory.addItem('cut_bait', 3, { quiet: true });
+    const bait = at();
+    g.fishing.cast({ x: -22, z: -14 });
+    const used = 3 - g.inventory.count('cut_bait');
+    g.fishing.stop();
+    g.skills.raise('fishing');
+    g.inventory.removeAll('cut_bait');
+    g.inventory.removeAll('yew_fishing_rod');
+    return { rank, base, rod, bait, used, ranked: at() };
+  });
+  record('The chance of a bite rises with Fishing rank, a better rod and bait (used one per cast)', odds.rod > odds.base && odds.bait > odds.rod && odds.ranked > odds.base && odds.used === 1, `rank ${odds.rank}: ${odds.base}%; Tam's yew rod ${odds.rod}%; with bait ${odds.bait}% (${odds.used} used); one rank higher ${odds.ranked}%`);
   record('No script errors (torch and fishing)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -3467,12 +3502,13 @@ async function uiLayout(browser) {
     const coins = document.querySelector('#right-dock .coins').getBoundingClientRect();
     return {
       menus: [...document.querySelectorAll('#micro-bar .micro')].map((b) => b.dataset.tip),
-      centred: Math.abs((bar.left + bar.right) / 2 - innerWidth / 2) < 2,
+      // centred, or moved left just enough to clear the bottom-right dock
+      centred: Math.abs((bar.left + bar.right) / 2 - innerWidth / 2) < 2 || r('right-dock').left - document.getElementById('bottom-bar').getBoundingClientRect().right < 14,
       coinsRight: innerWidth - coins.right < 20,
       overlap: bar.right > r('right-dock').left,
     };
   });
-  record('The spell bar is centred; money sits on the far right; the menu is Character, Spells, Talents, Quest Log, Settings', layout.centred && layout.coinsRight && !layout.overlap && layout.menus.map((t) => t.replace(/ \(.*\)$/, '')).join(',') === 'Character,Spells,Talents,Quest Log,Settings', JSON.stringify(layout));
+  record('The spell bar is centred (or just clear of the bottom-right dock); money sits on the far right; the menu is Character, Spells, Professions, Talents, Quest Log, Settings', layout.centred && layout.coinsRight && !layout.overlap && layout.menus.map((t) => t.replace(/ \(.*\)$/, '')).join(',') === 'Character,Spells,Professions,Talents,Quest Log,Settings', JSON.stringify(layout));
 
   // rebinding: slot 1 to Z, then Z casts what is in slot 1
   const rebind = await page.evaluate(() => {
@@ -3549,13 +3585,13 @@ async function resources(browser) {
 
   // Hallowed Bolt costs 20 mana, paid when the cast finishes
   await sim(page, 2);
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; const e = g.enemies.byId('ghoul_road'); e.windup = 0; e.attackTimer = 30; });
   const castOk = await page.evaluate(() => window.__shadowfall.spells.tryCast('hallowedBolt'));
   const midCast = await page.evaluate(() => window.__shadowfall.resources.mana);
   await sim(page, 1.8);
   const afterCast = await page.evaluate(() => window.__shadowfall.resources.mana);
   record('Hallowed Bolt costs 20 mana, paid when the cast finishes', castOk && midCast >= 50 && afterCast > 29 && afterCast < 34, `mana 50 → ${midCast.toFixed(1)} while casting → ${afterCast.toFixed(1)} after (regen 1.5/s in combat)`);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.resources.mana = 5; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.player.casting = null; g.hud.lastError = null; g.resources.mana = 5; });
   const noMana = await page.evaluate(() => !window.__shadowfall.spells.tryCast('hallowedBolt') && window.__shadowfall.hud.lastError);
   record('A spell is refused without enough mana', !!noMana && /mana/.test(noMana), `"${noMana}"`);
 
@@ -3777,7 +3813,9 @@ async function townAndCooking(browser) {
     const g = window.__shadowfall;
     g.inventory.addCoins(500);
     g.dialogue.open(g.npcs.byId('hester'));
-    const opts = g.dialogue.page.options.map((o) => o.id);
+    const menu = g.dialogue.page.options.map((o) => o.id);
+    g.dialogue.choose('train');
+    const opts = [...menu, ...g.dialogue.page.options.map((o) => o.id)];
     const ok = g.dialogue.choose('train:cooking');
     const after = g.dialogue.page.options.map((o) => o.id);
     const early = g.cooking.learnRecipe('hound_steak');
@@ -3813,6 +3851,19 @@ async function townAndCooking(browser) {
   const stopped = await page.evaluate(() => ({ c: window.__shadowfall.cooking.crafting, n: window.__shadowfall.inventory.count('roast_dace') }));
   record('Moving stops cooking', !stopped.c && stopped.n === 0, JSON.stringify(stopped));
 
+  // cook one, then the next from the same window, without reopening it
+  await setup(page, { x: 4.6, z: 69.6 });
+  await page.evaluate(() => { const g = window.__shadowfall; g.inventory.addItem('gloomwater_perch', 2, { quiet: true }); g.hud.items.closeAll(); g.hud.items.toggle('cooking'); });
+  await sim(page, 0.1);
+  await page.click('#cooking-list [data-cook="grilled_perch"]:not([data-all])');
+  await sim(page, 2.8);
+  const again = await page.evaluate(() => { const b = document.querySelector('#cooking-list [data-cook="grilled_perch"]:not([data-all])'); return { disabled: b.disabled, busy: !!window.__shadowfall.cooking.crafting }; });
+  if (!again.disabled) await page.click('#cooking-list [data-cook="grilled_perch"]:not([data-all])');
+  await sim(page, 2.8);
+  const twice = await page.evaluate(() => window.__shadowfall.inventory.count('gloomwater_perch'));
+  record('Cooking: after one dish the window offers the next at once (no closing and reopening)', !again.disabled && !again.busy && twice === 0, `Cook button enabled after the first: ${!again.disabled}; raw perch left ${twice}`);
+  await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
+
   // eat: sit, heal over time, stop on moving; refused in a fight
   const eat = await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -3835,6 +3886,19 @@ async function townAndCooking(browser) {
     return ok;
   });
   record("You can't eat in a fight", fight === false);
+
+  // Well Fed: eat for 10 seconds, even at full health
+  const fed0 = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.health = g.player.maxHealth;
+    const loc = g.inventory.bagLocations().find((l) => g.inventory.get(l)?.id === 'grilled_perch');
+    return { ok: g.cooking.eat(loc), hp: g.player.maxHealth, stam: g.stats.totals.stamina };
+  });
+  await sim(page, 9.5);
+  const fed1 = await page.evaluate(() => !!window.__shadowfall.cooking.wellFedAura);
+  await sim(page, 0.7);
+  const fed2 = await page.evaluate(() => { const g = window.__shadowfall; return { aura: g.cooking.wellFedAura, eating: !!g.player.eating, hp: g.player.maxHealth, stam: g.stats.totals.stamina, buffs: document.querySelectorAll('#buffs .aura').length }; });
+  record('Eating for 10 seconds makes you Well Fed: a little Stamina for 15 minutes (shown with your buffs)', fed0.ok && !fed1 && fed2.aura && fed2.stam === fed0.stam + 2 && fed2.hp > fed0.hp && !fed2.eating && fed2.buffs >= 1, `Stamina ${fed0.stam} → ${fed2.stam}, health ${fed0.hp} → ${fed2.hp}; ${Math.round(fed2.aura?.left)} s left`);
 
   // indoors: walls block, the roof and front wall fade, the camera comes in
   await page.evaluate(() => { window.__shadowfall.hud.items.closeAll(); document.getElementById('ui-error').classList.remove('show'); });
@@ -3977,15 +4041,20 @@ async function wowCombat(browser) {
   await sim(page, 0.4);
   await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'auto-shot.png') });
-  await sim(page, 1.2, { held: ['KeyA'] });
-  await sim(page, 2 * eq.T - 0.6);
+  // moving holds Auto Shot (WoW Classic): no arrow leaves while you walk
+  const walkFrom = await page.evaluate(() => window.__shadowfall.__shots.length);
+  await sim(page, (eq.T + 0.4) / 2, { held: ['ArrowLeft'] });
+  await sim(page, (eq.T + 0.4) / 2, { held: ['ArrowRight'] });
+  const walkShots = (await page.evaluate(() => window.__shadowfall.__shots.length)) - walkFrom;
+  await sim(page, 2 * eq.T + 0.6);
   const bow = await page.evaluate(() => ({ shots: window.__shadowfall.__shots, hits: window.__shadowfall.__hits.filter((h) => h.hand === 'ranged').map((h) => h.t) }));
   const flight = bow.hits.length ? +(bow.hits[0] - bow.shots[0]).toFixed(2) : null;
   const left = await page.evaluate(() => window.__shadowfall.inventory.count('rough_arrow'));
   record('Each shot uses one arrow', left === 100 - bow.shots.length, `${bow.shots.length} shots, ${left} of 100 arrows left`);
-  const gap = bow.shots.length > 1 ? +(bow.shots[1] - bow.shots[0]).toFixed(2) : null;
+  const gap = bow.shots.length > 2 ? +(bow.shots.at(-1) - bow.shots.at(-2)).toFixed(2) : null;
   record('A bow goes in the ranged slot; with the target beyond melee reach, Auto Shot fires on the bow\'s own timer', eq.ok && bow.shots.length >= 3 && near(gap, eq.T, 0.05) && /Auto Shot/.test(bar.text) && bar.inHand, `${eq.bow}: shots at ${bow.shots.join(', ')} (every ${eq.T.toFixed(1)} s); bar "${bar.text}"`);
-  record('Arrows fly to the target and hit on arrival; you can shoot on the move', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits while strafing`);
+  record('Arrows fly to the target and hit on arrival', flight !== null && flight > 0.2 && flight < 0.45 && bow.hits.length >= 2, `first arrow took ${flight}s to land; ${bow.hits.length} hits`);
+  record('Auto Shot needs you to stand still: walking (arrow keys) holds it, and it resumes when you stop', walkShots === 0 && bow.shots.length >= walkFrom + 2, `${walkShots} shots while walking ${(eq.T + 0.4).toFixed(1)} s; ${bow.shots.length} shots in all`);
 
   // the target comes into reach: the sword takes over
   await page.evaluate(() => { const g = window.__shadowfall; const p = g.player.position; g.enemies.byId('ghoul_road').position.set(p.x, 0, p.z - 1.6); g.__hits = []; });
@@ -4031,6 +4100,12 @@ async function wowCombat(browser) {
     return { rough: hit('rough_arrow'), barbed: hit('barbed_arrow') };
   });
   record('Better arrows hit harder', dmg.barbed > dmg.rough, `rough ${dmg.rough}, barbed ${dmg.barbed}`);
+  const dps = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const per = (h) => { const [lo, hi] = g.stats.swingRangeFor(h); return +((lo + hi) / 2 / g.stats.attackCooldownFor(h)).toFixed(1); };
+    return { sword: per('main'), bow: per('ranged'), ghoul: g.enemies.byId('ghoul_road').maxHealth };
+  });
+  record("A Warden's bow is for pulling: well under half the sword's damage a second (Agility, not Strength, powers it)", dps.bow < dps.sword * 0.5, `sword ${dps.sword}/s, bow ${dps.bow}/s (ghoul health ${dps.ghoul})`);
 
   // bow abilities: Quick Shot (instant) and Venom Arrow (instant poison)
   const onBar = await page.evaluate(() => ['quickShot', 'venomArrow'].map((a) => window.__shadowfall.actionBar.slots.indexOf(a)));
@@ -4191,7 +4266,162 @@ async function titleAndCharacters(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, gearRolls, blackwood, atmosphere };
+async function playtest3(browser) {
+  current = 'Playtest batch 3';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+  await placeEnemy(page, 'ghoul_road', 0, -4, { frozen: true });
+  const heads = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.select(g.enemies.byId('ghoul_road'));
+    g.events.emit('damageNumber', { target: g.player, amount: 7, kind: 'taken' });
+    g.events.emit('damageNumber', { target: g.enemies.byId('ghoul_road'), amount: 5, kind: 'dealt' });
+    return true;
+  });
+  await sim(page, 0.1);
+  const ui = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const hp = [...document.querySelectorAll('.ebar.targeted .ehp')].map((e) => e.textContent);
+    const taken = [...document.querySelectorAll('#damage-numbers .dmg.taken')].map((e) => e.textContent);
+    const dealt = [...document.querySelectorAll('#damage-numbers .dmg.dealt')].map((e) => e.textContent);
+    const name = [...document.querySelectorAll('.wlabel.player')].filter((e) => !e.hidden).map((e) => e.textContent);
+    g.settings.set('playerName', false);
+    return { hp, taken, dealt, name, who: g.character?.name };
+  });
+  await sim(page, 0.05);
+  const off = await page.evaluate(() => { const n = [...document.querySelectorAll('.wlabel.player')].filter((e) => !e.hidden).length; window.__shadowfall.settings.set('playerName', true); return n; });
+  record('The selected enemy shows its health in numbers on its bar', ui.hp.length === 1 && /^\d+ \/ \d+$/.test(ui.hp[0]), JSON.stringify(ui.hp));
+  record('Damage you take shows with a minus sign; damage you deal does not', ui.taken.includes('-7') && ui.dealt.includes('5'), `taken ${ui.taken}, dealt ${ui.dealt}`);
+  record('Your name shows over your character, and Settings turns it off', ui.name.length === 1 && ui.name[0] === ui.who && off === 0, `${JSON.stringify(ui.name)} (character ${ui.who}); with the setting off: ${off}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'names-and-health.png') });
+
+  // a fishing hook cursor over the bob
+  await setup(page, { x: -16.8, z: -14 });
+  const hook = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.skills.ranks.set('fishing', 1);
+    g.inventory.addItem('fishing_rod', 1, { quiet: true });
+    g.player.facing = -Math.PI / 2;
+    return g.fishing.cast({ x: -22, z: -14 });
+  });
+  await sim(page, 1);
+  const cur = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const r = g.renderer.domElement.getBoundingClientRect();
+    const v = g.fishing.bobPosition.clone().project(g.camera);
+    Object.assign(g.input.mouse, { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height, onCanvas: true });
+    g._cursorFor(null);
+    const over = g.renderer.domElement.style.cursor;
+    g.input.mouse.x += 200;
+    g._cursorFor(null);
+    return { over, away: g.renderer.domElement.style.cursor };
+  });
+  record('Hovering over the fishing bob shows a fishing hook cursor', hook && /7 11/.test(cur.over) && !/7 11/.test(cur.away), `over the bob: ${cur.over.slice(-12)}; away: "${cur.away.slice(-12)}"`);
+  await page.evaluate(() => window.__shadowfall.fishing.stop());
+
+  // signposts: hover for where they point, E to read them
+  await setup(page, { x: -4.6, z: 56 });
+  await sim(page, 0.2);
+  const sign = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.interaction.update();
+    const prompt = g.interaction.current?.prompt;
+    g.interaction.interact();
+    const card = document.getElementById('signpost-card');
+    const r = g.renderer.domElement.getBoundingClientRect();
+    const v = g.player.position.clone().set(-4.6, g.player.position.y + 1.5, 54).project(g.camera);
+    Object.assign(g.input.mouse, { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height, onCanvas: true });
+    const pick = g._pickUnderCursor();
+    g.hud.items.worldTip(pick);
+    return { prompt, card: card && !card.hidden ? card.innerText : null, pick: pick?.kind, tip: document.getElementById('tooltip')?.innerText || '' };
+  });
+  await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'signpost.png') });
+  await sim(page, 1.6, { held: ['KeyS'] });
+  const gone = await page.evaluate(() => document.getElementById('signpost-card').hidden);
+  record('Signposts by the road: hovering shows where each arm points, and E reads it on screen until you walk on', sign.prompt === 'Read the signpost' && /Brackenford/.test(sign.card || '') && /Stillwater Mere/.test(sign.card || '') && sign.pick === 'sign' && /Signpost/.test(sign.tip) && gone, `prompt "${sign.prompt}"; card: ${(sign.card || '').replace(/\n/g, ' | ')}; hover: ${sign.pick}`);
+
+  // talking to townsfolk: each kind of choice marked, training in its own
+  // window, Back from the shop and the trainer to the conversation
+  await setup(page, { x: 8, z: 70 });
+  const talk = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addCoins(500);
+    g.npcs.talk(g.npcs.byId('hester'));
+    const heads = [...document.querySelectorAll('#dlg-options .dlg-head')].map((e) => e.textContent);
+    const kinds = [...document.querySelectorAll('#dlg-options .dlg-option')].map((e) => e.className.replace('dlg-option ', ''));
+    g.dialogue.choose('train');
+    const trainOpen = !document.getElementById('trainer-window').hidden && document.getElementById('dialogue-window').hidden;
+    const rows = [...document.querySelectorAll('#train-list .train-row')].map((e) => e.querySelector('.train-name').textContent + ':' + e.className.split(' ').pop());
+    document.querySelector('#train-list [data-option="train:cooking"]').click();
+    const learned = g.skills.has('cooking');
+    const after = [...document.querySelectorAll('#train-list .train-row')].map((e) => e.className.split(' ').pop());
+    document.getElementById('train-back').click();
+    const backToTalk = !document.getElementById('dialogue-window').hidden && document.getElementById('trainer-window').hidden;
+    g.dialogue.close();
+    g.npcs.talk(g.npcs.byId('tam'));
+    g.dialogue.choose('shop');
+    const shopBack = !document.getElementById('shop-back').hidden;
+    document.getElementById('shop-back').click();
+    const fromShop = !g.merchant.current && g.dialogue.isOpen && g.dialogue.npc.id === 'tam';
+    g.dialogue.close();
+    return { heads, kinds, trainOpen, rows, learned, after, backToTalk, shopBack, fromShop };
+  });
+  record('Talking to someone: quests, things to ask and services each have a heading and their own badge', talk.heads.includes('Services') && talk.kinds.includes('train') && talk.kinds.includes('home') && talk.kinds.includes('bye'), `headings ${talk.heads.join(', ')}; badges ${talk.kinds.join(', ')}`);
+  record('Train opens a trainer window like the shop: each skill and recipe, its cost and Learn', talk.trainOpen && talk.rows.length >= 4 && talk.learned && talk.after.includes('known'), talk.rows.join(', '));
+  record('Back takes you from the trainer window or the shop to the conversation', talk.backToTalk && talk.shopBack && talk.fromShop, JSON.stringify({ trainer: talk.backToTalk, shop: talk.fromShop }));
+  await page.evaluate(() => { const g = window.__shadowfall; g.npcs.talk(g.npcs.byId('hester')); g.dialogue.choose('train'); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'trainer-window.png') });
+  await page.evaluate(() => { const g = window.__shadowfall; g.dialogue.back(); });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'npc-talk.png') });
+  const prof = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.close();
+    g.skills.learn('fishing');
+    g.hud.items.show('skills');
+    const rows = [...document.querySelectorAll('#skills-list .prof-row')].map((e) => e.dataset.skill);
+    const drag = [...document.querySelectorAll('#skills-list .islot')].map((e) => e.dataset.loc);
+    g.hud.items.show('spellbook');
+    const book = [...document.querySelectorAll('#spellbook-list .islot')].map((e) => e.dataset.loc);
+    return { rows, drag, book };
+  });
+  record('Professions (U) has its own window with ranks and abilities; the spellbook keeps to spells', prof.rows.includes('cooking') && prof.drag.includes('k:fish') && prof.drag.includes('k:cook') && !prof.book.includes('k:fish') && !prof.book.includes('k:cook') && prof.book.includes('k:lunge'), `professions ${prof.rows.join(', ')} (${prof.drag.join(', ')}); spellbook ${prof.book.join(', ')}`);
+  await page.evaluate(() => window.__shadowfall.hud.items.show('skills'));
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'professions.png') });
+  await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
+
+  // the bottom right: menus, then bags, then money in the corner, clear of the spell bar
+  const dock = async () => page.evaluate(() => {
+    const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+    const micro = r('#micro-bar'), bags = r('#bag-dock'), coins = r('#right-dock .coins'), bar = r('#bottom-bar');
+    return { inline: Math.abs(micro.bottom - bags.bottom) < 2 && micro.right <= bags.left && bags.right <= coins.left, corner: window.innerWidth - coins.right < 20 && window.innerHeight - coins.bottom < 20, clear: bar.right <= micro.left, bar: [Math.round(bar.left), Math.round(bar.right)], micro: Math.round(micro.left), w: window.innerWidth };
+  });
+  const d1 = await dock();
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await sim(page, 0.05);
+  const d2 = await dock();
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'hud-1080p.png') });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await sim(page, 0.05);
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'hud-720p.png') });
+  record('Menu buttons sit in a row with the bag slots, money in the bottom-right corner, clear of the spell bar (720p and 1080p)', d1.inline && d1.corner && d1.clear && d2.inline && d2.corner && d2.clear, JSON.stringify([d1, d2]));
+
+  // doors and signs: a look at the town
+  for (const [x, z, name] of [[-1, 72, 'inn-west'], [-4, 80, 'town-south']]) {
+    await setup(page, { x, z });
+    await sim(page, 0.3);
+    await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
+    await page.screenshot({ path: path.join(HERE, 'screenshots', `${name}.png`) });
+  }
+
+  record('No script errors (playtest batch 3)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

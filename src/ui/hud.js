@@ -1,4 +1,5 @@
 import { moneyText, moneyHTML } from './money.js';
+import { signpostLines } from '../world/signposts.js';
 import { Portraits } from './portraits.js';
 import { WorldLabels } from './worldLabels.js';
 import { KeybindUI } from './keybindUI.js';
@@ -249,8 +250,13 @@ export class Hud {
       if (force) this.items.closeAll();
       return true;
     }
+    const sign = !!this.signpost;
+    if (sign) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
     const talk = this.quests.closeAll();
-    return this.items.closeAll() || talk;
+    return this.items.closeAll() || talk || sign;
   }
 
   // ------------------------------------------------------------- feedback
@@ -282,6 +288,47 @@ export class Hud {
 
   // A WoW-style error in red in the middle of the screen ("Out of range"):
   // it shows at once and fades; the same message again only restarts it.
+  // A signpost read (E, or a click on it): where its arms point, on screen
+  // until you walk away from it.
+  showSignpost(sp) {
+    let el = document.getElementById('signpost-card');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'signpost-card';
+      document.getElementById('hud').appendChild(el);
+    }
+    el.innerHTML = `<div class="sign-head">Signpost</div>${signpostLines(sp).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span><span class="sign-to">${l.label}</span><span class="sign-far">${l.metres} m ${l.dir}</span></div>`).join('')}`;
+    el.hidden = false;
+    this.signpost = { sp, at: this.game.player.position.clone() };
+    this.game.events.emit('signpostRead', { id: sp.id });
+  }
+
+  // On a narrow screen the spell bar moves left of centre, so it stays
+  // clear of the menus, bags and money in the bottom-right corner.
+  _layoutBottom() {
+    const bar = document.getElementById('bottom-bar');
+    const dock = document.getElementById('right-dock');
+    if (!bar || !dock) return;
+    const was = parseFloat(bar.style.marginLeft) || 0;
+    const b = bar.getBoundingClientRect();
+    const d = dock.getBoundingClientRect();
+    const centred = b.left - was;
+    const over = centred + b.width + 10 - d.left;
+    const shift = over > 0 ? -Math.min(over, Math.max(0, centred - 12)) : 0;
+    if (shift !== was) bar.style.marginLeft = `${shift}px`;
+  }
+
+  _updateSignpost() {
+    if (!this.signpost) return;
+    const { player } = this.game;
+    const [x, z] = this.signpost.sp.position;
+    const near = Math.hypot(player.position.x - x, player.position.z - z) < 6 || player.position.distanceTo(this.signpost.at) < 3;
+    if (!near) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
+  }
+
   error(text) {
     const el = document.getElementById('ui-error');
     el.textContent = text;
@@ -389,7 +436,9 @@ export class Hud {
         ? { t: k.t, total: k.total, name: `Cooking ${ITEMS[DB.recipes[k.id].output.item].name}${k.left > 1 ? ` (${k.left})` : ''}` }
         : e
           ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
-          : null;
+          : this.game.fishing?.bar
+            ? { ...this.game.fishing.bar, name: 'Fishing' }
+            : null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
@@ -416,11 +465,13 @@ export class Hud {
       $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
       const ammo = h === 'ranged' ? this.game.inventory.ammo : null;
       const arrows = h === 'ranged' ? (ammo ? ` · ${this.game.inventory.count(ammo)} arrows` : ' · no arrows') : '';
-      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}  ${left.toFixed(1)}`;
+      const still = h === 'ranged' && player.moving && ammo ? ' · stand still to shoot' : '';
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}${still}  ${left.toFixed(1)}`;
     };
     showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
     showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
-    this._auras($('buffs'), spells.buffList(), '');
+    const fed = this.game.cooking.wellFedAura;
+    this._auras($('buffs'), fed ? [...spells.buffList(), fed] : spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
   }
 
@@ -428,9 +479,9 @@ export class Hud {
     const key = list.map((a) => a.id).join(',');
     if (el.dataset.key !== key) {
       el.dataset.key = key;
-      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || ''}"><span></span></div>`).join('');
+      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${a.name || ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || this.abilityIcons.cook || ''}"><span></span></div>`).join('');
     }
-    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = Math.ceil(a.left)));
+    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = a.left > 60 ? `${Math.ceil(a.left / 60)}m` : Math.ceil(a.left)));
   }
 
   update(dt = 0) {
@@ -444,6 +495,11 @@ export class Hud {
       if (this.levelUpTime <= 0) lu.hidden = true;
     }
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
+    this._updateSignpost();
+    if ((this.layoutClock = (this.layoutClock || 0) - dt) <= 0) {
+      this.layoutClock = 0.5;
+      this._layoutBottom();
+    }
     this.refreshStats();
     this._refreshSlots();
     this._refreshSpells();
@@ -512,7 +568,7 @@ export class Hud {
       if (!bar) {
         bar = document.createElement('div');
         bar.className = 'ebar' + (e.cfg.elite ? ' elite' : '');
-        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
+        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div><span class="ehp"></span></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
         this.el.bars.appendChild(bar);
         this.enemyBars.set(e.id, bar);
       }
@@ -524,6 +580,12 @@ export class Hud {
       if (e.cfg.mana) bar.querySelector('.emana-fill').style.width = `${(e.mana / e.cfg.mana) * 100}%`;
       bar.classList.toggle('winding', e.windup > 0 || !!e.casting);
       bar.classList.toggle('targeted', e === t);
+      // the selected enemy's bar shows its health in numbers (WoW)
+      if (e === t) {
+        const hp = `${Math.ceil(e.health)} / ${e.maxHealth}`;
+        const el = bar.querySelector('.ehp');
+        if (el.textContent !== hp) el.textContent = hp;
+      }
       bar.classList.toggle('nemesis', nemesis);
       // FFXIV-style cast bar under the name while a telegraphed attack winds up
       const cast = e.casting;

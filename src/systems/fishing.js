@@ -5,12 +5,15 @@ import { ITEMS, rollLoot } from '../data/items.js';
 import { waterAt, waterLevel } from '../world/terrain.js';
 
 // Fishing, WoW style. With the Fishing skill (from Old Tam) and a rod in the
-// bags, the Fishing ability casts a bob into the water you face. After a
-// while the bob dips: strike then (click the bob, or E / A) for a chance to
-// land a fish from that water's loot table (data: world.json `water`
-// `fishTable`). Too soon or too late and it gets away. The chance rises with
-// skill rank, and bait in the bags (an item with `bait`: a bonus in percent,
-// one used per strike) adds to it. Fish are never seen in the water.
+// bags, the Fishing ability casts a bob into the water you face, and the
+// fishing bar runs for `duration` seconds. Whether anything bites is rolled
+// at the cast: the chance rises with your fishing skill, which is your rank
+// plus your best rod's `fishingSkill` plus bait's (`bait`, one used per
+// cast). If something bites, the bob dips at some moment in the cast: strike
+// then (click the bob, or E / A) for a chance to land a fish from that
+// water's loot table (data: world.json `water` `fishTable`). Too soon or too
+// late and it gets away; if the bar runs out with no bite, nothing was
+// biting. Fish are never seen in the water.
 //
 // Phases: 'cast' (the bob flies) -> 'wait' -> 'bite' (strike now) -> done.
 
@@ -51,22 +54,48 @@ export class Fishing {
     player.holdRod(true);
     player.rig.play('castLine', 0.7, 0.45);
     const cfg = CONFIG.fishing;
-    const wait = cfg.biteMin + (cfg.biteMax - cfg.biteMin) * this.game.random();
-    this.state = { phase: 'cast', t: 0, wait, x: spot.x, z: spot.z, water, bob: this._makeBob(), line: this._makeLine(), from: p.clone() };
+    // bait goes on the hook now, and counts for this cast
+    const bait = this._bait();
+    const skill = this.skill;
+    if (bait) inventory.removeCount(bait, 1);
+    const bites = this.game.random() * 100 < this.biteChanceFor(skill);
+    const wait = bites ? cfg.biteMin + (cfg.biteMax - cfg.biteMin) * this.game.random() : Infinity;
+    this.state = { phase: 'cast', t: 0, elapsed: 0, wait, skill, x: spot.x, z: spot.z, water, bob: this._makeBob(), line: this._makeLine(), from: p.clone() };
     events.emit('fishCast', { x: spot.x, z: spot.z });
     return true;
   }
 
-  // The catch chance in percent for the next strike.
-  get chance() {
-    const cfg = CONFIG.fishing;
+  // Fishing skill: rank, plus the best rod in your bags, plus bait if you
+  // have some (it is used up when you cast)
+  get skill() {
+    const inv = this.game.inventory;
+    const rod = Math.max(0, ...Object.keys(ITEMS).filter((id) => ITEMS[id].fishingSkill && inv.count(id) > 0).map((id) => ITEMS[id].fishingSkill));
     const bait = this._bait();
-    return Math.min(100, cfg.baseChance + this.game.skills.rank('fishing') * cfg.chancePerRank + (bait ? ITEMS[bait].bait : 0));
+    return this.game.skills.rank('fishing') + rod + (bait ? ITEMS[bait].bait : 0);
   }
 
+  // percent chance that a cast gets a bite
+  biteChanceFor(skill = this.skill) {
+    const cfg = CONFIG.fishing;
+    return Math.min(cfg.biteCap, cfg.biteBase + skill * cfg.bitePerSkill);
+  }
+
+  // The catch chance in percent for a timely strike.
+  get chance() {
+    const cfg = CONFIG.fishing;
+    return Math.min(100, cfg.baseChance + (this.state?.skill ?? this.skill) * cfg.chancePerRank);
+  }
+
+  // the best bait in your bags
   _bait() {
     const inv = this.game.inventory;
-    return Object.keys(ITEMS).find((id) => ITEMS[id].bait && inv.count(id) > 0) || null;
+    const have = Object.keys(ITEMS).filter((id) => ITEMS[id].bait && inv.count(id) > 0);
+    return have.sort((a, b) => ITEMS[b].bait - ITEMS[a].bait)[0] || null;
+  }
+
+  // the fishing bar: { t, total }
+  get bar() {
+    return this.state ? { t: this.state.elapsed, total: CONFIG.fishing.duration } : null;
   }
 
   // Click the bob, or E / A: strike.
@@ -79,10 +108,7 @@ export class Fishing {
       this.stop();
       return true;
     }
-    const bait = this._bait();
-    const chance = this.chance;
-    if (bait) inventory.removeCount(bait, 1);
-    if (this.game.random() * 100 >= chance) {
+    if (this.game.random() * 100 >= this.chance) {
       events.emit('log', { text: 'The fish slips the hook.', kind: 'muted' });
       this.stop();
       return true;
@@ -123,7 +149,15 @@ export class Fishing {
       return;
     }
     s.t += dt;
+    s.elapsed += dt;
     const cfg = CONFIG.fishing;
+    // the fishing bar has run out with nothing on the line
+    if (s.elapsed >= cfg.duration && s.phase !== 'bite') {
+      events.emit('log', { text: 'Nothing is biting. You reel in your line.', kind: 'muted' });
+      this.game.hud?.error?.('Nothing is biting');
+      this.stop();
+      return;
+    }
     const level = waterLevel(s.water);
     const bob = s.bob;
     if (s.phase === 'cast') {

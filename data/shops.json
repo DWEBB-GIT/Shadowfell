@@ -39,7 +39,7 @@
       "id": "tam_outfitters",
       "name": "Tam's tackle",
       "vendorType": "outfitter",
-      "stock": ["fishing_rod", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
+      "stock": ["fishing_rod", "yew_fishing_rod", "cut_bait", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
       "faction": "mere_folk"
     },
     {

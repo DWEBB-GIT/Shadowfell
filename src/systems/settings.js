@@ -5,6 +5,7 @@
 const KEY = 'shadowfall.settings';
 export const SETTINGS = [
   { id: 'names', label: 'Show names over characters', default: true },
+  { id: 'playerName', label: 'Show your own name over your character', default: true },
   { id: 'lootNames', label: 'Show names of items on the ground', default: true },
 ];
 
