@@ -282,7 +282,6 @@ export class Player {
       // draw, and the next one starts once you stop
       if (speed01 > 0 && this.pendingShot) this._cancelShot();
       if (a.shoot && speed01 === 0) this.tryShoot(controls.aim);
-      if (a.draught) this.game.inventory.useDraught();
       if (a.fish) this.game.fishing.cast(controls.rawAim);
       if (a.cook) this.game.hud.items.toggle('cooking');
     }

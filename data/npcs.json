@@ -32,6 +32,15 @@
       "shop": "ford_inn",
       "dialogue": "hester",
       "innkeeper": true
+    },
+    {
+      "id": "town_board",
+      "name": "Town Board",
+      "title": "Notices",
+      "level": 1,
+      "model": "town_board",
+      "board": true,
+      "dialogue": "town_board"
     }
   ]
 }

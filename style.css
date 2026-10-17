@@ -319,7 +319,10 @@ kbd {
 .equip-col { display: flex; flex-direction: column; gap: 4px; }
 #character-window .islot.equip { width: 48px; height: 48px; }
 #character-window .islot.equip .ph { font-size: 9px; letter-spacing: 0; }
-#char-rep { margin-top: 8px; }
+#char-rep { margin-top: 8px; min-height: 200px; }
+.char-tabs { display: flex; gap: 4px; margin-top: 8px; border-top: 1px solid rgba(201, 162, 83, 0.3); padding-top: 6px; }
+.char-tab { flex: 1; background: rgba(20, 16, 12, 0.8); color: var(--dim, #a99); border: 1px solid rgba(201, 162, 83, 0.3); padding: 4px; font: inherit; font-size: 12px; cursor: pointer; }
+.char-tab.active { color: var(--gold); border-color: var(--gold); }
 #char-rep h3 { font-size: 12px; margin: 0 0 4px; color: var(--gold); font-weight: normal; }
 .rep-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 6px; align-items: center; font-size: 11px; margin-bottom: 3px; }
 .rep-bar { position: relative; height: 14px; background: #1c1712; border: 1px solid #000; }

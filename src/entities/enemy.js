@@ -25,7 +25,7 @@ export class Enemy {
     this.facing = Math.random() * Math.PI * 2;
     this.radius = this.cfg.radius;
     // each spawn point's enemy is a little leaner or bigger than its type (+-10%)
-    this.maxHealth = this.cfg.type === 'boss' ? this.cfg.health : spawnHealth(this.cfg.health, this.id);
+    this.maxHealth = this.cfg.type === 'boss' || this.cfg.dummy ? this.cfg.health : spawnHealth(this.cfg.health, this.id);
     this.health = this.maxHealth;
     this.mana = this.cfg.mana || 0; // only enemies whose config gives them mana have any
     this.state = 'idle';
@@ -101,11 +101,14 @@ export class Enemy {
       const dir = new THREE.Vector3(this.position.x - knockFrom.x, 0, this.position.z - knockFrom.z);
       if (dir.lengthSq() > 0.0001) this.knock.copy(dir.normalize().multiplyScalar(knockback * 6));
     }
-    if (this.state === 'idle' || this.state === 'return') {
+    if (!this.cfg.dummy && (this.state === 'idle' || this.state === 'return')) {
       this.state = 'chase';
       this._wakePack();
     }
-    if (this.health <= 0) {
+    if (this.health <= 0 && this.cfg.dummy) {
+      // the training dummy never dies: it is whole again
+      this.health = this.maxHealth;
+    } else if (this.health <= 0) {
       this.dead = true;
       this.state = 'dead';
       this.windup = 0;
@@ -236,7 +239,9 @@ export class Enemy {
     setEmissive(this.materials, this.flashColor, this.flash * (this.flashColor === FLASH_WHITE ? 0.35 : 0.6));
     this.engaged = Math.max(0, this.engaged - dt);
 
-    if (this.dead) {
+    if (this.dead || this.cfg.dummy) {
+      // the dummy just stands there, and mends a few seconds after the last hit
+      if (this.cfg.dummy && this.engaged <= 0) this.health = this.maxHealth;
       this.rig.update(dt, 0);
       this._sync();
       return;

@@ -143,7 +143,7 @@ Object.assign(CONFIG, {
   shieldBreak: tuning('shieldBreak'),
   lunge: tuning('lunge'),
   brace: tuning('brace'),
-  draught: tuning('draught'),
+  draught: { cooldown: 1 }, // healing draughts share a short cooldown
   globalCooldown: DB.globalCooldown,
   // WoW's spell queue: an ability pressed this close to the end of the global
   // cooldown (or its own) goes off the moment it can

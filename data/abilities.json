@@ -128,16 +128,6 @@
       }
     },
     {
-      "id": "draught",
-      "name": "Healing draught",
-      "target": "self",
-      "desc": "Drink a healing draught from your bags.",
-      "item": "healing_draught",
-      "tuning": {
-        "cooldown": 1
-      }
-    },
-    {
       "id": "hallowedBolt",
       "name": "Hallowed Bolt",
       "kind": "cast",

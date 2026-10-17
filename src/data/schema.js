@@ -71,6 +71,8 @@ export const SPELL_KINDS = {
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };
 const ID = /^[a-z][a-z0-9_]*$/;
+// models built in code (src/assets/fallback.js) rather than in Blender
+const PROCEDURAL_MODELS = ['training_dummy', 'town_board'];
 const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved spell bars use them
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -211,7 +213,7 @@ export function validateGameData(raw, opts = {}) {
   };
   const model = (where, name) => {
     if (!isStr(name)) errors.push(`${where}: needs a model`);
-    else if (opts.models && !opts.models.includes(name)) errors.push(`${where}: model ${name} does not exist in assets/models`);
+    else if (opts.models && !opts.models.includes(name) && !PROCEDURAL_MODELS.includes(name)) errors.push(`${where}: model ${name} does not exist in assets/models`);
   };
 
   // ---- items

@@ -73,6 +73,13 @@ export class ItemUI {
 
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
+    // tabs along the bottom of the character window: Character, Reputation
+    document.querySelectorAll('[data-char-tab]').forEach((b) => b.addEventListener('click', () => {
+      const rep = b.dataset.charTab === 'rep';
+      $('char-page-main').hidden = rep;
+      $('char-rep').hidden = !rep;
+      document.querySelectorAll('[data-char-tab]').forEach((t) => t.classList.toggle('active', t === b));
+    }));
     $('btn-skills').addEventListener('click', () => this.toggle('skills'));
     this.el.skillList.addEventListener('click', (e) => e.target.closest('[data-open-cooking]') && this.show('cooking'));
     $('btn-settings').addEventListener('click', () => this.toggle('settings'));
@@ -711,11 +718,9 @@ export class ItemUI {
       return;
     }
     if (to && to.startsWith('a:')) {
-      // a draught dragged from the bags onto the bar is the Draught ability;
-      // anything else usable (a torch, lockpicks) goes on as an item
+      // anything usable (a draught, a torch, lockpicks) goes on as an item
       const stack = inv.get(from);
-      if (stack && stack.id === ABILITIES.draught.item) bar.place('draught', +to.slice(2));
-      else if (stack && (ITEMS[stack.id].slot || ['consumable', 'document', 'torch', 'tool'].includes(ITEMS[stack.id].kind))) bar.placeItem(stack.id, +to.slice(2));
+      if (stack && (ITEMS[stack.id].slot || ['consumable', 'document', 'torch', 'tool'].includes(ITEMS[stack.id].kind))) bar.placeItem(stack.id, +to.slice(2));
       return;
     }
     if (to && !to.startsWith('k:')) {
