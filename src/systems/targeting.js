@@ -128,15 +128,17 @@ export class Targeting {
     if (!this.select(enemy)) return false;
     if (!this.attacking) {
       this.attacking = true;
-      // WoW: a fresh fight opens with an instant blow (or arrow) the moment
-      // the target is in reach: the clocks are ready, nothing runs while you
-      // close in. Switching targets mid-fight keeps the running clocks.
+      // WoW: a fresh fight opens the moment the target is in reach: the
+      // clocks are ready, nothing runs while you close in, and the first
+      // blow comes after a short, visible windup (`openerWindup`). Switching
+      // targets mid-fight keeps the running clocks.
       const p = this.game.player;
       const T = this.game.stats.attackCooldown;
       if (!(p.lastSwingAt !== undefined && this.game.time - p.lastSwingAt < T)) {
         p.cooldowns.attack = 0;
         p.cooldowns.attackOff = 0;
         p.cooldowns.ranged = 0;
+        p.opener = p.openerOff = true;
       }
       this.game.events.emit('autoAttack', { on: true, target: enemy });
     }

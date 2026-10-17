@@ -309,8 +309,9 @@ export class Player {
   // moment the blow lands, so the swing timer bar fills exactly on the hit.
   // The animation starts its windup early, so its impact frame is that same
   // moment; it only starts if the target is in reach and in front of you.
-  // A fresh fight's clocks start ready: the first blow lands the moment you
-  // reach the target (after a short `readyWindup`), then every T. If the
+  // A fresh fight's clocks start ready: the first blow lands soon after you
+  // reach the target, after a weighty opening windup (`openerWindup`, a
+  // fraction of T, not the full timer), then every T. If the
   // target is out of reach when the clock runs out there is no swing: the
   // clock waits, full, and you swing the moment you are back in reach. It
   // restarts from the blow, keeping any overshoot (capped by `catchUp`) so
@@ -322,8 +323,10 @@ export class Player {
     const windup = stats.swingWindup;
     if (this.cooldowns.attack > windup) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
-    const t = Math.max(this.cooldowns.attack, Math.min(windup, CONFIG.attack.readyWindup));
     const anim = stats.swingAnimation;
+    const ready = this.opener ? Math.min(CONFIG.attack.openerWindup, anim * 0.7) : Math.min(windup, CONFIG.attack.readyWindup);
+    const t = Math.max(this.cooldowns.attack, ready);
+    this.opener = false;
     if (this.bowInHand) this.holdBow(false);
     this.pending = { type: 'strike', t, aim: aim ? { x: aim.x, z: aim.z } : null };
     this.rig.play('strike', anim, t / anim);
@@ -344,7 +347,9 @@ export class Player {
     if (this.cooldowns.attackOff > windup) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
     const gap = CONFIG.attack.staggerGap;
-    const t = Math.max(this.cooldowns.attackOff, Math.min(windup, CONFIG.attack.readyWindup));
+    const anim = stats.swingAnimationFor('off');
+    const ready = this.openerOff ? Math.min(CONFIG.attack.openerWindup, anim * 0.7) : Math.min(windup, CONFIG.attack.readyWindup);
+    const t = Math.max(this.cooldowns.attackOff, ready);
     const main = this.pending && this.pending.type === 'strike' ? this.pending.t : this.cooldowns.attack;
     const since = this.game.time - (this.lastMainImpactAt ?? -Infinity);
     if (Math.abs(main - t) < gap) {
@@ -355,7 +360,7 @@ export class Player {
       this.cooldowns.attackOff = gap - since;
       return false;
     }
-    const anim = stats.swingAnimationFor('off');
+    this.openerOff = false;
     this.pendingOff = { t, aim: aim ? { x: aim.x, z: aim.z } : null };
     this.rig.playOff(anim, t / anim);
     this.game.events.emit('playerSwing', { hand: 'off' });

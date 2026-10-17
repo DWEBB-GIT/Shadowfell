@@ -3673,7 +3673,7 @@ async function swingTimer(browser) {
   await sim(page, 3 * T);
   const sync = await page.evaluate(() => window.__shadowfall.__sync.filter((x) => x.hit).map((x) => ({ lead: +(x.hit - x.start).toFixed(3), impactIn: +x.impactIn.toFixed(3), clock: +x.clock.toFixed(3), frac: +x.frac.toFixed(3), bar: x.bar })));
   await page.evaluate(() => window.__shadowfall.targeting.stopAttack());
-  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x) => near(x.lead, x.impactIn, 1 / 60 + 0.001) && near(x.impactIn, Math.max(x.clock, 0.12), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
+  record('The blow lands on the animation\'s impact frame, exactly when the swing clock runs out', sync.length >= 2 && sync.every((x, i) => near(x.lead, x.impactIn, 1 / 60 + 0.001) && near(x.impactIn, Math.max(x.clock, i === 0 ? 0.45 : 0.12), 0.005) && near(x.frac, x.impactIn, 0.001)), sync.map((x) => `swing began ${x.impactIn}s before the clock ran out (impact frame ${x.frac}s in), hit ${x.lead}s after`).join('; '));
 
   // out of reach: the clock waits at zero; back in reach it swings once, then a full interval
   await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
@@ -3683,9 +3683,9 @@ async function swingTimer(browser) {
   await sim(page, 4);
   const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, hits: window.__shadowfall.__swings.length }));
   await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; });
-  await sim(page, T + 0.3);
+  await sim(page, T + 0.7);
   const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
-  record('A new fight opens with an instant blow the moment you reach the target (WoW); nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it (T ${T}s)`);
+  record('A new fight opens with a short windup blow once you reach the target (not instant, not the full timer); nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] >= 0.3 && opener[0] <= 0.6 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it (T ${T}s)`);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
   await sim(page, 3);
   // mid-fight: a clock that runs out with the target out of reach waits at zero
@@ -3712,7 +3712,7 @@ async function swingTimer(browser) {
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_cart', 1.2, -1.2, { frozen: true });
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.list.forEach((e) => (e.health = 9999)); g.player.lastSwingAt = undefined; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
-  await sim(page, 0.8);
+  await sim(page, 1.2);
   const before = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_cart')); });
   const after = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
