@@ -255,6 +255,11 @@
       "position": [-1.6, -110.4]
     },
     {
+      "id": "greyjaw_blackwood",
+      "enemy": "greyjaw",
+      "position": [-14, -96]
+    },
+    {
       "id": "seer_glade",
       "enemy": "seer",
       "position": [-6.4, -114.6]

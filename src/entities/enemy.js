@@ -48,6 +48,9 @@ export class Enemy {
     this.group.add(this.model);
     this.rig = new Rig(this.model, this.type);
     this.materials = Rig.isolateMaterials(this.model);
+    // a rare elite reuses its kin's model, sized and tinted
+    if (this.cfg.scale) this.model.scale.multiplyScalar(this.cfg.scale);
+    if (this.cfg.tint) for (const m of this.materials) m.color.multiply(new THREE.Color(this.cfg.tint));
     this._sync();
   }
 
@@ -388,13 +391,15 @@ export class Enemy {
     if (w.t <= 0) {
       w.t = 3 + Math.random() * 4;
       const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * 2;
+      // `roam` (metres): wanders that far from its post instead of shuffling
+      const r = Math.random() * (this.cfg.roam || 2);
       w.target.set(this.home.x + Math.cos(a) * r, 0, this.home.z + Math.sin(a) * r);
     }
     const d = Math.hypot(w.target.x - this.position.x, w.target.z - this.position.z);
     if (d > 0.2) {
-      this._moveTowards(w.target.x, w.target.z, this.cfg.speed * 0.25, dt, 0.1);
-      return 0.35;
+      const pace = this.cfg.roam ? 0.45 : 0.25;
+      this._moveTowards(w.target.x, w.target.z, this.cfg.speed * pace, dt, 0.1);
+      return pace + 0.1;
     }
     return 0;
   }

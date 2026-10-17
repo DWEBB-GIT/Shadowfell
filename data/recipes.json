@@ -5,7 +5,11 @@
       "id": "grilled_perch",
       "skill": "cooking",
       "rank": 1,
-      "skillUp": [15, 25, 35],
+      "skillUp": [
+        15,
+        25,
+        35
+      ],
       "inputs": [
         {
           "item": "gloomwater_perch",
@@ -22,7 +26,11 @@
       "id": "roast_dace",
       "skill": "cooking",
       "rank": 1,
-      "skillUp": [15, 25, 35],
+      "skillUp": [
+        15,
+        25,
+        35
+      ],
       "inputs": [
         {
           "item": "silver_dace",
@@ -39,7 +47,11 @@
       "id": "hound_steak",
       "skill": "cooking",
       "rank": 10,
-      "skillUp": [25, 35, 45],
+      "skillUp": [
+        25,
+        35,
+        45
+      ],
       "inputs": [
         {
           "item": "hound_meat",
@@ -58,7 +70,11 @@
       "id": "travellers_stew",
       "skill": "cooking",
       "rank": 20,
-      "skillUp": [35, 45, 55],
+      "skillUp": [
+        35,
+        45,
+        55
+      ],
       "inputs": [
         {
           "item": "hound_meat",
@@ -81,7 +97,11 @@
       "id": "smoked_eel",
       "skill": "cooking",
       "rank": 30,
-      "skillUp": [45, 55, 65],
+      "skillUp": [
+        45,
+        55,
+        65
+      ],
       "inputs": [
         {
           "item": "barrow_eel",
@@ -95,6 +115,52 @@
       "station": "fire",
       "trainer": "hester",
       "cost": 80
+    },
+    {
+      "id": "baked_carp",
+      "skill": "cooking",
+      "rank": 15,
+      "skillUp": [
+        30,
+        40,
+        50
+      ],
+      "inputs": [
+        {
+          "item": "bramble_carp",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "baked_carp",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 25
+    },
+    {
+      "id": "ghostfin_broth",
+      "skill": "cooking",
+      "rank": 35,
+      "skillUp": [
+        50,
+        60,
+        70
+      ],
+      "inputs": [
+        {
+          "item": "ghostfin",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "ghostfin_broth",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 100
     }
   ]
 }

@@ -36,7 +36,9 @@
       "name": "Bells at Hallow Cut",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": ["missing_delivery"],
+      "requires": [
+        "missing_delivery"
+      ],
       "summary": "Hollin's manifest warns of bells at Hallow Cut, the old burial ground east of the road. Look over the graves and put down whatever walks there.",
       "offer": "Graves don't ring. I've buried enough folk to know. Something's walking at Hallow Cut, and big, by the tracks on the road. Go and look at the graves, and if whatever rings those bells can be put down, put it down.",
       "progress": "Still ringing? Then it's still walking.",
@@ -71,7 +73,9 @@
       "name": "The Hound Den",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": ["missing_delivery"],
+      "requires": [
+        "missing_delivery"
+      ],
       "summary": "The carters turned north into the Blackwood, past a den of barrow hounds beside the track. Thin the pack and search the den for any sign of them.",
       "offer": "The carters turned north into the Blackwood. They'd not have got far. There's a den of barrow hounds by the track, past the shrine at the forest edge. Thin the pack, and tell me if you see any sign of my carters.",
       "progress": "The hounds hunt in threes. Don't let them get round you.",
@@ -113,7 +117,10 @@
       "name": "The Seer in the Glade",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": ["bells_at_hallow_cut", "the_hound_den"],
+      "requires": [
+        "bells_at_hallow_cut",
+        "the_hound_den"
+      ],
       "summary": "Someone is calling the dead up out of the Blackwood. Hunters speak of a seer among the standing stones in the far glade, and of archers camped on the way. Go deep and end it.",
       "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
       "progress": "The glade is at the end of the track. You'll know the stones.",
@@ -250,6 +257,130 @@
         "reputation": {
           "road_wardens": 150
         }
+      }
+    },
+    {
+      "id": "board_greyjaw",
+      "name": "Bounty: Old Greyjaw",
+      "giver": "town_board",
+      "turnIn": "mara",
+      "summary": "A huge grey hound, Old Greyjaw, roams the Blackwood and has killed two trappers. Put it down and claim the bounty from Mara Venn at her forge.",
+      "offer": "BOUNTY. A grey hound the size of a pony roams the Blackwood. It has taken two trappers and a mule. Whoever kills OLD GREYJAW will be paid at the forge. Do not go alone. (You will go alone.)",
+      "progress": "Greyjaw's still out there. You'd hear the howling stop.",
+      "complete": "That's Greyjaw's blood on you? Then the trappers can go back in. The bounty's yours, and well earned.",
+      "objectives": [
+        {
+          "id": "greyjaw",
+          "type": "kill",
+          "target": "greyjaw",
+          "count": 1,
+          "label": "Old Greyjaw slain"
+        }
+      ],
+      "reward": {
+        "coins": 45,
+        "xp": 220,
+        "reputation": {
+          "road_wardens": 250
+        }
+      }
+    },
+    {
+      "id": "hester_carp",
+      "name": "Carp for Sunday",
+      "giver": "hester",
+      "turnIn": "hester",
+      "summary": "Hester wants two bramble carp from the Stillwater Mere for the Sunday table.",
+      "offer": "Sunday's the one day folk here eat like they mean it. Carp hide under the reeds at the mere. Bring me two and I'll show you how to bake them.",
+      "progress": "No carp? Try the reeds. Patience, mostly.",
+      "complete": "Look at the size of them. Here, that's how you bake a carp, and a couple to see you on your way.",
+      "objectives": [
+        {
+          "id": "carp",
+          "type": "collect",
+          "target": "bramble_carp",
+          "count": 2,
+          "label": "Bramble carp"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 80,
+        "items": [
+          {
+            "item": "baked_carp",
+            "count": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "hester_supper",
+      "name": "Supper at the Ford",
+      "giver": "hester",
+      "turnIn": "hester",
+      "requires": [
+        "hester_carp"
+      ],
+      "summary": "The inn is full and Hester's short of hands. Cook three grilled perch and two roast dace and bring them to her.",
+      "offer": "Carters in, and every one of them hungry. I can't be at the hearth and the tap at once. Cook me three grilled perch and two roast dace, would you?",
+      "progress": "They're banging their mugs out there.",
+      "complete": "Not burnt, not raw. You've the knack. Here's your share of the night's takings.",
+      "objectives": [
+        {
+          "id": "perch",
+          "type": "collect",
+          "target": "grilled_perch",
+          "count": 3,
+          "label": "Grilled perch"
+        },
+        {
+          "id": "dace",
+          "type": "collect",
+          "target": "roast_dace",
+          "count": 2,
+          "label": "Roast dace"
+        }
+      ],
+      "reward": {
+        "coins": 20,
+        "xp": 120
+      }
+    },
+    {
+      "id": "hester_ghostfin",
+      "name": "The Ghost in the Mere",
+      "giver": "hester",
+      "turnIn": "hester",
+      "requires": [
+        "hester_supper"
+      ],
+      "summary": "Hester's mother made a broth from a pale fish called the ghostfin. Catch one in the Stillwater Mere and bring it to her. It is very rare.",
+      "offer": "My mother made a broth from ghostfin. One bowl and you'd walk through snow. I haven't tasted it in twenty years. Tam says they still bite, once in a blue moon. Catch me one?",
+      "progress": "Still fishing? Tam says it took him a whole winter.",
+      "complete": "Oh. Oh, that's one. I'll write the broth down for you, it's only fair. And take this, it was my mother's.",
+      "objectives": [
+        {
+          "id": "ghostfin",
+          "type": "collect",
+          "target": "ghostfin",
+          "count": 1,
+          "label": "Ghostfin"
+        }
+      ],
+      "reward": {
+        "coins": 40,
+        "xp": 200,
+        "items": [
+          {
+            "item": "ghostfin_broth",
+            "count": 2
+          },
+          {
+            "item": "yew_fishing_rod",
+            "count": 1
+          }
+        ]
       }
     }
   ]
