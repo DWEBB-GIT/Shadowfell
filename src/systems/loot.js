@@ -19,6 +19,7 @@ export class LootSystem {
   constructor(game) {
     this.game = game;
     this.active = []; // { def, x, z, group, glint, baseY }
+    this.regrow = []; // { def, at }: gathering nodes waiting to respawn
   }
 
   spawnAll() {
@@ -120,11 +121,13 @@ export class LootSystem {
   clear() {
     for (const l of this.active) this.game.scene.remove(l.group);
     this.active = [];
+    this.regrow = [];
   }
 
   _spawn(def, x, z) {
     const group = new THREE.Group();
     const model = this.game.assets.instance(def.model);
+    if (def.scale) model.scale.multiplyScalar(def.scale);
     if (def.kind === 'weapon') {
       model.rotation.set(Math.PI / 2, 0, 0.6); // lying on the ground
       model.position.y = 0.06;
@@ -235,6 +238,7 @@ export class LootSystem {
     if (r.item && !inventory.addItem(r.item, r.count || 1, { rolls: r.rolls || null })) return false;
     if (r.coins) inventory.addCoins(r.coins, 'in a purse');
     if (def.ground) worldState.ground.splice(worldState.ground.indexOf(def.ground), 1);
+    else if (def.respawn) this.regrow.push({ def, at: this.game.time + def.respawn }); // a gathering node grows back
     else worldState.markCollected(def.id);
     this.game.scene.remove(entry.group);
     entry.group.traverse((o) => {
@@ -250,6 +254,12 @@ export class LootSystem {
   }
 
   update(dt, time) {
+    for (let i = this.regrow.length - 1; i >= 0; i--) {
+      const r = this.regrow[i];
+      if (time < r.at) continue;
+      this.regrow.splice(i, 1);
+      this._spawn(r.def, r.def.position[0], r.def.position[1]);
+    }
     for (const l of this.active) {
       const pulse = 0.45 + Math.sin(time * 2.2 + l.seed) * 0.2;
       l.glint.material.opacity = pulse;

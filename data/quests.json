@@ -382,6 +382,78 @@
           }
         ]
       }
+    },
+    {
+      "id": "hester_firewood",
+      "name": "Wood for the Hearth",
+      "giver": "hester",
+      "turnIn": "hester",
+      "summary": "Hester needs five bundles of firewood from the deadfall in the Blackwood to keep the inn's fire lit.",
+      "offer": "The woodpile's down to splinters and the nights are drawing in. There's deadfall all through the Blackwood. Bring me five bundles and the fire stays lit.",
+      "progress": "Still cold in here, love. The deadfall's north, past the watch post.",
+      "complete": "That'll see us through the week. Warm yourself before you go.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "firewood",
+          "count": 5,
+          "label": "Bundles of firewood",
+          "location": "blackwood_deadfall"
+        }
+      ],
+      "reward": {
+        "coins": 12,
+        "xp": 90
+      }
+    },
+    {
+      "id": "mara_ore",
+      "name": "Ore for the Forge",
+      "giver": "mara",
+      "turnIn": "mara",
+      "summary": "Mara wants four lumps of bog-iron ore from the rocks in Hallow Cut.",
+      "offer": "Grave-iron won't last forever. There's bog-iron in the rocks at Hallow Cut, red as rust. Bring me four lumps and I'll have something to work with.",
+      "progress": "The red stone, in the Cut. Hit it until it gives.",
+      "complete": "Good weight to these. I'll get them in the furnace tonight.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "bog_iron_ore",
+          "count": 4,
+          "label": "Lumps of bog-iron ore",
+          "location": "hallow_cut_ore"
+        }
+      ],
+      "reward": {
+        "coins": 12,
+        "xp": 90
+      }
+    },
+    {
+      "id": "tam_sorrel",
+      "name": "Sorrel from the Mere",
+      "giver": "tam",
+      "turnIn": "tam",
+      "summary": "Tam wants six sprigs of mere sorrel from the wet ground around the Stillwater Mere.",
+      "offer": "Mere sorrel. Sharp green stuff, grows round the edge of the Stillwater and nowhere else. Fish taste of nothing without it. Six sprigs, if you're passing.",
+      "progress": "Round the water's edge. Smell it before you see it.",
+      "complete": "That's the stuff. Here, for your trouble.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "mere_sorrel",
+          "count": 6,
+          "label": "Sprigs of mere sorrel",
+          "location": "stillwater_mere"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 80
+      }
     }
   ]
 }
