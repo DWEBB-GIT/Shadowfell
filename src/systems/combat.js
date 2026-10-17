@@ -9,6 +9,7 @@ export class Combat {
   constructor(game) {
     this.game = game;
     this.arrows = []; // Auto Shot arrows in flight: { target, t }
+    this.shownLater = []; // opener hits whose visuals wait for the windup: { t, fn }
   }
 
   // average damage of each weapon ability before the target's armour (for
@@ -21,15 +22,32 @@ export class Combat {
   // A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
   // `swing`: an auto attack, which rolls the weapon's own per-swing damage;
   // abilities roll the normalised range (see Stats.abilityWeaponRange).
-  _playerHit(enemy, mult, hurtOpts, { swing = false, hand = 'main', bonus = 0 } = {}) {
+  // `show`: delay the hit's visuals (flinch, knockback, number, hit-stop)
+  // by this many seconds; the damage itself lands now.
+  _playerHit(enemy, mult, hurtOpts, { swing = false, hand = 'main', bonus = 0, show = 0 } = {}) {
     const { stats, events } = this.game;
     const r = this.game.random;
     const base = (swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats)) + bonus;
     const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
-    enemy.hurt(hit.amount, hurtOpts);
-    events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt', hand: hand === 'ranged' ? 'ranged' : 'main' });
-    events.emit('hitImpact', { enemy, crit: hit.crit, heavy: !!(hurtOpts && hurtOpts.heavy) || swing });
+    const visuals = () => {
+      events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt', hand: hand === 'ranged' ? 'ranged' : 'main' });
+      events.emit('hitImpact', { enemy, crit: hit.crit, heavy: !!(hurtOpts && hurtOpts.heavy) || swing });
+    };
+    if (show > 0) {
+      enemy.hurt(hit.amount, { stagger: 0, quiet: true });
+      this.shownLater.push({ t: show, fn: () => { if (!enemy.dead) enemy.hurt(0, hurtOpts); visuals(); } });
+    } else {
+      enemy.hurt(hit.amount, hurtOpts);
+      visuals();
+    }
     return hit;
+  }
+
+  updateShown(dt) {
+    for (const s of this.shownLater) s.t -= dt;
+    const due = this.shownLater.filter((s) => s.t <= 1e-6);
+    this.shownLater = this.shownLater.filter((s) => s.t > 1e-6);
+    due.forEach((s) => s.fn());
   }
 
   // A blow from an enemy on the player: variance, crit, armour, block.
@@ -117,7 +135,7 @@ export class Combat {
   }
 
   // `hand`: 'off' for a dual-wielded off-hand swing, which does less damage
-  resolvePlayerStrike(aim, hand = 'main') {
+  resolvePlayerStrike(aim, hand = 'main', show = 0) {
     const { player, events } = this.game;
     if (player.dead) return null;
     const target = this._selectedInReach(CONFIG.attack.range) || this.selectStrikeTarget(aim);
@@ -126,7 +144,7 @@ export class Combat {
       return null;
     }
     const off = hand === 'off';
-    const hit = this._playerHit(target, off ? CONFIG.stats.offHandDamage : 1, { stagger: off ? 0.12 : 0.22, knockFrom: player.position, knockback: off ? 0.15 : 0.3 }, { swing: true, hand });
+    const hit = this._playerHit(target, off ? CONFIG.stats.offHandDamage : 1, { stagger: off ? 0.12 : 0.22, knockFrom: player.position, knockback: off ? 0.15 : 0.3 }, { swing: true, hand, show });
     events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true, hand });
     events.emit('log', { text: `${off ? 'Your off hand strikes' : 'You strike'} the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
     if (target.dead) this.onEnemyDefeated(target);

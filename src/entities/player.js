@@ -224,6 +224,8 @@ export class Player {
         else if (p.type === 'spell') this.game.spells.resolve(p.id);
       }
     }
+    // an opener's hit, shown on the windup's impact frame
+    if (this.game.combat.shownLater.length) this.game.combat.updateShown(dt);
     // the off hand's blow has its own impact frame
     if (this.pendingOff && (this.pendingOff.t -= dt) <= 1e-6) {
       const p = this.pendingOff;
@@ -324,10 +326,20 @@ export class Player {
     if (this.cooldowns.attack > windup) return false;
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
     const anim = stats.swingAnimation;
-    const ready = this.opener ? Math.min(CONFIG.attack.openerWindup, anim * 0.7) : Math.min(windup, CONFIG.attack.readyWindup);
-    const t = Math.max(this.cooldowns.attack, ready);
-    this.opener = false;
     if (this.bowInHand) this.holdBow(false);
+    if (this.opener) {
+      // a fresh fight's first blow registers the moment you engage in reach
+      // (damage, swing clock), as the server does in WoW; what you see is a
+      // weighty windup, with the hit shown on its impact frame
+      this.opener = false;
+      const show = Math.min(CONFIG.attack.openerWindup, anim * 0.7);
+      this.rig.play('strike', anim, show / anim);
+      this.rig.action.auto = true;
+      this.game.events.emit('playerSwing', {});
+      this._impact('main', { t: 0, aim: aim ? { x: aim.x, z: aim.z } : null }, 0, show);
+      return true;
+    }
+    const t = Math.max(this.cooldowns.attack, Math.min(windup, CONFIG.attack.readyWindup));
     this.pending = { type: 'strike', t, aim: aim ? { x: aim.x, z: aim.z } : null };
     this.rig.play('strike', anim, t / anim);
     this.rig.action.auto = true;
@@ -348,7 +360,8 @@ export class Player {
     if (aim && !this.facingPoint(aim.x, aim.z, CONFIG.attack.coneDegrees / 2)) return false;
     const gap = CONFIG.attack.staggerGap;
     const anim = stats.swingAnimationFor('off');
-    const ready = this.openerOff ? Math.min(CONFIG.attack.openerWindup, anim * 0.7) : Math.min(windup, CONFIG.attack.readyWindup);
+    // the opener's off hand follows the main hand's shown blow
+    const ready = this.openerOff ? Math.min(CONFIG.attack.openerWindup, anim * 0.7) + gap : Math.min(windup, CONFIG.attack.readyWindup);
     const t = Math.max(this.cooldowns.attackOff, ready);
     const main = this.pending && this.pending.type === 'strike' ? this.pending.t : this.cooldowns.attack;
     const since = this.game.time - (this.lastMainImpactAt ?? -Infinity);
@@ -370,7 +383,9 @@ export class Player {
   // A blow's impact frame: it lands only if the target is still in reach,
   // and the hand's clock starts again from here. Out of reach, the swing is
   // called off and the clock waits at zero.
-  _impact(hand, p, dt) {
+  // `show`: seconds until the blow is shown (the opener's windup); the
+  // damage and the clock still resolve now.
+  _impact(hand, p, dt, show = 0) {
     const off = hand === 'off';
     const tg = this.game.targeting;
     if (!tg.attacking || !tg.targetInReach) {
@@ -382,7 +397,7 @@ export class Player {
     this.cooldowns[off ? 'attackOff' : 'attack'] = Math.max(0, this.game.stats.attackCooldownFor(hand) - late);
     this.lastSwingAt = this.game.time;
     if (!off) this.lastMainImpactAt = this.game.time;
-    this.game.combat.resolvePlayerStrike(p.aim, hand);
+    this.game.combat.resolvePlayerStrike(p.aim, hand, show);
   }
 
   // Auto Shot (WoW): with a bow in the ranged slot, while the target is

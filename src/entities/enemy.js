@@ -78,14 +78,17 @@ export class Enemy {
     this._sync();
   }
 
-  hurt(amount, { stagger = 0.15, knockFrom = null, knockback = 0, heavy = false } = {}) {
+  // `quiet`: the damage only; its flash and flinch are shown later
+  hurt(amount, { stagger = 0.15, knockFrom = null, knockback = 0, heavy = false, quiet = false } = {}) {
     if (this.dead) return 0;
     const dealt = Math.min(this.health, amount);
     this.health -= dealt;
-    this.flash = 1;
-    this.flashColor = heavy ? FLASH_WHITE : FLASH_RED;
     this.engaged = 6;
-    this.rig.hit();
+    if (!quiet) {
+      this.flash = 1;
+      this.flashColor = heavy ? FLASH_WHITE : FLASH_RED;
+      this.rig.hit();
+    }
     this.stagger = Math.max(this.stagger, stagger);
     if (heavy && !(this.casting && !this.casting.interruptible)) {
       // a heavy blow interrupts an ordinary swing or an interruptible cast;
