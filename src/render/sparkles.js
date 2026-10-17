@@ -40,7 +40,7 @@ export class Sparkles {
     for (const c of chests.list) if (!chests.opened(c)) out.push({ x: c.x, z: c.z, y: 0.5 });
     for (const l of loot.active) {
       const id = l.def.reward && l.def.reward.item;
-      if (!l.def.ground && id && ITEMS[id] && ITEMS[id].quest) out.push({ x: l.x, z: l.z, y: (l.def.heightOffset || 0) + 0.2 });
+      if (!l.def.ground && loot.gatherable(l.def) && id && ITEMS[id] && ITEMS[id].quest) out.push({ x: l.x, z: l.z, y: (l.def.heightOffset || 0) + 0.2 });
     }
     for (const p of world.examinePoints) if (!worldState.examined.has(p.id)) out.push({ x: p.x, z: p.z, y: 0.6 });
     return out;

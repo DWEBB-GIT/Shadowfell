@@ -42,7 +42,7 @@ export class WorldLabels {
     if (!this.game.settings.get('lootNames')) return out;
     for (const l of this.game.loot.active) {
       const r = l.def.reward;
-      if (!r || !r.item || !ITEMS[r.item]) continue;
+      if (!r || !r.item || !ITEMS[r.item] || !this.game.loot.gatherable(l.def)) continue;
       const v = itemView({ id: r.item, rolls: r.rolls });
       out.push({ text: `${v.name}${r.count > 1 ? ` ×${r.count}` : ''}`, colour: RARITY[v.rarity].colour, x: l.x, y: l.baseY + 0.75, z: l.z, cls: 'loot-label' });
     }
