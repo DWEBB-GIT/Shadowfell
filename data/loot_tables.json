@@ -330,11 +330,19 @@
             {
               "item": "silver_dace",
               "weight": 2
+            },
+            {
+              "item": "bramble_carp",
+              "weight": 2
             }
           ],
           "rare": [
             {
               "item": "barrow_eel",
+              "weight": 1
+            },
+            {
+              "item": "ghostfin",
               "weight": 1
             }
           ]

@@ -185,6 +185,34 @@
       "coins": 0,
       "elite": false,
       "respawn": 0
+    },
+    {
+      "id": "greyjaw",
+      "name": "Old Greyjaw",
+      "model": "hound",
+      "type": "elite",
+      "level": 5,
+      "crit": 8,
+      "windup": 0.4,
+      "detection": 12,
+      "meleeRange": 1.6,
+      "speed": 5.2,
+      "radius": 0.8,
+      "xp": 160,
+      "coins": 14,
+      "elite": true,
+      "rareElite": true,
+      "scale": 1.7,
+      "tint": "#7a6a66",
+      "roam": 8,
+      "barHeight": 2.3,
+      "meleeAnim": "bite",
+      "uniqueDrop": "greyjaws_fang",
+      "lootTable": "hound",
+      "respawn": 900,
+      "reputation": {
+        "road_wardens": 60
+      }
     }
   ]
 }

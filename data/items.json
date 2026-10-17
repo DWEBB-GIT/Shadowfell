@@ -22,32 +22,46 @@
     {
       "id": "might",
       "name": "of Strength",
-      "stats": ["strength"]
+      "stats": [
+        "strength"
+      ]
     },
     {
       "id": "vigour",
       "name": "of Vigour",
-      "stats": ["stamina"]
+      "stats": [
+        "stamina"
+      ]
     },
     {
       "id": "finesse",
       "name": "of Agility",
-      "stats": ["agility"]
+      "stats": [
+        "agility"
+      ]
     },
     {
       "id": "bear",
       "name": "of the Bear",
-      "stats": ["strength", "stamina"]
+      "stats": [
+        "strength",
+        "stamina"
+      ]
     },
     {
       "id": "tiger",
       "name": "of the Tiger",
-      "stats": ["strength", "agility"]
+      "stats": [
+        "strength",
+        "agility"
+      ]
     },
     {
       "id": "swiftness",
       "name": "of Swiftness",
-      "stats": ["haste"]
+      "stats": [
+        "haste"
+      ]
     }
   ],
   "items": [
@@ -365,7 +379,9 @@
         "stamina": 1,
         "haste": 1
       },
-      "reservedFor": ["seer"],
+      "reservedFor": [
+        "seer"
+      ],
       "stack": 1,
       "price": 260,
       "model": "witchbane",
@@ -693,6 +709,81 @@
       "model": "bent_arrowhead",
       "icon": "bent_arrowhead",
       "description": "Bent wire and a tension pin. With the Lockpicking skill, they open locks that have lost their keys."
+    },
+    {
+      "id": "greyjaws_fang",
+      "name": "Greyjaw's Fang",
+      "kind": "weapon",
+      "rarity": "rare",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 5,
+      "speed": 1.6,
+      "statSplit": {
+        "agility": 2,
+        "strength": 1
+      },
+      "stack": 1,
+      "price": 90,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "The old hound's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling."
+    },
+    {
+      "id": "bramble_carp",
+      "name": "Bramble carp",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Fat and muddy-gold, it lurks under the reeds. Hester bakes them whole."
+    },
+    {
+      "id": "ghostfin",
+      "name": "Ghostfin",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 45,
+      "model": "dace",
+      "icon": "dace",
+      "description": "Pale enough to see its bones. The mere folk say it only bites for the unlucky, or the very lucky."
+    },
+    {
+      "id": "baked_carp",
+      "name": "Baked carp",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 100,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 9,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Whole, with a crust of salt. Restores 100 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "ghostfin_broth",
+      "name": "Ghostfin broth",
+      "kind": "consumable",
+      "rarity": "rare",
+      "use": {
+        "food": {
+          "heal": 240,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 50,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Clear as rainwater and strangely warming. Restores 240 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     }
   ]
 }
