@@ -518,6 +518,7 @@ export function validateGameData(raw, opts = {}) {
     const r = l.reward || {};
     if (!r.item && !r.coins) errors.push(`${w}: reward needs an item or coins`);
     if (r.item) ref(w, 'item', items, r.item);
+    if (l.quest !== undefined) ref(w, 'quest', quests, l.quest);
     if (l.respawn !== undefined && !(l.respawn > 0)) errors.push(`${w}: respawn must be seconds above 0`);
     if (l.opensDocument && !documents[l.opensDocument]) errors.push(`${w}: names unknown document ${l.opensDocument}`);
   }

@@ -167,6 +167,15 @@ export class LootSystem {
   }
 
   // Everything that can be looted right now: bodies and loot in the world.
+  // A gathering node tied to a quest (`quest`) can only be taken, and only
+  // sparkles, while that quest is active and still needs its item.
+  gatherable(def) {
+    if (!def.quest) return true;
+    const q = this.game.quests;
+    if (q.status(def.quest) !== 'active') return false;
+    return q.objectives(def.quest).some((o) => !o.done && o.type === 'collect' && DB.quests[def.quest].objectives.find((d) => d.id === o.id).target === def.reward.item);
+  }
+
   lootables() {
     const { worldState, enemies } = this.game;
     const out = [];
@@ -176,7 +185,7 @@ export class LootSystem {
     }
     // only what fell in a fight (or was dropped) is area-looted; things placed
     // in the world, like the manifest, are taken one at a time
-    for (const l of this.active) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !!(l.def.ground || UNIQUE_DROPS[l.def.id] === l.def) });
+    for (const l of this.active) if (this.gatherable(l.def)) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !!(l.def.ground || UNIQUE_DROPS[l.def.id] === l.def) });
     return out;
   }
 
@@ -233,6 +242,7 @@ export class LootSystem {
     const { worldState, inventory, events, hud } = this.game;
     const def = entry.def;
     if (!def.ground && worldState.isCollected(def.id)) return false;
+    if (!this.gatherable(def)) return false;
     const r = def.reward;
     // a full bag leaves the item where it lies
     if (r.item && !inventory.addItem(r.item, r.count || 1, { rolls: r.rolls || null })) return false;
@@ -261,6 +271,7 @@ export class LootSystem {
       this._spawn(r.def, r.def.position[0], r.def.position[1]);
     }
     for (const l of this.active) {
+      if (l.def.quest) l.glint.visible = this.gatherable(l.def);
       const pulse = 0.45 + Math.sin(time * 2.2 + l.seed) * 0.2;
       l.glint.material.opacity = pulse;
       l.glint.position.y = 0.3 + Math.sin(time * 1.5 + l.seed) * 0.05;

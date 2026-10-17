@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item.",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -404,6 +404,7 @@
     },
     {
       "id": "firewood_1",
+      "quest": "hester_firewood",
       "model": "crate_broken",
       "scale": 0.55,
       "position": [-4, -58],
@@ -415,6 +416,7 @@
     },
     {
       "id": "firewood_2",
+      "quest": "hester_firewood",
       "model": "crate_broken",
       "scale": 0.55,
       "position": [5, -62],
@@ -426,6 +428,7 @@
     },
     {
       "id": "firewood_3",
+      "quest": "hester_firewood",
       "model": "crate_broken",
       "scale": 0.55,
       "position": [-9, -66],
@@ -437,6 +440,7 @@
     },
     {
       "id": "firewood_4",
+      "quest": "hester_firewood",
       "model": "crate_broken",
       "scale": 0.55,
       "position": [8, -70],
@@ -448,6 +452,7 @@
     },
     {
       "id": "ore_1",
+      "quest": "mara_ore",
       "model": "rock1",
       "scale": 0.4,
       "position": [27, -17],
@@ -459,6 +464,7 @@
     },
     {
       "id": "ore_2",
+      "quest": "mara_ore",
       "model": "rock1",
       "scale": 0.4,
       "position": [19, -24],
@@ -470,6 +476,7 @@
     },
     {
       "id": "ore_3",
+      "quest": "mara_ore",
       "model": "rock1",
       "scale": 0.4,
       "position": [26, -25],
@@ -481,6 +488,7 @@
     },
     {
       "id": "sorrel_1",
+      "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
       "position": [-17.6, -11.3],
@@ -492,6 +500,7 @@
     },
     {
       "id": "sorrel_2",
+      "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
       "position": [-24.6, -7.0],
@@ -503,6 +512,7 @@
     },
     {
       "id": "sorrel_3",
+      "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
       "position": [-30.8, -12.4],
@@ -514,6 +524,7 @@
     },
     {
       "id": "sorrel_4",
+      "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
       "position": [-27.6, -20.0],
@@ -525,6 +536,7 @@
     },
     {
       "id": "sorrel_5",
+      "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
       "position": [-19.4, -19.3],
