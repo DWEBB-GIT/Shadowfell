@@ -3686,7 +3686,7 @@ async function swingTimer(browser) {
   await sim(page, T + 0.3);
   const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
   const shown = await page.evaluate(() => window.__shadowfall.__shown[0]);
-  record('A new fight\'s first blow registers the moment you reach the target and is shown after a windup; nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && shown >= 0.35 && shown <= 0.6 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it, first shown at ${shown}s (T ${T}s)`);
+  record('A new fight\'s first blow registers the moment you reach the target and is shown after a windup; nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && shown >= 0.2 && shown <= 0.45 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it, first shown at ${shown}s (T ${T}s)`);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
   await sim(page, 3);
   // mid-fight: a clock that runs out with the target out of reach waits at zero

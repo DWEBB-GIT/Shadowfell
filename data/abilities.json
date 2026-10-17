@@ -20,7 +20,7 @@
         "turnRate": 6,
         "catchUp": 0.25,
         "readyWindup": 0.12,
-        "openerWindup": 0.45,
+        "openerWindup": 0.3,
         "staggerGap": 0.2,
         "movingLeeway": 1.0
       },
