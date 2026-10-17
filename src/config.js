@@ -89,6 +89,21 @@ export const CONFIG = {
     repairFraction: 0.5, // mending 100% costs half the item's price (silver)
   },
   // how a landed blow feels: a camera kick (no hit-stop: the action never pauses)
+  // Floating damage numbers (src/ui/damageNumbers.js). A number's size
+  // follows how big the hit is against your usual white (auto attack) hit:
+  // size = font x (hit / usual) ^ sizePower, held between minScale and
+  // maxScale. Crits stay longer, and one of pulseAt times your usual hit or
+  // more swells once as it lands.
+  damageNumbers: {
+    font: 22, // px, an average hit
+    sizePower: 0.6,
+    minScale: 0.65,
+    maxScale: 2.4,
+    life: 1.1, // seconds on screen
+    critLife: 1.6,
+    pulseAt: 2,
+    pulse: 0.5, // how far the pulse swells (x the number's size)
+  },
   impact: {
     shake: 0.07, // metres of camera kick
     critShake: 0.16,

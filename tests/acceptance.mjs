@@ -1695,7 +1695,7 @@ async function statsAndDamage(browser) {
     vis: !document.getElementById('target-frame').hidden, name: document.getElementById('target-name').textContent, text: document.getElementById('target-text').textContent,
     label: document.getElementById('target-label').textContent, level: document.getElementById('target-level').textContent, mana: !document.getElementById('target-mana-bar').hidden, bar: !!document.querySelector('#enemy-bars .ebar'),
   }));
-  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '15 / 18' && tf.level === '1' && !tf.mana && tf.bar,
+  record('Enemy health shows in the target frame without locking on', tf.vis && tf.name === 'Ashen Ghoul' && tf.text === '15 / 27' && tf.level === '1' && !tf.mana && tf.bar,
     `aiming at a wounded ghoul: "${tf.name}" ${tf.text} (${tf.label}), bar over its head; no mana bar`);
   await page.evaluate(() => {
     const g = window.__shadowfall;
@@ -3299,7 +3299,7 @@ async function economy(browser) {
     g.hud.togglePanel('character');
     return n;
   });
-  record('The character panel has all 16 equipment slots', panel === 16, `${panel} slots`);
+  record('The character panel has all 17 equipment slots and the ammo slot', panel === 18, `${panel} slots`);
 
   // starting gear is much weaker now
   const start = await page.evaluate(() => { const g = window.__shadowfall; return { w: g.inventory.weapon.damage, speed: g.stats.weaponSpeed, armour: g.stats.armour, swing: g.stats.swingRange }; });
@@ -4421,7 +4421,100 @@ async function playtest3(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, gearRolls, blackwood, atmosphere };
+// Dan's playtest list, 16 Oct 2026 (afternoon): quiver count, ammo slot,
+// a wider character panel with the live model, sized damage numbers,
+// tougher enemies.
+async function playtest4(browser) {
+  current = 'Playtest batch 4';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road'] });
+
+  // a quiver in a bag slot shows how many arrows it holds
+  const quiver = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    inv.addItem('leather_quiver', 1, { quiet: true });
+    inv.use(inv.bagLocations().find((l) => inv.get(l)?.id === 'leather_quiver'));
+    inv.addItem('barbed_arrow', 40, { quiet: true });
+    inv.addItem('rough_arrow', 150, { quiet: true });
+    g.hud.items.render();
+    const counts = [...document.querySelectorAll('#bag-sockets .arrow-count')].map((e) => e.textContent);
+    return { counts, inQuiver: inv.arrowsIn(1) };
+  });
+  record('A quiver in a bag slot shows the number of arrows in it', quiver.counts.length === 1 && quiver.counts[0] === '190' && quiver.inQuiver === 190, JSON.stringify(quiver));
+
+  // the ammo slot: fills itself with the best arrows, can be changed by
+  // dragging arrows onto it, and takes the next arrows when they run out
+  const ammo = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    const first = inv.ammoChoice;
+    const rough = inv.bagLocations().find((l) => inv.get(l)?.id === 'rough_arrow');
+    g.hud.items.dropOn(rough, 'e:ammo');
+    const chosen = inv.ammo;
+    const stayed = inv.count('rough_arrow');
+    inv.removeCount('rough_arrow', 150); // shoot them all
+    const next = inv.ammo;
+    g.hud.items.show('character');
+    const slot = document.querySelector('#equip-bottom [data-loc="e:ammo"]');
+    const shown = slot && slot.querySelector('.count')?.textContent;
+    const saved = inv.serialize().ammo;
+    return { first, chosen, stayed, next, slotChoice: inv.ammoChoice, shown, saved };
+  });
+  record('The ammo slot picks which arrows Auto Shot uses, and takes the next arrows when those run out', ammo.first === 'barbed_arrow' && ammo.chosen === 'rough_arrow' && ammo.stayed === 150 && ammo.next === 'barbed_arrow' && ammo.slotChoice === 'barbed_arrow' && ammo.shown === '40' && ammo.saved === 'barbed_arrow', JSON.stringify(ammo));
+
+  // the character panel: wider, larger slots, the live model drawn
+  await page.evaluate(() => window.__shadowfall._frame());
+  const panel = await page.evaluate(() => {
+    const w = document.getElementById('character-window').getBoundingClientRect().width;
+    const s = document.querySelector('#equip-left .islot').getBoundingClientRect().width;
+    const c = document.getElementById('char-model');
+    // read back a few pixels of the figure: the model drew something
+    window.__shadowfall.hud.items.preview.render();
+    const gl = window.__shadowfall.hud.items.preview.renderer;
+    let lit = 0;
+    if (gl) {
+      const ctx = gl.getContext();
+      const px = new Uint8Array(4 * 40 * 40);
+      ctx.readPixels(Math.floor(ctx.drawingBufferWidth / 2) - 20, Math.floor(ctx.drawingBufferHeight / 2) - 20, 40, 40, ctx.RGBA, ctx.UNSIGNED_BYTE, px);
+      for (let i = 3; i < px.length; i += 4) if (px[i] > 0) lit++;
+    }
+    return { w: Math.round(w), s: Math.round(s), canvas: [c.clientWidth, c.clientHeight], lit, home: window.__shadowfall.player.model.parent?.name };
+  });
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'character-panel.png') });
+  record('The character panel is wider with larger slots, and shows your own model live', panel.w >= 450 && panel.s >= 48 && panel.lit > 100 && panel.home === 'Player', JSON.stringify(panel));
+  await page.evaluate(() => window.__shadowfall.hud.items.closeAll());
+
+  // damage numbers: sized against your usual white hit; big crits pulse and linger
+  await placeEnemy(page, 'ghoul_road', 0, -4, { frozen: true });
+  const nums = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    const usual = g.hud.numbers.usualHit('main');
+    const add = (amount, crit) => {
+      g.events.emit('damageNumber', { target: e, amount, crit, kind: 'dealt', hand: 'main' });
+      const it = g.hud.numbers.items[g.hud.numbers.items.length - 1];
+      return { size: parseFloat(it.el.style.fontSize), life: it.life, pulse: it.pulse };
+    };
+    return { usual, small: add(Math.max(1, Math.round(usual * 0.5)), false), white: add(Math.round(usual), false), crit: add(Math.round(usual * 1.5), true), huge: add(Math.round(usual * 2.5), true) };
+  });
+  const n = nums;
+  record('Damage numbers are larger, and sized by the hit against your usual white hit', n.white.size >= 20 && n.small.size < n.white.size && n.crit.size > n.white.size && n.huge.size > n.crit.size, JSON.stringify(n));
+  record('Crits linger longer, and a crit over double your usual hit pulses once', n.crit.life > n.white.life && !n.crit.pulse && n.huge.pulse, JSON.stringify(n));
+  await sim(page, 0.2);
+  await page.screenshot({ path: path.join(HERE, 'screenshots', 'damage-numbers.png') });
+
+  // tougher enemies: a level 1 ghoul has 7 s of par damage and hits for par health / 12
+  const ghoul = await page.evaluate(() => { const c = window.__shadowfall.config.enemies.ghoul; return { health: c.health, damage: c.damage }; });
+  record('Enemies are tougher: the level 1 ghoul has 27 health and hits for 8', ghoul.health === 27 && ghoul.damage === 8, JSON.stringify(ghoul));
+
+  record('No script errors (playtest batch 4)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

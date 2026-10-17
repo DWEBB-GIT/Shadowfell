@@ -27,7 +27,7 @@ export class Combat {
     const base = (swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats)) + bonus;
     const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
     enemy.hurt(hit.amount, hurtOpts);
-    events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt' });
+    events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt', hand: hand === 'ranged' ? 'ranged' : 'main' });
     events.emit('hitImpact', { enemy, crit: hit.crit, heavy: !!(hurtOpts && hurtOpts.heavy) || swing });
     return hit;
   }
@@ -38,7 +38,7 @@ export class Combat {
     const r = this.game.random;
     const hit = computeHit(r, enemyBlock(enemy.cfg), stats.statBlock, { base: enemyRoll(r, damage), canCrit, canBlock, school });
     if (hit.amount > 0) player.takeDamage(hit.amount);
-    events.emit('damageNumber', { target: player, amount: hit.amount, crit: hit.crit, blocked: hit.blocked, kind: 'taken' });
+    events.emit('damageNumber', { target: player, amount: hit.amount, crit: hit.crit, blocked: hit.blocked, kind: 'taken', usual: enemy.cfg.damage });
     return hit;
   }
 

@@ -7,6 +7,8 @@ import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
+import { AMMO_LOC } from '../systems/inventory.js';
+import { CharPreview } from './charPreview.js';
 
 const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility', intellect: 'Intellect', armour: 'armour', resistance: 'resistance', block: '% block chance', haste: '% haste' };
 
@@ -67,6 +69,7 @@ export class ItemUI {
       tooltip: $('tooltip'),
       ghost: $('drag-ghost'),
     };
+    this.preview = new CharPreview(game, $('char-model'));
 
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
@@ -298,7 +301,13 @@ export class ItemUI {
     let sockets = '';
     for (let i = BAG_SOCKETS - 1; i >= 1; i--) {
       const s = inv.sockets[i];
-      sockets += this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, 'socket', '');
+      let slot = this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, 'socket', '');
+      // a quiver shows how many arrows it holds
+      if (s && ITEMS[s.id].holds === 'ammo') {
+        const n = inv.arrowsIn(i);
+        slot = slot.replace(/<\/div>$/, `<span class="arrow-count${n ? '' : ' none'}">${n}</span></div>`);
+      }
+      sockets += slot;
     }
     // a bag whose socket was emptied closes with it
     for (const i of [...this.openBags]) if (!inv.sockets[i]) this.openBags.delete(i);
@@ -331,7 +340,12 @@ export class ItemUI {
       const col = (where) => EQUIP_SLOTS.filter((s) => s.col === where).map((s) => `<div class="equip-row">${this._slotHTML(`e:${s.id}`, inv.equipment[s.id], 'equip', s.label)}</div>`).join('');
       this.el.left.innerHTML = col('left');
       this.el.right.innerHTML = col('right');
-      document.getElementById('equip-bottom').innerHTML = col('bottom');
+      // the ammo slot, beside the ranged slot: which arrows Auto Shot uses
+      // and how many of them you carry
+      const ammo = inv.get(AMMO_LOC);
+      const ammoSlot = this._slotHTML(AMMO_LOC, ammo, 'equip ammo', 'Ammo').replace(/<span class="count">\d+<\/span>/, '');
+      const ammoCount = ammo ? `<span class="count${ammo.count ? '' : ' none'}">${ammo.count}</span>` : '';
+      document.getElementById('equip-bottom').innerHTML = col('bottom') + `<div class="equip-row">${ammoSlot.replace(/<\/div>$/, ammoCount + '</div>')}</div>`;
       // reputation, WoW style: a bar per faction with its standing
       const rep = this.game.reputation;
       document.getElementById('char-rep').innerHTML = '<h3>Reputation</h3>' + Object.values(DB.factions).map((f) => {
@@ -530,12 +544,17 @@ export class ItemUI {
       tip.innerHTML = lines.join('');
       return this._placeTip();
     }
-    if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && !this.hud.padMode) {
+    if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && loc !== AMMO_LOC && !this.hud.padMode) {
       lines.push('<div class="tt-hint">Right-click to sell</div>');
       tip.innerHTML = lines.join('');
       return this._placeTip();
     }
-    const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
+    if (loc === AMMO_LOC) {
+      lines.splice(lines.length - 2, 0, '<div class="tt-hint">Auto Shot uses these. When they run out, the next arrows in your bags take their place. Drag other arrows here to change.</div>');
+      tip.innerHTML = lines.join('');
+      return this._placeTip();
+    }
+    const action = def.kind === 'ammo' ? 'Right-click to use these for Auto Shot' : loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
     tip.innerHTML = lines.join('');
     this._placeTip();

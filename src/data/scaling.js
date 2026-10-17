@@ -65,8 +65,8 @@ export const SCALING = {
   // Each level's normal enemy is sized against "par": a character of that
   // level with only its own attributes (the Warden's) and white gear.
   par: { mainStat: 4, mainStatPerLevel: 2, stamina: 10, staminaPerLevel: 2 },
-  enemyHealthSeconds: 4.5, // a normal enemy has the health of 4.5 s of par damage
-  enemyHitShare: 18, // ...hits for par health / 18...
+  enemyHealthSeconds: 7, // a normal enemy has the health of 7 s of par damage (4.5 until Dan found it too easy, 2026-10-16)
+  enemyHitShare: 12, // ...hits for par health / 12 (was 18)...
   enemyHealthRoll: 0.1, // ...and each spawn point's enemy has +-10% health
   // a type multiplies its level's normal enemy; `special` sizes a telegraphed
   // special from par health (a quarter for an elite, half for a heavy)

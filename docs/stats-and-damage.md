@@ -306,17 +306,17 @@ Each level's **normal** enemy is sized once against **par**, a character of that
 ```
 par damage   = an on-level white weapon's damage a second + Strength ÷ 2.4   (3.9 a second at level 1)
 par health   = 40 + 6 × Stamina                                             (100 at level 1)
-normal enemy = the health of 4.5 seconds of par damage, a hit of par health ÷ 18, a blow every 1.35 s
+normal enemy = the health of 7 seconds of par damage, a hit of par health ÷ 12, a blow every 1.35 s
 ```
 
 | Level | Par damage a second | Par health | Normal: health / hit | Elite: health / hit / special | Heavy (ogre): health / hit / special |
 |---|---|---|---|---|---|
-| 1 | 3.9 | 100 | 18 / 6 | 30 / 8 / 25 | 71 / 17 / 50 |
-| 5 | 9.1 | 148 | 41 / 8 | 69 / 11 / 37 | 163 / 25 / 74 |
-| 10 | 15.5 | 208 | 70 / 12 | 118 / 16 / 52 | 278 / 35 / 104 |
-| 20 | 28.3 | 328 | 127 / 18 | 216 / 25 / 82 | 509 / 55 / 164 |
-| 40 | 54.0 | 568 | 243 / 32 | 413 / 43 / 142 | 971 / 95 / 284 |
-| 60 | 79.6 | 808 | 358 / 45 | 609 / 62 / 202 | 1,433 / 135 / 404 |
+| 1 | 3.9 | 100 | 27 / 8 | 47 / 11 / 25 | 110 / 25 / 50 |
+| 5 | 9.1 | 148 | 63 / 12 | 108 / 17 / 37 | 253 / 37 / 74 |
+| 10 | 15.5 | 208 | 108 / 17 | 184 / 24 / 52 | 433 / 52 / 104 |
+| 20 | 28.3 | 328 | 198 / 27 | 337 / 38 / 82 | 792 / 82 / 164 |
+| 40 | 54.0 | 568 | 378 / 47 | 642 / 65 / 142 | 1,511 / 142 / 284 |
+| 60 | 79.6 | 808 | 557 / 67 | 948 / 93 / 202 | 2,230 / 202 / 404 |
 
 Hits are before the player's armour.
 
@@ -373,14 +373,16 @@ So a par Warden in plate beats a pack of four wolves for a quarter to a third of
 
 ### Fight length
 
-The first swing waits for the weapon's speed, so a fight opens with Shield Break and Cleave and the first swing lands 2.2 s in. A par Warden in plate and shield (an on-level white sword, Shield Break, then Cleave, then Rend on each global cooldown) against enemies of its own level; each cell is how long the fight lasts, how many times you swing, and the share of your health it costs:
+The first swing waits for the weapon's speed, so a fight opens with Shield Break and Cleave and the first swing lands 2.2 s in. A par Warden in plate and shield (an on-level white sword, Shield Break, then Cleave, then Rend on each global cooldown) against enemies of its own level; each cell is how long the fight lasts and the share of your health it costs:
 
 | | One normal | 4 wolves | 6 wolves | One elite | One ogre | Two ogres |
 |---|---|---|---|---|---|---|
-| Par Warden, plate and shield | 4.4 s, 2 swings, 8% | 4.8 s, 2 swings, 28% | 7.8 s, 3 swings, 53% | 6.6 s, 3 swings, 23% | 13 s, 6 swings, 50% | you die |
-| Par character in cloth (health cost) | 14% | 47% | 88% | 38% | 83% | you die |
+| Par Warden, plate and shield | 4.8 s, 16% | 8.8 s, 57% | you die | 8.8 s, 40% | you die | you die |
+| Par character in cloth (health cost) | 27% | 95% | you die | 66% | you die | you die |
 
-Moving to WoW-length fights later (health ×2 and hits ×½ again: a normal enemy about 7 seconds, an ogre half a minute) is one pair of numbers, `enemyHealthSeconds` and `enemyHitShare`, at about the same danger.
+Raised on 16 Oct 2026 (Dan: too easy even at the start) from 4.5 s and ÷ 18, when one normal enemy cost 8% of your health. The heavy type (no ogre is in the game yet) is now more than one par character can take, so its multipliers want a look when the first ogre arrives.
+
+Fight length and danger are one pair of numbers, `enemyHealthSeconds` and `enemyHitShare`.
 
 ### Level gaps
 
@@ -390,7 +392,7 @@ damage × 1.2 ^ (attacker's level − target's level)
 
 An enemy 5 levels above you hits 2.5 times as hard and takes 2.5 times as long to kill; one 5 levels below does the reverse. A hit always does at least 1 damage.
 
-A par Warden in plate and shield, with its abilities, against one normal enemy. Each cell is its hits to kill you / the seconds you need to kill it, then the share of your health the fight costs:
+A par Warden in plate and shield, with its abilities, against one normal enemy. Each cell is its hits to kill you / the seconds you need to kill it, then the share of your health the fight costs. These figures are from before the 16 Oct raise; every enemy now has about 1.55 times the health and 1.5 times the hit, so each fight costs about 2.3 times the share shown:
 
 | Enemy | Its hits on you | Level 10 Warden | Level 20 | Level 40 |
 |---|---|---|---|---|
