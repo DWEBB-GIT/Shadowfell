@@ -3665,7 +3665,7 @@ async function swingTimer(browser) {
     const g = window.__shadowfall;
     g.__sync = [];
     g.enemies.byId('ghoul_road').health = 9999;
-    g.events.on('playerSwing', (e) => { if (!e.hand) g.__sync.push({ start: g.time, impactIn: g.player.pending.t, clock: g.player.cooldowns.attack, frac: g.player.rig.action.impact * g.player.rig.action.duration }); });
+    g.events.on('playerSwing', (e) => { if (!e.hand && g.player.pending) g.__sync.push({ start: g.time, impactIn: g.player.pending.t, clock: g.player.cooldowns.attack, frac: g.player.rig.action.impact * g.player.rig.action.duration }); });
     g.events.on('enemyHit', (e) => { if (e.swing && g.__sync.length) Object.assign(g.__sync[g.__sync.length - 1], { hit: g.time, bar: document.getElementById('swing-fill').style.width }); });
     g.targeting.engage(g.enemies.byId('ghoul_road'));
   });
@@ -3682,10 +3682,11 @@ async function swingTimer(browser) {
   await page.evaluate(() => { const g = window.__shadowfall; g.player.lastSwingAt = undefined; g.__swings = []; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 4);
   const closing = await page.evaluate(() => ({ clock: window.__shadowfall.player.cooldowns.attack, hits: window.__shadowfall.__swings.length }));
-  await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.__reachedAt = g.time; g.enemies.byId('ghoul_road').position.set(0, 0, -1.6); g.enemies.byId('ghoul_road').health = 9999; g.__shown = []; g.events.on('damageNumber', (e) => e.kind === 'dealt' && g.__shown.push(+(g.time - g.__reachedAt).toFixed(2))); });
   await sim(page, T + 0.3);
   const opener = await page.evaluate(() => { const g = window.__shadowfall; return g.__swings.map((t) => +(t - g.__reachedAt).toFixed(2)); });
-  record('A new fight opens with an instant blow the moment you reach the target (WoW); nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it (T ${T}s)`);
+  const shown = await page.evaluate(() => window.__shadowfall.__shown[0]);
+  record('A new fight\'s first blow registers the moment you reach the target and is shown after a windup; nothing runs while you close in', closing.clock === 0 && closing.hits === 0 && opener.length === 2 && opener[0] <= 0.15 && shown >= 0.2 && shown <= 0.45 && near(opener[1] - opener[0], T, 0.05), `4 s closing in: clock ${closing.clock}, no swings; blows ${opener.join(', ')}s after reaching it, first shown at ${shown}s (T ${T}s)`);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.byId('ghoul_road').position.set(0, 0, -6); });
   await sim(page, 3);
   // mid-fight: a clock that runs out with the target out of reach waits at zero
@@ -3699,7 +3700,7 @@ async function swingTimer(browser) {
   // the damage checks reach at the impact frame
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.__swings = []; });
   await sim(page, 3);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.health = g.player.maxHealth; g.enemies.byId('ghoul_road').health = 9999; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; g.player.opener = false; });
   await sim(page, 0.05);
   const started = await page.evaluate(() => window.__shadowfall.player.pending?.type === 'strike');
   await page.evaluate(() => { const e = window.__shadowfall.enemies.byId('ghoul_road'); e.position.set(0, 0, -8); });
@@ -3712,7 +3713,7 @@ async function swingTimer(browser) {
   await placeEnemy(page, 'ghoul_road', 0, -1.6, { frozen: true });
   await placeEnemy(page, 'ghoul_cart', 1.2, -1.2, { frozen: true });
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.enemies.list.forEach((e) => (e.health = 9999)); g.player.lastSwingAt = undefined; g.player.cooldowns.attack = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.cooldowns.attack = 0; });
-  await sim(page, 0.8);
+  await sim(page, 1.2);
   const before = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_cart')); });
   const after = await page.evaluate(() => window.__shadowfall.player.cooldowns.attack);
@@ -3974,7 +3975,7 @@ async function wowCombat(browser) {
 
   // an ability is never eaten by a swing on its way
   await fresh();
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); g.player.opener = false; }); // a regular swing, not the opener
   await sim(page, 0.05);
   const mid = await page.evaluate(() => ({ swing: window.__shadowfall.player.pending?.type === 'strike', ok: window.__shadowfall.spells.tryCast('smite'), cd: window.__shadowfall.player.cooldowns.smite }));
   record('An ability goes off even while a swing is on its way (no animation lock)', mid.swing && mid.ok && mid.cd > 0, JSON.stringify(mid));
