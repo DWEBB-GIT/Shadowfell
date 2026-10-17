@@ -277,7 +277,7 @@ export function validateGameData(raw, opts = {}) {
         // a bow ability (`ranged`) is an instant or dot from a bow roll:
         // an instant needs damageMultiplier instead of its own damage range
         if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant and dot spells`);
-        const need = a.ranged === true && a.kind === 'instant' ? ['damageMultiplier'] : k.tuning;
+        const need = a.kind === 'instant' && (a.ranged === true || a.tuning?.damageMultiplier !== undefined) ? ['damageMultiplier'] : k.tuning; // weapon/bow instants roll the weapon
         for (const t of ['cooldown', ...need]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
         if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
       }

@@ -63,7 +63,7 @@ function glyph(draw, size = 64) {
 }
 
 export function abilityIcons() {
-  return {
+  const icons = {
     strike: glyph((g) => {
       // a sword slash
       g.strokeStyle = '#c8c4b8';
@@ -392,4 +392,8 @@ export function abilityIcons() {
       g.fill();
     }),
   };
+  // weapon strikes reuse the sword and shield-slam glyphs
+  icons.heavyStrike = icons.strike;
+  icons.crushingBlow = icons.shieldBreak;
+  return icons;
 }

@@ -165,6 +165,38 @@
       }
     },
     {
+      "id": "heavyStrike",
+      "name": "Heavy Strike",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "range": 2.6,
+      "desc": "An instant strike with your weapon at your target, for 140% of normalised weapon damage. Builds 10 Resolve. Triggers the global cooldown. 4 second cooldown.",
+      "tuning": {
+        "cooldown": 4,
+        "damageMultiplier": 1.4
+      },
+      "gain": {
+        "resolve": 10
+      }
+    },
+    {
+      "id": "crushingBlow",
+      "name": "Crushing Blow",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "range": 2.6,
+      "desc": "A brutal overhead blow with your weapon, for 300% of normalised weapon damage. Triggers the global cooldown. 12 second cooldown.",
+      "tuning": {
+        "cooldown": 12,
+        "damageMultiplier": 3
+      },
+      "cost": {
+        "resolve": 30
+      }
+    },
+    {
       "id": "smite",
       "name": "Smite",
       "kind": "instant",

@@ -222,6 +222,8 @@ export class Spells {
       events.emit('projectile', { kind: 'holy', from: { x: player.position.x, y: player.position.y + 1.3, z: player.position.z }, to: target.position, speed: t.projectileSpeed, follow: target, life: d / t.projectileSpeed });
     } else if (spell.kind === 'instant') {
       player.rig.play('strike', 0.4, 0.4);
+      // a weapon strike (`damageMultiplier`, e.g. Sinister Strike) rolls the weapon
+      if (t.damageMultiplier !== undefined) return void this._damage(spell, target, weaponRoll(this.game.random, this.game.stats), `Your ${spell.name} hits the {name} for {n}.`, t.damageMultiplier, { stagger: 0.25, knockFrom: player.position, knockback: 0.3 });
       events.emit('spellFlash', { position: target.position, school: spell.school });
       this._damage(spell, target, this._spellBase(t), `Your ${spell.name} hits the {name} for {n}.`);
     } else if (spell.kind === 'dot') {
