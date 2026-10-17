@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}).",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model.",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -160,6 +160,18 @@
       "name": "The Ford Inn",
       "position": [8, 72],
       "radius": 6
+    },
+    {
+      "id": "blackwood_deadfall",
+      "name": "Deadfall in the Blackwood",
+      "position": [2, -64],
+      "radius": 9
+    },
+    {
+      "id": "hallow_cut_ore",
+      "name": "Ore in Hallow Cut",
+      "position": [24, -22],
+      "radius": 7
     }
   ],
   "npcSpawns": [
@@ -181,10 +193,7 @@
     },
     {
       "npc": "town_board",
-      "position": [
-        -4.6,
-        66
-      ],
+      "position": [-4.6, 66],
       "facing": 180
     }
   ],
@@ -391,6 +400,138 @@
       "prompt": "Take the iron key",
       "reward": {
         "item": "watch_key"
+      }
+    },
+    {
+      "id": "firewood_1",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [-4, -58],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_2",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [5, -62],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_3",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [-9, -66],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_4",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [8, -70],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "ore_1",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [27, -17],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "ore_2",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [19, -24],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "ore_3",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [26, -25],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "sorrel_1",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [-17.6, -11.3],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_2",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [-24.6, -7.0],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_3",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [-30.8, -12.4],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_4",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [-27.6, -20.0],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_5",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [-19.4, -19.3],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
       }
     }
   ],

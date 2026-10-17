@@ -784,6 +784,42 @@
       "model": "cooked_fish",
       "icon": "cooked_fish",
       "description": "Clear as rainwater and strangely warming. Restores 240 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "firewood",
+      "name": "Bundle of firewood",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Dry deadfall from the Blackwood, split and tied. It will burn bright and quick."
+    },
+    {
+      "id": "bog_iron_ore",
+      "name": "Lump of bog-iron ore",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Rust-red stone, heavy for its size. Mara can smelt it into something useful."
+    },
+    {
+      "id": "mere_sorrel",
+      "name": "Mere sorrel",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "pine",
+      "icon": "pine",
+      "description": "A sharp-smelling green herb that only grows in the wet ground around the Stillwater Mere."
     }
   ]
 }
