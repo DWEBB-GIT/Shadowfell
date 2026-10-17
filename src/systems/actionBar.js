@@ -30,7 +30,7 @@ export const BAR_SLOTS = [
   { kbm: '9', pad: '◀B', utility: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', 'heavyStrike', 'crushingBlow', null, null];
 // the bow abilities go onto free slots the first time a bow is equipped
 export const BOW_ABILITIES = ['quickShot', 'venomArrow'];
 
