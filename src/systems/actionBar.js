@@ -30,7 +30,7 @@ export const BAR_SLOTS = [
   { kbm: '9', pad: '◀B', utility: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null];
 // the bow abilities go onto free slots the first time a bow is equipped
 export const BOW_ABILITIES = ['quickShot', 'venomArrow'];
 
@@ -52,7 +52,7 @@ export const UTILITY_ABILITIES = ['fish', 'setCamp', 'cook'];
 export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);
 
 // abilities that no longer exist, mapped to what replaced them (old saves)
-const RENAMED = { dodge: 'brace' };
+const RENAMED = { dodge: 'brace', draught: 'item:healing_draught' };
 
 export class ActionBar {
   constructor(game) {

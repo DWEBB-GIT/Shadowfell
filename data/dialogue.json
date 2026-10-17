@@ -220,6 +220,16 @@
           ]
         }
       ]
+    },
+    {
+      "id": "town_board",
+      "greetings": [
+        {
+          "text": "Notices in a dozen hands are nailed over one another. Some are weeks old. A few look fresh."
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

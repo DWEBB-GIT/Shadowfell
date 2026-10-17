@@ -94,7 +94,7 @@ export function validateSave(data) {
     validateInventory(inv, check);
   }
   if (data.bar !== undefined) {
-    check(Array.isArray(data.bar) && [6, 7, BAR_SLOTS.length].includes(data.bar.length) && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge' || (itemRef(a) && ITEMS[itemRef(a)])), 'spell bar');
+    check(Array.isArray(data.bar) && [6, 7, BAR_SLOTS.length].includes(data.bar.length) && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge' || a === 'draught' || (itemRef(a) && ITEMS[itemRef(a)])), 'spell bar');
   }
   // the quest log (saves from before it have none, and start from the story flag)
   if (data.quests !== undefined) {

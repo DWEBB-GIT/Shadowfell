@@ -26,6 +26,7 @@ class Npc {
     this.model = game.assets.instance(def.model);
     this.group.add(this.model);
     this.rig = new Rig(this.model, 'warden');
+    this.board = !!def.board; // a notice board: never turns or works
     this.workTimer = 1 + Math.random();
     this.group.position.copy(this.position);
     game.collision.add(this.position.x, this.position.z, this.radius);
@@ -35,7 +36,7 @@ class Npc {
     const dx = player.position.x - this.position.x;
     const dz = player.position.z - this.position.z;
     const near = Math.hypot(dx, dz) < 4.5 && !player.dead;
-    const want = near ? Math.atan2(dx, dz) : this.def.anvil ? Math.atan2(this.def.anvil[0] - this.position.x, this.def.anvil[1] - this.position.z) : this.restFacing;
+    const want = this.board ? this.restFacing : near ? Math.atan2(dx, dz) : this.def.anvil ? Math.atan2(this.def.anvil[0] - this.position.x, this.def.anvil[1] - this.position.z) : this.restFacing;
     let d = want - this.facing;
     d = Math.atan2(Math.sin(d), Math.cos(d));
     this.facing += d * Math.min(1, dt * 5);

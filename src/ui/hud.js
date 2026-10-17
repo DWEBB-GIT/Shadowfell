@@ -68,7 +68,7 @@ export class Hud {
     const P = () => game.player.cooldowns;
     this.cooldowns = {
       strike: () => [P().attack, game.stats.attackCooldown, false],
-      draught: () => [P().draught, CONFIG.draught.cooldown, false],
+      'item:healing_draught': () => [P().draught, CONFIG.draught.cooldown, false],
       fish: () => [0, 0, false],
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
@@ -127,7 +127,6 @@ export class Hud {
   }
 
   setItemIcons(icons) {
-    if (icons.draught) this.abilityIcons.draught = icons.draught;
     this.items.setIcons(icons);
     this.renderBar();
   }
@@ -376,14 +375,12 @@ export class Hud {
     rested.style.width = `${Math.min(100 - (progression.xp / progression.xpToNext) * 100, (progression.rested / progression.xpToNext) * 100)}%`;
     this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience (${Math.floor((progression.xp / progression.xpToNext) * 100)}%)${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
     this.el.coins.innerHTML = moneyHTML(inventory.coins);
-    const n = inventory.draughts;
     for (const el of this.barSlots) {
-      const isDraught = el.dataset.ability === 'draught';
       const item = itemRef(el.dataset.ability);
       // items on the bar show how many you carry (or that one is in hand)
       const have = item ? inventory.count(item) + (inventory.equipment.offHand?.id === item ? 1 : 0) : 0;
-      el.querySelector('.count').textContent = isDraught ? n : item && ITEMS[item].stack > 1 ? have : '';
-      el.classList.toggle('none', (isDraught && n === 0) || (!!item && have === 0));
+      el.querySelector('.count').textContent = item && ITEMS[item].stack > 1 ? have : '';
+      el.classList.toggle('none', !!item && have === 0);
       el.classList.toggle('active-item', !!item && inventory.equipment.offHand?.id === item);
     }
   }

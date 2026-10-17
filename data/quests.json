@@ -156,6 +156,101 @@
           "road_wardens": 500
         }
       }
+    },
+    {
+      "id": "board_perch_for_the_pot",
+      "name": "Perch for the Pot",
+      "giver": "town_board",
+      "turnIn": "hester",
+      "summary": "Hester Vale at the Ford Inn wants fresh perch from the mere for her kitchen. Catch three and bring them to her.",
+      "offer": "WANTED: three good perch, fresh, for the inn's kitchen. Fair coin paid. Ask for Hester at the Ford Inn. (Not eels. Never again eels.)",
+      "progress": "No perch yet? Tam will show you which end of the rod goes in the water.",
+      "complete": "Now those are perch. The stew will taste of something tonight. Here, for your trouble.",
+      "objectives": [
+        {
+          "id": "perch",
+          "type": "collect",
+          "target": "gloomwater_perch",
+          "count": 3,
+          "label": "Gloomwater perch"
+        }
+      ],
+      "reward": {
+        "coins": 12,
+        "xp": 60
+      }
+    },
+    {
+      "id": "board_meat_for_winter",
+      "name": "Meat for Winter",
+      "giver": "town_board",
+      "turnIn": "hester",
+      "summary": "The town is short of meat for the winter stores. Bring four cuts of hound meat to Hester at the Ford Inn.",
+      "offer": "The cellar's half empty and the frost is coming. Meat wanted, any honest kind. The barrow hounds in the woods are lean, but they'll salt. Bring it to the Ford Inn. H. Vale.",
+      "progress": "The salt barrel's still waiting.",
+      "complete": "That'll keep a family through a bad week. Thank you. Truly.",
+      "objectives": [
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "hound_meat",
+          "count": 4,
+          "label": "Hound meat"
+        }
+      ],
+      "reward": {
+        "coins": 18,
+        "xp": 90
+      }
+    },
+    {
+      "id": "board_pelts_for_tam",
+      "name": "Pelts for the Boat",
+      "giver": "town_board",
+      "turnIn": "tam",
+      "summary": "Old Tam wants hound pelts to stuff the seams of his boat. Bring him two.",
+      "offer": "Boat leaks. Need two pelts to caulk her, hound will do. Bring them to the mere. Tam.",
+      "progress": "Still leaking, she is.",
+      "complete": "Good thick hides. She'll float another year. Take this, and mind the edge.",
+      "objectives": [
+        {
+          "id": "pelts",
+          "type": "collect",
+          "target": "hound_pelt",
+          "count": 2,
+          "label": "Hound pelt"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 70
+      }
+    },
+    {
+      "id": "board_clear_the_road",
+      "name": "Clear the Road",
+      "giver": "town_board",
+      "turnIn": "mara",
+      "summary": "The dead walk the Fallen Road north of town. Put down five Ashen Ghouls and tell Mara Venn at her forge it is done.",
+      "offer": "BY ORDER OF THE TOWN: the road north is unsafe. Any able hand who puts down the walking dead on the Fallen Road will be paid at the forge. Mara Venn will settle.",
+      "progress": "The road's no quieter yet.",
+      "complete": "Five of them? The carters will thank you, even if they never learn your name. Here's the town's coin.",
+      "objectives": [
+        {
+          "id": "ghouls",
+          "type": "kill",
+          "target": "ghoul",
+          "count": 5,
+          "label": "Ashen Ghoul slain"
+        }
+      ],
+      "reward": {
+        "coins": 20,
+        "xp": 100,
+        "reputation": {
+          "road_wardens": 150
+        }
+      }
     }
   ]
 }

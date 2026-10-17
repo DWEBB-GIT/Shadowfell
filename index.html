@@ -89,6 +89,7 @@
 
   <div id="character-window" class="window panel" hidden>
     <div class="window-head"><h2 id="character-title">Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
+    <div id="char-page-main">
     <div class="char-body">
       <div class="equip-col" id="equip-left"></div>
       <div class="char-figure">
@@ -99,8 +100,10 @@
     </div>
     <div class="equip-bottom" id="equip-bottom"></div>
     <div id="char-stats"></div>
-    <div id="char-rep"></div>
     <div class="window-hint" id="char-hint"></div>
+    </div>
+    <div id="char-rep" hidden></div>
+    <div class="char-tabs"><button class="char-tab active" data-char-tab="main">Character</button><button class="char-tab" data-char-tab="rep">Reputation</button></div>
   </div>
 
   <div id="spellbook-window" class="window panel" hidden>

@@ -1324,7 +1324,7 @@ async function spellBar(browser) {
   await begin(page, '#continue-btn');
   const bOld = await bar();
   record('Old saves with Dodge on the bar get Brace instead (extra)', bOld[5] === 'brace', bOld.map((a) => a || '—').join(', '));
-  record('Old bars keep Shield Break from the mouse buttons, on number keys, and drop Attack (auto attack is off the bar)', bOld.length === 10 && bOld.includes('shieldBreak') && !bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'draught', bOld.map((a) => a || '—').join(', '));
+  record('Old bars keep Shield Break from the mouse buttons, on number keys, and drop Attack (auto attack is off the bar)', bOld.length === 10 && bOld.includes('shieldBreak') && !bOld.includes('strike') && bOld[0] === 'lunge' && bOld[1] === 'item:healing_draught', bOld.map((a) => a || '—').join(', '));
   const noAttack = await page.evaluate(() => { const g = window.__shadowfall; g.actionBar.place('strike', 2); return g.actionBar.slots.includes('strike'); });
   record('Attack cannot be put on the bar', !noAttack);
 
@@ -3469,7 +3469,7 @@ async function utilityBar(browser) {
     g.step(1 / 60);
     const back = g.inventory.equipment.offHand?.id;
     // a bar saved before the utility slots (six slots, Fishing on 4)
-    g.actionBar.apply(['lunge', 'shieldBreak', 'draught', 'fish', 'rebuke', 'brace']);
+    g.actionBar.apply(['lunge', 'shieldBreak', 'item:healing_draught', 'fish', 'rebuke', 'brace']);
     const old = [...g.actionBar.slots];
     g.actionBar.reset();
     return { slots, fishAt, torchSlot, lit, back, old };

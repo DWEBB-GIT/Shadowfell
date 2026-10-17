@@ -178,6 +178,14 @@
       "npc": "hester",
       "position": [11.2, 68.6],
       "facing": 0
+    },
+    {
+      "npc": "town_board",
+      "position": [
+        -4.6,
+        66
+      ],
+      "facing": 180
     }
   ],
   "enemySpawns": [
@@ -250,6 +258,11 @@
       "id": "seer_glade",
       "enemy": "seer",
       "position": [-6.4, -114.6]
+    },
+    {
+      "id": "dummy_forge",
+      "enemy": "training_dummy",
+      "position": [18.2, -39.4]
     }
   ],
   "placedLoot": [
