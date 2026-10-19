@@ -48,7 +48,7 @@ import { QuestLog } from './systems/quests.js';
 import { Dialogue } from './systems/dialogue.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
-import { EXAMINE } from './data/text.js';
+import { EXAMINE, TITLE } from './data/text.js';
 import { ITEMS, validateItems, rollItem, itemView, rollLoot } from './data/items.js';
 import { DB } from './data/db.js';
 import { DATA_ERRORS } from './data/db.js';
@@ -227,6 +227,9 @@ class Game {
     this.bootSave = this.save.read();
     if (this.bootSave.status === 'invalid') return; // the select screen does not offer it
     this.character = c;
+    // the class decides stats, resources, spellbook, bar and starting gear
+    const cls = TITLE.classes.find((k) => k.id === c.classId);
+    this.archetypeId = cls?.archetype || CONFIG.player.archetype;
     this.roster.touch(id);
     this.hud.setCharacter(c);
     this.startGame(this.bootSave.status === 'ok');

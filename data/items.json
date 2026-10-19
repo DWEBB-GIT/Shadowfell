@@ -112,6 +112,20 @@
       "description": "Wool and leather, patched at the elbows. Keeps the rain off, mostly."
     },
     {
+      "id": "frayed_robe",
+      "name": "Frayed robe",
+      "kind": "armor",
+      "rarity": "common",
+      "slot": "chest",
+      "armourType": "cloth",
+      "itemLevel": 1,
+      "stack": 1,
+      "price": 8,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "Undyed wool gone grey at the hem, its sleeves scorched by candle and worse. Cloth: any class can wear it."
+    },
+    {
       "id": "watch_helm",
       "name": "Dented watch helm",
       "kind": "armor",

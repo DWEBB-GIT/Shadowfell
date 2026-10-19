@@ -33,6 +33,9 @@ async function freshGame(browser, { noAudio = false } = {}) {
 // '#new-btn' makes a new character (with the random name the create screen
 // offers) and enters the world; '#continue-btn' plays the last character.
 async function begin(page, which = '#new-btn', { pinRolls = true, legacyKeys = true } = {}) {
+  // checks written before the class kits (2026-10-19) had the Warden know
+  // every spell; they keep that, from before a save's bar is loaded
+  if (legacyKeys) await page.evaluate(() => (window.__shadowfall.skills.allSpells = true));
   await page.click(which);
   if (which === '#new-btn') await page.click('#create-confirm');
   await page.waitForFunction(() => window.__shadowfall.started);
@@ -43,7 +46,7 @@ async function begin(page, which = '#new-btn', { pinRolls = true, legacyKeys = t
     await page.evaluate(() => {
       const g = window.__shadowfall;
       Object.assign(g.keys.map, { bar0: ['Digit1'], bar1: ['Digit2'], bar2: ['Digit3', 'KeyQ'], bar3: ['Digit4'], bar4: ['Digit5'], bar5: ['Space'], bar6: ['Digit6'], bar7: ['Digit7'], bar8: ['Digit8'], bar9: ['Digit9'], interact: ['KeyE'] });
-      if (!g.save.read().data) g.actionBar.apply(['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', 'heavyStrike', 'crushingBlow', null, null]);
+      if (!g.save.read().data) g.actionBar.apply(['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', null, null, null, null]);
     });
   }
   // combat rolls (weapon range, crits, blocks, enemy variance) land on the
@@ -357,7 +360,7 @@ async function combat(browser) {
   const braceLog = await page.evaluate(() => [...document.querySelectorAll('#log li')].map((l) => l.textContent).join(' | '));
   record('Brace (Space) turns aside the next blow, and only one', br.up && !br.r1 && br.hp1 === 100 && br.r2 && br.hp2 === 95 && /your shield takes/i.test(braceLog),
     `raised during the global cooldown; first claw blocked (hp ${br.hp1}), second lands (hp ${br.hp2})`);
-  record('Brace has a cooldown of about 7 seconds', near(br.cd, 7, 0.1), `${br.cd.toFixed(2)}s after use`);
+  record('Brace has a cooldown of about 12 seconds (with a shield it blocks every blow for 3 s, class kits 2026-10-19)', near(br.cd, 12, 0.1), `${br.cd.toFixed(2)}s after use`);
   await page.evaluate(() => {
     const e = window.__shadowfall.enemies.byId('ghoul_road');
     e.cfg = { ...e.cfg, detection: 0 }; // keep the ghoul quiet from here
@@ -1288,9 +1291,23 @@ async function spellBar(browser) {
   record('Spells can be dragged to another slot on the bar', b1[3] === 'lunge' && b1[0] === 'hallowedBolt' && iconMoved, `Lunge and Hallowed Bolt swapped slots 1 and 4 (bar was ${b0.map((a) => a || '—').join(', ')})`);
 
   await pauseLoop(page);
-  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: 0, z: 14 } });
+  // (Lunge only ever charges at an enemy: one stands where you aim)
+  await page.evaluate(() => {
+    const e = window.__shadowfall.enemies.byId('ghoul_road');
+    e.cfg = { ...e.cfg, speed: 0 };
+    e.position.set(0, 0, 15);
+    e.home.copy(e.position);
+    window.__shadowfall.targeting.select(e);
+  });
+  await sim(page, 0.05, { press: ['Digit4'], aimAt: { x: 0, z: 15 } });
   const lunged = await page.evaluate(() => window.__shadowfall.player.lunge !== null);
   await sim(page, 2);
+  await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.targeting.stopAttack();
+    g.targeting.clear();
+    g.enemies.byId('ghoul_road').position.set(-30, 0, -45);
+  });
   await sim(page, 0.05, { press: ['Digit1'] });
   const nothing = await page.evaluate(() => window.__shadowfall.player.lunge === null && window.__shadowfall.player.cooldowns.gcd === 0);
   record('A moved spell fires from its new key', lunged && nothing, 'key 4 now lunges; key 1 no longer does (Hallowed Bolt, with no target in range)');
@@ -1306,7 +1323,8 @@ async function spellBar(browser) {
   await dragSlot(page, '#spellbook-window .islot[data-loc="k:lunge"]', '#aslot-3');
   await page.waitForTimeout(150);
   const b3 = await bar();
-  record('The spellbook (P) puts removed spells back on the bar', b3[3] === 'lunge', `Lunge dragged from the spellbook to slot 4 (key 4)`);
+  const bookRows = await page.evaluate(() => { const el = document.querySelector('#spellbook-window .islot[data-loc="k:lunge"]'); const r = el?.getBoundingClientRect(); return `${document.querySelectorAll('#spellbook-list .spell-row').length} rows; lunge at ${r ? Math.round(r.x) + ',' + Math.round(r.y) : 'none'}`; });
+  record('The spellbook (P) puts removed spells back on the bar', b3[3] === 'lunge', `Lunge dragged from the spellbook to slot 4 (key 4); bar ${b3.join(',')}; ${bookRows}`);
 
   await dragSlot(page, '#aslot-5', '#aslot-4');
   await page.waitForTimeout(150);
@@ -2694,11 +2712,11 @@ async function spells(browser) {
   await ready([['ghoul_road', 2, 0], ['ghoul_cart', -2, 1], ['ghoul_graves', 0, 8]]);
   await slot('hallowedGround');
   await sim(page, 0.05, { press: ['Digit4'] });
-  await sim(page, 6.5);
+  await sim(page, 8.5);
   const ground = [500 - (await hp('ghoul_road')), 500 - (await hp('ghoul_cart')), 500 - (await hp('ghoul_graves'))];
   const zoneGone = await page.evaluate(() => window.__shadowfall.spells.zones.length === 0);
   await page.evaluate(() => { const t = window.__shadowfall.targeting; t.engage = t._engage; });
-  record('Hallowed Ground: burns every enemy inside it each second for 6s, not those outside', ground[0] > 0 && ground[1] === ground[0] && ground[2] === 0 && zoneGone, `inside ${ground[0]} and ${ground[1]}, outside ${ground[2]}`);
+  record('Hallowed Ground: burns every enemy inside it each second for 8s, not those outside', ground[0] > 0 && ground[1] === ground[0] && ground[2] === 0 && zoneGone, `inside ${ground[0]} and ${ground[1]}, outside ${ground[2]}`);
 
   // cleave
   await ready([['ghoul_road', 1, 1.8], ['ghoul_cart', -1, 1.8], ['ghoul_graves', 0, -2]]);
@@ -3562,7 +3580,7 @@ async function resources(browser) {
     const r = window.__shadowfall.resources;
     return { mana: r.mana, max: r.maxMana, gauge: r.gauge, mpShown: !document.getElementById('mp-bar').hidden, gText: document.getElementById('gauge-text').textContent };
   });
-  record('The Warden starts with full mana (100 + 10 per Intellect) and no Resolve', start.mana === start.max && start.max === 110 && start.gauge === 0 && start.mpShown, `${start.mana}/${start.max} mana, "${start.gText}"`);
+  record('The Warrior starts with no Resolve, and has no mana (class kits, 2026-10-19)', start.max === 0 && start.gauge === 0 && !start.mpShown && start.gText === '0 Resolve', `${start.mana}/${start.max} mana, "${start.gText}"`);
 
   // Shield Break costs 25 Resolve: refused at 0, slot dimmed
   await page.evaluate(() => { const g = window.__shadowfall; g.enemies.byId('ghoul_road').health = 999; g.targeting.select(g.enemies.byId('ghoul_road')); });
@@ -3593,28 +3611,39 @@ async function resources(browser) {
   const lunge = await page.evaluate(() => { const g = window.__shadowfall; return { ok: g.spells.tryCast('lunge'), r: g.resources.gauge }; });
   record('Lunge is free and gives 15 Resolve to open a fight', lunge.ok && lunge.r === 15, `cast: ${lunge.ok}, ${lunge.r} Resolve`);
 
-  // Hallowed Bolt costs 20 mana, paid when the cast finishes
+  // out of combat Resolve fades
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); const e = g.enemies.byId('ghoul_road'); e.position.set(-30, 0, -45); e.home.copy(e.position); e.state = 'idle'; g.resources.sinceCombat = 99; g.resources.gauge = 40; });
   await sim(page, 2);
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; const e = g.enemies.byId('ghoul_road'); e.windup = 0; e.attackTimer = 30; });
-  const castOk = await page.evaluate(() => window.__shadowfall.spells.tryCast('hallowedBolt'));
-  const midCast = await page.evaluate(() => window.__shadowfall.resources.mana);
-  await sim(page, 1.8);
-  const afterCast = await page.evaluate(() => window.__shadowfall.resources.mana);
-  record('Hallowed Bolt costs 20 mana, paid when the cast finishes', castOk && midCast >= 50 && afterCast > 29 && afterCast < 34, `mana 50 → ${midCast.toFixed(1)} while casting → ${afterCast.toFixed(1)} after (regen 1.5/s in combat)`);
-  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.player.casting = null; g.hud.lastError = null; g.resources.mana = 5; });
-  const noMana = await page.evaluate(() => !window.__shadowfall.spells.tryCast('hallowedBolt') && window.__shadowfall.hud.lastError);
-  record('A spell is refused without enough mana', !!noMana && /mana/.test(noMana), `"${noMana}"`);
-
-  // out of combat: mana refills fast, Resolve fades
-  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); const e = g.enemies.byId('ghoul_road'); e.position.set(-30, 0, -45); e.home.copy(e.position); e.state = 'idle'; g.resources.sinceCombat = 99; g.resources.gauge = 40; g.resources.mana = 10; });
-  await sim(page, 2);
-  const ooc = await page.evaluate(() => ({ m: window.__shadowfall.resources.mana, g: window.__shadowfall.resources.gauge }));
-  record('Out of combat mana refills at 10 a second and Resolve fades at 8 a second', near(ooc.m, 30, 1) && near(ooc.g, 24, 1), `2 s later: ${ooc.m.toFixed(1)} mana, ${ooc.g.toFixed(1)} Resolve`);
+  const fade = await page.evaluate(() => window.__shadowfall.resources.gauge);
+  record('Out of combat Resolve fades at 8 a second', near(fade, 24, 1), `2 s later: ${fade.toFixed(1)} Resolve`);
 
   // tooltips show the cost
   await page.hover('.aslot[data-ability="shieldBreak"]');
   const tipCost = await page.evaluate(() => document.querySelector('.tt-cost')?.textContent);
   record('Ability tooltips show the cost', tipCost === '25 Resolve', `"${tipCost}"`);
+
+  // mana: the Paladin's (the Warrior has none since the class kits)
+  await page.evaluate(() => { const g = window.__shadowfall; g.archetypeId = 'paladin'; g.resources.reset(); });
+  const pal = await page.evaluate(() => { const r = window.__shadowfall.resources; return { mana: r.mana, max: r.maxMana }; });
+  record('A Paladin starts with full mana (120 + 10 per Intellect)', pal.mana === pal.max && pal.max === 150, `${pal.mana}/${pal.max}`);
+
+  // Hallowed Bolt costs 20 mana, paid when the cast finishes
+  await sim(page, 2);
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.resources.sinceCombat = 0; g.player.placeAt(0, 4, Math.PI); g.enemies.byId('ghoul_road').position.set(0, 0, 0); g.enemies.byId('ghoul_road').state = 'idle'; g.targeting.select(g.enemies.byId('ghoul_road')); Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0)); g.player.pending = null; g.player.lunge = null; g.resources.mana = 50; const e = g.enemies.byId('ghoul_road'); e.windup = 0; e.attackTimer = 30; });
+  const castOk = await page.evaluate(() => window.__shadowfall.spells.tryCast('hallowedBolt'));
+  const midCast = await page.evaluate(() => window.__shadowfall.resources.mana);
+  await sim(page, 1.8);
+  const afterCast = await page.evaluate(() => window.__shadowfall.resources.mana);
+  record('Hallowed Bolt costs 20 mana, paid when the cast finishes', castOk && midCast >= 50 && afterCast > 29 && afterCast < 34, `mana 50 → ${midCast.toFixed(1)} while casting → ${afterCast.toFixed(1)} after (regen 1.5/s in combat)${castOk ? '' : '; refused: ' + (await page.evaluate(() => window.__shadowfall.hud.lastError))}`);
+  await page.evaluate(() => { const g = window.__shadowfall; g.player.cooldowns.gcd = 0; g.player.cooldowns.hallowedBolt = 0; g.player.casting = null; g.hud.lastError = null; g.resources.mana = 5; });
+  const noMana = await page.evaluate(() => !window.__shadowfall.spells.tryCast('hallowedBolt') && window.__shadowfall.hud.lastError);
+  record('A spell is refused without enough mana', !!noMana && /mana/.test(noMana), `"${noMana}"`);
+
+  // out of combat: mana refills fast
+  await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); const e = g.enemies.byId('ghoul_road'); e.position.set(-30, 0, -45); e.home.copy(e.position); e.state = 'idle'; g.resources.sinceCombat = 99; g.resources.mana = 10; });
+  await sim(page, 2);
+  const ooc = await page.evaluate(() => window.__shadowfall.resources.mana);
+  record('Out of combat a Paladin\'s mana refills at 12 a second', near(ooc, 34, 1), `2 s later: ${ooc.toFixed(1)} mana`);
   record('No script errors (resources)', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -4187,7 +4216,7 @@ async function titleAndCharacters(browser) {
     classes: [...document.querySelectorAll('.class-card')].map((c) => c.textContent.replace(/\s+/g, ' ').trim()),
     locked: document.querySelectorAll('.class-card.locked').length,
   }));
-  record('Create screen: a random name, Warden playable, other classes shown as coming later', create.view && /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(create.name) && create.locked === 2 && /Warden/.test(create.classes[0]), `${create.name}; ${create.classes.join(' / ')}`);
+  record('Create screen: a random name, and all five classes playable, Warrior first', create.view && /^[A-Z][a-z]+ [A-Z][a-z]+$/.test(create.name) && create.locked === 0 && create.classes.length === 5 && /Warrior/.test(create.classes[0]), `${create.name}; ${create.classes.join(' / ')}`);
 
   const bad = [];
   for (const n of ['', 'x', 'R2D2', 'a very long name indeed']) {
@@ -4216,7 +4245,7 @@ async function titleAndCharacters(browser) {
   });
   await reopen(page);
   const back = await page.evaluate(() => ({ cont: document.getElementById('continue-who').textContent, chars: !document.getElementById('chars-btn').hidden }));
-  record('Continue names the last character and their level', /Mara Bcm · level 3 Warden/.test(back.cont) && back.chars, back.cont);
+  record('Continue names the last character and their level', /Mara Bcm · level 3 Warrior/.test(back.cont) && back.chars, back.cont);
 
   // a second character, then the list
   await page.click('#new-btn');
@@ -4875,7 +4904,380 @@ async function targetingFixes(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes };
+// ------------------------------------------------------------- class kits
+// Each class (data/archetypes.json) plays its own six-spell base kit on its
+// own resources (Dan, 2026-10-19). One fresh character per class.
+async function classKits(browser) {
+  current = 'Class kits';
+  const play = async (cls) => {
+    const { ctx, page, errors } = await freshGame(browser);
+    await page.click('#new-btn');
+    await page.click(`[data-class="${cls}"]`);
+    await page.click('#create-confirm');
+    await page.waitForFunction(() => window.__shadowfall.started);
+    await pauseLoop(page);
+    await page.evaluate(() => {
+      const g = window.__shadowfall;
+      g.random = () => 0.5;
+      // tough, rooted, harmless enemies in a row in front of you (south)
+      window.__t = {
+        prep(n = 1, { gap = 3, dist = 2, health = 2000 } = {}) {
+          g.player.health = g.player.maxHealth;
+          for (const k of Object.keys(g.player.cooldowns)) g.player.cooldowns[k] = 0;
+          g.spells.reset();
+          g.resources.reset();
+          g.targeting.clear();
+          g.player.placeAt(0, 0, 0);
+          const list = g.enemies.list.filter((e) => e.alive).slice(0, 6);
+          list.forEach((e, i) => {
+            e.cfg = { ...e.cfg, health, speed: 0, detection: 0.01, damage: 10, telegraph: false, special: null, ranged: null, circle: null };
+            e.maxHealth = e.health = health;
+            e.position.set(i < n ? i * gap : -40 + i * 3, 0, i < n ? dist : -60);
+            e.home.copy(e.position);
+            e.state = 'idle';
+            e.stagger = 0;
+            e._resetControl();
+            e.facing = Math.PI; // facing you
+          });
+          for (const e of g.enemies.list.slice(6)) e.position.set(80, 0, 80 + Math.random());
+          return list.slice(0, n).map((e) => e.id);
+        },
+        step(seconds) {
+          for (let t = 0; t < seconds - 1e-9; t += 1 / 60) g.step(1 / 60);
+        },
+        cast(id) {
+          g.player.cooldowns.gcd = 0;
+          return g.spells.tryCast(id);
+        },
+        e: (id) => g.enemies.byId(id),
+      };
+    });
+    return { ctx, page, errors };
+  };
+
+  // ---- Warrior
+  {
+    const { ctx, page, errors } = await play('warden');
+    const r = await page.evaluate(() => {
+      const g = window.__shadowfall;
+      const T = window.__t;
+      const out = { bar: g.actionBar.slots.slice(0, 6).join(','), mana: g.resources.maxMana, bar0: g.resources.gaugeCfg?.name };
+      const [id] = T.prep(1);
+      const hs = () => {
+        T.e(id).health = 2000;
+        g.player.cooldowns.heavyStrike = 0;
+        T.cast('heavyStrike');
+        return 2000 - T.e(id).health;
+      };
+      g.targeting.select(T.e(id));
+      out.shield = hs();
+      out.resolveShield = g.resources.gauge;
+      const shield = g.inventory.equipment.offHand;
+      g.inventory.equipment.offHand = null;
+      out.alone = hs();
+      out.loadout = 'twoHand';
+      g.inventory.equipment.offHand = shield;
+      // Brace with a shield: every blow in 3 s
+      T.prep(1);
+      g.player.health = 1000;
+      T.cast('brace');
+      const e = T.e(id);
+      for (let i = 0; i < 3; i++) g.combat.resolveEnemyStrike(e);
+      out.braced = 1000 - g.player.health;
+      // spending Resolve heals 2% per 10
+      g.player.health = 50;
+      g.resources.gauge = 100;
+      g.targeting.select(e);
+      T.cast('crushingBlow');
+      out.healed = g.player.health - 50;
+      out.maxHp = g.player.maxHealth;
+      return out;
+    });
+    record('Warrior: Resolve only (no mana), and its six on the bar', r.mana === 0 && r.bar0 === 'Resolve' && r.bar === 'heavyStrike,crushingBlow,cleave,lunge,battleCry,brace', `${r.bar}; mana ${r.mana}`);
+    record('Weapon Master: Heavy Strike hits harder with a weapon alone than with a shield, and the shield builds more Resolve', r.alone > r.shield && r.resolveShield === 20, `alone ${r.alone}, with shield ${r.shield} (+${r.resolveShield} Resolve)`);
+    record('Brace with a shield blocks every blow for its window', r.braced === 0, `3 blows, ${r.braced} damage`);
+    record('Spending Resolve heals (2% of health per 10 spent)', Math.abs(r.healed - r.maxHp * 0.06) < 1.01, `30 Resolve spent: healed ${r.healed} of ${r.maxHp}`);
+    record('Warrior: no errors', !errors.length, errors.join(' | '));
+    await ctx.close();
+  }
+
+  // ---- Rogue
+  {
+    const { ctx, page, errors } = await play('rogue');
+    const r = await page.evaluate(() => {
+      const g = window.__shadowfall;
+      const T = window.__t;
+      const out = { energy: g.resources.amount('energy'), pipsShown: !document.getElementById('combo-pips').hidden };
+      const [a, b] = T.prep(2, { gap: 4 });
+      g.targeting.select(T.e(a));
+      T.cast('quickStrike');
+      T.cast('quickStrike');
+      out.combo = g.resources.amount('combo');
+      out.energyAfter = Math.round(g.resources.amount('energy'));
+      // Double Cut scales with points
+      g.resources.values.energy = 100;
+      g.resources.values.combo = 1;
+      T.e(a).health = 2000;
+      T.cast('doubleCut');
+      out.cut1 = 2000 - T.e(a).health;
+      g.resources.values.energy = 100;
+      g.resources.values.combo = 5;
+      T.e(a).health = 2000;
+      T.cast('doubleCut');
+      out.cut5 = 2000 - T.e(a).health;
+      out.comboLeft = g.resources.amount('combo');
+      // Shadow: the enemy loses you; Energy refills 3x
+      T.prep(2, { gap: 4 });
+      g.targeting.select(T.e(a));
+      T.e(a).state = 'chase';
+      g.resources.values.energy = 0;
+      g.resources.sinceCombat = 0;
+      T.cast('shadow');
+      out.hidden = g.spells.hidden;
+      out.lost = T.e(a).state;
+      T.step(1);
+      out.shadowRegen = Math.round(g.resources.amount('energy'));
+      // Ambush from Shadow: stun, +3 points, a crit
+      g.resources.values.energy = 100;
+      T.e(a).health = 2000;
+      g.targeting.select(T.e(a));
+      T.cast('quickStrike');
+      out.ambushPoints = g.resources.amount('combo');
+      out.stunned = T.e(a).stagger > 1.5;
+      out.outOfShadow = !g.spells.hidden;
+      out.ambushHit = 2000 - T.e(a).health;
+      // Sleep holds until damage wakes it
+      g.player.cooldowns.sleep = 0;
+      g.targeting.select(T.e(b));
+      T.cast('sleep');
+      out.asleep = T.e(b).asleep && T.e(b).stagger > 9;
+      T.step(2);
+      out.stillAsleep = T.e(b).asleep;
+      T.e(b).hurt(5);
+      out.woke = !T.e(b).asleep && T.e(b).stagger < 1;
+      // Guile: the next two blows miss
+      T.e(a).position.set(0, 0, 1.5);
+      g.player.health = 500;
+      T.cast('guile');
+      for (let i = 0; i < 3; i++) g.combat.resolveEnemyStrike(T.e(a));
+      out.guileTook = 500 - g.player.health;
+      // utility slots take no spells
+      g.actionBar.place('sleep', 8);
+      out.utilitySpell = g.actionBar.slots[8];
+      g.actionBar.place('item:healing_draught', 9);
+      out.utilityItem = g.actionBar.slots[9];
+      return out;
+    });
+    record('Rogue: Energy starts full (100) and combo points show', r.energy === 100 && r.pipsShown, JSON.stringify({ e: r.energy, pips: r.pipsShown }));
+    record('Strike costs Energy and adds a combo point each', r.combo === 2 && r.energyAfter === 20, `2 Strikes: ${r.combo} points, ${r.energyAfter} Energy left`);
+    record('Double Cut spends every combo point and hits harder for each', r.cut5 > r.cut1 * 2 && r.comboLeft === 0, `1 point ${r.cut1}, 5 points ${r.cut5}`);
+    record('Shadow: a chasing enemy loses you, Energy refills three times as fast', r.hidden && r.lost === 'idle' && r.shadowRegen >= 29, `state ${r.lost}; ${r.shadowRegen} Energy in 1 s`);
+    record('Ambush from Shadow: a crit that stuns for 2 s and gives 3 combo points', r.ambushPoints === 3 && r.stunned && r.outOfShadow && r.ambushHit > r.cut1, `hit ${r.ambushHit}`);
+    record('Sleep holds an enemy until damage wakes it', r.asleep && r.stillAsleep && r.woke, JSON.stringify({ asleep: r.asleep, still: r.stillAsleep, woke: r.woke }));
+    record('Guile: the next two enemy blows miss', r.guileTook > 0 && r.guileTook <= 30, `3 blows, took ${r.guileTook}`);
+    record('The utility bar takes items, never spells', r.utilitySpell === null && r.utilityItem === 'item:healing_draught', JSON.stringify([r.utilitySpell, r.utilityItem]));
+    record('Rogue: no errors', !errors.length, errors.join(' | '));
+    await ctx.close();
+  }
+
+  // ---- Ranger
+  {
+    const { ctx, page, errors } = await play('ranger');
+    const r = await page.evaluate(() => {
+      const g = window.__shadowfall;
+      const T = window.__t;
+      const out = { focus: g.resources.amount('focus') };
+      // standing still refills faster
+      g.resources.values.focus = 0;
+      g.resources.sinceCombat = 0;
+      T.step(1);
+      out.stillRegen = Math.round(g.resources.amount('focus'));
+      // Triple Shot: three targets
+      const ids = T.prep(3, { gap: 3, dist: 10 });
+      g.player.facing = 0;
+      g.targeting.select(T.e(ids[1]));
+      T.cast('tripleShot');
+      T.step(1);
+      out.tripleHit = ids.filter((id) => T.e(id).health < 2000).length;
+      // Long Shot: a 3 s draw, then a mark
+      T.prep(1, { dist: 10 });
+      g.player.facing = 0;
+      const [id] = ids;
+      g.targeting.select(T.e(id));
+      T.cast('longShot');
+      out.casting = !!g.player.casting;
+      T.step(3.6);
+      out.marked = g.spells.hasAura(T.e(id), 'longShot');
+      out.taken = T.e(id).damageTakenScale;
+      // Tar Trap: springs on the first enemy, slows it
+      T.prep(1, { dist: 6 });
+      T.cast('tarTrap');
+      T.step(1.2);
+      T.e(id).position.set(0, 0, 0.5);
+      T.step(0.2);
+      out.slowed = 1 - T.e(id).mods.slow / 100;
+      out.sprung = g.spells.traps.length === 0 && g.spells.zones.length === 1;
+      // Disengage: 8 m away from the target
+      T.prep(1, { dist: 2 });
+      g.targeting.select(T.e(id));
+      T.cast('disengage');
+      T.step(0.6);
+      out.leapt = Math.hypot(g.player.position.x, g.player.position.z);
+      out.awayZ = g.player.position.z;
+      out.noMana = g.resources.maxMana;
+      return out;
+    });
+    record('Ranger: Focus (150), refilling 50% faster standing still', r.focus === 150 && r.stillRegen === 12 && r.noMana === 0, `${r.stillRegen} Focus in 1 s standing still`);
+    record('Triple Shot hits the target and two near it', r.tripleHit === 3, `${r.tripleHit} hit`);
+    record('Long Shot: a held draw, then the target is Marked (+15% damage taken)', r.casting && r.marked && Math.abs(r.taken - 1.15) < 1e-6, `taken x${r.taken}`);
+    record('Tar Trap springs on the first enemy into a pool that slows by 50%', r.sprung && Math.abs(r.slowed - 0.5) < 1e-6, `speed x${r.slowed}`);
+    record('Disengage leaps about 8 m away from the target', r.leapt > 7 && r.awayZ < 0, `${r.leapt.toFixed(1)} m`);
+    record('Ranger: no errors', !errors.length, errors.join(' | '));
+    await ctx.close();
+  }
+
+  // ---- Occultist
+  {
+    const { ctx, page, errors } = await play('occultist');
+    const r = await page.evaluate(() => {
+      const g = window.__shadowfall;
+      const T = window.__t;
+      const ids = T.prep(3, { gap: 2, dist: 8 });
+      const out = { mana: g.resources.maxMana };
+      g.player.facing = 0;
+      // Rot ticks build Corruption and heal (Leech)
+      g.targeting.select(T.e(ids[0]));
+      T.cast('rot');
+      g.player.health = 40;
+      T.step(12.2);
+      out.corruption = Math.round(g.resources.amount('corruption'));
+      out.leeched = g.player.health - 40;
+      // Grave Bloom spreads Rot to everything in it
+      g.rawAim = { x: 2, z: 8 };
+      T.prep(3, { gap: 2, dist: 8 });
+      T.cast('graveBloom');
+      T.step(1.1);
+      out.spread = ids.filter((id) => g.spells.hasAura(T.e(id), 'rot')).length;
+      // Hex: the target deals 20% less and moves 30% slower
+      g.targeting.select(T.e(ids[0]));
+      T.cast('hexOfWithering');
+      T.step(0.05);
+      out.hexDealt = T.e(ids[0]).damageDealtScale;
+      out.hexSlow = 1 - T.e(ids[0]).mods.slow / 100;
+      // Overcorrupted: +20% damage, health bleeds away
+      g.resources.values.corruption = 100;
+      g.player.health = g.player.maxHealth;
+      out.scale = g.spells.damageScale;
+      T.step(1);
+      out.bled = g.player.maxHealth - g.player.health;
+      // Purge spends it all: heals, extends dots
+      const left = g.spells.dots.find((d) => d.id === 'rot')?.left;
+      g.player.health = 20;
+      T.cast('purge');
+      out.purgeHeal = g.player.health - 20;
+      out.purgedTo = g.resources.amount('corruption');
+      out.extended = g.spells.dots.find((d) => d.id === 'rot')?.left - left;
+      // Siphon Life: a channel that heals
+      T.prep(1, { dist: 8 });
+      g.targeting.select(T.e(ids[0]));
+      g.player.health = 20;
+      T.cast('siphonLife');
+      out.channel = g.player.casting?.channel;
+      T.step(3.2);
+      out.siphoned = g.player.health - 20;
+      out.drained = 2000 - T.e(ids[0]).health;
+      return out;
+    });
+    record('Occultist: mana from Intellect, Rot ticks build Corruption and Leech heals', r.mana === 160 && r.corruption === 16 && r.leeched > 0, `4 ticks: ${r.corruption} Corruption, healed ${r.leeched}`);
+    record('Grave Bloom spreads Rot to every enemy inside', r.spread === 3, `${r.spread} rotting`);
+    record('Hex of Withering: target deals 20% less and moves 30% slower', Math.abs(r.hexDealt - 0.8) < 1e-6 && Math.abs(r.hexSlow - 0.7) < 1e-6, `dealt x${r.hexDealt}, speed x${r.hexSlow}`);
+    record('Overcorrupted at 100: +20% damage, losing 2% health a second', Math.abs(r.scale - 1.2) < 1e-6 && Math.abs(r.bled - 0.02 * 94) < 1, `damage x${r.scale}, lost ${r.bled.toFixed(1)} in 1 s`);
+    record('Purge spends all Corruption to heal and extends your dots by 4 s', r.purgedTo === 0 && r.purgeHeal > 0 && Math.abs(r.extended - 4) < 1e-6, `healed ${r.purgeHeal}, Rot +${r.extended}s`);
+    record('Siphon Life: a 3 s channel that heals for what it drains', r.channel && r.siphoned > 0 && r.drained > 0, `drained ${r.drained}, healed ${r.siphoned}`);
+    record('Occultist: no errors', !errors.length, errors.join(' | '));
+    await ctx.close();
+  }
+
+  // ---- Paladin, and bosses and elites
+  {
+    const { ctx, page, errors } = await play('paladin');
+    const r = await page.evaluate(() => {
+      const g = window.__shadowfall;
+      const T = window.__t;
+      const [id, id2] = T.prep(2, { gap: 6 });
+      const out = { mana: g.resources.maxMana };
+      g.targeting.select(T.e(id));
+      // Holy Strike builds Righteous stacks; a crit uses them up
+      g.random = () => 0.99; // no crits
+      for (let i = 0; i < 4; i++) {
+        g.player.cooldowns.holyStrike = 0;
+        T.cast('holyStrike');
+      }
+      out.stacks = g.spells.buffs.get('righteous')?.stacks;
+      g.random = () => 0.2; // 20 < 5% base + 30% from stacks: a crit
+      g.player.cooldowns.lightsHammer = 0;
+      T.cast('lightsHammer');
+      out.used = !g.spells.buffs.has('righteous');
+      out.burn = g.spells.hasAura(T.e(id), 'lightsBurn');
+      g.random = () => 0.5;
+      // Hallowed Ground heals you standing in it
+      g.player.health = 30;
+      T.cast('hallowedGround');
+      T.step(2.05);
+      out.hgHeal = g.player.health - 30;
+      // Light Shield absorbs
+      g.player.health = g.player.maxHealth;
+      T.cast('lightShield');
+      g.combat.resolveEnemyStrike(T.e(id));
+      out.absorbed = g.player.health === g.player.maxHealth;
+      // Bring to Kneel: slowed 2 s, then stunned 2 s
+      g.player.cooldowns.bringToKneel = 0;
+      T.cast('bringToKneel');
+      T.step(0.1);
+      out.kneelSlow = 1 - T.e(id).mods.slow / 100;
+      T.step(2.1);
+      out.kneelStun = T.e(id).stagger > 1.5;
+      // Empowered Light: a swing echoes for 30%
+      T.prep(1);
+      const before = T.e(id).health;
+      g.targeting.select(T.e(id));
+      const hit = g.combat.resolvePlayerStrike(null);
+      out.echoed = before - T.e(id).health;
+      // no daggers
+      out.dagger = g.inventory.canWear(g.config.items?.rusty_dirk || { weaponType: 'dagger', kind: 'weapon' });
+      // a boss is never stunned: control fills its stagger bar
+      T.prep(2, { gap: 6 });
+      const boss = T.e(id);
+      boss.cfg = { ...boss.cfg, type: 'boss' };
+      boss._resetControl();
+      out.bossHeld = boss.control('stun', 2);
+      out.bossBar = boss.staggerBar.value;
+      boss.control('stun', 4);
+      out.staggered = boss.staggered;
+      out.staggerTaken = boss.damageTakenScale;
+      out.nextNeed = boss.staggerBar.need;
+      // an elite wears stuns off: full, half, quarter, then none
+      const elite = T.e(id2);
+      elite.cfg = { ...elite.cfg, type: 'elite' };
+      elite._resetControl();
+      out.elite = [2, 2, 2, 2].map((s) => elite.control('stun', s));
+      return out;
+    });
+    record('Paladin: mana only, and Holy Strike stacks Righteous up to 3', r.mana === 150 && r.stacks === 3, `mana ${r.mana}; ${r.stacks} stacks after 4 strikes`);
+    record('A crit uses the Righteous stacks; Light\'s Hammer leaves a burn', r.used && r.burn, JSON.stringify({ used: r.used, burn: r.burn }));
+    record('Hallowed Ground heals you while you stand in it', r.hgHeal >= 4, `+${r.hgHeal} in 2 s`);
+    record('Light Shield absorbs a blow', r.absorbed);
+    record('Bring to Kneel: slowed by 50%, then stunned', Math.abs(r.kneelSlow - 0.5) < 1e-6 && r.kneelStun, JSON.stringify({ slow: r.kneelSlow, stun: r.kneelStun }));
+    record('Empowered Light: swings echo with holy damage', r.echoed > 0, `swing plus echo: ${r.echoed}`);
+    record('A Paladin cannot use daggers', r.dagger === false);
+    record('Bosses: a stun does not hold, it fills the stagger bar; full = Staggered 4 s, +25% damage taken, next needs 50% more', r.bossHeld === 0 && r.bossBar === 2 && r.staggered === 4 && Math.abs(r.staggerTaken - 1.25) < 1e-6 && r.nextNeed === 9, JSON.stringify({ held: r.bossHeld, bar: r.bossBar, staggered: r.staggered, need: r.nextNeed }));
+    record('Elites: stuns wear off (full, half, quarter, then immune)', r.elite.join(',') === '2,1,0.5,0', r.elite.join(', '));
+    record('Paladin: no errors', !errors.length, errors.join(' | '));
+    await ctx.close();
+  }
+}
+
+const SECTIONS = { titleAndCharacters, classKits, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

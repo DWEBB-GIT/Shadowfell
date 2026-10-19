@@ -23,6 +23,8 @@ import { DB } from '../data/db.js';
 // Bottom of the screen, Diablo/WoW style: the experience bar across the top
 // of a spell bar, then the micro menu, coins and the bag slots.
 
+// a #rrggbb colour darkened to `k` of itself, for the bottom of a bar's gradient
+const shade = (hex, k) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k).toString(16).padStart(2, '0')).join('');
 const $ = (id) => document.getElementById(id);
 
 export class Hud {
@@ -389,7 +391,7 @@ export class Hud {
   }
 
   // Cooldown sweep per slot, plus the shared GCD sweep on GCD abilities.
-  // mana and the class gauge under the health bar
+  // mana, the class bar and combo points under the health bar
   _refreshResources() {
     const r = this.game.resources;
     if (!r) return;
@@ -403,8 +405,25 @@ export class Hud {
     const gb = $('gauge-bar');
     gb.hidden = !g;
     if (g) {
-      $('gauge-fill').style.width = `${(r.gauge / g.max) * 100}%`;
-      $('gauge-text').textContent = `${Math.floor(r.gauge)} ${g.name}`;
+      const v = r.amount(g.id);
+      const fill = $('gauge-fill');
+      fill.style.width = `${(v / g.max) * 100}%`;
+      if (fill.dataset.colour !== g.colour) {
+        fill.dataset.colour = g.colour || '';
+        fill.style.background = g.colour ? `linear-gradient(${g.colour}, ${shade(g.colour, 0.55)})` : '';
+      }
+      const o = g.overload && v >= g.max ? ` · ${g.overload.name}!` : '';
+      $('gauge-text').textContent = `${Math.floor(v)} ${g.name}${o}`;
+      gb.classList.toggle('overload', !!o);
+    }
+    const p = r.pointsCfg;
+    const pips = $('combo-pips');
+    pips.hidden = !p;
+    if (p) {
+      if (pips.children.length !== p.max) pips.innerHTML = '<span class="pip"></span>'.repeat(p.max);
+      const n = Math.floor(r.amount(p.id));
+      [...pips.children].forEach((el, i) => el.classList.toggle('on', i < n));
+      pips.title = `${n} ${p.name}`;
     }
   }
 
@@ -489,9 +508,10 @@ export class Hud {
     const key = list.map((a) => a.id).join(',');
     if (el.dataset.key !== key) {
       el.dataset.key = key;
-      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${a.name || ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || this.abilityIcons.cook || ''}"><span></span></div>`).join('');
+      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${a.name || ABILITIES[a.id]?.name || ''}"><img alt="" src="${this.abilityIcons[a.icon || a.id] || this.abilityIcons.cook || ''}"><span></span></div>`).join('');
     }
-    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = a.left > 60 ? `${Math.ceil(a.left / 60)}m` : Math.ceil(a.left)));
+    // (an aura that lasts until something ends it, such as Shadow, shows no time)
+    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = !Number.isFinite(a.left) ? '' : a.left > 60 ? `${Math.ceil(a.left / 60)}m` : Math.ceil(a.left)));
   }
 
   update(dt = 0) {
@@ -548,6 +568,7 @@ export class Hud {
       this.el.targetLabel.textContent = friend.def.title || '';
       this.el.target.classList.remove('elite', 'locked', 'attacking');
       this.el.targetManaBar.hidden = true;
+      document.getElementById('target-stagger-bar').hidden = true;
     }
     if (shown) {
       const c = shown.cfg;
@@ -562,6 +583,16 @@ export class Hud {
       if (c.mana) {
         this.el.targetMana.style.width = `${(shown.mana / c.mana) * 100}%`;
         this.el.targetManaText.textContent = `${Math.ceil(shown.mana)} / ${c.mana}`;
+      }
+      // a boss's stagger bar: control fills it, full means Staggered
+      const sb = shown.staggerBar;
+      const sbar = document.getElementById('target-stagger-bar');
+      sbar.hidden = !sb;
+      if (sb) {
+        const full = shown.staggered > 0;
+        sbar.classList.toggle('full', full);
+        document.getElementById('target-stagger').style.width = `${full ? 100 : Math.min(100, (sb.value / sb.need) * 100)}%`;
+        document.getElementById('target-stagger-text').textContent = full ? `Staggered ${Math.ceil(shown.staggered)}` : 'Stagger';
       }
     }
 

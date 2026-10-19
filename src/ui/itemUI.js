@@ -380,6 +380,7 @@ export class ItemUI {
       const wears = arch.armourTypes.map((k) => CONFIG.armourTypes[k].name).join(', ') + (arch.shields ? ', shields' : '');
       this.el.stats.innerHTML = [
         row('Level', `${lvl} ${arch.name}`),
+        arch.trait ? row('Trait', arch.trait.name, arch.trait.desc) : '',
         row('Health', `${Math.ceil(player.health)} / ${player.maxHealth}`, '', 'health'),
         '<div class="stat-gap"></div>',
         row('Stamina', t.stamina, `+${CONFIG.stats.healthPerStamina} health per point`, 'stamina'),
@@ -595,6 +596,7 @@ export class ItemUI {
     const r = this.game.resources;
     const parts = [
       ...Object.entries(a.cost || {}).map(([k, n]) => `${n} ${r.nameOf(k)}`),
+      ...(a.spendsAll ? [`Spends all ${r.nameOf(a.spendsAll)}`] : []),
       ...Object.entries(a.gain || {}).map(([k, n]) => `Gives ${n} ${r.nameOf(k)}`),
     ];
     return parts.length ? `<div class="tt-cost">${parts.join(' · ')}</div>` : '';

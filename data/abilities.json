@@ -1,5 +1,5 @@
 {
-  "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js): cast, dot, instant, aoe, cleave, burst, charge, buff or camp; the rest have their own code. `cost` is what an ability spends ({mana: n} or {resolve: n}, the class gauge); `gain` is what it gives.",
+  "_about": "Player abilities: what the spell bar and spellbook show, and the numbers each one runs on. Abilities with a `kind` are spells run by the generic spell engine (src/systems/spells.js; its top comment lists every kind and field); the rest have their own code. `cost` is what an ability spends ({mana: n}, or a class bar such as {resolve: n}, {energy: n}, {focus: n}); `gain` is what it gives ({combo: 1}). `spendsAll` spends all of one bar (at least 1). `applies` puts an aura on the target (slow, stun, sleep, damage taken or dealt); `follow` lands another ability's effect too; `inShadow` is the ability used instead while in Shadow; `loadouts` changes tuning by what you hold (Weapon Master); `stacks` grants a stacking buff. Which class has which ability is in archetypes.json.",
   "globalCooldown": 1.5,
   "spellQueueWindow": 0.4,
   "castPushback": 0.5,
@@ -46,13 +46,13 @@
       "school": "physical",
       "target": "enemy",
       "range": 20,
-      "desc": "An instant arrow from your bow at your target, for 120% of a bow shot. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown. 6 second cooldown.",
+      "desc": "An instant arrow from your bow at your target, for 110% of a bow shot. Cheap filler. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown.",
       "tuning": {
-        "cooldown": 6,
-        "damageMultiplier": 1.2
+        "cooldown": 0,
+        "damageMultiplier": 1.1
       },
       "cost": {
-        "mana": 10
+        "focus": 20
       }
     },
     {
@@ -71,7 +71,7 @@
         "tickMultiplier": 0.3
       },
       "cost": {
-        "mana": 15
+        "focus": 25
       }
     },
     {
@@ -102,31 +102,50 @@
       "school": "physical",
       "target": "enemy",
       "range": 6.6,
-      "desc": "Charge at your target (or towards the cursor) and strike on arrival. Triggers the global cooldown. 8 second cooldown.",
+      "desc": "Charge at an enemy (never away from one) and strike on arrival, dazing it for 1 second. Builds 15 Resolve. Triggers the global cooldown. 8 second cooldown.",
       "tuning": {
         "cooldown": 8,
         "damageMultiplier": 1.5,
-        "distance": 5,
         "duration": 0.26,
-        "hitRadius": 1.6
+        "hitRadius": 1.6,
+        "distance": 5
       },
       "gain": {
         "resolve": 15
+      },
+      "applies": {
+        "name": "Dazed",
+        "duration": 1,
+        "stun": 1
       }
     },
     {
       "id": "brace",
-      "requires": "shield",
       "name": "Brace",
       "kind": "guard",
       "school": "physical",
       "target": "self",
       "defensive": true,
-      "desc": "Raise your shield: the next blow within 2.5 seconds, even a Grave Slam, is turned aside. Off the global cooldown. 7 second cooldown.",
+      "desc": "Weapon Master: with a shield, block every blow for 3 seconds, even a Grave Slam. With two weapons, parry the next 2 blows within 4 seconds. With a weapon alone, take 40% less damage for 4 seconds. Off the global cooldown. 12 second cooldown.",
       "tuning": {
-        "cooldown": 7,
-        "window": 2.5,
+        "cooldown": 12,
+        "window": 3,
+        "blocks": 0,
         "offGlobalCooldown": 1
+      },
+      "loadouts": {
+        "twoHand": {
+          "tuning": {
+            "window": 4,
+            "reduction": 40
+          }
+        },
+        "dualWield": {
+          "tuning": {
+            "window": 4,
+            "blocks": 2
+          }
+        }
       }
     },
     {
@@ -175,13 +194,31 @@
       "school": "physical",
       "target": "enemy",
       "range": 2.6,
-      "desc": "An instant strike with your weapon at your target, for 140% of normalised weapon damage. Builds 10 Resolve. Triggers the global cooldown. 4 second cooldown.",
+      "desc": "An instant strike at your target. Builds 10 Resolve. Weapon Master: a weapon alone hits hardest (180% of normalised weapon damage), two weapons strike with both hands, a weapon and shield hits for 140% and builds 10 more Resolve. Triggers the global cooldown. 4 second cooldown.",
       "tuning": {
         "cooldown": 4,
         "damageMultiplier": 1.4
       },
       "gain": {
         "resolve": 10
+      },
+      "loadouts": {
+        "twoHand": {
+          "tuning": {
+            "damageMultiplier": 1.8
+          }
+        },
+        "dualWield": {
+          "tuning": {
+            "damageMultiplier": 1.0,
+            "bothHands": 1
+          }
+        },
+        "shield": {
+          "gain": {
+            "resolve": 20
+          }
+        }
       }
     },
     {
@@ -224,14 +261,15 @@
       "kind": "aoe",
       "school": "holy",
       "target": "self",
-      "desc": "Consecrate the ground around you. Every enemy standing in it burns each second for 6 seconds. Triggers the global cooldown. 15 second cooldown.",
+      "desc": "Consecrate the ground around you for 8 seconds. Every enemy standing in it burns each second, and while you stand in it you heal 2% of your health each second. Triggers the global cooldown. 15 second cooldown.",
       "tuning": {
         "cooldown": 15,
         "radius": 4,
-        "duration": 6,
+        "duration": 8,
         "tickInterval": 1,
         "damageMin": 1,
-        "damageMax": 1
+        "damageMax": 2,
+        "healPercent": 2
       },
       "cost": {
         "mana": 30
@@ -244,7 +282,7 @@
       "kind": "cleave",
       "school": "physical",
       "target": "self",
-      "desc": "A wide swing that hits up to 4 enemies in front of you. Triggers the global cooldown. 5 second cooldown.",
+      "desc": "A wide swing that hits up to 4 enemies in front of you. Weapon Master: a weapon alone swings a wider arc at up to 5, two weapons spin twice around you, a weapon and shield cuts a narrow arc at up to 3. Triggers the global cooldown. 5 second cooldown.",
       "tuning": {
         "cooldown": 5,
         "damageMultiplier": 1.2,
@@ -255,6 +293,29 @@
       },
       "cost": {
         "resolve": 30
+      },
+      "loadouts": {
+        "twoHand": {
+          "tuning": {
+            "coneDegrees": 180,
+            "maxTargets": 5,
+            "damageMultiplier": 1.3
+          }
+        },
+        "dualWield": {
+          "tuning": {
+            "coneDegrees": 360,
+            "maxTargets": 5,
+            "damageMultiplier": 0.7,
+            "spins": 2
+          }
+        },
+        "shield": {
+          "tuning": {
+            "coneDegrees": 90,
+            "maxTargets": 3
+          }
+        }
       }
     },
     {
@@ -262,7 +323,7 @@
       "name": "Battle Cry",
       "kind": "buff",
       "target": "self",
-      "desc": "A shout that steels you: all your damage is increased by 20% for 15 seconds. Triggers the global cooldown. 45 second cooldown.",
+      "desc": "A shout that steels you: gives 25 Resolve at once, and all your damage is increased by 20% for 15 seconds. Starts the ramp early. Triggers the global cooldown. 45 second cooldown.",
       "tuning": {
         "cooldown": 45,
         "duration": 15,
@@ -326,6 +387,480 @@
         "wellFedAfter": 10,
         "wellFedStamina": 2,
         "wellFedSeconds": 900
+      }
+    },
+    {
+      "id": "quickStrike",
+      "requires": "weapon",
+      "name": "Strike",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "range": 2.6,
+      "inShadow": "ambush",
+      "desc": "A quick strike at your target for 110% of normalised weapon damage. Adds a combo point. From Shadow it becomes Ambush. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "damageMultiplier": 1.1
+      },
+      "cost": {
+        "energy": 40
+      },
+      "gain": {
+        "combo": 1
+      }
+    },
+    {
+      "id": "ambush",
+      "requires": "weapon",
+      "name": "Ambush",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "range": 2.6,
+      "bar": false,
+      "desc": "Strike from Shadow: a huge hit for 300% of normalised weapon damage that stuns your target for 2 seconds and adds 3 combo points. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "damageMultiplier": 3
+      },
+      "cost": {
+        "energy": 60
+      },
+      "gain": {
+        "combo": 3
+      },
+      "applies": {
+        "name": "Stunned",
+        "duration": 2,
+        "stun": 1
+      }
+    },
+    {
+      "id": "doubleCut",
+      "requires": "weapon",
+      "name": "Double Cut",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "range": 2.6,
+      "spendsAll": "combo",
+      "bonusVs": {
+        "aura": "poisonedBlade",
+        "percent": 30
+      },
+      "desc": "Cut with both weapons at once, spending all your combo points: 60% of normalised weapon damage, plus 50% for each point, with each hand. Poisoned targets take 30% more. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "damageMultiplier": 0.6,
+        "perPoint": 0.5,
+        "bothHands": 1
+      },
+      "cost": {
+        "energy": 35
+      }
+    },
+    {
+      "id": "poisonedBlade",
+      "requires": "weapon",
+      "name": "Poisoned Blade",
+      "kind": "instant",
+      "school": "nature",
+      "target": "enemy",
+      "range": 2.6,
+      "desc": "A poisoned cut for 80% of normalised weapon damage that adds a combo point. The target stays Poisoned for 12 seconds and takes 30% more from Double Cut. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "damageMultiplier": 0.8
+      },
+      "cost": {
+        "energy": 30
+      },
+      "gain": {
+        "combo": 1
+      },
+      "applies": {
+        "name": "Poisoned",
+        "duration": 12
+      }
+    },
+    {
+      "id": "sleep",
+      "name": "Sleep",
+      "kind": "control",
+      "school": "nature",
+      "target": "enemy",
+      "range": 6,
+      "desc": "Puts one enemy to sleep for 10 seconds. Any damage wakes it. Bosses cannot be slept: it fills their stagger bar instead. Triggers the global cooldown. 20 second cooldown.",
+      "tuning": {
+        "cooldown": 20
+      },
+      "cost": {
+        "energy": 30
+      },
+      "applies": {
+        "name": "Asleep",
+        "duration": 10,
+        "sleep": 1
+      }
+    },
+    {
+      "id": "shadow",
+      "name": "Shadow",
+      "kind": "stealth",
+      "target": "self",
+      "desc": "Slip into Shadow: enemies lose sight of you and stop chasing. In Shadow your Energy refills three times as fast and your combo points are kept; Strike becomes Ambush. Attacking, or being hit, brings you out. Off the global cooldown. 15 second cooldown.",
+      "tuning": {
+        "cooldown": 15,
+        "offGlobalCooldown": 1
+      }
+    },
+    {
+      "id": "guile",
+      "name": "Guile",
+      "kind": "guard",
+      "school": "physical",
+      "target": "self",
+      "defensive": true,
+      "desc": "The next 2 enemy attacks within 6 seconds miss you completely, even a Grave Slam. Off the global cooldown. 20 second cooldown.",
+      "tuning": {
+        "cooldown": 20,
+        "window": 6,
+        "blocks": 2,
+        "miss": 1,
+        "offGlobalCooldown": 1
+      }
+    },
+    {
+      "id": "flamingArrow",
+      "name": "Flaming Arrow",
+      "kind": "dot",
+      "ranged": true,
+      "school": "fire",
+      "target": "enemy",
+      "range": 20,
+      "desc": "A burning arrow: your target takes fire damage every 2 seconds for 10 seconds (5 ticks of 40% of a bow shot). Using it again refreshes the burn. Needs a bow and uses one arrow. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 10,
+        "tickInterval": 2,
+        "tickMultiplier": 0.4
+      },
+      "cost": {
+        "focus": 25
+      }
+    },
+    {
+      "id": "tarTrap",
+      "name": "Tar Trap",
+      "kind": "trap",
+      "school": "nature",
+      "target": "self",
+      "desc": "Set a trap at your feet. The first enemy to step on it bursts it into a pool of tar 3 metres across that slows every enemy in it by 50% for 8 seconds. Up to 2 traps; each lasts 60 seconds. Costs no Focus. Triggers the global cooldown. 12 second cooldown.",
+      "tuning": {
+        "cooldown": 12,
+        "armTime": 1,
+        "triggerRadius": 1.4,
+        "lifetime": 60,
+        "maxTraps": 2,
+        "radius": 3,
+        "duration": 8,
+        "slow": 50
+      }
+    },
+    {
+      "id": "tripleShot",
+      "name": "Triple Shot",
+      "kind": "instant",
+      "ranged": true,
+      "school": "physical",
+      "target": "enemy",
+      "range": 20,
+      "desc": "Loose three arrows at once: your target and up to 2 enemies within 6 metres of it each take 80% of a bow shot. Needs a bow and uses one arrow. Triggers the global cooldown. 8 second cooldown.",
+      "tuning": {
+        "cooldown": 8,
+        "damageMultiplier": 0.8,
+        "maxTargets": 3,
+        "spread": 6
+      },
+      "cost": {
+        "focus": 35
+      }
+    },
+    {
+      "id": "longShot",
+      "name": "Long Shot",
+      "kind": "cast",
+      "ranged": true,
+      "school": "physical",
+      "target": "enemy",
+      "range": 20,
+      "desc": "Draw and hold for 3 seconds, then loose an arrow for 300% of a bow shot that marks the target: it takes 15% more damage from you for 10 seconds. Moving breaks the draw. Needs a bow and uses one arrow. Triggers the global cooldown. 10 second cooldown.",
+      "tuning": {
+        "cooldown": 10,
+        "castTime": 3,
+        "damageMultiplier": 3
+      },
+      "cost": {
+        "focus": 40
+      },
+      "applies": {
+        "name": "Marked",
+        "duration": 10,
+        "damageTaken": 15
+      }
+    },
+    {
+      "id": "disengage",
+      "name": "Disengage",
+      "kind": "leap",
+      "target": "self",
+      "defensive": true,
+      "desc": "Leap 8 metres back, away from your target (or from where you face). Off the global cooldown. 16 second cooldown.",
+      "tuning": {
+        "cooldown": 16,
+        "distance": 8,
+        "duration": 0.35,
+        "offGlobalCooldown": 1
+      }
+    },
+    {
+      "id": "blightBolt",
+      "name": "Blight Bolt",
+      "kind": "cast",
+      "school": "shadow",
+      "target": "enemy",
+      "range": 20,
+      "desc": "A 1.8 second cast that hurls a bolt of grave-rot at your target. Moving interrupts the cast. Triggers the global cooldown.",
+      "tuning": {
+        "castTime": 1.8,
+        "cooldown": 0,
+        "damageMin": 4,
+        "damageMax": 5,
+        "projectileSpeed": 20
+      },
+      "cost": {
+        "mana": 15
+      }
+    },
+    {
+      "id": "rot",
+      "name": "Rot",
+      "kind": "dot",
+      "school": "shadow",
+      "target": "enemy",
+      "range": 20,
+      "desc": "An instant curse of rot: your target takes shadow damage every 3 seconds for 12 seconds. Using it again refreshes it. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 12,
+        "tickInterval": 3,
+        "damageMin": 1,
+        "damageMax": 2,
+        "tickMultiplier": 1
+      },
+      "cost": {
+        "mana": 20
+      }
+    },
+    {
+      "id": "graveBloom",
+      "name": "Grave Bloom",
+      "kind": "aoe",
+      "school": "shadow",
+      "target": "ground",
+      "range": 20,
+      "spreads": "rot",
+      "desc": "Raise a circle of grave-flowers at the cursor, 4 metres across, for 5 seconds: every enemy inside is afflicted by Rot (or has it refreshed) each second. Triggers the global cooldown. 15 second cooldown.",
+      "tuning": {
+        "cooldown": 15,
+        "radius": 4,
+        "duration": 5,
+        "tickInterval": 1,
+        "damageMin": 0,
+        "damageMax": 0
+      },
+      "cost": {
+        "mana": 35
+      }
+    },
+    {
+      "id": "hexOfWithering",
+      "name": "Hex of Withering",
+      "kind": "control",
+      "school": "shadow",
+      "target": "enemy",
+      "range": 20,
+      "desc": "Curse your target for 15 seconds: it deals 20% less damage and moves 30% slower. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0
+      },
+      "cost": {
+        "mana": 20
+      },
+      "applies": {
+        "name": "Withering",
+        "duration": 15,
+        "damageDealt": -20,
+        "slow": 30
+      }
+    },
+    {
+      "id": "purge",
+      "name": "Purge",
+      "kind": "purge",
+      "school": "shadow",
+      "target": "self",
+      "spendsAll": "corruption",
+      "desc": "Spend all your Corruption: heal 0.3% of your health for each point, and every Rot and curse of yours lasts 4 seconds longer. Triggers the global cooldown. 10 second cooldown.",
+      "tuning": {
+        "cooldown": 10,
+        "healPerPoint": 0.3,
+        "extend": 4
+      }
+    },
+    {
+      "id": "siphonLife",
+      "name": "Siphon Life",
+      "kind": "channel",
+      "school": "shadow",
+      "target": "enemy",
+      "range": 20,
+      "defensive": true,
+      "desc": "Channel for 3 seconds, draining your target every half second; every point drained heals you. Moving breaks the channel. Triggers the global cooldown. 12 second cooldown.",
+      "tuning": {
+        "cooldown": 12,
+        "castTime": 3,
+        "tickInterval": 0.5,
+        "damageMin": 1,
+        "damageMax": 1,
+        "healPercent": 100
+      },
+      "cost": {
+        "mana": 25
+      }
+    },
+    {
+      "id": "holyStrike",
+      "requires": "weapon",
+      "name": "Holy Strike",
+      "kind": "instant",
+      "school": "holy",
+      "target": "enemy",
+      "range": 2.6,
+      "stacks": {
+        "id": "righteous",
+        "name": "Righteous",
+        "max": 3,
+        "duration": 10,
+        "critBonus": 10
+      },
+      "desc": "A slow, heavy holy blow for 160% of normalised weapon damage. Each hit gives you a Righteous stack (+10% crit chance, up to 3, for 10 seconds); your next crit uses them all up. Triggers the global cooldown. 5 second cooldown.",
+      "tuning": {
+        "cooldown": 5,
+        "damageMultiplier": 1.6
+      },
+      "cost": {
+        "mana": 10
+      }
+    },
+    {
+      "id": "lightsHammer",
+      "name": "Light's Hammer",
+      "kind": "instant",
+      "school": "holy",
+      "target": "enemy",
+      "range": 15,
+      "follow": "lightsBurn",
+      "desc": "A hammer of light falls on your target from the sky, then it burns for 6 seconds. The Paladin's only reach. Triggers the global cooldown. 8 second cooldown.",
+      "tuning": {
+        "cooldown": 8,
+        "damageMin": 3,
+        "damageMax": 4
+      },
+      "cost": {
+        "mana": 25
+      }
+    },
+    {
+      "id": "lightsBurn",
+      "name": "Light's Burn",
+      "kind": "dot",
+      "school": "holy",
+      "target": "enemy",
+      "range": 15,
+      "bar": false,
+      "desc": "Burning holy light from Light's Hammer: damage every 2 seconds for 6 seconds. It does not heal you.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 6,
+        "tickInterval": 2,
+        "damageMin": 1,
+        "damageMax": 1,
+        "tickMultiplier": 0.6
+      }
+    },
+    {
+      "id": "divineStorm",
+      "requires": "weapon",
+      "name": "Divine Storm",
+      "kind": "burst",
+      "school": "holy",
+      "target": "self",
+      "desc": "One holy spin around you that strikes every enemy within 3.5 metres for 150% of normalised weapon damage. Best at 3 Righteous stacks. Triggers the global cooldown. 10 second cooldown.",
+      "tuning": {
+        "cooldown": 10,
+        "damageMultiplier": 1.5,
+        "radius": 3.5,
+        "windup": 0.3,
+        "stagger": 0.2,
+        "knockback": 0
+      },
+      "cost": {
+        "mana": 30
+      }
+    },
+    {
+      "id": "bringToKneel",
+      "name": "Bring to Kneel",
+      "kind": "control",
+      "school": "holy",
+      "target": "enemy",
+      "range": 8,
+      "desc": "Your target is slowed by 50% for 2 seconds, then stunned for 2 seconds. Bosses are not stunned: it fills their stagger bar instead. Triggers the global cooldown. 20 second cooldown.",
+      "tuning": {
+        "cooldown": 20
+      },
+      "cost": {
+        "mana": 15
+      },
+      "applies": {
+        "name": "Kneeling",
+        "duration": 2,
+        "slow": 50,
+        "then": {
+          "name": "Stunned",
+          "duration": 2,
+          "stun": 1
+        }
+      }
+    },
+    {
+      "id": "lightShield",
+      "name": "Light Shield",
+      "kind": "shield",
+      "school": "holy",
+      "target": "self",
+      "defensive": true,
+      "desc": "A shield of light absorbs damage up to 25% of your health for 10 seconds. Off the global cooldown. 30 second cooldown.",
+      "tuning": {
+        "cooldown": 30,
+        "duration": 10,
+        "absorbPercent": 25,
+        "offGlobalCooldown": 1
+      },
+      "cost": {
+        "mana": 20
       }
     }
   ]
