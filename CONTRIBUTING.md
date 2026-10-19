@@ -40,6 +40,10 @@ Engine tuning that is not content, such as the damage formula's constants, camer
 5. **Positions are `[x, z]` in metres**, rotations are in degrees, and north is −z.
 6. **Every file has an `_about` line** saying what it is for. Keys starting with `_` are notes and are ignored.
 
+## Editing quests
+
+`npm run editor` starts a small local server; open the address it prints (http://localhost:5180/tools/quest-editor/). The quest editor lists every quest by giver, edits one at a time with dropdowns of real NPCs, enemies, items, examine points, map areas and factions, draws the quest chains, and runs the same checks as `npm run validate` as you type. **Save** (or Ctrl+S) writes `data/quests.json`; then rebuild and commit as usual. Quest ids lock once saved, because saves store them.
+
 ## Checking your change
 
 ```
