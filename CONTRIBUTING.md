@@ -7,8 +7,8 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | File | What it holds | Points at |
 |---|---|---|
 | `items.json` | Every item, plus `armourTypes` and the random-roll `suffixes`. Gear states its `itemLevel` and `statSplit`; its armour, damage, block and stats are worked out | models |
-| `archetypes.json` | Playable archetypes: base attributes, per-level gains, armour types, defensive ability | armour types, abilities |
-| `abilities.json` | Player abilities: name, targeting, description, and the `tuning` numbers each runs on; `globalCooldown` | items (the draught) |
+| `archetypes.json` | Playable classes: base attributes, per-level gains, armour types and weapons, resources (mana and the class bars: Resolve, Energy and combo points, Focus, Corruption), trait, spellbook, the six spells a new character starts with, starting gear | armour types, abilities, items |
+| `abilities.json` | Player abilities: name, targeting, description, the `tuning` numbers each runs on, cost and gain, and what they do to a target (`applies`: slows, stuns, sleeps, curses); `globalCooldown` | items (the draught), abilities |
 | `enemies.json` | Enemy types: `level` and `type` (which size health, hits, attack speed and armour), behaviour (`ranged`, `circle`, `special`, `pack`), `lootTable`, `uniqueDrop`; `leashDistance` | loot tables, items, models |
 | `skills.json` | Learnable skills (Camping, Fishing): the `trainer` npc, `cost`, `maxRank`, the ability it `teaches` | npcs, abilities |
 | `rarities.json` | Item rarity tiers, lowest first (junk, common, enhanced, rare, epic, legendary, quest): name and colour | |
@@ -79,6 +79,8 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
   1. Add a record to `enemies.json` with a `level` and a `type`: `fodder`, `pack_beast`, `normal`, `skirmisher`, `armoured`, `elite`, `heavy` or `boss`. The type works out its health, hits, attack speed and armour from its level (`armourClass` changes the armour), and an elite's or heavy's `special` damage. Never size an enemy to the player's level. State a number to override the type's (a boss states its own hits and attack speed). Reuse behaviour blocks such as `ranged`, `circle`, `special` and `pack`.
   2. Add a loot table.
   3. Add spawns to `world.json`, and build a model.
+- **A new spell:** add a record to `abilities.json` with a `kind` the spell engine knows (the list is at the top of `src/systems/spells.js`: cast, dot, instant, aoe, cleave, burst, charge, leap, guard, interrupt, control, buff, stealth, trap, purge, channel, shield), its `tuning`, a `cost` in mana or the class's bar, and an `applies` aura if it slows, stuns, sleeps or curses. Then list it in a class's `abilities` in `archetypes.json` (and in its `bar` if it is part of the base kit). A spell no class lists cannot be used. Stuns and sleeps never hold a boss: they fill its stagger bar (`control` in `src/config.js`).
+- **A new class:** add an archetype (stats, armour, `resources`, `trait`, `abilities`, a six-spell `bar`, `startingGear`) and a class in `text.json` `title.classes` pointing at it. A trait with new behaviour needs code in `src/systems/spells.js`.
 - **A new shop:**
   1. Add a `shops.json` record, with a `vendorTypes` entry if it is a new kind of vendor.
   2. Point an NPC's `shop` at it.

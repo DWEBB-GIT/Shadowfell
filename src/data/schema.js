@@ -54,25 +54,37 @@ export const slotFits = (slotId, itemSlot) => {
 // what wears out: weapons, armour and shields (and jewellery)
 export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
-const SCHOOLS = ['physical', 'shadow', 'holy', 'nature'];
+const SCHOOLS = ['physical', 'shadow', 'holy', 'nature', 'fire'];
 // what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
 export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer'];
 
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
 export const SPELL_KINDS = {
-  cast: { enemy: true, tuning: ['castTime', 'damageMin', 'damageMax', 'projectileSpeed'] },
+  cast: { enemy: true, tuning: ['castTime', 'damageMin', 'damageMax', 'projectileSpeed'] }, // ranged: castTime, damageMultiplier
   dot: { enemy: true, tuning: ['duration', 'tickInterval', 'tickMultiplier'] },
   instant: { enemy: true, tuning: ['damageMin', 'damageMax'] },
-  aoe: { enemy: false, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] },
-  cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
+  aoe: { enemy: false, ground: true, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] }, // optional healPercent; `spreads` a dot
+  cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] }, // optional spins
   burst: { enemy: false, tuning: ['damageMultiplier', 'radius', 'windup', 'stagger', 'knockback'] }, // optional interrupts: 1
   charge: { enemy: true, tuning: ['damageMultiplier', 'distance', 'duration', 'hitRadius'] },
-  guard: { enemy: false, tuning: ['window'] }, // Brace: the next blow within `window` s is turned aside
+  leap: { enemy: false, tuning: ['distance', 'duration'] }, // Disengage: a jump back
+  guard: { enemy: false, tuning: ['window'] }, // Brace, Guile: optional blocks (0 = all), reduction %, miss: 1
   interrupt: { enemy: true, tuning: ['lockout', 'damageMin', 'damageMax'] }, // breaks an interruptible enemy cast
+  control: { enemy: true, tuning: [] }, // only its `applies` aura: Sleep, Hex, Bring to Kneel
   buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
+  stealth: { enemy: false, tuning: [] }, // Shadow
+  trap: { enemy: false, tuning: ['armTime', 'triggerRadius', 'lifetime', 'maxTraps', 'radius', 'duration', 'slow'] },
+  purge: { enemy: false, tuning: ['healPerPoint', 'extend'] }, // spends all of `spendsAll`
+  channel: { enemy: true, tuning: ['castTime', 'tickInterval', 'damageMin', 'damageMax', 'healPercent'] },
+  shield: { enemy: false, tuning: ['duration', 'absorbPercent'] },
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };
+// what an `applies` aura may say, all numbers: `then` is a second aura that follows it
+const AURA_KEYS = ['duration', 'slow', 'stun', 'sleep', 'damageTaken', 'damageDealt'];
+const LOADOUTS = ['twoHand', 'dualWield', 'shield'];
+// what a class bar may say (src/systems/resources.js)
+const BAR_NUMBERS = ['max', 'regenPerSecond', 'regenOutOfCombat', 'stillBonus', 'shadowMultiplier', 'perSwing', 'perHitTaken', 'perBlock', 'perDotTick', 'decayAfter', 'decayPerSecond', 'fadeAfter', 'healPerSpent'];
 const ID = /^[a-z][a-z0-9_]*$/;
 // models built in code (src/assets/fallback.js) rather than in Blender
 const PROCEDURAL_MODELS = ['training_dummy', 'town_board'];
@@ -259,10 +271,46 @@ export function validateGameData(raw, opts = {}) {
     ref(w, 'ability', abilities, a.defensive);
     const r = a.resources || {};
     if (r.mana && !['base', 'perIntellect', 'regenPerSecond', 'regenOutOfCombat'].every((k) => isNum(r.mana[k]))) errors.push(`${w}: mana needs base, perIntellect, regenPerSecond and regenOutOfCombat`);
-    if (r.gauge && (!isStr(r.gauge.id) || !isStr(r.gauge.name) || !['max', 'perSwing', 'perHitTaken', 'perBlock', 'decayAfter', 'decayPerSecond'].every((k) => isNum(r.gauge[k])))) errors.push(`${w}: the gauge needs an id, a name and max, perSwing, perHitTaken, perBlock, decayAfter and decayPerSecond`);
+    if (r.bars !== undefined && !Array.isArray(r.bars)) errors.push(`${w}: resources.bars must be a list`);
+    for (const b of r.bars || []) {
+      if (!isStr(b.id) || !isStr(b.name) || !isNum(b.max) || b.max <= 0) errors.push(`${w}: every bar needs an id, a name and a max above 0`);
+      if (b.id === 'mana') errors.push(`${w}: a bar cannot be called mana`);
+      if (b.start !== undefined && !['empty', 'full'].includes(b.start)) errors.push(`${w} ${b.id}: start must be empty or full`);
+      if (b.colour !== undefined && !/^#[0-9a-f]{6}$/i.test(b.colour)) errors.push(`${w} ${b.id}: colour must be #rrggbb`);
+      for (const k of BAR_NUMBERS) if (b[k] !== undefined && !(isNum(b[k]) && b[k] >= 0)) errors.push(`${w} ${b.id}: ${k} must be a number of at least 0`);
+      if (b.overload && !(isStr(b.overload.name) && isNum(b.overload.damageBonus) && isNum(b.overload.healthLossPercent))) errors.push(`${w} ${b.id}: overload needs a name, damageBonus and healthLossPercent`);
+    }
+    if (a.trait && !(isStr(a.trait.id) && isStr(a.trait.name) && isStr(a.trait.desc))) errors.push(`${w}: trait needs an id, a name and a desc`);
+    if (a.rangedPowerShare !== undefined && !isNum(a.rangedPowerShare)) errors.push(`${w}: rangedPowerShare must be a number`);
+    const weaponTypes = new Set(Object.values(items).map((i) => i.weaponType).filter(Boolean));
+    for (const t of a.bannedWeaponTypes || []) if (!weaponTypes.has(t)) errors.push(`${w}: bannedWeaponTypes names unknown weapon type ${t}`);
+    // the spellbook (base kit and swap pool) and the six spells it starts with
+    if (!isStrList(a.abilities) || !a.abilities.length) errors.push(`${w}: abilities must list the class's spells`);
+    for (const id of a.abilities || []) {
+      ref(`${w} abilities`, 'ability', abilities, id);
+      if (abilities[id]?.skill) errors.push(`${w}: ${id} is a skill's tool, not a class spell`);
+    }
+    if (a.defensive && !(a.abilities || []).includes(a.defensive)) errors.push(`${w}: its defensive ${a.defensive} must be in its abilities`);
+    if (!Array.isArray(a.bar) || a.bar.length !== 6) errors.push(`${w}: bar must name the 6 spells it starts with`);
+    else for (const id of a.bar) if (id !== null && !(a.abilities || []).includes(id)) errors.push(`${w}: bar names ${id}, which is not in its abilities`);
+    const g = a.startingGear || {};
+    for (const [slot, id] of Object.entries(g)) {
+      if (slot === 'ammo') {
+        if (!(Array.isArray(id) && items[id[0]]?.kind === 'ammo' && isInt(id[1]) && id[1] > 0)) errors.push(`${w}: startingGear ammo must be [arrow item id, count]`);
+        continue;
+      }
+      if (!EQUIP_SLOTS.some((e) => e.id === slot)) errors.push(`${w}: startingGear names unknown slot ${slot}`);
+      ref(`${w} startingGear`, 'item', items, id);
+      const def = items[id];
+      if (!def) continue;
+      if (def.armourType && !(a.armourTypes || []).includes(def.armourType)) errors.push(`${w}: cannot wear its starting ${id}`);
+      if (def.kind === 'shield' && !a.shields) errors.push(`${w}: starts with a shield it cannot use`);
+      if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) errors.push(`${w}: starts dual wielding but cannot`);
+      if ((a.bannedWeaponTypes || []).includes(def.weaponType)) errors.push(`${w}: starts with a ${def.weaponType} it cannot use`);
+    }
   }
   // every resource some class has: what ability costs may name
-  const RESOURCE_IDS = new Set(['mana', ...Object.values(archetypes).map((a) => a.resources?.gauge?.id).filter(Boolean)]);
+  const RESOURCE_IDS = new Set(['mana', ...Object.values(archetypes).flatMap((a) => (a.resources?.bars || []).map((b) => b.id))]);
 
   // ---- abilities
   if (!isNum(abilF.globalCooldown)) errors.push('abilities.json: globalCooldown must be a number');
@@ -288,14 +336,42 @@ export function validateGameData(raw, opts = {}) {
       const k = SPELL_KINDS[a.kind];
       if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);
       else {
-        if (k.enemy !== (a.target === 'enemy')) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : 'self'}`);
-        // a bow ability (`ranged`) is an instant or dot from a bow roll:
-        // an instant needs damageMultiplier instead of its own damage range
-        if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant and dot spells`);
-        const need = a.kind === 'instant' && (a.ranged === true || a.tuning?.damageMultiplier !== undefined) ? ['damageMultiplier'] : k.tuning; // weapon/bow instants roll the weapon
+        const targetOk = k.enemy ? a.target === 'enemy' : a.target === 'self' || (k.ground && a.target === 'ground');
+        if (!targetOk) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : k.ground ? 'self or the ground' : 'self'}`);
+        if (a.target === 'ground' && !isNum(a.range)) errors.push(`${w}: a ground-targeted spell needs a range`);
+        // a bow ability (`ranged`) is an instant, dot or cast from a bow
+        // roll: an instant or cast needs damageMultiplier instead of its own damage range
+        if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot', 'cast'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant, dot and cast spells`);
+        const weaponDamage = a.ranged === true || a.tuning?.damageMultiplier !== undefined;
+        const need = a.kind === 'instant' && weaponDamage ? ['damageMultiplier'] : a.kind === 'cast' && a.ranged === true ? ['castTime', 'damageMultiplier'] : k.tuning; // weapon/bow instants roll the weapon
         for (const t of ['cooldown', ...need]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
         if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
+        if (a.kind === 'control' && !a.applies) errors.push(`${w}: a control spell needs an applies aura`);
+        if (a.kind === 'purge' && !a.spendsAll) errors.push(`${w}: purge needs spendsAll`);
       }
+    }
+    const aura = (where, x) => {
+      if (!x || typeof x !== 'object' || !isStr(x.name)) return errors.push(`${where}: needs a name and numbers`);
+      for (const [key, v] of Object.entries(x)) {
+        if (key === 'name' || key.startsWith('_')) continue;
+        if (key === 'then') aura(where + ' then', v);
+        else if (!AURA_KEYS.includes(key) || !isNum(v)) errors.push(`${where}: ${key} must be one of ${AURA_KEYS.join(', ')}, a number`);
+      }
+      if (!(isNum(x.duration) && x.duration > 0)) errors.push(`${where}: needs a duration above 0`);
+    };
+    if (a.applies !== undefined) aura(`${w} applies`, a.applies);
+    for (const f of ['inShadow', 'follow', 'spreads']) if (a[f] !== undefined) ref(`${w} ${f}`, 'ability', abilities, a[f]);
+    if (a.spreads && abilities[a.spreads]?.kind !== 'dot') errors.push(`${w}: spreads must name a dot`);
+    if (a.spendsAll !== undefined && !RESOURCE_IDS.has(a.spendsAll)) errors.push(`${w}: spendsAll names an unknown resource ${a.spendsAll}`);
+    if (a.bonusVs !== undefined) {
+      ref(`${w} bonusVs`, 'ability', abilities, a.bonusVs.aura);
+      if (!isNum(a.bonusVs.percent)) errors.push(`${w}: bonusVs needs a percent`);
+    }
+    if (a.stacks !== undefined && !(isStr(a.stacks.id) && isStr(a.stacks.name) && ['max', 'duration', 'critBonus'].every((k) => isNum(a.stacks[k]) && a.stacks[k] > 0))) errors.push(`${w}: stacks needs an id, a name, max, duration and critBonus`);
+    for (const [lo, v] of Object.entries(a.loadouts || {})) {
+      if (!LOADOUTS.includes(lo)) errors.push(`${w}: loadouts must be ${LOADOUTS.join(', ')}`);
+      if (v.tuning && !Object.values(v.tuning).every(isNum)) errors.push(`${w}: loadout ${lo} tuning must be numbers`);
+      for (const k of Object.keys(v.gain || {})) if (!RESOURCE_IDS.has(k)) errors.push(`${w}: loadout ${lo} gain names an unknown resource ${k}`);
     }
   }
 

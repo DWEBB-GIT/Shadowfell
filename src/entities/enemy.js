@@ -35,6 +35,7 @@ export class Enemy {
     this.specialTimer = 3; // first Grave Slam comes a few seconds into a fight
     this.circleTimer = 2.5; // first circle spell, likewise
     this.stagger = 0;
+    this._resetControl();
     this.knock = new THREE.Vector3();
     this.flash = 0;
     this.flashColor = FLASH_RED;
@@ -58,6 +59,79 @@ export class Enemy {
     return !this.dead;
   }
 
+  // ---- control: stuns, sleeps, slows and the boss stagger bar
+  _resetControl() {
+    this.mods = { slow: 0, taken: 1, dealt: 1 }; // set each frame by your auras (systems/spells.js)
+    this.asleep = false;
+    this.staggered = 0; // seconds left Staggered (bosses)
+    this.dr = { n: 0, quiet: 0 }; // elites: stuns in a row, and seconds since the last
+    this.staggerBar = this.cfg.type === 'boss' ? { value: 0, need: CONFIG.control.bossStaggerNeed } : null;
+  }
+
+  get isElite() {
+    return this.cfg.type === 'elite' || !!this.cfg.elite;
+  }
+
+  get moveSpeed() {
+    return this.cfg.speed * (1 - Math.min(90, this.mods.slow) / 100);
+  }
+
+  get damageTakenScale() {
+    return this.mods.taken * (this.staggered > 0 ? 1 + CONFIG.control.staggeredDamageTaken / 100 : 1);
+  }
+
+  get damageDealtScale() {
+    return this.mods.dealt;
+  }
+
+  // A stun or sleep of `seconds`: returns how long it holds (0 if it does
+  // not). A boss takes none and staggers; an elite wears it off.
+  control(kind, seconds) {
+    if (this.dead || this.cfg.dummy) return 0;
+    const c = CONFIG.control;
+    if (this.staggerBar) {
+      const b = this.staggerBar;
+      if (this.staggered > 0) return 0;
+      b.value += seconds;
+      if (b.value >= b.need) {
+        b.value = 0;
+        b.need *= c.staggerGrowth;
+        this.staggered = c.staggered;
+        this._hold(c.staggered);
+        this.game.events.emit('log', { text: `The ${this.cfg.name} is Staggered!`, kind: 'level' });
+        this.game.hud?.toast?.('Staggered!');
+      }
+      return 0;
+    }
+    if (this.isElite) {
+      const share = c.eliteDr[this.dr.n];
+      if (share === undefined) return 0;
+      this.dr.n += 1;
+      this.dr.quiet = 0;
+      seconds *= share;
+    }
+    this._hold(seconds);
+    this.asleep = kind === 'sleep';
+    return seconds;
+  }
+
+  // frozen in place: the swing or cast being made is broken
+  _hold(seconds) {
+    this.stagger = Math.max(this.stagger, seconds);
+    this.windup = 0;
+    this.rig.action = null;
+    this._cancelCast();
+  }
+
+  // the player slipped into Shadow: stop chasing and stand looking about
+  // (no walk home, so no healing on the way)
+  loseTrack() {
+    if (this.dead || this.cfg.dummy) return;
+    this.state = 'idle';
+    this.windup = 0;
+    this.wander.target.copy(this.position);
+  }
+
   _sync() {
     this.group.position.copy(this.position);
     this.group.rotation.y = this.facing;
@@ -76,6 +150,7 @@ export class Enemy {
     this.specialTimer = 3;
     this.circleTimer = 2.5;
     this.stagger = 0;
+    this._resetControl();
     this.engaged = 0;
     this.rig.action = null;
     this._sync();
@@ -87,12 +162,17 @@ export class Enemy {
     const dealt = Math.min(this.health, amount);
     this.health -= dealt;
     this.engaged = 6;
+    // damage wakes a sleeper
+    if (amount > 0 && this.asleep) {
+      this.asleep = false;
+      this.stagger = Math.min(this.stagger, stagger);
+    }
     if (!quiet) {
       this.flash = 1;
       this.flashColor = heavy ? FLASH_WHITE : FLASH_RED;
       this.rig.hit();
     }
-    this.stagger = Math.max(this.stagger, stagger);
+    if (!this.asleep) this.stagger = Math.max(this.stagger, stagger);
     if (heavy && !(this.casting && !this.casting.interruptible)) {
       // a heavy blow interrupts an ordinary swing or an interruptible cast;
       // casts marked `interruptible: false` in the data (Grave Slam) go on
@@ -274,14 +354,18 @@ export class Enemy {
       this.knock.multiplyScalar(fade);
     }
 
+    this.staggered = Math.max(0, this.staggered - dt);
+    if ((this.dr.quiet += dt) >= CONFIG.control.eliteDrReset) this.dr.n = 0;
+    const hidden = !!this.game.spells?.hidden;
     if (this.stagger > 0) {
       this.stagger -= dt;
+      if (this.stagger <= 0) this.asleep = false;
     } else if (player.dead) {
       if (this.state !== 'idle') this.state = 'return';
     } else {
       switch (this.state) {
         case 'idle':
-          if (dist < cfg.detection) {
+          if (dist < cfg.detection && !hidden) {
             this.state = 'chase';
             this.game.events.emit('enemyAlert', { enemy: this });
             this._wakePack();
@@ -289,6 +373,11 @@ export class Enemy {
           break;
         case 'chase':
         case 'attack':
+          // lost in Shadow: it stops where it is, unhurt and unhealed, and looks about
+          if (hidden) {
+            this.loseTrack();
+            break;
+          }
           if (fromHome > CONFIG.enemies.leashDistance || dist > cfg.detection * 2) {
             this.state = 'return';
             this.windup = 0;
@@ -298,7 +387,7 @@ export class Enemy {
           this.engaged = Math.max(this.engaged, 2);
           break;
         case 'return':
-          if (dist < cfg.detection * 0.8 && fromHome < CONFIG.enemies.leashDistance * 0.6) this.state = 'chase';
+          if (dist < cfg.detection * 0.8 && fromHome < CONFIG.enemies.leashDistance * 0.6 && !hidden) this.state = 'chase';
           else if (fromHome < 0.6) this.state = 'idle';
           break;
         default:
@@ -330,18 +419,18 @@ export class Enemy {
         // when the Warden gets close, and shoots when it is ready
         this.facing = Math.atan2(dx, dz);
         if (dist > rg.range * 0.9) {
-          this._moveTowards(player.position.x, player.position.z, cfg.speed, dt, rg.range * 0.8);
+          this._moveTowards(player.position.x, player.position.z, this.moveSpeed, dt, rg.range * 0.8);
           speed01 = 1;
         } else if (dist < rg.keep) {
-          this.position.x -= (dx / dist) * cfg.speed * 0.75 * dt;
-          this.position.z -= (dz / dist) * cfg.speed * 0.75 * dt;
+          this.position.x -= (dx / dist) * this.moveSpeed * 0.75 * dt;
+          this.position.z -= (dz / dist) * this.moveSpeed * 0.75 * dt;
           speed01 = 0.7;
           if (this.attackTimer <= 0) this._startShot(player);
         } else if (this.attackTimer <= 0) {
           this._startShot(player);
         }
       } else if (this.state === 'chase') {
-        this._moveTowards(player.position.x, player.position.z, cfg.speed, dt, reach * 0.85);
+        this._moveTowards(player.position.x, player.position.z, this.moveSpeed, dt, reach * 0.85);
         speed01 = 1;
         if (this.windup > 0) this.windup = 0;
       } else if (this.state === 'attack' && cfg.telegraph) {
@@ -367,7 +456,7 @@ export class Enemy {
     if (this.casting) {
       // nothing else moves while committed to a telegraphed attack
     } else if (this.state === 'return' && this.stagger <= 0) {
-      this._moveTowards(this.home.x, this.home.z, cfg.speed * 0.8, dt, 0.3);
+      this._moveTowards(this.home.x, this.home.z, this.moveSpeed * 0.8, dt, 0.3);
       speed01 = 0.8;
       this.health = Math.min(this.maxHealth, this.health + dt * 6);
     } else if (this.state === 'idle') {
@@ -406,7 +495,7 @@ export class Enemy {
     const d = Math.hypot(w.target.x - this.position.x, w.target.z - this.position.z);
     if (d > 0.2) {
       const pace = this.cfg.roam ? 0.45 : 0.25;
-      this._moveTowards(w.target.x, w.target.z, this.cfg.speed * pace, dt, 0.1);
+      this._moveTowards(w.target.x, w.target.z, this.moveSpeed * pace, dt, 0.1);
       return pace + 0.1;
     }
     return 0;
