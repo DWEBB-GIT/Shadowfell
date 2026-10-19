@@ -1,4 +1,5 @@
 import { DB } from '../data/db.js';
+import { CONFIG } from '../config.js';
 import { computeHit, enemyBlock, weaponRoll, swingRoll } from './stats.js';
 
 // The spell engine. Abilities in data/abilities.json with a `kind` are run
@@ -44,20 +45,41 @@ import { computeHit, enemyBlock, weaponRoll, swingRoll } from './stats.js';
 
 export const SPELLS = Object.fromEntries(Object.values(DB.abilities).filter((a) => a.kind).map((a) => [a.id, a]));
 
-// What the ability needs and is missing ('Requires a shield'), or null.
+// What an ability needs, worded for its tooltip ('Requires a shield in your
+// off hand'), or null. Bow abilities (`ranged`) need a bow and arrows.
+export function requirementText(ability) {
+  if (ability?.ranged) return 'Requires a bow in your ranged slot, and arrows';
+  const need = ability?.requires;
+  if (!need) return null;
+  if (need === 'shield') return 'Requires a shield in your off hand';
+  if (need === 'weapon') return 'Requires a melee weapon in your main hand';
+  return `Requires ${/^[aeiou]/i.test(need) ? 'an' : 'a'} ${need} in your main hand`;
+}
+
+// What the ability needs and is missing (the requirement, as above, or
+// 'You have no arrows'), or null.
 export function missingGear(game, ability) {
+  if (ability?.ranged) {
+    if (!game.stats.hasRanged) return requirementText(ability).replace(', and arrows', '');
+    return game.inventory.ammo ? null : 'You have no arrows';
+  }
   const need = ability?.requires;
   if (!need) return null;
   const inv = game.inventory;
   if (need === 'shield') {
     const s = inv.equipment.offHand;
     const v = s && DB.items[s.id]?.kind === 'shield' && game.itemView(s);
-    return v && !v.broken ? null : 'Requires a shield';
+    return v && !v.broken ? null : requirementText(ability);
   }
   const w = inv.equipment.mainHand && game.itemView(inv.equipment.mainHand);
-  if (!w || w.broken || DB.items[w.id]?.kind !== 'weapon') return need === 'weapon' ? 'Requires a melee weapon' : `Requires a ${need}`;
-  if (need !== 'weapon' && DB.items[w.id].weaponType !== need) return `Requires a ${need}`;
+  if (!w || w.broken || DB.items[w.id]?.kind !== 'weapon') return requirementText(ability);
+  if (need !== 'weapon' && DB.items[w.id].weaponType !== need) return requirementText(ability);
   return null;
+}
+
+// A bow ability, or a spell at an enemy from beyond melee reach (not a charge).
+export function isRangedAttack(spell) {
+  return !!spell && spell.target === 'enemy' && spell.kind !== 'charge' && (spell.ranged || spell.range > CONFIG.attack.range + 1);
 }
 
 export class Spells {
@@ -137,14 +159,6 @@ export class Spells {
       this.game.hud.error(missing);
       return false;
     }
-    if (spell.ranged && !stats.hasRanged) {
-      this.game.hud.error('You need a bow in your ranged slot');
-      return false;
-    }
-    if (spell.ranged && !this.game.inventory.ammo) {
-      this.game.hud.error('You have no arrows');
-      return false;
-    }
     if (!this.game.resources.check(spell)) return false;
     let target = null;
     if (spell.kind === 'charge') {
@@ -157,7 +171,15 @@ export class Spells {
     if (spell.target === 'enemy') {
       target = this._targetFor(spell);
       if (!target) return false;
-      player.faceTowards(target.position.x, target.position.z);
+      // ranged attacks (bow abilities and spells cast from afar) need the
+      // target in front of you, in the same arc as Auto Shot; melee ones
+      // turn you to it
+      if (isRangedAttack(spell)) {
+        if (!player.facingPoint(target.position.x, target.position.z, CONFIG.attack.coneDegrees / 2)) {
+          this.game.hud.error('You must be facing your target');
+          return false;
+        }
+      } else player.faceTowards(target.position.x, target.position.z);
       // a spell at an enemy engages it: auto attack follows once in reach
       this.game.targeting.engage(target);
     }

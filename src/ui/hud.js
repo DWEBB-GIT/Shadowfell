@@ -410,6 +410,14 @@ export class Hud {
 
   _refreshSlots() {
     const gcd = this.game.player.cooldowns.gcd;
+    // with an enemy selected, abilities that cannot reach it go red (WoW)
+    const { player, stats } = this.game;
+    const tgt = this.game.targeting.current;
+    const far = (ab) => {
+      if (!tgt || !tgt.alive || ab.target !== 'enemy') return false;
+      const reach = (ab.ranged ? stats.rangedReach : ab.range) + tgt.radius * 0.6;
+      return Math.hypot(tgt.position.x - player.position.x, tgt.position.z - player.position.z) > reach;
+    };
     for (const el of this.barSlots) {
       const a = el.dataset.ability;
       const [remaining, total, onGcd] = a && this.cooldowns[a] ? this.cooldowns[a]() : [0, 0, false];
@@ -421,6 +429,7 @@ export class Hud {
       el.classList.toggle('cooling', remaining > 0 || showGcd);
       el.classList.toggle('active', a === 'brace' && this.game.player.isBraced);
       el.classList.toggle('nores', !!(a && ABILITIES[a] && (!this.game.resources.canAfford(ABILITIES[a]) || missingGear(this.game, ABILITIES[a]))));
+      el.classList.toggle('oor', !!(a && ABILITIES[a] && far(ABILITIES[a])));
     }
   }
 

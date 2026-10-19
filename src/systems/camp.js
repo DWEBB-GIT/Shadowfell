@@ -6,6 +6,8 @@ import { heightAt } from '../world/terrain.js';
 // pitching a new one strikes the old. The camp is where the spirit rises
 // after a death, and resting beside it, with no enemy near, builds rested
 // experience: kills then pay double until the rested pool is spent, as in WoW.
+// A faint ring on the ground shows how close you must stay to rest
+// (`CONFIG.camp.restRadius`); it glows brighter while you rest.
 
 export class Camp {
   constructor(game) {
@@ -34,7 +36,7 @@ export class Camp {
   show() {
     const c = this.game.worldState.camp;
     if (this.mesh) this.game.scene.remove(this.mesh);
-    this.mesh = null;
+    this.mesh = this.ring = null;
     if (!c) return;
     this.mesh = new THREE.Group();
     this.mesh.name = 'Camp';
@@ -43,7 +45,23 @@ export class Camp {
     this.light.position.set(0, 0.8, 0);
     this.mesh.add(this.light);
     this.mesh.position.set(c.x, heightAt(c.x, c.z), c.z);
+    this.mesh.add((this.ring = this._ring(c)));
     this.game.scene.add(this.mesh);
+  }
+
+  // the rest circle: a thin band laid over the ground around the fire
+  _ring(c) {
+    const r = CONFIG.camp.restRadius;
+    const geo = new THREE.RingGeometry(r - 0.07, r + 0.07, 72, 1);
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    const base = heightAt(c.x, c.z);
+    for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(c.x + pos.getX(i), c.z + pos.getZ(i)) - base + 0.06);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
+    const m = new THREE.Mesh(geo, mat);
+    m.name = 'CampRestRing';
+    m.renderOrder = 2;
+    return m;
   }
 
   // 'camp' by your fire, 'inn' under an inn's roof (no enemy near), else null
@@ -60,6 +78,7 @@ export class Camp {
     // rested experience builds while you sit by the fire
     const prog = this.game.progression;
     const where = this.resting;
+    if (this.ring) this.ring.material.opacity = where === 'camp' ? 0.6 + Math.sin(time * 3) * 0.1 : 0.3;
     if (where) {
       const cap = prog.xpToNext * CONFIG.camp.restedCap;
       if (prog.rested < cap) {

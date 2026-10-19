@@ -430,6 +430,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #char-panel .bar.thin { height: 13px; margin-top: 3px; }
 #char-panel .bar.thin .bar-text { font-size: 10px; line-height: 13px; }
 .bar.gauge .fill { background: linear-gradient(#e0a84a, #9a5a1c); }
+.aslot.oor img { filter: sepia(1) saturate(6) hue-rotate(-30deg) brightness(0.75); }
+.aslot.oor::after { content: ''; position: absolute; inset: 0; background: rgba(200, 20, 10, 0.28); pointer-events: none; }
 .aslot.nores img { filter: saturate(0.35) brightness(0.55) sepia(0.4) hue-rotate(190deg); }
 #target-mana-bar { margin-top: 4px; height: 10px; }
 #target-mana-bar .bar-text { font-size: 9px; line-height: 9px; }

@@ -130,6 +130,10 @@ export const CONFIG = {
     clickRadius: 46, // pixels: how close a click must be to an enemy or townsperson
     softArc: 60, // soft lock: degrees either side of your aim
     softAimRadius: 2.5, // ...or an enemy this close to the cursor point
+    screenMargin: 0.03, // keys and soft lock only pick enemies this far (of half the screen) inside its edge, unless already fighting you
+  },
+  minimap: {
+    questRange: 90, // metres (the map shows ~38 m at its widest): quest marks and objective areas further than this stay off the minimap
   },
   loot: {
     areaRadius: 5, // looting one thing also loots everything this close to it

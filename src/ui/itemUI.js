@@ -3,7 +3,7 @@ import { signpostLines } from '../world/signposts.js';
 import { ITEMS, EQUIP_SLOTS, TOOL_SOCKET, RARITY, sellPrice, itemView, durability } from '../data/items.js';
 import { moneyText, moneyHTML } from './money.js';
 import { SETTINGS } from '../systems/settings.js';
-import { missingGear } from '../systems/spells.js';
+import { missingGear, requirementText } from '../systems/spells.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -519,7 +519,8 @@ export class ItemUI {
         tip.innerHTML = `<div class="tt-name q-${d.rarity}">${d.name}</div><div class="tt-desc">${d.description}</div><div class="tt-hint">Press to use${d.slot === 'offHand' ? ' (again to put it away)' : ''}</div>`;
         return this._placeTip();
       }
-      const req = ABILITIES[id].requires && `<div class="tt-req${missingGear(this.game, ABILITIES[id]) ? ' bad' : ''}">${{ shield: 'Requires a shield', weapon: 'Requires a melee weapon' }[ABILITIES[id].requires] || `Requires a ${ABILITIES[id].requires}`}</div>`;
+      const reqText = requirementText(ABILITIES[id]);
+      const req = reqText && `<div class="tt-req${missingGear(this.game, ABILITIES[id]) ? ' bad' : ''}">${reqText}</div>`;
       tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div>${this._costLine(ABILITIES[id])}${req || ''}<div class="tt-desc">${ABILITIES[id].desc}</div>`;
       return this._placeTip();
     }

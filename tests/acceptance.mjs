@@ -4740,7 +4740,98 @@ async function playtest5(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere };
+async function targetingFixes(browser) {
+  current = 'Targeting and minimap fixes';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page, '#new-btn', { legacyKeys: false });
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: ['ghoul_road', 'ghoul_cart'] });
+  await placeEnemy(page, 'ghoul_road', 0, -6, { frozen: true });
+  await placeEnemy(page, 'ghoul_cart', 0, -70, { frozen: true });
+  await sim(page, 0.05);
+
+  // off screen enemies are not picked by keys or soft lock, unless they fight you
+  const off = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const far = g.enemies.byId('ghoul_cart');
+    const near = g.enemies.byId('ghoul_road');
+    const ahead = { x: 0, z: -40 };
+    const r = { farOnScreen: g.targeting.onScreen(far), nearOnScreen: g.targeting.onScreen(near), soft: g.targeting.softTarget(ahead, 200)?.id || null, farPickable: g.targeting.targetable(far) };
+    far.state = 'chase';
+    r.farPickableEngaged = g.targeting.targetable(far);
+    far.state = 'idle';
+    return r;
+  });
+  record('Soft lock and Tab skip enemies off screen, unless they are already fighting you', off.nearOnScreen && !off.farOnScreen && off.soft === 'ghoul_road' && !off.farPickable && off.farPickableEngaged, JSON.stringify(off));
+
+  // exact requirements; bow abilities need a bow; red when out of range; facing for ranged
+  const tips = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const show = (id) => {
+      g.hud.items._tooltip('k:' + id, document.body);
+      return document.getElementById('tooltip').innerText;
+    };
+    return { heavy: show('heavyStrike'), quick: show('quickShot'), venom: show('venomArrow') };
+  });
+  record('Tooltips name the exact gear: melee weapon in the main hand; bow and arrows for bow abilities', /melee weapon in your main hand/.test(tips.heavy) && /bow in your ranged slot/.test(tips.quick) && /bow in your ranged slot/.test(tips.venom), JSON.stringify(tips));
+
+  const range = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    g.targeting.select(e);
+    g.actionBar.slots[7] = 'smite';
+    g.hud.renderBar?.();
+    const slot = () => [...document.querySelectorAll('.aslot')].find((el) => el.dataset.ability === 'heavyStrike');
+    g.hud._refreshSlots();
+    const far = slot()?.classList.contains('oor');
+    e.position.set(g.player.position.x, 0, g.player.position.z + 1.5);
+    g.hud._refreshSlots();
+    const close = slot()?.classList.contains('oor');
+    return { far, close };
+  });
+  record('With a target selected, abilities that cannot reach it turn red', range.far === true && range.close === false, JSON.stringify(range));
+
+  const facing = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    e.position.set(g.player.position.x, 0, g.player.position.z + 8);
+    Object.keys(g.player.cooldowns).forEach((k) => (g.player.cooldowns[k] = 0));
+    g.resources.add?.('mana', 1000);
+    g.targeting.select(e);
+    g.player.facing = Math.PI; // back to it
+    const behind = g.spells.tryCast('smite');
+    g.player.facing = 0;
+    const front = g.spells.tryCast('smite');
+    return { behind, front };
+  });
+  record('Ranged spells and bow abilities need the target in front of you (same arc as Auto Shot)', !facing.behind && facing.front, JSON.stringify(facing));
+
+  // minimap: red dots for foes fighting you, trade icons, quest range
+  const map = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId('ghoul_road');
+    e.state = 'chase';
+    const m = g.hud.minimap.markers();
+    const foe = m.some((x) => x.kind === 'foe');
+    e.state = 'idle';
+    const icons = Object.fromEntries(m.filter((x) => x.icon).map((x) => [x.label, x.icon]));
+    const q = m.filter((x) => ['available', 'ready', 'active', 'area'].includes(x.kind)).map((x) => Math.round(Math.hypot(x.x - g.player.position.x, x.z - g.player.position.z)));
+    g.hud.minimap.draw();
+    return { foe, icons, maxQuest: Math.max(0, ...q), limit: g.config.minimap.questRange };
+  });
+  record('Minimap: enemies fighting you are red dots, traders show their icon, quest marks only within range', map.foe && map.icons['Mara Venn'] === 'blacksmith' && map.icons['Old Tam'] === 'fishing' && map.maxQuest <= map.limit + 30, JSON.stringify(map));
+
+  const camp = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.camp.pitch(g.player.position.x + 1, g.player.position.z);
+    return { ring: !!g.scene.getObjectByName('CampRestRing'), r: g.config.camp.restRadius };
+  });
+  record('A camp shows a ring for how close you must stay to rest', camp.ring, JSON.stringify(camp));
+  record('No errors', !errors.length, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);
