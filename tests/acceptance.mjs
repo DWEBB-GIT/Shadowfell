@@ -4571,25 +4571,48 @@ async function playtest5(browser) {
     const got = g.inventory.count('firewood');
     return { err: document.getElementById('ui-error').textContent, before, area, instant, bar, got, depleted: node.depleted, stillThere: !!node.group.parent && g.loot.active.includes(node), lootableAfter: g.loot.lootables().some((l) => l.id === 'firewood_1') };
   });
-  record('Quest items stay in sight (named) without the quest, but cannot be taken', !gather.before.lootable && gather.before.inScene && gather.before.label, JSON.stringify(gather.before));
+  record('Quest items stay in sight (unnamed) without the quest, but cannot be taken', !gather.before.lootable && gather.before.inScene && !gather.before.label, JSON.stringify(gather.before));
   record('Gathering a quest item takes time and shows a bar; it is never area looted', gather.area === false && gather.instant === 0 && /Gathering Bundle of firewood/.test(gather.bar || '') && gather.got === 1, JSON.stringify(gather));
   record('A gathered node stays in sight, spent, until it grows back', gather.depleted && gather.stillThere && !gather.lootableAfter, JSON.stringify(gather));
 
-  // fishing: shorter casts, more bites, practice on a miss, any rod works
+  // fishing: shorter casts, more bites, skill only from real attempts, any rod works
   const fish = await page.evaluate(() => {
     const g = window.__shadowfall;
     g.skills.ranks.set('fishing', 1);
     g.inventory.addItem('yew_fishing_rod', 1, { quiet: true });
     const hasRod = g.fishing.hasRod;
-    // a strike with nothing on the line still teaches
-    g.fishing.state = { phase: 'wait', bob: new (g.scene.constructor)(), line: { geometry: { dispose() {} } } };
-    g.fishing.state.bob = g.fishing._makeBob();
-    g.fishing.state.line = g.fishing._makeLine();
+    // skill only from a real attempt: a strike before the bite or a cancel
+    // teaches nothing; a strike on a real bite that slips the hook does
+    const fresh = (phase) => Object.assign(g.fishing.state = {}, { phase, skill: 0, water: { fishTable: 'mere_fish' }, bob: g.fishing._makeBob(), line: g.fishing._makeLine() });
+    fresh('wait');
     g.fishing.strike();
-    return { hasRod, rank: g.skills.rank('fishing'), duration: g.config.fishing.duration, bite: g.fishing.biteChanceFor(1) };
+    const early = g.skills.rank('fishing');
+    fresh('wait');
+    g.fishing.stop();
+    const cancel = g.skills.rank('fishing');
+    const rnd = g.random;
+    g.random = () => 0.999; // the catch roll fails
+    fresh('bite');
+    g.fishing.strike();
+    g.random = rnd;
+    return { hasRod, early, cancel, slipped: g.skills.rank('fishing'), duration: g.config.fishing.duration, bite: g.fishing.biteChanceFor(1) };
   });
   record('A yew rod alone lets you fish; casts last 12 s and most get a bite', fish.hasRod && fish.duration === 12 && fish.bite >= 60, JSON.stringify(fish));
-  record('A cast that lands no fish still raises the Fishing skill', fish.rank === 2, JSON.stringify(fish));
+  record('Fishing skill rises only on a catch or a real bite that slips the hook, never on a cancel or an early strike', fish.early === 1 && fish.cancel === 1 && fish.slipped === 2, JSON.stringify(fish));
+
+  // no names through roofs: a label inside a building shows only while you are in there
+  const roof = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const b = g.world.buildings[0];
+    const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+    g.player.placeAt(b.maxX + 3, cz);
+    g.world.updateIndoors(0, g.player.position);
+    const outside = g.world.roofOver(cx, cz);
+    g.player.placeAt(cx, cz);
+    g.world.updateIndoors(0, g.player.position);
+    return { outside, inside: g.world.roofOver(cx, cz), open: g.world.roofOver(b.maxX + 5, cz) };
+  });
+  record('Names inside a building are hidden under its roof until you go in', roof.outside && !roof.inside && !roof.open, JSON.stringify(roof));
 
   // the training dummy cannot be shoved or knocked back
   const dummy = await page.evaluate(() => {

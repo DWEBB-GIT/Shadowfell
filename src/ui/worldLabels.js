@@ -5,7 +5,8 @@ import { ITEMS, RARITY, itemView } from '../data/items.js';
 // items lying on the ground in their rarity colour (as in WoW and Diablo),
 // and nameplates over townsfolk (with their title) and enemies (until their
 // health bar, which carries the name, takes over), and your own name over
-// your character. Settings (O) hide each.
+// your character. Settings (O) hide each. Nothing shows through a roof: a
+// label inside a building only shows while you are in there too.
 
 const RANGE = 18; // metres from the Warden
 
@@ -42,11 +43,13 @@ export class WorldLabels {
     if (!this.game.settings.get('lootNames')) return out;
     for (const l of this.game.loot.active) {
       const r = l.def.reward;
-      // quest items are always named; greyed while they cannot be taken
+      // quest pick-ups (firewood, ore...) carry no name: their sparkle and
+      // the quest log show them (Dan, 2026-10-19)
+      if (l.def.quest) continue;
       const ok = this.game.loot.available(l);
-      if (!r || !r.item || !ITEMS[r.item] || (!ok && !l.def.quest)) continue;
+      if (!r || !r.item || !ITEMS[r.item] || !ok) continue;
       const v = itemView({ id: r.item, rolls: r.rolls });
-      out.push({ text: `${v.name}${r.count > 1 ? ` ×${r.count}` : ''}`, colour: ok ? RARITY[v.rarity].colour : '#7a7a7a', x: l.x, y: l.baseY + 0.75, z: l.z, cls: 'loot-label' });
+      out.push({ text: `${v.name}${r.count > 1 ? ` ×${r.count}` : ''}`, colour: RARITY[v.rarity].colour, x: l.x, y: l.baseY + 0.75, z: l.z, cls: 'loot-label' });
     }
     return out;
   }
@@ -60,6 +63,7 @@ export class WorldLabels {
     for (const src of this.sources) {
       for (const lab of src()) {
         if (Math.hypot(lab.x - p.x, lab.z - p.z) > RANGE) continue;
+        if (this.game.world?.roofOver?.(lab.x, lab.z)) continue; // indoors, under a roof you can see
         this.tmp.set(lab.x, lab.y, lab.z).project(camera);
         if (this.tmp.z > 1 || Math.abs(this.tmp.x) > 1.1 || Math.abs(this.tmp.y) > 1.1) continue;
         let el = this.pool[n];
