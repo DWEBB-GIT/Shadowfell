@@ -19,6 +19,17 @@ import { heightAt } from '../world/terrain.js';
 // Abilities go to the selected enemy; with nothing selected they go to the
 // enemy nearest your aim (the cursor, or ahead of you on a pad), which a faint
 // ring shows. Ground spells use the raw aim point (see `aimFor`).
+//
+// Only what you can see: soft lock, Tab and RT pick only enemies inside the
+// camera view, or ones already fighting you (Diablo and WoW alike: you
+// cannot pick a fight with something you have not seen). See `targetable`.
+
+const _v = new THREE.Vector3();
+
+// Is this enemy chasing or striking the player?
+export function inCombatWithPlayer(e) {
+  return !!e && e.alive && (e.state === 'chase' || e.state === 'attack');
+}
 
 export class Targeting {
   constructor(game) {
@@ -56,6 +67,22 @@ export class Targeting {
     return Math.hypot(e.position.x - p.x, e.position.z - p.z);
   }
 
+  // Is the enemy inside the camera view (with a small margin in from the
+  // screen's edge)?
+  onScreen(e) {
+    const cam = this.game.camera;
+    if (!cam) return true;
+    _v.set(e.position.x, e.position.y + 1, e.position.z).project(cam);
+    const m = CONFIG.targeting.screenMargin;
+    return _v.z < 1 && Math.abs(_v.x) <= 1 - m && Math.abs(_v.y) <= 1 - m;
+  }
+
+  // Can a key or soft lock pick this enemy? Living, and either on screen or
+  // already fighting you.
+  targetable(e) {
+    return !!e && e.alive && (inCombatWithPlayer(e) || this.onScreen(e));
+  }
+
   // The enemy a soft lock picks for an ability with reach `range`, given an
   // aim point: inside the arc around the aim direction (or right under the
   // cursor), favouring the smallest angle and then the nearest.
@@ -76,7 +103,7 @@ export class Targeting {
     let best = null;
     let bestScore = Infinity;
     for (const e of enemies.list) {
-      if (!e.alive) continue;
+      if (!this.targetable(e)) continue;
       const dx = e.position.x - p.x;
       const dz = e.position.z - p.z;
       const d = Math.hypot(dx, dz);
@@ -171,7 +198,7 @@ export class Targeting {
   // Tab / R3: the enemy you are aiming at first, then the next nearest each
   // press, round all those in range.
   cycle(aim) {
-    const near = this.game.enemies.list.filter((e) => e.alive && this._dist(e) <= CONFIG.targeting.range).sort((a, b) => this._dist(a) - this._dist(b));
+    const near = this.game.enemies.list.filter((e) => this.targetable(e) && this._dist(e) <= CONFIG.targeting.range).sort((a, b) => this._dist(a) - this._dist(b));
     if (!near.length) return this.select(null);
     if (!this.current || !near.includes(this.current)) return this.select(this.softTarget(aim, CONFIG.targeting.range) || near[0]);
     return this.select(near[(near.indexOf(this.current) + 1) % near.length]);
@@ -180,7 +207,7 @@ export class Targeting {
   _nearest() {
     let best = null;
     for (const e of this.game.enemies.list) {
-      if (e.alive && this._dist(e) <= CONFIG.targeting.range && (!best || this._dist(e) < this._dist(best))) best = e;
+      if (this.targetable(e) && this._dist(e) <= CONFIG.targeting.range && (!best || this._dist(e) < this._dist(best))) best = e;
     }
     return best;
   }

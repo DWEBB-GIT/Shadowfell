@@ -55,6 +55,9 @@ export const slotFits = (slotId, itemSlot) => {
 export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
 const SCHOOLS = ['physical', 'shadow', 'holy', 'nature'];
+// what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
+export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer'];
+
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
 export const SPELL_KINDS = {
@@ -394,6 +397,7 @@ export function validateGameData(raw, opts = {}) {
     if (!(Number.isInteger(n.level) && n.level >= 1)) errors.push(`${w}: needs a level (a whole number, 1 or more)`);
     model(w, n.model);
     if (n.shop) ref(w, 'shop', shops, n.shop);
+    if (n.mapIcon !== undefined && !NPC_MAP_ICONS.includes(n.mapIcon)) errors.push(`${w}: mapIcon must be one of ${NPC_MAP_ICONS.join(', ')}`);
     if (n.dialogue !== undefined) ref(w, 'dialogue', dialogues, n.dialogue);
   }
 
