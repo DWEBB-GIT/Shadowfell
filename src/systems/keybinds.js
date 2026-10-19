@@ -2,21 +2,27 @@
 // change them in the Settings window, or use Quick bind (as WoW's /kb): hover
 // a spell or utility bar slot and press a key. Bindings are kept in the
 // browser with the other settings. Movement stays on WASD and the arrow keys.
+// A key held with Shift is its own binding, written 'Shift+Digit1'.
+//
+// Defaults (Dan, 2026-10-19): six spell slots on 1 2 3 4 Q E, the four
+// utility slots on Shift-1 to Shift-4, and Space to interact.
 
-const KEY = 'shadowfall.keys';
+// (v2: the 2026-10-19 layout; bindings saved under the old key are dropped
+// so everyone gets it)
+const KEY = 'shadowfall.keys.v2';
 
 export const KEY_ACTIONS = [
   { id: 'bar0', label: 'Spell bar 1', group: 'Spell bar', keys: ['Digit1'] },
   { id: 'bar1', label: 'Spell bar 2', group: 'Spell bar', keys: ['Digit2'] },
-  { id: 'bar2', label: 'Spell bar 3', group: 'Spell bar', keys: ['Digit3', 'KeyQ'] },
+  { id: 'bar2', label: 'Spell bar 3', group: 'Spell bar', keys: ['Digit3'] },
   { id: 'bar3', label: 'Spell bar 4', group: 'Spell bar', keys: ['Digit4'] },
-  { id: 'bar4', label: 'Spell bar 5', group: 'Spell bar', keys: ['Digit5'] },
-  { id: 'bar5', label: 'Defensive', group: 'Spell bar', keys: ['Space'] },
-  { id: 'bar6', label: 'Utility 1', group: 'Utility bar', keys: ['Digit6'] },
-  { id: 'bar7', label: 'Utility 2', group: 'Utility bar', keys: ['Digit7'] },
-  { id: 'bar8', label: 'Utility 3', group: 'Utility bar', keys: ['Digit8'] },
-  { id: 'bar9', label: 'Utility 4', group: 'Utility bar', keys: ['Digit9'] },
-  { id: 'interact', label: 'Interact', group: 'Actions', keys: ['KeyE'] },
+  { id: 'bar4', label: 'Spell bar 5', group: 'Spell bar', keys: ['KeyQ'] },
+  { id: 'bar5', label: 'Spell bar 6', group: 'Spell bar', keys: ['KeyE'] },
+  { id: 'bar6', label: 'Utility 1', group: 'Utility bar', keys: ['Shift+Digit1'] },
+  { id: 'bar7', label: 'Utility 2', group: 'Utility bar', keys: ['Shift+Digit2'] },
+  { id: 'bar8', label: 'Utility 3', group: 'Utility bar', keys: ['Shift+Digit3'] },
+  { id: 'bar9', label: 'Utility 4', group: 'Utility bar', keys: ['Shift+Digit4'] },
+  { id: 'interact', label: 'Interact', group: 'Actions', keys: ['Space'] },
   { id: 'cycleTarget', label: 'Next target', group: 'Actions', keys: ['Tab'] },
   { id: 'character', label: 'Character', group: 'Menus', keys: ['KeyC'] },
   { id: 'spellbook', label: 'Spells', group: 'Menus', keys: ['KeyP'] },
@@ -31,9 +37,17 @@ export const KEY_ACTIONS = [
 // keys nobody may take: movement, Escape and the mouse
 const RESERVED = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape']);
 
-// how a key code reads on a button: Digit1 -> 1, KeyQ -> Q, Space -> Space
+// The binding a key press makes: Shift held turns Digit1 into Shift+Digit1
+// (Shift itself, pressed alone, stays Shift).
+export function comboOf(e) {
+  return e.shiftKey && !e.code.startsWith('Shift') ? 'Shift+' + e.code : e.code;
+}
+
+// how a key code reads on a button: Digit1 -> 1, KeyQ -> Q, Space -> Space,
+// Shift+Digit1 -> Shift-1
 export function keyLabel(code) {
   if (!code) return '';
+  if (code.startsWith('Shift+')) return 'Shift-' + keyLabel(code.slice(6));
   if (code.startsWith('Digit')) return code.slice(5);
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Numpad')) return 'N' + code.slice(6);
@@ -76,7 +90,7 @@ export class Keybinds {
   // Bind a key to an action, taking it from anything else that had it.
   // Returns false for keys that cannot be bound.
   bind(id, code) {
-    if (RESERVED.has(code) || !this.map[id]) return false;
+    if (RESERVED.has(code.replace('Shift+', '')) || !this.map[id]) return false;
     for (const k of Object.keys(this.map)) this.map[k] = this.map[k].filter((c) => c !== code);
     this.map[id] = [code];
     this._save();

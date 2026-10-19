@@ -76,6 +76,7 @@
     },
     {
       "id": "shieldBreak",
+      "requires": "shield",
       "name": "Shield Break",
       "kind": "burst",
       "school": "physical",
@@ -115,6 +116,7 @@
     },
     {
       "id": "brace",
+      "requires": "shield",
       "name": "Brace",
       "kind": "guard",
       "school": "physical",
@@ -148,6 +150,7 @@
     },
     {
       "id": "rend",
+      "requires": "weapon",
       "name": "Rend",
       "kind": "dot",
       "school": "physical",
@@ -166,6 +169,7 @@
     },
     {
       "id": "heavyStrike",
+      "requires": "weapon",
       "name": "Heavy Strike",
       "kind": "instant",
       "school": "physical",
@@ -182,6 +186,7 @@
     },
     {
       "id": "crushingBlow",
+      "requires": "weapon",
       "name": "Crushing Blow",
       "kind": "instant",
       "school": "physical",
@@ -234,6 +239,7 @@
     },
     {
       "id": "cleave",
+      "requires": "weapon",
       "name": "Cleave",
       "kind": "cleave",
       "school": "physical",
@@ -284,7 +290,6 @@
       "target": "ground",
       "range": 9,
       "skill": "fishing",
-      "requiresItem": "fishing_rod",
       "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod in your bags.",
       "tuning": {
         "cooldown": 1

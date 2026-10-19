@@ -512,6 +512,20 @@
       "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
     },
     {
+      "id": "tool_pack",
+      "name": "Warden's tool pack",
+      "kind": "bag",
+      "toolPack": true,
+      "holds": ["tool", "torch"],
+      "rarity": "enhanced",
+      "bagSlots": 6,
+      "stack": 1,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "Waxed leather with loops and pockets, from Mara Venn. It has its own slot beside your bags and carries your torch, rods, lockpicks and other tools, so they take no bag space."
+    },
+    {
       "id": "torch",
       "name": "Pitch torch",
       "kind": "torch",
@@ -526,6 +540,7 @@
     },
     {
       "id": "fishing_rod",
+      "rod": true,
       "name": "Fishing rod",
       "kind": "tool",
       "rarity": "common",
@@ -537,6 +552,7 @@
     },
     {
       "id": "yew_fishing_rod",
+      "rod": true,
       "name": "Yew fishing rod",
       "kind": "tool",
       "rarity": "enhanced",

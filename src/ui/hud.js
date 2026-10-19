@@ -12,7 +12,7 @@ import { ABILITIES, BAR_SLOTS, itemRef, entryName } from '../systems/actionBar.j
 import { DamageNumbers } from './damageNumbers.js';
 import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
-import { SPELLS } from '../systems/spells.js';
+import { SPELLS, missingGear } from '../systems/spells.js';
 import { RARITY, ITEMS } from '../data/items.js';
 import { DB } from '../data/db.js';
 
@@ -141,7 +141,7 @@ export class Hud {
   _buildBar() {
     let html = '';
     BAR_SLOTS.forEach((b, i) => {
-      if (b.defensive || (b.utility && !BAR_SLOTS[i - 1].utility)) html += '<div class="sep"></div>';
+      if (b.utility && !BAR_SLOTS[i - 1].utility) html += '<div class="sep"></div>';
        html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}${b.utility ? ' utility' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
     });
     this.el.actionBar.innerHTML = html;
@@ -180,7 +180,8 @@ export class Hud {
     // keyboard labels follow the player's key bindings
     const keys = this.game.keys;
     if (keys) {
-      this.barSlots?.forEach((el, i) => (el.querySelector('.key').dataset.kbm = keys.label('bar' + i)));
+      // Shift-1 is ⇧1 on a slot, where room is short
+      this.barSlots?.forEach((el, i) => (el.querySelector('.key').dataset.kbm = keys.label('bar' + i).replace(/Shift-/g, '⇧')));
       document.querySelectorAll('.key[data-key-action]').forEach((k) => {
         k.dataset.kbm = keys.label(k.dataset.keyAction);
         const btn = k.closest('[data-tip]');
@@ -417,7 +418,7 @@ export class Hud {
       el.style.setProperty('--gcd', (showGcd ? gcd / this.game.stats.globalCooldown : 0).toFixed(3));
       el.classList.toggle('cooling', remaining > 0 || showGcd);
       el.classList.toggle('active', a === 'brace' && this.game.player.isBraced);
-      el.classList.toggle('nores', !!(a && ABILITIES[a] && !this.game.resources.canAfford(ABILITIES[a])));
+      el.classList.toggle('nores', !!(a && ABILITIES[a] && (!this.game.resources.canAfford(ABILITIES[a]) || missingGear(this.game, ABILITIES[a]))));
     }
   }
 
@@ -435,7 +436,7 @@ export class Hud {
           ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
           : this.game.fishing?.bar
             ? { ...this.game.fishing.bar, name: 'Fishing' }
-            : null;
+            : this.game.loot?.gatherBar || null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
@@ -447,14 +448,15 @@ export class Hud {
     // (one per hand when dual wielding)
     const tg = this.game.targeting;
     const st = this.game.stats;
-    // with the target beyond melee reach and a bow on your back, the bar is
-    // Auto Shot's
+    // with the target beyond melee reach and a bow on your back, the second
+    // bar is Auto Shot's; the melee swing timer keeps running on the first,
+    // so you know when your blade is ready as the enemy closes
     const shooting = tg.targetInShot;
     const showSwing = (hand, bar, fill, text) => {
       const el = $(bar);
-      el.hidden = !tg.attacking || player.dead || (hand === 'off' && (shooting || !st.dualWielding));
+      el.hidden = !tg.attacking || player.dead || (hand === 'off' && !shooting && !st.dualWielding);
       if (el.hidden) return;
-      const h = hand === 'main' && shooting ? 'ranged' : hand;
+      const h = hand === 'off' && shooting ? 'ranged' : hand;
       // the bar fills on the blow (or the arrow's release) itself
       const pend = h === 'off' ? player.pendingOff?.t : h === 'ranged' ? player.pendingShot?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
       const left = Math.max(0, pend ?? player.cooldowns[h === 'off' ? 'attackOff' : h === 'ranged' ? 'ranged' : 'attack']);
@@ -505,7 +507,7 @@ export class Hud {
 
     const c = interaction.current;
     const promptText = c && !this.modal ? c.prompt : '';
-    const key = this.padMode ? 'A' : 'E';
+    const key = this.padMode ? 'A' : this.game.keys.label('interact') || 'Space';
     if (this.el.prompt.dataset.text !== promptText + key) {
       this.el.prompt.dataset.text = promptText + key;
       this.el.prompt.innerHTML = promptText ? `<kbd>${key}</kbd> ${promptText}` : '';

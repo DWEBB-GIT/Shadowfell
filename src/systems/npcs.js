@@ -84,7 +84,8 @@ export class NpcManager {
   }
 
   talk(n) {
-    n.facing = Math.atan2(this.game.player.position.x - n.position.x, this.game.player.position.z - n.position.z);
+    // a notice board stays as it was put up; people turn to you
+    if (!n.board) n.facing = Math.atan2(this.game.player.position.x - n.position.x, this.game.player.position.z - n.position.z);
     this.game.dialogue.open(n);
   }
 }

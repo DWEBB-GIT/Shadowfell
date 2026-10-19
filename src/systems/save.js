@@ -1,4 +1,4 @@
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls, slotFits } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, TOOL_SOCKET, validRolls, slotFits } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
 import { ABILITIES, BAR_SLOTS, itemRef } from './actionBar.js';
 import { DB } from '../data/db.js';
@@ -49,14 +49,15 @@ export function migrateSave(data) {
 function validateInventory(inv, check) {
   check(isInt(inv.coins) && inv.coins >= 0, 'coins');
   const sk = inv.sockets;
-  check(Array.isArray(sk) && sk.length === BAG_SOCKETS, 'bag sockets');
+  // (saves from before the tool pack have no tool socket)
+  check(Array.isArray(sk) && (sk.length === BAG_SOCKETS || sk.length === TOOL_SOCKET + 1), 'bag sockets');
   if (Array.isArray(sk)) {
     sk.forEach((s, i) => {
       if (i === 0) {
         check(s && s.id === 'backpack' && Array.isArray(s.slots) && s.slots.length === BACKPACK_SLOTS, 'backpack');
       } else if (s !== null) {
         const def = s && ITEMS[s.id];
-        check(def && def.kind === 'bag' && Array.isArray(s.slots) && s.slots.length === def.bagSlots, `bag in socket ${i}`);
+        check(def && def.kind === 'bag' && !!def.toolPack === (i === TOOL_SOCKET) && Array.isArray(s.slots) && s.slots.length === def.bagSlots, `bag in socket ${i}`);
       }
       if (s && Array.isArray(s.slots)) check(s.slots.every((x) => x === null || isStack(x)), `contents of bag ${i}`);
     });
@@ -224,6 +225,11 @@ export class SaveManager {
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);
+    // rewards added to a quest after it was handed in (the tool pack, for
+    // the story quest) are given now, once
+    for (const id of this.game.quests.done) {
+      for (const g of DB.quests[id].reward?.items || []) if (ITEMS[g.item].toolPack && !inventory.toolPack) inventory.addItem(g.item, 1);
+    }
     this.game.recomputeMaxHealth();
     player.health = Math.min(data.player.health, player.maxHealth);
     this.game.resources.reset();

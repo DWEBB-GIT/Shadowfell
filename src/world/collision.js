@@ -14,8 +14,9 @@ export class Collision {
     return cx * 10007 + cz;
   }
 
-  add(x, z, r) {
-    const c = { x, z, r };
+  // `wall`: part of a building's walls, which block line of sight
+  add(x, z, r, wall = false) {
+    const c = { x, z, r, wall };
     this.circles.push(c);
     const minX = Math.floor((x - r) / this.cellSize);
     const maxX = Math.floor((x + r) / this.cellSize);
@@ -62,6 +63,26 @@ export class Collision {
     }
     this.clampToBounds(pos, radius);
     return pos;
+  }
+
+  // Is there a wall between two points? Talking, looting and opening chests
+  // need a clear line (a door is a gap in the wall's circles).
+  wallBetween(ax, az, bx, bz) {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const len2 = dx * dx + dz * dz;
+    if (len2 < 1e-6) return false;
+    const mx = (ax + bx) / 2;
+    const mz = (az + bz) / 2;
+    for (const c of this._nearby(mx, mz, Math.sqrt(len2) / 2 + 1)) {
+      if (!c.wall) continue;
+      const k = Math.max(0, Math.min(1, ((c.x - ax) * dx + (c.z - az) * dz) / len2));
+      const ex = ax + dx * k - c.x;
+      const ez = az + dz * k - c.z;
+      // a little give, so the corner of a doorway does not block the person inside it
+      if (ex * ex + ez * ez < (c.r * 0.7) ** 2) return true;
+    }
+    return false;
   }
 
   clampToBounds(pos, radius = 0) {

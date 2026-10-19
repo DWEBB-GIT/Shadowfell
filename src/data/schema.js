@@ -135,7 +135,9 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.slot === 'ranged' && !(isNum(d.range) && d.range >= 8 && d.range <= 40)) bad('a ranged weapon needs a range in metres (8 to 40)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
     // a quiver: a bag that holds only arrows and quickens Auto Shot
-    if (d.holds !== undefined && !(d.kind === 'bag' && KINDS.includes(d.holds))) bad('holds must name an item kind, on a bag');
+    // (the tool pack holds several kinds, as a list)
+    if (d.holds !== undefined && !(d.kind === 'bag' && [].concat(d.holds).length > 0 && [].concat(d.holds).every((k) => KINDS.includes(k)))) bad('holds must name item kinds, on a bag');
+    if (d.toolPack !== undefined && !(d.toolPack === true && d.kind === 'bag' && d.holds !== undefined)) bad('toolPack: true is for a bag that holds tools');
     if (d.rangedHaste !== undefined && !(d.holds === 'ammo' && isNum(d.rangedHaste) && d.rangedHaste > 0 && d.rangedHaste <= 30)) bad('rangedHaste (percent, up to 30) is for a quiver (a bag that holds ammo)');
     // arrows: used one a shot, adding `ammoDps` damage a second of bow speed
     if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
@@ -143,6 +145,9 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
     if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus to fishing skill above 0');
     if (d.fishingSkill !== undefined && !(isNum(d.fishingSkill) && d.fishingSkill > 0)) bad('fishingSkill must be a bonus to fishing skill above 0');
+    // a fishing rod: any one carried lets you fish
+    if (d.rod !== undefined && !(d.rod === true && d.kind === 'tool')) bad('rod: true is for tools (fishing rods)');
+    if (d.fishingSkill !== undefined && !d.rod) bad('fishingSkill is for rods (rod: true)');
     for (const [k, v] of Object.entries(d.stats || {})) {
       if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
       else if (!isNum(v)) bad(`stat ${k} must be a number`);
@@ -261,6 +266,8 @@ export function validateGameData(raw, opts = {}) {
     if (a.target === 'enemy' && !isNum(a.range)) errors.push(`${w}: an enemy-targeted ability needs a range`);
     if (a.item) ref(w, 'item', items, a.item);
     if (a.requiresItem) ref(w, 'item', items, a.requiresItem);
+    // gear the ability needs: a shield, any melee weapon, or one weapon type
+    if (a.requires !== undefined && !['shield', 'weapon', ...new Set(Object.values(items).map((i) => i.weaponType).filter(Boolean))].includes(a.requires)) errors.push(`${w}: requires must be shield, weapon or a weapon type an item has`);
     if (a.skill) ref(w, 'skill', skills, a.skill);
     if (!a.tuning || typeof a.tuning !== 'object' || !Object.values(a.tuning).every(isNum)) errors.push(`${w}: tuning must be a set of numbers`);
     if (a.school && !SCHOOLS.includes(a.school)) errors.push(`${w}: unknown school ${a.school}`);

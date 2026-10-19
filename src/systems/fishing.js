@@ -13,7 +13,9 @@ import { waterAt, waterLevel } from '../world/terrain.js';
 // then (click the bob, or E / A) for a chance to land a fish from that
 // water's loot table (data: world.json `water` `fishTable`). Too soon or too
 // late and it gets away; if the bar runs out with no bite, nothing was
-// biting. Fish are never seen in the water.
+// biting. Fish are never seen in the water. Every cast that runs its course,
+// fish or no fish, is practice: it can raise your Fishing skill. Any rod
+// (an item with `rod: true`) will do, in the bags or the tool pack.
 //
 // Phases: 'cast' (the bob flies) -> 'wait' -> 'bite' (strike now) -> done.
 
@@ -36,7 +38,7 @@ export class Fishing {
     const { player, skills, inventory, events } = this.game;
     const say = (text, key) => events.emit('log', { text, kind: 'muted', throttle: key });
     if (!skills.has('fishing')) return say('You do not know how to fish. Old Tam by the mere can teach you.', 'fish-skill'), false;
-    if (inventory.count(DB.abilities.fish.requiresItem) < 1) return say('You need a fishing rod in your bags.', 'fish-rod'), false;
+    if (!this.hasRod) return say('You need a fishing rod in your bags.', 'fish-rod'), false;
     if (player.casting || player.pending) return false;
     this.stop(true);
     const range = DB.abilities.fish.range;
@@ -65,11 +67,17 @@ export class Fishing {
     return true;
   }
 
+  // any rod carried
+  get hasRod() {
+    const inv = this.game.inventory;
+    return Object.keys(ITEMS).some((id) => ITEMS[id].rod && inv.count(id) > 0);
+  }
+
   // Fishing skill: rank, plus the best rod in your bags, plus bait if you
   // have some (it is used up when you cast)
   get skill() {
     const inv = this.game.inventory;
-    const rod = Math.max(0, ...Object.keys(ITEMS).filter((id) => ITEMS[id].fishingSkill && inv.count(id) > 0).map((id) => ITEMS[id].fishingSkill));
+    const rod = Math.max(0, ...Object.keys(ITEMS).filter((id) => ITEMS[id].rod && ITEMS[id].fishingSkill && inv.count(id) > 0).map((id) => ITEMS[id].fishingSkill));
     const bait = this._bait();
     return this.game.skills.rank('fishing') + rod + (bait ? ITEMS[bait].bait : 0);
   }
@@ -105,11 +113,13 @@ export class Fishing {
     const { events, inventory, skills } = this.game;
     if (s.phase !== 'bite') {
       events.emit('log', { text: 'You strike too soon. Whatever was there is gone.', kind: 'muted' });
+      this._practice();
       this.stop();
       return true;
     }
     if (this.game.random() * 100 >= this.chance) {
       events.emit('log', { text: 'The fish slips the hook.', kind: 'muted' });
+      this._practice();
       this.stop();
       return true;
     }
@@ -127,6 +137,11 @@ export class Fishing {
     skills.raise('fishing');
     this.stop();
     return true;
+  }
+
+  // a cast with nothing landed still teaches you something
+  _practice() {
+    this.game.skills.raise('fishing');
   }
 
   // Reel in (moving, fighting or a new cast ends it).
@@ -155,6 +170,7 @@ export class Fishing {
     if (s.elapsed >= cfg.duration && s.phase !== 'bite') {
       events.emit('log', { text: 'Nothing is biting. You reel in your line.', kind: 'muted' });
       this.game.hud?.error?.('Nothing is biting');
+      this._practice();
       this.stop();
       return;
     }
@@ -181,6 +197,7 @@ export class Fishing {
       bob.position.set(s.x, level - 0.06 + Math.sin(s.t * 28) * 0.05, s.z);
       if (s.t >= cfg.biteWindow) {
         events.emit('log', { text: 'The bob rises again. It got away.', kind: 'muted' });
+        this._practice();
         this.stop();
         return;
       }

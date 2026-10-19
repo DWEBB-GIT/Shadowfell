@@ -14,12 +14,50 @@ import { AMMO_LOC } from './inventory.js';
 // Defeated enemies leave a body holding their coins. Looting anything (a
 // click on it, or E / A beside it) also loots every body and drop within
 // CONFIG.loot.areaRadius, so a pack of kills is cleared in one go.
+//
+// Quest gathering nodes (world.json placedLoot with `quest`) are different:
+// they are never area-looted, each one takes CONFIG.loot.gatherTime to
+// gather (a cast bar shows it; moving or being hit stops it), and they stay
+// in sight at all times. Without the quest, or once gathered and waiting to
+// grow back, a node is greyed out and cannot be taken.
 
 export class LootSystem {
   constructor(game) {
     this.game = game;
     this.active = []; // { def, x, z, group, glint, baseY }
-    this.regrow = []; // { def, at }: gathering nodes waiting to respawn
+    this.regrow = []; // { entry, at }: gathering nodes waiting to grow back
+    this.gathering = null; // { entry, t, total, from }
+    game.events.on('playerHurt', () => this.stopGathering('Interrupted.'));
+  }
+
+  // the cast bar while gathering: { t, total, name }
+  get gatherBar() {
+    const g = this.gathering;
+    return g ? { t: g.t, total: g.total, name: `Gathering ${this.describe(g.entry)}` } : null;
+  }
+
+  // Start gathering a quest node; it is taken when the bar fills.
+  startGather(entry) {
+    const { player } = this.game;
+    if (this.gathering?.entry === entry || !this.available(entry)) return false;
+    if (player.casting || player.dead) return false;
+    this.game.fishing?.stop(true);
+    const total = CONFIG.loot.gatherTime;
+    this.gathering = { entry, t: 0, total, from: player.position.clone() };
+    player.faceTowards(entry.x, entry.z);
+    player.rig.play('brace', total, 0.9);
+    return true;
+  }
+
+  stopGathering(reason = '') {
+    if (!this.gathering) return;
+    this.gathering = null;
+    if (reason) this.game.hud?.error?.(reason);
+  }
+
+  // can this entry be taken right now? (a gathered node waits to grow back)
+  available(entry) {
+    return !entry.depleted && this.gatherable(entry.def);
   }
 
   spawnAll() {
@@ -59,6 +97,10 @@ export class LootSystem {
     if (!stack || loc === AMMO_LOC) return null; // the ammo slot only names arrows
     if (ITEMS[stack.id].quest) {
       events.emit('log', { text: `You keep hold of the ${ITEMS[stack.id].name}. Someone will want it.`, kind: 'muted', throttle: 'inv-refuse' });
+      return null;
+    }
+    if (ITEMS[stack.id].toolPack) {
+      events.emit('log', { text: `You keep the ${ITEMS[stack.id].name.toLowerCase()}. It was hard earned.`, kind: 'muted', throttle: 'inv-refuse' });
       return null;
     }
     const taken = inventory.take(loc);
@@ -122,6 +164,7 @@ export class LootSystem {
     for (const l of this.active) this.game.scene.remove(l.group);
     this.active = [];
     this.regrow = [];
+    this.gathering = null;
   }
 
   _spawn(def, x, z) {
@@ -185,7 +228,8 @@ export class LootSystem {
     }
     // only what fell in a fight (or was dropped) is area-looted; things placed
     // in the world, like the manifest, are taken one at a time
-    for (const l of this.active) if (this.gatherable(l.def)) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !!(l.def.ground || UNIQUE_DROPS[l.def.id] === l.def) });
+    // (quest gathering nodes never are)
+    for (const l of this.active) if (this.available(l)) out.push({ kind: 'item', id: l.def.id, x: l.x, z: l.z, entry: l, area: !l.def.quest && !!(l.def.ground || UNIQUE_DROPS[l.def.id] === l.def) });
     return out;
   }
 
@@ -199,6 +243,8 @@ export class LootSystem {
 
   // Loot `origin` and everything else lootable within the area radius of it.
   lootArea(origin) {
+    // a quest node is gathered on its own, over a moment
+    if (origin.kind === 'item' && origin.entry.def.quest) return this.startGather(origin.entry) ? 1 : 0;
     const list = this._area(origin);
     let n = 0;
     for (const l of list) if (l.kind === 'corpse' ? this.lootCorpse(l.id) : this.collect(l.entry)) n++;
@@ -242,14 +288,21 @@ export class LootSystem {
     const { worldState, inventory, events, hud } = this.game;
     const def = entry.def;
     if (!def.ground && worldState.isCollected(def.id)) return false;
-    if (!this.gatherable(def)) return false;
+    if (!this.available(entry)) return false;
     const r = def.reward;
     // a full bag leaves the item where it lies
     if (r.item && !inventory.addItem(r.item, r.count || 1, { rolls: r.rolls || null })) return false;
     if (r.coins) inventory.addCoins(r.coins, 'in a purse');
     if (def.ground) worldState.ground.splice(worldState.ground.indexOf(def.ground), 1);
-    else if (def.respawn) this.regrow.push({ def, at: this.game.time + def.respawn }); // a gathering node grows back
-    else worldState.markCollected(def.id);
+    else if (def.respawn) {
+      // a gathering node stays in sight, spent, and grows back
+      this.regrow.push({ entry, at: this.game.time + def.respawn });
+      entry.depleted = true;
+      entry.group.scale.setScalar(0.6);
+      entry.glint.visible = false;
+      events.emit('lootCollected', { id: def.id });
+      return true;
+    } else worldState.markCollected(def.id);
     this.game.scene.remove(entry.group);
     entry.group.traverse((o) => {
       if (o.isSprite) o.material.dispose();
@@ -268,10 +321,20 @@ export class LootSystem {
       const r = this.regrow[i];
       if (time < r.at) continue;
       this.regrow.splice(i, 1);
-      this._spawn(r.def, r.def.position[0], r.def.position[1]);
+      r.entry.depleted = false;
+      r.entry.group.scale.setScalar(1);
+    }
+    const g = this.gathering;
+    if (g) {
+      const p = this.game.player;
+      if (p.dead || p.casting || p.position.distanceTo(g.from) > 0.3 || !this.available(g.entry)) this.stopGathering(p.dead ? '' : 'Interrupted.');
+      else if ((g.t += dt) >= g.total) {
+        this.gathering = null;
+        this.collect(g.entry);
+      }
     }
     for (const l of this.active) {
-      if (l.def.quest) l.glint.visible = this.gatherable(l.def);
+      if (l.def.quest) l.glint.visible = this.available(l);
       const pulse = 0.45 + Math.sin(time * 2.2 + l.seed) * 0.2;
       l.glint.material.opacity = pulse;
       l.glint.position.y = 0.3 + Math.sin(time * 1.5 + l.seed) * 0.05;
