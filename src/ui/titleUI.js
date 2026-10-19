@@ -1,4 +1,5 @@
 import { TITLE, INTRO } from '../data/text.js';
+import { BUILD_LABEL } from '../buildInfo.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { regionAt } from '../world/layout.js';
 import { tidyName } from '../systems/characters.js';
@@ -35,6 +36,7 @@ export class TitleScreen {
     $('title-tagline').textContent = TITLE.tagline;
     $('title-build').textContent = TITLE.build;
     $('title-foot-build').textContent = `Shadowfall ${TITLE.build}`;
+    $('title-version').textContent = BUILD_LABEL;
     $('intro-text').textContent = INTRO;
 
     const on = (id, fn) => $(id).addEventListener('click', fn);

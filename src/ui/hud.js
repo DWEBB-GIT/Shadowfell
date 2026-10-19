@@ -6,6 +6,7 @@ import { KeybindUI } from './keybindUI.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { DOCUMENTS } from '../data/text.js';
+import { BUILD_LABEL } from '../buildInfo.js';
 import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
 import { ABILITIES, BAR_SLOTS, itemRef, entryName } from '../systems/actionBar.js';
@@ -34,6 +35,7 @@ export class Hud {
     this.logThrottle = new Map();
     this.enemyBars = new Map();
     this.tmp = new THREE.Vector3();
+    $('hud-build').textContent = BUILD_LABEL;
     this.el = {
       level: $('stat-level'),
       hpFill: $('hp-fill'),
