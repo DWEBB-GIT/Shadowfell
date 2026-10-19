@@ -4,7 +4,7 @@ import { ABILITIES } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
 
-const STAT_LABEL = { might: 'Might', finesse: 'Finesse', intellect: 'Intellect', vitality: 'Vitality', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
+const STAT_LABEL = { strength: 'Strength', agility: 'Agility', stamina: 'Stamina', might: 'Might', finesse: 'Finesse', intellect: 'Intellect', vitality: 'Vitality', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
 
 // Bags, the character panel, the spellbook, and the bag slots and spell bar
 // on the bottom bar. None of these pause the game.
@@ -379,18 +379,62 @@ export class ItemUI {
     else lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
     if (shop) {
       if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
-      tip.innerHTML = lines.join('');
+      this._fill(tip, lines, def, loc);
       return this._placeTip(anchor);
     }
     if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && !this.hud.padMode) {
       lines.push('<div class="tt-hint">Right-click to sell</div>');
-      tip.innerHTML = lines.join('');
+      this._fill(tip, lines, def, loc);
       return this._placeTip(anchor);
     }
     const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
-    tip.innerHTML = lines.join('');
+    this._fill(tip, lines, def, loc);
     this._placeTip(anchor);
+  }
+
+  // WoW-style compare: gear hovered outside the character panel shows what is
+  // worn in that slot alongside, with the stat changes on the hovered item.
+  _fill(tip, lines, def, loc) {
+    const worn = [];
+    if (def.slot && !loc.startsWith('e:') && !loc.startsWith('s:')) {
+      const slots = def.slot === 'mainHand' && def.damage ? ['mainHand', 'offHand'] : [def.slot];
+      for (const s of slots) {
+        const st = this.game.inventory.get(`e:${s}`);
+        const w = st && itemView(st);
+        if (w && (s === def.slot || w.damage)) worn.push(w);
+      }
+    }
+    tip.classList.toggle('cmp', worn.length > 0);
+    if (!worn.length) {
+      tip.innerHTML = lines.join('');
+      return;
+    }
+    const totals = (d) => {
+      const t = { ...(d.stats || {}) };
+      if (d.damage) t.damage = (d.damage[0] + d.damage[1]) / 2;
+      return t;
+    };
+    const label = (k) => (k === 'damage' ? 'average damage' : STAT_LABEL[k] || k);
+    const boxes = worn.map((w) => {
+      const wl = [`<div class="tt-equipped">Currently equipped</div>`, `<div class="tt-name k-${w.kind} q-${w.rarity}">${w.name}</div>`];
+      if (w.damage) wl.push(`<div>${w.damage[0]}–${w.damage[1]} damage</div>`);
+      for (const [k, v] of Object.entries(w.stats || {})) wl.push(`<div>+${v} ${STAT_LABEL[k] || k}</div>`);
+      return `<div class="tt-box">${wl.join('')}</div>`;
+    });
+    const a = totals(def);
+    const diff = worn.map((w) => {
+      const b = totals(w);
+      const out = [];
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        const d = Math.round(((a[k] || 0) - (b[k] || 0)) * 10) / 10;
+        if (d) out.push(`<div class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d} ${label(k)}</div>`);
+      }
+      return `<div class="tt-diff"><div class="tt-kind">If you replace ${w.name}:</div>${out.join('') || '<div class="tt-kind">No stat change</div>'}</div>`;
+    });
+    const hint = lines.findIndex((l) => l.includes('tt-sell') || l.includes('tt-price'));
+    lines.splice(hint < 0 ? lines.length : hint, 0, ...diff);
+    tip.innerHTML = `${boxes.join('')}<div class="tt-box">${lines.join('')}</div>`;
   }
 
   _placeTip(anchor) {

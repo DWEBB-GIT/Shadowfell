@@ -330,6 +330,10 @@ kbd {
 .tt-kind { color: var(--text-dim); font-size: 12px; }
 .tt-desc { color: #d0b878; font-style: italic; margin-top: 4px; }
 .tt-hint { color: #8fbf6a; font-size: 12px; margin-top: 4px; }
+#tooltip.cmp { display: flex; gap: 6px; align-items: flex-start; max-width: none; padding: 0; background: none; border: 0; box-shadow: none; }
+#tooltip.cmp .tt-box { width: 220px; padding: 7px 10px; background: rgba(10, 9, 14, 0.96); border: 1px solid #5a5a70; box-shadow: 0 0 0 1px #000; }
+.tt-equipped { color: var(--text-dim); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.tt-diff { margin-top: 4px; border-top: 1px solid #33334a; padding-top: 3px; }
 #tooltip .up { color: #8fdf6a; }
 #tooltip .down { color: #e06a5a; }
 
