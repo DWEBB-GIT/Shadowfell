@@ -28,7 +28,10 @@ export class Combat {
     const { stats, events } = this.game;
     const r = this.game.random;
     const base = (swing ? swingRoll(r, stats, hand) : weaponRoll(r, stats)) + bonus;
-    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * (this.game.spells ? this.game.spells.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy) });
+    const sp = this.game.spells;
+    const m = sp ? sp.hitMods(enemy) : { mult: 1, critBonus: 0, forceCrit: false };
+    const hit = computeHit(r, stats.statBlock, enemyBlock(enemy.cfg), { base, mult: mult * m.mult * (sp ? sp.damageScale : 1) * this.game.afterlife.damageScaleAgainst(enemy), critBonus: m.critBonus, forceCrit: m.forceCrit });
+    sp?.afterHit(hit);
     const visuals = () => {
       events.emit('damageNumber', { target: enemy, amount: hit.amount, crit: hit.crit, kind: 'dealt', hand: hand === 'ranged' ? 'ranged' : 'main' });
       events.emit('hitImpact', { enemy, crit: hit.crit, heavy: !!(hurtOpts && hurtOpts.heavy) || swing });
@@ -50,11 +53,17 @@ export class Combat {
     due.forEach((s) => s.fn());
   }
 
-  // A blow from an enemy on the player: variance, crit, armour, block.
+  // A blow from an enemy on the player: variance, crit, armour, block, then
+  // what a curse (Hex), a guard (Brace with a weapon alone) and a shield of
+  // light (Light Shield) take off it.
   _enemyHit(enemy, damage, { canCrit = true, canBlock = true, school = 'physical' } = {}) {
     const { stats, player, events } = this.game;
     const r = this.game.random;
-    const hit = computeHit(r, enemyBlock(enemy.cfg), stats.statBlock, { base: enemyRoll(r, damage), canCrit, canBlock, school });
+    const mult = (enemy.damageDealtScale ?? 1) * (1 - player.damageReduction / 100);
+    const hit = computeHit(r, enemyBlock(enemy.cfg), stats.statBlock, { base: enemyRoll(r, damage), mult, canCrit, canBlock, school });
+    const left = this.game.spells ? this.game.spells.absorb(hit.amount) : hit.amount;
+    if (left < hit.amount) hit.absorbed = hit.amount - left;
+    hit.amount = left;
     if (hit.amount > 0) player.takeDamage(hit.amount);
     events.emit('damageNumber', { target: player, amount: hit.amount, crit: hit.crit, blocked: hit.blocked, kind: 'taken', usual: enemy.cfg.damage });
     return hit;
@@ -82,9 +91,11 @@ export class Combat {
       if (label) events.emit('log', { text: `You are clear of the ${label}.`, kind: 'muted' });
       return false;
     }
-    if (player.consumeBrace()) {
+    const guard = player.consumeBrace();
+    if (guard) {
       events.emit('braceBlock', { enemy, heavy: true });
-      events.emit('log', { text: `You brace and turn aside the ${label || enemy.cfg.name + "'s blow"}.`, kind: 'hit' });
+      const what = label || enemy.cfg.name + "'s blow";
+      events.emit('log', { text: guard === 'miss' ? `The ${what} misses you.` : guard === 'parry' ? `You parry the ${what}.` : `You brace and turn aside the ${what}.`, kind: 'hit' });
       return false;
     }
     // the slam cannot crit or be blocked; an ordinary cleave can be both.
@@ -148,6 +159,7 @@ export class Combat {
     events.emit('enemyHit', { enemy: target, damage: hit.amount, crit: hit.crit, kind: 'strike', swing: true, hand });
     events.emit('log', { text: `${off ? 'Your off hand strikes' : 'You strike'} the ${target.cfg.name} for ${hit.amount}.${this._critText(hit)}`, kind: 'hit' });
     if (target.dead) this.onEnemyDefeated(target);
+    else this.game.spells?.echo(target, hit); // Empowered Light
     return target;
   }
 
@@ -189,9 +201,11 @@ export class Combat {
       events.emit('enemyWhiff', { enemy });
       return false;
     }
-    if (player.consumeBrace()) {
+    const guard = player.consumeBrace();
+    if (guard) {
       events.emit('braceBlock', { enemy });
-      events.emit('log', { text: `Your shield takes the ${enemy.cfg.name}'s blow.`, kind: 'hit' });
+      const who = enemy.cfg.name;
+      events.emit('log', { text: guard === 'miss' ? `The ${who}'s blow misses you.` : guard === 'parry' ? `You parry the ${who}'s blow.` : `Your shield takes the ${who}'s blow.`, kind: 'hit' });
       return false;
     }
     const hit = this._enemyHit(enemy, enemy.cfg.damage);
@@ -205,6 +219,7 @@ export class Combat {
     if (hit.blocked && hit.amount === 0) return `You block ${who.replace(/^The/, 'the')}'s blow.`;
     const parts = [`${who} ${hit.crit ? 'critically hits' : 'hits'} you for ${hit.amount}`];
     if (hit.blocked) parts.push(` (${hit.blocked} blocked)`);
+    if (hit.absorbed) parts.push(` (${hit.absorbed} absorbed)`);
     return parts.join('') + '.';
   }
 

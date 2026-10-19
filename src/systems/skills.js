@@ -25,10 +25,17 @@ export class Skills {
     return this.ranks.get(id) || 0;
   }
 
-  // May the Warden use this ability? Abilities with no `skill` always.
+  // May the character use this ability? A skill's tool once the skill is
+  // learned; a class spell if it is in the class's spellbook
+  // (archetypes.json `abilities`), or is the Shadow or follow-up form of one
+  // (Ambush, Light's Burn). Abilities in no class (auto attack) always.
   knowsAbility(ability) {
     const a = DB.abilities[ability];
-    return !!a && (!a.skill || this.has(a.skill));
+    if (!a) return false;
+    if (a.skill) return this.has(a.skill);
+    if (!a.kind || this.allSpells) return true; // allSpells: a test hook, every class spell
+    const book = this.game.stats.archetype.abilities || [];
+    return book.includes(ability) || book.some((id) => DB.abilities[id]?.inShadow === ability || DB.abilities[id]?.follow === ability);
   }
 
   // What a trainer offers that the Warden has not learned.

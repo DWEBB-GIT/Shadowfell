@@ -16,6 +16,21 @@ export const CONFIG = {
     startCoins: 8,
     startDraughts: 1,
   },
+  // Control on enemies (Dan, 2026-10-19). Normal enemies take stuns and
+  // sleeps in full. Elites wear them off: each one in a row lasts the next
+  // share of `eliteDr` (full, half, quarter), then they are immune until
+  // `eliteDrReset` seconds pass with none. Bosses are never stunned or
+  // slept: every second of control fills their stagger bar instead, and a
+  // full bar Staggers them for `staggered` seconds (cast broken, +25%
+  // damage taken); each stagger after needs `staggerGrowth` times more.
+  control: {
+    bossStaggerNeed: 6,
+    staggered: 4,
+    staggeredDamageTaken: 25,
+    staggerGrowth: 1.5,
+    eliteDr: [1, 0.5, 0.25],
+    eliteDrReset: 15,
+  },
   shop: {
     sellFraction: 0.25, // merchants pay a quarter of their price, as in WoW
     buybackSlots: 6, // things you sold this session can be bought back at what you got

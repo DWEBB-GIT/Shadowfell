@@ -393,7 +393,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .islot.socket[data-lit] { box-shadow: inset 0 0 10px rgba(240, 200, 120, 0.45); border-color: var(--gold); }
 
 #spellbook-window { left: 50%; bottom: 140px; transform: translateX(-50%); width: 300px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
-#spellbook-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+#spellbook-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; max-height: calc(100vh - 260px); overflow-y: auto; }
 .spell-row { display: flex; align-items: center; gap: 8px; }
 .spell-name { font-size: 13px; }
 .spell-where { font-size: 11px; }
@@ -440,6 +440,15 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 #char-panel .bar.thin { height: 13px; margin-top: 3px; }
 #char-panel .bar.thin .bar-text { font-size: 10px; line-height: 13px; }
 .bar.gauge .fill { background: linear-gradient(#e0a84a, #9a5a1c); }
+/* combo points: five pips under the Energy bar */
+.pips { display: flex; gap: 4px; margin-top: 3px; }
+.pips .pip { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #000; background: #1a1410; box-shadow: inset 0 0 2px #000; }
+.pips .pip.on { background: radial-gradient(circle at 40% 35%, #ffb070, #c84a20); }
+/* a boss's stagger bar under its health */
+#target-stagger-bar { margin-top: 4px; height: 10px; }
+#target-stagger-bar .fill { background: linear-gradient(#f0e0a0, #b08a30); }
+#target-stagger-bar.full .fill { background: linear-gradient(#fff4c0, #f0b040); }
+#target-stagger-bar .bar-text { font-size: 9px; line-height: 9px; }
 .aslot.oor img { filter: sepia(1) saturate(6) hue-rotate(-30deg) brightness(0.75); }
 .aslot.oor::after { content: ''; position: absolute; inset: 0; background: rgba(200, 20, 10, 0.28); pointer-events: none; }
 .aslot.nores img { filter: saturate(0.35) brightness(0.55) sepia(0.4) hue-rotate(190deg); }

@@ -46,11 +46,16 @@ export class Inventory {
     this.coins = CONFIG.player.startCoins;
     this.sockets = [{ id: 'backpack', slots: new Array(BACKPACK_SLOTS).fill(null) }, null, null, null, null];
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.id, null]));
-    this.equipment.mainHand = { id: 'worn_longsword', count: 1 };
-    this.equipment.chest = { id: 'travelling_clothes', count: 1 };
-    this.equipment.offHand = { id: 'kite_shield', count: 1 };
     this.sockets[0].slots[0] = { id: 'healing_draught', count: CONFIG.player.startDraughts };
     this.ammoChoice = null; // the arrow type in the ammo slot
+    // each class starts with its own gear (archetypes.json `startingGear`)
+    const arch = this.game.stats?.archetype || CONFIG.archetypes[CONFIG.player.archetype];
+    for (const [slot, id] of Object.entries(arch.startingGear || {})) {
+      if (slot === 'ammo') {
+        this.sockets[0].slots[1] = { id: id[0], count: id[1] };
+        this.ammoChoice = id[0];
+      } else this.equipment[slot] = { id, count: 1 };
+    }
   }
 
   // ------------------------------------------------------------ queries
@@ -372,6 +377,7 @@ export class Inventory {
     if (def.armourType && !a.armourTypes.includes(def.armourType)) return false;
     if (def.kind === 'shield' && !a.shields) return false;
     if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) return false;
+    if (def.weaponType && (a.bannedWeaponTypes || []).includes(def.weaponType)) return false;
     return true;
   }
 
@@ -421,6 +427,7 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def, p.slot)) {
+      if (def.weaponType && (this.game.stats.archetype.bannedWeaponTypes || []).includes(def.weaponType)) return `A ${this.game.stats.archetype.name} cannot use ${def.weaponType}s.`;
       if (def.kind === 'weapon') return `A ${this.game.stats.archetype.name} cannot dual wield.`;
       const what = def.kind === 'shield' ? 'shields' : `${CONFIG.armourTypes[def.armourType].name.toLowerCase()} armour`;
       return `A ${this.game.stats.archetype.name} cannot use ${what}.`;

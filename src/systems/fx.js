@@ -6,6 +6,9 @@ import * as THREE from 'three';
 // sparks on hits, dust, and a faint pillar on level-up. Effects are pooled
 // per type and disposed when finished.
 
+// the colour of each school of magic (and of a Ranger's tar)
+const SCHOOL_COLOURS = { holy: 0xffd070, shadow: 0x9a5ae0, nature: 0x8ad04a, fire: 0xff8030, physical: 0xe8dcc0, tar: 0x5a4630 };
+
 export class Effects {
   constructor(game) {
     this.game = game;
@@ -15,7 +18,7 @@ export class Effects {
     this.dustMat = new THREE.MeshLambertMaterial({ color: 0x6a5c48 });
 
     const ev = game.events;
-    ev.on('burst', ({ position, radius }) => this.shockwave(position, radius));
+    ev.on('burst', ({ position, radius, school }) => this.shockwave(position, radius, school === 'holy' ? 0xffe6a0 : undefined));
     ev.on('enemyHit', ({ enemy, kind, crit }) => this.sparks(enemy.position, crit ? 14 : kind === 'strike' ? 7 : 8));
     // the weight of a landed blow: the camera kicks (nothing ever pauses)
     ev.on('hitImpact', ({ crit, heavy }) => {
@@ -38,15 +41,23 @@ export class Effects {
       const p = this.game.player.position;
       if (Math.hypot(p.x - x, p.z - z) < 25) this.sparks({ x, y: heightAt(x, z) - 0.3, z }, 5);
     });
-    ev.on('playerBrace', () => this.braceGlow());
+    ev.on('playerBrace', ({ window } = {}) => this.braceGlow(window));
     ev.on('projectile', (p) => this.projectile(p));
     ev.on('darkCircle', ({ x, z, radius }) => {
       const pos = new THREE.Vector3(x, heightAt(x, z), z);
       this.shockwave(pos, radius, 0x9a7cff);
     });
     // spells (src/systems/spells.js)
-    ev.on('spellFlash', ({ position, school }) => this.flash(position, school === 'nature' ? 0x8ad04a : school === 'physical' ? 0xe8dcc0 : 0xffe08a));
-    ev.on('zone', ({ x, z, radius, duration }) => this.zone(x, z, radius, duration));
+    ev.on('spellFlash', ({ position, school }) => this.flash(position, SCHOOL_COLOURS[school] || 0xffe08a));
+    ev.on('zone', ({ x, z, radius, duration, school }) => this.zone(x, z, radius, duration, SCHOOL_COLOURS[school]));
+    // a set trap is a small dull ring until it is sprung or wears out
+    this.traps = new Map();
+    ev.on('trap', ({ key, x, z, radius, duration }) => this.traps.set(key, this.zone(x, z, radius, duration, 0x8a7050, 0.35)));
+    ev.on('trapGone', ({ key }) => {
+      const it = this.traps.get(key);
+      if (it) it.life = Math.max(1e-3, Math.min(it.life, it.age));
+      this.traps.delete(key);
+    });
     ev.on('cleave', ({ position, facing, range }) => {
       const r = range * 0.5;
       this.shockwave(new THREE.Vector3(position.x + Math.sin(facing) * r, position.y, position.z + Math.cos(facing) * r), range * 0.7, 0xffc890);
@@ -59,7 +70,9 @@ export class Effects {
 
   _add(obj, life, update) {
     this.game.scene.add(obj);
-    this.items.push({ obj, life, age: 0, update });
+    const it = { obj, life, age: 0, update };
+    this.items.push(it);
+    return it;
   }
 
   shockwave(pos, radius, color = 0xffd9a0) {
@@ -143,12 +156,12 @@ export class Effects {
   }
 
   // a pale shield of light in front of the Warden while Brace is up
-  braceGlow() {
+  braceGlow(window = this.game.config.brace.window) {
     const player = this.game.player;
     const mat = new THREE.SpriteMaterial({ map: this.game.textures.glint, color: 0x9cc4ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
     const s = new THREE.Sprite(mat);
     s.scale.set(1.4, 1.8, 1);
-    this._add(s, this.game.config.brace.window, (o) => {
+    this._add(s, window, (o) => {
       const f = player.facing;
       o.position.set(player.position.x + Math.sin(f) * 0.6, player.position.y + 1.1, player.position.z + Math.cos(f) * 0.6);
       o.material.opacity = player.isBraced ? 0.5 : 0;
@@ -182,14 +195,14 @@ export class Effects {
   }
 
   // consecrated ground: a glowing ring that stays for the spell's duration
-  zone(x, z, radius, duration) {
-    const mat = new THREE.MeshBasicMaterial({ map: this.game.textures.ring, color: 0xffd070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  zone(x, z, radius, duration, color = 0xffd070, strength = 1) {
+    const mat = new THREE.MeshBasicMaterial({ map: this.game.textures.ring, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const ring = new THREE.Mesh(this.ringGeo, mat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.set(x, heightAt(x, z) + 0.1, z);
     ring.scale.setScalar(radius * 2);
-    this._add(ring, duration, (o, k) => {
-      o.material.opacity = (0.55 + 0.25 * Math.sin(k * duration * Math.PI * 2)) * Math.min(1, (1 - k) * 6);
+    return this._add(ring, duration, (o, k) => {
+      o.material.opacity = strength * (0.55 + 0.25 * Math.sin(k * duration * Math.PI * 2)) * Math.min(1, (1 - k) * 6);
     });
   }
 

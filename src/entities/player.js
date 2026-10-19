@@ -50,7 +50,8 @@ export class Player {
     this.ghost = false; // dead, walking as a spirit (see systems/afterlife.js)
     this.deadTime = 0;
     this.cooldowns = freshCooldowns();
-    this.braced = 0; // seconds left with the shield raised
+    this.braced = 0; // seconds left with a guard up (Brace, Guile)
+    this.guardRule = null; // how it guards: { blocks (0 = every blow), reduction %, miss }
     this.lunge = null; // { t, dir }
     this.pending = null; // queued attack waiting for its impact frame
     this.casting = null; // a spell being cast: { id, t, total, target }
@@ -297,12 +298,36 @@ export class Player {
     return this.braced > 0;
   }
 
-  // Called by combat when a blow lands; true if the shield took it.
+  // % less damage taken from a guard that softens blows rather than
+  // turning them aside (Brace with a weapon alone)
+  get damageReduction() {
+    return this.braced > 0 ? this.guardRule?.reduction || 0 : 0;
+  }
+
+  // Called by combat when a blow lands: false, or how the guard took it
+  // ('block', 'parry' or 'miss'). A guard takes its `blocks` blows (the
+  // first, if it says nothing), or every one in its window with 0.
   consumeBrace() {
     if (this.braced <= 0) return false;
-    this.braced = 0;
+    const rule = this.guardRule || { blocks: 1 };
+    if (rule.reduction) return false;
+    if (rule.blocks > 0) {
+      rule.blocks -= 1;
+      if (rule.blocks <= 0) this.braced = 0;
+    }
     this.rig.play('brace', 0.35, 0.2);
-    return true;
+    if (rule.miss) return 'miss';
+    return this.game.inventory.equipment.offHand && ITEMS[this.game.inventory.equipment.offHand.id]?.kind === 'shield' ? 'block' : 'parry';
+  }
+
+  // Shadow: the Rogue fades to a shade of itself
+  setHidden(on) {
+    if (this.ghost) return;
+    for (const m of this.materials) {
+      m.transparent = on;
+      m.opacity = on ? 0.35 : 1;
+      m.depthWrite = !on;
+    }
   }
 
   // Auto attack, as WoW does it. Each hand has a swing clock

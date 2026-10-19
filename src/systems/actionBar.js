@@ -1,11 +1,14 @@
 import { DB } from '../data/db.js';
 import { ITEMS } from '../data/items.js';
+import { CONFIG } from '../config.js';
 
 // The spell bar. Six spell slots (1 2 3 4 Q E) and four utility slots
 // (Shift-1 to Shift-4; on a pad, hold D-pad left and press a face button,
 // like FFXIV's cross hotbar), each
 // with a fixed key (and pad button); the
-// player decides which ability sits in which slot, Diablo style. Abilities
+// player decides which ability sits in which slot, Diablo style: the six
+// spells you carry are your build (Dan, 2026-10-19). The utility slots take
+// items and tools (Fishing, Set Camp, Cooking) only, never spells. Abilities
 // can be dragged between slots, dragged off the bar, and put back from the
 // spellbook. A slot location is 'a:<index>', a spellbook entry 'k:<ability>'.
 
@@ -17,8 +20,9 @@ import { ITEMS } from '../data/items.js';
 export const ABILITIES = DB.abilities;
 
 // Key labels for keyboard/mouse and gamepad, in slot order (the keyboard
-// ones follow the player's bindings, src/systems/keybinds.js). The sixth
-// slot starts with the archetype's defensive move (the Warden's Brace).
+// ones follow the player's bindings, src/systems/keybinds.js). A new
+// character's six spell slots hold its class's base kit (archetypes.json
+// `bar`); the sixth is its defensive move (the Warrior's Brace).
 export const BAR_SLOTS = [
   { kbm: '1', pad: 'X' },
   { kbm: '2', pad: 'Y' },
@@ -32,8 +36,10 @@ export const BAR_SLOTS = [
   { kbm: '⇧4', pad: '◀B', utility: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'heavyStrike', 'crushingBlow', 'rebuke', 'brace', 'item:healing_draught', null, null, null];
-// the bow abilities go onto free slots the first time a bow is equipped
+// a class's starting bar: its six spells, then a draught on the first utility slot
+export const defaultBar = (archetype) => [...archetype.bar, 'item:healing_draught', null, null, null];
+export const DEFAULT_BAR = defaultBar(CONFIG.archetypes[CONFIG.player.archetype]);
+// the bow abilities go onto free spell slots the first time a bow is equipped
 export const BOW_ABILITIES = ['quickShot', 'venomArrow'];
 
 // A slot can also hold an item (WoW style), as 'item:<id>': the torch,
@@ -49,6 +55,10 @@ export function freeSlot(slots) {
   return i === undefined ? -1 : i;
 }
 export const UTILITY_ABILITIES = ['fish', 'setCamp', 'cook'];
+// the first free spell slot (1 2 3 4 Q E), or -1
+export const freeSpellSlot = (slots) => BAR_SLOTS.findIndex((b, k) => !b.utility && !slots[k]);
+// what may sit in a utility slot: items and skill tools, never class spells
+export const utilityOk = (a) => !a || !!itemRef(a) || !!ABILITIES[a]?.skill;
 
 // may this ability sit on the bar (and show in the spellbook)?
 export const barAbility = (game, id) => !!ABILITIES[id] && ABILITIES[id].bar !== false && game.skills.knowsAbility(id);
@@ -73,18 +83,26 @@ export class ActionBar {
   addBowAbilities() {
     for (const ab of BOW_ABILITIES) {
       if (this.slots.includes(ab) || !barAbility(this.game, ab)) continue;
-      const free = freeSlot(this.slots);
+      const free = freeSpellSlot(this.slots);
       if (free >= 0) this.place(ab, free);
     }
   }
 
   reset() {
-    this.apply([...DEFAULT_BAR]);
+    this.apply(defaultBar(this.game.stats.archetype));
+  }
+
+  // may `a` go in slot `index`? (says why not if it may not)
+  fits(a, index) {
+    if (!BAR_SLOTS[index]?.utility || utilityOk(a)) return true;
+    this.game.hud?.error('Only items and tools go on the utility bar');
+    return false;
   }
 
   // Swap two slots (either may be empty).
   move(from, to) {
     if (from === to) return;
+    if (!this.fits(this.slots[from], to) || !this.fits(this.slots[to], from)) return;
     [this.slots[from], this.slots[to]] = [this.slots[to], this.slots[from]];
     this._changed();
   }
@@ -93,6 +111,7 @@ export class ActionBar {
   // in the target slot goes back to the spellbook.
   place(ability, index) {
     if (!itemRef(ability) && !barAbility(this.game, ability)) return;
+    if (!this.fits(ability, index)) return;
     const was = this.slots.indexOf(ability);
     if (was >= 0) this.slots[was] = null;
     this.slots[index] = ability;
@@ -152,10 +171,17 @@ export class ActionBar {
         if (a && free >= 0 && free < BAR_SLOTS.length - 1) list[free] = a;
       }
     }
-    this.slots = BAR_SLOTS.map((_, i) => {
+    // only what this class knows, and no spells on the utility slots
+    this.slots = BAR_SLOTS.map((b, i) => {
       const a = RENAMED[list[i]] || list[i];
-      return validEntry(a) ? a : null;
+      return validEntry(a) && (itemRef(a) || barAbility(this.game, a)) && (!b.utility || utilityOk(a)) ? a : null;
     });
+    // a bar saved before the class kits: its empty spell slots take the
+    // base kit's spells it lacks
+    for (const a of this.game.stats.archetype.bar || []) {
+      const free = freeSpellSlot(this.slots);
+      if (a && free >= 0 && !this.slots.includes(a)) this.slots[free] = a;
+    }
     // bars saved before the utility slots: move Fishing and Set Camp there
     if (slots.length < BAR_SLOTS.length) {
       for (const u of UTILITY_ABILITIES) {

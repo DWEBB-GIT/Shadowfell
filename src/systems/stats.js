@@ -24,8 +24,9 @@ export class Stats {
     this.game = game;
   }
 
+  // the character's class (set when you enter the world, src/main.js)
   get archetype() {
-    return CONFIG.archetypes[CONFIG.player.archetype];
+    return CONFIG.archetypes[this.game.archetypeId] || CONFIG.archetypes[CONFIG.player.archetype];
   }
 
   // every attribute and gear stat, summed
@@ -58,9 +59,10 @@ export class Stats {
 
   // Ranged attack power comes from Agility, at half the rate of a main stat
   // (a WoW warrior's 1 per Agility against a hunter's 2): a Strength
-  // fighter's bow is for pulling, not for killing
+  // fighter's bow is for pulling, not for killing. A class may say its own
+// share (the Ranger's bow is its weapon: 1)
   get rangedPower() {
-    return this.totals.agility * S().powerPerMainStat * S().rangedPowerShare;
+    return this.totals.agility * S().powerPerMainStat * (this.archetype.rangedPowerShare ?? S().rangedPowerShare);
   }
 
   get spellPower() {
@@ -287,9 +289,10 @@ export function enemyBlock(cfg) {
 //   level below) -> crit? -> armour or resistance (by the defender's own
 //   level) -> block? (stops blockReduction % of what is left) -> round, at
 //   least 1
-export function computeHit(rand, attacker, defender, { base, mult = 1, school = 'physical', canCrit = true, canBlock = false }) {
+// `critBonus` adds crit chance (Righteous); `forceCrit` always crits (Opportunist).
+export function computeHit(rand, attacker, defender, { base, mult = 1, school = 'physical', canCrit = true, canBlock = false, critBonus = 0, forceCrit = false }) {
   let dmg = base * mult * levelGapFactor(attacker.level, defender.level);
-  const crit = canCrit && rand() * 100 < attacker.crit;
+  const crit = canCrit && (forceCrit || rand() * 100 < attacker.crit + critBonus);
   if (crit) dmg *= attacker.critMultiplier;
   dmg *= 1 - mitigation(school === 'physical' ? defender.armour : defender.resistance, defender.level) / 100;
   let blocked = 0;

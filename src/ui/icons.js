@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ITEMS } from '../data/items.js';
+import { DB } from '../data/db.js';
 
 // Inventory icons are rendered from the same Blender models used in the
 // world, once at start-up, so an item always looks like what you dropped.
@@ -395,5 +396,131 @@ export function abilityIcons() {
   // weapon strikes reuse the sword and shield-slam glyphs
   icons.heavyStrike = icons.strike;
   icons.crushingBlow = icons.shieldBreak;
+  // every other spell gets a glyph painted from its kind, in its school's colour
+  for (const a of Object.values(DB.abilities)) if (!icons[a.id] && a.kind) icons[a.id] = glyph((g) => kindGlyph(g, a));
   return icons;
+}
+
+const SCHOOL = { holy: '#ffd070', shadow: '#a86ae8', nature: '#8ad04a', fire: '#ff8a3a', physical: '#d8d0c0' };
+
+// A plain painted glyph for a spell without its own: the shape says what it
+// does (a slash, a bolt, drops for a dot, a ring for ground...), the colour
+// its school.
+function kindGlyph(g, a) {
+  const c = SCHOOL[a.school] || '#d8d0c0';
+  g.strokeStyle = c;
+  g.fillStyle = c;
+  g.lineWidth = 4;
+  const line = (pts) => {
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.stroke();
+  };
+  const dot = (x, y, r) => {
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+  };
+  const ring = (r, from = 0, to = Math.PI * 2) => {
+    g.beginPath();
+    g.arc(32, 32, r, from, to);
+    g.stroke();
+  };
+  if (a.ranged) {
+    // an arrow, with the spell's mark at its head
+    g.strokeStyle = '#d8c8a0';
+    line([[12, 52], [48, 16]]);
+    line([[48, 16], [36, 18]]);
+    line([[48, 16], [46, 28]]);
+    g.fillStyle = c;
+    if (a.kind === 'dot') dot(48, 16, 6);
+    if (a.tuning?.maxTargets > 1) {
+      line([[8, 40], [36, 12]]);
+      line([[24, 56], [52, 28]]);
+    }
+    if (a.kind === 'cast') ring(24, -2.4, -0.6);
+    return;
+  }
+  switch (a.kind) {
+    case 'instant':
+    case 'charge':
+      line([[14, 50], [48, 16]]);
+      if (a.tuning?.bothHands) line([[16, 16], [50, 50]]);
+      if (a.tuning?.damageMultiplier === undefined) dot(32, 32, 8);
+      g.lineWidth = 2;
+      ring(22, -1.9, -0.3);
+      break;
+    case 'dot':
+      for (const [x, y] of [[20, 22], [34, 34], [44, 18], [26, 46]]) dot(x, y, 5);
+      break;
+    case 'cast':
+    case 'channel':
+      g.globalAlpha = 0.5;
+      line([[10, 54], [34, 30]]);
+      g.globalAlpha = 1;
+      dot(40, 24, 11);
+      if (a.kind === 'channel') {
+        g.lineWidth = 2;
+        line([[8, 40], [16, 34], [24, 40], [32, 34], [40, 40], [48, 34], [56, 40]]);
+      }
+      break;
+    case 'aoe':
+    case 'trap':
+      ring(20);
+      g.lineWidth = 2;
+      ring(12);
+      if (a.kind === 'trap') for (let i = 0; i < 8; i++) {
+        const t = (i / 8) * Math.PI * 2;
+        line([[32 + Math.cos(t) * 20, 32 + Math.sin(t) * 20], [32 + Math.cos(t) * 26, 32 + Math.sin(t) * 26]]);
+      }
+      break;
+    case 'burst':
+      for (let i = 0; i < 10; i++) {
+        const t = (i / 10) * Math.PI * 2;
+        line([[32 + Math.cos(t) * 8, 32 + Math.sin(t) * 8], [32 + Math.cos(t) * 24, 32 + Math.sin(t) * 24]]);
+      }
+      break;
+    case 'control':
+      // an eye, or closed for sleep
+      g.lineWidth = 3;
+      line([[10, 32], [22, 22], [42, 22], [54, 32], [42, 42], [22, 42], [10, 32]]);
+      if (!a.applies?.sleep) dot(32, 32, 6);
+      else line([[14, 32], [50, 32]]);
+      break;
+    case 'stealth':
+      g.beginPath();
+      g.arc(32, 32, 20, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#100c09';
+      g.beginPath();
+      g.arc(40, 26, 18, 0, Math.PI * 2);
+      g.fill();
+      break;
+    case 'guard':
+    case 'shield':
+      if (a.kind === 'shield') {
+        g.globalAlpha = 0.35;
+        dot(32, 32, 22);
+        g.globalAlpha = 1;
+      }
+      ring(22);
+      line([[32, 14], [32, 50]]);
+      break;
+    case 'leap':
+      line([[50, 32], [14, 32]]);
+      line([[14, 32], [24, 22]]);
+      line([[14, 32], [24, 42]]);
+      g.lineWidth = 2;
+      ring(20, -2.6, -0.5);
+      break;
+    case 'purge':
+      g.beginPath();
+      g.moveTo(32, 10);
+      g.quadraticCurveTo(50, 34, 32, 54);
+      g.quadraticCurveTo(14, 34, 32, 10);
+      g.fill();
+      break;
+    default:
+      dot(32, 32, 12);
+  }
 }
