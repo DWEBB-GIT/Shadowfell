@@ -18,6 +18,7 @@
 //   data/text.json         intro, documents, examine text
 //   data/skills.json       skills learned from trainers (camping, fishing, cooking)
 //   data/recipes.json      recipes for crafting skills (cooking)
+//   data/titles.json       renown tiers, titles and how NPCs address you
 //
 // See CONTRIBUTING.md for how to add content.
 
@@ -37,6 +38,7 @@ import text from '../../data/text.json';
 import skills from '../../data/skills.json';
 import factions from '../../data/factions.json';
 import recipes from '../../data/recipes.json';
+import titles from '../../data/titles.json';
 import { validateGameData, indexById } from './schema.js';
 
 export const RAW = {
@@ -56,6 +58,7 @@ export const RAW = {
   'skills.json': skills,
   'factions.json': factions,
   'recipes.json': recipes,
+  'titles.json': titles,
 };
 
 // Problems found in the data (empty when it is sound). The game logs them at
@@ -90,6 +93,11 @@ export const DB = {
   factions: byId(factions.factions, 'factions'),
   recipes: byId(recipes.recipes, 'recipes'),
   standings: factions.standings,
+  titles: byId(titles.titles, 'titles'),
+  renown: titles.renown,
+  renownTiers: titles.tiers,
+  titleLines: { greetings: titles.greetings, farewells: titles.farewells },
+  mockChance: titles.mockChance,
   water: world.water || [],
   obscured: world.obscured || [],
   world,

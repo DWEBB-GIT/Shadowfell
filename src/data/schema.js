@@ -607,6 +607,42 @@ export function validateGameData(raw, opts = {}) {
     }
   }
 
+  // ---- renown and titles
+  const titF = raw['titles.json'];
+  if (!titF) errors.push('titles.json: missing');
+  else {
+    const rn = titF.renown || {};
+    for (const k of ['perQuest', 'perLevel', 'firstEliteKill']) if (!(isInt(rn[k]) && rn[k] >= 0)) errors.push(`titles.json renown: ${k} must be a whole number of at least 0`);
+    if (!(isNum(titF.mockChance) && titF.mockChance >= 0 && titF.mockChance <= 1)) errors.push('titles.json: mockChance must be between 0 and 1');
+    const tiers = titF.tiers;
+    if (!Array.isArray(tiers) || !tiers.length || tiers[0].min !== 0 || tiers.some((t, i) => !isStr(t.id) || !isStr(t.name) || !isStr(t.desc) || !isInt(t.min) || (i && t.min <= tiers[i - 1].min))) errors.push('titles.json: tiers need an id, name, desc and a rising min, the first from 0');
+    for (const kind of ['greetings', 'farewells']) {
+      const l = titF[kind] || {};
+      for (const k of ['untitled', 'titled', 'mocking']) if (!isStrList(l[k]) || !l[k].length) errors.push(`titles.json ${kind}: ${k} needs at least one line`);
+      for (const line of [...(l.titled || []), ...(l.mocking || [])]) if (isStr(line) && !line.includes('{title}')) errors.push(`titles.json ${kind}: "${line}" must say {title}`);
+    }
+    const standingIds = (facF.standings || []).map((t) => t.id);
+    for (const [id, t] of Object.entries(indexById(titF.titles, 'titles.json', errors))) {
+      const w = `titles.json ${id}`;
+      if (!isStr(t.name) || !isStr(t.desc)) errors.push(`${w}: needs a name and a desc`);
+      if (!(isInt(t.renown) && t.renown >= 0)) errors.push(`${w}: renown must be a whole number of at least 0`);
+      if (t.mock !== undefined && !(isNum(t.mock) && t.mock >= 0 && t.mock <= 1)) errors.push(`${w}: mock must be between 0 and 1`);
+      if (t.mocks !== undefined && !isStrList(t.mocks)) errors.push(`${w}: mocks must be a list of lines`);
+      if (t.requires !== undefined && !Array.isArray(t.requires)) errors.push(`${w}: requires must be a list`);
+      for (const r of Array.isArray(t.requires) ? t.requires : []) {
+        if (r.skill !== undefined) {
+          ref(w, 'skill', skills, r.skill);
+          if (!(isInt(r.rank) && r.rank >= 1 && (!skills[r.skill] || r.rank <= (skills[r.skill].maxRank || 1)))) errors.push(`${w}: a skill condition needs a rank the skill can reach`);
+        } else if (r.slain !== undefined) ref(w, 'enemy', enemies, r.slain);
+        else if (r.faction !== undefined) {
+          ref(w, 'faction', factions, r.faction);
+          if (!standingIds.includes(r.standing)) errors.push(`${w}: names unknown standing ${r.standing}`);
+        } else if (r.quest !== undefined) ref(w, 'quest', quests, r.quest);
+        else if (!(isInt(r.level) && r.level >= 1)) errors.push(`${w}: each condition needs a skill, slain, faction, quest or level`);
+      }
+    }
+  }
+
   // ---- text
   if (!isStr(textF.intro)) errors.push('text.json: needs an intro');
   const ttl = textF.title;

@@ -103,6 +103,10 @@ export function validateSave(data) {
     const known = (l) => isStrArray(l) && l.every((id) => DB.quests[id]);
     check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
   }
+  if (data.titles !== undefined) {
+    const t = data.titles;
+    check(t && typeof t === 'object' && Number.isFinite(t.renown) && (t.chosen === null || typeof t.chosen === 'string') && isStrArray(t.slain) && isStrArray(t.known), 'titles');
+  }
   if (data.reputation !== undefined) check(data.reputation && typeof data.reputation === 'object' && Object.values(data.reputation).every((n) => Number.isFinite(n)), 'reputation');
   if (data.cooking !== undefined) check(data.cooking && isStrArray(data.cooking.recipes) && data.cooking.recipes.every((id) => DB.recipes[id]), 'recipes');
   if (data.skills !== undefined) {
@@ -155,6 +159,7 @@ export class SaveManager {
       quests: this.game.quests.serialize(),
       skills: this.game.skills.serialize(),
       reputation: this.game.reputation.serialize(),
+      titles: this.game.titles.serialize(),
       cooking: this.game.cooking.serialize(),
     };
   }
@@ -225,6 +230,12 @@ export class SaveManager {
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);
+    // renown and titles; saves from before titles start with the renown
+    // their finished quests and levels would have earned
+    const titles = this.game.titles;
+    titles.apply(data.titles);
+    if (!data.titles) titles.renown = this.game.quests.done.size * DB.renown.perQuest + (progression.level - 1) * DB.renown.perLevel;
+    titles._checkNew();
     // rewards added to a quest after it was handed in (the tool pack, for
     // the story quest) are given now, once
     for (const id of this.game.quests.done) {

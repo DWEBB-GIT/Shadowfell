@@ -109,8 +109,10 @@ export class Enemy {
       this._wakePack();
     }
     if (this.health <= 0 && this.cfg.dummy) {
-      // the training dummy never dies: it is whole again
+      // the training dummy never dies: it is whole again (beating it still
+      // counts, for the Dummy Slayer title)
       this.health = this.maxHealth;
+      this.game.events.emit('dummyBeaten', { enemy: this });
     } else if (this.health <= 0) {
       this.dead = true;
       this.state = 'dead';

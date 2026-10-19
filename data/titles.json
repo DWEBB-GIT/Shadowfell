@@ -1,0 +1,106 @@
+{
+  "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done) or { level }. NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
+  "renown": {
+    "perQuest": 10,
+    "perLevel": 5,
+    "firstEliteKill": 15
+  },
+  "mockChance": 0.2,
+  "tiers": [
+    { "id": "nobody", "name": "Nobody", "min": 0, "desc": "No one knows your name. Most don't look up when you pass." },
+    { "id": "familiar", "name": "A Familiar Face", "min": 20, "desc": "A few folk nod when you pass. One or two may even remember why." },
+    { "id": "known", "name": "Known", "min": 60, "desc": "Your name comes up at the inn, not always kindly." },
+    { "id": "respected", "name": "Respected", "min": 120, "desc": "People step aside on the road and lower their voices when you come in." },
+    { "id": "renowned", "name": "Renowned", "min": 200, "desc": "Children play at being you. Their parents argue about whether that is a good thing." },
+    { "id": "famous", "name": "Famous", "min": 350, "desc": "Strangers know your face before you open your mouth." }
+  ],
+  "greetings": {
+    "untitled": ["Hello there.", "Hey you!", "You. Yes, you.", "Mm? What is it?", "Oh. Hello."],
+    "titled": ["Hello, {title}.", "Hey, {title}!", "Well met, {title}.", "Ah, the {title}."],
+    "mocking": ["Well, if it isn't the mighty {title}.", "{title}, is it? Course you are.", "Oh look, everyone. The {title}'s back.", "Mind the step, {title}. Wouldn't want a legend to trip."]
+  },
+  "farewells": {
+    "untitled": ["Bye, then.", "Off you go.", "Mind how you go."],
+    "titled": ["Farewell, {title}.", "Safe road, {title}.", "Go well, {title}."],
+    "mocking": ["Off you go, {title}. Try to live up to it.", "Bye, {title}. Don't let it go to your head.", "Farewell, {title}. We'll tell them you were brave."]
+  },
+  "titles": [
+    {
+      "id": "adventurer",
+      "name": "Adventurer",
+      "renown": 20,
+      "mock": 0.25,
+      "desc": "Anyone with a sword and nowhere to be can call themselves this. Now you do."
+    },
+    {
+      "id": "dummy_slayer",
+      "name": "Dummy Slayer",
+      "renown": 20,
+      "mock": 0.9,
+      "requires": [{ "slain": "training_dummy" }],
+      "desc": "You beat a sack of straw. Brackenford will never let you forget it.",
+      "mocks": ["Hey, Dummy Slayer! The straw man sends his regards.", "Careful, everyone. Dummy Slayer's here.", "The Dummy Slayer! I'll guard the scarecrows."]
+    },
+    {
+      "id": "angler",
+      "name": "Angler",
+      "renown": 20,
+      "mock": 0.2,
+      "requires": [{ "skill": "fishing", "rank": 15 }],
+      "desc": "You can tell a perch from a dace, and you've caught more of both than you've lost.",
+      "mocks": ["Smells like an Angler, right enough.", "Hey, Angler! Caught anything bigger than a boot yet?"]
+    },
+    {
+      "id": "master_angler",
+      "name": "Master Angler",
+      "renown": 120,
+      "mock": 0.1,
+      "requires": [{ "skill": "fishing", "rank": 40 }],
+      "desc": "The mere gives up its fish to you. Old Tam pretends not to mind.",
+      "mocks": ["Master Angler. Master of standing about in the wet, more like."]
+    },
+    {
+      "id": "cook",
+      "name": "Cook",
+      "renown": 20,
+      "mock": 0.2,
+      "requires": [{ "skill": "cooking", "rank": 15 }],
+      "desc": "Your stew has stopped making people ill. Mostly.",
+      "mocks": ["The Cook! Is that what that smell was?"]
+    },
+    {
+      "id": "lockpick",
+      "name": "Lockpick",
+      "renown": 60,
+      "mock": 0.5,
+      "requires": [{ "skill": "lockpicking", "rank": 15 }],
+      "desc": "No chest is safe. Neither, folk mutter, is anything else.",
+      "mocks": ["Hide the silver, here's the Lockpick.", "Lockpick. Hands where I can see them."]
+    },
+    {
+      "id": "road_warden",
+      "name": "Warden of the Road",
+      "renown": 60,
+      "mock": 0.1,
+      "requires": [{ "faction": "road_wardens", "standing": "friendly" }],
+      "desc": "The Road Wardens count you as one of their own, or near enough."
+    },
+    {
+      "id": "greyjaw_bane",
+      "name": "Bane of Greyjaw",
+      "renown": 60,
+      "mock": 0.15,
+      "requires": [{ "slain": "greyjaw" }],
+      "desc": "You killed the old wolf of the mere. Some are glad. Some liked him better than you.",
+      "mocks": ["Bane of Greyjaw. Poor old dog."]
+    },
+    {
+      "id": "hero",
+      "name": "Hero",
+      "renown": 200,
+      "mock": 0.5,
+      "desc": "You've done enough to claim it. Whether anyone believes you is another matter.",
+      "mocks": ["Hero! Ha. Heroes don't come to Brackenford.", "Hello, Hero. Saved anyone today?", "The Hero. Every village has one. Ours is you, apparently."]
+    }
+  ]
+}

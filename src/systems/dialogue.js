@@ -30,6 +30,9 @@ export class Dialogue {
     this.game.merchant.close();
     this.npc = npc;
     this.view = { kind: 'menu' };
+    // how they hail you: "Hey you!" while you are nobody, your title once
+    // you have chosen one (the notice board says nothing)
+    this.salutation = DB.npcs[npc.id].board ? '' : this.game.titles.address('greetings');
     this.game.events.emit('dialogueChanged', {});
   }
 
@@ -89,6 +92,7 @@ export class Dialogue {
     if (v.kind === 'menu') {
       const greet = d ? d.greetings.filter((g) => conditionHolds(this.game, g.when)) : [];
       page.text = greet.length ? greet[greet.length - 1].text : '';
+      page.salutation = this.salutation;
       for (const q of this.game.quests.forNpc(this.npc.id)) {
         page.options.push({ id: 'quest:' + q.id, text: DB.quests[q.id].name, icon: q.status, group: 'quest' });
       }
@@ -136,7 +140,10 @@ export class Dialogue {
     if (!this.npc) return false;
     const { quests, merchant, events } = this.game;
     const v = this.view;
-    if (id === 'bye') return this.close();
+    if (id === 'bye') {
+      if (!DB.npcs[this.npc.id].board) events.emit('log', { text: `${DB.npcs[this.npc.id].name}: "${this.game.titles.address('farewells')}"`, kind: 'say' });
+      return this.close();
+    }
     if (id === 'menu') this.view = { kind: 'menu' };
     else if (id === 'train') this.view = { kind: 'train' };
     else if (id === 'shop') {

@@ -4875,7 +4875,65 @@ async function targetingFixes(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes };
+// Renown and titles (Dan, 2026-10-19): a nobody is hailed "Hey you!"; deeds
+// earn renown; a title unlocks when renown (and its own conditions) allow,
+// and NPCs then use it in greetings and farewells, sometimes mockingly.
+async function titles(browser) {
+  current = 'Renown and titles';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await pauseLoop(page);
+  const start = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.npcs.talk(g.npcs.byId('mara'));
+    const p = g.dialogue.page;
+    const untitled = g.db.titleLines.greetings.untitled;
+    return { renown: g.titles.renown, tier: g.titles.tier.name, sal: p.salutation, plain: untitled.includes(p.salutation), shown: document.getElementById('dlg-text')?.textContent.startsWith(p.salutation), canAdventurer: g.titles.available('adventurer'), refused: !g.titles.choose('adventurer') };
+  });
+  record('A new character is a Nobody, hailed with a plain line, and cannot take a title yet', start.renown === 0 && start.tier === 'Nobody' && start.plain && start.shown && !start.canAdventurer && start.refused, JSON.stringify(start));
+
+  const earned = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.dialogue.close();
+    g.events.emit('questComplete', { id: 'missing_delivery' });
+    g.events.emit('questComplete', { id: 'bells_at_hallow_cut' });
+    const r = { renown: g.titles.renown, tier: g.titles.tier.name, adventurer: g.titles.available('adventurer'), angler: g.titles.lockedBecause('angler') };
+    g.titles.choose('adventurer');
+    g.random = Math.random;
+    const lines = [];
+    for (let i = 0; i < 40; i++) { g.npcs.talk(g.npcs.byId('mara')); lines.push(g.dialogue.page.salutation); g.dialogue.close(); }
+    g.npcs.talk(g.npcs.byId('mara'));
+    g.dialogue.choose('bye');
+    r.lines = [...new Set(lines)];
+    r.farewell = [...document.querySelectorAll('#log li')].map((li) => li.textContent).reverse().find((t) => t.startsWith('Mara Venn:'));
+    return r;
+  });
+  const usesTitle = earned.lines.every((l) => l.includes('Adventurer'));
+  record('Two quests make you A Familiar Face; Adventurer unlocks, Angler still needs Fishing 15', earned.renown === 20 && earned.tier === 'A Familiar Face' && earned.adventurer && earned.angler === 'Requires Fishing 15', JSON.stringify(earned));
+  record('With a title chosen NPCs greet and bid farewell by it, sometimes mockingly', usesTitle && earned.lines.length >= 3 && /Adventurer/.test(earned.farewell || ''), JSON.stringify({ lines: earned.lines, farewell: earned.farewell }));
+
+  const kept = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.skills.ranks.set('fishing', 15);
+    g.events.emit('skillsChanged', { id: 'fishing' });
+    g.events.emit('dummyBeaten', { enemy: g.enemies.list.find((e) => e.type === 'training_dummy') || { type: 'training_dummy', cfg: g.db.enemies.training_dummy } });
+    const angler = g.titles.choose('angler');
+    const dummy = g.titles.available('dummy_slayer');
+    const data = JSON.parse(JSON.stringify(g.save.serialize()));
+    const ok = g.validateSave(data);
+    g.titles.reset();
+    g.save.apply(data);
+    g.hud.items.toggle('character');
+    document.querySelector('[data-char-tab="titles"]').click();
+    const tab = document.getElementById('char-titles');
+    return { angler, dummy, ok: Array.isArray(ok) ? !ok.length : !!ok, chosen: g.titles.chosen, renown: g.titles.renown, head: document.getElementById('character-title').textContent, rows: tab.querySelectorAll('.title-row').length, visible: !tab.hidden };
+  });
+  record('Titles and renown save and load; the character window lists them and shows the chosen one', kept.angler && kept.dummy && kept.ok && kept.chosen === 'angler' && kept.renown === 20 && /, Angler$/.test(kept.head) && kept.rows > 5 && kept.visible, JSON.stringify(kept));
+  record('No errors (titles)', !errors.length, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes, titles };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);
