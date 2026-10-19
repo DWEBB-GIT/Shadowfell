@@ -4775,6 +4775,27 @@ async function targetingFixes(browser) {
   });
   record('Tooltips name the exact gear: melee weapon in the main hand; bow and arrows for bow abilities', /melee weapon in your main hand/.test(tips.heavy) && /bow in your ranged slot/.test(tips.quick) && /bow in your ranged slot/.test(tips.venom), JSON.stringify(tips));
 
+  // every melee weapon in the main hand counts for the melee abilities; no weapon or a broken one does not
+  const melee = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    const blocked = (ab) => { g.hud.items._tooltip('k:' + ab, document.body); return document.querySelector('#tooltip .tt-req').classList.contains('bad'); };
+    const saved = inv.equipment.mainHand;
+    const wrong = [];
+    const ids = Object.entries(g.items).filter(([, d]) => d.kind === 'weapon' && d.slot !== 'ranged').map(([id]) => id);
+    for (const id of ids) {
+      inv.equipment.mainHand = { id, count: 1 };
+      for (const ab of ['heavyStrike', 'crushingBlow', 'cleave', 'rend']) if (blocked(ab)) wrong.push(`${id}/${ab}`);
+    }
+    inv.equipment.mainHand = { id: ids[0], count: 1, dur: 0 };
+    const broken = blocked('heavyStrike');
+    inv.equipment.mainHand = null;
+    const empty = blocked('heavyStrike');
+    inv.equipment.mainHand = saved;
+    return { n: ids.length, wrong, broken, empty };
+  });
+  record('Every melee weapon in the main hand (swords, daggers, axes...) allows the melee abilities; none, or a broken one, does not', melee.n >= 10 && !melee.wrong.length && melee.broken && melee.empty, JSON.stringify(melee));
+
   const range = await page.evaluate(() => {
     const g = window.__shadowfall;
     const e = g.enemies.byId('ghoul_road');

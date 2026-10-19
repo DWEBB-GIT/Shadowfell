@@ -71,9 +71,11 @@ export function missingGear(game, ability) {
     const v = s && DB.items[s.id]?.kind === 'shield' && game.itemView(s);
     return v && !v.broken ? null : requirementText(ability);
   }
-  const w = inv.equipment.mainHand && game.itemView(inv.equipment.mainHand);
-  if (!w || w.broken || DB.items[w.id]?.kind !== 'weapon') return requirementText(ability);
-  if (need !== 'weapon' && DB.items[w.id].weaponType !== need) return requirementText(ability);
+  // (an item view has no id: the item's id is on the stack)
+  const stack = inv.equipment.mainHand;
+  const def = stack && DB.items[stack.id];
+  if (!def || def.kind !== 'weapon' || game.itemView(stack).broken) return requirementText(ability);
+  if (need !== 'weapon' && def.weaponType !== need) return requirementText(ability);
   return null;
 }
 
