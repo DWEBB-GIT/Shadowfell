@@ -1,8 +1,9 @@
 import { DB } from '../data/db.js';
 import { ITEMS } from '../data/items.js';
 
-// The spell bar. Six combat slots and four utility slots (keys 6-9; on a pad,
-// hold D-pad left and press a face button, like FFXIV's cross hotbar), each
+// The spell bar. Six spell slots (1 2 3 4 Q E) and four utility slots
+// (Shift-1 to Shift-4; on a pad, hold D-pad left and press a face button,
+// like FFXIV's cross hotbar), each
 // with a fixed key (and pad button); the
 // player decides which ability sits in which slot, Diablo style. Abilities
 // can be dragged between slots, dragged off the bar, and put back from the
@@ -15,22 +16,23 @@ import { ITEMS } from '../data/items.js';
 // `strike`) never go on the bar or in the spellbook.
 export const ABILITIES = DB.abilities;
 
-// Key labels for keyboard/mouse and gamepad, in slot order. The last slot is
-// the defensive slot on Space, which each archetype fills with its own move.
+// Key labels for keyboard/mouse and gamepad, in slot order (the keyboard
+// ones follow the player's bindings, src/systems/keybinds.js). The sixth
+// slot starts with the archetype's defensive move (the Warden's Brace).
 export const BAR_SLOTS = [
   { kbm: '1', pad: 'X' },
   { kbm: '2', pad: 'Y' },
-  { kbm: '3 / Q', pad: 'RB' },
+  { kbm: '3', pad: 'RB' },
   { kbm: '4', pad: 'LB' },
-  { kbm: '5', pad: 'LT' },
-  { kbm: 'Space', pad: 'B', defensive: true },
-  { kbm: '6', pad: '◀X', utility: true },
-  { kbm: '7', pad: '◀Y', utility: true },
-  { kbm: '8', pad: '◀A', utility: true },
-  { kbm: '9', pad: '◀B', utility: true },
+  { kbm: 'Q', pad: 'LT' },
+  { kbm: 'E', pad: 'B' },
+  { kbm: '⇧1', pad: '◀X', utility: true },
+  { kbm: '⇧2', pad: '◀Y', utility: true },
+  { kbm: '⇧3', pad: '◀A', utility: true },
+  { kbm: '⇧4', pad: '◀B', utility: true },
 ];
 
-export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', 'heavyStrike', 'crushingBlow', null, null];
+export const DEFAULT_BAR = ['lunge', 'shieldBreak', 'heavyStrike', 'crushingBlow', 'rebuke', 'brace', 'item:healing_draught', null, null, null];
 // the bow abilities go onto free slots the first time a bow is equipped
 export const BOW_ABILITIES = ['quickShot', 'venomArrow'];
 
@@ -42,7 +44,7 @@ const validEntry = (a) => (itemRef(a) ? !!ITEMS[itemRef(a)] : !!ABILITIES[a] && 
 export const entryName = (a) => (itemRef(a) ? ITEMS[itemRef(a)]?.name || '' : ABILITIES[a]?.name || '');
 // the first free slot for something new: a utility slot if one is free
 export function freeSlot(slots) {
-  const order = [...BAR_SLOTS.keys()].filter((i) => !BAR_SLOTS[i].defensive).sort((a, b) => !!BAR_SLOTS[b].utility - !!BAR_SLOTS[a].utility);
+  const order = [...BAR_SLOTS.keys()].sort((a, b) => !!BAR_SLOTS[b].utility - !!BAR_SLOTS[a].utility);
   const i = order.find((k) => !slots[k]);
   return i === undefined ? -1 : i;
 }

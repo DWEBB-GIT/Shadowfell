@@ -78,6 +78,8 @@ export class Interaction {
     for (const c of player.ghost ? this.game.afterlife.interactions() : this._candidates()) {
       const d = Math.hypot(c.x - player.position.x, c.z - player.position.z);
       if (d > (c.reach || CONFIG.interaction.radius)) continue;
+      // nothing through a wall
+      if (this.game.collision.wallBetween(player.position.x, player.position.z, c.x, c.z)) continue;
       const score = d + c.bias;
       if (score < bestScore) {
         bestScore = score;

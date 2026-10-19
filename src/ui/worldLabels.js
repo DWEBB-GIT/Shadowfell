@@ -42,9 +42,11 @@ export class WorldLabels {
     if (!this.game.settings.get('lootNames')) return out;
     for (const l of this.game.loot.active) {
       const r = l.def.reward;
-      if (!r || !r.item || !ITEMS[r.item] || !this.game.loot.gatherable(l.def)) continue;
+      // quest items are always named; greyed while they cannot be taken
+      const ok = this.game.loot.available(l);
+      if (!r || !r.item || !ITEMS[r.item] || (!ok && !l.def.quest)) continue;
       const v = itemView({ id: r.item, rolls: r.rolls });
-      out.push({ text: `${v.name}${r.count > 1 ? ` ×${r.count}` : ''}`, colour: RARITY[v.rarity].colour, x: l.x, y: l.baseY + 0.75, z: l.z, cls: 'loot-label' });
+      out.push({ text: `${v.name}${r.count > 1 ? ` ×${r.count}` : ''}`, colour: ok ? RARITY[v.rarity].colour : '#7a7a7a', x: l.x, y: l.baseY + 0.75, z: l.z, cls: 'loot-label' });
     }
     return out;
   }

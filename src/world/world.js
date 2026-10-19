@@ -76,7 +76,7 @@ export class World {
 
   // walls as rows of small circles, from [x1, z1, x2, z2] segments in the
   // object's own space (rotated by `r` radians)
-  _wallColliders(x, z, r, segments, radius = 0.28) {
+  _wallColliders(x, z, r, segments, radius = 0.28, wall = false) {
     const cos = Math.cos(r);
     const sin = Math.sin(r);
     for (const [x1, z1, x2, z2] of segments) {
@@ -85,7 +85,7 @@ export class World {
       for (let i = 0; i <= n; i++) {
         const ox = x1 + ((x2 - x1) * i) / n;
         const oz = z1 + ((z2 - z1) * i) / n;
-        this.game.collision.add(x + ox * cos + oz * sin, z - ox * sin + oz * cos, radius);
+        this.game.collision.add(x + ox * cos + oz * sin, z - ox * sin + oz * cos, radius, wall);
       }
     }
   }
@@ -140,7 +140,7 @@ export class World {
         this.flickerLights.push({ light, base: 4, seed: x });
       }
       this.group.add(group);
-      this._wallColliders(x, z, 0, b.walls);
+      this._wallColliders(x, z, 0, b.walls, 0.28, true); // building walls block sight
       for (const [ox, oz, r] of b.furniture || []) this.game.collision.add(x + ox, z + oz, r);
       const [w, d] = b.size;
       this.buildings.push({ def: b, fade, inside: 0, minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });

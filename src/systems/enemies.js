@@ -97,10 +97,12 @@ export class EnemyManager {
     const living = this.list.filter((e) => e.alive);
     for (let i = 0; i < living.length; i++) {
       const a = living[i];
+      // the training dummy is planted: whoever bumps it does all the moving
       for (let j = i + 1; j < living.length; j++) {
-        pushApart(a.position, a.radius, living[j].position, living[j].radius, 0.5);
+        const b = living[j];
+        pushApart(a.position, a.radius, b.position, b.radius, a.cfg.dummy ? 1 : b.cfg.dummy ? 0 : 0.5);
       }
-      if (!player.dead) pushApart(player.position, player.radius, a.position, a.radius, 0.85);
+      if (!player.dead) pushApart(player.position, player.radius, a.position, a.radius, a.cfg.dummy ? 0 : 0.85);
     }
   }
 }

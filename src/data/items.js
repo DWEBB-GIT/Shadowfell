@@ -41,6 +41,9 @@ export const RARITY = DB.rarities; // id -> { name, colour, suffix?, drops? }, l
 
 export const BACKPACK_SLOTS = 16;
 export const BAG_SOCKETS = 4; // socket 0 is the backpack and cannot be removed
+// one more socket after the bags, for the tool pack (an item with `toolPack`),
+// which carries the torch, rods and other tools outside the bags
+export const TOOL_SOCKET = BAG_SOCKETS;
 
 // ------------------------------------------------------------ random rolls
 // Gear that drops from enemies rolls a little, Diablo style: its stats and

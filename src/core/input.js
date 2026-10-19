@@ -3,7 +3,7 @@
 
 const GAME_KEYS = new Set([
   'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight',
-  'KeyQ', 'KeyE', 'KeyI', 'KeyK', 'KeyM', 'KeyB', 'KeyC', 'KeyP', 'Tab', 'Escape', 'Enter',
+  'KeyQ', 'KeyE', 'KeyI', 'KeyK', 'KeyB', 'KeyC', 'KeyP', 'Tab', 'Escape', 'Enter',
   'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyL',
 ]);
 
@@ -24,8 +24,11 @@ export class Input {
       }
       // typing in a text field (the character name) is not a game key
       if (e.target instanceof HTMLInputElement) return;
-      if (GAME_KEYS.has(e.code) || this.isBound(e.code)) e.preventDefault();
-      if (!e.repeat) this.pressed.add(e.code);
+      // with Shift held a key is its Shift binding if it has one (Shift-1:
+      // utility slot 1), else the key itself (Shift+W still walks)
+      const shifted = e.shiftKey && !e.code.startsWith('Shift') && this.isBound('Shift+' + e.code) ? 'Shift+' + e.code : null;
+      if (GAME_KEYS.has(e.code) || shifted || this.isBound(e.code)) e.preventDefault();
+      if (!e.repeat) this.pressed.add(shifted || e.code);
       this.held.add(e.code);
     });
     window.addEventListener('keyup', (e) => {
@@ -39,6 +42,12 @@ export class Input {
       if (e.button === 2) this.mouse.rightClicked = true;
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // the wheel zooms the camera (notches, + is out)
+    this.wheel = 0;
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.wheel += Math.sign(e.deltaY);
+    }, { passive: false });
   }
 
   _mouse(e) {
@@ -60,6 +69,12 @@ export class Input {
       return true;
     }
     return false;
+  }
+
+  consumeWheel() {
+    const w = this.wheel;
+    this.wheel = 0;
+    return w;
   }
 
   consumeClick() {

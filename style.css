@@ -95,7 +95,7 @@ kbd {
 .q-objectives li.done { color: #8cbf78; }
 
 /* the minimap: round, north up, top right */
-#minimap-wrap { position: absolute; top: 12px; right: 12px; width: 168px; height: 168px; pointer-events: auto; }
+#minimap-wrap { position: absolute; top: 12px; right: 12px; width: 168px; height: 168px; pointer-events: auto; cursor: crosshair; }
 #minimap { display: block; border-radius: 50%; border: 2px solid var(--border); box-shadow: 0 0 0 2px #000, 0 2px 10px rgba(0,0,0,0.6); box-sizing: content-box; margin: -2px; }
 .mm-north { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--gold); background: var(--panel-solid); border: 1px solid var(--border); border-radius: 8px; padding: 0 5px; line-height: 14px; }
 .mm-zoom { position: absolute; right: -4px; width: 20px; height: 20px; padding: 0; font: bold 14px/18px Georgia, serif; color: var(--text); background: var(--panel-solid); border: 1px solid var(--border); border-radius: 50%; cursor: pointer; }
@@ -575,6 +575,9 @@ body.ghost #prompt { color: #cfe6ff; }
 #skills-window { left: 50%; bottom: 140px; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 #settings-window { left: 50%; transform: translateX(-50%); width: 320px; padding: 10px 12px 12px; background: rgba(16, 13, 10, 0.95); }
 #settings-list label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; }
+#settings-list .set-slider span { flex: 1; }
+#settings-list .set-slider input { width: 120px; }
+#settings-list .set-slider b { width: 38px; text-align: right; font-weight: normal; color: var(--text-dim); }
 #skills-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .skill-tile { display: flex; gap: 8px; align-items: center; padding: 6px; border: 1px solid #3a2f20; background: #0f0c09; }
 .skill-tile img { width: 34px; height: 34px; }
@@ -718,3 +721,11 @@ body.ghost #prompt { color: #cfe6ff; }
 .prof-how { font-size: 11px; margin-top: 2px; }
 .prof-sub { margin: 6px 0 0; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
 .train-row .btn:disabled { opacity: 0.4; cursor: default; }
+
+/* an ability's gear requirement in its tooltip; red while it is not met */
+.tt-req { font-size: 12px; color: var(--text); }
+.tt-req.bad { color: #ff4a3a; }
+
+/* the tool pack's slot, left of the bag slots */
+.islot.tool-socket { margin-right: 6px; }
+.islot.tool-socket:not(.filled) .ph { opacity: 0.35; font-size: 18px; }

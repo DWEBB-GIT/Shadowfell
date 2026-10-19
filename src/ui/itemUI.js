@@ -1,8 +1,9 @@
 import { DB } from '../data/db.js';
 import { signpostLines } from '../world/signposts.js';
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView, durability } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, TOOL_SOCKET, RARITY, sellPrice, itemView, durability } from '../data/items.js';
 import { moneyText, moneyHTML } from './money.js';
 import { SETTINGS } from '../systems/settings.js';
+import { missingGear } from '../systems/spells.js';
 import { BUTTONS } from '../core/gamepad.js';
 import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
@@ -90,7 +91,10 @@ export class ItemUI {
       if (b) game.cooking.start(b.dataset.cook, b.dataset.all ? Infinity : 1);
     });
     for (const ev of ['craftEnd', 'craftStart', 'campPitched']) game.events.on(ev, () => this.open.cooking && this.render());
-    $('settings-list').addEventListener('change', (e) => game.settings.set(e.target.dataset.setting, e.target.checked));
+    // checkboxes on change; sliders as they move, so the sound follows the hand
+    const setFrom = (e) => e.target.dataset.setting && game.settings.set(e.target.dataset.setting, e.target.type === 'range' ? +e.target.value : e.target.checked);
+    $('settings-list').addEventListener('change', setFrom);
+    $('settings-list').addEventListener('input', setFrom);
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
     // Back: from the shop to the conversation with its keeper
@@ -306,9 +310,11 @@ export class ItemUI {
     const inv = this.game.inventory;
     // bag sockets on the bottom bar (backpack last, as in WoW: right-most)
     let sockets = '';
-    for (let i = BAG_SOCKETS - 1; i >= 1; i--) {
+    // the tool pack's own slot comes first, left of the bags (empty until earned)
+    for (let i = TOOL_SOCKET; i >= 1; i--) {
       const s = inv.sockets[i];
-      let slot = this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, 'socket', '');
+      let slot = this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, i === TOOL_SOCKET ? 'socket tool-socket' : 'socket', i === TOOL_SOCKET ? '⚒' : '');
+      if (i === TOOL_SOCKET && !s) slot = slot.replace('<div ', '<div title="Tool pack slot: earned from Mara Venn\'s first errand" ');
       // a quiver shows how many arrows it holds
       if (s && ITEMS[s.id].holds === 'ammo') {
         const n = inv.arrowsIn(i);
@@ -318,7 +324,7 @@ export class ItemUI {
     }
     // a bag whose socket was emptied closes with it
     for (const i of [...this.openBags]) if (!inv.sockets[i]) this.openBags.delete(i);
-    for (let i = 1; i < BAG_SOCKETS; i++) if (this.openBags.has(i)) sockets = sockets.replace(`data-loc="s:${i}"`, `data-loc="s:${i}" data-lit="1"`);
+    for (let i = 1; i <= TOOL_SOCKET; i++) if (this.openBags.has(i)) sockets = sockets.replace(`data-loc="s:${i}"`, `data-loc="s:${i}" data-lit="1"`);
     // the free space in all bags shows on the backpack, as in WoW
     const free = inv.freeSlots();
     sockets += `<div class="islot socket backpack filled${this.openBags.has(0) ? ' lit' : ''}${free === 0 ? ' full' : ''}" data-loc="s:0" title="Backpack (B): ${free} free slot${free === 1 ? '' : 's'}"><span class="bp-icon"></span><span class="bag-free">${free}</span><span class="key" data-kbm="B" data-pad="Start"></span></div>`;
@@ -435,8 +441,21 @@ export class ItemUI {
     this.el.settings.hidden = !this.open.settings;
     if (this.open.settings) {
       const list = document.getElementById('settings-list');
-      if (!list.children.length) list.innerHTML = SETTINGS.map((s) => `<label><input type="checkbox" data-setting="${s.id}"> ${s.label}</label>`).join('');
-      for (const box of list.querySelectorAll('input')) box.checked = this.game.settings.get(box.dataset.setting);
+      if (!list.children.length) {
+        let group = '';
+        list.innerHTML = SETTINGS.map((s) => {
+          const head = s.group && s.group !== group ? `<h3 class="set-head">${(group = s.group)}</h3>` : '';
+          if (s.min !== undefined) return `${head}<label class="set-slider"><span>${s.label}</span><input type="range" min="${s.min}" max="${s.max}" step="1" data-setting="${s.id}"><b></b></label>`;
+          return `${head}<label><input type="checkbox" data-setting="${s.id}"> ${s.label}</label>`;
+        }).join('');
+      }
+      for (const box of list.querySelectorAll('input')) {
+        const v = this.game.settings.get(box.dataset.setting);
+        if (box.type === 'range') {
+          box.value = v;
+          box.nextElementSibling.textContent = `${v}%`;
+        } else box.checked = v;
+      }
       this.hud.keybindUI.render();
     }
 
@@ -500,7 +519,8 @@ export class ItemUI {
         tip.innerHTML = `<div class="tt-name q-${d.rarity}">${d.name}</div><div class="tt-desc">${d.description}</div><div class="tt-hint">Press to use${d.slot === 'offHand' ? ' (again to put it away)' : ''}</div>`;
         return this._placeTip();
       }
-      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div>${this._costLine(ABILITIES[id])}<div class="tt-desc">${ABILITIES[id].desc}</div>`;
+      const req = ABILITIES[id].requires && `<div class="tt-req${missingGear(this.game, ABILITIES[id]) ? ' bad' : ''}">${{ shield: 'Requires a shield', weapon: 'Requires a melee weapon' }[ABILITIES[id].requires] || `Requires a ${ABILITIES[id].requires}`}</div>`;
+      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div>${this._costLine(ABILITIES[id])}${req || ''}<div class="tt-desc">${ABILITIES[id].desc}</div>`;
       return this._placeTip();
     }
     let stack = loc && this.game.inventory.get(loc);
