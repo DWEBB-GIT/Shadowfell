@@ -9,7 +9,9 @@
     "assets": "blender --background --python assets/blender/build_assets.py",
     "test": "node tests/validate-data.mjs && node tests/acceptance.mjs",
     "validate": "node tests/validate-data.mjs",
-    "editor": "node tools/server.mjs"
+    "editor": "node tools/server.mjs",
+    "postinstall": "node -e \"require('fs').writeFileSync('node_modules/.gdignore','')\"",
+    "godot:test": "godot --headless --path . --script res://game/tests/run_tests.gd"
   },
   "devDependencies": {
     "esbuild": "0.25.10",
