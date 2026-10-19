@@ -8,7 +8,8 @@
     "dev": "node scripts/build.mjs --watch",
     "assets": "blender --background --python assets/blender/build_assets.py",
     "test": "node tests/validate-data.mjs && node tests/acceptance.mjs",
-    "validate": "node tests/validate-data.mjs"
+    "validate": "node tests/validate-data.mjs",
+    "editor": "node tools/server.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

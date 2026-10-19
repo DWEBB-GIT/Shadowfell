@@ -25,9 +25,7 @@
         "coins": 20,
         "xp": 50,
         "items": [{ "item": "tool_pack", "count": 1 }],
-        "reputation": {
-          "road_wardens": 250
-        }
+        "reputation": { "road_wardens": 250 }
       },
       "setsFlag": "manifest_delivered",
       "turnInLog": "You hand Mara the manifest. She reads it twice."
@@ -37,9 +35,7 @@
       "name": "Bells at Hallow Cut",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": [
-        "missing_delivery"
-      ],
+      "requires": ["missing_delivery"],
       "summary": "Hollin's manifest warns of bells at Hallow Cut, the old burial ground east of the road. Look over the graves and put down whatever walks there.",
       "offer": "Graves don't ring. I've buried enough folk to know. Something's walking at Hallow Cut, and big, by the tracks on the road. Go and look at the graves, and if whatever rings those bells can be put down, put it down.",
       "progress": "Still ringing? Then it's still walking.",
@@ -64,9 +60,7 @@
       "reward": {
         "coins": 30,
         "xp": 80,
-        "reputation": {
-          "road_wardens": 250
-        }
+        "reputation": { "road_wardens": 250 }
       }
     },
     {
@@ -74,9 +68,7 @@
       "name": "The Hound Den",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": [
-        "missing_delivery"
-      ],
+      "requires": ["missing_delivery"],
       "summary": "The carters turned north into the Blackwood, past a den of barrow hounds beside the track. Thin the pack and search the den for any sign of them.",
       "offer": "The carters turned north into the Blackwood. They'd not have got far. There's a den of barrow hounds by the track, past the shrine at the forest edge. Thin the pack, and tell me if you see any sign of my carters.",
       "progress": "The hounds hunt in threes. Don't let them get round you.",
@@ -101,16 +93,8 @@
       "reward": {
         "coins": 25,
         "xp": 70,
-        "items": [
-          {
-            "item": "healing_draught",
-            "count": 2
-          }
-        ],
-        "reputation": {
-          "mere_folk": 250,
-          "road_wardens": 100
-        }
+        "items": [{ "item": "healing_draught", "count": 2 }],
+        "reputation": { "mere_folk": 250, "road_wardens": 100 }
       }
     },
     {
@@ -118,10 +102,7 @@
       "name": "The Seer in the Glade",
       "giver": "mara",
       "turnIn": "mara",
-      "requires": [
-        "bells_at_hallow_cut",
-        "the_hound_den"
-      ],
+      "requires": ["bells_at_hallow_cut", "the_hound_den"],
       "summary": "Someone is calling the dead up out of the Blackwood. Hunters speak of a seer among the standing stones in the far glade, and of archers camped on the way. Go deep and end it.",
       "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
       "progress": "The glade is at the end of the track. You'll know the stones.",
@@ -154,15 +135,8 @@
       "reward": {
         "coins": 50,
         "xp": 150,
-        "items": [
-          {
-            "item": "iron_shield",
-            "count": 1
-          }
-        ],
-        "reputation": {
-          "road_wardens": 500
-        }
+        "items": [{ "item": "iron_shield", "count": 1 }],
+        "reputation": { "road_wardens": 500 }
       }
     },
     {
@@ -183,10 +157,7 @@
           "label": "Gloomwater perch"
         }
       ],
-      "reward": {
-        "coins": 12,
-        "xp": 60
-      }
+      "reward": { "coins": 12, "xp": 60 }
     },
     {
       "id": "board_meat_for_winter",
@@ -206,10 +177,7 @@
           "label": "Hound meat"
         }
       ],
-      "reward": {
-        "coins": 18,
-        "xp": 90
-      }
+      "reward": { "coins": 18, "xp": 90 }
     },
     {
       "id": "board_pelts_for_tam",
@@ -229,10 +197,7 @@
           "label": "Hound pelt"
         }
       ],
-      "reward": {
-        "coins": 10,
-        "xp": 70
-      }
+      "reward": { "coins": 10, "xp": 70 }
     },
     {
       "id": "board_clear_the_road",
@@ -255,9 +220,7 @@
       "reward": {
         "coins": 20,
         "xp": 100,
-        "reputation": {
-          "road_wardens": 150
-        }
+        "reputation": { "road_wardens": 150 }
       }
     },
     {
@@ -281,9 +244,7 @@
       "reward": {
         "coins": 45,
         "xp": 220,
-        "reputation": {
-          "road_wardens": 250
-        }
+        "reputation": { "road_wardens": 250 }
       }
     },
     {
@@ -307,12 +268,7 @@
       "reward": {
         "coins": 10,
         "xp": 80,
-        "items": [
-          {
-            "item": "baked_carp",
-            "count": 2
-          }
-        ]
+        "items": [{ "item": "baked_carp", "count": 2 }]
       }
     },
     {
@@ -320,9 +276,7 @@
       "name": "Supper at the Ford",
       "giver": "hester",
       "turnIn": "hester",
-      "requires": [
-        "hester_carp"
-      ],
+      "requires": ["hester_carp"],
       "summary": "The inn is full and Hester's short of hands. Cook three grilled perch and two roast dace and bring them to her.",
       "offer": "Carters in, and every one of them hungry. I can't be at the hearth and the tap at once. Cook me three grilled perch and two roast dace, would you?",
       "progress": "They're banging their mugs out there.",
@@ -343,19 +297,14 @@
           "label": "Roast dace"
         }
       ],
-      "reward": {
-        "coins": 20,
-        "xp": 120
-      }
+      "reward": { "coins": 20, "xp": 120 }
     },
     {
       "id": "hester_ghostfin",
       "name": "The Ghost in the Mere",
       "giver": "hester",
       "turnIn": "hester",
-      "requires": [
-        "hester_supper"
-      ],
+      "requires": ["hester_supper"],
       "summary": "Hester's mother made a broth from a pale fish called the ghostfin. Catch one in the Stillwater Mere and bring it to her. It is very rare.",
       "offer": "My mother made a broth from ghostfin. One bowl and you'd walk through snow. I haven't tasted it in twenty years. Tam says they still bite, once in a blue moon. Catch me one?",
       "progress": "Still fishing? Tam says it took him a whole winter.",
@@ -373,14 +322,8 @@
         "coins": 40,
         "xp": 200,
         "items": [
-          {
-            "item": "ghostfin_broth",
-            "count": 2
-          },
-          {
-            "item": "yew_fishing_rod",
-            "count": 1
-          }
+          { "item": "ghostfin_broth", "count": 2 },
+          { "item": "yew_fishing_rod", "count": 1 }
         ]
       }
     },
@@ -403,10 +346,7 @@
           "location": "blackwood_deadfall"
         }
       ],
-      "reward": {
-        "coins": 12,
-        "xp": 90
-      }
+      "reward": { "coins": 12, "xp": 90 }
     },
     {
       "id": "mara_ore",
@@ -427,10 +367,7 @@
           "location": "hallow_cut_ore"
         }
       ],
-      "reward": {
-        "coins": 12,
-        "xp": 90
-      }
+      "reward": { "coins": 12, "xp": 90 }
     },
     {
       "id": "tam_sorrel",
@@ -451,10 +388,7 @@
           "location": "stillwater_mere"
         }
       ],
-      "reward": {
-        "coins": 10,
-        "xp": 80
-      }
+      "reward": { "coins": 10, "xp": 80 }
     }
   ]
 }

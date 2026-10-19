@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shadowfell Quest Editor</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+  <header>
+    <h1>Quest Editor</h1>
+    <div class="views">
+      <button data-view="edit" class="on">Quest</button>
+      <button data-view="map">Chain map</button>
+    </div>
+    <span id="checks-badge" class="badge"></span>
+    <span id="dirty" class="dirty"></span>
+    <button id="new-quest">New quest</button>
+    <button id="save" class="primary">Save</button>
+  </header>
+  <main>
+    <aside id="list-pane">
+      <input id="search" type="search" placeholder="Search quests, npcs, text" />
+      <div id="quest-list"></div>
+    </aside>
+    <section id="edit-view"></section>
+    <section id="map-view" hidden></section>
+    <aside id="side-pane"></aside>
+  </main>
+  <div id="toast"></div>
+  <script type="module" src="editor.js"></script>
+</body>
+</html>
