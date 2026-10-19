@@ -18,7 +18,7 @@
 //   data/text.json         intro, documents, examine text
 //   data/skills.json       skills learned from trainers (camping, fishing, cooking)
 //   data/recipes.json      recipes for crafting skills (cooking)
-//   data/titles.json       renown tiers, titles and how NPCs address you
+//   data/titles.json       titles and how NPCs address you by them
 //
 // See CONTRIBUTING.md for how to add content.
 
@@ -94,8 +94,7 @@ export const DB = {
   recipes: byId(recipes.recipes, 'recipes'),
   standings: factions.standings,
   titles: byId(titles.titles, 'titles'),
-  renown: titles.renown,
-  renownTiers: titles.tiers,
+  renown: factions.renown,
   titleLines: { greetings: titles.greetings, farewells: titles.farewells },
   mockChance: titles.mockChance,
   water: world.water || [],

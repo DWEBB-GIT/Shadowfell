@@ -366,21 +366,20 @@ export class ItemUI {
       const ammoSlot = this._slotHTML(AMMO_LOC, ammo, 'equip ammo', 'Ammo').replace(/<span class="count">\d+<\/span>/, '');
       const ammoCount = ammo ? `<span class="count${ammo.count ? '' : ' none'}">${ammo.count}</span>` : '';
       document.getElementById('equip-bottom').innerHTML = col('bottom') + `<div class="equip-row">${ammoSlot.replace(/<\/div>$/, ammoCount + '</div>')}</div>`;
-      // reputation, WoW style: a bar per faction with its standing
+      // reputation, WoW style: renown first (how known you are anywhere,
+      // Fable style), then a bar per faction with its standing
       const rep = this.game.reputation;
-      document.getElementById('char-rep').innerHTML = '<h3>Reputation</h3>' + Object.values(DB.factions).map((f) => {
+      const tier = rep.renownTier;
+      const tpct = tier.span ? Math.min(100, (tier.into / tier.span) * 100) : 100;
+      document.getElementById('char-rep').innerHTML = `<h3>Renown</h3><div class="rep-row" title="${tier.desc}"><span>${rep.renown} renown</span><div class="rep-bar renown"><div style="width:${tpct}%"></div><b>${tier.name}${tier.span ? ` ${tier.into} / ${tier.span}` : ''}</b></div></div><p class="renown-desc">${tier.desc}</p><h3>Factions</h3>` + Object.values(DB.factions).map((f) => {
         const s = rep.standing(f.id);
         const pct = s.span ? Math.min(100, (s.into / s.span) * 100) : 100;
         return `<div class="rep-row" title="${f.description}"><span>${f.name}</span><div class="rep-bar s-${s.id}"><div style="width:${pct}%"></div><b>${s.name}${s.span ? ` ${s.into} / ${s.span}` : ''}</b></div></div>`;
       }).join('');
-      // renown and titles, Fable style: how known you are, and what you may
-      // be called
+      // titles, Fable style: what you may be called (renown unlocks them)
       const ttl = this.game.titles;
-      const tier = ttl.tier;
-      const tpct = tier.span ? Math.min(100, (tier.into / tier.span) * 100) : 100;
       document.getElementById('character-title').textContent = (this.game.character?.name || 'Warden') + (ttl.name ? `, ${ttl.name}` : '');
-      document.getElementById('char-titles').innerHTML = `<h3>Renown</h3><div class="rep-row" title="${tier.desc}"><span>${ttl.renown} renown</span><div class="rep-bar renown"><div style="width:${tpct}%"></div><b>${tier.name}${tier.span ? ` ${tier.into} / ${tier.span}` : ''}</b></div></div><p class="renown-desc">${tier.desc}</p>` +
-        `<h3>Titles</h3><button class="title-row${ttl.chosen ? '' : ' chosen'}" data-title=""><b>No title</b><span>Folk call you what they like.</span></button>` +
+      document.getElementById('char-titles').innerHTML = `<h3>Titles</h3><p class="renown-desc">${rep.renown} renown (${tier.name}). Reputation with anyone adds to it.</p><button class="title-row${ttl.chosen ? '' : ' chosen'}" data-title=""><b>No title</b><span>Folk call you what they like.</span></button>` +
         ttl.list.map((x) => `<button class="title-row${x.chosen ? ' chosen' : ''}${x.locked ? ' locked' : ''}" data-title="${x.id}"${x.locked ? ' disabled' : ''}><b>${x.name}</b><span>${x.locked || x.desc}</span></button>`).join('');
       const { player, progression, stats } = this.game;
       const t = stats.totals;

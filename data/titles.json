@@ -1,19 +1,6 @@
 {
   "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done) or { level }. NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
-  "renown": {
-    "perQuest": 10,
-    "perLevel": 5,
-    "firstEliteKill": 15
-  },
   "mockChance": 0.2,
-  "tiers": [
-    { "id": "nobody", "name": "Nobody", "min": 0, "desc": "No one knows your name. Most don't look up when you pass." },
-    { "id": "familiar", "name": "A Familiar Face", "min": 20, "desc": "A few folk nod when you pass. One or two may even remember why." },
-    { "id": "known", "name": "Known", "min": 60, "desc": "Your name comes up at the inn, not always kindly." },
-    { "id": "respected", "name": "Respected", "min": 120, "desc": "People step aside on the road and lower their voices when you come in." },
-    { "id": "renowned", "name": "Renowned", "min": 200, "desc": "Children play at being you. Their parents argue about whether that is a good thing." },
-    { "id": "famous", "name": "Famous", "min": 350, "desc": "Strangers know your face before you open your mouth." }
-  ],
   "greetings": {
     "untitled": ["Hello there.", "Hey you!", "You. Yes, you.", "Mm? What is it?", "Oh. Hello."],
     "titled": ["Hello, {title}.", "Hey, {title}!", "Well met, {title}.", "Ah, the {title}."],

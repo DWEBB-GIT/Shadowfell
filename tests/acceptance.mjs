@@ -4888,7 +4888,7 @@ async function titles(browser) {
     g.npcs.talk(g.npcs.byId('mara'));
     const p = g.dialogue.page;
     const untitled = g.db.titleLines.greetings.untitled;
-    return { renown: g.titles.renown, tier: g.titles.tier.name, sal: p.salutation, plain: untitled.includes(p.salutation), shown: document.getElementById('dlg-text')?.textContent.startsWith(p.salutation), canAdventurer: g.titles.available('adventurer'), refused: !g.titles.choose('adventurer') };
+    return { renown: g.reputation.renown, tier: g.reputation.renownTier.name, sal: p.salutation, plain: untitled.includes(p.salutation), shown: document.getElementById('dlg-text')?.textContent.startsWith(p.salutation), canAdventurer: g.titles.available('adventurer'), refused: !g.titles.choose('adventurer') };
   });
   record('A new character is a Nobody, hailed with a plain line, and cannot take a title yet', start.renown === 0 && start.tier === 'Nobody' && start.plain && start.shown && !start.canAdventurer && start.refused, JSON.stringify(start));
 
@@ -4897,7 +4897,9 @@ async function titles(browser) {
     g.dialogue.close();
     g.events.emit('questComplete', { id: 'missing_delivery' });
     g.events.emit('questComplete', { id: 'bells_at_hallow_cut' });
-    const r = { renown: g.titles.renown, tier: g.titles.tier.name, adventurer: g.titles.available('adventurer'), angler: g.titles.lockedBecause('angler') };
+    const fromQuests = g.reputation.renown;
+    g.reputation.add('road_wardens', 500);
+    const r = { fromQuests, renown: g.reputation.renown, tier: g.reputation.renownTier.name, adventurer: g.titles.available('adventurer'), angler: g.titles.lockedBecause('angler') };
     g.titles.choose('adventurer');
     g.random = Math.random;
     const lines = [];
@@ -4909,7 +4911,7 @@ async function titles(browser) {
     return r;
   });
   const usesTitle = earned.lines.every((l) => l.includes('Adventurer'));
-  record('Two quests make you A Familiar Face; Adventurer unlocks, Angler still needs Fishing 15', earned.renown === 20 && earned.tier === 'A Familiar Face' && earned.adventurer && earned.angler === 'Requires Fishing 15', JSON.stringify(earned));
+  record('Two quests (5 each) and 500 Road Warden reputation (1 per 50) make you A Familiar Face; Adventurer unlocks, Angler still needs Fishing 15', earned.fromQuests === 10 && earned.renown === 20 && earned.tier === 'A Familiar Face' && earned.adventurer && earned.angler === 'Requires Fishing 15', JSON.stringify(earned));
   record('With a title chosen NPCs greet and bid farewell by it, sometimes mockingly', usesTitle && earned.lines.length >= 3 && /Adventurer/.test(earned.farewell || ''), JSON.stringify({ lines: earned.lines, farewell: earned.farewell }));
 
   const kept = await page.evaluate(() => {
@@ -4926,9 +4928,10 @@ async function titles(browser) {
     g.hud.items.toggle('character');
     document.querySelector('[data-char-tab="titles"]').click();
     const tab = document.getElementById('char-titles');
-    return { angler, dummy, ok: Array.isArray(ok) ? !ok.length : !!ok, chosen: g.titles.chosen, renown: g.titles.renown, head: document.getElementById('character-title').textContent, rows: tab.querySelectorAll('.title-row').length, visible: !tab.hidden };
+    const repTab = document.getElementById('char-rep').textContent;
+    return { repTab: /20 renown/.test(repTab) && /A Familiar Face/.test(repTab), angler, dummy, ok: Array.isArray(ok) ? !ok.length : !!ok, chosen: g.titles.chosen, renown: g.reputation.renown, head: document.getElementById('character-title').textContent, rows: tab.querySelectorAll('.title-row').length, visible: !tab.hidden };
   });
-  record('Titles and renown save and load; the character window lists them and shows the chosen one', kept.angler && kept.dummy && kept.ok && kept.chosen === 'angler' && kept.renown === 20 && /, Angler$/.test(kept.head) && kept.rows > 5 && kept.visible, JSON.stringify(kept));
+  record('Titles and renown save and load; renown heads the Reputation tab; the Titles tab lists titles and shows the chosen one', kept.repTab && kept.angler && kept.dummy && kept.ok && kept.chosen === 'angler' && kept.renown === 20 && /, Angler$/.test(kept.head) && kept.rows > 5 && kept.visible, JSON.stringify(kept));
   record('No errors (titles)', !errors.length, errors.join(' | '));
   await ctx.close();
 }

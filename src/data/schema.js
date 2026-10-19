@@ -190,6 +190,11 @@ export function validateGameData(raw, opts = {}) {
   const facF = need('factions.json');
   const factions = indexById(facF.factions || [], 'factions.json', errors);
   if (!Array.isArray(facF.standings) || !facF.standings.length || facF.standings.some((t, i) => !isStr(t.name) || !isNum(t.min) || !isNum(t.discount) || (i && t.min <= facF.standings[i - 1].min))) errors.push('factions.json: standings need a name, a rising min and a discount');
+  const rn = facF.renown || {};
+  for (const k of ['perQuest', 'perLevel', 'firstEliteKill']) if (!(isInt(rn[k]) && rn[k] >= 0)) errors.push(`factions.json renown: ${k} must be a whole number of at least 0`);
+  if (!(isInt(rn.perReputation) && rn.perReputation >= 1)) errors.push('factions.json renown: perReputation must be a whole number of at least 1');
+  const rt = rn.tiers;
+  if (!Array.isArray(rt) || !rt.length || rt[0].min !== 0 || rt.some((t, i) => !isStr(t.id) || !isStr(t.name) || !isStr(t.desc) || !isInt(t.min) || (i && t.min <= rt[i - 1].min))) errors.push('factions.json renown: tiers need an id, name, desc and a rising min, the first from 0');
   const repRefs = (w, map) => {
     if (map === undefined) return;
     if (!map || typeof map !== 'object') return errors.push(`${w}: reputation must map faction ids to points`);
@@ -607,15 +612,11 @@ export function validateGameData(raw, opts = {}) {
     }
   }
 
-  // ---- renown and titles
+  // ---- titles (renown itself is checked with factions)
   const titF = raw['titles.json'];
   if (!titF) errors.push('titles.json: missing');
   else {
-    const rn = titF.renown || {};
-    for (const k of ['perQuest', 'perLevel', 'firstEliteKill']) if (!(isInt(rn[k]) && rn[k] >= 0)) errors.push(`titles.json renown: ${k} must be a whole number of at least 0`);
     if (!(isNum(titF.mockChance) && titF.mockChance >= 0 && titF.mockChance <= 1)) errors.push('titles.json: mockChance must be between 0 and 1');
-    const tiers = titF.tiers;
-    if (!Array.isArray(tiers) || !tiers.length || tiers[0].min !== 0 || tiers.some((t, i) => !isStr(t.id) || !isStr(t.name) || !isStr(t.desc) || !isInt(t.min) || (i && t.min <= tiers[i - 1].min))) errors.push('titles.json: tiers need an id, name, desc and a rising min, the first from 0');
     for (const kind of ['greetings', 'farewells']) {
       const l = titF[kind] || {};
       for (const k of ['untitled', 'titled', 'mocking']) if (!isStrList(l[k]) || !l[k].length) errors.push(`titles.json ${kind}: ${k} needs at least one line`);

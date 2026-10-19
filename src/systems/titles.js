@@ -1,9 +1,9 @@
 import { DB } from '../data/db.js';
 
-// Renown and titles, Fable style (data/titles.json). You start a nobody, and
-// townsfolk greet you with "Hello there." or "Hey you!". Deeds earn renown:
-// quests done, levels gained, the first kill of each elite type. Once your
-// renown (and a title's own conditions, such as a fishing rank) allow it, you
+// Titles, Fable style (data/titles.json). You start a nobody, and townsfolk
+// greet you with "Hello there." or "Hey you!". Renown, kept with reputation
+// (systems/reputation.js), says how known you are; once it (and a title's own
+// conditions, such as a fishing rank) allows it, you
 // may choose a title in the character window, and NPCs then call you by it:
 // "Hello, Master Angler.", "Farewell, Adventurer.", now and then mockingly.
 
@@ -12,56 +12,29 @@ export class Titles {
     this.game = game;
     this.reset();
     const ev = game.events;
-    ev.on('questComplete', () => this.addRenown(DB.renown.perQuest, 'for your deeds'));
-    ev.on('levelUp', () => this.addRenown(DB.renown.perLevel, 'as you grow in strength'));
     ev.on('enemyDefeated', ({ enemy }) => this._slay(enemy.type, enemy.cfg));
     ev.on('dummyBeaten', ({ enemy }) => this._slay(enemy.type, enemy.cfg));
     for (const e of ['skillsChanged', 'reputationChanged']) ev.on(e, () => this._checkNew());
   }
 
   reset() {
-    this.renown = 0;
     this.chosen = null; // title id, or null for none
     this.slain = new Set(); // enemy types beaten at least once
     this.known = new Set(); // titles already announced as available
   }
 
-  // how known you are: { id, name, desc, min, next, into, span }
-  get tier() {
-    const tiers = DB.renownTiers;
-    let i = 0;
-    while (i + 1 < tiers.length && this.renown >= tiers[i + 1].min) i++;
-    const next = tiers[i + 1];
-    return { ...tiers[i], next: next ? next.name : null, into: this.renown - tiers[i].min, span: next ? next.min - tiers[i].min : 0 };
-  }
-
-  addRenown(n, why = '') {
-    if (!n) return;
-    const before = this.tier.id;
-    this.renown += n;
-    const { events, hud } = this.game;
-    events.emit('log', { text: `Your renown grows by ${n}${why ? ' ' + why : ''}.`, kind: 'rep' });
-    const t = this.tier;
-    if (t.id !== before) {
-      events.emit('log', { text: `You are now ${t.name}. ${t.desc}`, kind: 'level' });
-      hud?.toast(`Renown: ${t.name}`);
-    }
-    this._checkNew();
-    events.emit('titlesChanged', {});
-  }
-
   _slay(type, cfg) {
     if (this.slain.has(type)) return;
     this.slain.add(type);
-    if (cfg.elite) this.addRenown(DB.renown.firstEliteKill, `for felling the ${cfg.name}`);
-    else this._checkNew();
+    if (cfg.elite) this.game.reputation.addRenown(DB.renown.firstEliteKill, `for felling the ${cfg.name}`);
+    this._checkNew();
   }
 
   // Why a title cannot be chosen yet ('' when it can).
   lockedBecause(id) {
     const t = DB.titles[id];
-    if (this.renown < t.renown) return `Requires ${t.renown} renown`;
     const { skills, reputation, quests, progression } = this.game;
+    if (reputation.renown < t.renown) return `Requires ${t.renown} renown`;
     for (const r of t.requires || []) {
       if (r.skill && skills.rank(r.skill) < r.rank) return `Requires ${DB.skills[r.skill].name} ${r.rank}`;
       if (r.slain && !this.slain.has(r.slain)) return `Defeat ${DB.enemies[r.slain].name}`;
@@ -120,13 +93,12 @@ export class Titles {
   }
 
   serialize() {
-    return { renown: this.renown, chosen: this.chosen, slain: [...this.slain], known: [...this.known] };
+    return { chosen: this.chosen, slain: [...this.slain], known: [...this.known] };
   }
 
   apply(data) {
     this.reset();
     if (!data) return;
-    this.renown = data.renown || 0;
     this.slain = new Set((data.slain || []).filter((id) => DB.enemies[id]));
     this.known = new Set((data.known || []).filter((id) => DB.titles[id]));
     this.chosen = data.chosen && DB.titles[data.chosen] ? data.chosen : null;
