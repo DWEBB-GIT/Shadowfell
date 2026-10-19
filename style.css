@@ -63,6 +63,7 @@ kbd {
   padding: 6px 14px 7px; text-align: center;
 }
 .game-title { font-size: 20px; letter-spacing: 6px; color: var(--gold); }
+.build-tag { font-size: 10px; letter-spacing: 1px; color: var(--text-dim); opacity: 0.75; margin-top: 4px; user-select: text; }
 .region { font-size: 12px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
 
 #char-panel { position: absolute; top: 74px; left: 12px; width: 240px; padding: 8px 10px; }
