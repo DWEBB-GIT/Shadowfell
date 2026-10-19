@@ -169,6 +169,15 @@ export class World {
     return this.indoors;
   }
 
+  // true if (x, z) is inside a building whose roof is still showing (you are
+  // not in there), so its labels stay hidden under it
+  roofOver(x, z) {
+    for (const b of this.buildings || []) {
+      if (x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ) return b.inside < 0.5;
+    }
+    return false;
+  }
+
   // 0 outside, rising to 1 inside a building (the camera closes in)
   get indoorBlend() {
     return Math.max(0, ...(this.buildings || []).map((b) => b.inside));

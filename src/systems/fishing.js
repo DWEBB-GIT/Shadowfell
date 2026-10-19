@@ -13,8 +13,11 @@ import { waterAt, waterLevel } from '../world/terrain.js';
 // then (click the bob, or E / A) for a chance to land a fish from that
 // water's loot table (data: world.json `water` `fishTable`). Too soon or too
 // late and it gets away; if the bar runs out with no bite, nothing was
-// biting. Fish are never seen in the water. Every cast that runs its course,
-// fish or no fish, is practice: it can raise your Fishing skill. Any rod
+// biting. Fish are never seen in the water. As in WoW and RuneScape, skill
+// comes only from a real attempt: landing something (fish or junk) or a
+// strike on a real bite that slips the hook. Reeling in, striking before the
+// bite, letting the bite pass or an empty cast teach nothing (Dan,
+// 2026-10-19). Any rod
 // (an item with `rod: true`) will do, in the bags or the tool pack.
 //
 // Phases: 'cast' (the bob flies) -> 'wait' -> 'bite' (strike now) -> done.
@@ -113,7 +116,6 @@ export class Fishing {
     const { events, inventory, skills } = this.game;
     if (s.phase !== 'bite') {
       events.emit('log', { text: 'You strike too soon. Whatever was there is gone.', kind: 'muted' });
-      this._practice();
       this.stop();
       return true;
     }
@@ -139,7 +141,7 @@ export class Fishing {
     return true;
   }
 
-  // a cast with nothing landed still teaches you something
+  // a strike on a real bite that slips the hook still teaches you something
   _practice() {
     this.game.skills.raise('fishing');
   }
@@ -170,7 +172,6 @@ export class Fishing {
     if (s.elapsed >= cfg.duration && s.phase !== 'bite') {
       events.emit('log', { text: 'Nothing is biting. You reel in your line.', kind: 'muted' });
       this.game.hud?.error?.('Nothing is biting');
-      this._practice();
       this.stop();
       return;
     }
@@ -197,7 +198,6 @@ export class Fishing {
       bob.position.set(s.x, level - 0.06 + Math.sin(s.t * 28) * 0.05, s.z);
       if (s.t >= cfg.biteWindow) {
         events.emit('log', { text: 'The bob rises again. It got away.', kind: 'muted' });
-        this._practice();
         this.stop();
         return;
       }
