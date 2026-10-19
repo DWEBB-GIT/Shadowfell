@@ -66,6 +66,8 @@ const broken = [
   ['gear without an item level', (d) => delete d['items.json'].items.find((i) => i.id === 'worn_longsword').itemLevel, /worn_longsword: gear needs an itemLevel/],
   ['an ability costing a resource no class has', (d) => (d['abilities.json'].abilities.find((a) => a.id === 'smite').cost = { rage: 10 }), /unknown resource rage/],
   ['a recipe cooking an item that does not exist', (d) => (d['recipes.json'].recipes[0].output.item = 'grilled_prech'), /unknown item grilled_prech/],
+  ['a title needing a skill rank that does not exist', (d) => (d['titles.json'].titles.find((t) => t.id === 'angler').requires = [{ skill: 'fishing', rank: 99 }]), /angler: a skill condition needs a rank the skill can reach/],
+  ['a titled greeting that never says the title', (d) => d['titles.json'].greetings.titled.push('Hello.'), /must say \{title\}/],
   ['an enemy of an unknown type', (d) => (d['enemies.json'].enemies[0].type = 'dragonkin'), /type must be one of/],
 ];
 const selfTest = [];

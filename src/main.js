@@ -21,6 +21,7 @@ import { Settings } from './systems/settings.js';
 import { Keybinds } from './systems/keybinds.js';
 import { Chests } from './systems/chests.js';
 import { Reputation } from './systems/reputation.js';
+import { Titles } from './systems/titles.js';
 import { Sparkles } from './render/sparkles.js';
 import { Camp } from './systems/camp.js';
 import { WaterAndDark } from './world/waterAndDark.js';
@@ -107,6 +108,7 @@ class Game {
     this.input.isBound = (code) => this.keys.isBound(code);
     this.hud?._applyKeyLabels?.();
     this.reputation = new Reputation(this);
+    this.titles = new Titles(this);
     this.camp = new Camp(this);
     this.fishing = new Fishing(this);
     this.cooking = new Cooking(this);
@@ -262,6 +264,7 @@ class Game {
     this.afterlife.reset();
     this.skills.reset();
     this.reputation.reset();
+    this.titles.reset();
     this.pendingDeath = null;
     this.telegraphs.clear();
     this.hud.numbers.clear();

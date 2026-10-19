@@ -202,6 +202,11 @@ export function validateGameData(raw, opts = {}) {
   const facF = need('factions.json');
   const factions = indexById(facF.factions || [], 'factions.json', errors);
   if (!Array.isArray(facF.standings) || !facF.standings.length || facF.standings.some((t, i) => !isStr(t.name) || !isNum(t.min) || !isNum(t.discount) || (i && t.min <= facF.standings[i - 1].min))) errors.push('factions.json: standings need a name, a rising min and a discount');
+  const rn = facF.renown || {};
+  for (const k of ['perQuest', 'perLevel', 'firstEliteKill']) if (!(isInt(rn[k]) && rn[k] >= 0)) errors.push(`factions.json renown: ${k} must be a whole number of at least 0`);
+  if (!(isInt(rn.perReputation) && rn.perReputation >= 1)) errors.push('factions.json renown: perReputation must be a whole number of at least 1');
+  const rt = rn.tiers;
+  if (!Array.isArray(rt) || !rt.length || rt[0].min !== 0 || rt.some((t, i) => !isStr(t.id) || !isStr(t.name) || !isStr(t.desc) || !isInt(t.min) || (i && t.min <= rt[i - 1].min))) errors.push('factions.json renown: tiers need an id, name, desc and a rising min, the first from 0');
   const repRefs = (w, map) => {
     if (map === undefined) return;
     if (!map || typeof map !== 'object') return errors.push(`${w}: reputation must map faction ids to points`);
@@ -680,6 +685,38 @@ export function validateGameData(raw, opts = {}) {
     if (r.trainer !== undefined) {
       ref(w, 'trainer npc', npcs, r.trainer);
       if (!(isInt(r.cost) && r.cost >= 0)) errors.push(`${w}: a taught recipe needs a cost in coins`);
+    }
+  }
+
+  // ---- titles (renown itself is checked with factions)
+  const titF = raw['titles.json'];
+  if (!titF) errors.push('titles.json: missing');
+  else {
+    if (!(isNum(titF.mockChance) && titF.mockChance >= 0 && titF.mockChance <= 1)) errors.push('titles.json: mockChance must be between 0 and 1');
+    for (const kind of ['greetings', 'farewells']) {
+      const l = titF[kind] || {};
+      for (const k of ['untitled', 'titled', 'mocking']) if (!isStrList(l[k]) || !l[k].length) errors.push(`titles.json ${kind}: ${k} needs at least one line`);
+      for (const line of [...(l.titled || []), ...(l.mocking || [])]) if (isStr(line) && !line.includes('{title}')) errors.push(`titles.json ${kind}: "${line}" must say {title}`);
+    }
+    const standingIds = (facF.standings || []).map((t) => t.id);
+    for (const [id, t] of Object.entries(indexById(titF.titles, 'titles.json', errors))) {
+      const w = `titles.json ${id}`;
+      if (!isStr(t.name) || !isStr(t.desc)) errors.push(`${w}: needs a name and a desc`);
+      if (!(isInt(t.renown) && t.renown >= 0)) errors.push(`${w}: renown must be a whole number of at least 0`);
+      if (t.mock !== undefined && !(isNum(t.mock) && t.mock >= 0 && t.mock <= 1)) errors.push(`${w}: mock must be between 0 and 1`);
+      if (t.mocks !== undefined && !isStrList(t.mocks)) errors.push(`${w}: mocks must be a list of lines`);
+      if (t.requires !== undefined && !Array.isArray(t.requires)) errors.push(`${w}: requires must be a list`);
+      for (const r of Array.isArray(t.requires) ? t.requires : []) {
+        if (r.skill !== undefined) {
+          ref(w, 'skill', skills, r.skill);
+          if (!(isInt(r.rank) && r.rank >= 1 && (!skills[r.skill] || r.rank <= (skills[r.skill].maxRank || 1)))) errors.push(`${w}: a skill condition needs a rank the skill can reach`);
+        } else if (r.slain !== undefined) ref(w, 'enemy', enemies, r.slain);
+        else if (r.faction !== undefined) {
+          ref(w, 'faction', factions, r.faction);
+          if (!standingIds.includes(r.standing)) errors.push(`${w}: names unknown standing ${r.standing}`);
+        } else if (r.quest !== undefined) ref(w, 'quest', quests, r.quest);
+        else if (!(isInt(r.level) && r.level >= 1)) errors.push(`${w}: each condition needs a skill, slain, faction, quest or level`);
+      }
     }
   }
 

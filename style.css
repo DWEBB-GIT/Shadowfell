@@ -119,6 +119,7 @@ kbd {
 #log li.hurt { color: #d98a72; }
 #log li.loot { color: #d8bd73; }
 #log li.rep { color: #9fb6e8; }
+#log li.say { color: #f0e2a0; }
 #log li.xp, #log li.level { color: #c9b77a; }
 #log li.heal { color: #a8c08a; }
 #log li.lore { color: #b9b2a0; font-style: italic; }
@@ -321,6 +322,15 @@ kbd {
 #character-window .islot.equip { width: 48px; height: 48px; }
 #character-window .islot.equip .ph { font-size: 9px; letter-spacing: 0; }
 #char-rep { margin-top: 8px; min-height: 200px; }
+#char-titles { margin-top: 8px; min-height: 200px; max-height: 420px; overflow-y: auto; }
+#char-titles h3 { font-size: 12px; margin: 6px 0 4px; color: var(--gold); font-weight: normal; }
+.rep-bar.renown > div { background: #7a5a2a; }
+.renown-desc { font-size: 11px; color: var(--dim, #a99); font-style: italic; margin: 2px 0 6px; }
+.title-row { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: left; background: rgba(20, 16, 12, 0.8); border: 1px solid rgba(201, 162, 83, 0.25); color: inherit; font: inherit; font-size: 12px; padding: 4px 6px; margin-bottom: 3px; cursor: pointer; }
+.title-row span { font-size: 10px; color: var(--dim, #a99); }
+.title-row.chosen { border-color: var(--gold); }
+.title-row.chosen b { color: var(--gold); }
+.title-row.locked { opacity: 0.5; cursor: default; }
 .char-tabs { display: flex; gap: 4px; margin-top: 8px; border-top: 1px solid rgba(201, 162, 83, 0.3); padding-top: 6px; }
 .char-tab { flex: 1; background: rgba(20, 16, 12, 0.8); color: var(--dim, #a99); border: 1px solid rgba(201, 162, 83, 0.3); padding: 4px; font: inherit; font-size: 12px; cursor: pointer; }
 .char-tab.active { color: var(--gold); border-color: var(--gold); }
