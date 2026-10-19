@@ -245,6 +245,12 @@ export class Enemy {
     if (this.dead || this.cfg.dummy) {
       // the dummy just stands there, and mends a few seconds after the last hit
       if (this.cfg.dummy && this.engaged <= 0) this.health = this.maxHealth;
+      // ...and never leaves its post: no knockback, no shoving
+      if (this.cfg.dummy) {
+        this.knock.set(0, 0, 0);
+        this.position.x = this.home.x;
+        this.position.z = this.home.z;
+      }
       this.rig.update(dt, 0);
       this._sync();
       return;

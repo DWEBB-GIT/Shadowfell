@@ -33,10 +33,32 @@ import { computeHit, enemyBlock, weaponRoll, swingRoll } from './stats.js';
 // as the bow does, and lands when its arrow arrives. Its damage is a bow
 // roll (with the arrow's own damage) x `damageMultiplier` / `tickMultiplier`.
 //
+// `requires` names gear the ability cannot be used without: 'shield' (a
+// working shield in the off hand: Brace, Shield Break), 'weapon' (a working
+// melee weapon in the main hand, not bare fists) or a weapon type
+// ('sword', 'dagger'...) in the main hand. Without it the bar slot dims and
+// pressing it says what is missing, as WoW's "Requires Shield".
+//
 // Enemy spells go to the selected target, or the soft target near your aim
 // (which then becomes selected), as in WoW.
 
 export const SPELLS = Object.fromEntries(Object.values(DB.abilities).filter((a) => a.kind).map((a) => [a.id, a]));
+
+// What the ability needs and is missing ('Requires a shield'), or null.
+export function missingGear(game, ability) {
+  const need = ability?.requires;
+  if (!need) return null;
+  const inv = game.inventory;
+  if (need === 'shield') {
+    const s = inv.equipment.offHand;
+    const v = s && DB.items[s.id]?.kind === 'shield' && game.itemView(s);
+    return v && !v.broken ? null : 'Requires a shield';
+  }
+  const w = inv.equipment.mainHand && game.itemView(inv.equipment.mainHand);
+  if (!w || w.broken || DB.items[w.id]?.kind !== 'weapon') return need === 'weapon' ? 'Requires a melee weapon' : `Requires a ${need}`;
+  if (need !== 'weapon' && DB.items[w.id].weaponType !== need) return `Requires a ${need}`;
+  return null;
+}
 
 export class Spells {
   constructor(game) {
@@ -108,6 +130,11 @@ export class Spells {
     }
     if ((spell.kind === 'cast' || spell.kind === 'camp') && player.moving) {
       this.game.hud.error("You can't do that while moving");
+      return false;
+    }
+    const missing = missingGear(this.game, spell);
+    if (missing) {
+      this.game.hud.error(missing);
       return false;
     }
     if (spell.ranged && !stats.hasRanged) {

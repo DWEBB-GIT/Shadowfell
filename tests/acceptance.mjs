@@ -32,10 +32,20 @@ async function freshGame(browser, { noAudio = false } = {}) {
 
 // '#new-btn' makes a new character (with the random name the create screen
 // offers) and enters the world; '#continue-btn' plays the last character.
-async function begin(page, which = '#new-btn', { pinRolls = true } = {}) {
+async function begin(page, which = '#new-btn', { pinRolls = true, legacyKeys = true } = {}) {
   await page.click(which);
   if (which === '#new-btn') await page.click('#create-confirm');
   await page.waitForFunction(() => window.__shadowfall.started);
+  // checks written before the 2026-10-19 key layout (spells on 1-4 Q E,
+  // utility on Shift-1..4, Space to interact) keep the keys and bar they
+  // were written for; the playtest 5 section checks the new defaults
+  if (legacyKeys) {
+    await page.evaluate(() => {
+      const g = window.__shadowfall;
+      Object.assign(g.keys.map, { bar0: ['Digit1'], bar1: ['Digit2'], bar2: ['Digit3', 'KeyQ'], bar3: ['Digit4'], bar4: ['Digit5'], bar5: ['Space'], bar6: ['Digit6'], bar7: ['Digit7'], bar8: ['Digit8'], bar9: ['Digit9'], interact: ['KeyE'] });
+      if (!g.save.read().data) g.actionBar.apply(['lunge', 'shieldBreak', 'item:healing_draught', 'hallowedBolt', 'rebuke', 'brace', 'heavyStrike', 'crushingBlow', null, null]);
+    });
+  }
   // combat rolls (weapon range, crits, blocks, enemy variance) land on the
   // average unless a check says otherwise, so expected numbers are exact
   if (pinRolls) await page.evaluate(() => (window.__shadowfall.random = () => 0.5));
@@ -1362,8 +1372,8 @@ async function controls(browser) {
   await begin(page);
   await pauseLoop(page);
   const labels = await page.evaluate(() => [...document.querySelectorAll('#action-bar .aslot .key')].map((k) => k.textContent));
-  const defensive = await page.evaluate(() => document.getElementById('aslot-5').classList.contains('defensive'));
-  record('The spell bar is on number keys (the mouse selects and attacks), with Space as the defensive slot', labels.join() === '1,2,3 / Q,4,5,Space,6,7,8,9' && defensive, `slots: ${labels.join(' | ')}`);
+  // (the 2026-10-19 layout is checked in playtest5; this section runs on the legacy keys)
+  record('The spell bar is on number keys (the mouse selects and attacks)', labels.join() === '1,2,3 / Q,4,5,Space,6,7,8,9', `slots: ${labels.join(' | ')}`);
 
   // the camera is fixed: no orbit, WASD is screen-relative
   await setup(page, { x: -6, z: 30 });
@@ -2336,7 +2346,7 @@ async function questsAndMap(browser) {
   record('Topics open a small dialogue tree and lead back to the greeting', /Mara Venn. I keep the forge/.test(tree.a.text) && tree.a.replies.includes('What happened to the watch?') && /Gone quiet/.test(tree.b) && tree.back === 'menu', `"${tree.a.text.slice(0, 50)}…" → "${tree.b.slice(0, 40)}…"`);
   record('Some topics only open up as the story moves on (extra)', tree.blackwood, 'Tell me about the Blackwood: offered once the manifest is delivered');
 
-  // kills count, even ones made before the quest was taken
+  // kills move the objective on
   const hounds = await page.evaluate(() => {
     const g = window.__shadowfall;
     g.dialogue.close();
@@ -2353,13 +2363,13 @@ async function questsAndMap(browser) {
   record('When every objective is met the tracker says to return, and Mara shows a gold ?', hounds.status === 'ready' && hounds.mark === 'ready' && /Return to Mara Venn/.test(hounds.tracker), `tracker: "${hounds.tracker.trim().replace(/\s+/g, ' ')}"`);
   const bells = await page.evaluate(() => {
     const g = window.__shadowfall;
-    g.combat.onEnemyDefeated(g.enemies.byId('brute_hallow'));
     g.npcs.talk(g.npcs.byId('mara'));
     g.dialogue.choose('quest:bells_at_hallow_cut');
     g.dialogue.choose('accept');
+    g.combat.onEnemyDefeated(g.enemies.byId('brute_hallow'));
     return { objectives: g.quests.objectives('bells_at_hallow_cut').map((o) => `${o.have}/${o.need}`), status: g.quests.status('bells_at_hallow_cut') };
   });
-  record('An enemy slain before the quest was taken still counts (enemies do not return)', bells.objectives[1] === '1/1' && bells.status === 'active', `Bells at Hallow Cut: ${bells.objectives.join(', ')}`);
+  record('A kill made with the quest in hand counts (kills are counted from when the quest is taken, since enemies respawn)', bells.objectives[1] === '1/1' && bells.status === 'active', `Bells at Hallow Cut: ${bells.objectives.join(', ')}`);
 
   // hand-in with an item reward
   const hand = await page.evaluate(() => {
@@ -4034,11 +4044,12 @@ async function wowCombat(browser) {
   // no arrows, no shots
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 1);
-  const dry = await page.evaluate(() => ({ shots: window.__shadowfall.__shots.length, text: document.getElementById('swing-text').textContent, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).filter((t) => /no arrows/.test(t)).length }));
+  const dry = await page.evaluate(() => ({ shots: window.__shadowfall.__shots.length, text: document.getElementById('swing-text-off').textContent, log: [...document.querySelectorAll('#log li')].map((l) => l.textContent).filter((t) => /no arrows/.test(t)).length }));
   record('Auto Shot needs arrows: with none it does not fire, and says so', dry.shots === 0 && /no arrows/.test(dry.text) && dry.log > 0, `${dry.shots} shots; bar "${dry.text}"`);
   await page.evaluate(() => { const g = window.__shadowfall; g.targeting.stopAttack(); g.inventory.addItem('rough_arrow', 100, { quiet: true }); g.player.cooldowns.ranged = 0; g.targeting.engage(g.enemies.byId('ghoul_road')); });
   await sim(page, 0.3);
-  const bar = await page.evaluate(() => ({ text: document.getElementById('swing-text').textContent, inHand: window.__shadowfall.player.bowInHand }));
+  // (Auto Shot has the second bar; the melee swing timer keeps the first)
+  const bar = await page.evaluate(() => ({ text: document.getElementById('swing-text-off').textContent, inHand: window.__shadowfall.player.bowInHand }));
   await sim(page, 0.4);
   await page.evaluate(() => { const g = window.__shadowfall; g.renderer.render(g.scene, g.camera); });
   await page.screenshot({ path: path.join(HERE, 'screenshots', 'auto-shot.png') });
@@ -4515,7 +4526,221 @@ async function playtest4(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, gearRolls, blackwood, atmosphere };
+async function playtest5(browser) {
+  current = 'Playtest batch 5';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page, '#new-btn', { legacyKeys: false });
+  await pauseLoop(page);
+  await setup(page, { x: 0, z: 0, keep: [] });
+
+  // kill quests count kills made after taking them, and respawns, loot and
+  // fish no longer take them away
+  const kills = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.quests.accept('board_clear_the_road');
+    const e = g.enemies.byId('ghoul_cart');
+    e.health = 1;
+    e.hurt(5);
+    g.combat.onEnemyDefeated(e);
+    const after = g.quests.objectives('board_clear_the_road')[0].have;
+    g.worldState.respawnAt.ghoul_cart = 0; // it comes straight back
+    g.step(0.05);
+    const back = !!g.enemies.byId('ghoul_cart')?.alive;
+    g.inventory.addItem('bramble_carp', 1, { quiet: true });
+    const saved = g.quests.serialize().kills.board_clear_the_road?.ghouls;
+    return { after, back, now: g.quests.objectives('board_clear_the_road')[0].have, saved };
+  });
+  record('Kill quests count each kill once and keep it through respawns and looting fish', kills.after === 1 && kills.back && kills.now === 1 && kills.saved === 1, JSON.stringify(kills));
+
+  // quest gathering takes time with a cast bar; never area looted; nodes stay in sight
+  const gather = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const node = g.loot.active.find((l) => l.def.id === 'firewood_1');
+    const before = { lootable: g.loot.lootables().some((l) => l.id === 'firewood_1'), inScene: !!node.group.parent, label: g.hud.labels.sources.flatMap((f) => f()).some((l) => l.text === 'Bundle of firewood') };
+    // nothing near to shoot at the gatherer
+    g.enemies.list.forEach((e, i) => { e.position.set(40 + i * 2, 0, 60); e.home.copy(e.position); e.state = 'idle'; });
+    g.quests.accept('hester_firewood');
+    g.player.placeAt(-4, -56.8);
+    g.step(0.02);
+    const area = g.loot.lootables().find((l) => l.id === 'firewood_1').area;
+    g.interaction.interact();
+    const instant = g.inventory.count('firewood');
+    g.hud._refreshSpells();
+    const bar = !document.getElementById('cast-bar').hidden && document.getElementById('cast-text').textContent;
+    for (let i = 0; i < 130; i++) g.step(1 / 60);
+    const got = g.inventory.count('firewood');
+    return { err: document.getElementById('ui-error').textContent, before, area, instant, bar, got, depleted: node.depleted, stillThere: !!node.group.parent && g.loot.active.includes(node), lootableAfter: g.loot.lootables().some((l) => l.id === 'firewood_1') };
+  });
+  record('Quest items stay in sight (named) without the quest, but cannot be taken', !gather.before.lootable && gather.before.inScene && gather.before.label, JSON.stringify(gather.before));
+  record('Gathering a quest item takes time and shows a bar; it is never area looted', gather.area === false && gather.instant === 0 && /Gathering Bundle of firewood/.test(gather.bar || '') && gather.got === 1, JSON.stringify(gather));
+  record('A gathered node stays in sight, spent, until it grows back', gather.depleted && gather.stillThere && !gather.lootableAfter, JSON.stringify(gather));
+
+  // fishing: shorter casts, more bites, practice on a miss, any rod works
+  const fish = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.skills.ranks.set('fishing', 1);
+    g.inventory.addItem('yew_fishing_rod', 1, { quiet: true });
+    const hasRod = g.fishing.hasRod;
+    // a strike with nothing on the line still teaches
+    g.fishing.state = { phase: 'wait', bob: new (g.scene.constructor)(), line: { geometry: { dispose() {} } } };
+    g.fishing.state.bob = g.fishing._makeBob();
+    g.fishing.state.line = g.fishing._makeLine();
+    g.fishing.strike();
+    return { hasRod, rank: g.skills.rank('fishing'), duration: g.config.fishing.duration, bite: g.fishing.biteChanceFor(1) };
+  });
+  record('A yew rod alone lets you fish; casts last 12 s and most get a bite', fish.hasRod && fish.duration === 12 && fish.bite >= 60, JSON.stringify(fish));
+  record('A cast that lands no fish still raises the Fishing skill', fish.rank === 2, JSON.stringify(fish));
+
+  // the training dummy cannot be shoved or knocked back
+  const dummy = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const d = g.enemies.byId('dummy_forge');
+    const home = { x: d.position.x, z: d.position.z };
+    d.hurt(1, { knockFrom: { x: home.x + 1, z: home.z }, knockback: 0.4 });
+    g.player.placeAt(home.x + 0.3, home.z);
+    for (let i = 0; i < 30; i++) g.step(1 / 60);
+    return { moved: Math.hypot(d.position.x - home.x, d.position.z - home.z), pushedOut: Math.hypot(g.player.position.x - home.x, g.player.position.z - home.z) };
+  });
+  record('The training dummy does not move when hit or bumped', dummy.moved < 0.01 && dummy.pushedOut > 0.5, JSON.stringify(dummy));
+
+  // no talking through walls
+  const wall = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const n = g.npcs.byId('hester');
+    let spot = null;
+    for (let a = 0; a < Math.PI * 2 && !spot; a += 0.1) {
+      for (const r of [1.8, 2.3, 2.8]) {
+        const x = n.position.x + Math.sin(a) * r;
+        const z = n.position.z + Math.cos(a) * r;
+        if (g.collision.wallBetween(x, z, n.position.x, n.position.z)) { spot = { x, z }; break; }
+      }
+    }
+    if (!spot) return { spot };
+    g.player.position.set(spot.x, 0, spot.z);
+    g.interaction.update();
+    return { spot, offered: g.interaction.current?.key || null };
+  });
+  record('You cannot talk to someone through a wall', !!wall.spot && wall.offered !== 'npc:hester', JSON.stringify(wall));
+
+  // the town board does not turn when read
+  const board = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const b = g.npcs.byId('town_board');
+    const was = b.facing;
+    g.player.placeAt(b.position.x + 2, b.position.z + 1);
+    g.npcs.talk(b);
+    g.dialogue.close();
+    for (let i = 0; i < 30; i++) g.step(1 / 60);
+    return { was, now: b.facing };
+  });
+  record('The town board no longer spins round when clicked', Math.abs(board.was - board.now) < 1e-6, JSON.stringify(board));
+
+  // keys: 1-4 Q E spells, Shift-1..4 utility, Space interact; M no longer mutes
+  const keys = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const k = (id) => g.keys.label(id);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', shiftKey: true }));
+    const shifted = g.input.pressed.has('Shift+Digit1') && !g.input.pressed.has('Digit1');
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit1' }));
+    g.input.pressed.clear();
+    return { bar: [0, 1, 2, 3, 4, 5, 6, 9].map((i) => k('bar' + i)), interact: k('interact'), shifted, slot6: document.querySelector('#aslot-6 .key').dataset.kbm };
+  });
+  record('Default keys: spells on 1 2 3 4 Q E, utility on Shift-1 to Shift-4, Space interacts', keys.bar.join(',') === '1,2,3,4,Q,E,Shift-1,Shift-4' && keys.interact === 'Space' && keys.shifted && keys.slot6 === '⇧1', JSON.stringify(keys));
+
+  // abilities that need a shield
+  const shield = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.cooldowns.gcd = 0;
+    g.player.cooldowns.brace = 0;
+    g.inventory.use('e:offHand'); // shield into the bags
+    const without = g.spells.tryCast('brace');
+    const err = document.getElementById('ui-error').textContent;
+    g.hud._refreshSlots();
+    const dim = document.getElementById('aslot-5').classList.contains('nores');
+    g.inventory.equip('kite_shield');
+    g.player.cooldowns.gcd = 0;
+    return { without, err, dim, with: g.spells.tryCast('brace') };
+  });
+  record('Brace and Shield Break need a shield: the slot dims and says so', !shield.without && /shield/i.test(shield.err) && shield.dim && shield.with, JSON.stringify(shield));
+
+  // the tool pack, from the story quest
+  const pack = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const inv = g.inventory;
+    inv.addItem('torch', 1, { quiet: true });
+    inv.addItem('manifest', 1, { quiet: true });
+    const free = inv.freeSlots();
+    const done = g.quests.complete('missing_delivery');
+    const contents = inv.toolPack?.slots.filter(Boolean).map((s) => s.id);
+    // an old save, from before the tool socket, still loads and gets the pack
+    const data = g.save.serialize ? null : null;
+    return { done, pack: inv.toolPack?.id, contents, freedBags: inv.freeSlots() - free, sockets: inv.serialize().sockets.length, socketShown: !!document.querySelector('#bag-sockets [data-loc="s:4"]') };
+  });
+  record('Handing in the manifest earns the tool pack, which takes the torch and rod out of the bags', pack.done && pack.pack === 'tool_pack' && pack.contents.includes('torch') && pack.contents.includes('yew_fishing_rod') && pack.sockets === 5, JSON.stringify(pack));
+  const oldSave = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const r = g.save.save({ manual: true });
+    const raw = JSON.parse(localStorage.getItem(g.save.key));
+    raw.inventory.sockets = raw.inventory.sockets.slice(0, 4).map((s) => s && { ...s, slots: s.slots.map((x) => (x && (x.id === 'torch' || x.id === 'yew_fishing_rod') ? null : x)) });
+    const v = g.validateSave(raw);
+    g.save.apply(raw);
+    return { saved: r.ok, valid: v.ok ?? v.valid ?? v, pack: g.inventory.toolPack?.id };
+  });
+  record('A save from before the tool pack loads, and a finished story quest hands the pack over', oldSave.saved && oldSave.pack === 'tool_pack', JSON.stringify(oldSave));
+
+  // mouse wheel zoom, and the Warden nearer the middle of the screen
+  const zoom = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(0, 0);
+    g._snapCamera();
+    const d0 = g.camera.position.distanceTo(g.player.position);
+    g.renderer.domElement.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }));
+    g.renderer.domElement.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }));
+    g.step(0.016);
+    g._snapCamera();
+    const d1 = g.camera.position.distanceTo(g.player.position);
+    const v = g.player.position.clone().project(g.camera);
+    return { d0, d1, zoom: g.zoom, screenY: v.y };
+  });
+  record('The mouse wheel zooms the camera', zoom.d1 > zoom.d0 + 0.5 && zoom.zoom > 1, JSON.stringify(zoom));
+  record('The Warden stands nearer the middle of the screen', zoom.screenY > -0.3, JSON.stringify(zoom));
+
+  // Settings: volume sliders and click to move
+  const set = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.hud.items.show('settings');
+    const sliders = [...document.querySelectorAll('#settings-list input[type=range]')].map((i) => i.dataset.setting);
+    g.settings.set('clickToMove', true);
+    g.hud.items.close('settings');
+    g.player.placeAt(0, 0);
+    g.moveTo = { x: 0, z: 5, reach: 0.25 };
+    for (let i = 0; i < 60; i++) g.step(1 / 60);
+    const walked = g.player.position.z;
+    g.settings.set('clickToMove', false);
+    return { sliders, walked };
+  });
+  record('Settings has master, effects and ambience volumes', ['volMaster', 'volEffects', 'volAmbience'].every((s) => set.sliders.includes(s)), JSON.stringify(set));
+  record('Click to move walks the Warden to the clicked point', set.walked > 4, JSON.stringify(set));
+
+  // with a bow out of melee reach, the melee swing timer still shows, Auto Shot under it
+  await placeEnemy(page, 'ghoul_road', 0, -10, { frozen: true });
+  const swing = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.player.placeAt(0, 0);
+    g.inventory.addItem('hunting_bow', 1, { quiet: true });
+    g.inventory.addItem('rough_arrow', 50, { quiet: true });
+    g.inventory.equip('hunting_bow');
+    g.targeting.engage(g.enemies.byId('ghoul_road'));
+    for (let i = 0; i < 10; i++) g.step(1 / 60);
+    return { main: !document.getElementById('swing-bar').hidden && document.getElementById('swing-text').textContent, second: !document.getElementById('swing-bar-off').hidden && document.getElementById('swing-text-off').textContent };
+  });
+  record('Shooting out of melee reach keeps the melee swing timer, with Auto Shot beneath', swing.main && !/Auto Shot/.test(swing.main) && /Auto Shot/.test(swing.second || ''), JSON.stringify(swing));
+
+  record('No script errors (playtest batch 5)', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

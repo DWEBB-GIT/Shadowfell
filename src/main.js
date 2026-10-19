@@ -63,6 +63,7 @@ class Game {
     this.time = 0;
     this.events = new Events();
     this.pendingDeath = null;
+    this.zoom = 1; // mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
   }
 
   async init() {
@@ -377,7 +378,7 @@ class Game {
       const p = this.player.position;
       const o = pick.obj;
       if (pick.kind === 'enemy') c = CURSORS.attack;
-      else if (pick.kind === 'npc') c = Math.hypot(o.position.x - p.x, o.position.z - p.z) <= CONFIG.shop.talkRange + 0.5 ? CURSORS.talk : CURSORS.talkFar;
+      else if (pick.kind === 'npc') c = Math.hypot(o.position.x - p.x, o.position.z - p.z) <= CONFIG.shop.talkRange + 0.5 && !this.collision.wallBetween(p.x, p.z, o.position.x, o.position.z) ? CURSORS.talk : CURSORS.talkFar;
       else if (pick.kind === 'loot' || pick.kind === 'chest') c = Math.hypot(o.x - p.x, o.z - p.z) <= (pick.kind === 'chest' ? 2.4 : CONFIG.loot.reach) ? CURSORS.loot : CURSORS.lootFar;
     }
     if (c !== this.cursor) this.renderer.domElement.style.cursor = this.cursor = c;
@@ -389,35 +390,76 @@ class Game {
     // a click on (or near) the fishing bob strikes
     if (this._overBob()) return this.fishing.strike();
     const pick = this._pickUnderCursor();
+    // With click to move (Settings) a click on the ground walks there, and a
+    // click on something out of reach walks up to it and then acts.
+    const walk = this.settings.get('clickToMove');
+    this.moveTo = null;
     // a left click on the ground lets go of the target; a right click does not
     if (!pick) {
       if (button === 'left') this.targeting.clear();
+      const at = walk && this.input.mouse.onCanvas && this._aimPoint();
+      if (at) this.moveTo = { x: at.x, z: at.z, reach: 0.25 };
       return false;
     }
     const { player, events, targeting, loot } = this;
-    const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
+    const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach || this.collision.wallBetween(player.position.x, player.position.z, x, z);
+    // out of reach: walk up and act on arrival (click to move), or say so
+    const reachOr = (x, z, reach, act, tooFar) => {
+      if (!far(x, z, reach)) return act();
+      if (walk) this.moveTo = { x, z, reach: reach - 0.3, then: act };
+      else tooFar();
+    };
+    const closer = () => this.hud.error('You need to be closer to interact with that target.');
     if (pick.kind === 'sign') {
       this.hud.showSignpost(pick.obj);
     } else if (pick.kind === 'chest') {
-      if (far(pick.obj.x, pick.obj.z, 2.4)) this.hud.error('You need to be closer to interact with that target.');
-      else this.chests.open(pick.obj);
+      reachOr(pick.obj.x, pick.obj.z, 2.4, () => this.chests.open(pick.obj), closer);
     } else if (pick.kind === 'loot') {
       const l = pick.obj;
-      if (far(l.x, l.z, CONFIG.loot.reach)) events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
-      else loot.lootArea(l);
+      reachOr(l.x, l.z, CONFIG.loot.reach, () => loot.lootArea(l), () => events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' }));
     } else if (pick.kind === 'enemy') {
       if (button === 'right') {
         targeting.engage(pick.obj);
-        if (!targeting.targetInReach) this.hud.error('Out of range');
+        // walking in, the Warden follows the enemy until it is in reach
+        if (!targeting.targetInReach && walk && !targeting.targetInShot) this.moveTo = { follow: pick.obj, reach: 0 };
+        else if (!targeting.targetInReach && !targeting.targetInShot) this.hud.error('Out of range');
       } else targeting.select(pick.obj);
     } else if (pick.kind === 'npc') {
       // either button selects a townsperson and talks to them, if close enough
       const n = pick.obj;
       targeting.selectFriendly(n);
-      if (far(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5)) this.hud.error('You need to be closer to interact with that target.');
-      else this.npcs.talk(n);
+      reachOr(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5, () => this.npcs.talk(n), closer);
     }
     return true;
+  }
+
+  // Click to move: the way to walk this frame, or null. Arriving runs the
+  // action the walk was for; any movement key takes over and ends it.
+  _clickMove(keysMove) {
+    const m = this.moveTo;
+    if (!m) return null;
+    if (keysMove.x || keysMove.z || this.player.dead) {
+      this.moveTo = null;
+      return null;
+    }
+    const p = this.player.position;
+    if (m.follow) {
+      if (!m.follow.alive || this.targeting.current !== m.follow || this.targeting.targetInReach) {
+        this.moveTo = null;
+        return null;
+      }
+      m.x = m.follow.position.x;
+      m.z = m.follow.position.z;
+    }
+    const dx = m.x - p.x;
+    const dz = m.z - p.z;
+    const d = Math.hypot(dx, dz);
+    if (d <= Math.max(0.2, m.reach)) {
+      this.moveTo = null;
+      m.then?.();
+      return null;
+    }
+    return { x: dx / d, z: dz / d };
   }
 
   // Maximum health comes from level plus worn gear (the helm).
@@ -491,7 +533,11 @@ class Game {
     if (pad.active && pad.now.some(Boolean)) hud.setPadMode(true);
     if (input.pressed.size || input.mouse.clicked) hud.setPadMode(false);
 
-    if (input.consume('KeyM')) hud.setMuted(this.audio.toggleMute());
+    const notches = input.consumeWheel();
+    if (notches && this.started) {
+      const c = CONFIG.camera;
+      this.zoom = THREE.MathUtils.clamp(this.zoom + notches * c.zoomStep, c.zoomMin, c.zoomMax);
+    }
     if (hud.modal === 'title') {
       this.title.update(dt);
       return null;
@@ -535,7 +581,8 @@ class Game {
     }
     if (this.player.dead) return null;
 
-    const move = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
+    const keysMove = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
+    const move = this._clickMove(keysMove) || keysMove;
     const usingPad = padOn && (pad.left.m > 0 || pad.right.m > 0 || hud.padMode);
     const p = (b) => padOn && pad.pressed(b);
     const rawAim = usingPad ? this._padAim() : this._aimPoint();
@@ -638,8 +685,7 @@ class Game {
     if (k !== this._bwk) {
       this._bwk = k;
       const bw = CONFIG.blackwood;
-      this.scene.fog.near = THREE.MathUtils.lerp(CONFIG.fog.near, bw.fogNear, k);
-      this.scene.fog.far = THREE.MathUtils.lerp(CONFIG.fog.far, bw.fogFar, k);
+      this.fogBase = { near: THREE.MathUtils.lerp(CONFIG.fog.near, bw.fogNear, k), far: THREE.MathUtils.lerp(CONFIG.fog.far, bw.fogFar, k) };
       this.scene.fog.color.set(CONFIG.fog.color).lerp(new THREE.Color(bw.fogColor), k);
       this.scene.background.copy(this.scene.fog.color);
       const light = THREE.MathUtils.lerp(1, bw.light, k);
@@ -697,7 +743,7 @@ class Game {
     if (!this.started && this.title?.view && this.title.view !== 'main') return this._placeShowcase();
     // a fixed isometric view: the scenes are composed for this one angle
     // indoors the camera closes in a little, under where the roof was
-    const zoom = 1 - CONFIG.camera.indoorZoom * (this.world.indoorBlend || 0);
+    const zoom = this.zoom * (1 - CONFIG.camera.indoorZoom * (this.world.indoorBlend || 0));
     const [ox, oy, oz] = CONFIG.camera.offset.map((v) => v * zoom);
     const t = this.cameraTarget;
     let sx = 0;
@@ -708,7 +754,19 @@ class Game {
       this.shake *= Math.exp(-CONFIG.impact.shakeDecay * dt);
     } else this.shake = 0;
     this.camera.position.set(t.x + ox + sx, t.y + oy + sy, t.z + oz);
-    this.camera.lookAt(t.x + sx, t.y + 1.0 + sy, t.z - 2.4); // look a little ahead, up the road
+    // fog is measured from the camera: zooming moves it with the camera, so
+    // the Warden's surroundings stay as clear at any zoom
+    if (this.fogBase) {
+      const extra = Math.hypot(ox, oy, oz) - Math.hypot(...CONFIG.camera.offset);
+      this.scene.fog.near = this.fogBase.near + extra;
+      this.scene.fog.far = this.fogBase.far + extra;
+      const far = this.scene.fog.far + 6;
+      if (this.camera.far !== far) {
+        this.camera.far = far;
+        this.camera.updateProjectionMatrix();
+      }
+    }
+    this.camera.lookAt(t.x + sx, t.y + 1.0 + sy, t.z - CONFIG.camera.lookAhead * zoom); // a little ahead, up the road
     this.sun.position.set(t.x - 14, t.y + 26, t.z + 6);
     this.sun.target.position.set(t.x, t.y, t.z);
     const p = this.player.position;

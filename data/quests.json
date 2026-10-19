@@ -10,7 +10,7 @@
       "summary": "Mara Venn's iron never reached the old watch post. Follow the Fallen Road and find out what became of it.",
       "offer": "Iron's late, and the watch post won't answer its door. Nine bars of grave-iron with my mark on them went up that road. Find out what happened and I'll pay for it.",
       "progress": "Any word of my iron? A cart doesn't vanish. Look it over properly if you find it. A carter keeps papers.",
-      "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
+      "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised, and take this pack. Keep a torch and a rod loose in your kit and you'll lose both. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
       "objectives": [
         {
           "id": "manifest",
@@ -24,6 +24,7 @@
       "reward": {
         "coins": 20,
         "xp": 50,
+        "items": [{ "item": "tool_pack", "count": 1 }],
         "reputation": {
           "road_wardens": 250
         }

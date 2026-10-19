@@ -221,13 +221,15 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | Tab | R3 (stick click) | Next target |
 | Left click | | Select an enemy or townsperson; loot a body or drop |
 | Right click | RT | Engage an enemy (auto attack); talk to a townsperson; loot |
-| 1 | X | Lunge (slot 1) |
-| 2 | Y | Shield Break (slot 2) |
-| 3 or Q | RB | Healing draught (slot 3) |
-| 4 | LB | Hallowed Bolt (slot 4) |
-| 5 | LT | Spell-bar slot 5 (Rend by default) |
-| Space | B | Brace, the defensive slot |
-| E | A | Interact, examine, loot everything nearby |
+| 1 | X | Spell slot 1 (Lunge) |
+| 2 | Y | Spell slot 2 (Shield Break) |
+| 3 | RB | Spell slot 3 (Heavy Strike) |
+| 4 | LB | Spell slot 4 (Crushing Blow) |
+| Q | LT | Spell slot 5 (Rebuke) |
+| E | B | Spell slot 6 (Brace) |
+| Shift-1 to Shift-4 | D-pad left + X / Y / A / B | Utility slots (healing draught, torch, fishing, camp) |
+| Space | A | Interact, examine, loot everything nearby |
+| Mouse wheel | | Zoom the camera in and out |
 | B (or I) | Start | Bags |
 | C | View | Character panel |
 | P | D-pad up | Spellbook |
@@ -237,7 +239,7 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 | U | | Skills (RuneScape style: each skill and its level; also a button in the Spells window) |
 | K | D-pad down | Save |
 | Esc | B (in a window) | Close windows, then clear the target |
-| M | | Sound on or off |
+| (Settings) | | Volume for master, effects and ambience; click to move |
 
 Every keyboard key above except WASD, the arrow keys, Esc and M can be changed in Settings (O).
 

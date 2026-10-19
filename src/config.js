@@ -35,14 +35,14 @@ export const CONFIG = {
   },
   fishing: {
     castTime: 0.6, // the bob's flight
-    duration: 20, // seconds a cast lasts (the fishing bar); no bite by then and nothing was biting
-    biteMin: 3, // a bite comes this many seconds into the cast, at least...
-    biteMax: 16, // ...and at most
+    duration: 12, // seconds a cast lasts (the fishing bar); no bite by then and nothing was biting (Dan, 2026-10-19: 20 was too long)
+    biteMin: 2, // a bite comes this many seconds into the cast, at least...
+    biteMax: 9, // ...and at most
     biteWindow: 1.4, // how long the bob stays under: strike now
-    biteBase: 35, // percent chance a cast gets a bite at all...
+    biteBase: 65, // percent chance a cast gets a bite at all... (was 35: too many empty casts)
     bitePerSkill: 1.2, // ...plus this per point of fishing skill (rank + rod + bait), up to biteCap
     biteCap: 95,
-    baseChance: 65, // percent chance to land it on a timely strike...
+    baseChance: 75, // percent chance to land it on a timely strike...
     chancePerRank: 0.6, // ...plus this per point of fishing skill
     clickRadius: 60, // pixels: a click this close to the bob strikes
   },
@@ -114,6 +114,10 @@ export const CONFIG = {
   blackwood: { fogColor: 0x1d2725, fogNear: 9, fogFar: 32, light: 0.68 },
   camera: {
     offset: [0, 11, 10],
+    lookAhead: 0.5, // metres north of the Warden the camera centres on (was 2.4; Dan: keep him nearer the middle so you see what comes from the south)
+    zoomMin: 0.6, // mouse wheel zoom: this close...
+    zoomMax: 1.35, // ...to this far, as a share of the offset
+    zoomStep: 0.08, // per wheel notch
     indoorZoom: 0.22, // how much closer the camera comes inside a building
     fov: 45,
     followSharpness: 8, // higher = tighter follow
@@ -131,6 +135,7 @@ export const CONFIG = {
     areaRadius: 5, // looting one thing also loots everything this close to it
     clickRadius: 40, // pixels: how close a click must be to a corpse or drop
     reach: 3.2, // how close the Warden must be to loot by clicking
+    gatherTime: 2, // seconds to gather a quest item (firewood, ore, sorrel...)
   },
 };
 

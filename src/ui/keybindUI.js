@@ -1,4 +1,4 @@
-import { KEY_ACTIONS, keyLabel } from '../systems/keybinds.js';
+import { KEY_ACTIONS, keyLabel, comboOf } from '../systems/keybinds.js';
 
 // The key bindings list in the Settings window, plus Quick bind: while it is
 // on, hovering a spell or utility bar slot and pressing a key binds it there.
@@ -45,10 +45,12 @@ export class KeybindUI {
     this.waiting = id;
     this.render();
     this.game.input.capture = (e) => {
+      if (e.code.startsWith('Shift')) return; // a modifier: wait for the key it goes with
       this.game.input.capture = null;
       this.waiting = null;
+      const code = comboOf(e);
       if (e.code === 'Backspace') this.game.keys.unbind(id);
-      else if (e.code !== 'Escape' && !this.game.keys.bind(id, e.code)) this.hud.error(`${keyLabel(e.code)} cannot be bound`);
+      else if (e.code !== 'Escape' && !this.game.keys.bind(id, code)) this.hud.error(`${keyLabel(code)} cannot be bound`);
       this.render();
     };
   }
@@ -61,8 +63,8 @@ export class KeybindUI {
     this.game.input.capture = on
       ? (e) => {
           if (e.code === 'Escape') return this.setQuick(false);
-          if (this.hovered === null) return;
-          if (!this.game.keys.bind('bar' + this.hovered, e.code)) this.hud.error(`${keyLabel(e.code)} cannot be bound`);
+          if (this.hovered === null || e.code.startsWith('Shift')) return;
+          if (!this.game.keys.bind('bar' + this.hovered, comboOf(e))) this.hud.error(`${keyLabel(comboOf(e))} cannot be bound`);
         }
       : null;
   }
