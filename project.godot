@@ -1,0 +1,55 @@
+; Godot 4 project for Shadowfell. It sits at the repo root so it reads the
+; same data/*.json and assets/models/*.glb as the browser build: content
+; changes land in both. Folders with a .gdignore (the JS code, tests, tools)
+; are hidden from Godot.
+
+config_version=5
+
+[application]
+
+config/name="Shadowfell"
+config/description="Retro-inspired dark fantasy RPG"
+run/main_scene="res://game/main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[autoload]
+
+GameData="*res://game/autoload/game_data.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[input]
+
+move_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":87), Object(InputEventKey,"physical_keycode":4194320), Object(InputEventJoypadMotion,"axis":1,"axis_value":-1.0)]
+}
+move_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":83), Object(InputEventKey,"physical_keycode":4194322), Object(InputEventJoypadMotion,"axis":1,"axis_value":1.0)]
+}
+move_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":65), Object(InputEventKey,"physical_keycode":4194319), Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]
+}
+move_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":68), Object(InputEventKey,"physical_keycode":4194321), Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]
+}
+zoom_in={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"button_index":4,"pressed":true)]
+}
+zoom_out={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"button_index":5,"pressed":true)]
+}
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
