@@ -173,7 +173,7 @@ export class QuestUI {
     if (page.train) return this._renderTrainer(page);
     this.el.dlgName.textContent = page.name;
     this.el.dlgTitle.textContent = page.title;
-    this.el.dlgText.textContent = page.text;
+    this.el.dlgText.textContent = page.salutation ? `${page.salutation} ${page.text}` : page.text;
     const q = page.quest;
     if (q) {
       const head = q.status === 'ready' ? 'Ready to hand in' : q.status === 'available' ? 'New quest' : 'In progress';
