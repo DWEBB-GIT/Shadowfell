@@ -4,44 +4,232 @@
     {
       "id": "mara",
       "greetings": [
-        { "text": "Mara Venn, smith. If it's iron, I've likely hit it." },
-        { "text": "Any word of my iron? Nine bars, my mark on every one.", "when": { "quest": "missing_delivery", "status": "active" } },
-        { "text": "You've a look about you. Found something on the road?", "when": { "quest": "missing_delivery", "status": "ready" } },
-        { "text": "Back again, Warden? The forge is hot if you need it.", "when": { "quest": "missing_delivery", "status": "done" } },
-        { "text": "The bells have stopped. First quiet night in a month.", "when": { "quest": "the_glade_seer", "status": "done" } }
+        {
+          "text": "Mara Venn, smith. If it's iron, I've likely hit it."
+        },
+        {
+          "text": "Any word of my iron? Nine bars, my mark on every one.",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "active"
+          }
+        },
+        {
+          "text": "You've a look about you. Found something on the road?",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Back again, Warden? The forge is hot if you need it.",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "done"
+          }
+        },
+        {
+          "text": "The bells have stopped. First quiet night in a month.",
+          "when": {
+            "quest": "the_glade_seer",
+            "status": "done"
+          }
+        }
       ],
       "topics": [
-        { "id": "who", "prompt": "Who are you?", "node": "mara_who" },
-        { "id": "grave_iron", "prompt": "What is grave-iron?", "node": "mara_grave_iron" },
-        { "id": "blackwood", "prompt": "Tell me about the Blackwood.", "node": "mara_blackwood", "when": { "quest": "missing_delivery", "status": "done" } }
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "mara_who"
+        },
+        {
+          "id": "grave_iron",
+          "prompt": "What is grave-iron?",
+          "node": "mara_grave_iron"
+        },
+        {
+          "id": "blackwood",
+          "prompt": "Tell me about the Blackwood.",
+          "node": "mara_blackwood",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "done"
+          }
+        }
       ],
       "nodes": [
         {
           "id": "mara_who",
           "text": "Mara Venn. I keep the forge for the watch post, or I did, while there was a watch. Now I keep it for whoever pays.",
-          "replies": [{ "text": "What happened to the watch?", "node": "mara_watch" }, { "text": "I see." }]
+          "replies": [
+            {
+              "text": "What happened to the watch?",
+              "node": "mara_watch"
+            },
+            {
+              "text": "I see."
+            }
+          ]
         },
         {
           "id": "mara_watch",
           "text": "Gone quiet a fortnight back. Doors barred from the inside, and nobody answers. I've stopped knocking.",
-          "replies": [{ "text": "I'll keep an eye out." }]
+          "replies": [
+            {
+              "text": "I'll keep an eye out."
+            }
+          ]
         },
         {
           "id": "mara_grave_iron",
           "text": "Iron smelted from old barrow-nails. It holds an edge against things that ought to stay dead. Bring me any you find and I'll pay fair for it.",
-          "replies": [{ "text": "I'll remember that." }]
+          "replies": [
+            {
+              "text": "I'll remember that."
+            }
+          ]
         },
         {
           "id": "mara_blackwood",
           "text": "Black pines, older than the road. The track runs through to a glade where the old stones stand. Hunters went in for the hounds' pelts. Fewer come out each year.",
-          "replies": [{ "text": "Who set the stones?", "node": "mara_stones" }, { "text": "Thank you." }]
+          "replies": [
+            {
+              "text": "Who set the stones?",
+              "node": "mara_stones"
+            },
+            {
+              "text": "Thank you."
+            }
+          ]
         },
         {
           "id": "mara_stones",
           "text": "Nobody living. My grandmother said they were there before the barrows, and the barrows were there before the road.",
-          "replies": [{ "text": "Thank you." }]
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
         }
       ]
+    },
+    {
+      "id": "tam",
+      "greetings": [
+        {
+          "text": "Mind the edge. The mere's deeper than it looks, and colder than that."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "tam_who"
+        },
+        {
+          "id": "mere",
+          "prompt": "What lives in the mere?",
+          "node": "tam_mere"
+        },
+        {
+          "id": "dark",
+          "prompt": "Where would I need a torch?",
+          "node": "tam_dark"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "tam_who",
+          "text": "Tam. I fished this water before the road fell and I'll fish it after. I can teach you to fish, and to make a camp worth the name, if you've the coin.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "tam_mere",
+          "text": "Perch, dace, and the odd boot. There's an eel down there too, black as a grave. Strike when the bob goes under, not before.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "tam_dark",
+          "text": "West of the hound den in the Blackwood there's a hollow where the light won't go. Folk say the old watch hid their pay chest in it. Take a torch. Your shield won't help you see.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hester",
+      "greetings": [
+        {
+          "text": "Come in out of it. There's a fire, a bed, and stew if you don't ask what's in it."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "hester_who"
+        },
+        {
+          "id": "cook",
+          "prompt": "Can you teach me to cook?",
+          "node": "hester_cook"
+        },
+        {
+          "id": "rest",
+          "prompt": "Can I rest here?",
+          "node": "hester_rest"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "hester_who",
+          "text": "Hester Vale. I keep the Ford Inn, which mostly means I keep it standing. Brackenford's what's left of the folk who wouldn't leave when the road fell.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_cook",
+          "text": "Anyone can burn a fish. Cooking's knowing when to stop. Learn from me and you'll eat better than the dead do. Bring me perch and dace to start; once you've the knack I'll show you what to do with hound.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_rest",
+          "text": "Under this roof you're safe to rest. Sit a while and you'll wake sharper for it. Say the word and I'll keep a bed for you: if the road kills you, you'll wake up here.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_board",
+      "greetings": [
+        {
+          "text": "Notices in a dozen hands are nailed over one another. Some are weeks old. A few look fresh."
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

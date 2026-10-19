@@ -1,6 +1,7 @@
 // The shape of the game's data (the JSON files in /data) and the checks that
-// keep it sound. Pure functions with no imports, so the same checks run in
-// the game at start-up and in Node (tests/validate-data.mjs) before a commit.
+// keep it sound. Pure functions that import only the pure scaling formulas,
+// so the same checks run in the game at start-up and in Node
+// (tests/validate-data.mjs) before a commit.
 //
 // The rules, in short:
 //   * every record has a lower_snake_case `id`, unique within its file
@@ -9,38 +10,90 @@
 // Each check returns readable strings such as
 //   "loot_tables.json ghoul: gear entry names unknown item iron_glvoes".
 
-export const KINDS = ['weapon', 'armor', 'shield', 'bag', 'consumable', 'material', 'junk', 'document'];
+import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
+
+export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'ammo', 'consumable', 'material', 'junk', 'document'];
 // rarity ids, lowest first (data/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
-export const STAT_KEYS = ['might', 'finesse', 'intellect', 'vitality', 'armour', 'resistance', 'block', 'blockRating', 'haste'];
+const EQUIPPABLE = ['weapon', 'armor', 'shield', 'jewellery', 'torch'];
+export const STAT_KEYS = ['stamina', 'strength', 'agility', 'intellect', 'armour', 'resistance', 'block', 'haste'];
+// Character slots, laid out as in WoW: `col` is where the panel shows it.
+// An item's `slot` names the slot it goes in, or a slot type (`fits`) when
+// there are two of them: a ring goes on either finger, a trinket in either
+// trinket slot.
 export const EQUIP_SLOTS = [
-  { id: 'head', label: 'Head' },
-  { id: 'chest', label: 'Chest' },
-  { id: 'hands', label: 'Hands' },
-  { id: 'legs', label: 'Legs' },
-  { id: 'feet', label: 'Feet' },
-  { id: 'mainHand', label: 'Main hand' },
-  { id: 'offHand', label: 'Off hand' },
+  { id: 'head', label: 'Head', col: 'left' },
+  { id: 'neck', label: 'Neck', col: 'left' },
+  { id: 'shoulders', label: 'Shoulder', col: 'left' },
+  { id: 'back', label: 'Back', col: 'left' },
+  { id: 'chest', label: 'Chest', col: 'left' },
+  { id: 'wrists', label: 'Wrists', col: 'left' },
+  { id: 'hands', label: 'Hands', col: 'left' },
+  { id: 'waist', label: 'Waist', col: 'right' },
+  { id: 'legs', label: 'Legs', col: 'right' },
+  { id: 'feet', label: 'Feet', col: 'right' },
+  { id: 'finger1', label: 'Finger', fits: 'finger', col: 'right' },
+  { id: 'finger2', label: 'Finger', fits: 'finger', col: 'right' },
+  { id: 'trinket1', label: 'Trinket', fits: 'trinket', col: 'right' },
+  { id: 'trinket2', label: 'Trinket', fits: 'trinket', col: 'right' },
+  // a one-handed weapon (slot `oneHand`) goes in either hand; the off hand
+  // only for a class that can dual wield
+  { id: 'mainHand', label: 'Main hand', col: 'bottom', also: ['oneHand'] },
+  { id: 'offHand', label: 'Off hand', col: 'bottom', also: ['oneHand'] },
+  // a bow, for Auto Shot at targets beyond melee reach (any class, as in WoW)
+  { id: 'ranged', label: 'Ranged', col: 'bottom' },
 ];
+// what an item's `slot` may say: a slot id, or a slot type
+export const ITEM_SLOTS = [...new Set(EQUIP_SLOTS.flatMap((s) => [s.fits || s.id, ...(s.also || [])]))];
+// does an item with this `slot` go in that character slot?
+export const slotFits = (slotId, itemSlot) => {
+  const s = EQUIP_SLOTS.find((x) => x.id === slotId);
+  return !!s && (s.id === itemSlot || s.fits === itemSlot || (s.also || []).includes(itemSlot));
+};
+// what wears out: weapons, armour and shields (and jewellery)
+export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
-const SCHOOLS = ['physical', 'shadow', 'holy'];
+const SCHOOLS = ['physical', 'shadow', 'holy', 'nature', 'fire'];
+// what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
+export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer'];
+
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
 export const SPELL_KINDS = {
-  cast: { enemy: true, tuning: ['castTime', 'damageMin', 'damageMax', 'projectileSpeed'] },
+  cast: { enemy: true, tuning: ['castTime', 'damageMin', 'damageMax', 'projectileSpeed'] }, // ranged: castTime, damageMultiplier
   dot: { enemy: true, tuning: ['duration', 'tickInterval', 'tickMultiplier'] },
   instant: { enemy: true, tuning: ['damageMin', 'damageMax'] },
-  aoe: { enemy: false, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] },
-  cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] },
+  aoe: { enemy: false, ground: true, tuning: ['radius', 'duration', 'tickInterval', 'damageMin', 'damageMax'] }, // optional healPercent; `spreads` a dot
+  cleave: { enemy: false, tuning: ['damageMultiplier', 'coneDegrees', 'range', 'maxTargets', 'windup'] }, // optional spins
+  burst: { enemy: false, tuning: ['damageMultiplier', 'radius', 'windup', 'stagger', 'knockback'] }, // optional interrupts: 1
+  charge: { enemy: true, tuning: ['damageMultiplier', 'distance', 'duration', 'hitRadius'] },
+  leap: { enemy: false, tuning: ['distance', 'duration'] }, // Disengage: a jump back
+  guard: { enemy: false, tuning: ['window'] }, // Brace, Guile: optional blocks (0 = all), reduction %, miss: 1
+  interrupt: { enemy: true, tuning: ['lockout', 'damageMin', 'damageMax'] }, // breaks an interruptible enemy cast
+  control: { enemy: true, tuning: [] }, // only its `applies` aura: Sleep, Hex, Bring to Kneel
   buff: { enemy: false, tuning: ['duration', 'damageBonus'] },
+  stealth: { enemy: false, tuning: [] }, // Shadow
+  trap: { enemy: false, tuning: ['armTime', 'triggerRadius', 'lifetime', 'maxTraps', 'radius', 'duration', 'slow'] },
+  purge: { enemy: false, tuning: ['healPerPoint', 'extend'] }, // spends all of `spendsAll`
+  channel: { enemy: true, tuning: ['castTime', 'tickInterval', 'damageMin', 'damageMax', 'healPercent'] },
+  shield: { enemy: false, tuning: ['duration', 'absorbPercent'] },
+  camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
 };
+// what an `applies` aura may say, all numbers: `then` is a second aura that follows it
+const AURA_KEYS = ['duration', 'slow', 'stun', 'sleep', 'damageTaken', 'damageDealt'];
+const LOADOUTS = ['twoHand', 'dualWield', 'shield'];
+// what a class bar may say (src/systems/resources.js)
+const BAR_NUMBERS = ['max', 'regenPerSecond', 'regenOutOfCombat', 'stillBonus', 'shadowMultiplier', 'perSwing', 'perHitTaken', 'perBlock', 'perDotTick', 'decayAfter', 'decayPerSecond', 'fadeAfter', 'healPerSpent'];
 const ID = /^[a-z][a-z0-9_]*$/;
+// models built in code (src/assets/fallback.js) rather than in Blender
+const PROCEDURAL_MODELS = ['training_dummy', 'town_board'];
 const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved spell bars use them
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
 const isStr = (v) => typeof v === 'string' && v.length > 0;
+const isStrList = (v) => Array.isArray(v) && v.every(isStr);
 const isVec2 = (v) => Array.isArray(v) && v.length === 2 && v.every(isNum);
 
 // Turn a list of records into a map by id, noting missing and repeated ids.
@@ -73,13 +126,43 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (!isInt(d.stack) || d.stack < 1) bad('stack must be a whole number of at least 1');
     if (!isInt(d.price) || d.price < 0) bad('price must be a whole number of coins');
     if (!d.model || !d.icon) bad('needs a model and an icon');
-    const equips = ['weapon', 'armor', 'shield'].includes(d.kind);
+    const equips = EQUIPPABLE.includes(d.kind);
     if (equips && !slots.includes(d.slot)) bad(`unknown slot ${d.slot}`);
     if (!equips && d.slot) bad('only weapons, armour and shields have a slot');
     if (d.kind === 'armor' && !armourTypes.includes(d.armourType)) bad('armour needs an armour type');
     if (d.armourType && !armourTypes.includes(d.armourType)) bad(`unknown armour type ${d.armourType}`);
-    if (d.kind === 'weapon' && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage[0] <= d.damage[1])) bad('a weapon needs damage [min, max]');
+    // gear's numbers come from its item level (src/data/scaling.js)
+    if (GEAR.includes(d.kind) || d.kind === 'jewellery') {
+      if (!(isInt(d.itemLevel) && d.itemLevel >= 1)) bad('gear needs an itemLevel (a whole number of at least 1)');
+      for (const [k, v] of Object.entries(d.statSplit || {})) {
+        if (!STAT_KEYS.includes(k)) bad(`statSplit names unknown stat ${k}`);
+        else if (!(isNum(v) && v > 0)) bad(`statSplit ${k} must be a share above 0`);
+      }
+      const r = SCALING.rarity[d.rarity];
+      if (d.statSplit && r && !r.budget) bad(`a ${d.rarity} item has no stat points to split`);
+      if (isScaledItem(d) && rarities.includes(d.rarity) && overBudget(d)) {
+        const { budget, spent } = itemSpend(d);
+        bad(`spends ${spent.toFixed(1)} stat points of its ${budget.toFixed(1)} (or states damage above its item level's); mark it budgetException if that is meant`);
+      }
+    }
+    if (d.damage !== undefined && !(Array.isArray(d.damage) && d.damage.length === 2 && d.damage.every(isNum) && d.damage[0] <= d.damage[1])) bad('damage must be [min, max]');
+    if (d.kind === 'weapon' && !(isNum(d.speed) && d.speed >= 1 && d.speed <= 5)) bad('a weapon needs a swing speed in seconds (1 to 5)');
+    if (d.slot === 'ranged' && !(isNum(d.range) && d.range >= 8 && d.range <= 40)) bad('a ranged weapon needs a range in metres (8 to 40)');
     if (d.kind === 'bag' && !(d.bagSlots > 0)) bad('a bag needs bagSlots');
+    // a quiver: a bag that holds only arrows and quickens Auto Shot
+    // (the tool pack holds several kinds, as a list)
+    if (d.holds !== undefined && !(d.kind === 'bag' && [].concat(d.holds).length > 0 && [].concat(d.holds).every((k) => KINDS.includes(k)))) bad('holds must name item kinds, on a bag');
+    if (d.toolPack !== undefined && !(d.toolPack === true && d.kind === 'bag' && d.holds !== undefined)) bad('toolPack: true is for a bag that holds tools');
+    if (d.rangedHaste !== undefined && !(d.holds === 'ammo' && isNum(d.rangedHaste) && d.rangedHaste > 0 && d.rangedHaste <= 30)) bad('rangedHaste (percent, up to 30) is for a quiver (a bag that holds ammo)');
+    // arrows: used one a shot, adding `ammoDps` damage a second of bow speed
+    if (d.kind === 'ammo' && !(isNum(d.ammoDps) && d.ammoDps >= 0)) bad('ammo needs ammoDps (damage a second it adds)');
+    if (d.buyCount !== undefined && !(isInt(d.buyCount) && d.buyCount > 1 && d.buyCount <= d.stack)) bad('buyCount (how many a vendor sells at the price) must be a whole number from 2 to the stack size');
+    if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
+    if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus to fishing skill above 0');
+    if (d.fishingSkill !== undefined && !(isNum(d.fishingSkill) && d.fishingSkill > 0)) bad('fishingSkill must be a bonus to fishing skill above 0');
+    // a fishing rod: any one carried lets you fish
+    if (d.rod !== undefined && !(d.rod === true && d.kind === 'tool')) bad('rod: true is for tools (fishing rods)');
+    if (d.fishingSkill !== undefined && !d.rod) bad('fishingSkill is for rods (rod: true)');
     for (const [k, v] of Object.entries(d.stats || {})) {
       if (!STAT_KEYS.includes(k)) bad(`unknown stat ${k}`);
       else if (!isNum(v)) bad(`stat ${k} must be a number`);
@@ -110,10 +193,28 @@ export function validateGameData(raw, opts = {}) {
   const worldF = need('world.json');
   const sceneF = need('scenery.json');
   const textF = need('text.json');
+  const skillF = need('skills.json');
 
   const armourTypes = indexById(itemsF.armourTypes, 'items.json armourTypes', errors);
   const suffixes = indexById(itemsF.suffixes, 'items.json suffixes', errors);
   const rarities = indexById(rarF.rarities, 'rarities.json', errors);
+  const skills = indexById(skillF.skills, 'skills.json', errors);
+  const facF = need('factions.json');
+  const factions = indexById(facF.factions || [], 'factions.json', errors);
+  if (!Array.isArray(facF.standings) || !facF.standings.length || facF.standings.some((t, i) => !isStr(t.name) || !isNum(t.min) || !isNum(t.discount) || (i && t.min <= facF.standings[i - 1].min))) errors.push('factions.json: standings need a name, a rising min and a discount');
+  const rn = facF.renown || {};
+  for (const k of ['perQuest', 'perLevel', 'firstEliteKill']) if (!(isInt(rn[k]) && rn[k] >= 0)) errors.push(`factions.json renown: ${k} must be a whole number of at least 0`);
+  if (!(isInt(rn.perReputation) && rn.perReputation >= 1)) errors.push('factions.json renown: perReputation must be a whole number of at least 1');
+  const rt = rn.tiers;
+  if (!Array.isArray(rt) || !rt.length || rt[0].min !== 0 || rt.some((t, i) => !isStr(t.id) || !isStr(t.name) || !isStr(t.desc) || !isInt(t.min) || (i && t.min <= rt[i - 1].min))) errors.push('factions.json renown: tiers need an id, name, desc and a rising min, the first from 0');
+  const repRefs = (w, map) => {
+    if (map === undefined) return;
+    if (!map || typeof map !== 'object') return errors.push(`${w}: reputation must map faction ids to points`);
+    for (const [f, n] of Object.entries(map)) {
+      ref(w + ' reputation', 'faction', factions, f);
+      if (!isInt(n)) errors.push(`${w}: reputation with ${f} must be a whole number`);
+    }
+  };
   const items = indexById(itemsF.items, 'items.json items', errors);
   const archetypes = indexById(archF.archetypes, 'archetypes.json', errors);
   const abilities = indexById(abilF.abilities, 'abilities.json', errors, ABILITY_ID);
@@ -137,7 +238,7 @@ export function validateGameData(raw, opts = {}) {
   };
   const model = (where, name) => {
     if (!isStr(name)) errors.push(`${where}: needs a model`);
-    else if (opts.models && !opts.models.includes(name)) errors.push(`${where}: model ${name} does not exist in assets/models`);
+    else if (opts.models && !opts.models.includes(name) && !PROCEDURAL_MODELS.includes(name)) errors.push(`${where}: model ${name} does not exist in assets/models`);
   };
 
   // ---- items
@@ -146,13 +247,14 @@ export function validateGameData(raw, opts = {}) {
     if (!RARITIES.includes(id)) errors.push(`rarities.json ${id}: unknown rarity (the engine knows ${RARITIES.join(', ')})`);
     if (!isStr(r.name) || !/^#[0-9a-f]{6}$/i.test(r.colour || '')) errors.push(`rarities.json ${id}: needs a name and a #rrggbb colour`);
   }
-  for (const e of validateItems(items, EQUIP_SLOTS.map((s) => s.id), Object.keys(armourTypes), Object.keys(rarities))) errors.push('items.json ' + e);
+  for (const e of validateItems(items, ITEM_SLOTS, Object.keys(armourTypes), Object.keys(rarities))) errors.push('items.json ' + e);
   // an item kept for certain loot tables (a boss's own blade) drops from those alone
   for (const [id, d] of Object.entries(items)) for (const t of d.reservedFor || []) ref(`items.json ${id} reservedFor`, 'loot table', lootTables, t);
   for (const [id, d] of Object.entries(items)) {
     model(`items.json ${id}`, d.model);
     model(`items.json ${id} icon`, d.icon);
-    if (d.use && !(isNum(d.use.heal) && d.use.heal > 0)) errors.push(`items.json ${id}: use must say what it does, e.g. { "heal": 42 }`);
+    const food = d.use?.food;
+    if (d.use && !((isNum(d.use.heal) && d.use.heal > 0) || (food && isNum(food.heal) && food.heal > 0 && isNum(food.seconds) && food.seconds > 0))) errors.push(`items.json ${id}: use must say what it does, e.g. { "heal": 42 } or { "food": { "heal": 60, "seconds": 15 } }`);
   }
   for (const [id, s] of Object.entries(suffixes)) {
     if (!isStr(s.name)) errors.push(`items.json suffix ${id}: needs a name`);
@@ -167,26 +269,109 @@ export function validateGameData(raw, opts = {}) {
     for (const k of Object.keys({ ...a.base, ...a.perLevel })) if (!STAT_KEYS.includes(k)) errors.push(`${w}: unknown stat ${k}`);
     for (const t of a.armourTypes || []) ref(w, 'armour type', armourTypes, t);
     ref(w, 'ability', abilities, a.defensive);
+    const r = a.resources || {};
+    if (r.mana && !['base', 'perIntellect', 'regenPerSecond', 'regenOutOfCombat'].every((k) => isNum(r.mana[k]))) errors.push(`${w}: mana needs base, perIntellect, regenPerSecond and regenOutOfCombat`);
+    if (r.bars !== undefined && !Array.isArray(r.bars)) errors.push(`${w}: resources.bars must be a list`);
+    for (const b of r.bars || []) {
+      if (!isStr(b.id) || !isStr(b.name) || !isNum(b.max) || b.max <= 0) errors.push(`${w}: every bar needs an id, a name and a max above 0`);
+      if (b.id === 'mana') errors.push(`${w}: a bar cannot be called mana`);
+      if (b.start !== undefined && !['empty', 'full'].includes(b.start)) errors.push(`${w} ${b.id}: start must be empty or full`);
+      if (b.colour !== undefined && !/^#[0-9a-f]{6}$/i.test(b.colour)) errors.push(`${w} ${b.id}: colour must be #rrggbb`);
+      for (const k of BAR_NUMBERS) if (b[k] !== undefined && !(isNum(b[k]) && b[k] >= 0)) errors.push(`${w} ${b.id}: ${k} must be a number of at least 0`);
+      if (b.overload && !(isStr(b.overload.name) && isNum(b.overload.damageBonus) && isNum(b.overload.healthLossPercent))) errors.push(`${w} ${b.id}: overload needs a name, damageBonus and healthLossPercent`);
+    }
+    if (a.trait && !(isStr(a.trait.id) && isStr(a.trait.name) && isStr(a.trait.desc))) errors.push(`${w}: trait needs an id, a name and a desc`);
+    if (a.rangedPowerShare !== undefined && !isNum(a.rangedPowerShare)) errors.push(`${w}: rangedPowerShare must be a number`);
+    const weaponTypes = new Set(Object.values(items).map((i) => i.weaponType).filter(Boolean));
+    for (const t of a.bannedWeaponTypes || []) if (!weaponTypes.has(t)) errors.push(`${w}: bannedWeaponTypes names unknown weapon type ${t}`);
+    // the spellbook (base kit and swap pool) and the six spells it starts with
+    if (!isStrList(a.abilities) || !a.abilities.length) errors.push(`${w}: abilities must list the class's spells`);
+    for (const id of a.abilities || []) {
+      ref(`${w} abilities`, 'ability', abilities, id);
+      if (abilities[id]?.skill) errors.push(`${w}: ${id} is a skill's tool, not a class spell`);
+    }
+    if (a.defensive && !(a.abilities || []).includes(a.defensive)) errors.push(`${w}: its defensive ${a.defensive} must be in its abilities`);
+    if (!Array.isArray(a.bar) || a.bar.length !== 6) errors.push(`${w}: bar must name the 6 spells it starts with`);
+    else for (const id of a.bar) if (id !== null && !(a.abilities || []).includes(id)) errors.push(`${w}: bar names ${id}, which is not in its abilities`);
+    const g = a.startingGear || {};
+    for (const [slot, id] of Object.entries(g)) {
+      if (slot === 'ammo') {
+        if (!(Array.isArray(id) && items[id[0]]?.kind === 'ammo' && isInt(id[1]) && id[1] > 0)) errors.push(`${w}: startingGear ammo must be [arrow item id, count]`);
+        continue;
+      }
+      if (!EQUIP_SLOTS.some((e) => e.id === slot)) errors.push(`${w}: startingGear names unknown slot ${slot}`);
+      ref(`${w} startingGear`, 'item', items, id);
+      const def = items[id];
+      if (!def) continue;
+      if (def.armourType && !(a.armourTypes || []).includes(def.armourType)) errors.push(`${w}: cannot wear its starting ${id}`);
+      if (def.kind === 'shield' && !a.shields) errors.push(`${w}: starts with a shield it cannot use`);
+      if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) errors.push(`${w}: starts dual wielding but cannot`);
+      if ((a.bannedWeaponTypes || []).includes(def.weaponType)) errors.push(`${w}: starts with a ${def.weaponType} it cannot use`);
+    }
   }
+  // every resource some class has: what ability costs may name
+  const RESOURCE_IDS = new Set(['mana', ...Object.values(archetypes).flatMap((a) => (a.resources?.bars || []).map((b) => b.id))]);
 
   // ---- abilities
   if (!isNum(abilF.globalCooldown)) errors.push('abilities.json: globalCooldown must be a number');
+  for (const k of ['spellQueueWindow', 'castPushback', 'maxPushbacks']) if (!isNum(abilF[k]) || abilF[k] < 0) errors.push(`abilities.json: ${k} must be a number of at least 0`);
   for (const [id, a] of Object.entries(abilities)) {
     const w = `abilities.json ${id}`;
     if (!isStr(a.name) || !isStr(a.desc)) errors.push(`${w}: needs a name and a desc`);
     if (!ABILITY_TARGETS.includes(a.target)) errors.push(`${w}: target must be one of ${ABILITY_TARGETS.join(', ')}`);
     if (a.target === 'enemy' && !isNum(a.range)) errors.push(`${w}: an enemy-targeted ability needs a range`);
     if (a.item) ref(w, 'item', items, a.item);
+    if (a.requiresItem) ref(w, 'item', items, a.requiresItem);
+    // gear the ability needs: a shield, any melee weapon, or one weapon type
+    if (a.requires !== undefined && !['shield', 'weapon', ...new Set(Object.values(items).map((i) => i.weaponType).filter(Boolean))].includes(a.requires)) errors.push(`${w}: requires must be shield, weapon or a weapon type an item has`);
+    if (a.skill) ref(w, 'skill', skills, a.skill);
     if (!a.tuning || typeof a.tuning !== 'object' || !Object.values(a.tuning).every(isNum)) errors.push(`${w}: tuning must be a set of numbers`);
     if (a.school && !SCHOOLS.includes(a.school)) errors.push(`${w}: unknown school ${a.school}`);
+    for (const f of ['cost', 'gain']) {
+      if (a[f] === undefined) continue;
+      if (typeof a[f] !== 'object' || !Object.values(a[f]).every((n) => isNum(n) && n > 0)) errors.push(`${w}: ${f} must be resource amounts above 0`);
+      else for (const k of Object.keys(a[f])) if (!RESOURCE_IDS.has(k)) errors.push(`${w}: ${f} names an unknown resource ${k}`);
+    }
     if (a.kind !== undefined) {
       const k = SPELL_KINDS[a.kind];
       if (!k) errors.push(`${w}: kind must be one of ${Object.keys(SPELL_KINDS).join(', ')}`);
       else {
-        if (k.enemy !== (a.target === 'enemy')) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : 'self'}`);
-        for (const t of ['cooldown', ...k.tuning]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
+        const targetOk = k.enemy ? a.target === 'enemy' : a.target === 'self' || (k.ground && a.target === 'ground');
+        if (!targetOk) errors.push(`${w}: a ${a.kind} spell must target ${k.enemy ? 'an enemy' : k.ground ? 'self or the ground' : 'self'}`);
+        if (a.target === 'ground' && !isNum(a.range)) errors.push(`${w}: a ground-targeted spell needs a range`);
+        // a bow ability (`ranged`) is an instant, dot or cast from a bow
+        // roll: an instant or cast needs damageMultiplier instead of its own damage range
+        if (a.ranged !== undefined && (a.ranged !== true || !['instant', 'dot', 'cast'].includes(a.kind))) errors.push(`${w}: ranged: true is only for instant, dot and cast spells`);
+        const weaponDamage = a.ranged === true || a.tuning?.damageMultiplier !== undefined;
+        const need = a.kind === 'instant' && weaponDamage ? ['damageMultiplier'] : a.kind === 'cast' && a.ranged === true ? ['castTime', 'damageMultiplier'] : k.tuning; // weapon/bow instants roll the weapon
+        for (const t of ['cooldown', ...need]) if (!isNum(a.tuning?.[t]) || a.tuning[t] < 0) errors.push(`${w}: a ${a.kind} spell needs tuning.${t} of at least 0`);
         if (isNum(a.tuning?.damageMin) && a.tuning.damageMax < a.tuning.damageMin) errors.push(`${w}: damageMax is below damageMin`);
+        if (a.kind === 'control' && !a.applies) errors.push(`${w}: a control spell needs an applies aura`);
+        if (a.kind === 'purge' && !a.spendsAll) errors.push(`${w}: purge needs spendsAll`);
       }
+    }
+    const aura = (where, x) => {
+      if (!x || typeof x !== 'object' || !isStr(x.name)) return errors.push(`${where}: needs a name and numbers`);
+      for (const [key, v] of Object.entries(x)) {
+        if (key === 'name' || key.startsWith('_')) continue;
+        if (key === 'then') aura(where + ' then', v);
+        else if (!AURA_KEYS.includes(key) || !isNum(v)) errors.push(`${where}: ${key} must be one of ${AURA_KEYS.join(', ')}, a number`);
+      }
+      if (!(isNum(x.duration) && x.duration > 0)) errors.push(`${where}: needs a duration above 0`);
+    };
+    if (a.applies !== undefined) aura(`${w} applies`, a.applies);
+    for (const f of ['inShadow', 'follow', 'spreads']) if (a[f] !== undefined) ref(`${w} ${f}`, 'ability', abilities, a[f]);
+    if (a.spreads && abilities[a.spreads]?.kind !== 'dot') errors.push(`${w}: spreads must name a dot`);
+    if (a.spendsAll !== undefined && !RESOURCE_IDS.has(a.spendsAll)) errors.push(`${w}: spendsAll names an unknown resource ${a.spendsAll}`);
+    if (a.bonusVs !== undefined) {
+      ref(`${w} bonusVs`, 'ability', abilities, a.bonusVs.aura);
+      if (!isNum(a.bonusVs.percent)) errors.push(`${w}: bonusVs needs a percent`);
+    }
+    if (a.stacks !== undefined && !(isStr(a.stacks.id) && isStr(a.stacks.name) && ['max', 'duration', 'critBonus'].every((k) => isNum(a.stacks[k]) && a.stacks[k] > 0))) errors.push(`${w}: stacks needs an id, a name, max, duration and critBonus`);
+    for (const [lo, v] of Object.entries(a.loadouts || {})) {
+      if (!LOADOUTS.includes(lo)) errors.push(`${w}: loadouts must be ${LOADOUTS.join(', ')}`);
+      if (v.tuning && !Object.values(v.tuning).every(isNum)) errors.push(`${w}: loadout ${lo} tuning must be numbers`);
+      for (const k of Object.keys(v.gain || {})) if (!RESOURCE_IDS.has(k)) errors.push(`${w}: loadout ${lo} gain names an unknown resource ${k}`);
     }
   }
 
@@ -196,12 +381,24 @@ export function validateGameData(raw, opts = {}) {
     const w = `enemies.json ${id}`;
     if (!isStr(e.name)) errors.push(`${w}: needs a name`);
     model(w, e.model);
+    repRefs(`enemies.json ${e.id}`, e.reputation);
+    if (e.respawn !== undefined && !(isNum(e.respawn) && e.respawn >= 0)) errors.push(`enemies.json ${e.id}: respawn must be seconds (0 = never)`);
+    // a type sizes health, damage, attack speed and armour from the level
+    // (src/data/scaling.js); a number stated in the record wins
+    const type = SCALING.enemyTypes[e.type];
+    if (e.type !== undefined && !type) errors.push(`${w}: type must be one of ${Object.keys(SCALING.enemyTypes).join(', ')}`);
+    if (e.armourClass !== undefined && SCALING.armourClasses[e.armourClass] === undefined) errors.push(`${w}: armourClass must be one of ${Object.keys(SCALING.armourClasses).join(', ')}`);
+    const sized = { health: 'health', damage: 'hit', attackInterval: 'interval' };
     for (const k of ['level', 'health', 'damage', 'attackInterval', 'windup', 'detection', 'meleeRange', 'speed', 'radius', 'xp', 'coins']) {
-      if (!isNum(e[k]) || e[k] < 0) errors.push(`${w}: ${k} must be a number of at least 0`);
+      if (e[k] === undefined && type && type[sized[k]] !== undefined) continue;
+      if (!isNum(e[k]) || e[k] < 0) errors.push(`${w}: ${k} must be a number of at least 0${sized[k] ? ' (or give the enemy a type that sizes it)' : ''}`);
     }
+    if (e.armour !== undefined && !(isNum(e.armour) && e.armour >= 0)) errors.push(`${w}: armour must be a number of at least 0`);
     if (e.lootTable) ref(w, 'loot table', lootTables, e.lootTable);
     if (e.uniqueDrop) ref(w, 'item', items, e.uniqueDrop);
-    if (e.ranged && !(isNum(e.ranged.range) && isNum(e.ranged.damage) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage and windup`);
+    if (e.ranged && !(isNum(e.ranged.range) && (isNum(e.ranged.damage) || type?.hit !== undefined) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage (or a type) and windup`);
+    if (e.special && !(isNum(e.special.damage) || type?.special !== undefined)) errors.push(`${w}: special needs damage (or an elite, heavy or boss type)`);
+    if (e.circle && !isNum(e.circle.damage)) errors.push(`${w}: circle needs damage`);
     for (const att of [e.ranged, e.circle]) if (att && att.school && !SCHOOLS.includes(att.school)) errors.push(`${w}: unknown school ${att.school}`);
     if ((e.ranged?.mana || e.circle?.mana) && !(e.mana > 0)) errors.push(`${w}: spends mana but has none`);
   }
@@ -245,6 +442,19 @@ export function validateGameData(raw, opts = {}) {
     }
   }
 
+  // ---- skills: learned from a trainer, they unlock abilities
+  for (const [id, s] of Object.entries(skills)) {
+    const w = `skills.json ${id}`;
+    if (!isStr(s.name) || !isStr(s.desc)) errors.push(`${w}: needs a name and a desc`);
+    ref(w, 'trainer npc', npcs, s.trainer);
+    if (!(isInt(s.cost) && s.cost >= 0)) errors.push(`${w}: cost must be a whole number of coins`);
+    if (s.maxRank !== undefined && !(isInt(s.maxRank) && s.maxRank >= 1)) errors.push(`${w}: maxRank must be a whole number of at least 1`);
+    for (const ab of s.teaches || []) {
+      ref(w, 'ability', abilities, ab);
+      if (abilities[ab] && abilities[ab].skill !== id) errors.push(`${w}: teaches ${ab}, which does not name ${id} as its skill`);
+    }
+  }
+
   // ---- shops and npcs
   for (const [id, v] of Object.entries(vendorTypes)) {
     if (!isStr(v.name)) errors.push(`shops.json vendor type ${id}: needs a name`);
@@ -253,6 +463,7 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, s] of Object.entries(shops)) {
     const w = `shops.json ${id}`;
     ref(w, 'vendor type', vendorTypes, s.vendorType);
+    if (s.faction !== undefined) ref(w, 'faction', factions, s.faction);
     const vt = vendorTypes[s.vendorType];
     for (const it of s.stock || []) {
       ref(w + ' stock', 'item', items, it);
@@ -264,8 +475,10 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, n] of Object.entries(npcs)) {
     const w = `npcs.json ${id}`;
     if (!isStr(n.name)) errors.push(`${w}: needs a name`);
+    if (!(Number.isInteger(n.level) && n.level >= 1)) errors.push(`${w}: needs a level (a whole number, 1 or more)`);
     model(w, n.model);
     if (n.shop) ref(w, 'shop', shops, n.shop);
+    if (n.mapIcon !== undefined && !NPC_MAP_ICONS.includes(n.mapIcon)) errors.push(`${w}: mapIcon must be one of ${NPC_MAP_ICONS.join(', ')}`);
     if (n.dialogue !== undefined) ref(w, 'dialogue', dialogues, n.dialogue);
   }
 
@@ -311,6 +524,7 @@ export function validateGameData(raw, opts = {}) {
       if (o.location !== undefined) ref(ow, 'location', locations, o.location);
     }
     const r = q.reward || {};
+    repRefs(w, r.reputation);
     if (!(isInt(r.coins ?? 0) && isInt(r.xp ?? 0))) errors.push(`${w}: reward coins and xp must be whole numbers`);
     for (const it of r.items || []) {
       ref(w + ' reward', 'item', items, it.item);
@@ -361,6 +575,17 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, r] of Object.entries(regions)) if (!isStr(r.name) || !(r.minZ === null || isNum(r.minZ))) errors.push(`world.json region ${id}: needs a name and minZ (a number, or null for the last)`);
   for (const road of worldF.roads || []) if (!Array.isArray(road.points) || road.points.length < 2 || !road.points.every(isVec2)) errors.push(`world.json road ${road.id}: needs at least two [x, z] points`);
   if (!worldF.playerStart || !inWorld(worldF.playerStart.position)) errors.push('world.json: playerStart needs a position inside the world');
+  for (const wa of worldF.water || []) {
+    const w = `world.json water ${wa.id}`;
+    pos(w, wa.position);
+    if (!(isNum(wa.radius) && wa.radius > 0)) errors.push(`${w}: needs a radius`);
+    ref(w, 'fish loot table', lootTables, wa.fishTable);
+  }
+  for (const o of worldF.obscured || []) {
+    const w = `world.json obscured ${o.id}`;
+    pos(w, o.position);
+    if (!(isNum(o.radius) && o.radius > 0) || !isStr(o.name)) errors.push(`${w}: needs a name and a radius`);
+  }
   for (const [id, s] of Object.entries(shrines)) {
     pos(`world.json shrine ${id}`, s.position);
     if (!isStr(s.label)) errors.push(`world.json shrine ${id}: needs a label (shown on the death screen)`);
@@ -385,7 +610,21 @@ export function validateGameData(raw, opts = {}) {
     const r = l.reward || {};
     if (!r.item && !r.coins) errors.push(`${w}: reward needs an item or coins`);
     if (r.item) ref(w, 'item', items, r.item);
+    if (l.quest !== undefined) ref(w, 'quest', quests, l.quest);
+    if (l.respawn !== undefined && !(l.respawn > 0)) errors.push(`${w}: respawn must be seconds above 0`);
     if (l.opensDocument && !documents[l.opensDocument]) errors.push(`${w}: names unknown document ${l.opensDocument}`);
+  }
+  for (const [id, c] of Object.entries(indexById(worldF.chests || [], 'world.json chests', errors))) {
+    const w = `world.json chest ${id}`;
+    pos(w, c.position);
+    if (!isStr(c.name)) errors.push(`${w}: needs a name`);
+    for (const it of c.items || []) ref(w, 'item', items, it.id);
+    if (c.coins !== undefined && !(isInt(c.coins) && c.coins >= 0)) errors.push(`${w}: coins must be whole silver`);
+    if (c.lock) {
+      if (!c.lock.key && !c.lock.pick) errors.push(`${w}: a lock needs a key or a pick rank`);
+      if (c.lock.key) ref(w, 'key item', items, c.lock.key);
+      if (c.lock.pick !== undefined && !(isInt(c.lock.pick) && c.lock.pick >= 1)) errors.push(`${w}: pick must be a Lockpicking rank of at least 1`);
+    }
   }
   for (const z of worldF.dangerZones || []) {
     pos('world.json dangerZone', z.position);
@@ -399,12 +638,109 @@ export function validateGameData(raw, opts = {}) {
     pos(w, p.position);
     if (p.examine && !examine[p.examine]) errors.push(`${w}: names unknown examine text ${p.examine}`);
     const c = p.collider;
-    if (!(c === undefined || isNum(c) || (Array.isArray(c) && c.every((x) => Array.isArray(x) && x.length === 3 && x.every(isNum))))) errors.push(`${w}: collider must be a radius or a list of [x, z, radius]`);
+    const box = c && !Array.isArray(c) && typeof c === 'object' && Array.isArray(c.box) && c.box.length === 2 && c.box.every((v) => isNum(v) && v > 0);
+    if (!(c === undefined || isNum(c) || box || (Array.isArray(c) && c.every((x) => Array.isArray(x) && x.length === 3 && x.every(isNum))))) errors.push(`${w}: collider must be a radius, a list of [x, z, radius] or { "box": [width, depth] }`);
   });
   for (const l of sceneF.lights || []) pos('scenery.json light', l.position);
 
+  // ---- buildings you can enter, cooking stations, levelled ground
+  for (const b of worldF.buildings || []) {
+    const w = `world.json building ${b.id}`;
+    pos(w, b.position);
+    for (const m of [b.shell, b.front, b.roof]) model(w, m);
+    if (!(Array.isArray(b.size) && b.size.length === 2 && b.size.every((v) => isNum(v) && v > 0))) errors.push(`${w}: size must be [width, depth]`);
+    if (!Array.isArray(b.walls) || !b.walls.every((s) => Array.isArray(s) && s.length === 4 && s.every(isNum))) errors.push(`${w}: walls must be a list of [x1, z1, x2, z2] segments`);
+    for (const f of b.furniture || []) if (!(Array.isArray(f) && f.length === 3 && f.every(isNum))) errors.push(`${w}: furniture must be [x, z, radius] circles`);
+  }
+  for (const s of worldF.stations || []) {
+    pos(`world.json station ${s.id}`, s.position);
+    if (s.kind !== 'fire') errors.push(`world.json station ${s.id}: kind must be fire`);
+  }
+  for (const s of worldF.signposts || []) {
+    const w = `world.json signpost ${s.id}`;
+    pos(w, s.position);
+    if (!Array.isArray(s.points) || !s.points.length || s.points.length > 4) errors.push(`${w}: points must list 1 to 4 places`);
+    for (const p of s.points || []) {
+      ref(w, 'location', locations, p.to);
+      if (p.label !== undefined && !isStr(p.label)) errors.push(`${w}: a label must be text`);
+    }
+  }
+  for (const p of worldF.pads || []) if (!(Array.isArray(p) && p.length === 3 && p.every(isNum))) errors.push('world.json pads: each must be [x, z, radius]');
+
+  // ---- recipes (crafting skills: cooking)
+  const recF = raw['recipes.json'] || { recipes: [] };
+  const recipes = indexById(recF.recipes, 'recipes.json', errors);
+  for (const [id, r] of Object.entries(recipes)) {
+    const w = `recipes.json ${id}`;
+    ref(w, 'skill', skills, r.skill);
+    if (skills[r.skill] && !skills[r.skill].maxRank) errors.push(`${w}: its skill ${r.skill} has no ranks`);
+    if (!(isInt(r.rank) && r.rank >= 1)) errors.push(`${w}: rank must be a whole number of at least 1`);
+    if (!(Array.isArray(r.skillUp) && r.skillUp.length === 3 && r.skillUp.every(isInt) && r.skillUp[0] > r.rank && r.skillUp[0] < r.skillUp[1] && r.skillUp[1] < r.skillUp[2])) errors.push(`${w}: skillUp must be three rising ranks (yellow, green, grey) above its rank`);
+    if (!Array.isArray(r.inputs) || !r.inputs.length) errors.push(`${w}: needs inputs`);
+    for (const x of [...(r.inputs || []), r.output || {}]) {
+      ref(w, 'item', items, x.item);
+      if (!(isInt(x.count) && x.count >= 1)) errors.push(`${w}: counts must be whole numbers of at least 1`);
+    }
+    if (r.station !== 'fire') errors.push(`${w}: station must be fire`);
+    if (r.trainer !== undefined) {
+      ref(w, 'trainer npc', npcs, r.trainer);
+      if (!(isInt(r.cost) && r.cost >= 0)) errors.push(`${w}: a taught recipe needs a cost in coins`);
+    }
+  }
+
+  // ---- titles (renown itself is checked with factions)
+  const titF = raw['titles.json'];
+  if (!titF) errors.push('titles.json: missing');
+  else {
+    if (!(isNum(titF.mockChance) && titF.mockChance >= 0 && titF.mockChance <= 1)) errors.push('titles.json: mockChance must be between 0 and 1');
+    for (const kind of ['greetings', 'farewells']) {
+      const l = titF[kind] || {};
+      for (const k of ['untitled', 'titled', 'mocking']) if (!isStrList(l[k]) || !l[k].length) errors.push(`titles.json ${kind}: ${k} needs at least one line`);
+      for (const line of [...(l.titled || []), ...(l.mocking || [])]) if (isStr(line) && !line.includes('{title}')) errors.push(`titles.json ${kind}: "${line}" must say {title}`);
+    }
+    const standingIds = (facF.standings || []).map((t) => t.id);
+    for (const [id, t] of Object.entries(indexById(titF.titles, 'titles.json', errors))) {
+      const w = `titles.json ${id}`;
+      if (!isStr(t.name) || !isStr(t.desc)) errors.push(`${w}: needs a name and a desc`);
+      if (!(isInt(t.renown) && t.renown >= 0)) errors.push(`${w}: renown must be a whole number of at least 0`);
+      if (t.mock !== undefined && !(isNum(t.mock) && t.mock >= 0 && t.mock <= 1)) errors.push(`${w}: mock must be between 0 and 1`);
+      if (t.mocks !== undefined && !isStrList(t.mocks)) errors.push(`${w}: mocks must be a list of lines`);
+      if (t.requires !== undefined && !Array.isArray(t.requires)) errors.push(`${w}: requires must be a list`);
+      for (const r of Array.isArray(t.requires) ? t.requires : []) {
+        if (r.skill !== undefined) {
+          ref(w, 'skill', skills, r.skill);
+          if (!(isInt(r.rank) && r.rank >= 1 && (!skills[r.skill] || r.rank <= (skills[r.skill].maxRank || 1)))) errors.push(`${w}: a skill condition needs a rank the skill can reach`);
+        } else if (r.slain !== undefined) ref(w, 'enemy', enemies, r.slain);
+        else if (r.faction !== undefined) {
+          ref(w, 'faction', factions, r.faction);
+          if (!standingIds.includes(r.standing)) errors.push(`${w}: names unknown standing ${r.standing}`);
+        } else if (r.quest !== undefined) ref(w, 'quest', quests, r.quest);
+        else if (!(isInt(r.level) && r.level >= 1)) errors.push(`${w}: each condition needs a skill, slain, faction, quest or level`);
+      }
+    }
+  }
+
   // ---- text
   if (!isStr(textF.intro)) errors.push('text.json: needs an intro');
+  const ttl = textF.title;
+  if (!ttl || typeof ttl !== 'object') errors.push('text.json: needs a title section (title screen and character creation)');
+  else {
+    if (!isStr(ttl.build) || !isStr(ttl.tagline)) errors.push('text.json title: needs a build label and a tagline');
+    if (!(isInt(ttl.maxCharacters) && ttl.maxCharacters >= 1)) errors.push('text.json title: maxCharacters must be a whole number of at least 1');
+    const classes = Array.isArray(ttl.classes) ? ttl.classes : [];
+    if (!classes.some((c) => c.archetype)) errors.push('text.json title: at least one class needs a playable archetype');
+    const seen = new Set();
+    for (const c of classes) {
+      const w = `text.json title class ${c.id}`;
+      if (!isStr(c.id) || seen.has(c.id)) errors.push(`${w}: needs a unique id`);
+      seen.add(c.id);
+      if (!isStr(c.name) || !isStr(c.role) || !isStr(c.blurb) || !isStrList(c.traits)) errors.push(`${w}: needs a name, role, blurb and a list of traits`);
+      if (c.archetype !== undefined && !archetypes[c.archetype]) errors.push(`${w}: names unknown archetype ${c.archetype}`);
+    }
+    const n = ttl.names || {};
+    if (!isStrList(n.first) || !n.first.length || !isStrList(n.last) || !n.last.length) errors.push('text.json title: names needs non-empty first and last lists');
+    else if ([...n.first, ...n.last].some((x) => !/^[A-Z][a-z]{1,11}$/.test(x))) errors.push('text.json title: every name must be a capitalised word of 2 to 12 letters');
+  }
   for (const [id, d] of Object.entries(documents)) if (!isStr(d.title) || !Array.isArray(d.body)) errors.push(`text.json document ${id}: needs a title and a body (a list of paragraphs)`);
 
   return errors;

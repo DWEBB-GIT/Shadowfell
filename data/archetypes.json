@@ -1,29 +1,285 @@
 {
-  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and their defensive ability.",
+  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and wield, their resources, their always-on trait, their spellbook (`abilities`: the base kit and the swap pool), the six spells they start with on the bar (`bar`, slots 1 2 3 4 Q E) and their starting gear. Resources: `mana` (from Intellect) and `bars`, one refilling-bar system with different numbers per class (Resolve, Energy, Focus, Corruption, combo points). See the comment at the top of src/systems/resources.js for what each bar field does.",
   "archetypes": [
     {
       "id": "warden",
-      "name": "Warden",
-      "mainStat": "might",
+      "name": "Warrior",
+      "mainStat": "strength",
       "base": {
-        "might": 4,
-        "finesse": 2,
+        "strength": 4,
+        "agility": 2,
         "intellect": 1,
-        "vitality": 10,
+        "stamina": 10,
         "armour": 0,
         "resistance": 0,
         "block": 0,
-        "blockRating": 0,
         "haste": 0
       },
       "perLevel": {
-        "might": 2,
-        "vitality": 2
+        "strength": 2,
+        "stamina": 2
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,
-      "resource": null,
-      "defensive": "brace"
+      "dualWield": true,
+      "resources": {
+        "bars": [
+          {
+            "id": "resolve",
+            "name": "Resolve",
+            "colour": "#c8862e",
+            "max": 100,
+            "start": "empty",
+            "perSwing": 12,
+            "perHitTaken": 6,
+            "perBlock": 10,
+            "decayAfter": 6,
+            "decayPerSecond": 8,
+            "healPerSpent": 0.2
+          }
+        ]
+      },
+      "trait": {
+        "id": "weaponMaster",
+        "name": "Weapon Master",
+        "desc": "Heavy Strike, Cleave and Brace change with the weapons you hold: a weapon on its own, two weapons, or a weapon and shield. Spending Resolve heals you for 2% of your health per 10 spent."
+      },
+      "defensive": "brace",
+      "abilities": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace", "shieldBreak", "rend"],
+      "bar": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace"],
+      "startingGear": {
+        "mainHand": "worn_longsword",
+        "offHand": "kite_shield",
+        "chest": "travelling_clothes"
+      }
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue",
+      "mainStat": "agility",
+      "base": {
+        "strength": 2,
+        "agility": 5,
+        "intellect": 1,
+        "stamina": 8,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "agility": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth", "leather"],
+      "shields": false,
+      "dualWield": true,
+      "resources": {
+        "bars": [
+          {
+            "id": "energy",
+            "name": "Energy",
+            "colour": "#d8c040",
+            "max": 100,
+            "start": "full",
+            "regenPerSecond": 10,
+            "regenOutOfCombat": 25,
+            "shadowMultiplier": 3,
+            "decayAfter": 6
+          },
+          {
+            "id": "combo",
+            "name": "Combo points",
+            "colour": "#e05a30",
+            "max": 5,
+            "start": "empty",
+            "points": true,
+            "fadeAfter": 8
+          }
+        ]
+      },
+      "trait": {
+        "id": "opportunist",
+        "name": "Opportunist",
+        "desc": "Your attacks from behind your target, or from Shadow, always crit."
+      },
+      "defensive": "guile",
+      "abilities": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
+      "bar": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
+      "startingGear": {
+        "mainHand": "rusty_dirk",
+        "offHand": "rusty_dirk",
+        "chest": "travelling_clothes"
+      }
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "mainStat": "agility",
+      "rangedPowerShare": 1,
+      "base": {
+        "strength": 2,
+        "agility": 5,
+        "intellect": 1,
+        "stamina": 9,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "agility": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth", "leather"],
+      "shields": false,
+      "dualWield": false,
+      "resources": {
+        "bars": [
+          {
+            "id": "focus",
+            "name": "Focus",
+            "colour": "#5aa868",
+            "max": 150,
+            "start": "full",
+            "regenPerSecond": 8,
+            "regenOutOfCombat": 20,
+            "stillBonus": 0.5,
+            "decayAfter": 6
+          }
+        ]
+      },
+      "trait": {
+        "id": "houndCompanion",
+        "name": "Hound Companion",
+        "fromLevel": 8,
+        "desc": "From level 8 a hound joins you, attacks your target and keeps its attention. (The hound arrives in a later build: until then the Ranger relies on traps and Disengage.)"
+      },
+      "defensive": "disengage",
+      "abilities": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage", "venomArrow"],
+      "bar": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage"],
+      "startingGear": {
+        "mainHand": "rusty_dirk",
+        "ranged": "hunting_bow",
+        "chest": "travelling_clothes",
+        "ammo": ["rough_arrow", 200]
+      }
+    },
+    {
+      "id": "occultist",
+      "name": "Occultist",
+      "mainStat": "intellect",
+      "base": {
+        "strength": 1,
+        "agility": 1,
+        "intellect": 6,
+        "stamina": 9,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "intellect": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth"],
+      "shields": false,
+      "dualWield": false,
+      "resources": {
+        "mana": {
+          "base": 100,
+          "perIntellect": 10,
+          "regenPerSecond": 2,
+          "regenOutOfCombat": 12
+        },
+        "bars": [
+          {
+            "id": "corruption",
+            "name": "Corruption",
+            "colour": "#8a4ac8",
+            "max": 100,
+            "start": "empty",
+            "perDotTick": 4,
+            "decayAfter": 6,
+            "decayPerSecond": 5,
+            "overload": {
+              "name": "Overcorrupted",
+              "damageBonus": 20,
+              "healthLossPercent": 2
+            }
+          }
+        ]
+      },
+      "trait": {
+        "id": "leech",
+        "name": "Leech",
+        "dotHealPercent": 15,
+        "desc": "15% of all the damage your curses and rots deal over time heals you. Every tick builds Corruption: at 100 you are Overcorrupted, dealing 20% more damage but losing 2% of your health a second until you Purge."
+      },
+      "defensive": "siphonLife",
+      "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
+      "bar": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
+      "startingGear": {
+        "mainHand": "rusty_dirk",
+        "chest": "frayed_robe"
+      }
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "mainStat": "strength",
+      "base": {
+        "strength": 4,
+        "agility": 1,
+        "intellect": 3,
+        "stamina": 10,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "strength": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "shields": true,
+      "dualWield": false,
+      "bannedWeaponTypes": ["dagger"],
+      "resources": {
+        "mana": {
+          "base": 120,
+          "perIntellect": 10,
+          "regenPerSecond": 1.5,
+          "regenOutOfCombat": 12
+        },
+        "bars": []
+      },
+      "trait": {
+        "id": "empoweredLight",
+        "name": "Empowered Light",
+        "echoPercent": 30,
+        "desc": "Your weapon swings echo with a holy hit for 30% extra damage."
+      },
+      "defensive": "lightShield",
+      "abilities": [
+        "holyStrike",
+        "lightsHammer",
+        "divineStorm",
+        "hallowedGround",
+        "bringToKneel",
+        "lightShield",
+        "smite",
+        "rebuke",
+        "hallowedBolt"
+      ],
+      "bar": ["holyStrike", "lightsHammer", "divineStorm", "hallowedGround", "bringToKneel", "lightShield"],
+      "startingGear": {
+        "mainHand": "worn_longsword",
+        "offHand": "kite_shield",
+        "chest": "travelling_clothes"
+      }
     }
   ]
 }

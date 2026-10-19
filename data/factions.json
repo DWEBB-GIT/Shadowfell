@@ -1,0 +1,70 @@
+{
+  "_about": "Factions and reputation, WoW style. Reputation is earned per faction from quest rewards (`reward.reputation` in quests.json) and from activities in its area, such as killing enemies (`reputation` on an enemy type in enemies.json). `standings` are the named tiers, lowest first, each from `min` points; `discount` is percent off at that faction's vendors (shops with a `faction`). Reputation-gated items and areas will use these tiers later. `renown` is the one standing that spans every faction: titles unlock from it.",
+  "standings": [
+    {
+      "id": "hostile",
+      "name": "Hostile",
+      "min": -3000,
+      "discount": 0
+    },
+    {
+      "id": "neutral",
+      "name": "Neutral",
+      "min": 0,
+      "discount": 0
+    },
+    {
+      "id": "friendly",
+      "name": "Friendly",
+      "min": 1000,
+      "discount": 5
+    },
+    {
+      "id": "honored",
+      "name": "Honored",
+      "min": 3000,
+      "discount": 10
+    },
+    {
+      "id": "revered",
+      "name": "Revered",
+      "min": 6000,
+      "discount": 15
+    },
+    {
+      "id": "exalted",
+      "name": "Exalted",
+      "min": 12000,
+      "discount": 20
+    }
+  ],
+  "renown": {
+    "_about": "Renown: how known you are, across every faction (Fable style). Earned per quest done, per level gained, for the first kill of each elite type, and from faction reputation: every `perReputation` points gained with any faction add 1 renown. `tiers` name it, lowest first, each from `min`. Titles (titles.json) unlock from renown.",
+    "perQuest": 5,
+    "perLevel": 5,
+    "firstEliteKill": 15,
+    "perReputation": 50,
+    "tiers": [
+      { "id": "nobody", "name": "Nobody", "min": 0, "desc": "No one knows your name. Most don't look up when you pass." },
+      { "id": "familiar", "name": "A Familiar Face", "min": 20, "desc": "A few folk nod when you pass. One or two may even remember why." },
+      { "id": "known", "name": "Known", "min": 60, "desc": "Your name comes up at the inn, not always kindly." },
+      { "id": "respected", "name": "Respected", "min": 120, "desc": "People step aside on the road and lower their voices when you come in." },
+      { "id": "renowned", "name": "Renowned", "min": 200, "desc": "Children play at being you. Their parents argue about whether that is a good thing." },
+      { "id": "famous", "name": "Famous", "min": 350, "desc": "Strangers know your face before you open your mouth." }
+    ]
+  },
+  "factions": [
+    {
+      "id": "road_wardens",
+      "name": "The Road Wardens",
+      "region": "fallen_road",
+      "description": "The few who still keep the Fallen Road open: Mara at her forge, the watch that was, and anyone who clears the dead from the way."
+    },
+    {
+      "id": "mere_folk",
+      "name": "Folk of the Mere",
+      "region": "fallen_road",
+      "description": "Old Tam and the families who fish the Stillwater Mere and trap the woods around it."
+    }
+  ]
+}

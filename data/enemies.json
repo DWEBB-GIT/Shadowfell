@@ -1,17 +1,14 @@
 {
-  "_about": "Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns).",
+  "_about": "An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies).",
   "leashDistance": 18,
   "enemies": [
     {
       "id": "ghoul",
       "name": "Ashen Ghoul",
       "model": "ghoul",
+      "type": "normal",
       "level": 1,
-      "health": 48,
-      "damage": 11,
-      "armour": 0,
       "crit": 5,
-      "attackInterval": 1.35,
       "windup": 0.45,
       "detection": 8,
       "meleeRange": 1.25,
@@ -20,18 +17,19 @@
       "xp": 28,
       "coins": 3,
       "elite": false,
-      "lootTable": "ghoul"
+      "lootTable": "ghoul",
+      "respawn": 90,
+      "reputation": {
+        "road_wardens": 10
+      }
     },
     {
       "id": "brute",
       "name": "Gravebound Brute",
       "model": "brute",
+      "type": "elite",
       "level": 3,
-      "health": 96,
-      "damage": 17,
-      "armour": 10,
       "crit": 5,
-      "attackInterval": 1.05,
       "windup": 0.5,
       "detection": 8,
       "meleeRange": 1.25,
@@ -48,21 +46,22 @@
         "trigger": 3.4,
         "range": 4.2,
         "arc": 110,
-        "damage": 31
+        "interruptible": false
       },
       "uniqueDrop": "watchmans_edge",
-      "lootTable": "brute"
+      "lootTable": "brute",
+      "respawn": 300,
+      "reputation": {
+        "road_wardens": 40
+      }
     },
     {
       "id": "hound",
       "name": "Barrow Hound",
       "model": "hound",
+      "type": "pack_beast",
       "level": 3,
-      "health": 40,
-      "damage": 8,
-      "armour": 0,
       "crit": 5,
-      "attackInterval": 0.95,
       "windup": 0.3,
       "detection": 11,
       "meleeRange": 1.1,
@@ -74,18 +73,19 @@
       "pack": 9,
       "barHeight": 1.4,
       "meleeAnim": "bite",
-      "lootTable": "hound"
+      "lootTable": "hound",
+      "respawn": 75,
+      "reputation": {
+        "mere_folk": 10
+      }
     },
     {
       "id": "archer",
       "name": "Hollow Archer",
       "model": "archer",
+      "type": "skirmisher",
       "level": 3,
-      "health": 44,
-      "damage": 7,
-      "armour": 5,
       "crit": 5,
-      "attackInterval": 1.4,
       "windup": 0.5,
       "detection": 13,
       "meleeRange": 1.2,
@@ -99,25 +99,29 @@
         "range": 12,
         "keep": 6,
         "windup": 1.1,
-        "interval": 2.6,
-        "damage": 13,
         "width": 0.9,
         "projectile": "arrow",
-        "speed": 24
+        "speed": 24,
+        "interruptible": true
       },
-      "lootTable": "archer"
+      "lootTable": "archer",
+      "respawn": 120,
+      "reputation": {
+        "road_wardens": 15
+      }
     },
     {
       "id": "seer",
       "name": "Blackwood Seer",
       "model": "seer",
+      "type": "elite",
       "level": 5,
-      "health": 130,
+      "armourClass": "light",
+      "_stated": "A caster: its staff (damage, attackInterval) and its spells are its own, not an elite's.",
       "mana": 60,
       "manaRegen": 3,
-      "damage": 8,
-      "armour": 5,
-      "resistance": 20,
+      "damage": 6,
+      "resistance": 200,
       "crit": 5,
       "attackInterval": 1.3,
       "windup": 0.5,
@@ -136,12 +140,13 @@
         "keep": 5,
         "windup": 0.9,
         "interval": 2.2,
-        "damage": 15,
+        "damage": 10,
         "width": 1.1,
         "projectile": "bolt",
         "speed": 14,
         "mana": 10,
-        "school": "shadow"
+        "school": "shadow",
+        "interruptible": true
       },
       "circle": {
         "name": "Grasping Dark",
@@ -149,11 +154,65 @@
         "radius": 2.4,
         "windup": 1.6,
         "cooldown": 8,
-        "damage": 24,
+        "damage": 17,
         "mana": 25,
-        "school": "shadow"
+        "school": "shadow",
+        "interruptible": true
       },
-      "lootTable": "seer"
+      "lootTable": "seer",
+      "respawn": 0,
+      "reputation": {
+        "road_wardens": 100
+      }
+    },
+    {
+      "id": "training_dummy",
+      "name": "Training Dummy",
+      "model": "training_dummy",
+      "dummy": true,
+      "level": 1,
+      "health": 2000,
+      "damage": 0,
+      "attackInterval": 99,
+      "armour": 0,
+      "crit": 0,
+      "windup": 0.5,
+      "detection": 0,
+      "meleeRange": 1,
+      "speed": 0,
+      "radius": 0.45,
+      "xp": 0,
+      "coins": 0,
+      "elite": false,
+      "respawn": 0
+    },
+    {
+      "id": "greyjaw",
+      "name": "Old Greyjaw",
+      "model": "hound",
+      "type": "elite",
+      "level": 5,
+      "crit": 8,
+      "windup": 0.4,
+      "detection": 12,
+      "meleeRange": 1.6,
+      "speed": 5.2,
+      "radius": 0.8,
+      "xp": 160,
+      "coins": 14,
+      "elite": true,
+      "rareElite": true,
+      "scale": 1.7,
+      "tint": "#7a6a66",
+      "roam": 8,
+      "barHeight": 2.3,
+      "meleeAnim": "bite",
+      "uniqueDrop": "greyjaws_fang",
+      "lootTable": "hound",
+      "respawn": 900,
+      "reputation": {
+        "road_wardens": 60
+      }
     }
   ]
 }

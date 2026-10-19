@@ -1,6 +1,6 @@
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, validRolls } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, TOOL_SOCKET, validRolls, slotFits } from '../data/items.js';
 import { BOUNDS } from '../world/layout.js';
-import { ABILITIES, BAR_SLOTS } from './actionBar.js';
+import { ABILITIES, BAR_SLOTS, itemRef } from './actionBar.js';
 import { DB } from '../data/db.js';
 
 // Versioned save in localStorage. Loaded data is validated before anything is
@@ -19,7 +19,7 @@ const isInt = (v) => Number.isInteger(v);
 const isStrArray = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string');
 const inBounds = (p) => p && isNum(p.x) && isNum(p.z) && p.x >= BOUNDS.minX - 1 && p.x <= BOUNDS.maxX + 1 && p.z >= BOUNDS.minZ - 1 && p.z <= BOUNDS.maxZ + 1;
 
-const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack && validRolls(s.id, s.rolls);
+const isStack = (s) => s && typeof s === 'object' && typeof s.id === 'string' && ITEMS[s.id] && isInt(s.count) && s.count >= 1 && s.count <= ITEMS[s.id].stack && validRolls(s.id, s.rolls) && (s.dur === undefined || (isInt(s.dur) && s.dur >= 0 && s.dur <= 100));
 
 // Upgrade a build-1 save: its flat item list goes into the backpack, its
 // weapon into the main hand. Anything else is returned unchanged.
@@ -49,14 +49,15 @@ export function migrateSave(data) {
 function validateInventory(inv, check) {
   check(isInt(inv.coins) && inv.coins >= 0, 'coins');
   const sk = inv.sockets;
-  check(Array.isArray(sk) && sk.length === BAG_SOCKETS, 'bag sockets');
+  // (saves from before the tool pack have no tool socket)
+  check(Array.isArray(sk) && (sk.length === BAG_SOCKETS || sk.length === TOOL_SOCKET + 1), 'bag sockets');
   if (Array.isArray(sk)) {
     sk.forEach((s, i) => {
       if (i === 0) {
         check(s && s.id === 'backpack' && Array.isArray(s.slots) && s.slots.length === BACKPACK_SLOTS, 'backpack');
       } else if (s !== null) {
         const def = s && ITEMS[s.id];
-        check(def && def.kind === 'bag' && Array.isArray(s.slots) && s.slots.length === def.bagSlots, `bag in socket ${i}`);
+        check(def && def.kind === 'bag' && !!def.toolPack === (i === TOOL_SOCKET) && Array.isArray(s.slots) && s.slots.length === def.bagSlots, `bag in socket ${i}`);
       }
       if (s && Array.isArray(s.slots)) check(s.slots.every((x) => x === null || isStack(x)), `contents of bag ${i}`);
     });
@@ -66,7 +67,7 @@ function validateInventory(inv, check) {
   if (eq && typeof eq === 'object') {
     for (const [slot, st] of Object.entries(eq)) {
       check(EQUIP_SLOTS.some((s) => s.id === slot), `unknown equipment slot ${slot}`);
-      check(st === null || (isStack(st) && ITEMS[st.id].slot === slot), `equipment in ${slot}`);
+      check(st === null || (isStack(st) && slotFits(slot, ITEMS[st.id].slot)), `equipment in ${slot}`);
     }
   }
 }
@@ -94,13 +95,23 @@ export function validateSave(data) {
     validateInventory(inv, check);
   }
   if (data.bar !== undefined) {
-    check(Array.isArray(data.bar) && (data.bar.length === 7 || data.bar.length === BAR_SLOTS.length) && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge'), 'spell bar');
+    check(Array.isArray(data.bar) && [6, 7, BAR_SLOTS.length].includes(data.bar.length) && data.bar.every((a) => a === null || ABILITIES[a] || a === 'dodge' || a === 'draught' || (itemRef(a) && ITEMS[itemRef(a)])), 'spell bar');
   }
   // the quest log (saves from before it have none, and start from the story flag)
   if (data.quests !== undefined) {
     const q = data.quests;
     const known = (l) => isStrArray(l) && l.every((id) => DB.quests[id]);
     check(q && known(q.accepted) && known(q.done) && known(q.tracked), 'quest log');
+  }
+  if (data.titles !== undefined) {
+    const t = data.titles;
+    check(t && typeof t === 'object' && (t.chosen === null || typeof t.chosen === 'string') && isStrArray(t.slain) && isStrArray(t.known), 'titles');
+  }
+  if (data.renown !== undefined) check(data.renown && Number.isFinite(data.renown.points) && Number.isFinite(data.renown.carry), 'renown');
+  if (data.reputation !== undefined) check(data.reputation && typeof data.reputation === 'object' && Object.values(data.reputation).every((n) => Number.isFinite(n)), 'reputation');
+  if (data.cooking !== undefined) check(data.cooking && isStrArray(data.cooking.recipes) && data.cooking.recipes.every((id) => DB.recipes[id]), 'recipes');
+  if (data.skills !== undefined) {
+    check(data.skills && typeof data.skills === 'object' && Object.entries(data.skills).every(([id, r]) => DB.skills[id] && isInt(r) && r >= 1), 'skills');
   }
   const w = data.world;
   check(w && typeof w === 'object', 'missing world');
@@ -113,6 +124,10 @@ export function validateSave(data) {
       Array.isArray(w.ground) && w.ground.every((g) => isStack(g) && isInt(g.uid) && g.uid >= 1 && inBounds(g)),
       'items on the ground',
     );
+    if (w.camp !== undefined) check(w.camp === null || inBounds(w.camp), 'camp position');
+    if (w.restPoint !== undefined) check(w.restPoint === 'camp' || w.restPoint === 'shrine' || (typeof w.restPoint === 'string' && w.restPoint.startsWith('inn:')), 'rest point');
+    if (w.nemesis !== undefined) check(w.nemesis === null || typeof w.nemesis === 'string', 'nemesis');
+    if (w.respawnAt !== undefined) check(w.respawnAt && typeof w.respawnAt === 'object' && Object.values(w.respawnAt).every((t) => Number.isFinite(t)), 'respawn timers');
     if (w.corpses !== undefined) {
       check(w.corpses && typeof w.corpses === 'object' && Object.values(w.corpses).every((c) => inBounds(c) && isInt(c.coins) && c.coins >= 0), 'bodies to loot');
     }
@@ -124,6 +139,7 @@ export class SaveManager {
   constructor(game) {
     this.game = game;
     this.autosaveEnabled = true;
+    this.key = SAVE_KEY; // each character saves under its own key (see characters.js)
   }
 
   serialize() {
@@ -142,6 +158,11 @@ export class SaveManager {
       world: worldState.serialize(),
       bar: this.game.actionBar.serialize(),
       quests: this.game.quests.serialize(),
+      skills: this.game.skills.serialize(),
+      reputation: this.game.reputation.serialize(),
+      renown: this.game.reputation.serializeRenown(),
+      titles: this.game.titles.serialize(),
+      cooking: this.game.cooking.serialize(),
     };
   }
 
@@ -152,8 +173,8 @@ export class SaveManager {
     let text;
     try {
       text = JSON.stringify(this.serialize());
-      localStorage.setItem(SAVE_KEY, text);
-      if (localStorage.getItem(SAVE_KEY) !== text) throw new Error('read-back mismatch');
+      localStorage.setItem(this.key, text);
+      if (localStorage.getItem(this.key) !== text) throw new Error('read-back mismatch');
     } catch (err) {
       console.warn('Save failed', err);
       return { ok: false, reason: 'The game could not be saved. Browser storage may be full or disabled.' };
@@ -164,17 +185,17 @@ export class SaveManager {
 
   hasSave() {
     try {
-      return localStorage.getItem(SAVE_KEY) !== null;
+      return localStorage.getItem(this.key) !== null;
     } catch {
       return false;
     }
   }
 
   // Returns { status: 'none' | 'ok' | 'invalid', data?, errors? }
-  read() {
+  read(key = this.key) {
     let text;
     try {
-      text = localStorage.getItem(SAVE_KEY);
+      text = localStorage.getItem(key);
     } catch (err) {
       return { status: 'invalid', errors: ['storage unavailable'] };
     }
@@ -192,12 +213,12 @@ export class SaveManager {
   }
 
   // Keep an unreadable save safe, and stop autosave from replacing it.
-  quarantine(raw) {
-    this.autosaveEnabled = false;
+  quarantine(raw, key = this.key) {
+    if (key === this.key) this.autosaveEnabled = false;
     try {
-      if (raw != null) localStorage.setItem(BACKUP_KEY, raw);
+      if (raw != null) localStorage.setItem(key === SAVE_KEY ? BACKUP_KEY : `${key}.unreadable`, raw);
     } catch {
-      /* the original is still under SAVE_KEY, untouched */
+      /* the original is still under its key, untouched */
     }
   }
 
@@ -205,11 +226,28 @@ export class SaveManager {
     const { player, progression, inventory, worldState } = this.game;
     worldState.apply(data.world);
     this.game.quests.apply(data.quests, worldState.flags);
+    this.game.skills.apply(data.skills);
+    this.game.cooking.apply(data.cooking);
+    this.game.reputation.apply(data.reputation, data.renown);
     if (data.bar) this.game.actionBar.apply(data.bar);
     progression.apply(data.progression);
     inventory.apply(data.inventory);
+    // renown and titles; saves from before renown start with what their
+    // finished quests, levels and reputation would have earned
+    if (!data.renown) {
+      const rep = Object.values(data.reputation || {}).reduce((t, n) => t + Math.max(0, n), 0);
+      this.game.reputation.renown = this.game.quests.done.size * DB.renown.perQuest + (progression.level - 1) * DB.renown.perLevel + Math.floor(rep / DB.renown.perReputation);
+    }
+    this.game.titles.apply(data.titles);
+    this.game.titles._checkNew();
+    // rewards added to a quest after it was handed in (the tool pack, for
+    // the story quest) are given now, once
+    for (const id of this.game.quests.done) {
+      for (const g of DB.quests[id].reward?.items || []) if (ITEMS[g.item].toolPack && !inventory.toolPack) inventory.addItem(g.item, 1);
+    }
     this.game.recomputeMaxHealth();
     player.health = Math.min(data.player.health, player.maxHealth);
+    this.game.resources.reset();
     player.placeAt(data.player.position.x, data.player.position.z, data.player.facing);
   }
 

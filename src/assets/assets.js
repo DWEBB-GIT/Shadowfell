@@ -58,6 +58,36 @@ import bent_arrowhead from '../../assets/models/bent_arrowhead.glb';
 import hound_meat from '../../assets/models/hound_meat.glb';
 import old_watch_helm from '../../assets/models/old_watch_helm.glb';
 import witchbane from '../../assets/models/witchbane.glb';
+import arming_sword from '../../assets/models/arming_sword.glb';
+import militia_sword from '../../assets/models/militia_sword.glb';
+import dirk from '../../assets/models/dirk.glb';
+import hunting_bow from '../../assets/models/hunting_bow.glb';
+import arrow from '../../assets/models/arrow.glb';
+import arrow_bundle from '../../assets/models/arrow_bundle.glb';
+import arrow_bundle_barbed from '../../assets/models/arrow_bundle_barbed.glb';
+import quiver from '../../assets/models/quiver.glb';
+import bone_knife from '../../assets/models/bone_knife.glb';
+import cooked_fish from '../../assets/models/cooked_fish.glb';
+import steak from '../../assets/models/steak.glb';
+import stew from '../../assets/models/stew.glb';
+import innkeeper from '../../assets/models/innkeeper.glb';
+import inn_shell from '../../assets/models/inn_shell.glb';
+import inn_front from '../../assets/models/inn_front.glb';
+import inn_roof from '../../assets/models/inn_roof.glb';
+import cottage from '../../assets/models/cottage.glb';
+import well from '../../assets/models/well.glb';
+import lamp_post from '../../assets/models/lamp_post.glb';
+import tam from '../../assets/models/tam.glb';
+import camp from '../../assets/models/camp.glb';
+import torch from '../../assets/models/torch.glb';
+import fishing_rod from '../../assets/models/fishing_rod.glb';
+import perch from '../../assets/models/perch.glb';
+import dace from '../../assets/models/dace.glb';
+import eel from '../../assets/models/eel.glb';
+import old_boot from '../../assets/models/old_boot.glb';
+import chest from '../../assets/models/chest.glb';
+import signpost from '../../assets/models/signpost.glb';
+import sign_arm from '../../assets/models/sign_arm.glb';
 
 const SOURCES = {
   warden, ghoul, brute, cart, crate, crate_broken, wheel, shrine, watch_post,
@@ -68,6 +98,10 @@ const SOURCES = {
   hound, archer, seer, black_pine, standing_stone, palisade, bone_pile,
   rusted_falchion, warden_hauberk, plate_sabatons, blackwood_cleaver, hound_pelt,
   cracked_bone, bent_arrowhead, hound_meat, old_watch_helm, witchbane,
+  tam, camp, torch, fishing_rod, perch, dace, eel, old_boot, chest,
+  arming_sword, militia_sword, dirk, bone_knife, hunting_bow, arrow, arrow_bundle, arrow_bundle_barbed, quiver,
+  signpost, sign_arm,
+  cooked_fish, steak, stew, innkeeper, inn_shell, inn_front, inn_roof, cottage, well, lamp_post,
 };
 
 // One shared material per Blender material name keeps draw state small.

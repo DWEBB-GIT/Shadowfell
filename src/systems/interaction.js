@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
-import { SHRINES } from '../world/layout.js';
+import { SHRINES, STATIONS } from '../world/layout.js';
+import { SIGNPOSTS } from '../world/signposts.js';
 import { EXAMINE } from '../data/text.js';
 
 // Finds the nearest thing the player can act on and runs it when E is
@@ -21,6 +22,7 @@ export class Interaction {
       list.push({ key: 'loot:' + l.id, x: l.x, z: l.z, bias: -0.4, loot: l, prompt: n > 1 ? `${own} (and ${n - 1} more nearby)` : own, run: () => loot.lootArea(l) });
     }
     list.push(...this.game.npcs.interactions());
+    list.push(...this.game.chests.interactions());
     for (const sh of SHRINES) {
       list.push({
         key: sh.id === 'shrine_road' ? 'shrine' : 'shrine:' + sh.id,
@@ -31,6 +33,16 @@ export class Interaction {
         prompt: 'Rest at the shrine',
         run: () => this.game.restAtShrine(sh),
       });
+    }
+    // a hearth opens Cooking once you know the skill
+    if (this.game.skills.has('cooking')) {
+      for (const st of STATIONS) {
+        if (st.kind !== 'fire') continue;
+        list.push({ key: 'station:' + st.id, x: st.position[0], z: st.position[1], bias: 0.3, reach: st.radius, prompt: `Cook at ${st.name}`, run: () => this.game.hud.items.show('cooking') });
+      }
+    }
+    for (const sp of SIGNPOSTS) {
+      list.push({ key: 'sign:' + sp.id, x: sp.position[0], z: sp.position[1], bias: 0.3, reach: 2.6, prompt: 'Read the signpost', run: () => this.game.hud.showSignpost(sp) });
     }
     for (const p of world.examinePoints) {
       const seen = worldState.examined.has(p.id);
@@ -57,15 +69,17 @@ export class Interaction {
 
   update() {
     const { player } = this.game;
-    if (player.dead) {
+    if (player.dead && !player.ghost) {
       this.current = null;
       return;
     }
     let best = null;
     let bestScore = Infinity;
-    for (const c of this._candidates()) {
+    for (const c of player.ghost ? this.game.afterlife.interactions() : this._candidates()) {
       const d = Math.hypot(c.x - player.position.x, c.z - player.position.z);
       if (d > (c.reach || CONFIG.interaction.radius)) continue;
+      // nothing through a wall
+      if (this.game.collision.wallBetween(player.position.x, player.position.z, c.x, c.z)) continue;
       const score = d + c.bias;
       if (score < bestScore) {
         bestScore = score;

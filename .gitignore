@@ -7,3 +7,6 @@ tests/screenshots/
 .DS_Store
 __pycache__/
 *.blend1
+
+# Godot editor cache (rebuilt on open)
+.godot/

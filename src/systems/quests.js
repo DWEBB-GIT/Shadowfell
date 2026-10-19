@@ -5,32 +5,45 @@ import { ENEMIES } from '../world/layout.js';
 // the quests it requires are done, accepted into the quest log, and handed in
 // to its turn-in npc once every objective is met.
 //
-// Progress is read from the world rather than counted separately: kills from
-// the defeated enemies (enemies do not respawn, so one slain before the quest
-// was taken still counts), items from the bags, examine points from what has
-// been looked at. Only what the player chose is stored: accepted, done and
-// tracked quests.
+// Kills are counted per quest from the moment it is taken (WoW): most
+// enemies respawn, so the world's list of the fallen cannot be the count.
+// Items are read from the bags and examine points from what has been looked
+// at. Stored: accepted, done and tracked quests, and the kill counts.
 //
 // Status of a quest: 'done' | 'ready' (all objectives met) | 'active' |
 // 'available' (can be accepted now) | 'locked'.
 
 export const MAX_TRACKED = 4;
 
-const typeOfSpawn = Object.fromEntries(ENEMIES.map((e) => [e.id, e.type]));
-
 export class QuestLog {
   constructor(game) {
     this.game = game;
     this.reset();
     const refresh = () => this.refresh();
-    for (const ev of ['enemyDefeated', 'inventoryChanged', 'examined', 'levelUp']) game.events.on(ev, refresh);
+    for (const ev of ['inventoryChanged', 'examined', 'levelUp']) game.events.on(ev, refresh);
+    game.events.on('enemyDefeated', ({ enemy }) => {
+      this.countKill(enemy.type);
+      this.refresh();
+    });
   }
 
   reset() {
     this.accepted = []; // quest ids, in the order taken
     this.done = new Set();
     this.tracked = new Set();
+    this.kills = {}; // questId -> { objectiveId: kills since it was taken }
     this._last = {}; // questId -> progress text, to announce changes
+  }
+
+  // An enemy of this type fell: every active quest that wants it counts one.
+  countKill(type) {
+    for (const id of this.active) {
+      for (const o of DB.quests[id].objectives) {
+        if (o.type !== 'kill' || o.target !== type) continue;
+        const k = (this.kills[id] ||= {});
+        k[o.id] = Math.min(o.count || 1, (k[o.id] || 0) + 1);
+      }
+    }
   }
 
   // A brand-new game takes the opening quest (the intro sets it).
@@ -55,7 +68,7 @@ export class QuestLog {
     return DB.quests[id].objectives.map((o) => {
       const need = o.count || 1;
       let have = 0;
-      if (o.type === 'kill') have = [...worldState.defeated].filter((s) => typeOfSpawn[s] === o.target).length;
+      if (o.type === 'kill') have = this.kills[id]?.[o.id] || 0;
       else if (o.type === 'collect') have = inventory.count(o.target);
       else if (o.type === 'examine') have = worldState.examined.has(o.target) ? 1 : 0;
       have = Math.min(have, need);
@@ -97,6 +110,7 @@ export class QuestLog {
     if (this.status(id) !== 'available') return false;
     const q = DB.quests[id];
     this.accepted.push(id);
+    delete this.kills[id];
     if (this.tracked.size < MAX_TRACKED) this.tracked.add(id);
     this._last[id] = this._text(id);
     if (!quiet) {
@@ -114,6 +128,7 @@ export class QuestLog {
     this.accepted = this.accepted.filter((q) => q !== id);
     this.tracked.delete(id);
     delete this._last[id];
+    delete this.kills[id];
     this.game.events.emit('log', { text: `Quest abandoned: ${DB.quests[id].name}.`, kind: 'muted' });
     this._changed();
     return true;
@@ -135,12 +150,14 @@ export class QuestLog {
     this.done.add(id);
     this.tracked.delete(id);
     delete this._last[id];
+    delete this.kills[id];
     if (q.setsFlag) worldState.flags.add(q.setsFlag);
     if (q.turnInLog) events.emit('log', { text: q.turnInLog, kind: 'lore' });
     events.emit('log', { text: `Quest complete: ${q.name}.`, kind: 'quest' });
     if (r.coins) inventory.addCoins(r.coins, `from ${DB.npcs[q.turnIn].name}`);
     for (const g of gifts) inventory.addItem(g.item, g.count || 1);
     if (r.xp) progression.addXp(r.xp);
+    if (r.reputation) this.game.reputation.addAll(r.reputation);
     this.game.hud?.toast(`Quest complete: ${q.name}`);
     events.emit('questComplete', { id });
     this._changed();
@@ -199,7 +216,7 @@ export class QuestLog {
 
   // ------------------------------------------------------------- save
   serialize() {
-    return { accepted: [...this.accepted], done: [...this.done], tracked: [...this.tracked] };
+    return { accepted: [...this.accepted], done: [...this.done], tracked: [...this.tracked], kills: JSON.parse(JSON.stringify(this.kills)) };
   }
 
   // Saves from before the quest log carry only the story flag.
@@ -210,6 +227,17 @@ export class QuestLog {
       this.done = new Set(data.done.filter(known));
       this.accepted = data.accepted.filter((id) => known(id) && !this.done.has(id));
       this.tracked = new Set(data.tracked.filter((id) => this.accepted.includes(id)));
+      // kill counts; a save from before them counts the bodies still down
+      const typeOf = Object.fromEntries(ENEMIES.map((e) => [e.id, e.type]));
+      const fallen = [...this.game.worldState.defeated].map((s) => typeOf[s]);
+      for (const id of this.accepted) {
+        const saved = data.kills ? data.kills[id] : Object.fromEntries(DB.quests[id].objectives.map((o) => [o.id, fallen.filter((t) => t === o.target).length]));
+        if (!saved || typeof saved !== 'object') continue;
+        for (const o of DB.quests[id].objectives) {
+          const n = saved[o.id];
+          if (o.type === 'kill' && Number.isInteger(n) && n > 0) (this.kills[id] ||= {})[o.id] = Math.min(n, o.count || 1);
+        }
+      }
     } else if (flags && flags.has('manifest_delivered')) {
       this.done.add('missing_delivery');
     } else {

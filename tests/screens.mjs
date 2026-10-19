@@ -81,7 +81,7 @@ await page.evaluate(() => {
   live.home.copy(live.position);
   live.cfg = { ...live.cfg, speed: 0, detection: 0 };
   g.targeting.select(live);
-  g.player.tryBrace();
+  g.spells.tryCast('brace');
   g._snapCamera();
 });
 await page.waitForTimeout(2500);

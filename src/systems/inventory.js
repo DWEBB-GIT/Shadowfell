@@ -1,8 +1,11 @@
 import { CONFIG } from '../config.js';
-import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, itemView } from '../data/items.js';
+import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, TOOL_SOCKET, itemView, slotFits, durability } from '../data/items.js';
+import { moneyText } from '../ui/money.js';
 
 // Bags, equipment and currency, laid out the way classic WoW does it:
 //   * four bag sockets; socket 0 is the fixed backpack, the others take bags
+//   * a fifth socket (TOOL_SOCKET) for the tool pack, earned from the story
+//     quest: it holds the torch, rods and other tools, off the bags' space
 //   * every bag has numbered slots holding a stack { id, count }, plus
 //     `rolls` for gear that dropped with random stats (see data/items.js)
 //   * the character panel has one slot per equipment position
@@ -11,7 +14,9 @@ import { ITEMS, EQUIP_SLOTS, BACKPACK_SLOTS, BAG_SOCKETS, itemView } from '../da
 // A location is a short string so the UI, gamepad and tests share one shape:
 //   'b:<socket>:<slot>'  a slot inside a bag
 //   'e:<slotId>'         a character equipment slot
-//   's:<socket>'         a bag socket (1-3; the bag item itself)
+//   's:<socket>'         a bag socket (1-3, or 4 for the tool pack; the bag item itself)
+//   'e:ammo'             the ammo slot: which arrows Auto Shot uses. It
+//                        names an arrow type; the arrows stay in the bags.
 
 export const parseLoc = (loc) => {
   const [t, a, b] = loc.split(':');
@@ -21,7 +26,15 @@ export const parseLoc = (loc) => {
   return null;
 };
 
-const clone = (s) => (s ? (s.rolls ? { id: s.id, count: s.count, rolls: s.rolls } : { id: s.id, count: s.count }) : null);
+const clone = (s) => {
+  if (!s) return null;
+  const c = { id: s.id, count: s.count };
+  if (s.rolls) c.rolls = s.rolls;
+  if (s.dur !== undefined && s.dur < 100) c.dur = s.dur; // durability, once worn
+  return c;
+};
+
+export const AMMO_LOC = 'e:ammo';
 
 export class Inventory {
   constructor(game) {
@@ -31,18 +44,25 @@ export class Inventory {
 
   reset() {
     this.coins = CONFIG.player.startCoins;
-    this.sockets = [{ id: 'backpack', slots: new Array(BACKPACK_SLOTS).fill(null) }, null, null, null];
+    this.sockets = [{ id: 'backpack', slots: new Array(BACKPACK_SLOTS).fill(null) }, null, null, null, null];
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.id, null]));
-    this.equipment.mainHand = { id: 'worn_longsword', count: 1 };
-    this.equipment.chest = { id: 'travelling_clothes', count: 1 };
-    this.equipment.offHand = { id: 'kite_shield', count: 1 };
     this.sockets[0].slots[0] = { id: 'healing_draught', count: CONFIG.player.startDraughts };
+    this.ammoChoice = null; // the arrow type in the ammo slot
+    // each class starts with its own gear (archetypes.json `startingGear`)
+    const arch = this.game.stats?.archetype || CONFIG.archetypes[CONFIG.player.archetype];
+    for (const [slot, id] of Object.entries(arch.startingGear || {})) {
+      if (slot === 'ammo') {
+        this.sockets[0].slots[1] = { id: id[0], count: id[1] };
+        this.ammoChoice = id[0];
+      } else this.equipment[slot] = { id, count: 1 };
+    }
   }
 
   // ------------------------------------------------------------ queries
   get(loc) {
     const p = parseLoc(loc);
     if (!p) return null;
+    if (loc === AMMO_LOC) return this.ammoChoice ? { id: this.ammoChoice, count: this.count(this.ammoChoice) } : null;
     if (p.type === 'bag') return this.sockets[p.socket]?.slots[p.slot] ?? null;
     if (p.type === 'equip') return this.equipment[p.slot] ?? null;
     if (p.type === 'socket') {
@@ -86,7 +106,79 @@ export class Inventory {
 
   get weapon() {
     const s = this.equipment.mainHand;
-    return s ? itemView(s) : { name: 'Bare hands', damage: CONFIG.stats.fistDamage };
+    const v = s && itemView(s);
+    // a broken weapon swings like bare hands until it is mended
+    if (!v || v.broken) return { name: v ? `${v.name} (broken)` : 'Bare hands', damage: CONFIG.stats.fistDamage };
+    return v;
+  }
+
+  // a working weapon in the off hand (dual wielding), else null
+  get offWeapon() {
+    const s = this.equipment.offHand;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
+  }
+
+  // the arrows Auto Shot will use: those in the ammo slot (kept filled by
+  // _refillAmmo while you carry any)
+  get ammo() {
+    if (this.ammoChoice && this.count(this.ammoChoice) > 0) return this.ammoChoice;
+    return this.bestAmmo();
+  }
+
+  // the best arrows you carry (most damage)
+  bestAmmo() {
+    let best = null;
+    for (const loc of this.bagLocations()) {
+      const s = this.get(loc);
+      const d = s && ITEMS[s.id];
+      if (d?.kind === 'ammo' && (!best || d.ammoDps > ITEMS[best].ammoDps)) best = s.id;
+    }
+    return best;
+  }
+
+  // How many arrows a bag holds (shown on a quiver's bag slot).
+  arrowsIn(socket) {
+    const s = this.sockets[socket];
+    return s ? s.slots.reduce((n, st) => n + (st && ITEMS[st.id]?.kind === 'ammo' ? st.count : 0), 0) : 0;
+  }
+
+  // The ammo slot, as in WoW: arrows dragged onto it choose the type Auto
+  // Shot uses (they stay in the bags). When that type runs out the slot
+  // takes the next arrows you carry, best first; an empty slot fills itself
+  // as soon as you have arrows.
+  setAmmo(id) {
+    if (!ITEMS[id] || ITEMS[id].kind !== 'ammo') return this._refuse('Only arrows go in the ammo slot.');
+    if (this.ammoChoice !== id) {
+      this.ammoChoice = id;
+      this.game.events.emit('log', { text: `Auto Shot now uses ${ITEMS[id].name.toLowerCase()}s.`, kind: 'muted', throttle: 'ammo-set' });
+    }
+    this._changed();
+    return { ok: true };
+  }
+
+  _refillAmmo() {
+    const had = this.ammoChoice;
+    if (had && this.count(had) > 0) return;
+    const next = this.bestAmmo();
+    if (next === had) return;
+    this.ammoChoice = next;
+    if (had && next) this.game.events.emit('log', { text: `Out of ${ITEMS[had].name.toLowerCase()}s. Auto Shot now uses ${ITEMS[next].name.toLowerCase()}s.`, kind: 'muted' });
+    else if (had) this.game.events.emit('log', { text: `You are out of arrows.`, kind: 'muted', throttle: 'no-ammo' });
+  }
+
+  // a quiver in a bag slot quickens Auto Shot (percent; the best one counts)
+  get quiverHaste() {
+    return Math.max(0, ...this.sockets.map((s) => (s && ITEMS[s.id]?.rangedHaste) || 0));
+  }
+
+  // a working bow in the ranged slot (Auto Shot), else null
+  get rangedWeapon() {
+    const s = this.equipment.ranged;
+    if (!s || ITEMS[s.id]?.kind !== 'weapon') return null;
+    const v = itemView(s);
+    return v.broken ? null : v;
   }
 
   get draughts() {
@@ -113,11 +205,59 @@ export class Inventory {
     }
   }
 
+  // What a bag slot may hold, as a list of item kinds (null: anything): a
+  // quiver (`holds: 'ammo'`) takes only arrows, the tool pack only tools.
+  _bagHolds(socket) {
+    const s = this.sockets[socket];
+    const h = s && ITEMS[s.id]?.holds;
+    return h ? [].concat(h) : null;
+  }
+
+  // The bag slots an item can go in, best first: arrows into a quiver and
+  // tools into the tool pack before the ordinary bags.
+  _slotsFor(id) {
+    const kind = ITEMS[id].kind;
+    const locs = this.bagLocations().filter((l) => {
+      const h = this._bagHolds(+l.split(':')[1]);
+      return !h || h.includes(kind);
+    });
+    const special = (l) => (this._bagHolds(+l.split(':')[1]) ? 0 : 1);
+    return locs.sort((a, b) => special(a) - special(b));
+  }
+
+  get toolPack() {
+    return this.sockets[TOOL_SOCKET];
+  }
+
+  // A tool pack goes straight into its socket, and the tools in the bags
+  // move into it.
+  _fitToolPack(id) {
+    this._set(`s:${TOOL_SOCKET}`, { id, count: 1 });
+    this._stowTools();
+    this.game.events.emit('log', { text: `Your tools go into the ${ITEMS[id].name.toLowerCase()}, out of your bags.`, kind: 'loot' });
+  }
+
+  // Move tools lying in the ordinary bags into free tool pack slots.
+  _stowTools() {
+    const pack = this.toolPack;
+    if (!pack) return;
+    const holds = this._bagHolds(TOOL_SOCKET);
+    for (const loc of this.bagLocations()) {
+      if (loc.startsWith(`b:${TOOL_SOCKET}:`)) continue;
+      const s = this.get(loc);
+      if (!s || !holds.includes(ITEMS[s.id].kind)) continue;
+      const free = pack.slots.indexOf(null);
+      if (free < 0) return;
+      pack.slots[free] = s;
+      this._set(loc, null);
+    }
+  }
+
   // Put `count` of `id` into bags; returns how many did not fit.
   _insert(id, count, rolls = null) {
     const def = ITEMS[id];
     let left = count;
-    const locs = this.bagLocations();
+    const locs = this._slotsFor(id);
     for (const loc of locs) {
       const s = this.get(loc);
       if (left > 0 && !rolls && s && s.id === id && !s.rolls && s.count < def.stack) {
@@ -139,6 +279,13 @@ export class Inventory {
   // Returns true if everything fitted. A full bag leaves loot where it is.
   addItem(id, count = 1, { quiet = false, rolls = null } = {}) {
     if (!ITEMS[id]) return false;
+    if (ITEMS[id].toolPack) {
+      if (this.toolPack) return false;
+      this._fitToolPack(id);
+      if (!quiet) this.game.events.emit('log', { text: `Taken: ${ITEMS[id].name}.`, kind: 'loot' });
+      this._changed();
+      return true;
+    }
     if (this.roomFor(id) < count) {
       this.game.events.emit('log', { text: 'Your bags are full.', kind: 'muted', throttle: 'bags-full' });
       return false;
@@ -157,8 +304,9 @@ export class Inventory {
 
   roomFor(id) {
     const def = ITEMS[id];
+    if (def.toolPack) return this.toolPack ? 0 : 1; // it has its own socket
     let room = 0;
-    for (const loc of this.bagLocations()) {
+    for (const loc of this._slotsFor(id)) {
       const s = this.get(loc);
       if (!s) room += def.stack;
       else if (s.id === id) room += def.stack - s.count;
@@ -188,6 +336,7 @@ export class Inventory {
 
   // Remove up to `count` from one location; returns the removed stack.
   take(loc, count = Infinity) {
+    if (loc === AMMO_LOC) return null; // the arrows themselves stay in the bags
     const s = this.get(loc);
     if (!s) return null;
     const p = parseLoc(loc);
@@ -211,23 +360,33 @@ export class Inventory {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
     if (!p || !def) return false;
-    if (p.type === 'equip') return def.slot === p.slot && this.canWear(def);
-    if (p.type === 'socket') return p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag';
-    if (p.type === 'bag') return !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length;
+    if (loc === AMMO_LOC) return def.kind === 'ammo';
+    if (p.type === 'equip') return slotFits(p.slot, def.slot) && this.canWear(def, p.slot);
+    // the tool pack lives only in its own socket
+    if (p.type === 'socket') return p.socket === TOOL_SOCKET ? !!def.toolPack : p.socket > 0 && p.socket < BAG_SOCKETS && def.kind === 'bag' && !def.toolPack;
+    if (p.type === 'bag') {
+      const h = this._bagHolds(p.socket);
+      return !def.toolPack && !!this.sockets[p.socket] && p.slot < this.sockets[p.socket].slots.length && (!h || h.includes(def.kind));
+    }
     return false;
   }
 
-  // Armour types and shields are limited by archetype, as in WoW.
-  canWear(def) {
+  // Armour types, shields and dual wielding are limited by archetype, as in WoW.
+  canWear(def, slot = null) {
     const a = this.game.stats.archetype;
     if (def.armourType && !a.armourTypes.includes(def.armourType)) return false;
     if (def.kind === 'shield' && !a.shields) return false;
+    if (slot === 'offHand' && def.kind === 'weapon' && !a.dualWield) return false;
+    if (def.weaponType && (a.bannedWeaponTypes || []).includes(def.weaponType)) return false;
     return true;
   }
 
   // Move or swap the stacks at two locations. Returns { ok, reason }.
   move(from, to) {
     if (from === to) return { ok: false, reason: '' };
+    // arrows onto the ammo slot choose them; nothing is moved
+    if (to === AMMO_LOC) return this.get(from) ? this.setAmmo(this.get(from).id) : { ok: false, reason: '' };
+    if (from === AMMO_LOC) return this._refuse('Drag other arrows onto the ammo slot to change them.');
     const a = this.get(from);
     const b = this.get(to);
     if (!a) return { ok: false, reason: '' };
@@ -267,12 +426,16 @@ export class Inventory {
   _why(loc, stack) {
     const p = parseLoc(loc);
     const def = ITEMS[stack.id];
-    if (p.type === 'equip' && def.slot === p.slot && !this.canWear(def)) {
+    if (p.type === 'equip' && slotFits(p.slot, def.slot) && !this.canWear(def, p.slot)) {
+      if (def.weaponType && (this.game.stats.archetype.bannedWeaponTypes || []).includes(def.weaponType)) return `A ${this.game.stats.archetype.name} cannot use ${def.weaponType}s.`;
+      if (def.kind === 'weapon') return `A ${this.game.stats.archetype.name} cannot dual wield.`;
       const what = def.kind === 'shield' ? 'shields' : `${CONFIG.armourTypes[def.armourType].name.toLowerCase()} armour`;
       return `A ${this.game.stats.archetype.name} cannot use ${what}.`;
     }
     if (p.type === 'equip') return `The ${def.name} does not go there.`;
-    if (p.type === 'socket') return p.socket === 0 ? 'The backpack cannot be removed.' : 'Only bags go in bag slots.';
+    if (def.toolPack) return `The ${def.name.toLowerCase()} stays in its own slot.`;
+    if (p.type === 'socket') return p.socket === 0 ? 'The backpack cannot be removed.' : p.socket === TOOL_SOCKET ? 'Only a tool pack goes in the tool slot.' : 'Only bags go in bag slots.';
+    if (p.type === 'bag' && this._bagHolds(p.socket)) return `Only ${this._bagHolds(p.socket).includes('ammo') ? 'arrows' : 'tools'} go in the ${ITEMS[this.sockets[p.socket].id].name.toLowerCase()}.`;
     return 'That will not fit there.';
   }
 
@@ -291,17 +454,22 @@ export class Inventory {
     if (!s) return false;
     const def = ITEMS[s.id];
     const p = parseLoc(loc);
+    if (loc === AMMO_LOC) return false;
+    if (def.kind === 'ammo') return this.setAmmo(s.id).ok;
+    if (p.type === 'socket' && def.toolPack) return !!this._refuse(`The ${def.name.toLowerCase()} stays in its own slot.`);
     if (p.type === 'equip' || p.type === 'socket') {
-      const free = this.firstFree();
+      // a torch taken off goes back into the tool pack, if there is room
+      const free = this._slotsFor(s.id).find((l) => !this.get(l)) || this.firstFree();
       if (!free) return !!this._refuse('Your bags are full.');
       return this.move(loc, free).ok;
     }
+    if (def.use?.food) return this.game.cooking.eat(loc);
     if (def.kind === 'consumable') return this.useDraught(loc);
     if (def.kind === 'document') {
       this.game.hud.openDocument(s.id);
       return true;
     }
-    if (def.slot) return this.move(loc, `e:${def.slot}`).ok;
+    if (def.slot) return this.move(loc, `e:${this.slotFor(def)}`).ok;
     if (def.kind === 'bag') {
       const socket = [1, 2, 3].find((i) => !this.sockets[i]);
       if (socket === undefined) return !!this._refuse('All your bag slots are in use.');
@@ -310,11 +478,101 @@ export class Inventory {
     return false;
   }
 
+  // An item used from the spell bar. A torch (or any off-hand item) is
+  // swapped with whatever was in the off hand, and back again on the next
+  // press, so one key lights the way and raises the shield again.
+  useFromBar(id) {
+    const def = ITEMS[id];
+    if (!def) return false;
+    const find = (x) => this.bagLocations().find((l) => this.get(l)?.id === x);
+    if (def.slot === 'offHand' && this.equipment.offHand?.id === id) {
+      const back = this.prevOffHand && find(this.prevOffHand);
+      if (back) {
+        const ok = this.move(back, 'e:offHand').ok;
+        if (ok) this._afterBarSwap();
+        return ok;
+      }
+      return this.use('e:offHand');
+    }
+    const loc = find(id);
+    if (!loc) {
+      this.game.hud.error(`You have no ${def.name.toLowerCase()}.`);
+      return false;
+    }
+    if (def.slot === 'offHand') this.prevOffHand = this.equipment.offHand?.id || null;
+    return this.use(loc);
+  }
+
+  // (the torch swapped back out of the off hand returns to the tool pack)
+  _afterBarSwap() {
+    this._stowTools();
+    this._changed();
+  }
+
   // Equip by item id (kept for scripts and tests).
   equip(id) {
     const loc = this.bagLocations().find((l) => this.get(l)?.id === id);
     if (!loc) return false;
-    return this.move(loc, `e:${ITEMS[id].slot}`).ok;
+    return this.move(loc, `e:${this.slotFor(ITEMS[id])}`).ok;
+  }
+
+  // Which character slot an item goes in: the empty one of a pair (rings,
+  // trinkets) if there is one, else the first.
+  slotFor(def) {
+    const fits = EQUIP_SLOTS.filter((s) => slotFits(s.id, def.slot));
+    return (fits.find((s) => !this.equipment[s.id]) || fits[0] || { id: def.slot }).id;
+  }
+
+  // ------------------------------------------------------------ durability
+  // Death wears every worn weapon and piece of armour by `percent`; at 0 an
+  // item is broken (gives no stats) until a smith mends it.
+  wear(percent) {
+    const broke = [];
+    for (const s of Object.values(this.equipment)) {
+      const d = durability(s);
+      if (d === null || d === 0) continue;
+      s.dur = Math.max(0, d - percent);
+      if (s.dur === 0) broke.push(itemView(s).name);
+    }
+    for (const name of broke) this.game.events.emit('log', { text: `Your ${name} is broken. Have it repaired by a smith.`, kind: 'muted' });
+    this._equipmentChanged();
+    this._changed();
+    return broke;
+  }
+
+  // What mending one stack costs: its missing share of the item's price,
+  // times CONFIG.durability.repairFraction (at least 1 silver if worn).
+  repairCost(stack) {
+    const d = durability(stack);
+    if (d === null || d >= 100) return 0;
+    const price = itemView(stack).price;
+    return Math.max(1, Math.ceil((price * CONFIG.durability.repairFraction * (100 - d)) / 100));
+  }
+
+  // every worn or carried stack that needs mending
+  _worn() {
+    const all = [...Object.values(this.equipment), ...this.sockets.flatMap((s) => (s ? s.slots : []))];
+    return all.filter((s) => s && this.repairCost(s) > 0);
+  }
+
+  get repairAllCost() {
+    return this._worn().reduce((a, s) => a + this.repairCost(s), 0);
+  }
+
+  repairAll() {
+    const cost = this.repairAllCost;
+    if (!cost) return false;
+    if (this.coins < cost) {
+      this.game.events.emit('log', { text: `You need ${moneyText(cost)} to repair everything.`, kind: 'muted', throttle: 'repair' });
+      return false;
+    }
+    this.coins -= cost;
+    for (const s of this._worn()) delete s.dur;
+    this.game.events.emit('coins', { amount: -cost });
+    this.game.events.emit('log', { text: `Your gear is repaired for ${moneyText(cost)}.`, kind: 'loot' });
+    this._equipmentChanged();
+    this._changed();
+    return true;
   }
 
   _equipmentChanged() {
@@ -322,11 +580,13 @@ export class Inventory {
     player.showEquipment(this.equipment);
     this.game.recomputeMaxHealth();
     events.emit('equipmentChanged', {});
-    const [lo, hi] = this.game.stats.abilityRange(1);
-    events.emit('log', { text: `Strike damage is now ${lo}–${hi} (${this.weapon.name}).`, kind: 'level', throttle: `equip-dmg-${lo}-${hi}` });
+    const st = this.game.stats;
+    const [lo, hi] = st.swingRange;
+    events.emit('log', { text: `Auto attack is now ${lo}–${hi} every ${st.attackCooldown.toFixed(1)}s (${this.weapon.name}).`, kind: 'level', throttle: `equip-dmg-${lo}-${hi}` });
   }
 
   _changed() {
+    this._refillAmmo();
     this.game.events.emit('inventoryChanged', {});
   }
 
@@ -334,7 +594,7 @@ export class Inventory {
   addCoins(n, source = '') {
     this.coins += n;
     this.game.events.emit('coins', { amount: n });
-    this.game.events.emit('log', { text: `${n} coin${n === 1 ? '' : 's'}${source ? ' ' + source : ''}.`, kind: 'loot' });
+    this.game.events.emit('log', { text: `${moneyText(n)}${source ? ' ' + source : ''}.`, kind: 'loot' });
     this._changed();
   }
 
@@ -376,13 +636,16 @@ export class Inventory {
       sockets: this.sockets.map((s) => (s ? { id: s.id, slots: s.slots.map(clone) } : null)),
       equipment: Object.fromEntries(Object.entries(this.equipment).map(([k, v]) => [k, clone(v)])),
       granted: ['kite_shield'],
+      ammo: this.ammoChoice,
     };
   }
 
   apply(data) {
     this.coins = data.coins;
     this.sockets = data.sockets.map((s) => (s ? { id: s.id, slots: s.slots.map(clone) } : null));
+    while (this.sockets.length <= TOOL_SOCKET) this.sockets.push(null); // saves from before the tool pack
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((s) => [s.id, clone(data.equipment[s.id] || null)]));
+    this.ammoChoice = ITEMS[data.ammo] ? data.ammo : null;
     // saves from before shields existed: hand the Warden theirs, once
     if (!(data.granted || []).includes('kite_shield')) {
       if (!this.equipment.offHand) this.equipment.offHand = { id: 'kite_shield', count: 1 };

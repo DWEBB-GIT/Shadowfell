@@ -4,11 +4,14 @@
   "private": true,
   "description": "Shadowfall: playable prototype (The Fallen Road and the Blackwood)",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --format=iife --target=chrome110 --loader:.glb=binary --minify --sourcemap --outfile=dist/shadowfall.js",
-    "dev": "esbuild src/main.js --bundle --format=iife --target=chrome110 --loader:.glb=binary --sourcemap --outfile=dist/shadowfall.js --watch",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
     "assets": "blender --background --python assets/blender/build_assets.py",
     "test": "node tests/validate-data.mjs && node tests/acceptance.mjs",
-    "validate": "node tests/validate-data.mjs"
+    "validate": "node tests/validate-data.mjs",
+    "editor": "node tools/server.mjs",
+    "postinstall": "node -e \"require('fs').writeFileSync('node_modules/.gdignore','')\"",
+    "godot:test": "godot --headless --path . --script res://game/tests/run_tests.gd"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

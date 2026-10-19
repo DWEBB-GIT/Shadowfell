@@ -1,0 +1,166 @@
+{
+  "_about": "Recipes for crafting skills (cooking). `rank`: the skill rank needed to make it. `skillUp`: the ranks at which it turns yellow, green and grey: below yellow (orange) every craft raises the skill, yellow most of the time, green now and then, grey never (WoW). `inputs` are used up, `output` is made. `station`: what must be close by (`fire`: a camp or a hearth). `trainer` and `cost`: who teaches it, for how many coins; a recipe without a trainer comes with the skill.",
+  "recipes": [
+    {
+      "id": "grilled_perch",
+      "skill": "cooking",
+      "rank": 1,
+      "skillUp": [
+        15,
+        25,
+        35
+      ],
+      "inputs": [
+        {
+          "item": "gloomwater_perch",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "grilled_perch",
+        "count": 1
+      },
+      "station": "fire"
+    },
+    {
+      "id": "roast_dace",
+      "skill": "cooking",
+      "rank": 1,
+      "skillUp": [
+        15,
+        25,
+        35
+      ],
+      "inputs": [
+        {
+          "item": "silver_dace",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "roast_dace",
+        "count": 1
+      },
+      "station": "fire"
+    },
+    {
+      "id": "hound_steak",
+      "skill": "cooking",
+      "rank": 10,
+      "skillUp": [
+        25,
+        35,
+        45
+      ],
+      "inputs": [
+        {
+          "item": "hound_meat",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "hound_steak",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 20
+    },
+    {
+      "id": "travellers_stew",
+      "skill": "cooking",
+      "rank": 20,
+      "skillUp": [
+        35,
+        45,
+        55
+      ],
+      "inputs": [
+        {
+          "item": "hound_meat",
+          "count": 1
+        },
+        {
+          "item": "gloomwater_perch",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "travellers_stew",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 40
+    },
+    {
+      "id": "smoked_eel",
+      "skill": "cooking",
+      "rank": 30,
+      "skillUp": [
+        45,
+        55,
+        65
+      ],
+      "inputs": [
+        {
+          "item": "barrow_eel",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "smoked_eel",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 80
+    },
+    {
+      "id": "baked_carp",
+      "skill": "cooking",
+      "rank": 15,
+      "skillUp": [
+        30,
+        40,
+        50
+      ],
+      "inputs": [
+        {
+          "item": "bramble_carp",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "baked_carp",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 25
+    },
+    {
+      "id": "ghostfin_broth",
+      "skill": "cooking",
+      "rank": 35,
+      "skillUp": [
+        50,
+        60,
+        70
+      ],
+      "inputs": [
+        {
+          "item": "ghostfin",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "ghostfin_broth",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 100
+    }
+  ]
+}

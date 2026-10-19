@@ -27,10 +27,17 @@ export class Rig {
     this.flinch = 0;
     this.death = -1; // -1 alive, otherwise seconds since death
     this.lean = 0;
+    this.pose = null; // a held pose ('fish') when no action plays
   }
 
   play(type, duration, impact = 0.5) {
     this.action = { type, t: 0, duration, impact };
+  }
+
+  // a second weapon's swing on the left arm, on its own timing, layered over
+  // whatever the right arm is doing (dual wielding)
+  playOff(duration, impact = 0.4) {
+    this.offAction = { t: 0, duration, impact };
   }
 
   hit() {
@@ -40,6 +47,7 @@ export class Rig {
   die() {
     this.death = 0;
     this.action = null;
+    this.offAction = null;
   }
 
   revive() {
@@ -88,8 +96,41 @@ export class Rig {
       p.Torso.rotation.x -= 0.08;
     }
 
+    // a held pose under any action: the rod out over the water
+    // sitting to eat: knees up, a little lower
+    if (this.pose === 'sit' && !this.action) {
+      if (p.Leg_L) p.Leg_L.rotation.x += -1.45;
+      if (p.Leg_R) p.Leg_R.rotation.x += -1.35;
+      if (p.Arm_R) p.Arm_R.rotation.x += -0.9 + Math.sin(this.time * 3) * 0.25;
+      if (p.Arm_L) p.Arm_L.rotation.x += -0.5;
+      this.model.position.y = -0.5;
+    } else if (this.death < 0) this.model.position.y = 0;
+    if (this.pose === 'fish' && !this.action) {
+      if (p.Arm_R) p.Arm_R.rotation.x += -1.0;
+      if (p.Arm_L) p.Arm_L.rotation.x += -0.35;
+    }
     if (this.action) this._applyAction(dt);
+    if (this.offAction) this._applyOffAction(dt);
     if (this.death >= 0) this._applyDeath(dt);
+  }
+
+  // the off hand's cut: the same overhand arc as the main hand, on the left
+  _applyOffAction(dt) {
+    const a = this.offAction;
+    a.t += dt;
+    const k = Math.min(1, a.t / a.duration);
+    const up = a.impact * 0.65;
+    let arm;
+    if (k < up) arm = -2.4 * ease(k / up);
+    else if (k < a.impact) arm = -2.4 + 2.0 * ease((k - up) / (a.impact - up));
+    else arm = -0.4 * (1 - ease((k - a.impact) / (1 - a.impact)));
+    const p = this.parts;
+    if (p.Arm_L) {
+      p.Arm_L.rotation.x += arm;
+      p.Arm_L.rotation.y -= 0.3 * Math.min(1, -arm / 2.4);
+    }
+    if (p.Torso) p.Torso.rotation.y -= 0.25 * Math.min(1, -arm / 2.4);
+    if (k >= 1) this.offAction = null;
   }
 
   _applyAction(dt) {
@@ -103,13 +144,25 @@ export class Rig {
     const swing = k < impact ? 0 : ease(Math.min(1, (k - impact) / 0.35));
 
     switch (a.type) {
-      case 'strike': // warden: overhand diagonal cut
+      case 'strike': {
+        // warden: overhand cut. The blade goes up and back through most of
+        // the windup, then comes down hard so it lands (at `impact`) low and
+        // in front; then the arm recovers.
+        const up = impact * 0.65;
+        let arm;
+        if (k < up) arm = -2.7 * ease(k / up);
+        else if (k < impact) arm = -2.7 + 2.3 * ease((k - up) / (impact - up));
+        else arm = -0.4 * (1 - ease((k - impact) / (1 - impact)));
         if (p.Arm_R) {
-          p.Arm_R.rotation.x += -2.6 * raise - 0.9 * swing * (1 - k);
-          p.Arm_R.rotation.y += 0.5 * raise;
+          p.Arm_R.rotation.x += arm;
+          p.Arm_R.rotation.y += 0.35 * Math.min(1, -arm / 2.7);
         }
-        if (p.Torso) p.Torso.rotation.y += 0.4 * raise - 0.5 * swing * (1 - k);
+        if (p.Torso) {
+          p.Torso.rotation.y += 0.35 * Math.min(1, -arm / 2.7) - 0.2 * swing * (1 - k);
+          p.Torso.rotation.x += k >= up && k < impact + 0.15 ? 0.12 : 0; // lean into the blow
+        }
         break;
+      }
       case 'slam': // Shield Break: both hands overhead, then down hard
         if (p.Arm_R) p.Arm_R.rotation.x += -2.9 * raise - 0.8 * swing * (1 - k);
         if (p.Arm_L) p.Arm_L.rotation.x += -2.7 * raise - 0.8 * swing * (1 - k);
@@ -151,6 +204,11 @@ export class Rig {
           p.Arm_R.rotation.z += 0.5 * raise;
         }
         if (p.Torso) p.Torso.rotation.y += 0.35 * raise;
+        break;
+      case 'castLine': // fishing: rod back over the shoulder, then flicked out
+        if (p.Arm_R) p.Arm_R.rotation.x += -1.0 - 1.7 * raise;
+        if (p.Arm_L) p.Arm_L.rotation.x += -0.35;
+        if (p.Torso) p.Torso.rotation.x += -0.12 * raise + 0.1 * swing * (1 - k);
         break;
       case 'cast': // seer: staff and free hand raised, then thrust down
         if (p.Arm_R) p.Arm_R.rotation.x += -2.2 * raise + 0.6 * swing * (1 - k);

@@ -1,5 +1,5 @@
 {
-  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id. `rarity` is a rarities.json id. `reservedFor` lists the only loot tables that may drop an item (a boss's own weapon).",
+  "_about": "Every item in the game. Referenced by id from shops, loot tables, quests, world loot and saves: never rename an id. `rarity` is a rarities.json id. `reservedFor` lists the only loot tables that may drop an item (a boss's own weapon). Gear states its `itemLevel` and a `statSplit` (shares); its armour, weapon damage, block chance and stats are worked out from item level, slot, armour type and rarity (src/data/scaling.js).",
   "armourTypes": [
     {
       "id": "cloth",
@@ -21,33 +21,47 @@
   "suffixes": [
     {
       "id": "might",
-      "name": "of Might",
-      "stats": ["might"]
+      "name": "of Strength",
+      "stats": [
+        "strength"
+      ]
     },
     {
       "id": "vigour",
       "name": "of Vigour",
-      "stats": ["vitality"]
+      "stats": [
+        "stamina"
+      ]
     },
     {
       "id": "finesse",
-      "name": "of Finesse",
-      "stats": ["finesse"]
+      "name": "of Agility",
+      "stats": [
+        "agility"
+      ]
     },
     {
       "id": "bear",
       "name": "of the Bear",
-      "stats": ["might", "vitality"]
+      "stats": [
+        "strength",
+        "stamina"
+      ]
     },
     {
       "id": "tiger",
       "name": "of the Tiger",
-      "stats": ["might", "finesse"]
+      "stats": [
+        "strength",
+        "agility"
+      ]
     },
     {
       "id": "swiftness",
       "name": "of Swiftness",
-      "stats": ["haste"]
+      "stats": [
+        "haste"
+      ]
     }
   ],
   "items": [
@@ -57,7 +71,8 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [12, 16],
+      "itemLevel": 1,
+      "speed": 2.2,
       "stack": 1,
       "price": 12,
       "model": "worn_sword",
@@ -70,9 +85,11 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [16, 22],
-      "stats": {
-        "haste": 4
+      "itemLevel": 3,
+      "speed": 2.0,
+      "statSplit": {
+        "haste": 2,
+        "strength": 1
       },
       "stack": 1,
       "price": 60,
@@ -87,14 +104,26 @@
       "rarity": "common",
       "slot": "chest",
       "armourType": "leather",
-      "stats": {
-        "armour": 20
-      },
+      "itemLevel": 1,
       "stack": 1,
       "price": 8,
       "model": "clothes",
       "icon": "clothes",
       "description": "Wool and leather, patched at the elbows. Keeps the rain off, mostly."
+    },
+    {
+      "id": "frayed_robe",
+      "name": "Frayed robe",
+      "kind": "armor",
+      "rarity": "common",
+      "slot": "chest",
+      "armourType": "cloth",
+      "itemLevel": 1,
+      "stack": 1,
+      "price": 8,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "Undyed wool gone grey at the hem, its sleeves scorched by candle and worse. Cloth: any class can wear it."
     },
     {
       "id": "watch_helm",
@@ -103,10 +132,7 @@
       "rarity": "common",
       "slot": "head",
       "armourType": "mail",
-      "stats": {
-        "armour": 10,
-        "vitality": 1
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 25,
       "model": "watch_helm",
@@ -119,9 +145,7 @@
       "kind": "shield",
       "rarity": "common",
       "slot": "offHand",
-      "stats": {
-        "block": 10
-      },
+      "itemLevel": 1,
       "stack": 1,
       "price": 20,
       "model": "kite_shield",
@@ -184,9 +208,7 @@
       "rarity": "common",
       "slot": "hands",
       "armourType": "mail",
-      "stats": {
-        "armour": 6
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 14,
       "model": "iron_gloves",
@@ -200,10 +222,7 @@
       "rarity": "common",
       "slot": "feet",
       "armourType": "leather",
-      "stats": {
-        "armour": 5,
-        "vitality": 1
-      },
+      "itemLevel": 2,
       "stack": 1,
       "price": 12,
       "model": "hob_boots",
@@ -217,9 +236,7 @@
       "rarity": "common",
       "slot": "legs",
       "armourType": "mail",
-      "stats": {
-        "armour": 12
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 24,
       "model": "mail_chausses",
@@ -232,10 +249,9 @@
       "kind": "shield",
       "rarity": "enhanced",
       "slot": "offHand",
-      "stats": {
-        "block": 15,
-        "blockRating": 20,
-        "armour": 5
+      "itemLevel": 4,
+      "statSplit": {
+        "block": 1
       },
       "stack": 1,
       "price": 45,
@@ -249,7 +265,8 @@
       "kind": "weapon",
       "rarity": "common",
       "slot": "mainHand",
-      "damage": [13, 19],
+      "itemLevel": 2,
+      "speed": 2.6,
       "stack": 1,
       "price": 22,
       "model": "rusted_falchion",
@@ -263,10 +280,7 @@
       "rarity": "common",
       "slot": "chest",
       "armourType": "mail",
-      "stats": {
-        "armour": 32,
-        "vitality": 1
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 40,
       "model": "warden_hauberk",
@@ -280,9 +294,7 @@
       "rarity": "common",
       "slot": "feet",
       "armourType": "plate",
-      "stats": {
-        "armour": 10
-      },
+      "itemLevel": 3,
       "stack": 1,
       "price": 30,
       "model": "plate_sabatons",
@@ -295,9 +307,10 @@
       "kind": "weapon",
       "rarity": "enhanced",
       "slot": "mainHand",
-      "damage": [18, 26],
-      "stats": {
-        "might": 2
+      "itemLevel": 4,
+      "speed": 2.8,
+      "statSplit": {
+        "strength": 1
       },
       "stack": 1,
       "price": 75,
@@ -356,10 +369,10 @@
       "rarity": "rare",
       "slot": "head",
       "armourType": "mail",
-      "stats": {
-        "armour": 18,
-        "vitality": 4,
-        "might": 2
+      "itemLevel": 5,
+      "statSplit": {
+        "stamina": 3,
+        "strength": 2
       },
       "stack": 1,
       "price": 110,
@@ -373,18 +386,470 @@
       "kind": "weapon",
       "rarity": "epic",
       "slot": "mainHand",
-      "damage": [26, 34],
-      "stats": {
-        "might": 4,
-        "vitality": 3,
-        "haste": 5
+      "itemLevel": 5,
+      "speed": 2.4,
+      "statSplit": {
+        "strength": 1,
+        "stamina": 1,
+        "haste": 1
       },
-      "reservedFor": ["seer"],
+      "reservedFor": [
+        "seer"
+      ],
       "stack": 1,
       "price": 260,
       "model": "witchbane",
       "icon": "witchbane",
       "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
+    },
+    {
+      "id": "arming_sword",
+      "name": "Arming sword",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 2,
+      "speed": 2.4,
+      "stack": 1,
+      "price": 18,
+      "model": "arming_sword",
+      "icon": "arming_sword",
+      "description": "A plain one-handed sword, light enough to carry one in each hand if you have the knack."
+    },
+    {
+      "id": "rusty_dirk",
+      "name": "Rusty dirk",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 2,
+      "speed": 1.6,
+      "stack": 1,
+      "price": 14,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A long knife with more rust than edge. Quick in the off hand."
+    },
+    {
+      "id": "militia_sword",
+      "name": "Militia sword",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 4,
+      "speed": 2.5,
+      "statSplit": {
+        "strength": 1
+      },
+      "stack": 1,
+      "price": 55,
+      "model": "militia_sword",
+      "icon": "militia_sword",
+      "description": "Issued to the road militia before there was no road militia. The red grip is newer than the blade."
+    },
+    {
+      "id": "ghoulbone_knife",
+      "name": "Ghoulbone knife",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 4,
+      "speed": 1.7,
+      "statSplit": {
+        "agility": 1,
+        "haste": 1
+      },
+      "stack": 1,
+      "price": 50,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "Someone ground a ghoul's shin bone to an edge. It is lighter than steel and holds a grudge."
+    },
+    {
+      "id": "hunting_bow",
+      "name": "Hunting bow",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "ranged",
+      "weaponType": "bow",
+      "itemLevel": 2,
+      "speed": 2.8,
+      "range": 20,
+      "stack": 1,
+      "price": 20,
+      "model": "hunting_bow",
+      "icon": "hunting_bow",
+      "description": "A yew self bow, fit for deer and anything that has stopped being one. Goes in the ranged slot: Auto Shot looses an arrow at a target beyond the reach of your sword."
+    },
+    {
+      "id": "rough_arrow",
+      "name": "Rough arrow",
+      "kind": "ammo",
+      "rarity": "common",
+      "ammoDps": 0.25,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 1,
+      "model": "arrow_bundle",
+      "icon": "arrow_bundle",
+      "description": "Ash shafts, goose fletching, iron heads hammered out by the hundred. Auto Shot uses one an arrow. Sold by the hundred."
+    },
+    {
+      "id": "barbed_arrow",
+      "name": "Barbed arrow",
+      "kind": "ammo",
+      "rarity": "enhanced",
+      "ammoDps": 0.75,
+      "stack": 200,
+      "buyCount": 100,
+      "price": 6,
+      "model": "arrow_bundle_barbed",
+      "icon": "arrow_bundle_barbed",
+      "description": "Arrows with cruel backward hooks. Each shot hits harder than with rough arrows. Sold by the hundred."
+    },
+    {
+      "id": "leather_quiver",
+      "name": "Leather quiver",
+      "kind": "bag",
+      "rarity": "common",
+      "bagSlots": 6,
+      "holds": "ammo",
+      "rangedHaste": 10,
+      "stack": 1,
+      "price": 25,
+      "model": "quiver",
+      "icon": "quiver",
+      "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
+    },
+    {
+      "id": "tool_pack",
+      "name": "Warden's tool pack",
+      "kind": "bag",
+      "toolPack": true,
+      "holds": ["tool", "torch"],
+      "rarity": "enhanced",
+      "bagSlots": 6,
+      "stack": 1,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "Waxed leather with loops and pockets, from Mara Venn. It has its own slot beside your bags and carries your torch, rods, lockpicks and other tools, so they take no bag space."
+    },
+    {
+      "id": "torch",
+      "name": "Pitch torch",
+      "kind": "torch",
+      "rarity": "common",
+      "slot": "offHand",
+      "light": 9,
+      "stack": 1,
+      "price": 8,
+      "model": "torch",
+      "icon": "torch",
+      "description": "Rags soaked in pitch, bound to a stave. Carried in the off hand, it lights the dark places, at the cost of your shield."
+    },
+    {
+      "id": "fishing_rod",
+      "rod": true,
+      "name": "Fishing rod",
+      "kind": "tool",
+      "rarity": "common",
+      "stack": 1,
+      "price": 10,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Ash and horsehair line. Keep it in your bags to fish, once someone has shown you how. Better rods and bait raise your Fishing skill."
+    },
+    {
+      "id": "yew_fishing_rod",
+      "rod": true,
+      "name": "Yew fishing rod",
+      "kind": "tool",
+      "rarity": "enhanced",
+      "fishingSkill": 10,
+      "stack": 1,
+      "price": 60,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is in your bags, so fish bite more often and are landed more often."
+    },
+    {
+      "id": "cut_bait",
+      "name": "Cut bait",
+      "kind": "material",
+      "rarity": "common",
+      "bait": 5,
+      "stack": 20,
+      "price": 1,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "Strips of hound meat for the hook. +5 Fishing skill for one cast; one is used each time you cast."
+    },
+    {
+      "id": "gloomwater_perch",
+      "name": "Gloomwater perch",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 4,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Striped and bad-tempered. Good eating, by the standards of the road."
+    },
+    {
+      "id": "silver_dace",
+      "name": "Silver dace",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 5,
+      "model": "dace",
+      "icon": "dace",
+      "description": "A quick, bright little fish. Tam says they bite best in the evening."
+    },
+    {
+      "id": "barrow_eel",
+      "name": "Barrow eel",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 30,
+      "model": "eel",
+      "icon": "eel",
+      "description": "Black as the mere's bottom and nearly as old. Tam has caught two in forty years."
+    },
+    {
+      "id": "grilled_perch",
+      "name": "Grilled perch",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 60,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 6,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Charred at the edges, sweet in the middle. Restores 60 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "roast_dace",
+      "name": "Roast dace",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 70,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 7,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Small, bright and gone in three bites. Restores 70 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "hound_steak",
+      "name": "Hound steak",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 90,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 8,
+      "model": "steak",
+      "icon": "steak",
+      "description": "Tough as a boot and twice as filling. Restores 90 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "travellers_stew",
+      "name": "Traveller's stew",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 120,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 12,
+      "model": "stew",
+      "icon": "stew",
+      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "smoked_eel",
+      "name": "Smoked barrow eel",
+      "kind": "consumable",
+      "rarity": "rare",
+      "use": {
+        "food": {
+          "heal": 200,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 40,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Black, rich and faintly sinister. Restores 200 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "old_boot",
+      "name": "Waterlogged boot",
+      "kind": "junk",
+      "rarity": "junk",
+      "stack": 5,
+      "price": 4,
+      "model": "old_boot",
+      "icon": "old_boot",
+      "description": "Somebody's boot. You decide not to wonder where the rest of them is."
+    },
+    {
+      "id": "watch_key",
+      "name": "Watch-post key",
+      "kind": "key",
+      "rarity": "common",
+      "stack": 1,
+      "price": 0,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A heavy iron key on a rotten thong. The watch kept its coffer locked."
+    },
+    {
+      "id": "lockpicks",
+      "name": "Lockpicks",
+      "kind": "tool",
+      "rarity": "common",
+      "stack": 1,
+      "price": 12,
+      "model": "bent_arrowhead",
+      "icon": "bent_arrowhead",
+      "description": "Bent wire and a tension pin. With the Lockpicking skill, they open locks that have lost their keys."
+    },
+    {
+      "id": "greyjaws_fang",
+      "name": "Greyjaw's Fang",
+      "kind": "weapon",
+      "rarity": "rare",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 5,
+      "speed": 1.6,
+      "statSplit": {
+        "agility": 2,
+        "strength": 1
+      },
+      "stack": 1,
+      "price": 90,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "The old hound's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling."
+    },
+    {
+      "id": "bramble_carp",
+      "name": "Bramble carp",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Fat and muddy-gold, it lurks under the reeds. Hester bakes them whole."
+    },
+    {
+      "id": "ghostfin",
+      "name": "Ghostfin",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 45,
+      "model": "dace",
+      "icon": "dace",
+      "description": "Pale enough to see its bones. The mere folk say it only bites for the unlucky, or the very lucky."
+    },
+    {
+      "id": "baked_carp",
+      "name": "Baked carp",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 100,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 9,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Whole, with a crust of salt. Restores 100 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "ghostfin_broth",
+      "name": "Ghostfin broth",
+      "kind": "consumable",
+      "rarity": "rare",
+      "use": {
+        "food": {
+          "heal": 240,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 50,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Clear as rainwater and strangely warming. Restores 240 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "firewood",
+      "name": "Bundle of firewood",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Dry deadfall from the Blackwood, split and tied. It will burn bright and quick."
+    },
+    {
+      "id": "bog_iron_ore",
+      "name": "Lump of bog-iron ore",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Rust-red stone, heavy for its size. Mara can smelt it into something useful."
+    },
+    {
+      "id": "mere_sorrel",
+      "name": "Mere sorrel",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "pine",
+      "icon": "pine",
+      "description": "A sharp-smelling green herb that only grows in the wet ground around the Stillwater Mere."
     }
   ]
 }

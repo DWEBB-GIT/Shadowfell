@@ -16,6 +16,9 @@
 //   data/world.json        regions, roads, shrines, locations, spawns, loot
 //   data/scenery.json      props, clearings, lights
 //   data/text.json         intro, documents, examine text
+//   data/skills.json       skills learned from trainers (camping, fishing, cooking)
+//   data/recipes.json      recipes for crafting skills (cooking)
+//   data/titles.json       titles and how NPCs address you by them
 //
 // See CONTRIBUTING.md for how to add content.
 
@@ -32,6 +35,10 @@ import dialogue from '../../data/dialogue.json';
 import world from '../../data/world.json';
 import scenery from '../../data/scenery.json';
 import text from '../../data/text.json';
+import skills from '../../data/skills.json';
+import factions from '../../data/factions.json';
+import recipes from '../../data/recipes.json';
+import titles from '../../data/titles.json';
 import { validateGameData, indexById } from './schema.js';
 
 export const RAW = {
@@ -48,6 +55,10 @@ export const RAW = {
   'world.json': world,
   'scenery.json': scenery,
   'text.json': text,
+  'skills.json': skills,
+  'factions.json': factions,
+  'recipes.json': recipes,
+  'titles.json': titles,
 };
 
 // Problems found in the data (empty when it is sound). The game logs them at
@@ -65,6 +76,9 @@ export const DB = {
   archetypes: strip(byId(archetypes.archetypes, 'archetypes')),
   abilities: byId(abilities.abilities, 'abilities', /^[a-z][a-zA-Z0-9]*$/),
   globalCooldown: abilities.globalCooldown,
+  spellQueueWindow: abilities.spellQueueWindow,
+  castPushback: abilities.castPushback,
+  maxPushbacks: abilities.maxPushbacks,
   enemies: strip(byId(enemies.enemies, 'enemies')),
   leashDistance: enemies.leashDistance,
   lootTables: byId(lootTables.lootTables, 'lootTables'),
@@ -75,6 +89,16 @@ export const DB = {
   quests: byId(quests.quests, 'quests'),
   dialogues: byId(dialogue.dialogues, 'dialogues'),
   locations: byId(world.locations, 'locations'),
+  skills: byId(skills.skills, 'skills'),
+  factions: byId(factions.factions, 'factions'),
+  recipes: byId(recipes.recipes, 'recipes'),
+  standings: factions.standings,
+  titles: byId(titles.titles, 'titles'),
+  renown: factions.renown,
+  titleLines: { greetings: titles.greetings, farewells: titles.farewells },
+  mockChance: titles.mockChance,
+  water: world.water || [],
+  obscured: world.obscured || [],
   world,
   scenery,
   text,

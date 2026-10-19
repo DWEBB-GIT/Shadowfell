@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildTerrain, heightAt, distanceToRoad, distanceToMainRoad, seededRandom, blackwoodness } from './terrain.js';
-import { BOUNDS, REGIONS, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS } from './layout.js';
+import { BOUNDS, regionById, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS, PADS } from './layout.js';
+import { SIGNPOSTS, signpostLines } from './signposts.js';
 
 const DEG = Math.PI / 180;
 
@@ -41,6 +42,8 @@ export class World {
       }
     }
 
+    this._buildBuildings();
+    this._buildSignposts();
     this._scatterWoodland();
     this._scatterGroundCover();
     this._addLights();
@@ -56,6 +59,12 @@ export class World {
       collision.add(x, z, p.collider * s);
       return;
     }
+    if (p.collider.box) {
+      // a closed box (a cottage): its four walls
+      const [w, d] = p.collider.box.map((v) => v / 2);
+      this._wallColliders(x, z, (p.rotation || 0) * DEG, [[-w, -d, w, -d], [w, -d, w, d], [-w, d, w, d], [-w, -d, -w, d]]);
+      return;
+    }
     // compound collider: offsets in the prop's local space
     const r = (p.rotation || 0) * DEG;
     const cos = Math.cos(r);
@@ -63,6 +72,130 @@ export class World {
     for (const [ox, oz, cr] of p.collider) {
       collision.add(x + (ox * cos + oz * sin) * s, z + (-ox * sin + oz * cos) * s, cr * s);
     }
+  }
+
+  // walls as rows of small circles, from [x1, z1, x2, z2] segments in the
+  // object's own space (rotated by `r` radians)
+  _wallColliders(x, z, r, segments, radius = 0.28, wall = false) {
+    const cos = Math.cos(r);
+    const sin = Math.sin(r);
+    for (const [x1, z1, x2, z2] of segments) {
+      const len = Math.hypot(x2 - x1, z2 - z1);
+      const n = Math.max(1, Math.ceil(len / 0.35));
+      for (let i = 0; i <= n; i++) {
+        const ox = x1 + ((x2 - x1) * i) / n;
+        const oz = z1 + ((z2 - z1) * i) / n;
+        this.game.collision.add(x + ox * cos + oz * sin, z - ox * sin + oz * cos, radius, wall);
+      }
+    }
+  }
+
+  // Buildings you can walk into: the shell (floor, back walls, fittings), the
+  // wall facing the camera and the roof, which fade away while you are inside
+  // so the fixed camera can see in (see updateIndoors).
+  // a post, and an arm turned towards each place it names
+  _buildSignposts() {
+    const { assets, collision } = this.game;
+    for (const sp of SIGNPOSTS) {
+      const [x, z] = sp.position;
+      const y = heightAt(x, z);
+      const post = assets.instance('signpost');
+      post.position.set(x, y, z);
+      this.group.add(post);
+      signpostLines(sp).forEach((l, i) => {
+        const arm = assets.instance('sign_arm');
+        arm.position.set(x, y + 2.05 - i * 0.27, z);
+        arm.rotation.y = l.angle;
+        this.group.add(arm);
+      });
+      collision.add(x, z, 0.3);
+    }
+  }
+
+  _buildBuildings() {
+    const { assets } = this.game;
+    this.buildings = [];
+    for (const b of BUILDINGS) {
+      const [x, z] = b.position;
+      const group = new THREE.Group();
+      group.name = b.id;
+      group.position.set(x, heightAt(x, z) - 0.1, z);
+      group.add(assets.instance(b.shell));
+      const fade = [b.front, b.roof].map((m) => {
+        const obj = assets.instance(m);
+        const mats = [];
+        obj.traverse((o) => {
+          if (!o.isMesh) return;
+          o.material = o.material.clone();
+          o.material.transparent = true;
+          mats.push(o.material);
+        });
+        group.add(obj);
+        return { obj, mats };
+      });
+      if (b.light) {
+        const light = new THREE.PointLight(0xffa050, 4, 10, 1.4);
+        light.position.set(b.light[0], 1.1, b.light[1]);
+        group.add(light);
+        this.flickerLights.push({ light, base: 4, seed: x });
+      }
+      this.group.add(group);
+      this._wallColliders(x, z, 0, b.walls, 0.28, true); // building walls block sight
+      for (const [ox, oz, r] of b.furniture || []) this.game.collision.add(x + ox, z + oz, r);
+      const [w, d] = b.size;
+      this.buildings.push({ def: b, fade, inside: 0, minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
+    }
+    this.indoors = null;
+  }
+
+  // Which building (if any) the Warden stands in; fade its front wall and
+  // roof towards hidden while inside, back again outside.
+  updateIndoors(dt, pos) {
+    this.indoors = null;
+    for (const b of this.buildings || []) {
+      const inside = pos.x > b.minX + 0.1 && pos.x < b.maxX - 0.1 && pos.z > b.minZ + 0.1 && pos.z < b.maxZ - 0.1;
+      if (inside) this.indoors = b;
+      const k = 1 - Math.exp(-8 * dt);
+      b.inside += ((inside ? 1 : 0) - b.inside) * (dt > 0 ? k : 1);
+      for (const f of b.fade) {
+        const o = 1 - b.inside * (f === b.fade[1] ? 1 : 0.85);
+        for (const m of f.mats) {
+          m.opacity = o;
+          m.depthWrite = o > 0.95;
+        }
+        f.obj.visible = o > 0.02;
+      }
+    }
+    return this.indoors;
+  }
+
+  // true if (x, z) is inside a building whose roof is still showing (you are
+  // not in there), so its labels stay hidden under it
+  roofOver(x, z) {
+    for (const b of this.buildings || []) {
+      if (x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ) return b.inside < 0.5;
+    }
+    return false;
+  }
+
+  // 0 outside, rising to 1 inside a building (the camera closes in)
+  get indoorBlend() {
+    return Math.max(0, ...(this.buildings || []).map((b) => b.inside));
+  }
+
+  // Not on a building (with room to walk round it), a levelled pad, or a
+  // prop that has a box collider (the cottages).
+  _clearOfTown(x, z) {
+    for (const b of BUILDINGS) {
+      const [w, d] = b.size;
+      if (Math.abs(x - b.position[0]) < w / 2 + 3 && Math.abs(z - b.position[1]) < d / 2 + 3) return false;
+    }
+    for (const [px, pz, r] of PADS) if (Math.hypot(x - px, z - pz) < r + 2) return false;
+    for (const p of PROPS) {
+      const box = p.collider?.box;
+      if (box && Math.abs(x - p.position[0]) < box[0] / 2 + 3 && Math.abs(z - p.position[1]) < box[1] / 2 + 3) return false;
+    }
+    return true;
   }
 
   _clear(x, z, margin = 0) {
@@ -77,7 +210,7 @@ export class World {
     // The Fallen Road's woodland, laid out exactly as it always has been
     // (same seed, same bounds), less whatever now stands on the forest
     // track or beyond the old northern edge, where the Blackwood begins.
-    const road = REGIONS[0].bounds;
+    const road = regionById('fallen_road').bounds;
     const rand = seededRandom(1999);
     const pines = [];
     const dead = [];
@@ -99,13 +232,14 @@ export class World {
       if (inside && rand() < 0.12) dead.push(entry);
       else pines.push(entry);
     }
-    const keep = (t) => t.z > -47 && distanceToRoad(t.x, t.z) >= 3.4;
+    // (south of z 49 is Brackenford now, which plants its own)
+    const keep = (t) => t.z > -47 && t.z < 49 && distanceToRoad(t.x, t.z) >= 3.4;
     const roadPines = pines.filter(keep);
     const roadDead = dead.filter(keep);
     for (const t of [...roadPines, ...roadDead]) if (t.collide) collision.add(t.x, t.z, 0.45 * t.s);
 
     // The Blackwood: black pines, close-set, with the track the only clear way.
-    const bw = REGIONS[1].bounds;
+    const bw = regionById('blackwood').bounds;
     const rb = seededRandom(2024);
     const black = [];
     const bwDead = [];
@@ -126,9 +260,27 @@ export class World {
       else black.push(entry);
       if (inside || edge > -3) collision.add(x, z, 0.45 * s);
     }
+    // Brackenford: a few pines about the town and a wood at its edges, never
+    // on the road, a pad (the ground levelled for a building) or a building
+    const town = regionById('brackenford').bounds;
+    const rt = seededRandom(1213);
+    const townPines = [];
+    for (let i = 0; i < 2400 && townPines.length < 160; i++) {
+      const x = town.minX - pad + rt() * (town.maxX - town.minX + pad * 2);
+      const z = town.minZ + rt() * (town.maxZ - town.minZ + pad);
+      const inside = x >= town.minX && x <= town.maxX && z <= town.maxZ;
+      const edge = Math.min(x - town.minX, town.maxX - x, town.maxZ - z);
+      if (distanceToMainRoad(x, z) < 4.2 || !this._clear(x, z) || !this._clearOfTown(x, z)) continue;
+      const density = !inside ? 0.85 : edge < 5 ? 0.6 : 0.06;
+      if (rt() > density) continue;
+      if (townPines.some((p) => Math.hypot(p.x - x, p.z - z) < (inside ? 3.2 : 2.1))) continue;
+      const s = 0.8 + rt() * 0.7;
+      townPines.push({ x, z, s, r: rt() * Math.PI * 2 });
+      if (inside || edge > -3) collision.add(x, z, 0.45 * s);
+    }
     // for the minimap
-    this.mapTrees = [...roadPines, ...roadDead, ...bwDead, ...black].map((t) => [t.x, t.z]);
-    this._instanced('pine', roadPines);
+    this.mapTrees = [...roadPines, ...townPines, ...roadDead, ...bwDead, ...black].map((t) => [t.x, t.z]);
+    this._instanced('pine', roadPines.concat(townPines));
     this._instanced('dead_tree', roadDead.concat(bwDead));
     this._instanced('black_pine', black);
   }
@@ -211,7 +363,7 @@ export class World {
     blade.computeVertexNormals();
     const mat = new THREE.MeshLambertMaterial({ color: 0x4a5a32, side: THREE.DoubleSide });
     const rand = seededRandom(77);
-    const count = 3600;
+    const count = Math.round(3600 * ((BOUNDS.maxZ - BOUNDS.minZ + 12) / 184)); // the same density as the first map
     const mesh = new THREE.InstancedMesh(blade, mat, count);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -222,6 +374,7 @@ export class World {
       const z = BOUNDS.minZ - 6 + rand() * (BOUNDS.maxZ - BOUNDS.minZ + 12);
       const road = distanceToRoad(x, z);
       if (road < 1.6 && rand() > 0.15) continue; // a few tufts break through the road
+      if ((this.buildings || []).some((b) => x > b.minX - 0.3 && x < b.maxX + 0.3 && z > b.minZ - 0.3 && z < b.maxZ + 0.3)) continue; // not through a floor
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI);
       const s = 0.6 + rand() * 0.9;
       m.compose(new THREE.Vector3(x, heightAt(x, z) - 0.02, z), q, new THREE.Vector3(s, s * (0.7 + rand() * 0.8), s));

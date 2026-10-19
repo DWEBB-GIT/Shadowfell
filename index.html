@@ -14,19 +14,27 @@
     <div id="title-area" class="panel">
       <div class="game-title">SHADOWFALL</div>
       <div class="region">The Fallen Road</div>
+      <div id="hud-build" class="build-tag"></div>
     </div>
 
     <div id="char-panel" class="panel">
-      <div class="row"><span class="label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
+      <div class="row"><span class="label" id="char-name-label">Warden</span><span class="label">Level <b id="stat-level">1</b></span></div>
       <div class="bar hp"><div id="hp-fill" class="fill"></div><span id="hp-text" class="bar-text"></span></div>
+      <div id="mp-bar" class="bar mp thin"><div id="mp-fill" class="fill"></div><span id="mp-text" class="bar-text"></span></div>
+      <div id="gauge-bar" class="bar gauge thin"><div id="gauge-fill" class="fill"></div><span id="gauge-text" class="bar-text"></span></div>
+      <div id="combo-pips" class="pips" hidden></div>
       <div id="buffs" class="auras"></div>
     </div>
 
     <div id="target-frame" class="panel" hidden>
-      <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
-      <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
-      <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
-      <div id="target-auras" class="auras"></div>
+      <div id="target-portrait"><img id="target-img" alt=""><span id="target-level">1</span></div>
+      <div id="target-body">
+        <div class="row"><span id="target-name"></span><span id="target-label" class="label"></span></div>
+        <div class="bar hp"><div id="target-fill" class="fill"></div><span id="target-text" class="bar-text"></span></div>
+        <div id="target-mana-bar" class="bar mp" hidden><div id="target-mana" class="fill"></div><span id="target-mana-text" class="bar-text"></span></div>
+        <div id="target-stagger-bar" class="bar stagger" hidden><div id="target-stagger" class="fill"></div><span id="target-stagger-text" class="bar-text"></span></div>
+        <div id="target-auras" class="auras"></div>
+      </div>
     </div>
 
     <!-- top right: the minimap, and the tracked quests under it -->
@@ -42,26 +50,38 @@
     <ul id="log"></ul>
     <div id="prompt" hidden></div>
     <div id="enemy-bars"></div>
+    <div id="world-labels"></div>
     <div id="damage-numbers"></div>
     <div id="toast"></div>
+    <div id="ui-error"></div>
     <div id="levelup" class="panel" hidden><div id="levelup-title"></div><div id="levelup-list"></div></div>
-    <div id="mute-indicator" hidden>Sound off (M)</div>
+    <div id="mute-indicator" hidden>Sound off (Settings, O)</div>
 
     <!-- bottom of the screen: experience, spell bar, menus and bag slots -->
     <div id="cast-bar" class="bar cast" hidden><div id="cast-fill" class="fill"></div><span id="cast-text" class="bar-text"></span></div>
+    <!-- the weapon swing timer sits where the cast bar does (the cast bar shows above it) -->
+    <div id="swing-bar" class="bar swing" hidden><div id="swing-fill" class="fill"></div><span id="swing-text" class="bar-text"></span></div>
+    <div id="swing-bar-off" class="bar swing" hidden><div id="swing-fill-off" class="fill"></div><span id="swing-text-off" class="bar-text"></span></div>
+    <!-- centre: experience and the spell and utility bars -->
     <div id="bottom-bar">
-      <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><span id="xp-text" class="bar-text"></span></div>
+      <div id="xp-bar" class="bar xp"><div id="xp-fill" class="fill"></div><div id="xp-rested"></div><span id="xp-text" class="bar-text"></span></div>
       <div id="bar-row">
         <div id="action-bar" class="panel"></div>
-        <div id="micro-bar" class="panel">
-          <button class="micro" id="btn-character" title="Character (C)"><span class="micro-icon">&#9876;</span><span class="key" data-kbm="C" data-pad="View"></span></button>
-          <button class="micro" id="btn-spellbook" title="Spellbook (P)"><span class="micro-icon">&#10022;</span><span class="key" data-kbm="P" data-pad="&#8593;"></span></button>
-          <button class="micro" id="btn-quests" title="Quest log (L)"><span class="micro-icon">!</span><span class="key" data-kbm="L" data-pad="&#8594;"></span></button>
-          <button class="micro" id="btn-save" title="Save (K)"><span class="micro-icon">&#10003;</span><span class="key" data-kbm="K" data-pad="&#8595;"></span></button>
-          <div class="coins" title="Coins"><span class="coin-dot"></span><b id="stat-coins">0</b></div>
-          <div id="bag-sockets"></div>
-        </div>
       </div>
+    </div>
+    <!-- bottom right, in one row (Dan, 2026-10-16): the menus, the bag
+         slots, and money in the corner -->
+    <div id="right-dock">
+      <div id="micro-bar" class="panel">
+        <button class="micro" id="btn-character" data-tip="Character"><span class="micro-icon">&#9876;</span><span class="key" data-key-action="character" data-kbm="C" data-pad="View"></span></button>
+        <button class="micro" id="btn-spellbook" data-tip="Spells"><span class="micro-icon">&#10022;</span><span class="key" data-key-action="spellbook" data-kbm="P" data-pad="&#8593;"></span></button>
+        <button class="micro" id="btn-skills" data-tip="Professions"><span class="micro-icon">&#9874;</span><span class="key" data-key-action="skills" data-kbm="U" data-pad=""></span></button>
+        <button class="micro" id="btn-talents" data-tip="Talents"><span class="micro-icon">&#10048;</span><span class="key" data-key-action="talents" data-kbm="N" data-pad=""></span></button>
+        <button class="micro" id="btn-quests" data-tip="Quest Log"><span class="micro-icon">!</span><span class="key" data-key-action="quests" data-kbm="L" data-pad="&#8594;"></span></button>
+        <button class="micro" id="btn-settings" data-tip="Settings"><span class="micro-icon">&#9776;</span><span class="key" data-key-action="settings" data-kbm="O" data-pad=""></span></button>
+      </div>
+      <div id="bag-dock" class="panel"><div id="bag-sockets"></div></div>
+      <div class="coins panel" title="Money"><span id="stat-coins"></span></div>
     </div>
   </div>
 
@@ -71,31 +91,76 @@
   </div>
 
   <div id="character-window" class="window panel" hidden>
-    <div class="window-head"><h2>Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
+    <div class="window-head"><h2 id="character-title">Warden</h2><button class="btn small" data-close-panel="character">&times;</button></div>
+    <div id="char-page-main">
     <div class="char-body">
       <div class="equip-col" id="equip-left"></div>
       <div class="char-figure">
+        <canvas id="char-model" title="Drag to turn"></canvas>
         <div class="figure-shape"></div>
-        <div id="char-stats"></div>
       </div>
       <div class="equip-col" id="equip-right"></div>
     </div>
+    <div class="equip-bottom" id="equip-bottom"></div>
+    <div id="char-stats"></div>
     <div class="window-hint" id="char-hint"></div>
+    </div>
+    <div id="char-rep" hidden></div>
+    <div id="char-titles" hidden></div>
+    <div class="char-tabs"><button class="char-tab active" data-char-tab="main">Character</button><button class="char-tab" data-char-tab="rep">Reputation</button><button class="char-tab" data-char-tab="titles">Titles</button></div>
   </div>
 
   <div id="spellbook-window" class="window panel" hidden>
-    <div class="window-head"><h2>Spellbook</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
+    <div class="window-head"><h2>Spells</h2><button class="btn small" data-close-panel="spellbook">&times;</button></div>
     <div id="spellbook-list"></div>
     <div class="window-hint" id="spellbook-hint"></div>
   </div>
+
+  <div id="skills-window" class="window panel" hidden>
+    <div class="window-head"><h2>Professions</h2><button class="btn small" data-close-panel="skills">&times;</button></div>
+    <div id="skills-list"></div>
+    <div class="window-hint">Professions are learned from trainers and rise as you use them. Drag an ability onto your bar.</div>
+  </div>
+
+  <div id="settings-window" class="window panel" hidden>
+    <div class="window-head"><h2>Settings</h2><button class="btn small" data-close-panel="settings">&times;</button></div>
+    <div id="settings-list"></div>
+    <h3 class="set-head">Key bindings</h3>
+    <div class="set-buttons"><button class="btn small" id="quick-bind">Quick bind</button><button class="btn small" id="keys-reset">Reset to defaults</button></div>
+    <div id="keybind-list"></div>
+    <div class="set-buttons"><button class="btn small" id="btn-save">Save the game</button><button class="btn small" id="btn-logout">Save and return to characters</button></div>
+  </div>
+
+  <div id="talents-window" class="window panel" hidden>
+    <div class="window-head"><h2>Talents</h2><button class="btn small" data-close-panel="talents">&times;</button></div>
+    <p class="dim">Talent trees arrive in a later build. You will earn a point each level from 10 and spend them here.</p>
+  </div>
+
+  <div id="cooking-window" class="window panel" hidden>
+    <div class="window-head"><h2>Cooking</h2><button class="btn small" data-close-panel="cooking">&times;</button></div>
+    <div id="cooking-rank"></div>
+    <div id="cooking-fire" class="dim"></div>
+    <div id="cooking-list"></div>
+  </div>
+
+  <div id="quick-bind-banner" hidden>Quick bind: hover a spell or utility bar slot and press a key. Esc when done.</div>
 
   <div id="shop-window" class="window panel" hidden>
     <div class="window-head"><h2 id="shop-name"></h2><span id="shop-title" class="dim"></span><button class="btn small" id="shop-close">&times;</button></div>
     <div id="shop-stock"></div>
     <div class="shop-sub dim">Buy back</div>
     <div id="shop-buyback"></div>
-    <div class="bag-foot"><span class="coin-dot"></span><b id="shop-coins"></b> coins</div>
+    <div class="bag-foot"><button class="btn small" id="shop-back" hidden>&#8617; Back</button><button class="btn small" id="shop-repair" hidden>Repair all</button><span id="shop-coins"></span></div>
     <div class="window-hint" id="shop-hint"></div>
+  </div>
+
+  <!-- a trainer's window, like the shop: what they teach, its cost, Learn -->
+  <div id="trainer-window" class="window panel" hidden>
+    <div class="window-head"><h2 id="train-name"></h2><span class="dim">Trainer</span><button class="btn small" id="train-close">&times;</button></div>
+    <p id="train-text" class="dim"></p>
+    <div id="train-list"></div>
+    <div class="bag-foot"><button class="btn small" id="train-back">&#8617; Back</button><span id="train-coins"></span></div>
+    <div class="window-hint" id="train-hint"></div>
   </div>
 
   <!-- WoW-style conversation: greeting, quests, things to ask, the shop -->
@@ -128,47 +193,105 @@
     <div class="death-panel">
       <h1>You have fallen</h1>
       <p id="death-text"></p>
-      <button id="respawn-btn" class="btn">Return to the last shrine</button>
+      <button id="respawn-btn" class="btn">Release spirit</button>
     </div>
   </div>
 
-  <div id="title-screen" class="modal dark" hidden>
-    <div class="title-panel">
-      <h1>SHADOWFALL</h1>
-      <div class="sub">The Fallen Road &middot; first playable</div>
-      <p id="intro-text"></p>
-      <p id="title-note" class="warn" hidden></p>
-      <div class="title-buttons">
-        <button id="continue-btn" class="btn" hidden>Continue</button>
-        <button id="new-btn" class="btn">Begin</button>
+  <!-- the title screen, character select and character creation: one modal,
+       three views (src/ui/titleUI.js). The world stays paused behind it. -->
+  <div id="title-screen" class="modal title-modal" hidden>
+    <div id="title-main" class="title-view">
+      <div class="title-panel">
+        <div class="title-crest">&#10016;</div>
+        <h1>SHADOWFALL</h1>
+        <div class="sub"><span id="title-tagline"></span> &middot; <span id="title-build"></span></div>
+        <div id="title-version" class="build-tag"></div>
+        <p id="intro-text"></p>
+        <p id="title-note" class="warn" hidden></p>
+        <div class="title-menu">
+          <button id="continue-btn" class="btn title-btn" data-nav hidden><span class="tb-main">Continue</span><span class="tb-sub" id="continue-who"></span></button>
+          <button id="chars-btn" class="btn title-btn" data-nav hidden><span class="tb-main">Characters</span></button>
+          <button id="new-btn" class="btn title-btn" data-nav><span class="tb-main">New character</span></button>
+          <button id="controls-btn" class="btn title-btn" data-nav><span class="tb-main">Controls</span></button>
+        </div>
+        <div id="title-controls" hidden>
+        <div class="controls-wrap">
+          <table class="controls">
+            <tr><th colspan="2">Keyboard and mouse</th></tr>
+            <tr><td>WASD / arrow keys</td><td>Move</td></tr>
+            <tr><td>Left click</td><td>Select an enemy or person; loot</td></tr>
+            <tr><td>Right click</td><td>Auto attack an enemy; talk; loot</td></tr>
+            <tr><td>1 &middot; 2 &middot; 3 &middot; 4 &middot; Q &middot; E</td><td>The six spell slots (E: Brace)</td></tr>
+            <tr><td>Shift-1 to Shift-4</td><td>The four utility slots (draught, torch, fishing...)</td></tr>
+            <tr><td>Space</td><td>Interact / loot everything nearby</td></tr>
+            <tr><td>Tab</td><td>Next target</td></tr>
+            <tr><td>Mouse wheel</td><td>Zoom the camera</td></tr>
+            <tr><td>B &middot; C &middot; P &middot; L</td><td>Bags &middot; Character &middot; Spellbook &middot; Quest log</td></tr>
+            <tr><td>K &middot; O &middot; Esc</td><td>Save &middot; Settings (keys, sound, click to move) &middot; Close / clear target</td></tr>
+          </table>
+          <table class="controls">
+            <tr><th colspan="2">Gamepad</th></tr>
+            <tr><td>Left stick</td><td>Move</td></tr>
+            <tr><td>Right stick</td><td>Aim</td></tr>
+            <tr><td>RT</td><td>Auto attack the target (or who is ahead)</td></tr>
+            <tr><td>R3 (stick click)</td><td>Next target</td></tr>
+            <tr><td>X &middot; Y &middot; RB</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
+            <tr><td>LB &middot; LT</td><td>Spell-bar slots 4 and 5</td></tr>
+            <tr><td>B</td><td>Brace</td></tr>
+            <tr><td>A</td><td>Interact / loot / confirm</td></tr>
+            <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
+            <tr><td>D-pad up &middot; down &middot; right</td><td>Spellbook &middot; Save &middot; Quest log</td></tr>
+          </table>
+        </div>
+        </div>
       </div>
-      <div class="controls-wrap">
-        <table class="controls">
-          <tr><th colspan="2">Keyboard and mouse</th></tr>
-          <tr><td>WASD</td><td>Move</td></tr>
-          <tr><td>Left click</td><td>Select an enemy or person; loot</td></tr>
-          <tr><td>Right click</td><td>Auto attack an enemy; talk; loot</td></tr>
-          <tr><td>1 &middot; 2 &middot; 3 / Q</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
-          <tr><td>5</td><td>Attack (auto attack on / off)</td></tr>
-          <tr><td>Space</td><td>Brace (blocks the next blow)</td></tr>
-          <tr><td>Tab</td><td>Next target</td></tr>
-          <tr><td>E</td><td>Interact / loot everything nearby</td></tr>
-          <tr><td>B &middot; C &middot; P &middot; L</td><td>Bags &middot; Character &middot; Spellbook &middot; Quest log</td></tr>
-          <tr><td>K &middot; M &middot; Esc</td><td>Save &middot; Sound &middot; Close / clear target</td></tr>
-        </table>
-        <table class="controls">
-          <tr><th colspan="2">Gamepad</th></tr>
-          <tr><td>Left stick</td><td>Move</td></tr>
-          <tr><td>Right stick</td><td>Aim</td></tr>
-          <tr><td>RT</td><td>Auto attack the target (or who is ahead)</td></tr>
-          <tr><td>R3 (stick click)</td><td>Next target</td></tr>
-          <tr><td>X &middot; Y &middot; RB</td><td>Lunge &middot; Shield Break &middot; Healing draught</td></tr>
-          <tr><td>LB &middot; LT</td><td>Spell-bar slots 4 and 5</td></tr>
-          <tr><td>B</td><td>Brace</td></tr>
-          <tr><td>A</td><td>Interact / loot / confirm</td></tr>
-          <tr><td>Start &middot; View</td><td>Bags &middot; Character</td></tr>
-          <tr><td>D-pad up &middot; down &middot; right</td><td>Spellbook &middot; Save &middot; Quest log</td></tr>
-        </table>
+      <div class="title-foot"><span id="title-foot-build"></span> &middot; saves are kept in this browser &middot; <span class="key-hint" data-kbm="&#8593;&#8595; Enter" data-pad="D-pad &middot; A"></span></div>
+    </div>
+
+    <div id="title-select" class="title-view" hidden>
+      <div class="select-side panel">
+        <h2>Characters</h2>
+        <div id="char-count" class="dim"></div>
+        <div id="char-list"></div>
+        <div class="select-actions">
+          <button id="create-new-btn" class="btn" data-nav>Create new</button>
+          <button id="delete-btn" class="btn" data-nav>Delete</button>
+          <button id="select-back" class="btn" data-nav>Back</button>
+        </div>
+        <div id="delete-confirm" hidden>
+          <p id="delete-text"></p>
+          <div class="select-actions">
+            <button id="delete-yes" class="btn danger" data-nav>Delete for ever</button>
+            <button id="delete-no" class="btn" data-nav>Keep</button>
+          </div>
+        </div>
+      </div>
+      <div class="select-center">
+        <div id="sel-name" class="hero-name"></div>
+        <div id="sel-line" class="hero-line"></div>
+        <button id="enter-btn" class="btn enter-btn" data-nav>Enter world</button>
+        <div class="key-hint" data-kbm="&#8593;&#8595; choose &middot; Enter play &middot; Del delete &middot; Esc back" data-pad="D-pad choose &middot; A play &middot; Y delete &middot; B back"></div>
+      </div>
+    </div>
+
+    <div id="title-create" class="title-view" hidden>
+      <div class="create-side panel">
+        <h2>Create a character</h2>
+        <div class="field-label">Class</div>
+        <div id="class-list"></div>
+      </div>
+      <div class="select-center">
+        <div id="class-detail" class="panel"></div>
+        <div class="name-row">
+          <input id="char-name" maxlength="25" spellcheck="false" autocomplete="off" placeholder="Name" data-nav>
+          <button id="name-random" class="btn" data-nav title="Random name">&#9860;</button>
+        </div>
+        <div id="create-error" class="warn"></div>
+        <div class="select-actions center">
+          <button id="create-back" class="btn" data-nav>Back</button>
+          <button id="create-confirm" class="btn enter-btn" data-nav>Create and enter</button>
+        </div>
+        <div class="key-hint" data-kbm="Type a name &middot; Enter create &middot; Esc back" data-pad="D-pad choose &middot; A select &middot; Y random name &middot; B back"></div>
       </div>
     </div>
   </div>

@@ -7,7 +7,6 @@ export class AudioSystem {
   constructor(game) {
     this.game = game;
     this.ctx = null;
-    this.muted = false;
     this.nextCrow = 6;
     this.nextBell = 18;
     this.nextCreak = 10;
@@ -20,9 +19,15 @@ export class AudioSystem {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
       this.ctx = new Ctx();
+      // Settings has a volume for each: master, effects, ambience
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.7;
       this.master.connect(this.ctx.destination);
+      this.sfx = this.ctx.createGain();
+      this.sfx.connect(this.master);
+      this.amb = this.ctx.createGain();
+      this.amb.connect(this.master);
+      this.applyVolumes();
+      this.game.events.on('settingsChanged', ({ id }) => id.startsWith('vol') && this.applyVolumes());
       this.noise = this._noiseBuffer();
       this._startWind();
       this._startRumble();
@@ -33,18 +38,26 @@ export class AudioSystem {
     }
   }
 
-  toggleMute() {
-    this.muted = !this.muted;
-    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : 0.7, this.ctx.currentTime, 0.05);
-    return this.muted;
+  // the Settings sliders (percent); loudness follows the square, as ears do
+  applyVolumes() {
+    if (!this.ctx) return;
+    const set = (node, id) => node.gain.setTargetAtTime((this.game.settings.get(id) / 100) ** 2, this.ctx.currentTime, 0.05);
+    set(this.master, 'volMaster');
+    set(this.sfx, 'volEffects');
+    set(this.amb, 'volAmbience');
+    this.game.hud?.setMuted(this.game.settings.get('volMaster') === 0);
   }
 
   _bind() {
     const ev = this.game.events;
     ev.on('playerSwing', () => this.whoosh(0.18, 900));
     ev.on('playerMiss', () => {});
-    ev.on('enemyHit', ({ kind }) => (kind === 'strike' ? this.impact() : null));
-    ev.on('shieldBreak', () => this.shieldBreak());
+    ev.on('enemyHit', ({ kind, crit }) => {
+      if (kind !== 'strike') return;
+      this.impact();
+      if (crit) this.thud(90, 0.3); // a crit lands with a deeper crunch
+    });
+    ev.on('burst', () => this.shieldBreak());
     ev.on('playerBrace', () => this.thud(180, 0.12));
     ev.on('braceBlock', () => {
       this.impact();
@@ -115,7 +128,7 @@ export class AudioSystem {
     const lfo2Gain = this.ctx.createGain();
     lfo2Gain.gain.value = 0.03;
     lfo2.connect(lfo2Gain).connect(gain.gain);
-    src.connect(filter).connect(gain).connect(this.master);
+    src.connect(filter).connect(gain).connect(this.amb);
     src.start();
     lfo.start();
     lfo2.start();
@@ -130,7 +143,7 @@ export class AudioSystem {
     filter.frequency.value = 90;
     this.rumbleGain = this.ctx.createGain();
     this.rumbleGain.gain.value = 0;
-    osc.connect(filter).connect(this.rumbleGain).connect(this.master);
+    osc.connect(filter).connect(this.rumbleGain).connect(this.amb);
     osc.start();
   }
 
@@ -145,7 +158,7 @@ export class AudioSystem {
     f.frequency.exponentialRampToValueAtTime(freq * 1.6, t + dur);
     const g = this.ctx.createGain();
     this._env(g, t, dur * 0.4, 0.18, dur * 0.6);
-    src.connect(f).connect(g).connect(this.master);
+    src.connect(f).connect(g).connect(this.sfx);
     src.start(t, Math.random());
     src.stop(t + dur + 0.05);
   }
@@ -162,7 +175,7 @@ export class AudioSystem {
     f.frequency.value = 1200;
     const g = this.ctx.createGain();
     this._env(g, t, 0.003, 0.05, 0.08);
-    o.connect(f).connect(g).connect(this.master);
+    o.connect(f).connect(g).connect(this.sfx);
     o.start(t);
     o.stop(t + 0.1);
   }
@@ -175,7 +188,7 @@ export class AudioSystem {
     o.frequency.exponentialRampToValueAtTime(freq * 0.4, t + dur);
     const g = this.ctx.createGain();
     this._env(g, t, 0.005, 0.35, dur);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(this.sfx);
     o.start(t);
     o.stop(t + dur + 0.05);
     const n = this._noiseSource();
@@ -184,7 +197,7 @@ export class AudioSystem {
     f.frequency.value = 900;
     const ng = this.ctx.createGain();
     this._env(ng, t, 0.003, 0.25, dur * 0.6);
-    n.connect(f).connect(ng).connect(this.master);
+    n.connect(f).connect(ng).connect(this.sfx);
     n.start(t, Math.random());
     n.stop(t + dur);
   }
@@ -200,7 +213,7 @@ export class AudioSystem {
     f.frequency.value = 2400;
     const g = this.ctx.createGain();
     this._env(g, t, 0.002, 0.2, 0.25);
-    n.connect(f).connect(g).connect(this.master);
+    n.connect(f).connect(g).connect(this.sfx);
     n.start(t, Math.random());
     n.stop(t + 0.3);
   }
@@ -217,7 +230,7 @@ export class AudioSystem {
     f.frequency.value = freq * 5;
     const g = this.ctx.createGain();
     this._env(g, t, dur * 0.3, 0.12, dur * 0.7);
-    o.connect(f).connect(g).connect(this.master);
+    o.connect(f).connect(g).connect(this.sfx);
     o.start(t);
     o.stop(t + dur + 0.05);
   }
@@ -237,7 +250,7 @@ export class AudioSystem {
       o.frequency.value = fr;
       const g = this.ctx.createGain();
       this._env(g, t, 0.01, 0.07, 0.9);
-      o.connect(g).connect(this.master);
+      o.connect(g).connect(this.sfx);
       o.start(t);
       o.stop(t + 1);
     });
@@ -252,14 +265,14 @@ export class AudioSystem {
       o.frequency.value = 2200 + Math.random() * 900;
       const g = this.ctx.createGain();
       this._env(g, t, 0.002, 0.025, 0.12);
-      o.connect(g).connect(this.master);
+      o.connect(g).connect(this.sfx);
       o.start(t);
       o.stop(t + 0.15);
     }
   }
 
   // a distant, slightly detuned bell
-  bell(level = 0.06, base = 196) {
+  bell(level = 0.06, base = 196, out = this.sfx) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     [1, 2.01, 2.76, 5.4].forEach((ratio, i) => {
@@ -267,7 +280,7 @@ export class AudioSystem {
       o.frequency.value = base * ratio;
       const g = this.ctx.createGain();
       this._env(g, t, 0.01, level / (i + 1), 3.5 / (i * 0.5 + 1));
-      o.connect(g).connect(this.master);
+      o.connect(g).connect(out);
       o.start(t);
       o.stop(t + 4);
     });
@@ -286,7 +299,7 @@ export class AudioSystem {
       f.frequency.linearRampToValueAtTime(900, t + 0.18);
       const g = this.ctx.createGain();
       this._env(g, t, 0.02, 0.05, 0.18);
-      n.connect(f).connect(g).connect(this.master);
+      n.connect(f).connect(g).connect(this.amb);
       n.start(t, Math.random());
       n.stop(t + 0.25);
     }
@@ -305,7 +318,7 @@ export class AudioSystem {
     f.Q.value = 8;
     const g = this.ctx.createGain();
     this._env(g, t, 0.3, 0.025, 0.6);
-    o.connect(f).connect(g).connect(this.master);
+    o.connect(f).connect(g).connect(this.amb);
     o.start(t);
     o.stop(t + 1);
   }
@@ -320,7 +333,7 @@ export class AudioSystem {
       this.nextCrow = 14 + Math.random() * 20;
     }
     if (this.nextBell <= 0) {
-      this.bell(0.035, 180 + Math.random() * 30);
+      this.bell(0.035, 180 + Math.random() * 30, this.amb);
       this.nextBell = 35 + Math.random() * 40;
     }
     if (this.nextCreak <= 0) {

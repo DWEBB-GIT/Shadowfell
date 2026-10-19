@@ -1,10 +1,17 @@
-import { ITEMS, EQUIP_SLOTS, BAG_SOCKETS, RARITY, sellPrice, itemView } from '../data/items.js';
+import { DB } from '../data/db.js';
+import { signpostLines } from '../world/signposts.js';
+import { ITEMS, EQUIP_SLOTS, TOOL_SOCKET, RARITY, sellPrice, itemView, durability } from '../data/items.js';
+import { moneyText, moneyHTML } from './money.js';
+import { SETTINGS } from '../systems/settings.js';
+import { missingGear, requirementText } from '../systems/spells.js';
 import { BUTTONS } from '../core/gamepad.js';
-import { ABILITIES } from '../systems/actionBar.js';
+import { ABILITIES, barAbility, itemRef, entryName } from '../systems/actionBar.js';
 import { CONFIG } from '../config.js';
 import { mitigation } from '../systems/stats.js';
+import { AMMO_LOC } from '../systems/inventory.js';
+import { CharPreview } from './charPreview.js';
 
-const STAT_LABEL = { strength: 'Strength', agility: 'Agility', stamina: 'Stamina', might: 'Might', finesse: 'Finesse', intellect: 'Intellect', vitality: 'Vitality', armour: 'armour', resistance: 'resistance', block: '% block chance', blockRating: 'block rating', haste: '% haste' };
+const STAT_LABEL = { stamina: 'Stamina', strength: 'Strength', agility: 'Agility', intellect: 'Intellect', armour: 'armour', resistance: 'resistance', block: '% block chance', haste: '% haste' };
 
 // Bags, the character panel, the spellbook, and the bag slots and spell bar
 // on the bottom bar. None of these pause the game.
@@ -21,14 +28,14 @@ const STAT_LABEL = { strength: 'Strength', agility: 'Agility', stamina: 'Stamina
 // Every action is a request to the Inventory, which decides what is allowed.
 
 const $ = (id) => document.getElementById(id);
-const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
+const KIND_LABEL = { weapon: 'Weapon', armor: 'Armour', shield: 'Shield', bag: 'Bag', ammo: 'Arrows', consumable: 'Consumable', material: 'Material', junk: 'Junk', document: 'Document' };
 
 export class ItemUI {
   constructor(game, hud) {
     this.game = game;
     this.hud = hud;
     this.openBags = new Set(); // socket indices whose bag window is open
-    this.open = { character: false, spellbook: false };
+    this.open = { character: false, spellbook: false, skills: false, settings: false, talents: false, cooking: false };
     this.icons = {};
     this.drag = null; // { from, x0, y0, moved }
     this.focus = null; // gamepad highlight: a location string
@@ -45,6 +52,14 @@ export class ItemUI {
       spellbook: $('spellbook-window'),
       spellList: $('spellbook-list'),
       spellHint: $('spellbook-hint'),
+      skills: $('skills-window'),
+      settings: $('settings-window'),
+      talents: $('talents-window'),
+      cooking: $('cooking-window'),
+      cookList: $('cooking-list'),
+      cookRank: $('cooking-rank'),
+      cookFire: $('cooking-fire'),
+      skillList: $('skills-list'),
       shop: $('shop-window'),
       shopName: $('shop-name'),
       shopTitle: $('shop-title'),
@@ -55,11 +70,41 @@ export class ItemUI {
       tooltip: $('tooltip'),
       ghost: $('drag-ghost'),
     };
+    this.preview = new CharPreview(game, $('char-model'));
 
     $('btn-character').addEventListener('click', () => this.toggle('character'));
     $('btn-spellbook').addEventListener('click', () => this.toggle('spellbook'));
+    // tabs along the bottom of the character window: Character, Reputation, Titles
+    document.querySelectorAll('[data-char-tab]').forEach((b) => b.addEventListener('click', () => {
+      const tab = b.dataset.charTab;
+      $('char-page-main').hidden = tab !== 'main';
+      $('char-rep').hidden = tab !== 'rep';
+      $('char-titles').hidden = tab !== 'titles';
+      document.querySelectorAll('[data-char-tab]').forEach((t) => t.classList.toggle('active', t === b));
+    }));
+    $('btn-skills').addEventListener('click', () => this.toggle('skills'));
+    this.el.skillList.addEventListener('click', (e) => e.target.closest('[data-open-cooking]') && this.show('cooking'));
+    $('btn-settings').addEventListener('click', () => this.toggle('settings'));
+    $('btn-talents').addEventListener('click', () => this.toggle('talents'));
+    // cooking: Cook / Cook all on a recipe row
+    $('cooking-list').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cook]');
+      if (b) game.cooking.start(b.dataset.cook, b.dataset.all ? Infinity : 1);
+    });
+    for (const ev of ['craftEnd', 'craftStart', 'campPitched']) game.events.on(ev, () => this.open.cooking && this.render());
+    // checkboxes on change; sliders as they move, so the sound follows the hand
+    const setFrom = (e) => e.target.dataset.setting && game.settings.set(e.target.dataset.setting, e.target.type === 'range' ? +e.target.value : e.target.checked);
+    $('settings-list').addEventListener('change', setFrom);
+    $('settings-list').addEventListener('input', setFrom);
     $('btn-save').addEventListener('click', () => game.manualSave());
     $('shop-close').addEventListener('click', () => game.merchant.close());
+    // Back: from the shop to the conversation with its keeper
+    $('shop-back').addEventListener('click', () => {
+      const npc = game.merchant.npc;
+      game.merchant.close();
+      if (npc) game.npcs.talk(npc);
+    });
+    $('shop-repair').addEventListener('click', () => game.inventory.repairAll());
     // a merchant opens your bags with it (and closes the ones it opened)
     game.events.on('merchantOpened', () => {
       this.shopOpenedBags = !this.bagsOpen;
@@ -95,18 +140,49 @@ export class ItemUI {
         else if (loc) game.inventory.use(loc);
       }
     });
+    // Every tooltip shows in the bottom-right corner, as in WoW: items and
+    // spells (their own), any other button or stat (its title), and whoever
+    // is under the cursor in the world (see worldTip).
     document.addEventListener('mouseover', (e) => {
-      const slot = e.target.closest && e.target.closest('.islot, .aslot');
-      if (slot && !this.drag) this._tooltip(slot.dataset.loc, slot);
+      if (this.drag || !e.target.closest) return;
+      const slot = e.target.closest('.islot, .aslot');
+      if (slot) {
+        this.tipFrom = 'ui';
+        this._tooltip(slot.dataset.loc, slot);
+        return;
+      }
+      const titled = e.target.closest('[title], [data-tip]');
+      if (titled) {
+        if (titled.hasAttribute('title')) {
+          titled.dataset.tip = titled.getAttribute('title');
+          titled.removeAttribute('title'); // no browser tooltip as well
+        }
+        if (!titled.dataset.tip) return;
+        const head = titled.dataset.tipHead || '';
+        this.tipFrom = 'ui';
+        this.el.tooltip.innerHTML = (head ? `<div class="tt-name">${head}</div>` : '') + `<div>${titled.dataset.tip}</div>`;
+        this._placeTip();
+      }
     });
     document.addEventListener('mouseout', (e) => {
-      if (e.target.closest && e.target.closest('.islot, .aslot')) this.el.tooltip.hidden = true;
+      if (e.target.closest && e.target.closest('.islot, .aslot, [data-tip]')) {
+        this.el.tooltip.hidden = true;
+        this.tipFrom = null;
+      }
     });
 
     game.events.on('inventoryChanged', () => this.render());
     game.events.on('equipmentChanged', () => this.render());
     game.events.on('levelUp', () => this.render());
     game.events.on('barChanged', () => this.render());
+    game.events.on('skillsChanged', () => this.render());
+    game.events.on('reputationChanged', () => this.render());
+    game.events.on('titlesChanged', () => this.render());
+    // Titles tab: choose a title (or none)
+    $('char-titles').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-title]');
+      if (b && !b.disabled) game.titles.choose(b.dataset.title);
+    });
   }
 
   setIcons(icons) {
@@ -115,7 +191,7 @@ export class ItemUI {
   }
 
   get anyOpen() {
-    return this.openBags.size > 0 || this.open.character || this.open.spellbook || !!this.game.merchant.current;
+    return this.openBags.size > 0 || this.open.character || this.open.spellbook || this.open.skills || this.open.settings || this.open.talents || this.open.cooking || !!this.game.merchant.current;
   }
 
   // shop slots: m:<item> buys, y:<n> buys back
@@ -170,7 +246,7 @@ export class ItemUI {
   closeAll() {
     const was = this.anyOpen;
     this.openBags.clear();
-    this.open.character = this.open.spellbook = false;
+    this.open.character = this.open.spellbook = this.open.skills = this.open.settings = this.open.talents = this.open.cooking = false;
     this.shopOpenedBags = false;
     this.game.merchant.close();
     this._afterChange(null);
@@ -188,6 +264,31 @@ export class ItemUI {
     this._paintFocus();
   }
 
+  // Cooking: every recipe you know, coloured by how much it can still teach
+  // you (WoW's orange / yellow / green / grey), with its ingredients.
+  _renderCooking() {
+    const open = this.open.cooking;
+    this.el.cooking.hidden = !open;
+    if (!open) return;
+    const ck = this.game.cooking;
+    const inv = this.game.inventory;
+    const rank = ck.rank('cooking');
+    const max = DB.skills.cooking.maxRank;
+    this.el.cookRank.innerHTML = `Cooking ${rank} / ${max}<div class="skill-bar"><div style="width:${(rank / max) * 100}%"></div></div>`;
+    const fire = ck.nearFire;
+    this.el.cookFire.textContent = fire ? `Cooking at ${fire}.` : 'You need a fire: your camp or a hearth.';
+    this.el.cookFire.classList.toggle('bad', !fire);
+    const busy = ck.crafting;
+    const rows = ck.known('cooking').map((r) => {
+      const out = ITEMS[r.output.item];
+      const n = ck.canMake(r);
+      const need = r.inputs.map((x) => `<span class="${inv.count(x.item) >= x.count ? '' : 'bad'}">${ITEMS[x.item].name} ${inv.count(x.item)}/${x.count}</span>`).join(', ');
+      const ok = n > 0 && fire && !busy && rank >= r.rank;
+      return `<div class="recipe ${ck.colour(r)}" data-tip-item="${r.output.item}"><img src="${this._iconFor(r.output.item)}" alt=""><div class="recipe-body"><div class="recipe-name">${out.name}${n ? ` [${n}]` : ''}</div><div class="recipe-need dim">${need}</div></div><button class="btn small" data-cook="${r.id}" ${ok ? '' : 'disabled'}>Cook</button><button class="btn small" data-cook="${r.id}" data-all="1" ${ok && n > 1 ? '' : 'disabled'}>All</button></div>`;
+    });
+    this.el.cookList.innerHTML = rows.join('') || '<p class="dim">You know no recipes. Hester at the Ford Inn teaches Cooking.</p>';
+  }
+
   // ------------------------------------------------------------- render
   _iconFor(id) {
     const def = ITEMS[id];
@@ -202,6 +303,9 @@ export class ItemUI {
       inner = icon ? `<img src="${icon}" alt="">` : `<span class="letter">${ITEMS[stack.id].name[0]}</span>`;
       if (stack.count > 1) inner += `<span class="count">${stack.count}</span>`;
       cls.push('filled', 'k-' + ITEMS[stack.id].kind, 'q-' + itemView(stack).rarity);
+      const dur = durability(stack);
+      if (dur === 0) cls.push('broken');
+      else if (dur !== null && dur <= 25) cls.push('worn');
     } else if (placeholder) {
       inner = `<span class="ph">${placeholder}</span>`;
     }
@@ -213,14 +317,24 @@ export class ItemUI {
     const inv = this.game.inventory;
     // bag sockets on the bottom bar (backpack last, as in WoW: right-most)
     let sockets = '';
-    for (let i = BAG_SOCKETS - 1; i >= 1; i--) {
+    // the tool pack's own slot comes first, left of the bags (empty until earned)
+    for (let i = TOOL_SOCKET; i >= 1; i--) {
       const s = inv.sockets[i];
-      sockets += this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, 'socket', '');
+      let slot = this._slotHTML(`s:${i}`, s ? { id: s.id, count: 1 } : null, i === TOOL_SOCKET ? 'socket tool-socket' : 'socket', i === TOOL_SOCKET ? '⚒' : '');
+      if (i === TOOL_SOCKET && !s) slot = slot.replace('<div ', '<div title="Tool pack slot: earned from Mara Venn\'s first errand" ');
+      // a quiver shows how many arrows it holds
+      if (s && ITEMS[s.id].holds === 'ammo') {
+        const n = inv.arrowsIn(i);
+        slot = slot.replace(/<\/div>$/, `<span class="arrow-count${n ? '' : ' none'}">${n}</span></div>`);
+      }
+      sockets += slot;
     }
     // a bag whose socket was emptied closes with it
     for (const i of [...this.openBags]) if (!inv.sockets[i]) this.openBags.delete(i);
-    for (let i = 1; i < BAG_SOCKETS; i++) if (this.openBags.has(i)) sockets = sockets.replace(`data-loc="s:${i}"`, `data-loc="s:${i}" data-lit="1"`);
-    sockets += `<div class="islot socket backpack filled${this.openBags.has(0) ? ' lit' : ''}" data-loc="s:0" title="Backpack (B)"><span class="bp-icon"></span><span class="key" data-kbm="B" data-pad="Start"></span></div>`;
+    for (let i = 1; i <= TOOL_SOCKET; i++) if (this.openBags.has(i)) sockets = sockets.replace(`data-loc="s:${i}"`, `data-loc="s:${i}" data-lit="1"`);
+    // the free space in all bags shows on the backpack, as in WoW
+    const free = inv.freeSlots();
+    sockets += `<div class="islot socket backpack filled${this.openBags.has(0) ? ' lit' : ''}${free === 0 ? ' full' : ''}" data-loc="s:0" title="Backpack (B): ${free} free slot${free === 1 ? '' : 's'}"><span class="bp-icon"></span><span class="bag-free">${free}</span><span class="key" data-kbm="B" data-pad="Start"></span></div>`;
     this.el.sockets.innerHTML = sockets;
 
     // bags window: one frame per bag
@@ -234,7 +348,7 @@ export class ItemUI {
         html += `<div class="bag-frame panel"><div class="window-head"><h3>${name}</h3><span class="dim">${used}/${s.slots.length}</span><button class="btn small" data-close-bag="${i}" title="Close this bag">&times;</button></div><div class="bag-grid">`;
         s.slots.forEach((st, j) => (html += this._slotHTML(`b:${i}:${j}`, st)));
         html += '</div>';
-        if (i === 0) html += `<div class="bag-foot"><span class="coin-dot"></span><b>${inv.coins}</b> coins</div>`;
+        if (i === 0) html += `<div class="bag-foot">${moneyHTML(inv.coins)}</div>`;
         html += '</div>';
       });
       this.el.frames.innerHTML = html;
@@ -243,13 +357,32 @@ export class ItemUI {
     // character window
     this.el.character.hidden = !this.open.character;
     if (this.open.character) {
-      const half = Math.ceil(EQUIP_SLOTS.length / 2);
-      const col = (list) => list.map((s) => `<div class="equip-row">${this._slotHTML(`e:${s.id}`, inv.equipment[s.id], 'equip', s.label)}</div>`).join('');
-      this.el.left.innerHTML = col(EQUIP_SLOTS.slice(0, half));
-      this.el.right.innerHTML = col(EQUIP_SLOTS.slice(half));
+      const col = (where) => EQUIP_SLOTS.filter((s) => s.col === where).map((s) => `<div class="equip-row">${this._slotHTML(`e:${s.id}`, inv.equipment[s.id], 'equip', s.label)}</div>`).join('');
+      this.el.left.innerHTML = col('left');
+      this.el.right.innerHTML = col('right');
+      // the ammo slot, beside the ranged slot: which arrows Auto Shot uses
+      // and how many of them you carry
+      const ammo = inv.get(AMMO_LOC);
+      const ammoSlot = this._slotHTML(AMMO_LOC, ammo, 'equip ammo', 'Ammo').replace(/<span class="count">\d+<\/span>/, '');
+      const ammoCount = ammo ? `<span class="count${ammo.count ? '' : ' none'}">${ammo.count}</span>` : '';
+      document.getElementById('equip-bottom').innerHTML = col('bottom') + `<div class="equip-row">${ammoSlot.replace(/<\/div>$/, ammoCount + '</div>')}</div>`;
+      // reputation, WoW style: renown first (how known you are anywhere,
+      // Fable style), then a bar per faction with its standing
+      const rep = this.game.reputation;
+      const tier = rep.renownTier;
+      const tpct = tier.span ? Math.min(100, (tier.into / tier.span) * 100) : 100;
+      document.getElementById('char-rep').innerHTML = `<h3>Renown</h3><div class="rep-row" title="${tier.desc}"><span>${rep.renown} renown</span><div class="rep-bar renown"><div style="width:${tpct}%"></div><b>${tier.name}${tier.span ? ` ${tier.into} / ${tier.span}` : ''}</b></div></div><p class="renown-desc">${tier.desc}</p><h3>Factions</h3>` + Object.values(DB.factions).map((f) => {
+        const s = rep.standing(f.id);
+        const pct = s.span ? Math.min(100, (s.into / s.span) * 100) : 100;
+        return `<div class="rep-row" title="${f.description}"><span>${f.name}</span><div class="rep-bar s-${s.id}"><div style="width:${pct}%"></div><b>${s.name}${s.span ? ` ${s.into} / ${s.span}` : ''}</b></div></div>`;
+      }).join('');
+      // titles, Fable style: what you may be called (renown unlocks them)
+      const ttl = this.game.titles;
+      document.getElementById('character-title').textContent = (this.game.character?.name || 'Warden') + (ttl.name ? `, ${ttl.name}` : '');
+      document.getElementById('char-titles').innerHTML = `<h3>Titles</h3><p class="renown-desc">${rep.renown} renown (${tier.name}). Reputation with anyone adds to it.</p><button class="title-row${ttl.chosen ? '' : ' chosen'}" data-title=""><b>No title</b><span>Folk call you what they like.</span></button>` +
+        ttl.list.map((x) => `<button class="title-row${x.chosen ? ' chosen' : ''}${x.locked ? ' locked' : ''}" data-title="${x.id}"${x.locked ? ' disabled' : ''}><b>${x.name}</b><span>${x.locked || x.desc}</span></button>`).join('');
       const { player, progression, stats } = this.game;
       const t = stats.totals;
-      const range = (m) => stats.abilityRange(m).join('–');
       // stats that rose at the last level-up keep a green "+n" for a while
       const lg = progression.lastGains;
       const gain = (id) => {
@@ -262,24 +395,22 @@ export class ItemUI {
       const wears = arch.armourTypes.map((k) => CONFIG.armourTypes[k].name).join(', ') + (arch.shields ? ', shields' : '');
       this.el.stats.innerHTML = [
         row('Level', `${lvl} ${arch.name}`),
+        arch.trait ? row('Trait', arch.trait.name, arch.trait.desc) : '',
         row('Health', `${Math.ceil(player.health)} / ${player.maxHealth}`, '', 'health'),
         '<div class="stat-gap"></div>',
-        row('Might', t.might, arch.mainStat === 'might' ? 'Main attribute: +1 damage per point' : '', 'might'),
-        row('Finesse', t.finesse, '+0.5% critical chance per point', 'finesse'),
+        row('Stamina', t.stamina, `+${CONFIG.stats.healthPerStamina} health per point`, 'stamina'),
+        row('Strength', t.strength, arch.mainStat === 'strength' ? 'Main attribute: adds to every swing and ability' : '', 'strength'),
+        row('Agility', t.agility, `+${(1 / stats.agilityPerCrit).toFixed(2)}% crit chance per point at level ${lvl}`, 'agility'),
         row('Intellect', t.intellect, 'Spell power, and mana for casters', 'intellect'),
-        row('Vitality', t.vitality, '+6 health per point', 'vitality'),
         '<div class="stat-gap"></div>',
-        row('Weapon', `${inv.weapon.name} (${stats.weaponRange.join('–')})`),
-        row('Strike', range(1), '', 'strike'),
-        row('Shield Break', range(CONFIG.shieldBreak.damageMultiplier)),
-        row('Lunge', range(CONFIG.lunge.damageMultiplier)),
-        row('Critical chance', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
-        row('Haste', `${stats.haste}% (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'Shortens swings, windups, casts and the global cooldown', 'haste'),
+        row('Haste', `${stats.haste}%`, `Shortens the time between swings, ability windups, casts and the global cooldown (swing ${stats.attackCooldown.toFixed(2)}s, GCD ${stats.globalCooldown.toFixed(2)}s)`, 'haste'),
+        row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken, against any foe. A foe above your level hits ${Math.round((CONFIG.scaling.levelGap - 1) * 100)}% harder for each level, one below that much softer`),
+        row('Block', stats.blockChance ? `${stats.blockChance}%` : 'no shield', `Chance to block a melee blow, which stops ${CONFIG.stats.blockReduction}% of it: the shield's own block chance plus block chance from gear`, 'block'),
+        row('Crit', `${stats.critChance.toFixed(1)}%`, `Critical hits do ${CONFIG.stats.critMultiplier * 100}% damage`, 'crit'),
         '<div class="stat-gap"></div>',
-        row('Armour', `${t.armour} (−${mitigation(t.armour, lvl).toFixed(0)}%)`, `Physical damage taken from a level ${lvl} foe; higher-level foes get through more`),
-        row('Block', stats.blockChance ? `${stats.blockChance}%, stops ${CONFIG.stats.blockReduction}%` : 'no shield', 'Chance to block a melee blow (shield block chance + block rating / 10)', 'block'),
-        row('Block rating', t.blockRating || 0, `${CONFIG.stats.blockRatingPerPercent} rating = +1% block chance`),
-        row('Resistance', `${t.resistance || 0} (−${mitigation(t.resistance || 0, lvl).toFixed(0)}%)`, 'Reduces magical damage taken'),
+        row('Weapon', `${stats.swingRange.join('–')} / ${stats.attackCooldown.toFixed(1)}s`, `${inv.weapon.name}: ${stats.weaponRange.join('–')} damage, speed ${stats.weaponSpeed.toFixed(1)}; each auto attack swing adds strength`),
+        ...(stats.dualWielding ? [row('Off hand', `${stats.swingRangeFor('off').join('–')} / ${stats.attackCooldownFor('off').toFixed(1)}s`, `${inv.offWeapon.name}: its own swing timer; off-hand blows do ${Math.round(this.game.config.stats.offHandDamage * 100)}% damage`)] : []),
+        row('Damage per second', stats.dps.toFixed(1), stats.dualWielding ? 'From auto attack alone, both hands' : 'From auto attack alone', 'dps'),
         row('Wears', wears),
       ].join('');
       this.el.hint.textContent = this.hud.padMode
@@ -294,22 +425,78 @@ export class ItemUI {
     if (m.current) {
       const def = m.def;
       this.el.shopName.textContent = def.name;
+      document.getElementById('shop-back').hidden = !m.npc;
       this.el.shopTitle.textContent = def.title;
       this.el.shopStock.innerHTML = m.stock
         .map((id) => {
           const price = m.priceOf(id);
           const poor = price > inv.coins;
-          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: 1 })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price"><span class="coin-dot"></span>${price}</div></div></div>`;
+          const n = ITEMS[id].buyCount || 1; // arrows come by the hundred
+          return `<div class="shop-row${poor ? ' poor' : ''}">${this._slotHTML('m:' + id, { id, count: n })}<div><div class="shop-item q-${ITEMS[id].rarity}">${ITEMS[id].name}</div><div class="shop-price">${moneyHTML(price)}${n > 1 ? ` <span class="dim small">for ${n}</span>` : ''}</div></div></div>`;
         })
         .join('');
       const bb = m.buyback;
       this.el.shopBuyback.innerHTML = bb.length
         ? bb.map((b, i) => this._slotHTML('y:' + i, { id: b.id, count: b.count })).join('')
         : '<span class="dim small">Nothing sold yet.</span>';
-      this.el.shopCoins.textContent = inv.coins;
+      this.el.shopCoins.innerHTML = moneyHTML(inv.coins);
+      // smiths mend gear, as in WoW: one button for everything
+      const repair = document.getElementById('shop-repair');
+      const cost = def.repair ? inv.repairAllCost : 0;
+      repair.hidden = !def.repair;
+      repair.disabled = !cost;
+      repair.innerHTML = cost ? `Repair all ${moneyHTML(cost)}` : 'Nothing to repair';
       this.el.shopHint.textContent = this.hud.padMode
         ? 'A: buy   Y on a bag item: sell   B: leave'
         : 'Click to buy. Right-click (or drag here) anything in your bags to sell it.';
+    }
+
+    this.el.talents.hidden = !this.open.talents;
+    this._renderCooking();
+    // settings: one checkbox each, then the key bindings
+    this.el.settings.hidden = !this.open.settings;
+    if (this.open.settings) {
+      const list = document.getElementById('settings-list');
+      if (!list.children.length) {
+        let group = '';
+        list.innerHTML = SETTINGS.map((s) => {
+          const head = s.group && s.group !== group ? `<h3 class="set-head">${(group = s.group)}</h3>` : '';
+          if (s.min !== undefined) return `${head}<label class="set-slider"><span>${s.label}</span><input type="range" min="${s.min}" max="${s.max}" step="1" data-setting="${s.id}"><b></b></label>`;
+          return `${head}<label><input type="checkbox" data-setting="${s.id}"> ${s.label}</label>`;
+        }).join('');
+      }
+      for (const box of list.querySelectorAll('input')) {
+        const v = this.game.settings.get(box.dataset.setting);
+        if (box.type === 'range') {
+          box.value = v;
+          box.nextElementSibling.textContent = `${v}%`;
+        } else box.checked = v;
+      }
+      this.hud.keybindUI.render();
+    }
+
+    // Professions (U), apart from the spellbook (Dan, 2026-10-16): each
+    // profession with its rank, and its abilities to drag onto the bar
+    this.el.skills.hidden = !this.open.skills;
+    if (this.open.skills) {
+      const sk = this.game.skills;
+      const icons = this.hud.abilityIcons;
+      const row = (d) => {
+        const known = sk.has(d.id);
+        const max = d.maxRank || 1;
+        const level = known ? (d.maxRank ? `${sk.rank(d.id)} / ${max}` : 'Learned') : 'Not learned';
+        const trainer = DB.npcs[d.trainer];
+        const tip = `${d.desc}${known ? '' : ` ${trainer ? trainer.name : 'A trainer'} teaches it for ${moneyText(d.cost)}.`}`;
+        const fill = known ? (sk.rank(d.id) / max) * 100 : 0;
+        const abilities = known ? (d.teaches || []).filter((a) => barAbility(this.game, a)).map((a) => `<div class="islot spell filled${this.carry === 'k:' + a ? ' carried' : ''}" data-loc="k:${a}" title="${ABILITIES[a].name}: drag onto the bar"><img src="${icons[a] || ''}" alt=""></div>`).join('') : '';
+        const extra = known && d.id === 'cooking' ? '<button class="btn small" data-open-cooking>Cookbook</button>' : '';
+        const how = known ? '' : `<div class="prof-how dim">${trainer ? trainer.name : 'A trainer'} teaches it</div>`;
+        return `<div class="prof-row${known ? '' : ' unknown'}" data-skill="${d.id}" data-tip="${tip.replace(/"/g, '&quot;')}" data-tip-head="${d.name}"><div class="prof-body"><div class="prof-top"><span class="skill-name">${d.name}</span><span class="skill-level">${level}</span></div><div class="skill-bar"><div style="width:${fill}%"></div></div>${how}</div><div class="prof-abilities">${abilities}${extra}</div></div>`;
+      };
+      const all = Object.values(DB.skills);
+      const learned = all.filter((d) => sk.has(d.id));
+      const not = all.filter((d) => !sk.has(d.id));
+      this.el.skillList.innerHTML = (learned.length ? learned.map(row).join('') : '<p class="dim">You have no professions yet. Trainers in town teach them.</p>') + (not.length ? `<div class="prof-sub dim">Not yet learned</div>${not.map(row).join('')}` : '');
     }
 
     // spellbook: every ability, ready to drag onto the bar
@@ -317,7 +504,9 @@ export class ItemUI {
     if (this.open.spellbook) {
       const bar = this.game.actionBar;
       const icons = this.hud.abilityIcons;
+      // professions' abilities (fishing, cooking, camp) live in Professions (U)
       this.el.spellList.innerHTML = Object.entries(ABILITIES)
+        .filter(([id, a]) => barAbility(this.game, id) && !a.skill)
         .map(([id, a]) => {
           const at = bar.slots.indexOf(id);
           return `<div class="spell-row"><div class="islot spell filled${this.carry === 'k:' + id ? ' carried' : ''}" data-loc="k:${id}"><img src="${icons[id] || ''}" alt=""></div><div><div class="spell-name">${a.name}</div><div class="dim spell-where">${at >= 0 ? 'On the bar' : 'Not on the bar'}</div></div></div>`;
@@ -341,8 +530,15 @@ export class ItemUI {
         tip.hidden = true;
         return;
       }
-      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div><div class="tt-desc">${ABILITIES[id].desc}</div>`;
-      return this._placeTip(anchor);
+      if (itemRef(id)) {
+        const d = ITEMS[itemRef(id)];
+        tip.innerHTML = `<div class="tt-name q-${d.rarity}">${d.name}</div><div class="tt-desc">${d.description}</div><div class="tt-hint">Press to use${d.slot === 'offHand' ? ' (again to put it away)' : ''}</div>`;
+        return this._placeTip();
+      }
+      const reqText = requirementText(ABILITIES[id]);
+      const req = reqText && `<div class="tt-req${missingGear(this.game, ABILITIES[id]) ? ' bad' : ''}">${reqText}</div>`;
+      tip.innerHTML = `<div class="tt-name">${ABILITIES[id].name}</div>${this._costLine(ABILITIES[id])}${req || ''}<div class="tt-desc">${ABILITIES[id].desc}</div>`;
+      return this._placeTip();
     }
     let stack = loc && this.game.inventory.get(loc);
     let shop = null;
@@ -359,38 +555,53 @@ export class ItemUI {
       return;
     }
     const def = itemView(stack);
-    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + EQUIP_SLOTS.find((s) => s.id === def.slot).label : ''}</div>`];
+    const lines = [`<div class="tt-name k-${def.kind} q-${def.rarity}">${def.name}</div>`, `<div class="tt-kind">${['enhanced', 'rare', 'epic', 'legendary'].includes(def.rarity) ? RARITY[def.rarity].name + ' ' + KIND_LABEL[def.kind].toLowerCase() : KIND_LABEL[def.kind]}${def.slot ? ' &middot; ' + (def.slot === 'oneHand' ? `One-hand${def.weaponType ? ' ' + def.weaponType : ''}` : EQUIP_SLOTS.find((s) => s.id === def.slot || s.fits === def.slot).label) : ''}</div>`];
+    if (def.itemLevel) lines.push(`<div class="tt-ilvl">Item level ${def.itemLevel}</div>`);
     if (def.armourType) {
       const ok = this.game.inventory.canWear(def);
       lines.push(`<div class="${ok ? '' : 'down'}">${CONFIG.armourTypes[def.armourType].name}${ok ? '' : ` (a ${this.game.stats.archetype.name} cannot wear this)`}</div>`);
     }
     if (def.damage) {
-      const avg = (d) => (d[0] + d[1]) / 2;
-      const diff = avg(def.damage) - avg(this.game.stats.weaponRange);
-      const cmp = loc.startsWith('e:') || diff === 0 ? '' : ` <span class="${diff > 0 ? 'up' : 'down'}">(${diff > 0 ? '+' : ''}${diff} average)</span>`;
-      lines.push(`<div>${def.damage[0]}–${def.damage[1]} damage${cmp}</div>`);
+      // weapons compare by damage per second, as in WoW
+      const st = this.game.stats;
+      const dps = (d, sp) => (d[0] + d[1]) / 2 / sp;
+      const speed = def.speed || CONFIG.stats.fistSpeed;
+      const mine = dps(def.damage, speed);
+      const diff = Math.round((mine - dps(st.weaponRange, st.weaponSpeed)) * 10) / 10;
+      const cmp = loc.startsWith('e:') || diff === 0 ? '' : ` <span class="${diff > 0 ? 'up' : 'down'}">(${diff > 0 ? '+' : ''}${diff})</span>`;
+      lines.push(`<div class="tt-weapon"><span>${def.damage[0]}–${def.damage[1]} damage</span><span>Speed ${speed.toFixed(2)}</span></div>`);
+      lines.push(`<div>(${mine.toFixed(1)} damage per second${cmp})</div>`);
     }
     for (const [k, v] of Object.entries(def.stats || {})) lines.push(`<div class="up">+${v} ${STAT_LABEL[k] || k}</div>`);
     if (def.bagSlots) lines.push(`<div>${def.bagSlots} slots</div>`);
+    const dur = durability(stack);
+    if (dur !== null) lines.push(dur === 0 ? '<div class="down">Broken: gives no stats until repaired</div>' : `<div class="${dur <= 25 ? 'down' : ''}">Durability ${dur} / 100</div>`);
     if (stack.count > 1) lines.push(`<div>${stack.count} carried</div>`);
     lines.push(`<div class="tt-desc">${def.description}</div>`);
     const sell = sellPrice(stack, CONFIG.shop.sellFraction);
-    if (shop) lines.push(`<div class="tt-price">Price: ${shop.buy} coin${shop.buy === 1 ? '' : 's'}</div>`);
-    else lines.push(def.quest ? '<div class="tt-sell">Quest item</div>' : `<div class="tt-sell">Sells for ${sell * stack.count} coin${sell * stack.count === 1 ? '' : 's'}${stack.count > 1 ? ` (${sell} each)` : ''}</div>`);
+    if (shop) lines.push(`<div class="tt-price">Price: ${moneyHTML(shop.buy)}</div>`);
+    else if (def.quest) lines.push('<div class="tt-sell">Quest item</div>');
+    else if (!sell) lines.push('<div class="tt-sell dim">No sell value</div>');
+    else lines.push(`<div class="tt-sell">Sell for ${moneyHTML(sell * stack.count)}${stack.count > 1 ? ` (${moneyHTML(sell)} each)` : ''}</div>`);
     if (shop) {
       if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
       this._fill(tip, lines, def, loc);
-      return this._placeTip(anchor);
+      return this._placeTip();
     }
-    if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && !this.hud.padMode) {
+    if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && loc !== AMMO_LOC && !this.hud.padMode) {
       lines.push('<div class="tt-hint">Right-click to sell</div>');
       this._fill(tip, lines, def, loc);
-      return this._placeTip(anchor);
+      return this._placeTip();
     }
-    const action = loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
+    if (loc === AMMO_LOC) {
+      lines.splice(lines.length - 2, 0, '<div class="tt-hint">Auto Shot uses these. When they run out, the next arrows in your bags take their place. Drag other arrows here to change.</div>');
+      tip.innerHTML = lines.join('');
+      return this._placeTip();
+    }
+    const action = def.kind === 'ammo' ? 'Right-click to use these for Auto Shot' : loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
     this._fill(tip, lines, def, loc);
-    this._placeTip(anchor);
+    this._placeTip();
   }
 
   // WoW-style compare: gear hovered outside the character panel shows what is
@@ -398,14 +609,14 @@ export class ItemUI {
   _fill(tip, lines, def, loc) {
     const worn = [];
     if (def.slot && !loc.startsWith('e:') && !loc.startsWith('s:')) {
-      const slots = def.slot === 'mainHand' && def.damage ? ['mainHand', 'offHand'] : [def.slot];
-      for (const s of slots) {
+      const pairs = { oneHand: ['mainHand', 'offHand'], mainHand: def.damage ? ['mainHand', 'offHand'] : ['mainHand'], finger: ['finger1', 'finger2'], trinket: ['trinket1', 'trinket2'] };
+      for (const s of pairs[def.slot] || [def.slot]) {
         const st = this.game.inventory.get(`e:${s}`);
         const w = st && itemView(st);
-        if (w && (s === def.slot || w.damage)) worn.push(w);
+        // an off-hand shield is not compared against a weapon
+        if (w && (s !== 'offHand' || def.slot === 'offHand' || w.damage)) worn.push(w);
       }
     }
-    tip.classList.toggle('cmp', worn.length > 0);
     if (!worn.length) {
       tip.innerHTML = lines.join('');
       return;
@@ -437,26 +648,69 @@ export class ItemUI {
     tip.innerHTML = `${boxes.join('')}<div class="tt-box">${lines.join('')}</div>`;
   }
 
-  _placeTip(anchor) {
+  // The bottom-right corner, above the bag slots (left of the bags when
+  // they are open, so it never covers them).
+  // "20 mana" / "25 Resolve" / "Gives 15 Resolve" under an ability's name
+  _costLine(a) {
+    const r = this.game.resources;
+    const parts = [
+      ...Object.entries(a.cost || {}).map(([k, n]) => `${n} ${r.nameOf(k)}`),
+      ...(a.spendsAll ? [`Spends all ${r.nameOf(a.spendsAll)}`] : []),
+      ...Object.entries(a.gain || {}).map(([k, n]) => `Gives ${n} ${r.nameOf(k)}`),
+    ];
+    return parts.length ? `<div class="tt-cost">${parts.join(' · ')}</div>` : '';
+  }
+
+  _placeTip() {
     const tip = this.el.tooltip;
     tip.hidden = false;
-    const r = anchor.getBoundingClientRect();
     const tw = tip.offsetWidth;
     const th = tip.offsetHeight;
-    let x = r.left - tw - 8;
-    if (x < 8) x = r.right + 8;
-    let y = Math.min(window.innerHeight - th - 8, Math.max(8, r.top));
-    if (anchor.classList.contains('aslot')) {
-      // spell bar: above the slot
-      x = Math.min(window.innerWidth - tw - 8, Math.max(8, r.left + r.width / 2 - tw / 2));
-      y = r.top - th - 8;
+    const bar = document.getElementById('bottom-bar').getBoundingClientRect();
+    let x = window.innerWidth - tw - 16;
+    let y = Math.min(window.innerHeight, bar.top) - th - 10;
+    const bags = document.getElementById('bags-window');
+    if (bags && !bags.hidden) {
+      const b = bags.getBoundingClientRect();
+      x = Math.min(x, b.left - tw - 10);
     }
-    tip.style.transform = `translate(${x}px, ${y}px)`;
+    tip.style.transform = `translate(${Math.max(8, x)}px, ${Math.max(8, y)}px)`;
+  }
+
+  // Whoever is under the cursor in the world: called every frame with the
+  // pick (or null). Item and button tooltips come first.
+  worldTip(pick) {
+    if (this.tipFrom === 'ui' && !this.el.tooltip.hidden) return;
+    const key = pick && (pick.kind === 'enemy' || pick.kind === 'npc' || pick.kind === 'sign') ? pick.obj : null;
+    if (!key) {
+      if (this.tipFrom === 'world') {
+        this.el.tooltip.hidden = true;
+        this.tipFrom = null;
+        this.tipKey = null;
+      }
+      return;
+    }
+    this.tipFrom = 'world';
+    const health = key.cfg ? `${Math.ceil(key.health)} / ${key.maxHealth}` : '';
+    const html = pick.kind === 'sign'
+      ? `<div class="tt-name">Signpost</div>${signpostLines(key).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span> ${l.label} <span class="tt-kind">${l.metres} m ${l.dir}</span></div>`).join('')}`
+      : key.cfg
+      ? `<div class="tt-name tt-foe">${key.cfg.name}</div><div>Level ${key.cfg.level || 1}${key.cfg.elite ? ' Elite' : ''}</div><div class="tt-kind">${health} health</div>`
+      : `<div class="tt-name tt-friend">${key.name}</div>${key.def.title ? `<div class="tt-kind">&lt;${key.def.title}&gt;</div>` : ''}<div>Level ${key.def.level || 1}</div>`;
+    if (this.tipKey !== key || this.tipHtml !== html) {
+      this.el.tooltip.innerHTML = html;
+      this.tipKey = key;
+      this.tipHtml = html;
+    }
+    this._placeTip();
   }
 
   // ------------------------------------------------------------- mouse drag
   _iconForLoc(loc) {
-    if (loc.startsWith('a:')) return this.hud.abilityIcons[this.game.actionBar.slots[+loc.slice(2)]];
+    if (loc.startsWith('a:')) {
+      const a = this.game.actionBar.slots[+loc.slice(2)];
+      return itemRef(a) ? this._iconFor(itemRef(a)) : this.hud.abilityIcons[a];
+    }
     if (loc.startsWith('k:')) return this.hud.abilityIcons[loc.slice(2)];
     const stack = this.game.inventory.get(loc);
     return stack && this._iconFor(stack.id);
@@ -541,14 +795,14 @@ export class ItemUI {
         else bar.place(ability, +to.slice(2));
       } else if (from.startsWith('a:') && !overBar) {
         bar.remove(+from.slice(2)); // dragged off the bar
-        this.game.events.emit('log', { text: `${ABILITIES[ability].name} removed from the bar. Open the spellbook (P) to put it back.`, kind: 'muted', throttle: 'bar-removed' });
+        this.game.events.emit('log', { text: itemRef(ability) ? `${entryName(ability)} removed from the bar.` : `${entryName(ability)} removed from the bar. Open ${ABILITIES[ability]?.skill ? 'Professions (U)' : 'the spellbook (P)'} to put it back.`, kind: 'muted', throttle: 'bar-removed' });
       }
       return;
     }
     if (to && to.startsWith('a:')) {
-      // a draught dragged from the bags onto the bar
+      // anything usable (a draught, a torch, lockpicks) goes on as an item
       const stack = inv.get(from);
-      if (stack && stack.id === ABILITIES.draught.item) bar.place('draught', +to.slice(2));
+      if (stack && (ITEMS[stack.id].slot || ['consumable', 'document', 'torch', 'tool'].includes(ITEMS[stack.id].kind))) bar.placeItem(stack.id, +to.slice(2));
       return;
     }
     if (to && !to.startsWith('k:')) {
@@ -561,7 +815,7 @@ export class ItemUI {
 
   // ------------------------------------------------------------- gamepad
   _visibleLocs() {
-    return [...document.querySelectorAll('#shop-window .islot, #bags-window .islot, #character-window .islot, #spellbook-window .islot, #bag-sockets .islot, #action-bar .aslot')]
+    return [...document.querySelectorAll('#shop-window .islot, #bags-window .islot, #character-window .islot, #spellbook-window .islot, #skills-window .islot, #bag-sockets .islot, #action-bar .aslot')]
       .filter((el) => el.offsetParent !== null && el.dataset.loc !== 's:0')
       .map((el) => el.dataset.loc);
   }

@@ -5,7 +5,15 @@ A small dark fantasy action RPG prototype built to the *Shadowfall Game Design &
 ## Launch
 
 1. Open `index.html` in Chrome or Edge (double-click it, or drag it into the browser window).
-2. Choose **Begin**, or **Continue** if you have a save.
+2. Choose **New character**, or **Continue** to play your last character.
+
+### Title screen and characters (alpha)
+
+- **Title screen:** Continue (names your last character), Characters, New character and Controls.
+- **Character creation:** pick a class (the Warden for now; the Ranger and Occultist are shown as coming later), type a name or roll one with the dice (gamepad Y), then **Create and enter**. Names are one or two words of letters and must be unique.
+- **Character select:** your characters with their level, class and where they stand, latest first. Enter world (or double-click), Create new, or Delete (asks first, and removes that save). Up to 10 characters.
+- **Saves:** each character has its own save in the browser. The first character keeps the old save key, so a save from before this build shows up as a character called Warden. **Settings → Save and return to characters** logs out.
+- The keyboard (arrows, Enter, Esc, Del) and the gamepad (D-pad or stick, A, B, Y) drive every screen. Title text, classes and the name lists are in `data/text.json` under `title`.
 
 No install, web server or internet connection is needed. Three.js and every Blender model are bundled into `dist/shadowfall.js`, so the game also runs offline.
 
@@ -13,7 +21,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 
 ## New in build 2
 
-- **Ground telegraphs, after Final Fantasy XIV.** The Gravebound Brute paints its attacks on the ground before they land: an amber cone for its ordinary cleave and a large orange cone for **Grave Slam** (24 damage, 1.4 s wind-up). The cone fills as the wind-up runs, a cast bar shows under its health bar, and anyone still inside when it fills is hit. The area is fixed when the wind-up starts, so walk out or Brace. Shield Break interrupts the cleave but not the slam.
+- **Ground telegraphs, after Final Fantasy XIV.** The Gravebound Brute paints its attacks on the ground before they land: an amber cone for its ordinary cleave and a large orange cone for **Grave Slam** (31 damage, 1.4 s wind-up). The cone fills as the wind-up runs, a cast bar shows under its health bar, and anyone still inside when it fills is hit. The area is fixed when the wind-up starts, so walk out or Brace. Shield Break interrupts the cleave but not the slam.
 - **Global cooldown, as in classic WoW.** Shield Break and the new **Lunge** (a 5 m charge that strikes on arrival, 1.5× damage, 8 s cooldown) share a 1.5 s GCD. Strike, Brace and draughts stay off it. The spell bar shows each cooldown as a sweep, and the GCD as a second sweep.
 - **Diablo-style spell bar** along the bottom of the screen, with the experience bar above it, the character and save buttons, coins, and four bag slots.
 - **WoW bags.** The backpack (16 slots) sits in the right-most bag slot; three more slots take bags. A Traveller's Satchel (8 slots) lies in the western ruins. Click a bag slot to open or close that bag; each bag window also has its own ×, and B opens or closes them all. The bags, the character panel and the spellbook are separate windows, and none of them pause the game.
@@ -24,20 +32,110 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Fog and light.** Linear view-distance fog swallows the road ahead, low mist drifts over the ground, the light is a warm dusk, the Warden carries a glow, and braziers burn at the watch post.
 - **Saves carry over.** A build 1 save is upgraded on load: its items go into the backpack and its weapon into the main hand.
 
+## Playtest batch, 2026-10-16 (Dan's list)
+
+- **Townsfolk.** A conversation groups its choices under Quests, Ask about and Services. Each kind has its own badge: speech, goods (Browse goods), training (Train) and the inn (Make this inn your home). **Train** opens a trainer window like the shop. It lists every skill and recipe that person teaches, with what it needs, its cost and Learn. The shop and the trainer window both have **Back** to the conversation.
+- **Professions (U).** Professions have their own window with your rank in each, and their abilities (Fishing, Cooking, Set Camp) to drag onto the bar. The spellbook (P) now keeps to spells. There is also a Professions button with the menu buttons.
+- **Bottom right.** The menu buttons sit in one row with the bag slots, and your money is in the corner. On a narrow screen the spell bar moves left to stay clear of them.
+- **On screen.** Damage you take shows as "-n". The selected enemy's bar shows its health in numbers. Your name shows over your character, and Settings (O) can turn it off.
+- Bows, signposts, cooking, Well Fed and fishing are under their own headings below.
+
+## Dual wielding
+
+- One-handed swords and daggers (the arming sword and rusty dirk from Mara, the militia sword and ghoulbone knife as drops) go in either hand. Drag one onto the off hand to dual wield.
+- Each hand swings on its own timer at its own weapon's speed, with its own animation. The off hand opens half a swing later and never lands within 0.2 s of the main hand, so the blows alternate.
+- Off-hand blows do half damage and build half the Resolve. Two swing bars show while dual wielding, and the character panel shows both hands.
+
+## Brackenford, the Ford Inn and Cooking
+
+- **Brackenford** is a small town at the south end of the Fallen Road, a short walk south of where you start: three cottages, a well, lamp posts and the **Ford Inn**.
+- **Indoors.** Walk in through the inn's west door. Its walls are solid; inside, the roof hides, the front wall fades to a ghost, and the camera comes in about a fifth closer. All of it eases back as you step out.
+- **Hester Vale**, the innkeeper, sells food, teaches Cooking (10 coins) and its recipes, and can make the inn your home: if you fall, you wake by her hearth. Standing inside the inn with no enemy near builds rested experience, as by your camp fire.
+- **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
+- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Eat for 10 seconds (even at full health) to become **Well Fed**: +2 Stamina for 15 minutes. Recipes live in `data/recipes.json`.
+- **Signposts.** Four posts along the road (outside Brackenford, by the mere turning, at the fork for the watch post and the Blackwood, and inside the Blackwood). Hover over one to see where its arms point, with distance and direction, or press E (or click it) to read it on screen until you walk on. They live in `data/world.json` `signposts`.
+- **Fishing.** Each cast runs a 20-second fishing bar. Whether anything bites is rolled when you cast, and the chance rises with your Fishing skill: your rank, plus your best rod (Tam's yew rod +10) and bait (cut bait +5, one used per cast). If the bar runs out without a bite, nothing was biting. The cursor turns into a hook over your bob.
+
+## Combat feel (WoW)
+
+- Auto attack opens with an instant blow the moment you reach the target, then swings on the weapon's timer. The swing bar fills as each blow lands.
+- No animation lock: you move at full speed while swinging, shooting and using abilities, and a swing on its way never eats a key press. Abilities pressed in the last 0.4 s of the global cooldown are queued.
+- Casts are broken by moving, and each hit while casting pushes the cast back 0.5 s (at most twice).
+- **Bows:** put a bow in the ranged slot (Mara sells a hunting bow). Auto Shot fires at targets beyond melee reach on the bow's own timer while you stand still; arrows fly and hit on arrival. In melee reach the sword takes over.
+- **Arrows and quivers:** each shot uses an arrow (sold by the hundred: rough from Mara or Tam, barbed from Tam, which hit harder). Tam's leather quiver goes in a bag slot, holds only arrows and makes Auto Shot 10% faster.
+- **Bow abilities:** Quick Shot (instant arrow, 120% of a bow shot) and Venom Arrow (instant poison, 5 ticks over 15 s). Both use an arrow and appear on keys 6 and 7 when you first equip a bow.
+
+## Mana and Resolve
+
+- **Mana** pays for spells. The Warden has 100 plus 10 per point of Intellect (110 at the start). It refills at 1.5 a second in a fight and 10 a second out of one. A cast pays when it finishes, so an interrupted cast costs nothing.
+- **Resolve** is the Warden's class gauge (0 to 100), shown under the mana bar. Each landed weapon swing gives 12, each hit you take 6, and a block 10 more. It fades at 8 a second once you have been out of the fight for 6 seconds.
+- **Costs:** Shield Break 25 Resolve, Rend 20, Cleave 30; Hallowed Bolt 20 mana, Smite 15, Hallowed Ground 30, Rebuke 10. Lunge is free and gives 15 Resolve, and Battle Cry gives 25, so both open a fight. Brace, the draught, camp and fishing are free.
+- A slot you can't afford is dimmed, and its tooltip shows the cost. Trying it says "Not enough mana" or "Not enough Resolve".
+- Each class's mana and gauge numbers live in `data/archetypes.json` (`resources`), and ability costs in `data/abilities.json` (`cost`, `gain`). A later class gets its own gauge by giving it a different `gauge` block.
+
+## Swing timer, layout and key bindings
+
+- **Swing timer.** Time between swings = weapon speed ÷ (1 + haste), on its own clock. A bar where the cast bar sits fills up to the moment your blow lands, with the weapon's name and the seconds left. The blow lands at the swing's impact frame and only if the target is still in reach; haste shortens the gap between swings, not the swing itself. Details in `docs/stats-and-damage.md` (The swing timer).
+- **Layout.** The spell bar and experience bar sit in the middle of the bottom edge. Coins, the menu and the bag slots are stacked on the far right.
+- **Menu.** Five buttons: Character (C), Spells (P), Talents (N, an empty placeholder), Quest Log (L) and Settings (O). Skills moved into the Spells window header and Save into Settings (K still saves).
+- **Key bindings.** Settings lists every action with its key; click one and press a new key (Backspace clears it, Esc cancels). A key taken from another action moves over. **Quick bind** lets you hover a spell or utility slot and press a key to bind it; Esc ends it. Bindings are saved in the browser and the bar labels and tooltips follow them.
+
+## Armour, item budgets and enemy types
+
+Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-and-damage.md) has the formulas and tables.
+
+- **One growth line.** Everything that grows with level grows with (level + 4): the armour constant, item armour, item stat budgets, weapon damage, player spells, and enemy health and hits. The constants and formulas are in `src/data/scaling.js`.
+- **Armour by your own level.** Damage reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75%, so the character panel's percentage holds against every enemy. Armour numbers are ten times what they were: the travelling clothes have 30, and the Warden starts at 130 (21%).
+- **Level gaps.** Every hit is ×1.2 for each level the attacker is above its target, and ÷1.2 for each level below, with at least 1 damage.
+- **Items are worked out.** Gear states its item level, slot, armour type, rarity and a stat split; the game works out armour (cloth 3, leather 6, mail 9, plate 12 per slot weight), weapon damage (0.45 × (item level + 4) a second, ±40% a swing), a shield's armour and 10% block, and the stat points (0.4 × slot weight × (item level + 4), ×1 green, ×1.3 blue, ×1.6 purple; white has none). Tooltips show the item level. `npm run validate` prints each item's budget and refuses one more than 10% over. Block rating is folded into block chance, and suffixes on green drops spend the green budget.
+- **Enemies by level and type.** No world scaling: each enemy's health, hits, attack speed and armour come from its level and type (fodder, pack beast, normal, skirmisher, armoured, elite, heavy, boss), sized against a par character of its level. Each spawn point's enemy has its own health within ±10%. The ghoul is 18 health and hits for 6; the brute 50 (45 at Hallow Cut) with 140 armour, hits of 9 and a 31 Grave Slam; the archer shoots for 12.
+- **Spells** follow the weapons: Hallowed Bolt 3–4, Smite 1–3, Hallowed Ground 1 a second and Rebuke 1 at level 1, ×(level + 4) ÷ 5, plus 0.25 spell power per Intellect.
+
+## Utility bar and camera (Dan's list, part 4)
+
+- **Utility bar.** Four more slots after the combat bar, on keys 6–9 (gamepad: hold D-pad left and press X, Y, A or B, like FFXIV's cross hotbar). They take non-combat skills (Fishing and Set Camp land there when learned) and items dragged from the bags, WoW style: the torch lights on one press and goes away on the next, swapping your shield back in. Old six-slot bars move Fishing and Set Camp across.
+- **Camera.** It stays fixed. Ground telegraphs, click targeting and gamepad aiming all read best from one known angle, as in Diablo IV and Lost Ark. Mouse-wheel zoom is the recommended next step; 90° snap turns are the safe option if turning is ever wanted.
+
+## The world (Dan's list, part 3)
+
+- **Respawns.** Every enemy type has `respawn` (seconds) in `data/enemies.json`: ghouls 90, hounds 75, archers 120, the brute 300, the seer 0 (never). A killed enemy comes back at its spawn point when its time is up (an unlooted body goes then), so you can grind for experience. Timers run on play time and are saved.
+- **Names** float over townsfolk (green, with their title) and enemies (red, until their health bar shows). **Settings** (O, or the ☰ button) can hide names over characters and names of items on the ground.
+- **Running** is the default: 6.5 m/s (was a 5 m/s walk), with a quicker stride.
+- **Chests** (`chests` in `data/world.json`): the Traveller's chest by the cart (open), the Watch-post coffer at the watch post (locked: the Watch-post key, lying by the graves, or Lockpicking 1) and the Poacher's cache in the Blackwood (Lockpicking 3 only). Old Tam teaches **Lockpicking** and sells lockpicks; every lock picked raises the skill. Open with E or a click; contents go to your bags, silver to your purse.
+- **Sparkles.** Gold motes rise from unopened chests, quest items in the world (the manifest) and places still to examine.
+- **Reputation** (`data/factions.json`): the Road Wardens and the Folk of the Mere. Quests (`reward.reputation`) and kills in their area (`reputation` per enemy type) raise it; standings run Hostile, Neutral, Friendly (1000), Honored (3000), Revered (6000), Exalted (12000). A faction's vendors (`faction` on a shop) take 5/10/15/20% off from Friendly up. The character window lists each faction's standing. Gated items and areas can read the standing later.
+- **Renown and titles** (`renown` in `data/factions.json`, titles in `data/titles.json`): you start a nobody, and townsfolk hail you with "Hello there." or "Hey you!". Renown is part of reputation, the standing that spans every faction, shown at the top of the Reputation tab. It comes from deeds: 5 per quest, 5 per level, 15 for the first kill of each elite type, and 1 for every 50 reputation earned with any faction. It rises through Nobody, A Familiar Face (20), Known (60), Respected (120), Renowned (200) and Famous (350). Once your renown and a title's own conditions allow it (a skill rank, a foe beaten, a faction standing), choose it on the character window's Titles tab. NPCs then greet you and bid you farewell by it ("Hello, Adventurer.", "Farewell, Master Angler."), and sometimes mock it.
+
+## Money, durability and gear (Dan's list, part 2)
+
+- **Gold and silver.** The purse holds silver and shows it as gold and silver with coin icons (100 silver = 1 gold, converted automatically: 1 gold less 1 silver is 99 silver). Prices in the data are in silver. `src/ui/money.js` formats it everywhere: bags, shop, quest rewards, tooltips ("Sell for 3 (coin)") and the log.
+- **Durability.** Weapons, armour and shields start at 100%. Dying takes 10% off everything worn (`CONFIG.durability`). At 0% an item is broken: its icon turns red, it gives no stats, and a broken weapon swings like bare hands. Smiths (vendor types with `repairs` in `data/shops.json`, so Mara) have a **Repair all** button; mending costs half the item's price for the missing share.
+- **Character panel** has every WoW slot: head, neck, shoulders, back, chest, wrists, hands, waist, legs, feet, two rings, two trinkets, main hand and off hand. Items say `slot: "finger"` or `"trinket"` to go in either of a pair; kind `jewellery` covers rings, necks and trinkets. No items use the new slots yet (they need models).
+- **Rebalance.** Weapon damage is about an eighth of what it was (the worn longsword is 3–7 at 2.2 s), power adds 0.25 per point of Strength, starting armour is 5 and the kite shield blocks 5%. Enemy health is 45% of what it was and enemy damage 70%, so a ghoul (22 health) takes three swings. Old saves keep their rolled names; rolled damage from before the change falls back to the item's own.
+- **Ground loot** shows its name in its rarity colour above it.
+
+## Combat and targeting fixes (Dan's list, part 1)
+
+- Engaging a target waits one full weapon swing before the first hit (2.2 s with the longsword). Casting a spell stops swings, and the swing timer restarts when the cast ends.
+- **Brace** is a spell now (kind `guard`, still on Space, off the global cooldown). **Rebuke** (key 5, kind `interrupt`, 10 m, 10 s cooldown) breaks an enemy cast and locks it out for 3 s. Each enemy attack has `interruptible` in `data/enemies.json`: archer shots and Grasping Dark can be interrupted, Grave Slam cannot.
+- Red errors mid screen: "You have no target.", "Out of range", "You need to be closer to interact with that target.". Abilities with `target: ground` or `self` need no target.
+- Cursors: a sword over enemies, a speech bubble over NPCs (grey when out of reach), a bag over loot. Left and right click do the same thing on friendly NPCs.
+- The swing animation now chops down instead of up.
+
 ## Stats and damage
 
 The design and the comparison with RuneScape, Skyrim, Diablo and Lost Ark are in [docs/stats-and-damage.md](docs/stats-and-damage.md). In short:
 
-- **Four attributes:** Might, Finesse, Intellect and Vitality. Each archetype has a main attribute that adds to its damage; the Warden's is Might. Vitality gives health.
+- **Four attributes:** Stamina, Strength, Agility and Intellect (renamed from Vitality, Might and Finesse). Each archetype has a main attribute that adds to its damage; the Warden's is Strength. Stamina gives health. The character panel lists them, then Haste, Armour, Block and Crit.
 - **Derived combat stats:**
   - weapon damage ranges;
-  - crit chance (5% plus Finesse) at 150% damage;
-  - armour, a capped percentage reduction that weakens against higher-level attackers;
-  - shield block: block chance plus block rating, and each block stops 30% of the hit;
+  - crit chance (5% plus Agility, converted by level) at 150% damage;
+  - armour, a capped percentage reduction by your own level; higher-level attackers hit harder through the level gap instead;
+  - shield block: the shield's own block chance plus block chance from gear, and each block stops 30% of the hit;
   - haste, from gear only, which shortens swings, windups and the global cooldown.
 - **Armour types:** cloth, leather, mail and plate. Each archetype can only wear some types; the Warden can wear all of them and use shields, and starts with a battered kite shield.
 - **No hit rolls and no dodge chance.** Avoiding damage comes from telegraphs and the defensive button.
-- **One formula for every hit:** base × ability multiplier, then crit, then armour, then block.
+- **One formula for every hit:** base × ability multiplier × level gap, then crit, then armour, then block.
 - **Damage numbers** float up for hits dealt (pale), hits taken (red) and heals (green). Crits are larger, amber and marked "!", and blocks read "Block". They stay small and muted, as the design asks.
 - **Enemy health:** the target frame shows the health of the enemy you are locked on to, aiming at or fighting. Enemies with mana also get a blue bar there and over their heads.
 - **Character panel:** shows every stat. Item tooltips show weapon ranges, armour type and stat bonuses.
@@ -92,15 +190,26 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;
-  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (+1–2 Might and Vitality), *of Swiftness* (haste) or *of Vigour*: that is its magical property. It shows green and sells for a little more.
+  - common gear that drops at the Enhanced rarity gains a WoW-style suffix such as *of the Bear* (Strength and Stamina), *of Swiftness* (haste) or *of Vigour*, which spends the green stat budget of the item's level and slot: that is its magical property. It shows green and sells for a little more.
 - **Where the rolls live.** Each item keeps only its differences from the database, so a later balance change still reaches items already in your bags. Rolls survive dropping, selling, buying back and saving, and the save check rejects impossible rolls.
 - **Items placed in the world** (the helm, the sabatons in the archers' camp) and items bought from Mara do not roll.
+
+## Death, camps, the dark and fishing
+
+- **Death.** When you fall, release your spirit. It rises, grey and fast, at your camp or the last shrine you rested at. Enemies ignore a spirit. Walk back to your body (marked ✝ on the minimap) and rise there at half health with nothing lost, or return to life where you rose and lose a few coins.
+- **The dead remember.** The enemy that killed you wears a skull, over its head and on the minimap (☠). You deal it 25% more damage, and killing it pays half its experience again as revenge.
+- **Old Tam**, the fisher by the Stillwater Mere west of the road, teaches Camping (10 coins) and Fishing (5 coins), and sells rods and torches.
+- **Set Camp.** A 3 second cast, standing still, with no enemies near. The camp (▲ on the minimap) becomes where your spirit rises. Resting by its fire builds rested experience (the pale band on the experience bar), which doubles kill experience until spent.
+- **Torches and the dark.** Some places are too dark to enter. Equip a torch in the off hand (it replaces the shield, so no block) to walk in. The Barrow Hollow, west of the hound den in the Blackwood, holds a strongbox and a purse.
+- **Fishing.** With the skill and a rod in your bags, use Fishing (it goes on your bar when learned) facing the water (it casts towards your cursor if that is on the water). The Warden puts his sword away and holds the rod out, with the line running to the bob. Wait for the bob to dip, then strike: click the bob, or press E / A. Too soon, or too late, and the fish is gone. Each catch raises the skill, and higher skill (and bait, later) catches more often.
 
 ## Controls
 
 One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the scenes are composed for that one isometric angle) and movement is direct.
 
-**Targeting and auto attack (WoW style).** Left-click an enemy to select it: a red ring and the frame at the top of the screen mark it. Right-click an enemy to select it and start **auto attack**: the Warden swings at it every time his weapon is ready while it is in reach, until it falls, you pick another target, or you stop (Attack on the bar, or Esc). The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby; **RT** on a pad starts auto attack on your target, or on whoever is ahead. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+**Targeting and auto attack (WoW style).** Left-click anyone to select them: a yellow ring and the frame at the top of the screen (with their portrait and level) mark them. Left-clicking the ground lets go; right-clicking the ground does not. Hovering over anyone shows who they are in the bottom-right corner, where every tooltip now shows. Right-click an enemy (or **RT** on a pad), or use any ability on it, to **engage** it (the ring turns red): the Warden then auto attacks, swinging each time his weapon is ready while the target is in reach and in front of him, until it falls, you pick another target, or you clear it (Esc). Auto attack is not a spell and is not on the bar. Swing time is the weapon's **speed** (the worn longsword swings every 2.2 s), shortened by haste; each swing hits for the weapon's damage plus Strength. Engaging an enemy out of reach, or using a spell on one, says "Out of range" in red mid-screen. Right-clicking does not turn the Warden: on the move he faces where he walks (and holds his swing if the target is behind him); standing still he turns to it. The frame says "Attacking", or "Out of reach" until you close in. **Tab** (or **R3**) picks the enemy you are aiming at, then cycles through the others nearby. Abilities on the spell bar go to your target; with nothing selected they go to the enemy nearest your aim, which a faint gold ring shows. Left-clicking a townsperson selects them; right-clicking talks to them. Esc clears the target.
+
+**Weight.** A landed swing, a crit or a heavy blow kicks the camera and knocks the enemy back a little; crits shake harder and land with a deeper crunch. Nothing pauses: the action stays fluid. The numbers are in `impact` in `src/config.js`.
 
 **No dodge, no sprint.** Space is a single defensive button on a 7 s cooldown, and the slot belongs to the archetype. The Warden's is **Brace**: raise the shield and the next blow within 2.5 s, even a Grave Slam, is turned aside. It is off the global cooldown.
 
@@ -108,24 +217,32 @@ One scheme for keyboard and mouse and for a gamepad. The camera is fixed (the sc
 
 | Keyboard and mouse | Gamepad | Action |
 |---|---|---|
-| WASD | Left stick | Move |
+| WASD or arrow keys | Left stick | Move |
 | Mouse | Right stick | Aim (with no stick input, you aim the way you face) |
 | Tab | R3 (stick click) | Next target |
 | Left click | | Select an enemy or townsperson; loot a body or drop |
-| Right click | RT | Auto attack an enemy; talk to a townsperson; loot |
-| 1 | X | Lunge (slot 1) |
-| 2 | Y | Shield Break (slot 2) |
-| 3 or Q | RB | Healing draught (slot 3) |
-| 4 | LB | Hallowed Bolt (slot 4) |
-| 5 | LT | Attack: auto attack on or off (slot 5) |
-| Space | B | Brace, the defensive slot |
-| E | A | Interact, examine, loot everything nearby |
+| Right click | RT | Engage an enemy (auto attack); talk to a townsperson; loot |
+| 1 | X | Spell slot 1 (Lunge) |
+| 2 | Y | Spell slot 2 (Shield Break) |
+| 3 | RB | Spell slot 3 (Heavy Strike) |
+| 4 | LB | Spell slot 4 (Crushing Blow) |
+| Q | LT | Spell slot 5 (Rebuke) |
+| E | B | Spell slot 6 (Brace) |
+| Shift-1 to Shift-4 | D-pad left + X / Y / A / B | Utility slots (healing draught, torch, fishing, camp) |
+| Space | A | Interact, examine, loot everything nearby |
+| Mouse wheel | | Zoom the camera in and out |
 | B (or I) | Start | Bags |
 | C | View | Character panel |
 | P | D-pad up | Spellbook |
+| N | | Talents (placeholder for now) |
+| L | | Quest log |
+| O | | Settings (key bindings, nameplates, save) |
+| U | | Skills (RuneScape style: each skill and its level; also a button in the Spells window) |
 | K | D-pad down | Save |
 | Esc | B (in a window) | Close windows, then clear the target |
-| M | | Sound on or off |
+| (Settings) | | Volume for master, effects and ambience; click to move |
+
+Every keyboard key above except WASD, the arrow keys, Esc and M can be changed in Settings (O).
 
 **Example spells.** The Warden has six example spells, all on the global cooldown and all going to your target (or the enemy nearest your aim) as above. Hallowed Bolt starts on key 4; drag the rest from the spellbook (P) onto the bar.
 
@@ -154,7 +271,7 @@ Three Ashen Ghouls and the Brute are placed so they are not all visible from the
 
 ## Balance (from section 9.7)
 
-Every number lives in `src/config.js`. At average rolls: player 100 HP, strike 18 (16–20), Shield Break 2× strike (36), ghoul 48 HP / 8 dmg after armour / 1.35 s, brute 96 HP with 10 armour / 13 dmg after armour / 1.05 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Might and +2 Vitality: +12 max HP and +2 strike, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 24 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
+Every number lives in `src/config.js`, `src/data/scaling.js` and the data files. At average rolls: player 100 HP and 130 armour (21%), auto attack 9 (7–11) every 2.2 s with the worn longsword, Shield Break 5, ghoul 18 HP / 5 dmg after armour / 1.35 s, brute 50 HP with 140 armour / 9 dmg (×1.44 two levels up) / 1.2 s, draught +42, ghoul 28 XP, brute 65 XP, level 2 at 100 XP (+2 Strength and +2 Stamina: +12 max HP and more damage, then 160, 220 … XP per level), death costs 20% of coins capped at 5. Build 2 adds a 1.5 s GCD, Lunge 1.5× strike with an 8 s cooldown, Grave Slam 31 damage with a 1.4 s wind-up and 7 s cooldown, a 1 s cooldown between draughts, and fog from 14 m to 40 m. Brace has a 7 s cooldown and a 2.5 s window; area looting reaches 5 m (`loot` and `targeting` in config).
 
 ## Saving
 

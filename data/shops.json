@@ -1,17 +1,30 @@
 {
-  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price.",
+  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price. Vendor types with `repairs` mend gear (Repair all).",
   "vendorTypes": [
     {
       "id": "smith",
       "name": "Smith",
-      "sells": ["weapon", "armor", "shield", "material", "consumable", "bag"],
-      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for."
+      "sells": ["weapon", "ammo", "armor", "shield", "material", "consumable", "bag", "torch"],
+      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for.",
+      "repairs": true
     },
     {
       "id": "general",
       "name": "General goods",
       "sells": ["consumable", "bag", "material", "document"],
       "description": "Supplies, bags and sundries."
+    },
+    {
+      "id": "outfitter",
+      "name": "Outfitter",
+      "sells": ["tool", "ammo", "torch", "consumable", "material", "bag"],
+      "description": "Rods, lights and the things a traveller forgets."
+    },
+    {
+      "id": "innkeeper",
+      "name": "Innkeeper",
+      "sells": ["consumable"],
+      "description": "Food, drink and a bed."
     }
   ],
   "shops": [
@@ -19,7 +32,21 @@
       "id": "mara_forge",
       "name": "Mara's forge",
       "vendorType": "smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "travellers_satchel"]
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "arming_sword", "rusty_dirk", "hunting_bow", "rough_arrow", "travellers_satchel", "torch"],
+      "faction": "road_wardens"
+    },
+    {
+      "id": "tam_outfitters",
+      "name": "Tam's tackle",
+      "vendorType": "outfitter",
+      "stock": ["fishing_rod", "yew_fishing_rod", "cut_bait", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
+      "faction": "mere_folk"
+    },
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "vendorType": "innkeeper",
+      "stock": ["grilled_perch", "travellers_stew", "healing_draught"]
     }
   ]
 }

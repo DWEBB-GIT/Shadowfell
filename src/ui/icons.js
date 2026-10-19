@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ITEMS } from '../data/items.js';
+import { DB } from '../data/db.js';
 
 // Inventory icons are rendered from the same Blender models used in the
 // world, once at start-up, so an item always looks like what you dropped.
@@ -27,7 +28,7 @@ export function renderItemIcons(assets, size = 64) {
   for (const name of models) {
     const obj = assets.instance(name);
     // long items (swords) are shown diagonally, the classic RPG way
-    if (['worn_sword', 'watchmans_edge', 'rusted_falchion', 'blackwood_cleaver', 'witchbane'].includes(name)) obj.rotation.set(0, 0, -Math.PI / 4);
+    if (Object.values(ITEMS).some((i) => i.model === name && i.kind === 'weapon')) obj.rotation.set(0, 0, -Math.PI / 4);
     else if (name === 'kite_shield' || name === 'iron_shield') obj.rotation.set(0.15, 0.35, 0);
     else obj.rotation.set(0.5, -0.6, 0);
     scene.add(obj);
@@ -63,7 +64,7 @@ function glyph(draw, size = 64) {
 }
 
 export function abilityIcons() {
-  return {
+  const icons = {
     strike: glyph((g) => {
       // a sword slash
       g.strokeStyle = '#c8c4b8';
@@ -141,6 +142,24 @@ export function abilityIcons() {
       g.lineTo(44, 28);
       g.stroke();
     }),
+    rebuke: glyph((g) => {
+      // a spell broken: a spark of gold under a struck-through ring
+      const r = g.createRadialGradient(32, 32, 1, 32, 32, 14);
+      r.addColorStop(0, '#fff6d0');
+      r.addColorStop(0.6, '#ffc850');
+      r.addColorStop(1, 'rgba(255,160,40,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(32, 32, 14, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = '#d84a30';
+      g.lineWidth = 5;
+      g.beginPath();
+      g.arc(32, 32, 21, 0, Math.PI * 2);
+      g.moveTo(17, 17);
+      g.lineTo(47, 47);
+      g.stroke();
+    }),
     hallowedBolt: glyph((g) => {
       // a mote of gold fire with its trail
       g.strokeStyle = 'rgba(255,210,120,0.55)';
@@ -174,6 +193,69 @@ export function abilityIcons() {
         g.arc(x, y, 3, 0, Math.PI * 2);
         g.fill();
       }
+    }),
+    quickShot: glyph((g) => {
+      // an arrow in flight with speed lines
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#c8c4b8';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#a04a2a';
+      g.lineWidth = 3;
+      for (const [x, y] of [[12, 52], [17, 47]]) {
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x - 4, y - 8);
+        g.moveTo(x, y);
+        g.lineTo(x + 8, y + 4);
+        g.stroke();
+      }
+      g.strokeStyle = 'rgba(255,230,170,0.6)';
+      g.lineWidth = 2;
+      for (const o of [-10, 10]) {
+        g.beginPath();
+        g.moveTo(16 + o, 36 + o);
+        g.lineTo(30 + o, 22 + o);
+        g.stroke();
+      }
+    }),
+    venomArrow: glyph((g) => {
+      // an arrow dripping green venom
+      g.strokeStyle = '#d8c8a0';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(12, 52);
+      g.lineTo(50, 14);
+      g.stroke();
+      g.fillStyle = '#7ad04a';
+      g.beginPath();
+      g.moveTo(54, 10);
+      g.lineTo(42, 14);
+      g.lineTo(50, 22);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#5aa83a';
+      for (const [x, y, r] of [[44, 30, 3.5], [40, 40, 3], [46, 46, 2.5]]) {
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        g.fill();
+      }
+      const r = g.createRadialGradient(48, 16, 1, 48, 16, 14);
+      r.addColorStop(0, 'rgba(160,255,110,0.7)');
+      r.addColorStop(1, 'rgba(90,200,60,0)');
+      g.fillStyle = r;
+      g.beginPath();
+      g.arc(48, 16, 14, 0, Math.PI * 2);
+      g.fill();
     }),
     smite: glyph((g) => {
       // a star of light
@@ -218,6 +300,82 @@ export function abilityIcons() {
       g.fillStyle = '#8a6a3a';
       g.fillRect(28, 44, 8, 14);
     }),
+    setCamp: glyph((g) => {
+      // a campfire under a little tent
+      g.fillStyle = '#7a5c3a';
+      g.beginPath();
+      g.moveTo(32, 10);
+      g.lineTo(54, 44);
+      g.lineTo(10, 44);
+      g.closePath();
+      g.fill();
+      g.fillStyle = '#1a120c';
+      g.beginPath();
+      g.moveTo(32, 22);
+      g.lineTo(40, 44);
+      g.lineTo(24, 44);
+      g.fill();
+      g.fillStyle = '#ffa040';
+      g.beginPath();
+      g.ellipse(32, 50, 6, 9, 0, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = '#6a4a2a';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(20, 58);
+      g.lineTo(44, 52);
+      g.moveTo(20, 52);
+      g.lineTo(44, 58);
+      g.stroke();
+    }),
+    cook: glyph((g) => {
+      // a pot over flames
+      g.fillStyle = '#e07a2a';
+      for (const [x, h] of [[22, 16], [32, 22], [42, 16]]) {
+        g.beginPath();
+        g.moveTo(x - 6, 58);
+        g.quadraticCurveTo(x - 4, 58 - h * 0.6, x, 58 - h);
+        g.quadraticCurveTo(x + 4, 58 - h * 0.6, x + 6, 58);
+        g.fill();
+      }
+      g.fillStyle = '#4a4440';
+      g.beginPath();
+      g.ellipse(32, 30, 18, 12, 0, 0, Math.PI);
+      g.fill();
+      g.fillRect(14, 26, 36, 5);
+      g.strokeStyle = 'rgba(220,220,210,0.6)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(26, 22);
+      g.quadraticCurveTo(22, 15, 27, 8);
+      g.moveTo(37, 22);
+      g.quadraticCurveTo(41, 15, 36, 8);
+      g.stroke();
+    }),
+    fish: glyph((g) => {
+      // a rod, its line and a bob on the water
+      g.strokeStyle = '#8a6a3a';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(8, 56);
+      g.lineTo(44, 10);
+      g.stroke();
+      g.strokeStyle = 'rgba(220,220,200,0.7)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(44, 10);
+      g.quadraticCurveTo(52, 30, 46, 44);
+      g.stroke();
+      g.strokeStyle = '#5a8a9a';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(46, 48, 12, 4, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = '#d04030';
+      g.beginPath();
+      g.arc(46, 45, 4, 0, Math.PI * 2);
+      g.fill();
+    }),
     battleCry: glyph((g) => {
       // sound waves from a shout
       g.strokeStyle = '#ff9a5a';
@@ -235,4 +393,134 @@ export function abilityIcons() {
       g.fill();
     }),
   };
+  // weapon strikes reuse the sword and shield-slam glyphs
+  icons.heavyStrike = icons.strike;
+  icons.crushingBlow = icons.shieldBreak;
+  // every other spell gets a glyph painted from its kind, in its school's colour
+  for (const a of Object.values(DB.abilities)) if (!icons[a.id] && a.kind) icons[a.id] = glyph((g) => kindGlyph(g, a));
+  return icons;
+}
+
+const SCHOOL = { holy: '#ffd070', shadow: '#a86ae8', nature: '#8ad04a', fire: '#ff8a3a', physical: '#d8d0c0' };
+
+// A plain painted glyph for a spell without its own: the shape says what it
+// does (a slash, a bolt, drops for a dot, a ring for ground...), the colour
+// its school.
+function kindGlyph(g, a) {
+  const c = SCHOOL[a.school] || '#d8d0c0';
+  g.strokeStyle = c;
+  g.fillStyle = c;
+  g.lineWidth = 4;
+  const line = (pts) => {
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.stroke();
+  };
+  const dot = (x, y, r) => {
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+  };
+  const ring = (r, from = 0, to = Math.PI * 2) => {
+    g.beginPath();
+    g.arc(32, 32, r, from, to);
+    g.stroke();
+  };
+  if (a.ranged) {
+    // an arrow, with the spell's mark at its head
+    g.strokeStyle = '#d8c8a0';
+    line([[12, 52], [48, 16]]);
+    line([[48, 16], [36, 18]]);
+    line([[48, 16], [46, 28]]);
+    g.fillStyle = c;
+    if (a.kind === 'dot') dot(48, 16, 6);
+    if (a.tuning?.maxTargets > 1) {
+      line([[8, 40], [36, 12]]);
+      line([[24, 56], [52, 28]]);
+    }
+    if (a.kind === 'cast') ring(24, -2.4, -0.6);
+    return;
+  }
+  switch (a.kind) {
+    case 'instant':
+    case 'charge':
+      line([[14, 50], [48, 16]]);
+      if (a.tuning?.bothHands) line([[16, 16], [50, 50]]);
+      if (a.tuning?.damageMultiplier === undefined) dot(32, 32, 8);
+      g.lineWidth = 2;
+      ring(22, -1.9, -0.3);
+      break;
+    case 'dot':
+      for (const [x, y] of [[20, 22], [34, 34], [44, 18], [26, 46]]) dot(x, y, 5);
+      break;
+    case 'cast':
+    case 'channel':
+      g.globalAlpha = 0.5;
+      line([[10, 54], [34, 30]]);
+      g.globalAlpha = 1;
+      dot(40, 24, 11);
+      if (a.kind === 'channel') {
+        g.lineWidth = 2;
+        line([[8, 40], [16, 34], [24, 40], [32, 34], [40, 40], [48, 34], [56, 40]]);
+      }
+      break;
+    case 'aoe':
+    case 'trap':
+      ring(20);
+      g.lineWidth = 2;
+      ring(12);
+      if (a.kind === 'trap') for (let i = 0; i < 8; i++) {
+        const t = (i / 8) * Math.PI * 2;
+        line([[32 + Math.cos(t) * 20, 32 + Math.sin(t) * 20], [32 + Math.cos(t) * 26, 32 + Math.sin(t) * 26]]);
+      }
+      break;
+    case 'burst':
+      for (let i = 0; i < 10; i++) {
+        const t = (i / 10) * Math.PI * 2;
+        line([[32 + Math.cos(t) * 8, 32 + Math.sin(t) * 8], [32 + Math.cos(t) * 24, 32 + Math.sin(t) * 24]]);
+      }
+      break;
+    case 'control':
+      // an eye, or closed for sleep
+      g.lineWidth = 3;
+      line([[10, 32], [22, 22], [42, 22], [54, 32], [42, 42], [22, 42], [10, 32]]);
+      if (!a.applies?.sleep) dot(32, 32, 6);
+      else line([[14, 32], [50, 32]]);
+      break;
+    case 'stealth':
+      g.beginPath();
+      g.arc(32, 32, 20, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#100c09';
+      g.beginPath();
+      g.arc(40, 26, 18, 0, Math.PI * 2);
+      g.fill();
+      break;
+    case 'guard':
+    case 'shield':
+      if (a.kind === 'shield') {
+        g.globalAlpha = 0.35;
+        dot(32, 32, 22);
+        g.globalAlpha = 1;
+      }
+      ring(22);
+      line([[32, 14], [32, 50]]);
+      break;
+    case 'leap':
+      line([[50, 32], [14, 32]]);
+      line([[14, 32], [24, 22]]);
+      line([[14, 32], [24, 42]]);
+      g.lineWidth = 2;
+      ring(20, -2.6, -0.5);
+      break;
+    case 'purge':
+      g.beginPath();
+      g.moveTo(32, 10);
+      g.quadraticCurveTo(50, 34, 32, 54);
+      g.quadraticCurveTo(14, 34, 32, 10);
+      g.fill();
+      break;
+    default:
+      dot(32, 32, 12);
+  }
 }

@@ -5,14 +5,31 @@
 // code reads every number from one place.
 
 import { DB } from './data/db.js';
+import { SCALING, scaledEnemy } from './data/scaling.js';
 
 export const CONFIG = {
   player: {
     archetype: 'warden',
-    speed: 5.0, // metres per second
+    speed: 5.6, // metres per second: a run (Dan, 2026-10-16: 6.5 felt too fast)
+    runGait: 1.3, // the run animation: quicker, longer strides than a walk
     radius: 0.4,
     startCoins: 8,
     startDraughts: 1,
+  },
+  // Control on enemies (Dan, 2026-10-19). Normal enemies take stuns and
+  // sleeps in full. Elites wear them off: each one in a row lasts the next
+  // share of `eliteDr` (full, half, quarter), then they are immune until
+  // `eliteDrReset` seconds pass with none. Bosses are never stunned or
+  // slept: every second of control fills their stagger bar instead, and a
+  // full bar Staggers them for `staggered` seconds (cast broken, +25%
+  // damage taken); each stagger after needs `staggerGrowth` times more.
+  control: {
+    bossStaggerNeed: 6,
+    staggered: 4,
+    staggeredDamageTaken: 25,
+    staggerGrowth: 1.5,
+    eliteDr: [1, 0.5, 0.25],
+    eliteDrReset: 15,
   },
   shop: {
     sellFraction: 0.25, // merchants pay a quarter of their price, as in WoW
@@ -21,49 +38,106 @@ export const CONFIG = {
     leaveRange: 6.0, // walking further than this closes the shop
   },
   death: {
-    coinLossFraction: 0.2,
+    coinLossFraction: 0.2, // lost only by returning to life at the rest point, not at your body
     coinLossCap: 5,
     screenDelay: 1.3,
+    ghostSpeed: 1.5, // a spirit moves this much faster than the living
+    corpseReach: 3.5, // how close a spirit must come to its body to rise there
+    restReach: 4, // ...or to the rest point to return to life there
+    corpseHealth: 0.5, // rising at the body: this share of health
+    revengeBonus: 25, // percent more damage to the enemy that killed you
+    revengeXp: 0.5, // killing it pays this share of its experience again
+  },
+  fishing: {
+    castTime: 0.6, // the bob's flight
+    duration: 12, // seconds a cast lasts (the fishing bar); no bite by then and nothing was biting (Dan, 2026-10-19: 20 was too long)
+    biteMin: 2, // a bite comes this many seconds into the cast, at least...
+    biteMax: 9, // ...and at most
+    biteWindow: 1.4, // how long the bob stays under: strike now
+    biteBase: 65, // percent chance a cast gets a bite at all... (was 35: too many empty casts)
+    bitePerSkill: 1.2, // ...plus this per point of fishing skill (rank + rod + bait), up to biteCap
+    biteCap: 95,
+    baseChance: 75, // percent chance to land it on a timely strike...
+    chancePerRank: 0.6, // ...plus this per point of fishing skill
+    clickRadius: 60, // pixels: a click this close to the bob strikes
+  },
+  camp: {
+    clearRadius: 14, // no camp with a living enemy this close, or any enemy engaged
+    restRadius: 4, // rest within this of the fire to build rested experience
+    restedPerSecond: 0.01, // share of a level's experience rested per second by the fire
+    restedCap: 1, // at most one level's worth of rested experience
   },
   progression: {
     firstLevelXp: 100,
     xpGrowthPerLevel: 60, // level 2 -> 3 needs 160, then 220, ...
   },
   // Stats and damage (see docs/stats-and-damage.md). One formula for every
-  // hit: base x multiplier, then crit, then armour or resistance, then block.
+  // hit: base x multiplier x level gap, then crit, then armour or resistance,
+  // then block. Everything that grows with level (the armour constant, the
+  // level gap, item budgets, the enemy table) is in `scaling` below.
   stats: {
     healthBase: 40,
-    healthPerVitality: 6,
+    healthPerStamina: 6,
     manaPerIntellect: 10,
-    powerPerMainStat: 1, // flat damage added to every weapon hit
-    spellPowerPerIntellect: 1,
-    critBase: 5, // percent
-    critPerFinesse: 0.5,
+    rangedPowerShare: 0.5, // bows: Agility x powerPerMainStat x this is ranged power
+    powerPerMainStat: 0.25, // damage added to every weapon hit (per 0.6 s of swing time)
+    spellPowerPerIntellect: 0.25,
+    critBase: 5, // percent, plus Agility / (scaling.critAgility x (level + 4))
     critMultiplier: 1.5,
-    // reduction = armour / (armour + armourConstant + armourPerLevel x attacker
-    // level), as in WoW and Diablo III: armour keeps its worth as levels rise
-    armourConstant: 40,
-    armourPerLevel: 10,
-    mitigationCap: 75, // percent
+    mitigationCap: 75, // percent: armour and resistance never stop more
     blockCap: 50, // percent
-    blockRatingPerPercent: 10, // 10 block rating = +1% block chance
     blockReduction: 30, // a block stops this % of the blow (Brace stops all of it)
     hasteCap: 30, // percent; haste divides swing time, windups, casts and the GCD
     gcdFloor: 1.0, // seconds: haste never takes the global cooldown below this
     enemyVariance: 0.15, // enemy blows land within +-15% of their damage
-    fistDamage: [1, 3],
+    fistDamage: [1, 2], // bare hands (or a broken weapon), per swing
+    fistSpeed: 2.0, // seconds between bare-handed swings
+    offHandDamage: 0.5, // an off-hand weapon's swings do half damage (WoW)
+    offHandResolve: 0.5, // and build half the Resolve of a main-hand swing
   },
   interaction: {
     radius: 2.2,
+  },
+  // gear wears when you die; at 0% it is broken (no stats) until mended
+  durability: {
+    deathLoss: 10, // percent off every worn weapon and piece of armour
+    repairFraction: 0.5, // mending 100% costs half the item's price (silver)
+  },
+  // how a landed blow feels: a camera kick (no hit-stop: the action never pauses)
+  // Floating damage numbers (src/ui/damageNumbers.js). A number's size
+  // follows how big the hit is against your usual white (auto attack) hit:
+  // size = font x (hit / usual) ^ sizePower, held between minScale and
+  // maxScale. Crits stay longer, and one of pulseAt times your usual hit or
+  // more swells once as it lands.
+  damageNumbers: {
+    font: 22, // px, an average hit
+    sizePower: 0.6,
+    minScale: 0.65,
+    maxScale: 2.4,
+    life: 1.1, // seconds on screen
+    critLife: 1.6,
+    pulseAt: 2,
+    pulse: 0.5, // how far the pulse swells (x the number's size)
+  },
+  impact: {
+    shake: 0.07, // metres of camera kick
+    critShake: 0.16,
+    shakeDecay: 9, // per second
   },
   fog: { color: 0x3a4244, near: 14, far: 40 }, // linear view-distance fog, in metres from the camera
   // the Blackwood closes in: nearer, darker fog and dimmer light under the pines
   blackwood: { fogColor: 0x1d2725, fogNear: 9, fogFar: 32, light: 0.68 },
   camera: {
     offset: [0, 11, 10],
+    lookAhead: 0.5, // metres north of the Warden the camera centres on (was 2.4; Dan: keep him nearer the middle so you see what comes from the south)
+    zoomMin: 0.6, // mouse wheel zoom: this close...
+    zoomMax: 1.35, // ...to this far, as a share of the offset
+    zoomStep: 0.08, // per wheel notch
+    indoorZoom: 0.22, // how much closer the camera comes inside a building
     fov: 45,
     followSharpness: 8, // higher = tighter follow
     renderScale: 0.62, // chunky, period-appropriate pixels
+    showcase: { distance: 5.2, side: 1.3, height: 1.7, lookHeight: 1.0 }, // character select: in front of the character, a little to one side
   },
   targeting: {
     range: 26, // Tab / R3 cycle through enemies this close
@@ -71,11 +145,16 @@ export const CONFIG = {
     clickRadius: 46, // pixels: how close a click must be to an enemy or townsperson
     softArc: 60, // soft lock: degrees either side of your aim
     softAimRadius: 2.5, // ...or an enemy this close to the cursor point
+    screenMargin: 0.03, // keys and soft lock only pick enemies this far (of half the screen) inside its edge, unless already fighting you
+  },
+  minimap: {
+    questRange: 90, // metres (the map shows ~38 m at its widest): quest marks and objective areas further than this stay off the minimap
   },
   loot: {
     areaRadius: 5, // looting one thing also loots everything this close to it
     clickRadius: 40, // pixels: how close a click must be to a corpse or drop
     reach: 3.2, // how close the Warden must be to loot by clicking
+    gatherTime: 2, // seconds to gather a quest item (firewood, ore, sorrel...)
   },
 };
 
@@ -84,14 +163,26 @@ export const CONFIG = {
 const tuning = (id) => DB.abilities[id].tuning;
 Object.assign(CONFIG, {
   attack: tuning('strike'),
+  autoShot: tuning('autoShot'),
   shieldBreak: tuning('shieldBreak'),
   lunge: tuning('lunge'),
   brace: tuning('brace'),
-  draught: tuning('draught'),
+  draught: { cooldown: 1 }, // healing draughts share a short cooldown
   globalCooldown: DB.globalCooldown,
+  // WoW's spell queue: an ability pressed this close to the end of the global
+  // cooldown (or its own) goes off the moment it can
+  spellQueueWindow: DB.spellQueueWindow,
+  // being hit while casting sets the cast bar back (WoW Classic's pushback)
+  castPushback: DB.castPushback,
+  maxPushbacks: DB.maxPushbacks,
   armourTypes: DB.armourTypes,
   archetypes: DB.archetypes,
-  enemies: { ...DB.enemies, leashDistance: DB.leashDistance },
+  // each enemy's numbers from its level and type (src/data/scaling.js)
+  enemies: {
+    ...Object.fromEntries(Object.entries(DB.enemies).map(([id, e]) => [id, scaledEnemy(e, CONFIG.stats, tuning('strike').abilityWeaponSeconds)])),
+    leashDistance: DB.leashDistance,
+  },
+  scaling: SCALING,
 });
 
 export function xpForNextLevel(level) {

@@ -1,3 +1,5 @@
+import { CURSORS } from './ui/cursors.js';
+import { SIGNPOSTS } from './world/signposts.js';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Events } from './core/events.js';
@@ -12,6 +14,19 @@ import { blackwoodness } from './world/terrain.js';
 import { Player } from './entities/player.js';
 import { Combat } from './systems/combat.js';
 import { Spells } from './systems/spells.js';
+import { Resources } from './systems/resources.js';
+import { Afterlife } from './systems/afterlife.js';
+import { Skills } from './systems/skills.js';
+import { Settings } from './systems/settings.js';
+import { Keybinds } from './systems/keybinds.js';
+import { Chests } from './systems/chests.js';
+import { Reputation } from './systems/reputation.js';
+import { Titles } from './systems/titles.js';
+import { Sparkles } from './render/sparkles.js';
+import { Camp } from './systems/camp.js';
+import { WaterAndDark } from './world/waterAndDark.js';
+import { Fishing } from './systems/fishing.js';
+import { Cooking } from './systems/cooking.js';
 import { EnemyManager } from './systems/enemies.js';
 import { LootSystem } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
@@ -20,6 +35,8 @@ import { Stats } from './systems/stats.js';
 import { Progression } from './systems/progression.js';
 import { WorldState } from './systems/worldState.js';
 import { SaveManager, validateSave } from './systems/save.js';
+import { Roster } from './systems/characters.js';
+import { TitleScreen } from './ui/titleUI.js';
 import { Effects } from './systems/fx.js';
 import { AudioSystem } from './systems/audio.js';
 import { Telegraphs } from './systems/telegraphs.js';
@@ -32,7 +49,7 @@ import { QuestLog } from './systems/quests.js';
 import { Dialogue } from './systems/dialogue.js';
 import { Hud } from './ui/hud.js';
 import { renderItemIcons } from './ui/icons.js';
-import { EXAMINE } from './data/text.js';
+import { EXAMINE, TITLE } from './data/text.js';
 import { ITEMS, validateItems, rollItem, itemView, rollLoot } from './data/items.js';
 import { DB } from './data/db.js';
 import { DATA_ERRORS } from './data/db.js';
@@ -47,6 +64,7 @@ class Game {
     this.time = 0;
     this.events = new Events();
     this.pendingDeath = null;
+    this.zoom = 1; // mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
   }
 
   async init() {
@@ -57,6 +75,7 @@ class Game {
     this.assets = await new Assets().load();
     this.collision = new Collision();
     this.world = new World(this).build();
+    this.waterAndDark = new WaterAndDark(this).build();
     this.scene.add(this.world.group);
 
     this.worldState = new WorldState(this);
@@ -81,6 +100,18 @@ class Game {
     this.quests = new QuestLog(this);
     this.combat = new Combat(this);
     this.spells = new Spells(this);
+    this.resources = new Resources(this);
+    this.afterlife = new Afterlife(this);
+    this.skills = new Skills(this);
+    this.settings = new Settings(this);
+    this.keys = new Keybinds(this);
+    this.input.isBound = (code) => this.keys.isBound(code);
+    this.hud?._applyKeyLabels?.();
+    this.reputation = new Reputation(this);
+    this.titles = new Titles(this);
+    this.camp = new Camp(this);
+    this.fishing = new Fishing(this);
+    this.cooking = new Cooking(this);
     this.telegraphs = new Telegraphs(this);
     this.enemies = new EnemyManager(this);
     this.targeting = new Targeting(this);
@@ -88,6 +119,8 @@ class Game {
     this.merchant = new Merchant(this);
     this.dialogue = new Dialogue(this);
     this.loot = new LootSystem(this);
+    this.chests = new Chests(this);
+    this.sparkles = new Sparkles(this);
     this.interaction = new Interaction(this);
     this.actionBar = new ActionBar(this);
     this.hud = new Hud(this);
@@ -95,6 +128,8 @@ class Game {
     this.fx = new Effects(this);
     this.audio = new AudioSystem(this);
     this.save = new SaveManager(this);
+    this.roster = new Roster();
+    this.title = new TitleScreen(this);
 
     this._bindLifecycle();
     this._snapCamera();
@@ -146,6 +181,7 @@ class Game {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+      this.hud?._layoutBottom();
     });
   }
 
@@ -156,20 +192,63 @@ class Game {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') this.save.autosave();
     });
-    document.getElementById('continue-btn').addEventListener('click', () => this.startGame(true));
-    document.getElementById('new-btn').addEventListener('click', () => this.startGame(false));
+    document.getElementById('btn-logout').addEventListener('click', () => this.logOut());
   }
 
+  // The title screen and character select. Unreadable saves are copied
+  // aside and never overwritten; the character keeps its place in the list.
   _showTitle() {
-    const result = this.save.read();
-    this.bootSave = result;
+    this.bootSave = { status: 'none' };
+    const { legacyUnreadable } = this.roster.load((key) => this.save.read(key));
     let note = '';
-    if (result.status === 'invalid') {
-      this.save.quarantine(result.raw);
-      note = 'Your previous save could not be read. It has been kept aside and will not be overwritten unless you save manually (K).';
-      console.warn('Save rejected:', result.errors);
+    if (legacyUnreadable) note = 'Your previous save could not be read. It has been kept aside and will not be overwritten.';
+    for (const c of this.roster.list) {
+      const r = this.save.read(c.key);
+      if (r.status === 'invalid') {
+        this.save.quarantine(r.raw, c.key);
+        console.warn(`Save for ${c.name} rejected:`, r.errors);
+      }
     }
-    this.hud.showTitle({ hasSave: result.status === 'ok', note });
+    if (legacyUnreadable) this.save.quarantine(this.save.read(this.save.key).raw, this.save.key);
+    let view = 'main';
+    try {
+      if (sessionStorage.getItem('shadowfall.toSelect')) view = 'select';
+      sessionStorage.removeItem('shadowfall.toSelect');
+    } catch {
+      /* the main title it is */
+    }
+    this.title.open({ note, view });
+  }
+
+  // Play as a character from the roster: their own save, or a fresh start.
+  enterWorld(id) {
+    const c = this.roster.byId(id);
+    if (!c || this.started) return;
+    this.save.key = c.key;
+    this.save.autosaveEnabled = true;
+    this.bootSave = this.save.read();
+    if (this.bootSave.status === 'invalid') return; // the select screen does not offer it
+    this.character = c;
+    // the class decides stats, resources, spellbook, bar and starting gear
+    const cls = TITLE.classes.find((k) => k.id === c.classId);
+    this.archetypeId = cls?.archetype || CONFIG.player.archetype;
+    this.roster.touch(id);
+    this.hud.setCharacter(c);
+    this.startGame(this.bootSave.status === 'ok');
+  }
+
+  // Back to character select. A fresh page is the simplest clean slate.
+  logOut() {
+    if (this.player.dead) return this.hud.toast('You cannot leave while defeated.');
+    const r = this.save.save({ manual: true });
+    if (!r.ok) return this.hud.toast(r.reason);
+    this.save.autosaveEnabled = false; // just saved; nothing to add on the way out
+    try {
+      sessionStorage.setItem('shadowfall.toSelect', '1');
+    } catch {
+      /* the main title then */
+    }
+    location.reload();
   }
 
   startGame(resume) {
@@ -182,6 +261,11 @@ class Game {
     this.merchant.buyback = [];
     this.quests.startNew();
     this.region = null; // named again, quietly, from wherever the Warden stands
+    this.afterlife.reset();
+    this.skills.reset();
+    this.reputation.reset();
+    this.titles.reset();
+    this.pendingDeath = null;
     this.telegraphs.clear();
     this.hud.numbers.clear();
     this.hud.items.closeAll();
@@ -204,39 +288,44 @@ class Game {
       }
     }
     this.recomputeMaxHealth();
+    this.camp.show();
     this.enemies.spawnAll();
     this.loot.spawnAll();
+    this.chests.spawnAll();
     this.hud.hideTitle();
     this.hud.refreshObjective();
     this.started = true;
+    this.hud._layoutBottom(); // the spell bar settles before the first frame
     this._snapCamera();
     if (resumed) this.hud.log('You take up the road again.', 'lore');
     else this.hud.log('The Fallen Road. Somewhere ahead lies the old watch post.', 'lore');
   }
 
   // ----------------------------------------------------------- game events
-  onPlayerDeath() {
+  onPlayerDeath(killer = null) {
     const coins = this.inventory.coins;
     const loss = Math.min(CONFIG.death.coinLossCap, Math.floor(coins * CONFIG.death.coinLossFraction));
     this.pendingDeath = { loss, timer: CONFIG.death.screenDelay };
+    this.afterlife.onDeath(killer, loss);
     this.events.emit('playerDied', {});
     this.hud.closeModal(true);
     this.hud.log('You fall.', 'hurt');
   }
 
-  respawn() {
-    if (!this.player.dead || !this.pendingDeath) return;
-    const lost = this.inventory.loseCoins(this.pendingDeath.loss);
+  // Leave the body and walk as a spirit (systems/afterlife.js).
+  releaseSpirit() {
+    if (!this.player.dead || !this.pendingDeath) return false;
     this.pendingDeath = null;
-    const dest = this.respawnPoint();
-    this.telegraphs.clear();
-    this.hud.numbers.clear();
-    this.targeting.clear();
-    this.player.revive(dest.x, dest.z);
-    this.enemies.resetSurvivors();
     this.hud.hideDeath();
+    this.afterlife.release();
     this._snapCamera();
-    this.hud.log(`You wake ${dest.label}.${lost ? ` ${lost} coin${lost === 1 ? '' : 's'} gone.` : ''}`, 'lore');
+    return true;
+  }
+
+  // Release and return to life at once at the rest point, coins lost.
+  respawn() {
+    if (!this.releaseSpirit()) return;
+    this.afterlife.reviveHere();
   }
 
   // What is under the cursor: a body or drop to loot, a living enemy, or a
@@ -263,6 +352,12 @@ class Game {
       if (e.alive) consider('enemy', e, Math.min(screen(e.position.x, e.position.y + 1, e.position.z), screen(e.position.x, e.position.y + 0.3, e.position.z)) - 6);
     }
     for (const n of npcs.list) consider('npc', n, screen(n.position.x, n.position.y + 1, n.position.z));
+    for (const c of this.chests.list) if (!this.chests.opened(c)) consider('chest', c, screen(c.x, heightAt(c.x, c.z) + 0.4, c.z));
+    for (const sp of SIGNPOSTS) {
+      const [x, z] = sp.position;
+      const y = heightAt(x, z);
+      consider('sign', sp, Math.min(screen(x, y + 1.0, z), screen(x, y + 1.9, z)));
+    }
     for (const l of loot.lootables()) {
       const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
       if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
@@ -270,27 +365,107 @@ class Game {
     return best;
   }
 
+  // is the mouse on (or near) the fishing bob?
+  _overBob() {
+    const bob = this.fishing.bobPosition;
+    if (!bob) return false;
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const v = bob.clone().project(this.camera);
+    return Math.hypot(((v.x + 1) / 2) * r.width - (this.input.mouse.x - r.left), ((1 - v.y) / 2) * r.height - (this.input.mouse.y - r.top)) < CONFIG.fishing.clickRadius;
+  }
+
+  // The mouse cursor says what a click would do (WoW): a sword over an
+  // enemy, a speech bubble over a townsperson (grey until you are close
+  // enough to talk), a hand over loot, a hook over your fishing bob.
+  _cursorFor(pick) {
+    let c = '';
+    if (this.input.mouse.onCanvas && this._overBob()) c = CURSORS.fish;
+    else if (pick) {
+      const p = this.player.position;
+      const o = pick.obj;
+      if (pick.kind === 'enemy') c = CURSORS.attack;
+      else if (pick.kind === 'npc') c = Math.hypot(o.position.x - p.x, o.position.z - p.z) <= CONFIG.shop.talkRange + 0.5 && !this.collision.wallBetween(p.x, p.z, o.position.x, o.position.z) ? CURSORS.talk : CURSORS.talkFar;
+      else if (pick.kind === 'loot' || pick.kind === 'chest') c = Math.hypot(o.x - p.x, o.z - p.z) <= (pick.kind === 'chest' ? 2.4 : CONFIG.loot.reach) ? CURSORS.loot : CURSORS.lootFar;
+    }
+    if (c !== this.cursor) this.renderer.domElement.style.cursor = this.cursor = c;
+  }
+
   // Left click selects, right click acts (WoW): right on an enemy starts
   // auto attack, on a townsperson talks, and either button loots.
   _click(button) {
+    // a click on (or near) the fishing bob strikes
+    if (this._overBob()) return this.fishing.strike();
     const pick = this._pickUnderCursor();
-    if (!pick) return false;
+    // With click to move (Settings) a click on the ground walks there, and a
+    // click on something out of reach walks up to it and then acts.
+    const walk = this.settings.get('clickToMove');
+    this.moveTo = null;
+    // a left click on the ground lets go of the target; a right click does not
+    if (!pick) {
+      if (button === 'left') this.targeting.clear();
+      const at = walk && this.input.mouse.onCanvas && this._aimPoint();
+      if (at) this.moveTo = { x: at.x, z: at.z, reach: 0.25 };
+      return false;
+    }
     const { player, events, targeting, loot } = this;
-    const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach;
-    if (pick.kind === 'loot') {
+    const far = (x, z, reach) => Math.hypot(x - player.position.x, z - player.position.z) > reach || this.collision.wallBetween(player.position.x, player.position.z, x, z);
+    // out of reach: walk up and act on arrival (click to move), or say so
+    const reachOr = (x, z, reach, act, tooFar) => {
+      if (!far(x, z, reach)) return act();
+      if (walk) this.moveTo = { x, z, reach: reach - 0.3, then: act };
+      else tooFar();
+    };
+    const closer = () => this.hud.error('You need to be closer to interact with that target.');
+    if (pick.kind === 'sign') {
+      this.hud.showSignpost(pick.obj);
+    } else if (pick.kind === 'chest') {
+      reachOr(pick.obj.x, pick.obj.z, 2.4, () => this.chests.open(pick.obj), closer);
+    } else if (pick.kind === 'loot') {
       const l = pick.obj;
-      if (far(l.x, l.z, CONFIG.loot.reach)) events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' });
-      else loot.lootArea(l);
+      reachOr(l.x, l.z, CONFIG.loot.reach, () => loot.lootArea(l), () => events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' }));
     } else if (pick.kind === 'enemy') {
-      if (button === 'right') targeting.engage(pick.obj);
-      else targeting.select(pick.obj);
+      if (button === 'right') {
+        targeting.engage(pick.obj);
+        // walking in, the Warden follows the enemy until it is in reach
+        if (!targeting.targetInReach && walk && !targeting.targetInShot) this.moveTo = { follow: pick.obj, reach: 0 };
+        else if (!targeting.targetInReach && !targeting.targetInShot) this.hud.error('Out of range');
+      } else targeting.select(pick.obj);
     } else if (pick.kind === 'npc') {
+      // either button selects a townsperson and talks to them, if close enough
       const n = pick.obj;
-      if (button === 'left') targeting.selectFriendly(n);
-      else if (far(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5)) events.emit('log', { text: `You are too far away to talk to ${n.name}.`, kind: 'muted', throttle: 'talk-far' });
-      else this.npcs.talk(n);
+      targeting.selectFriendly(n);
+      reachOr(n.position.x, n.position.z, CONFIG.shop.talkRange + 0.5, () => this.npcs.talk(n), closer);
     }
     return true;
+  }
+
+  // Click to move: the way to walk this frame, or null. Arriving runs the
+  // action the walk was for; any movement key takes over and ends it.
+  _clickMove(keysMove) {
+    const m = this.moveTo;
+    if (!m) return null;
+    if (keysMove.x || keysMove.z || this.player.dead) {
+      this.moveTo = null;
+      return null;
+    }
+    const p = this.player.position;
+    if (m.follow) {
+      if (!m.follow.alive || this.targeting.current !== m.follow || this.targeting.targetInReach) {
+        this.moveTo = null;
+        return null;
+      }
+      m.x = m.follow.position.x;
+      m.z = m.follow.position.z;
+    }
+    const dx = m.x - p.x;
+    const dz = m.z - p.z;
+    const d = Math.hypot(dx, dz);
+    if (d <= Math.max(0.2, m.reach)) {
+      this.moveTo = null;
+      m.then?.();
+      return null;
+    }
+    return { x: dx / d, z: dz / d };
   }
 
   // Maximum health comes from level plus worn gear (the helm).
@@ -304,10 +479,7 @@ class Game {
   }
 
   respawnPoint() {
-    const r = this.worldState.respawn;
-    const sh = SHRINES.find((x) => x.id === this.worldState.shrineActivated) || SHRINES[0];
-    if (r) return { x: r.x, z: r.z, label: sh.label, kind: 'shrine' };
-    return { x: PLAYER_START.position[0], z: PLAYER_START.position[1], label: "at the road's end", kind: 'start' };
+    return this.afterlife.restPoint();
   }
 
   restAtShrine(shrine = SHRINE) {
@@ -318,6 +490,7 @@ class Game {
     // respawn just in front of the shrine, on the road side
     worldState.respawn = { x: shrine.position[0] - 1.8, z: shrine.position[1] };
     worldState.shrineActivated = shrine.id;
+    worldState.restPoint = 'shrine';
     events.emit('shrineRest', {});
     if (first) hud.log(EXAMINE.shrine_first, 'lore');
     hud.log('You rest a while. Your wounds close, and you will return here if you fall.', 'heal');
@@ -366,25 +539,32 @@ class Game {
     if (pad.active && pad.now.some(Boolean)) hud.setPadMode(true);
     if (input.pressed.size || input.mouse.clicked) hud.setPadMode(false);
 
-    if (input.consume('KeyM')) hud.setMuted(this.audio.toggleMute());
-    if (input.consume('Escape') && !hud.closeModal()) this.targeting.clear();
+    const notches = input.consumeWheel();
+    if (notches && this.started) {
+      const c = CONFIG.camera;
+      this.zoom = THREE.MathUtils.clamp(this.zoom + notches * c.zoomStep, c.zoomMin, c.zoomMax);
+    }
     if (hud.modal === 'title') {
-      if (pad.pressed(BUTTONS.A)) this.startGame(this.bootSave.status === 'ok');
+      this.title.update(dt);
       return null;
     }
+    if (input.consume('Escape') && !hud.closeModal()) this.targeting.clear();
     if (hud.modal === 'death') {
-      if (input.consume('Enter') || input.consume('KeyE') || pad.pressed(BUTTONS.A)) this.respawn();
+      if (input.consume('Enter') || this.keys.pressed('interact') || pad.pressed(BUTTONS.A)) this.releaseSpirit();
       return null;
     }
     if (hud.modal === 'document') {
       if (pad.pressed(BUTTONS.B) || pad.pressed(BUTTONS.A)) hud.closeModal();
       return null;
     }
-    if (input.consume('KeyB') || input.consume('KeyI') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
-    if (input.consume('KeyC') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
-    if (input.consume('KeyP')) hud.togglePanel('spellbook');
+    if (this.keys.pressed('bags') || pad.pressed(BUTTONS.START)) hud.togglePanel('bags');
+    if (this.keys.pressed('character') || pad.pressed(BUTTONS.VIEW)) hud.togglePanel('character');
+    if (this.keys.pressed('spellbook')) hud.togglePanel('spellbook');
+    if (this.keys.pressed('talents')) hud.togglePanel('talents');
+    if (this.keys.pressed('skills')) hud.togglePanel('skills');
+    if (this.keys.pressed('settings')) hud.togglePanel('settings');
     // D-pad right opens and closes the log (it moves the highlight in the bags)
-    if (input.consume('KeyL') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
+    if (this.keys.pressed('quests') || (!hud.items.anyOpen && !this.dialogue.isOpen && pad.pressed(BUTTONS.RIGHT))) hud.togglePanel('quests');
     // With a window open the pad drives the window; the world keeps running
     // and the keyboard and mouse still play, as in WoW. Conversations and the
     // quest log come first.
@@ -392,44 +572,66 @@ class Game {
     if (hud.quests.anyOpen) hud.quests.gamepad(pad, dt);
     else if (padMenu) hud.items.gamepad(pad, dt);
     else if (pad.pressed(BUTTONS.UP)) hud.togglePanel('spellbook');
-    if (input.consume('KeyK') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
+    if (this.keys.pressed('save') || (!padMenu && pad.pressed(BUTTONS.DOWN))) this.manualSave();
     if (hud.blocksGameplay) return null;
-    if (input.consume('KeyE') || (!padMenu && pad.pressed(BUTTONS.A))) this.interaction.interact();
+    if (this.keys.pressed('interact') || (!padMenu && !pad.held(BUTTONS.LEFT) && pad.pressed(BUTTONS.A))) {
+      if (this.fishing.active) this.fishing.strike();
+      else this.interaction.interact();
+    }
+    const padOn = !padMenu;
+    // a spirit only walks
+    if (this.player.ghost) {
+      input.consumeClick();
+      input.consumeRightClick();
+      return { move: padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis(), aim: null, actions: {} };
+    }
     if (this.player.dead) return null;
 
-    const padOn = !padMenu;
-    const move = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
+    const keysMove = padOn && pad.left.m > 0 ? { x: pad.left.x, z: pad.left.y } : input.moveAxis();
+    const move = this._clickMove(keysMove) || keysMove;
     const usingPad = padOn && (pad.left.m > 0 || pad.right.m > 0 || hud.padMode);
     const p = (b) => padOn && pad.pressed(b);
     const rawAim = usingPad ? this._padAim() : this._aimPoint();
     this.rawAim = rawAim;
     const tg = this.targeting;
     // Tab / R3 cycle targets; RT engages whoever is selected or ahead
-    if (input.consume('Tab') || p(BUTTONS.RS)) tg.cycle(rawAim);
-    if (p(BUTTONS.RT)) tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range));
+    if (this.keys.pressed('cycleTarget') || p(BUTTONS.RS)) tg.cycle(rawAim);
+    if (p(BUTTONS.RT) && tg.engage(tg.current || tg.softTarget(rawAim, CONFIG.targeting.range)) && !tg.targetInReach) this.hud.error('Out of range');
+    // hovering over anyone in the world shows who they are (bottom right)
+    if (!usingPad) {
+      const hover = input.mouse.onCanvas ? this._pickUnderCursor() : null;
+      this.hud.items.worldTip(hover);
+      this._cursorFor(hover);
+    }
     // left click selects, right click attacks, talks or loots
     if (input.consumeClick()) this._click('left');
     if (input.consumeRightClick()) this._click('right');
     // each spell-bar slot has a fixed key; whatever ability sits there fires
+    const util = padOn && pad.held(BUTTONS.LEFT);
     const slots = [
-      input.consume('Digit1') || p(BUTTONS.X),
-      input.consume('Digit2') || p(BUTTONS.Y),
-      input.consume('Digit3') || input.consume('KeyQ') || p(BUTTONS.RB),
-      input.consume('Digit4') || p(BUTTONS.LB),
-      input.consume('Digit5') || p(BUTTONS.LT),
-      input.consume('Space') || p(BUTTONS.B),
+      this.keys.pressed('bar0') || (!util && p(BUTTONS.X)),
+      this.keys.pressed('bar1') || (!util && p(BUTTONS.Y)),
+      this.keys.pressed('bar2') || p(BUTTONS.RB),
+      this.keys.pressed('bar3') || p(BUTTONS.LB),
+      this.keys.pressed('bar4') || p(BUTTONS.LT),
+      this.keys.pressed('bar5') || (!util && p(BUTTONS.B)),
+      // utility slots: 6-9, or D-pad left held with a face button
+      this.keys.pressed('bar6') || (util && p(BUTTONS.X)),
+      this.keys.pressed('bar7') || (util && p(BUTTONS.Y)),
+      this.keys.pressed('bar8') || (util && p(BUTTONS.A)),
+      this.keys.pressed('bar9') || (util && p(BUTTONS.B)),
     ];
     const actions = this.actionBar.actions(slots);
-    // Attack on the bar turns auto attack on or off; auto attack swings
-    // whenever the target is in reach and the weapon is ready
-    if (actions.strike) tg.toggleAttack(rawAim);
+    // Auto attack (WoW): once engaged (right-click, RT, or any ability used
+    // on an enemy) the Warden swings whenever the target is in reach, in
+    // front of him, and his weapon is ready. It is not on the bar.
     actions.strike = tg.attacking && tg.targetInReach;
-    const fighting = tg.attacking && tg.current && tg.current.position.distanceTo(this.player.position) < 6;
+    // beyond it, with a bow in the ranged slot, Auto Shot
+    actions.shoot = tg.attacking && tg.targetInShot;
     return {
       move,
-      aim: actions.strike ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
-      lungeAim: tg.aimFor(rawAim, ABILITIES.lunge.range),
-      lockOn: fighting ? tg.current.position : null,
+      aim: actions.strike || actions.shoot ? tg.current.position.clone() : tg.aimFor(rawAim, ABILITIES.strike.range),
+      rawAim,
       actions,
     };
   }
@@ -438,6 +640,7 @@ class Game {
     const dt = Math.min(this.clock.getDelta(), 0.1); // clamp long stalls
     this.step(dt);
     this.renderer.render(this.scene, this.camera);
+    if (this.hud.items.open.character) this.hud.items.preview.render(); // the character panel's live figure
   }
 
   // One simulation step. Exposed so tests can advance time deterministically.
@@ -449,6 +652,12 @@ class Game {
       this.time += dt;
       this.player.update(dt, controls);
       this.spells.update(dt);
+      this.combat.updateArrows(dt);
+      this.resources.update(dt);
+      this.camp.update(dt, this.time);
+      this.fishing.update(dt);
+      this.cooking.update(dt);
+      this.waterAndDark.update(dt, this.time);
       this.enemies.update(dt);
       this.npcs.update(dt);
       this.merchant.update();
@@ -457,6 +666,7 @@ class Game {
       this.targeting.update(dt, this.rawAim, ABILITIES.strike.range + 1);
       this.interaction.update();
       this.loot.update(dt, this.time);
+      this.sparkles.update(dt);
       this.fx.update(dt);
       this.audio.update(dt);
       if (this.pendingDeath && this.hud.modal !== 'death') {
@@ -468,6 +678,7 @@ class Game {
     }
     this.world.update(dt, performance.now() / 1000);
     this._updateRegion();
+    this.world.updateIndoors(dt, this.player.position);
     this._updateCamera(dt);
     if (this.started) this.hud.update(dt);
   }
@@ -480,8 +691,7 @@ class Game {
     if (k !== this._bwk) {
       this._bwk = k;
       const bw = CONFIG.blackwood;
-      this.scene.fog.near = THREE.MathUtils.lerp(CONFIG.fog.near, bw.fogNear, k);
-      this.scene.fog.far = THREE.MathUtils.lerp(CONFIG.fog.far, bw.fogFar, k);
+      this.fogBase = { near: THREE.MathUtils.lerp(CONFIG.fog.near, bw.fogNear, k), far: THREE.MathUtils.lerp(CONFIG.fog.far, bw.fogFar, k) };
       this.scene.fog.color.set(CONFIG.fog.color).lerp(new THREE.Color(bw.fogColor), k);
       this.scene.background.copy(this.scene.fog.color);
       const light = THREE.MathUtils.lerp(1, bw.light, k);
@@ -503,6 +713,7 @@ class Game {
 
   _snapCamera() {
     this.cameraTarget.copy(this.player.position);
+    this.world.updateIndoors?.(0, this.player.position);
     this._placeCamera();
   }
 
@@ -510,15 +721,58 @@ class Game {
     // exponential smoothing: the same feel at any frame rate
     const k = 1 - Math.exp(-CONFIG.camera.followSharpness * dt);
     this.cameraTarget.lerp(this.player.position, k);
-    this._placeCamera();
+    this._placeCamera(dt);
   }
 
-  _placeCamera() {
+  // a kick of the camera when a blow lands (see CONFIG.impact)
+  shakeCamera(amount) {
+    this.shake = Math.max(this.shake || 0, amount);
+  }
+
+  // character select and creation: the camera stands in front of the
+  // character, low, so they fill the middle of the screen
+  _placeShowcase() {
+    const p = this.player.position;
+    const f = this.player.facing;
+    const fx = Math.sin(f);
+    const fz = Math.cos(f);
+    const d = CONFIG.camera.showcase;
+    this.camera.position.set(p.x + fx * d.distance - fz * d.side, p.y + d.height, p.z + fz * d.distance + fx * d.side);
+    this.camera.lookAt(p.x - fz * d.side * 0.5, p.y + d.lookHeight, p.z + fx * d.side * 0.5);
+    this.sun.position.set(p.x - 14, p.y + 26, p.z + 6);
+    this.sun.target.position.set(p.x, p.y, p.z);
+    this.playerLight.position.set(p.x + fx * 1.5, p.y + 2.2, p.z + fz * 1.5);
+    this.world.setCutaway(this.camera.position, p.clone().setY(p.y + 1.2));
+  }
+
+  _placeCamera(dt = 0) {
+    if (!this.started && this.title?.view && this.title.view !== 'main') return this._placeShowcase();
     // a fixed isometric view: the scenes are composed for this one angle
-    const [ox, oy, oz] = CONFIG.camera.offset;
+    // indoors the camera closes in a little, under where the roof was
+    const zoom = this.zoom * (1 - CONFIG.camera.indoorZoom * (this.world.indoorBlend || 0));
+    const [ox, oy, oz] = CONFIG.camera.offset.map((v) => v * zoom);
     const t = this.cameraTarget;
-    this.camera.position.set(t.x + ox, t.y + oy, t.z + oz);
-    this.camera.lookAt(t.x, t.y + 1.0, t.z - 2.4); // look a little ahead, up the road
+    let sx = 0;
+    let sy = 0;
+    if (this.shake > 0.001) {
+      sx = Math.sin(this.time * 71) * this.shake;
+      sy = Math.cos(this.time * 53) * this.shake;
+      this.shake *= Math.exp(-CONFIG.impact.shakeDecay * dt);
+    } else this.shake = 0;
+    this.camera.position.set(t.x + ox + sx, t.y + oy + sy, t.z + oz);
+    // fog is measured from the camera: zooming moves it with the camera, so
+    // the Warden's surroundings stay as clear at any zoom
+    if (this.fogBase) {
+      const extra = Math.hypot(ox, oy, oz) - Math.hypot(...CONFIG.camera.offset);
+      this.scene.fog.near = this.fogBase.near + extra;
+      this.scene.fog.far = this.fogBase.far + extra;
+      const far = this.scene.fog.far + 6;
+      if (this.camera.far !== far) {
+        this.camera.far = far;
+        this.camera.updateProjectionMatrix();
+      }
+    }
+    this.camera.lookAt(t.x + sx, t.y + 1.0 + sy, t.z - CONFIG.camera.lookAhead * zoom); // a little ahead, up the road
     this.sun.position.set(t.x - 14, t.y + 26, t.z + 6);
     this.sun.target.position.set(t.x, t.y, t.z);
     const p = this.player.position;

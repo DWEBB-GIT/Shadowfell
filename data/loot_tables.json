@@ -35,6 +35,10 @@
             {
               "item": "mail_chausses",
               "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
             }
           ],
           "enhanced": [
@@ -52,6 +56,14 @@
             },
             {
               "item": "mail_chausses",
+              "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            },
+            {
+              "item": "ghoulbone_knife",
               "weight": 1
             }
           ],
@@ -209,6 +221,10 @@
             {
               "item": "watch_helm",
               "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
             }
           ],
           "enhanced": [
@@ -227,6 +243,14 @@
             {
               "item": "watch_helm",
               "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
+            },
+            {
+              "item": "militia_sword",
+              "weight": 1
             }
           ],
           "rare": [
@@ -275,6 +299,50 @@
           "epic": [
             {
               "item": "witchbane",
+              "weight": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mere_fish",
+      "drops": {
+        "rolls": 1,
+        "chance": 1,
+        "rarity": {
+          "junk": 12,
+          "common": 84,
+          "rare": 4
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "old_boot",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "gloomwater_perch",
+              "weight": 3
+            },
+            {
+              "item": "silver_dace",
+              "weight": 2
+            },
+            {
+              "item": "bramble_carp",
+              "weight": 2
+            }
+          ],
+          "rare": [
+            {
+              "item": "barrow_eel",
+              "weight": 1
+            },
+            {
+              "item": "ghostfin",
               "weight": 1
             }
           ]

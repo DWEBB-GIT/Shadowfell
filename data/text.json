@@ -23,6 +23,125 @@
     "hound_den": "Gnawed bones, some of them still in boots. The barrow hounds den here, and they do not like visitors.",
     "archer_camp": "A smashed crate stamped with the watch tower. Arrows, no bowstrings, and a cold fire. The archers here stopped needing to eat some time ago.",
     "seer_stones": "A ring of stones lit with witchlight. Grave-iron bars have been driven into the earth at its heart, nine of them, in a circle. So this is where Mara's iron went.",
-    "shrine_first": "The candles are fresh and someone has left bread in the bowl this morning. Whoever keeps this shrine is not far away."
+    "shrine_first": "The candles are fresh and someone has left bread in the bowl this morning. Whoever keeps this shrine is not far away.",
+    "well": "The well is deep and the water sweet. Someone has scratched the names of the drowned along the rim; the list stops forty years ago."
+  },
+  "title": {
+    "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "build": "Alpha 0.1",
+    "tagline": "The Fallen Road",
+    "maxCharacters": 10,
+    "classes": [
+      {
+        "id": "warden",
+        "name": "Warrior",
+        "archetype": "warden",
+        "role": "Weapon master",
+        "blurb": "A sworn guard of the old roads who starts every fight weak and grows stronger the longer it lasts. Fights with any melee weapon: one alone, two at once, or a weapon and shield. Builds Resolve by trading blows, and spending it heals.",
+        "traits": [
+          "Strength",
+          "Plate, mail, leather, cloth",
+          "Resolve",
+          "Strong: area damage, long fights. Weak: escaping, ranged foes"
+        ]
+      },
+      {
+        "id": "rogue",
+        "name": "Rogue",
+        "archetype": "rogue",
+        "role": "Shadow assassin",
+        "blurb": "Pops out of Shadow, bursts one enemy down with both blades, and slips away again to refill. Puts a second foe to sleep rather than fight a pack.",
+        "traits": [
+          "Agility",
+          "Leather, cloth",
+          "Energy and combo points",
+          "Strong: single-target burst, control. Weak: packs, long fights"
+        ]
+      },
+      {
+        "id": "ranger",
+        "name": "Ranger",
+        "archetype": "ranger",
+        "role": "Trapper and archer",
+        "blurb": "A hunter of the Blackwood fringe who traps the approach, sets the dead alight and leaps clear when they get close. A hound joins at level 8.",
+        "traits": [
+          "Agility",
+          "Leather, cloth",
+          "Focus",
+          "Strong: control, fire spread, escaping. Weak: being cornered"
+        ]
+      },
+      {
+        "id": "occultist",
+        "name": "Occultist",
+        "archetype": "occultist",
+        "role": "Curse-caster",
+        "blurb": "A reader of the grave-iron script who spreads rot over many foes and heals from every tick of it. Things die slowly, but the Occultist outlasts them.",
+        "traits": [
+          "Intellect",
+          "Cloth",
+          "Mana and Corruption",
+          "Strong: spread damage, survival. Weak: burst, moving fights"
+        ]
+      },
+      {
+        "id": "paladin",
+        "name": "Paladin",
+        "archetype": "paladin",
+        "role": "Holy juggernaut",
+        "blurb": "Slow and planted. Builds Righteous stacks with heavy blows for one earned crit, and heals while standing on consecrated ground.",
+        "traits": [
+          "Strength",
+          "Plate, mail, leather, cloth",
+          "Mana",
+          "Strong: big crits, toughness. Weak: speed, chasing"
+        ]
+      }
+    ],
+    "names": {
+      "first": [
+        "Aldric",
+        "Bryn",
+        "Cael",
+        "Dorrin",
+        "Edda",
+        "Fenn",
+        "Garrow",
+        "Hale",
+        "Isolde",
+        "Jory",
+        "Kestrel",
+        "Lorne",
+        "Maud",
+        "Nessa",
+        "Osric",
+        "Perrin",
+        "Quill",
+        "Rowan",
+        "Sable",
+        "Tamsin",
+        "Ulric",
+        "Vesna",
+        "Wren",
+        "Yorick"
+      ],
+      "last": [
+        "Ashford",
+        "Blackmere",
+        "Coldwater",
+        "Duskhollow",
+        "Emberly",
+        "Fallowe",
+        "Greyholt",
+        "Hollin",
+        "Ironside",
+        "Marsh",
+        "Nettle",
+        "Ravenscar",
+        "Stour",
+        "Thorne",
+        "Wexley"
+      ]
+    }
   }
 }

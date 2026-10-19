@@ -9,14 +9,27 @@ import { heightAt } from '../world/terrain.js';
 // frame. Left-clicking a townsperson selects them as a friendly target.
 // Escape clears the target.
 //
-// Auto attack: right-click an enemy (RT on a pad, or the Attack ability) to
-// select it and start swinging. The Warden swings at it each time his weapon
-// is ready while it is in reach, until it falls, you pick another target, or
-// you stop (Attack again, or Escape).
+// Auto attack: right-click an enemy (RT on a pad), or use any ability on it,
+// to engage it. The Warden swings at it each time his weapon is ready (its
+// speed, less haste) while it is in reach and in front of him, until it
+// falls, you pick another target, or you clear it (Escape). Right-clicking
+// selects without turning him: standing still he turns to it at a walk's
+// pace; moving, he faces where he goes.
 //
 // Abilities go to the selected enemy; with nothing selected they go to the
 // enemy nearest your aim (the cursor, or ahead of you on a pad), which a faint
 // ring shows. Ground spells use the raw aim point (see `aimFor`).
+//
+// Only what you can see: soft lock, Tab and RT pick only enemies inside the
+// camera view, or ones already fighting you (Diablo and WoW alike: you
+// cannot pick a fight with something you have not seen). See `targetable`.
+
+const _v = new THREE.Vector3();
+
+// Is this enemy chasing or striking the player?
+export function inCombatWithPlayer(e) {
+  return !!e && e.alive && (e.state === 'chase' || e.state === 'attack');
+}
 
 export class Targeting {
   constructor(game) {
@@ -25,9 +38,11 @@ export class Targeting {
     this.friendly = null; // a selected townsperson (Npc), or null
     this.attacking = false; // auto attack on the selected enemy
     this.soft = null; // who an ability would go to with nothing selected
-    this.marker = this._ring(0xff5a3a, 'TargetMarker');
-    this.softMarker = this._ring(0xf0c070, 'SoftTargetMarker');
-    this.softMarker.material.opacity = 0.45;
+    // the selection ring: yellow for anyone selected (left click), red once
+    // you are fighting it (right click, or an ability on it)
+    this.marker = this._ring(0xffd040, 'TargetMarker');
+    this.softMarker = this._ring(0xd8d0c0, 'SoftTargetMarker');
+    this.softMarker.material.opacity = 0.3;
   }
 
   _ring(color, name) {
@@ -52,6 +67,22 @@ export class Targeting {
     return Math.hypot(e.position.x - p.x, e.position.z - p.z);
   }
 
+  // Is the enemy inside the camera view (with a small margin in from the
+  // screen's edge)?
+  onScreen(e) {
+    const cam = this.game.camera;
+    if (!cam) return true;
+    _v.set(e.position.x, e.position.y + 1, e.position.z).project(cam);
+    const m = CONFIG.targeting.screenMargin;
+    return _v.z < 1 && Math.abs(_v.x) <= 1 - m && Math.abs(_v.y) <= 1 - m;
+  }
+
+  // Can a key or soft lock pick this enemy? Living, and either on screen or
+  // already fighting you.
+  targetable(e) {
+    return !!e && e.alive && (inCombatWithPlayer(e) || this.onScreen(e));
+  }
+
   // The enemy a soft lock picks for an ability with reach `range`, given an
   // aim point: inside the arc around the aim direction (or right under the
   // cursor), favouring the smallest angle and then the nearest.
@@ -72,7 +103,7 @@ export class Targeting {
     let best = null;
     let bestScore = Infinity;
     for (const e of enemies.list) {
-      if (!e.alive) continue;
+      if (!this.targetable(e)) continue;
       const dx = e.position.x - p.x;
       const dz = e.position.z - p.z;
       const d = Math.hypot(dx, dz);
@@ -124,6 +155,18 @@ export class Targeting {
     if (!this.select(enemy)) return false;
     if (!this.attacking) {
       this.attacking = true;
+      // WoW: a fresh fight opens the moment the target is in reach: the
+      // clocks are ready, nothing runs while you close in, and the first
+      // blow comes after a short, visible windup (`openerWindup`). Switching
+      // targets mid-fight keeps the running clocks.
+      const p = this.game.player;
+      const T = this.game.stats.attackCooldown;
+      if (!(p.lastSwingAt !== undefined && this.game.time - p.lastSwingAt < T)) {
+        p.cooldowns.attack = 0;
+        p.cooldowns.attackOff = 0;
+        p.cooldowns.ranged = 0;
+        p.opener = p.openerOff = true;
+      }
       this.game.events.emit('autoAttack', { on: true, target: enemy });
     }
     return true;
@@ -135,22 +178,27 @@ export class Targeting {
     this.game.events.emit('autoAttack', { on: false });
   }
 
-  // The Attack ability: start on the target (or whoever is ahead), or stop.
-  toggleAttack(aim) {
-    if (this.attacking) return this.stopAttack();
-    return this.engage(this.current || this.softTarget(aim, CONFIG.targeting.range) || this._nearest());
-  }
-
-  // Is the target close enough to hit with a swing?
+  // Is the target close enough to hit with a swing? As in WoW, melee reach
+  // stretches a little (`movingLeeway`) while you and it are both moving, so
+  // a chase does not drop swings.
   get targetInReach() {
     const t = this.current;
-    return !!t && t.alive && this._dist(t) <= CONFIG.attack.range + t.radius * 0.6;
+    if (!t || !t.alive) return false;
+    const leeway = this.game.player.moving && this.targetMoving ? CONFIG.attack.movingLeeway : 0;
+    return this._dist(t) <= CONFIG.attack.range + t.radius * 0.6 + leeway;
+  }
+
+  // Beyond melee reach but within the bow's: Auto Shot's turn.
+  get targetInShot() {
+    const t = this.current;
+    const st = this.game.stats;
+    return !!t && t.alive && st.hasRanged && !this.targetInReach && this._dist(t) <= st.rangedReach + t.radius * 0.6;
   }
 
   // Tab / R3: the enemy you are aiming at first, then the next nearest each
   // press, round all those in range.
   cycle(aim) {
-    const near = this.game.enemies.list.filter((e) => e.alive && this._dist(e) <= CONFIG.targeting.range).sort((a, b) => this._dist(a) - this._dist(b));
+    const near = this.game.enemies.list.filter((e) => this.targetable(e) && this._dist(e) <= CONFIG.targeting.range).sort((a, b) => this._dist(a) - this._dist(b));
     if (!near.length) return this.select(null);
     if (!this.current || !near.includes(this.current)) return this.select(this.softTarget(aim, CONFIG.targeting.range) || near[0]);
     return this.select(near[(near.indexOf(this.current) + 1) % near.length]);
@@ -159,7 +207,7 @@ export class Targeting {
   _nearest() {
     let best = null;
     for (const e of this.game.enemies.list) {
-      if (e.alive && this._dist(e) <= CONFIG.targeting.range && (!best || this._dist(e) < this._dist(best))) best = e;
+      if (this.targetable(e) && this._dist(e) <= CONFIG.targeting.range && (!best || this._dist(e) < this._dist(best))) best = e;
     }
     return best;
   }
@@ -167,18 +215,24 @@ export class Targeting {
   // Called each frame with the raw aim, to show the soft-lock ring.
   update(dt, rawAim = null, softRange = 0) {
     const t = this.current;
+    // is the target on the move? (for melee leeway)
+    if (t && this._last && this._lastFor === t && dt > 0) this.targetMoving = Math.hypot(t.position.x - this._last.x, t.position.z - this._last.z) / dt > 0.5;
+    else this.targetMoving = false;
+    this._lastFor = t;
+    this._last = t ? { x: t.position.x, z: t.position.z } : null;
     if (t && (!t.alive || this._dist(t) > CONFIG.targeting.dropRange || this.game.player.dead)) this.select(null);
     const f = this.friendly;
     if (f && Math.hypot(f.position.x - this.game.player.position.x, f.position.z - this.game.player.position.z) > CONFIG.targeting.dropRange) this.friendly = null;
     this.soft = !this.current && softRange > 0 ? this.softTarget(rawAim, softRange) : null;
-    this._place(this.marker, this.current, dt);
+    this.marker.material.color.setHex(this.current && this.attacking ? 0xff4a30 : 0xffd040);
+    this._place(this.marker, this.current || this.friendly, dt);
     this._place(this.softMarker, this.soft, dt);
   }
 
   _place(m, e, dt) {
     m.visible = !!e;
     if (!e) return;
-    const s = e.radius * 2.6;
+    const s = (e.radius || 0.45) * 2.6;
     m.scale.set(s, s, s);
     m.position.set(e.position.x, heightAt(e.position.x, e.position.z) + 0.08, e.position.z);
     m.rotation.z += dt * 0.8;

@@ -1,14 +1,21 @@
+import { moneyText, moneyHTML } from './money.js';
+import { signpostLines } from '../world/signposts.js';
+import { Portraits } from './portraits.js';
+import { WorldLabels } from './worldLabels.js';
+import { KeybindUI } from './keybindUI.js';
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { DOCUMENTS, INTRO } from '../data/text.js';
+import { DOCUMENTS } from '../data/text.js';
+import { BUILD_LABEL } from '../buildInfo.js';
 import { ItemUI } from './itemUI.js';
 import { abilityIcons } from './icons.js';
-import { ABILITIES, BAR_SLOTS } from '../systems/actionBar.js';
+import { ABILITIES, BAR_SLOTS, itemRef, entryName } from '../systems/actionBar.js';
 import { DamageNumbers } from './damageNumbers.js';
 import { QuestUI } from './questUI.js';
 import { Minimap } from './minimap.js';
-import { SPELLS } from '../systems/spells.js';
-import { RARITY } from '../data/items.js';
+import { SPELLS, missingGear } from '../systems/spells.js';
+import { RARITY, ITEMS } from '../data/items.js';
+import { DB } from '../data/db.js';
 
 // The HUD reads game state and forwards requests (equip, respawn, close).
 // It never decides gameplay outcomes itself.
@@ -16,6 +23,8 @@ import { RARITY } from '../data/items.js';
 // Bottom of the screen, Diablo/WoW style: the experience bar across the top
 // of a spell bar, then the micro menu, coins and the bag slots.
 
+// a #rrggbb colour darkened to `k` of itself, for the bottom of a bar's gradient
+const shade = (hex, k) => '#' + [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k).toString(16).padStart(2, '0')).join('');
 const $ = (id) => document.getElementById(id);
 
 export class Hud {
@@ -28,6 +37,7 @@ export class Hud {
     this.logThrottle = new Map();
     this.enemyBars = new Map();
     this.tmp = new THREE.Vector3();
+    $('hud-build').textContent = BUILD_LABEL;
     this.el = {
       level: $('stat-level'),
       hpFill: $('hp-fill'),
@@ -57,27 +67,23 @@ export class Hud {
 
       respawnBtn: $('respawn-btn'),
       title: $('title-screen'),
-      continueBtn: $('continue-btn'),
-      newBtn: $('new-btn'),
-      titleNote: $('title-note'),
-      intro: $('intro-text'),
       mute: $('mute-indicator'),
     };
-    this.el.intro.textContent = INTRO;
     const P = () => game.player.cooldowns;
     this.cooldowns = {
       strike: () => [P().attack, game.stats.attackCooldown, false],
-      shieldBreak: () => [P().shieldBreak, CONFIG.shieldBreak.cooldown, true],
-      lunge: () => [P().lunge, CONFIG.lunge.cooldown, true],
-      brace: () => [P().brace, CONFIG.brace.cooldown, false],
-      draught: () => [P().draught, CONFIG.draught.cooldown, false],
+      'item:healing_draught': () => [P().draught, CONFIG.draught.cooldown, false],
+      fish: () => [0, 0, false],
     };
     // spells from the spell engine: their own cooldown, and all on the GCD
-    for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, true];
+    for (const [id, s] of Object.entries(SPELLS)) this.cooldowns[id] = () => [P()[id], s.tuning.cooldown, !s.tuning.offGlobalCooldown];
+    this.portraits = new Portraits(game);
     this._rarityStyles();
     this.abilityIcons = abilityIcons();
     this._buildBar();
     this.items = new ItemUI(game, this);
+    this.keybindUI = new KeybindUI(game, this);
+    this.labels = new WorldLabels(game, $('world-labels'));
     this.numbers = new DamageNumbers(game, $('damage-numbers'));
     this.quests = new QuestUI(game, this);
     this.minimap = new Minimap(game);
@@ -107,7 +113,7 @@ export class Hud {
     ev.on('playerHurt', fought);
 
     document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => this.closeModal()));
-    this.el.respawnBtn.addEventListener('click', () => game.respawn());
+    this.el.respawnBtn.addEventListener('click', () => game.releaseSpirit());
 
   }
 
@@ -125,7 +131,6 @@ export class Hud {
   }
 
   setItemIcons(icons) {
-    if (icons.draught) this.abilityIcons.draught = icons.draught;
     this.items.setIcons(icons);
     this.renderBar();
   }
@@ -140,8 +145,8 @@ export class Hud {
   _buildBar() {
     let html = '';
     BAR_SLOTS.forEach((b, i) => {
-      if (b.defensive) html += '<div class="sep"></div>';
-       html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
+      if (b.utility && !BAR_SLOTS[i - 1].utility) html += '<div class="sep"></div>';
+       html += `<div class="aslot${b.mouse ? ' mouse' : ''}${b.defensive ? ' defensive' : ''}${b.utility ? ' utility' : ''}" id="aslot-${i}" data-loc="a:${i}"><img alt=""><span class="key" data-kbm="${b.kbm}" data-pad="${b.pad}"></span><span class="count"></span><span class="cd"></span><span class="gcd"></span><span class="aname"></span></div>`;
     });
     this.el.actionBar.innerHTML = html;
     this.barSlots = BAR_SLOTS.map((_, i) => $('aslot-' + i));
@@ -155,9 +160,11 @@ export class Hud {
       el.dataset.ability = a || '';
       el.classList.toggle('empty', !a);
       const img = el.querySelector('img');
-      if (a) img.src = this.abilityIcons[a] || '';
+      const item = itemRef(a);
+      const src = item ? ITEMS[item] && this.items.icons[ITEMS[item].model] : this.abilityIcons[a];
+      if (a) img.src = src || '';
       else img.removeAttribute('src');
-      el.querySelector('.aname').textContent = a ? ABILITIES[a].name : '';
+      el.querySelector('.aname').textContent = a ? entryName(a) : '';
     });
     this._applyKeyLabels();
   }
@@ -174,25 +181,32 @@ export class Hud {
   }
 
   _applyKeyLabels() {
+    // keyboard labels follow the player's key bindings
+    const keys = this.game.keys;
+    if (keys) {
+      // Shift-1 is ⇧1 on a slot, where room is short
+      this.barSlots?.forEach((el, i) => (el.querySelector('.key').dataset.kbm = keys.label('bar' + i).replace(/Shift-/g, '⇧')));
+      document.querySelectorAll('.key[data-key-action]').forEach((k) => {
+        k.dataset.kbm = keys.label(k.dataset.keyAction);
+        const btn = k.closest('[data-tip]');
+        if (btn) btn.dataset.tip = `${btn.dataset.tip.replace(/ \(.*\)$/, '')}${k.dataset.kbm ? ` (${k.dataset.kbm})` : ''}`;
+      });
+    }
     document.querySelectorAll('.key[data-kbm]').forEach((k) => {
       k.textContent = this.padMode ? k.dataset.pad : k.dataset.kbm;
     });
   }
 
   // ---------------------------------------------------------------- modals
-  showTitle({ hasSave, note }) {
-    this.modal = 'title';
-    this.el.title.hidden = false;
-    $('hud').hidden = true;
-    this.el.continueBtn.hidden = !hasSave;
-    this.el.newBtn.textContent = hasSave ? 'Begin a new journey' : 'Begin';
-    this.el.titleNote.textContent = note || '';
-    this.el.titleNote.hidden = !note;
-    (hasSave ? this.el.continueBtn : this.el.newBtn).focus();
+  // the character being played: their name on the HUD and character window
+  setCharacter(c) {
+    $('char-name-label').textContent = c.name;
+    $('character-title').textContent = c.name;
   }
 
+  // the title screen itself is src/ui/titleUI.js
   hideTitle() {
-    this.el.title.hidden = true;
+    this.game.title?.close();
     $('hud').hidden = false;
     this.modal = null;
     this.items.render();
@@ -217,9 +231,10 @@ export class Hud {
   showDeath({ coinsLost, destination }) {
     this.closeModal(true);
     this.modal = 'death';
+    const where = destination === 'camp' ? 'by your camp' : destination === 'shrine' ? 'at the last shrine you rested at' : "at the road's end";
     this.el.deathText.textContent =
-      `The road takes what it can. ${coinsLost > 0 ? `You will wake ${coinsLost} coin${coinsLost === 1 ? '' : 's'} lighter.` : 'You have nothing left for it to take.'}`;
-    this.el.respawnBtn.textContent = destination === 'shrine' ? 'Return to the last shrine' : "Return to the road's end";
+      `Your spirit will rise ${where}. Walk back to your body to live again with nothing lost, or return to life where you rise${coinsLost > 0 ? `, ${moneyText(coinsLost)} lighter` : ''}.`;
+    this.el.respawnBtn.textContent = 'Release spirit';
     this.el.death.hidden = false;
     this.el.respawnBtn.focus();
   }
@@ -239,8 +254,13 @@ export class Hud {
       if (force) this.items.closeAll();
       return true;
     }
+    const sign = !!this.signpost;
+    if (sign) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
     const talk = this.quests.closeAll();
-    return this.items.closeAll() || talk;
+    return this.items.closeAll() || talk || sign;
   }
 
   // ------------------------------------------------------------- feedback
@@ -268,6 +288,58 @@ export class Hud {
     this.levelUpTime = 6;
     $('levelup').hidden = false;
     $('levelup').style.opacity = 1;
+  }
+
+  // A WoW-style error in red in the middle of the screen ("Out of range"):
+  // it shows at once and fades; the same message again only restarts it.
+  // A signpost read (E, or a click on it): where its arms point, on screen
+  // until you walk away from it.
+  showSignpost(sp) {
+    let el = document.getElementById('signpost-card');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'signpost-card';
+      document.getElementById('hud').appendChild(el);
+    }
+    el.innerHTML = `<div class="sign-head">Signpost</div>${signpostLines(sp).map((l) => `<div class="sign-line"><span class="sign-arrow">${l.arrow}</span><span class="sign-to">${l.label}</span><span class="sign-far">${l.metres} m ${l.dir}</span></div>`).join('')}`;
+    el.hidden = false;
+    this.signpost = { sp, at: this.game.player.position.clone() };
+    this.game.events.emit('signpostRead', { id: sp.id });
+  }
+
+  // On a narrow screen the spell bar moves left of centre, so it stays
+  // clear of the menus, bags and money in the bottom-right corner.
+  _layoutBottom() {
+    const bar = document.getElementById('bottom-bar');
+    const dock = document.getElementById('right-dock');
+    if (!bar || !dock) return;
+    const was = parseFloat(bar.style.marginLeft) || 0;
+    const b = bar.getBoundingClientRect();
+    const d = dock.getBoundingClientRect();
+    const centred = b.left - was;
+    const over = centred + b.width + 10 - d.left;
+    const shift = over > 0 ? -Math.min(over, Math.max(0, centred - 12)) : 0;
+    if (shift !== was) bar.style.marginLeft = `${shift}px`;
+  }
+
+  _updateSignpost() {
+    if (!this.signpost) return;
+    const { player } = this.game;
+    const [x, z] = this.signpost.sp.position;
+    const near = Math.hypot(player.position.x - x, player.position.z - z) < 6 || player.position.distanceTo(this.signpost.at) < 3;
+    if (!near) {
+      document.getElementById('signpost-card').hidden = true;
+      this.signpost = null;
+    }
+  }
+
+  error(text) {
+    const el = document.getElementById('ui-error');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(this.errorTimer);
+    this.errorTimer = setTimeout(() => el.classList.remove('show'), 1400);
+    this.lastError = text;
   }
 
   toast(text, kind = '') {
@@ -300,23 +372,74 @@ export class Hud {
     const hp = Math.max(0, Math.ceil(player.health));
     this.el.hpFill.style.width = `${(player.health / player.maxHealth) * 100}%`;
     this.el.hpText.textContent = `${hp} / ${player.maxHealth}`;
+    this._refreshResources();
     this.el.xpFill.style.width = `${(progression.xp / progression.xpToNext) * 100}%`;
-    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience`;
-    this.el.coins.textContent = inventory.coins;
-    const n = inventory.draughts;
+    // rested experience shows as a pale band ahead of the fill, as in WoW
+    const rested = $('xp-rested');
+    rested.style.left = this.el.xpFill.style.width;
+    rested.style.width = `${Math.min(100 - (progression.xp / progression.xpToNext) * 100, (progression.rested / progression.xpToNext) * 100)}%`;
+    this.el.xpText.textContent = `Level ${progression.level}  ·  ${progression.xp} / ${progression.xpToNext} experience (${Math.floor((progression.xp / progression.xpToNext) * 100)}%)${progression.rested >= 1 ? `  ·  ${Math.floor(progression.rested)} rested` : ""}`;
+    this.el.coins.innerHTML = moneyHTML(inventory.coins);
     for (const el of this.barSlots) {
-      const isDraught = el.dataset.ability === 'draught';
-      el.querySelector('.count').textContent = isDraught ? n : '';
-      el.classList.toggle('none', isDraught && n === 0);
+      const item = itemRef(el.dataset.ability);
+      // items on the bar show how many you carry (or that one is in hand)
+      const have = item ? inventory.count(item) + (inventory.equipment.offHand?.id === item ? 1 : 0) : 0;
+      el.querySelector('.count').textContent = item && ITEMS[item].stack > 1 ? have : '';
+      el.classList.toggle('none', !!item && have === 0);
+      el.classList.toggle('active-item', !!item && inventory.equipment.offHand?.id === item);
     }
   }
 
   // Cooldown sweep per slot, plus the shared GCD sweep on GCD abilities.
+  // mana, the class bar and combo points under the health bar
+  _refreshResources() {
+    const r = this.game.resources;
+    if (!r) return;
+    const mp = $('mp-bar');
+    mp.hidden = !r.maxMana;
+    if (r.maxMana) {
+      $('mp-fill').style.width = `${(r.mana / r.maxMana) * 100}%`;
+      $('mp-text').textContent = `${Math.floor(r.mana)} / ${r.maxMana} mana`;
+    }
+    const g = r.gaugeCfg;
+    const gb = $('gauge-bar');
+    gb.hidden = !g;
+    if (g) {
+      const v = r.amount(g.id);
+      const fill = $('gauge-fill');
+      fill.style.width = `${(v / g.max) * 100}%`;
+      if (fill.dataset.colour !== g.colour) {
+        fill.dataset.colour = g.colour || '';
+        fill.style.background = g.colour ? `linear-gradient(${g.colour}, ${shade(g.colour, 0.55)})` : '';
+      }
+      const o = g.overload && v >= g.max ? ` · ${g.overload.name}!` : '';
+      $('gauge-text').textContent = `${Math.floor(v)} ${g.name}${o}`;
+      gb.classList.toggle('overload', !!o);
+    }
+    const p = r.pointsCfg;
+    const pips = $('combo-pips');
+    pips.hidden = !p;
+    if (p) {
+      if (pips.children.length !== p.max) pips.innerHTML = '<span class="pip"></span>'.repeat(p.max);
+      const n = Math.floor(r.amount(p.id));
+      [...pips.children].forEach((el, i) => el.classList.toggle('on', i < n));
+      pips.title = `${n} ${p.name}`;
+    }
+  }
+
   _refreshSlots() {
     const gcd = this.game.player.cooldowns.gcd;
+    // with an enemy selected, abilities that cannot reach it go red (WoW)
+    const { player, stats } = this.game;
+    const tgt = this.game.targeting.current;
+    const far = (ab) => {
+      if (!tgt || !tgt.alive || ab.target !== 'enemy') return false;
+      const reach = (ab.ranged ? stats.rangedReach : ab.range) + tgt.radius * 0.6;
+      return Math.hypot(tgt.position.x - player.position.x, tgt.position.z - player.position.z) > reach;
+    };
     for (const el of this.barSlots) {
       const a = el.dataset.ability;
-      const [remaining, total, onGcd] = a ? this.cooldowns[a]() : [0, 0, false];
+      const [remaining, total, onGcd] = a && this.cooldowns[a] ? this.cooldowns[a]() : [0, 0, false];
       const own = total > 0 ? remaining / total : 0;
       // whichever finishes later is what the player is waiting on
       const showGcd = onGcd && gcd > remaining;
@@ -324,20 +447,60 @@ export class Hud {
       el.style.setProperty('--gcd', (showGcd ? gcd / this.game.stats.globalCooldown : 0).toFixed(3));
       el.classList.toggle('cooling', remaining > 0 || showGcd);
       el.classList.toggle('active', a === 'brace' && this.game.player.isBraced);
+      el.classList.toggle('nores', !!(a && ABILITIES[a] && (!this.game.resources.canAfford(ABILITIES[a]) || missingGear(this.game, ABILITIES[a]))));
+      el.classList.toggle('oor', !!(a && ABILITIES[a] && far(ABILITIES[a])));
     }
   }
 
   // The cast bar, buffs under the health bar, and your effects on the target.
   _refreshSpells() {
     const { player, spells } = this.game;
-    const c = player.casting;
+    // a spell, a dish on the fire, or a meal (which empties as you eat)
+    const k = this.game.cooking?.crafting;
+    const e = player.eating;
+    const c = player.casting
+      ? { t: player.casting.t, total: player.casting.total, name: SPELLS[player.casting.id].name }
+      : k
+        ? { t: k.t, total: k.total, name: `Cooking ${ITEMS[DB.recipes[k.id].output.item].name}${k.left > 1 ? ` (${k.left})` : ''}` }
+        : e
+          ? { t: e.total - e.left, total: e.total, name: `Eating ${ITEMS[e.id].name}` }
+          : this.game.fishing?.bar
+            ? { ...this.game.fishing.bar, name: 'Fishing' }
+            : this.game.loot?.gatherBar || null;
     const bar = $('cast-bar');
     bar.hidden = !c;
     if (c) {
       $('cast-fill').style.width = `${Math.min(100, (c.t / c.total) * 100)}%`;
-      $('cast-text').textContent = `${SPELLS[c.id].name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
+      $('cast-text').textContent = `${c.name}  ${Math.max(0, c.total - c.t).toFixed(1)}`;
     }
-    this._auras($('buffs'), spells.buffList(), '');
+    // the weapon swing timer (WoW addons' swing timer): fills until the next
+    // blow lands, while auto attack is on
+    // (one per hand when dual wielding)
+    const tg = this.game.targeting;
+    const st = this.game.stats;
+    // with the target beyond melee reach and a bow on your back, the second
+    // bar is Auto Shot's; the melee swing timer keeps running on the first,
+    // so you know when your blade is ready as the enemy closes
+    const shooting = tg.targetInShot;
+    const showSwing = (hand, bar, fill, text) => {
+      const el = $(bar);
+      el.hidden = !tg.attacking || player.dead || (hand === 'off' && !shooting && !st.dualWielding);
+      if (el.hidden) return;
+      const h = hand === 'off' && shooting ? 'ranged' : hand;
+      // the bar fills on the blow (or the arrow's release) itself
+      const pend = h === 'off' ? player.pendingOff?.t : h === 'ranged' ? player.pendingShot?.t : player.pending && player.pending.type === 'strike' ? player.pending.t : null;
+      const left = Math.max(0, pend ?? player.cooldowns[h === 'off' ? 'attackOff' : h === 'ranged' ? 'ranged' : 'attack']);
+      const total = st.attackCooldownFor(h);
+      $(fill).style.width = `${Math.max(0, Math.min(100, (1 - left / total) * 100))}%`;
+      const ammo = h === 'ranged' ? this.game.inventory.ammo : null;
+      const arrows = h === 'ranged' ? (ammo ? ` · ${this.game.inventory.count(ammo)} arrows` : ' · no arrows') : '';
+      const still = h === 'ranged' && player.moving && ammo ? ' · stand still to shoot' : '';
+      $(text).textContent = `${st.handWeapon(h).name}${h === 'off' ? ' (off hand)' : h === 'ranged' ? ' (Auto Shot)' : ''}${arrows}${still}  ${left.toFixed(1)}`;
+    };
+    showSwing('main', 'swing-bar', 'swing-fill', 'swing-text');
+    showSwing('off', 'swing-bar-off', 'swing-fill-off', 'swing-text-off');
+    const fed = this.game.cooking.wellFedAura;
+    this._auras($('buffs'), fed ? [...spells.buffList(), fed] : spells.buffList(), '');
     this._auras($('target-auras'), this.shownTarget ? spells.dotsOn(this.shownTarget) : [], ' debuff');
   }
 
@@ -345,13 +508,15 @@ export class Hud {
     const key = list.map((a) => a.id).join(',');
     if (el.dataset.key !== key) {
       el.dataset.key = key;
-      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${ABILITIES[a.id].name}"><img alt="" src="${this.abilityIcons[a.id] || ''}"><span></span></div>`).join('');
+      el.innerHTML = list.map((a) => `<div class="aura${cls}" title="${a.name || ABILITIES[a.id]?.name || ''}"><img alt="" src="${this.abilityIcons[a.icon || a.id] || this.abilityIcons.cook || ''}"><span></span></div>`).join('');
     }
-    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = Math.ceil(a.left)));
+    // (an aura that lasts until something ends it, such as Shadow, shows no time)
+    list.forEach((a, i) => (el.children[i].querySelector('span').textContent = !Number.isFinite(a.left) ? '' : a.left > 60 ? `${Math.ceil(a.left / 60)}m` : Math.ceil(a.left)));
   }
 
   update(dt = 0) {
     const { interaction, enemies, camera, renderer } = this.game;
+    this.labels.update(dt);
     this.numbers.update(dt);
     if (this.levelUpTime > 0) {
       this.levelUpTime -= dt;
@@ -360,6 +525,11 @@ export class Hud {
       if (this.levelUpTime <= 0) lu.hidden = true;
     }
     this.recentFoeTime = Math.max(0, this.recentFoeTime - dt);
+    this._updateSignpost();
+    if ((this.layoutClock = (this.layoutClock || 0) - dt) <= 0) {
+      this.layoutClock = 0.5;
+      this._layoutBottom();
+    }
     this.refreshStats();
     this._refreshSlots();
     this._refreshSpells();
@@ -368,7 +538,7 @@ export class Hud {
 
     const c = interaction.current;
     const promptText = c && !this.modal ? c.prompt : '';
-    const key = this.padMode ? 'A' : 'E';
+    const key = this.padMode ? 'A' : this.game.keys.label('interact') || 'Space';
     if (this.el.prompt.dataset.text !== promptText + key) {
       this.el.prompt.dataset.text = promptText + key;
       this.el.prompt.innerHTML = promptText ? `<kbd>${key}</kbd> ${promptText}` : '';
@@ -386,25 +556,43 @@ export class Hud {
     this.shownTarget = shown;
     this.el.target.hidden = !shown && !friend;
     this.el.target.classList.toggle('friendly', !!friend);
+    const who = friend || shown;
+    if (who && who !== this.portraitOf) {
+      this.portraitOf = who;
+      const model = friend ? friend.def.model : shown.cfg.model;
+      document.getElementById('target-img').src = model ? this.portraits.get(model) : '';
+    }
+    if (who) document.getElementById('target-level').textContent = friend ? friend.def.level || 1 : shown.cfg.level || 1;
     if (friend) {
       this.el.targetName.textContent = friend.name;
       this.el.targetLabel.textContent = friend.def.title || '';
       this.el.target.classList.remove('elite', 'locked', 'attacking');
       this.el.targetManaBar.hidden = true;
+      document.getElementById('target-stagger-bar').hidden = true;
     }
     if (shown) {
       const c = shown.cfg;
       this.el.targetName.textContent = c.name;
-      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach ? 'Attacking' : 'Out of reach') : `Level ${c.level || 1}`;
+      this.el.targetLabel.textContent = t && tg.attacking ? (tg.targetInReach || tg.targetInShot ? 'Attacking' : 'Out of reach') : c.elite ? 'Elite' : '';
       this.el.target.classList.toggle('attacking', !!t && tg.attacking);
-      this.el.targetFill.style.width = `${(shown.health / c.health) * 100}%`;
-      this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${c.health}`;
+      this.el.targetFill.style.width = `${Math.min(100, (shown.health / shown.maxHealth) * 100)}%`;
+      this.el.targetText.textContent = `${Math.ceil(shown.health)} / ${shown.maxHealth}`;
       this.el.target.classList.toggle('elite', !!c.elite);
       this.el.target.classList.toggle('locked', !!t);
       this.el.targetManaBar.hidden = !c.mana;
       if (c.mana) {
         this.el.targetMana.style.width = `${(shown.mana / c.mana) * 100}%`;
         this.el.targetManaText.textContent = `${Math.ceil(shown.mana)} / ${c.mana}`;
+      }
+      // a boss's stagger bar: control fills it, full means Staggered
+      const sb = shown.staggerBar;
+      const sbar = document.getElementById('target-stagger-bar');
+      sbar.hidden = !sb;
+      if (sb) {
+        const full = shown.staggered > 0;
+        sbar.classList.toggle('full', full);
+        document.getElementById('target-stagger').style.width = `${full ? 100 : Math.min(100, (sb.value / sb.need) * 100)}%`;
+        document.getElementById('target-stagger-text').textContent = full ? `Staggered ${Math.ceil(shown.staggered)}` : 'Stagger';
       }
     }
 
@@ -414,13 +602,14 @@ export class Hud {
     const seen = new Set();
     for (const e of enemies.list) {
       if (!e.alive) continue;
-      if (e.engaged <= 0 && e.health >= e.cfg.health && e !== t && e !== shown) continue;
+      const nemesis = this.game.afterlife.isNemesis(e);
+      if (e.engaged <= 0 && e.health >= e.maxHealth && e !== t && e !== shown && !nemesis) continue;
       seen.add(e.id);
       let bar = this.enemyBars.get(e.id);
       if (!bar) {
         bar = document.createElement('div');
         bar.className = 'ebar' + (e.cfg.elite ? ' elite' : '');
-        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
+        bar.innerHTML = `<span class="ename">${e.cfg.name}</span><div class="etrack"><div class="efill"></div><span class="ehp"></span></div>${e.cfg.mana ? '<div class="emana"><div class="emana-fill"></div></div>' : ''}<div class="ecast"><div class="ecast-fill"></div><span class="ecast-name"></span></div>`;
         this.el.bars.appendChild(bar);
         this.enemyBars.set(e.id, bar);
       }
@@ -428,10 +617,17 @@ export class Hud {
       const visible = this.tmp.z < 1 && Math.abs(this.tmp.x) < 1.1 && Math.abs(this.tmp.y) < 1.1;
       bar.style.display = visible ? '' : 'none';
       bar.style.transform = `translate(${((this.tmp.x + 1) / 2) * w}px, ${((1 - this.tmp.y) / 2) * h}px) translate(-50%, -100%)`;
-      bar.querySelector('.efill').style.width = `${(e.health / e.cfg.health) * 100}%`;
+      bar.querySelector('.efill').style.width = `${(e.health / e.maxHealth) * 100}%`;
       if (e.cfg.mana) bar.querySelector('.emana-fill').style.width = `${(e.mana / e.cfg.mana) * 100}%`;
       bar.classList.toggle('winding', e.windup > 0 || !!e.casting);
       bar.classList.toggle('targeted', e === t);
+      // the selected enemy's bar shows its health in numbers (WoW)
+      if (e === t) {
+        const hp = `${Math.ceil(e.health)} / ${e.maxHealth}`;
+        const el = bar.querySelector('.ehp');
+        if (el.textContent !== hp) el.textContent = hp;
+      }
+      bar.classList.toggle('nemesis', nemesis);
       // FFXIV-style cast bar under the name while a telegraphed attack winds up
       const cast = e.casting;
       bar.classList.toggle('casting', !!cast);

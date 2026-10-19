@@ -1,12 +1,17 @@
 import { DB } from '../data/db.js';
-import { BOUNDS, REGIONS, PROPS, CLEARINGS, SHRINES } from '../world/layout.js';
+import { CONFIG } from '../config.js';
+import { inCombatWithPlayer } from '../systems/targeting.js';
+import { BOUNDS, regionById, PROPS, CLEARINGS, SHRINES, WATER, OBSCURED } from '../world/layout.js';
 
 // A round minimap in the top-right corner, north up (the camera never turns,
 // so up on the map is up on the screen). The ground, roads, trees and props
 // are painted once into a picture of the whole world; each frame draws the
 // part around the Warden, then the markers on top: townsfolk with their
 // quest marks, shrines, the places current objectives point to, and the
-// Warden as an arrow. Quest marks out of range sit on the rim, pointing the way.
+// Warden as an arrow. Quest marks out of range sit on the rim, pointing the way,
+// but only within `CONFIG.minimap.questRange` metres: quests far off stay
+// hidden until you come nearer. Townsfolk with a trade (npcs.json `mapIcon`)
+// show its icon; enemies fighting you show as red dots.
 
 const SIZE = 168; // CSS pixels across
 const PX = 4; // picture pixels per metre
@@ -64,7 +69,7 @@ export class Minimap {
     this.origin = { minX, minZ };
 
     // ground by region, blended across the border
-    const border = REGIONS[0].minZ;
+    const border = regionById('fallen_road').minZ;
     const grad = g.createLinearGradient(0, Z(border - 6), 0, Z(border + 6));
     grad.addColorStop(0, GROUND.blackwood);
     grad.addColorStop(1, GROUND.fallen_road);
@@ -112,6 +117,19 @@ export class Minimap {
         g.restore();
       }
     }
+    // ponds, and the places too dark to see into
+    for (const w of WATER) {
+      g.fillStyle = '#2c5056';
+      g.beginPath();
+      g.arc(X(w.position[0]), Z(w.position[1]), w.radius * PX, 0, Math.PI * 2);
+      g.fill();
+    }
+    for (const o of OBSCURED) {
+      g.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      g.beginPath();
+      g.arc(X(o.position[0]), Z(o.position[1]), o.radius * PX, 0, Math.PI * 2);
+      g.fill();
+    }
     // beyond the world's edge: darkness
     g.fillStyle = 'rgba(0, 0, 0, 0.55)';
     g.fillRect(0, 0, w, Z(BOUNDS.minZ));
@@ -135,15 +153,30 @@ export class Minimap {
       for (const o of quests.objectives(id)) {
         if (o.done || !o.location || areas.has(o.location)) continue;
         const l = DB.locations[o.location];
+        if (this._far(l.position[0], l.position[1], l.radius)) continue;
         areas.set(o.location, { x: l.position[0], z: l.position[1], r: l.radius, kind: 'area', label: l.name, tracked: quests.tracked.has(id) });
       }
     }
     out.push(...areas.values());
     for (const n of npcs.list) {
       const status = quests.markerFor(n.id);
-      out.push({ x: n.position.x, z: n.position.z, kind: status || 'npc', label: n.name });
+      const quest = status && !this._far(n.position.x, n.position.z) ? status : null;
+      out.push({ x: n.position.x, z: n.position.z, kind: quest || 'npc', icon: n.def.mapIcon, label: n.name });
     }
+    for (const e of this.game.enemies.list) if (inCombatWithPlayer(e)) out.push({ x: e.position.x, z: e.position.z, kind: 'foe', label: e.cfg.name });
+    // the enemy that killed you, and your body while you walk as a spirit
+    const { afterlife, enemies, worldState } = this.game;
+    const foe = worldState.nemesis && enemies.list.find((e) => e.id === worldState.nemesis && e.alive);
+    if (foe) out.push({ x: foe.position.x, z: foe.position.z, kind: 'nemesis', label: foe.cfg.name });
+    if (afterlife.corpse) out.push({ x: afterlife.corpse.x, z: afterlife.corpse.z, kind: 'corpse', label: 'Your body' });
+    if (worldState.camp) out.push({ x: worldState.camp.x, z: worldState.camp.z, kind: 'camp', label: 'Your camp' });
     return out;
+  }
+
+  // is (x, z) beyond the range quest marks show at? (`r`: an area's radius)
+  _far(x, z, r = 0) {
+    const p = this.game.player.position;
+    return Math.hypot(x - p.x, z - p.z) - r > CONFIG.minimap.questRange;
   }
 
   // ---------------------------------------------------------------- draw
@@ -194,10 +227,23 @@ export class Minimap {
         ctx.fill();
       } else if (m.kind === 'npc') {
         if (Math.hypot(s.x - R, s.y - R) > R - 4) continue;
+        if (m.icon) {
+          this._tradeIcon(s.x, s.y, m.icon);
+          continue;
+        }
         ctx.fillStyle = '#e8d8a0';
         ctx.beginPath();
         ctx.arc(s.x, s.y, 2.6, 0, Math.PI * 2);
         ctx.fill();
+      } else if (m.kind === 'foe') {
+        if (Math.hypot(s.x - R, s.y - R) > R - 4) continue;
+        ctx.fillStyle = '#ff3a2a';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       }
     }
     // the areas that are off the map get a pointer on the rim
@@ -209,6 +255,20 @@ export class Minimap {
       const colour = m.kind === 'active' ? '#a8a8a8' : '#ffd23c';
       if (Math.hypot(s.x - R, s.y - R) <= R - 8) this._glyph(s.x, s.y, glyph, colour, 15);
       else this._rim(s, R, colour, glyph);
+    }
+    // your camp, your killer and your body: always shown, on the rim when far
+    for (const m of markers) {
+      const s = toMap(m.x, m.z);
+      const inside = Math.hypot(s.x - R, s.y - R) <= R - 8;
+      if (m.kind === 'camp') {
+        if (inside) this._glyph(s.x, s.y, '\u25B2', '#ff9a40', 11);
+      } else if (m.kind === 'nemesis') {
+        if (inside) this._glyph(s.x, s.y, '\u2620', '#ff4a3a', 15);
+        else this._rim(s, R, '#ff4a3a', '\u2620');
+      } else if (m.kind === 'corpse') {
+        if (inside) this._glyph(s.x, s.y, '\u271D', '#cfe6ff', 15);
+        else this._rim(s, R, '#cfe6ff', null);
+      }
     }
     // the Warden, at the centre, pointing the way they face
     ctx.save();
@@ -226,6 +286,86 @@ export class Minimap {
     ctx.stroke();
     ctx.fill();
     ctx.restore();
+    ctx.restore();
+  }
+
+  // A townsperson's trade: a small pictogram on a dark disc.
+  _tradeIcon(x, y, icon) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(12, 10, 8, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = '#c8a860';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle = '#f0dca0';
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (icon === 'vendor') {
+      // a coin purse
+      ctx.arc(0, 1.2, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-1.6, -3.4);
+      ctx.lineTo(1.6, -3.4);
+      ctx.lineTo(0, -1.4);
+      ctx.fill();
+    } else if (icon === 'blacksmith') {
+      // an anvil
+      ctx.moveTo(-4, -2);
+      ctx.lineTo(4, -2);
+      ctx.lineTo(2, 0.5);
+      ctx.lineTo(1.2, 0.5);
+      ctx.lineTo(2.4, 3);
+      ctx.lineTo(-2.4, 3);
+      ctx.lineTo(-1.2, 0.5);
+      ctx.lineTo(-2.5, 0.5);
+      ctx.closePath();
+      ctx.fill();
+    } else if (icon === 'fishing') {
+      // a fish
+      ctx.ellipse(-0.6, 0, 3, 1.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(1.8, 0);
+      ctx.lineTo(4.2, -2.2);
+      ctx.lineTo(4.2, 2.2);
+      ctx.fill();
+    } else if (icon === 'cooking') {
+      // a cooking pot
+      ctx.arc(0, 0, 3.2, 0, Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-4.4, -0.2);
+      ctx.lineTo(4.4, -0.2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-1.2, -2.6);
+      ctx.lineTo(1.2, -2.6);
+      ctx.stroke();
+    } else if (icon === 'innkeeper') {
+      // a tankard
+      ctx.fillRect(-3, -2.8, 4.4, 6);
+      ctx.beginPath();
+      ctx.arc(1.6, 0.2, 1.8, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+    } else {
+      // a class trainer: crossed swords
+      for (const sgn of [1, -1]) {
+        ctx.beginPath();
+        ctx.moveTo(-3.6 * sgn, -3.6);
+        ctx.lineTo(3.2 * sgn, 3.2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(1.4 * sgn, 3.6);
+        ctx.lineTo(3.6 * sgn, 1.4);
+        ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 

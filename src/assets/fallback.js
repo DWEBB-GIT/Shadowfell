@@ -47,6 +47,30 @@ export function fallbackModel(name) {
       return humanoid(0.95, 0x5a564e, 0x6a665e);
     case 'brute':
       return humanoid(1.3, 0x3a3836, 0x5a4a3a);
+    case 'training_dummy': {
+      // a straw man on a post, built in code; Torso so it rocks when hit
+      const g = new THREE.Group();
+      g.add(box(0.14, 1.0, 0.14, 0x4a3420, 0, 0.5, 0));
+      const torso = new THREE.Group();
+      torso.name = 'Torso';
+      torso.position.y = 0.95;
+      torso.add(box(0.5, 0.7, 0.32, 0xb59a5a, 0, 0.35, 0));
+      torso.add(box(1.2, 0.1, 0.1, 0x4a3420, 0, 0.55, 0));
+      torso.add(box(0.3, 0.3, 0.3, 0xc4a868, 0, 0.88, 0));
+      torso.add(box(0.52, 0.08, 0.34, 0x6a2a20, 0, 0.2, 0));
+      g.add(torso);
+      return g;
+    }
+    case 'town_board': {
+      // a notice board on two posts under a little roof, papers pinned on
+      const g = new THREE.Group();
+      g.add(box(0.12, 2.0, 0.12, 0x4a3420, -0.7, 1.0, 0));
+      g.add(box(0.12, 2.0, 0.12, 0x4a3420, 0.7, 1.0, 0));
+      g.add(box(1.5, 0.9, 0.08, 0x5a4028, 0, 1.35, 0));
+      g.add(box(1.8, 0.08, 0.5, 0x3a2818, 0, 2.02, 0));
+      for (const [x, y, w, h] of [[-0.45, 1.5, 0.3, 0.38], [0.05, 1.42, 0.34, 0.46], [0.48, 1.55, 0.28, 0.3], [-0.2, 1.08, 0.36, 0.26], [0.4, 1.12, 0.3, 0.3]]) g.add(box(w, h, 0.02, 0xd8c8a0, x, y, -0.06));
+      return g;
+    }
     case 'pine': {
       const g = new THREE.Group();
       const c = new THREE.Mesh(new THREE.ConeGeometry(1.6, 4.5, 7), mat(0x1c3020));

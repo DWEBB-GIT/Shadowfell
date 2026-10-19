@@ -10,11 +10,23 @@
       "summary": "Mara Venn's iron never reached the old watch post. Follow the Fallen Road and find out what became of it.",
       "offer": "Iron's late, and the watch post won't answer its door. Nine bars of grave-iron with my mark on them went up that road. Find out what happened and I'll pay for it.",
       "progress": "Any word of my iron? A cart doesn't vanish. Look it over properly if you find it. A carter keeps papers.",
-      "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
+      "complete": "That's Hollin's hand, and my mark on the iron. Bells at Hallow Cut. I don't like that at all. Here, as promised, and take this pack. Keep a torch and a rod loose in your kit and you'll lose both. If you mean to look further, look north, into the Blackwood. That's where the carters turn off.",
       "objectives": [
-        { "id": "manifest", "type": "collect", "target": "manifest", "count": 1, "label": "Recover the cart's manifest", "location": "cart" }
+        {
+          "id": "manifest",
+          "type": "collect",
+          "target": "manifest",
+          "count": 1,
+          "label": "Recover the cart's manifest",
+          "location": "cart"
+        }
       ],
-      "reward": { "coins": 20, "xp": 50 },
+      "reward": {
+        "coins": 20,
+        "xp": 50,
+        "items": [{ "item": "tool_pack", "count": 1 }],
+        "reputation": { "road_wardens": 250 }
+      },
       "setsFlag": "manifest_delivered",
       "turnInLog": "You hand Mara the manifest. She reads it twice."
     },
@@ -29,10 +41,27 @@
       "progress": "Still ringing? Then it's still walking.",
       "complete": "A brute in grave-chains, carrying a watchman's blade? Then the watch post didn't just stop answering. Someone emptied it. Take this. You've earned it.",
       "objectives": [
-        { "id": "look", "type": "examine", "target": "hallow_cut", "label": "Look over the graves at Hallow Cut", "location": "hallow_cut" },
-        { "id": "brute", "type": "kill", "target": "brute", "count": 1, "label": "Gravebound Brute slain", "location": "hallow_cut" }
+        {
+          "id": "look",
+          "type": "examine",
+          "target": "hallow_cut",
+          "label": "Look over the graves at Hallow Cut",
+          "location": "hallow_cut"
+        },
+        {
+          "id": "brute",
+          "type": "kill",
+          "target": "brute",
+          "count": 1,
+          "label": "Gravebound Brute slain",
+          "location": "hallow_cut"
+        }
       ],
-      "reward": { "coins": 30, "xp": 80 }
+      "reward": {
+        "coins": 30,
+        "xp": 80,
+        "reputation": { "road_wardens": 250 }
+      }
     },
     {
       "id": "the_hound_den",
@@ -45,10 +74,28 @@
       "progress": "The hounds hunt in threes. Don't let them get round you.",
       "complete": "No carters, then. Only bones and a purse. I'd hoped otherwise. The track's safer for it, at least. Take these. You'll want them deeper in.",
       "objectives": [
-        { "id": "search", "type": "examine", "target": "hound_den", "label": "Search the hound den", "location": "hound_den" },
-        { "id": "hounds", "type": "kill", "target": "hound", "count": 3, "label": "Barrow Hounds slain", "location": "hound_den" }
+        {
+          "id": "search",
+          "type": "examine",
+          "target": "hound_den",
+          "label": "Search the hound den",
+          "location": "hound_den"
+        },
+        {
+          "id": "hounds",
+          "type": "kill",
+          "target": "hound",
+          "count": 3,
+          "label": "Barrow Hounds slain",
+          "location": "hound_den"
+        }
       ],
-      "reward": { "coins": 25, "xp": 70, "items": [{ "item": "healing_draught", "count": 2 }] }
+      "reward": {
+        "coins": 25,
+        "xp": 70,
+        "items": [{ "item": "healing_draught", "count": 2 }],
+        "reputation": { "mere_folk": 250, "road_wardens": 100 }
+      }
     },
     {
       "id": "the_glade_seer",
@@ -61,11 +108,287 @@
       "progress": "The glade is at the end of the track. You'll know the stones.",
       "complete": "It's quieter. I felt it at the anvil before you came up the track. Here, the best shield I've made this year. Keep it between you and whatever comes next.",
       "objectives": [
-        { "id": "archers", "type": "kill", "target": "archer", "count": 2, "label": "Hollow Archers slain", "location": "archer_camp" },
-        { "id": "stones", "type": "examine", "target": "seer_stones", "label": "Find the standing stones in the glade", "location": "seer_glade" },
-        { "id": "seer", "type": "kill", "target": "seer", "count": 1, "label": "Blackwood Seer slain", "location": "seer_glade" }
+        {
+          "id": "archers",
+          "type": "kill",
+          "target": "archer",
+          "count": 2,
+          "label": "Hollow Archers slain",
+          "location": "archer_camp"
+        },
+        {
+          "id": "stones",
+          "type": "examine",
+          "target": "seer_stones",
+          "label": "Find the standing stones in the glade",
+          "location": "seer_glade"
+        },
+        {
+          "id": "seer",
+          "type": "kill",
+          "target": "seer",
+          "count": 1,
+          "label": "Blackwood Seer slain",
+          "location": "seer_glade"
+        }
       ],
-      "reward": { "coins": 50, "xp": 150, "items": [{ "item": "iron_shield", "count": 1 }] }
+      "reward": {
+        "coins": 50,
+        "xp": 150,
+        "items": [{ "item": "iron_shield", "count": 1 }],
+        "reputation": { "road_wardens": 500 }
+      }
+    },
+    {
+      "id": "board_perch_for_the_pot",
+      "name": "Perch for the Pot",
+      "giver": "town_board",
+      "turnIn": "hester",
+      "summary": "Hester Vale at the Ford Inn wants fresh perch from the mere for her kitchen. Catch three and bring them to her.",
+      "offer": "WANTED: three good perch, fresh, for the inn's kitchen. Fair coin paid. Ask for Hester at the Ford Inn. (Not eels. Never again eels.)",
+      "progress": "No perch yet? Tam will show you which end of the rod goes in the water.",
+      "complete": "Now those are perch. The stew will taste of something tonight. Here, for your trouble.",
+      "objectives": [
+        {
+          "id": "perch",
+          "type": "collect",
+          "target": "gloomwater_perch",
+          "count": 3,
+          "label": "Gloomwater perch"
+        }
+      ],
+      "reward": { "coins": 12, "xp": 60 }
+    },
+    {
+      "id": "board_meat_for_winter",
+      "name": "Meat for Winter",
+      "giver": "town_board",
+      "turnIn": "hester",
+      "summary": "The town is short of meat for the winter stores. Bring four cuts of hound meat to Hester at the Ford Inn.",
+      "offer": "The cellar's half empty and the frost is coming. Meat wanted, any honest kind. The barrow hounds in the woods are lean, but they'll salt. Bring it to the Ford Inn. H. Vale.",
+      "progress": "The salt barrel's still waiting.",
+      "complete": "That'll keep a family through a bad week. Thank you. Truly.",
+      "objectives": [
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "hound_meat",
+          "count": 4,
+          "label": "Hound meat"
+        }
+      ],
+      "reward": { "coins": 18, "xp": 90 }
+    },
+    {
+      "id": "board_pelts_for_tam",
+      "name": "Pelts for the Boat",
+      "giver": "town_board",
+      "turnIn": "tam",
+      "summary": "Old Tam wants hound pelts to stuff the seams of his boat. Bring him two.",
+      "offer": "Boat leaks. Need two pelts to caulk her, hound will do. Bring them to the mere. Tam.",
+      "progress": "Still leaking, she is.",
+      "complete": "Good thick hides. She'll float another year. Take this, and mind the edge.",
+      "objectives": [
+        {
+          "id": "pelts",
+          "type": "collect",
+          "target": "hound_pelt",
+          "count": 2,
+          "label": "Hound pelt"
+        }
+      ],
+      "reward": { "coins": 10, "xp": 70 }
+    },
+    {
+      "id": "board_clear_the_road",
+      "name": "Clear the Road",
+      "giver": "town_board",
+      "turnIn": "mara",
+      "summary": "The dead walk the Fallen Road north of town. Put down five Ashen Ghouls and tell Mara Venn at her forge it is done.",
+      "offer": "BY ORDER OF THE TOWN: the road north is unsafe. Any able hand who puts down the walking dead on the Fallen Road will be paid at the forge. Mara Venn will settle.",
+      "progress": "The road's no quieter yet.",
+      "complete": "Five of them? The carters will thank you, even if they never learn your name. Here's the town's coin.",
+      "objectives": [
+        {
+          "id": "ghouls",
+          "type": "kill",
+          "target": "ghoul",
+          "count": 5,
+          "label": "Ashen Ghoul slain"
+        }
+      ],
+      "reward": {
+        "coins": 20,
+        "xp": 100,
+        "reputation": { "road_wardens": 150 }
+      }
+    },
+    {
+      "id": "board_greyjaw",
+      "name": "Bounty: Old Greyjaw",
+      "giver": "town_board",
+      "turnIn": "mara",
+      "summary": "A huge grey hound, Old Greyjaw, roams the Blackwood and has killed two trappers. Put it down and claim the bounty from Mara Venn at her forge.",
+      "offer": "BOUNTY. A grey hound the size of a pony roams the Blackwood. It has taken two trappers and a mule. Whoever kills OLD GREYJAW will be paid at the forge. Do not go alone. (You will go alone.)",
+      "progress": "Greyjaw's still out there. You'd hear the howling stop.",
+      "complete": "That's Greyjaw's blood on you? Then the trappers can go back in. The bounty's yours, and well earned.",
+      "objectives": [
+        {
+          "id": "greyjaw",
+          "type": "kill",
+          "target": "greyjaw",
+          "count": 1,
+          "label": "Old Greyjaw slain"
+        }
+      ],
+      "reward": {
+        "coins": 45,
+        "xp": 220,
+        "reputation": { "road_wardens": 250 }
+      }
+    },
+    {
+      "id": "hester_carp",
+      "name": "Carp for Sunday",
+      "giver": "hester",
+      "turnIn": "hester",
+      "summary": "Hester wants two bramble carp from the Stillwater Mere for the Sunday table.",
+      "offer": "Sunday's the one day folk here eat like they mean it. Carp hide under the reeds at the mere. Bring me two and I'll show you how to bake them.",
+      "progress": "No carp? Try the reeds. Patience, mostly.",
+      "complete": "Look at the size of them. Here, that's how you bake a carp, and a couple to see you on your way.",
+      "objectives": [
+        {
+          "id": "carp",
+          "type": "collect",
+          "target": "bramble_carp",
+          "count": 2,
+          "label": "Bramble carp"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 80,
+        "items": [{ "item": "baked_carp", "count": 2 }]
+      }
+    },
+    {
+      "id": "hester_supper",
+      "name": "Supper at the Ford",
+      "giver": "hester",
+      "turnIn": "hester",
+      "requires": ["hester_carp"],
+      "summary": "The inn is full and Hester's short of hands. Cook three grilled perch and two roast dace and bring them to her.",
+      "offer": "Carters in, and every one of them hungry. I can't be at the hearth and the tap at once. Cook me three grilled perch and two roast dace, would you?",
+      "progress": "They're banging their mugs out there.",
+      "complete": "Not burnt, not raw. You've the knack. Here's your share of the night's takings.",
+      "objectives": [
+        {
+          "id": "perch",
+          "type": "collect",
+          "target": "grilled_perch",
+          "count": 3,
+          "label": "Grilled perch"
+        },
+        {
+          "id": "dace",
+          "type": "collect",
+          "target": "roast_dace",
+          "count": 2,
+          "label": "Roast dace"
+        }
+      ],
+      "reward": { "coins": 20, "xp": 120 }
+    },
+    {
+      "id": "hester_ghostfin",
+      "name": "The Ghost in the Mere",
+      "giver": "hester",
+      "turnIn": "hester",
+      "requires": ["hester_supper"],
+      "summary": "Hester's mother made a broth from a pale fish called the ghostfin. Catch one in the Stillwater Mere and bring it to her. It is very rare.",
+      "offer": "My mother made a broth from ghostfin. One bowl and you'd walk through snow. I haven't tasted it in twenty years. Tam says they still bite, once in a blue moon. Catch me one?",
+      "progress": "Still fishing? Tam says it took him a whole winter.",
+      "complete": "Oh. Oh, that's one. I'll write the broth down for you, it's only fair. And take this, it was my mother's.",
+      "objectives": [
+        {
+          "id": "ghostfin",
+          "type": "collect",
+          "target": "ghostfin",
+          "count": 1,
+          "label": "Ghostfin"
+        }
+      ],
+      "reward": {
+        "coins": 40,
+        "xp": 200,
+        "items": [
+          { "item": "ghostfin_broth", "count": 2 },
+          { "item": "yew_fishing_rod", "count": 1 }
+        ]
+      }
+    },
+    {
+      "id": "hester_firewood",
+      "name": "Wood for the Hearth",
+      "giver": "hester",
+      "turnIn": "hester",
+      "summary": "Hester needs five bundles of firewood from the deadfall in the Blackwood to keep the inn's fire lit.",
+      "offer": "The woodpile's down to splinters and the nights are drawing in. There's deadfall all through the Blackwood. Bring me five bundles and the fire stays lit.",
+      "progress": "Still cold in here, love. The deadfall's north, past the watch post.",
+      "complete": "That'll see us through the week. Warm yourself before you go.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "firewood",
+          "count": 5,
+          "label": "Bundles of firewood",
+          "location": "blackwood_deadfall"
+        }
+      ],
+      "reward": { "coins": 12, "xp": 90 }
+    },
+    {
+      "id": "mara_ore",
+      "name": "Ore for the Forge",
+      "giver": "mara",
+      "turnIn": "mara",
+      "summary": "Mara wants four lumps of bog-iron ore from the rocks in Hallow Cut.",
+      "offer": "Grave-iron won't last forever. There's bog-iron in the rocks at Hallow Cut, red as rust. Bring me four lumps and I'll have something to work with.",
+      "progress": "The red stone, in the Cut. Hit it until it gives.",
+      "complete": "Good weight to these. I'll get them in the furnace tonight.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "bog_iron_ore",
+          "count": 4,
+          "label": "Lumps of bog-iron ore",
+          "location": "hallow_cut_ore"
+        }
+      ],
+      "reward": { "coins": 12, "xp": 90 }
+    },
+    {
+      "id": "tam_sorrel",
+      "name": "Sorrel from the Mere",
+      "giver": "tam",
+      "turnIn": "tam",
+      "summary": "Tam wants six sprigs of mere sorrel from the wet ground around the Stillwater Mere.",
+      "offer": "Mere sorrel. Sharp green stuff, grows round the edge of the Stillwater and nowhere else. Fish taste of nothing without it. Six sprigs, if you're passing.",
+      "progress": "Round the water's edge. Smell it before you see it.",
+      "complete": "That's the stuff. Here, for your trouble.",
+      "objectives": [
+        {
+          "id": "gather",
+          "type": "collect",
+          "target": "mere_sorrel",
+          "count": 6,
+          "label": "Sprigs of mere sorrel",
+          "location": "stillwater_mere"
+        }
+      ],
+      "reward": { "coins": 10, "xp": 80 }
     }
   ]
 }
