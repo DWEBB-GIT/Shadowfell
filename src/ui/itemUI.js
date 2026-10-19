@@ -585,12 +585,12 @@ export class ItemUI {
     else lines.push(`<div class="tt-sell">Sell for ${moneyHTML(sell * stack.count)}${stack.count > 1 ? ` (${moneyHTML(sell)} each)` : ''}</div>`);
     if (shop) {
       if (!this.hud.padMode) lines.push('<div class="tt-hint">Click to buy</div>');
-      tip.innerHTML = lines.join('');
+      this._fill(tip, lines, def, loc);
       return this._placeTip();
     }
     if (this.game.merchant.current && !def.quest && !loc.startsWith('s:') && loc !== AMMO_LOC && !this.hud.padMode) {
       lines.push('<div class="tt-hint">Right-click to sell</div>');
-      tip.innerHTML = lines.join('');
+      this._fill(tip, lines, def, loc);
       return this._placeTip();
     }
     if (loc === AMMO_LOC) {
@@ -600,8 +600,52 @@ export class ItemUI {
     }
     const action = def.kind === 'ammo' ? 'Right-click to use these for Auto Shot' : loc.startsWith('e:') || loc.startsWith('s:') ? 'Right-click to unequip' : def.slot ? 'Right-click to equip' : def.kind === 'consumable' ? 'Right-click to drink' : def.kind === 'document' ? 'Right-click to read' : def.kind === 'bag' ? 'Right-click to place in a bag slot' : '';
     if (action && !this.hud.padMode) lines.push(`<div class="tt-hint">${action}</div>`);
-    tip.innerHTML = lines.join('');
+    this._fill(tip, lines, def, loc);
     this._placeTip();
+  }
+
+  // WoW-style compare: gear hovered outside the character panel shows what is
+  // worn in that slot alongside, with the stat changes on the hovered item.
+  _fill(tip, lines, def, loc) {
+    const worn = [];
+    if (def.slot && !loc.startsWith('e:') && !loc.startsWith('s:')) {
+      const pairs = { oneHand: ['mainHand', 'offHand'], mainHand: def.damage ? ['mainHand', 'offHand'] : ['mainHand'], finger: ['finger1', 'finger2'], trinket: ['trinket1', 'trinket2'] };
+      for (const s of pairs[def.slot] || [def.slot]) {
+        const st = this.game.inventory.get(`e:${s}`);
+        const w = st && itemView(st);
+        // an off-hand shield is not compared against a weapon
+        if (w && (s !== 'offHand' || def.slot === 'offHand' || w.damage)) worn.push(w);
+      }
+    }
+    if (!worn.length) {
+      tip.innerHTML = lines.join('');
+      return;
+    }
+    const totals = (d) => {
+      const t = { ...(d.stats || {}) };
+      if (d.damage) t.damage = (d.damage[0] + d.damage[1]) / 2;
+      return t;
+    };
+    const label = (k) => (k === 'damage' ? 'average damage' : STAT_LABEL[k] || k);
+    const boxes = worn.map((w) => {
+      const wl = [`<div class="tt-equipped">Currently equipped</div>`, `<div class="tt-name k-${w.kind} q-${w.rarity}">${w.name}</div>`];
+      if (w.damage) wl.push(`<div>${w.damage[0]}–${w.damage[1]} damage</div>`);
+      for (const [k, v] of Object.entries(w.stats || {})) wl.push(`<div>+${v} ${STAT_LABEL[k] || k}</div>`);
+      return `<div class="tt-box">${wl.join('')}</div>`;
+    });
+    const a = totals(def);
+    const diff = worn.map((w) => {
+      const b = totals(w);
+      const out = [];
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        const d = Math.round(((a[k] || 0) - (b[k] || 0)) * 10) / 10;
+        if (d) out.push(`<div class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d} ${label(k)}</div>`);
+      }
+      return `<div class="tt-diff"><div class="tt-kind">If you replace ${w.name}:</div>${out.join('') || '<div class="tt-kind">No stat change</div>'}</div>`;
+    });
+    const hint = lines.findIndex((l) => l.includes('tt-sell') || l.includes('tt-price'));
+    lines.splice(hint < 0 ? lines.length : hint, 0, ...diff);
+    tip.innerHTML = `${boxes.join('')}<div class="tt-box">${lines.join('')}</div>`;
   }
 
   // The bottom-right corner, above the bag slots (left of the bags when
