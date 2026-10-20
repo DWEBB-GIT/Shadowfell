@@ -5458,6 +5458,11 @@ async function wildlifeAndFeud(browser) {
     g.loot.collect(g.loot.active.find((x) => x.def.id === 'blackhedge_rag'));
     r.drain = Q.complete('feud_what_lies_under');
     r.nails = g.inventory.count('grave_rot_nails');
+    // Cal hauled the sacks for the bandits, saving for Wren's ring, not knowing
+    r.endingsBeforeCal = Q.status('feud_end_truth');
+    Q.accept('feud_cals_coin');
+    r.calReady = Q.status('feud_cals_coin');
+    Q.complete('feud_cals_coin');
     r.open = ['feud_end_truth', 'feud_end_secret', 'feud_end_blame'].map((id) => Q.status(id));
     // Wren offers the two honest endings; Edda wants a culprit
     g.npcs.talk(g.npcs.byId('wren'));
@@ -5510,8 +5515,8 @@ async function wildlifeAndFeud(browser) {
     r.afterLoad = { truth: Q.status('feud_end_truth'), wren: !!g.npcs.byId('wren') };
     return r;
   });
-  record('The feud runs Edda > Bram (a talk quest, ready at once) > boar > Cal\'s letter > the drain, and leaves three endings open',
-    chain.barley && chain.talkReady === 'ready' && chain.bramMark === 'ready' && chain.tusks && chain.letter && chain.drain && chain.nails === 3 && chain.open.every((s) => s === 'available') && chain.wren.join() === 'The Whole Truth,Only the Drain',
+  record('The feud runs Edda > Bram (a talk quest, ready at once) > boar > Cal\'s letter > the drain > Cal\'s confession, and leaves three endings open',
+    chain.barley && chain.talkReady === 'ready' && chain.bramMark === 'ready' && chain.tusks && chain.letter && chain.drain && chain.nails === 3 && chain.endingsBeforeCal === 'locked' && chain.calReady === 'ready' && chain.open.every((s) => s === 'available') && chain.wren.join() === 'The Whole Truth,Only the Drain',
     JSON.stringify(chain));
   record('The ending is one choice: taking one locks the others (abandoning reopens them), and the offer says so',
     /closes the other ways/.test(chain.choiceNote) && chain.locked.every((s) => s === 'locked') && chain.reopened === 'available' && chain.done && chain.nailsAfter === 0, JSON.stringify({ note: chain.choiceNote, locked: chain.locked, reopened: chain.reopened }));

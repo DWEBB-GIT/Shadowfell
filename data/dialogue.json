@@ -614,7 +614,7 @@
         },
         {
           "id": "bram_boar",
-          "text": "A whole sounder of them, east of the road, and they come over to my side whenever they've had enough of everybody else's. They come back as fast as you kill them, too. Then there's Old Bristleback. Big as a cart and twice as mean. I've put a bounty on him at the town board.",
+          "text": "A whole sounder of them, east of the road, and they come over to my side whenever they've had enough of everybody else's. They come back as fast as you kill them, too. Then there's Old Bristleback. Big as a cart and twice as mean. I've put a bounty on him at the town board. And something's been taking my pigs, and it isn't boar. Boar don't lift gate latches.",
           "replies": [
             {
               "text": "I'll thin them out."
@@ -637,13 +637,20 @@
           }
         },
         {
-          "text": "Mister Corrick shook her hand. Shook Edda Ashby's hand. I've worked for him three years and never seen him do that.",
+          "text": "I can't look at her. I keep counting the money and it's all nails.",
+          "when": {
+            "quest": "feud_cals_coin",
+            "status": "done"
+          }
+        },
+        {
+          "text": "Mister Corrick shook Edda Ashby's hand. And she's letting me dig her drain, which is how she says sorry. I've still the money. It'll be a ring yet. A proper one.",
           "when": {
             "flag": "feud_mended"
           }
         },
         {
-          "text": "Not a word, eh? Good. One day, maybe.",
+          "text": "Not a word, eh? Not about the stone, not about the sacks. I'll pay it back somehow. Then I'll buy the ring.",
           "when": {
             "flag": "feud_secret"
           }
@@ -654,6 +661,15 @@
           "id": "who",
           "prompt": "Who are you?",
           "node": "cal_who"
+        },
+        {
+          "id": "ring",
+          "prompt": "Tell me about the ring.",
+          "node": "cal_ring",
+          "when": {
+            "quest": "feud_cals_coin",
+            "status": "done"
+          }
         }
       ],
       "nodes": [
@@ -663,6 +679,15 @@
           "replies": [
             {
               "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "cal_ring",
+          "text": "There's a silversmith passes through Brackenford at midsummer. A plain band, nothing fancy, eleven shillings. I had nine. Nine shillings of grave-nails.",
+          "replies": [
+            {
+              "text": "You didn't know."
             }
           ]
         }

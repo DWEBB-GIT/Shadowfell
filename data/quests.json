@@ -555,7 +555,7 @@
       "summary": "Wild boar are tearing up the Corrick fields as well as everyone else's. Kill six, and Bram Corrick may have more to say about the Ashbys.",
       "offer": "You want to talk about ruined fields? Look east. Wild boar, a sounder of them, rooting up everything I plant and half the road besides. Kill six of the brutes and I'll tell you something about that stone Edda's so worried about.",
       "progress": "Still hear them grunting. Still not dead, then.",
-      "complete": "That's six fewer mouths. All right. About the stone. I've seen someone at it, late, more than once. Not me. And there's another thing. My hired lad, Cal. Never in his bed when I look in, and always mud on his boots from the north side. Ask him where he goes. He'll lie to me. He might not lie to you.",
+      "complete": "That's six fewer mouths. All right. About the stone. I've seen someone at it, late, more than once. Not me. And there's another thing. Three of my pigs gone from the sty since harvest, and I blamed the boar. Boar don't lift gate latches. And my hired lad, Cal. Never in his bed when I look in, and always mud on his boots from the north side. Ask him where he goes. He'll lie to me. He might not lie to you.",
       "objectives": [
         {
           "id": "boars",
@@ -603,7 +603,7 @@
       "summary": "Wren Ashby says the barley started dying where the old drain comes out of the bank. Look at the drain mouth on the Ashby side of the hedge, pull three of the black nails out of it (at either end), and look for whatever else is in there.",
       "offer": "It isn't the Corricks. I've told her and told her. The barley started dying by the old drain, where it comes out of the bank on our side of the hedge. It runs all the way back under Corrick land to the graves on the hill. Mother won't go near it. Look at it for me. Both ends. Whatever's in the water, bring some back. She'll need to see it.",
       "progress": "The drain, by the hedge. And the far end, up by the graves, if you can stomach it.",
-      "complete": "Coffin nails. Somebody dug up the old graves and pushed these into our drain. On purpose. ...And this. A black rag, knotted three times. The Blackhedge lot wear those, the ones who rob the carts on the road. Why would bandits want our barley dead? Take the rag to Reeve Pell in Brackenford. Keep the nails. Somebody has to tell Mother, and she'll want proof in her hand.",
+      "complete": "Coffin nails. Somebody dug up the old graves and pushed these into our drain. On purpose. ...And this. A black rag, knotted three times. The Blackhedge lot wear those, the ones who rob the carts on the road. Why would bandits want our barley dead? ...I've seen one like it before. Hanging on the hook behind Cal's door. He said he found it on the road. Keep the nails. Somebody has to tell Mother, and she'll want proof in her hand. But ask Cal about that rag first. I can't.",
       "objectives": [
         {
           "id": "drain",
@@ -639,12 +639,12 @@
       "name": "The Whole Truth",
       "giver": "wren",
       "turnIn": "edda",
-      "requires": ["feud_what_lies_under"],
+      "requires": ["feud_cals_coin"],
       "choice": "ashby_feud_ending",
-      "summary": "Tell Edda Ashby everything: the bandits, the coffin nails in the old drain, and Wren and Cal and their letters under the stone. Show her the nails.",
-      "offer": "Tell her all of it. The bandits, the drain, the nails. And me and Cal. I'm sick of lifting turf in the dark. If she throws me out, she throws me out. At least the barley will grow.",
+      "summary": "Tell Edda Ashby everything: the bandits, the coffin nails in the old drain, Cal's night work for them and why he did it, and Wren and Cal and their letters under the stone. Show her the nails.",
+      "offer": "Tell her all of it. The bandits, the drain, the nails. What Cal did, and why. And me and Cal. I'm sick of lifting turf in the dark. If she throws me out, she throws me out. At least the barley will grow.",
       "progress": "Mother's in the yard. She's always in the yard.",
-      "complete": "Coffin nails. Bandits, in my own ground. And I spent the summer cursing Bram Corrick. ...And my Wren, with Bram's hired boy. Under my nose, all harvest. Give me a moment. No. Give me a lifetime. ...Tell Bram Corrick I'm sorry. Then tell him we're digging a new drain, together. And tell that boy he can come to supper. Then never repeat that I said any of it.",
+      "complete": "Coffin nails. Bandits, in my own ground. And I spent the summer cursing Bram Corrick. ...And my Wren, with Bram's hired boy. Under my nose, all harvest. Give me a moment. No. Give me a lifetime. ...Tell Bram Corrick I'm sorry. Then tell him we're digging a new drain, together. And that boy. Hauling grave-nails into my barley for a shilling a night, to buy my daughter a ring. Of all the stupid, stupid... Tell him he can come to supper. He can dig the drain first. Then never repeat that I said any of it.",
       "objectives": [
         {
           "id": "nails",
@@ -672,10 +672,10 @@
       "name": "Only the Drain",
       "giver": "wren",
       "turnIn": "edda",
-      "requires": ["feud_what_lies_under"],
+      "requires": ["feud_cals_coin"],
       "choice": "ashby_feud_ending",
-      "summary": "Tell Edda Ashby about the bandits and the coffin nails in the old drain, and nothing about Wren and Cal. Show her the nails.",
-      "offer": "Tell her about the bandits and the drain. Only that. Not about me and Cal, not yet. She's lost the barley and Father in the same few years; she'll not lose me to a hired hand on the same day. Let us keep our stone a while longer. Please.",
+      "summary": "Tell Edda Ashby about the bandits and the coffin nails in the old drain, and nothing about Wren and Cal, or Cal's part in it. Show her the nails.",
+      "offer": "Tell her about the bandits and the drain. Only that. Not about me and Cal, and not what he did. Not yet. She's lost the barley and Father in the same few years; she'll not lose me to a hired hand on the same day. Let us keep our stone a while longer. Please.",
       "progress": "Mother's in the yard. Only the drain, mind.",
       "complete": "Coffin nails. Bandits, in my own ground, all this time. ...So it wasn't Corrick. I'll have the drain stopped and the bank dug out. I'll not apologise to him, mind. He'll have done something, some time. He always has.",
       "objectives": [
@@ -699,7 +699,7 @@
       "name": "Corrick's Doing",
       "giver": "edda",
       "turnIn": "edda",
-      "requires": ["feud_what_lies_under"],
+      "requires": ["feud_cals_coin"],
       "choice": "ashby_feud_ending",
       "summary": "Edda Ashby wants a culprit, and the old drain runs under Corrick land. Give her the coffin nails and tell her the Corricks put them there. Say nothing about bandits.",
       "offer": "You've been poking round that drain. I've seen you. It runs under Corrick land, every yard of it. Whatever's in it, he put there. I don't want to hear about bandits or bogles. Bring me what you found and say his name, and you'll be paid better than the Corricks could ever pay you.",
@@ -730,7 +730,7 @@
       "summary": "Show Reeve Aldous Pell the knotted black rag from the Ashby drain.",
       "offer": "You've the look of someone with something to show me, and the look of someone who'd rather not. Out with it.",
       "progress": "Well? Let's see it.",
-      "complete": "Knotted three times. That's Blackhedge. A dozen cutthroats camped in the trees west of the forest track, past the deadfall. They rob carts and anyone poorer than themselves. Never bothered with farms. Never had the wit to. ...Somebody's paying them.",
+      "complete": "Knotted three times. That's Blackhedge. A dozen cutthroats camped in the trees west of the forest track, past the deadfall. They rob carts and anyone poorer than themselves, and lately pigs off Corrick land, I hear. Never bothered with poisoning fields. Never had the wit to. ...Somebody's paying them.",
       "objectives": [
         {
           "id": "rag",
@@ -838,6 +838,29 @@
         "reputation": {
           "road_wardens": 400
         }
+      }
+    },
+    {
+      "id": "feud_cals_coin",
+      "name": "A Shilling a Night",
+      "giver": "wren",
+      "turnIn": "cal",
+      "requires": ["feud_what_lies_under"],
+      "summary": "Wren Ashby has seen a knotted black rag like the one from the drain hanging behind Cal Fenner's door. Ask Cal about it.",
+      "offer": "That rag. There's one like it on the hook behind Cal's door, I'd swear to it. He's had money lately, too, and he never has money. Go and ask him. I can't. If he lies to me I'll know, and then I'll have to know.",
+      "progress": "Cal. At the Corrick farm. Please.",
+      "complete": "...Where did you get that? Oh, no. No, no. A man with one of those on his arm stopped me on the road at harvest. Said the Ashbys had hired him to clear their old drain and wanted it done quiet, so Edda's pride wouldn't take a knock. A shilling a night to carry sacks up from the graves and lift the capstones. Heavy sacks. I never looked inside. I was saving. For a ring. For Wren. ...I put those nails in her barley, didn't I. I did it to marry her and I've ruined her.",
+      "objectives": [
+        {
+          "id": "talk",
+          "type": "talk",
+          "target": "cal",
+          "label": "Ask Cal Fenner about the black rag",
+          "location": "corrick_farm"
+        }
+      ],
+      "reward": {
+        "xp": 120
       }
     }
   ]
