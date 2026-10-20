@@ -862,6 +862,30 @@
       "reward": {
         "xp": 120
       }
+    },
+    {
+      "id": "bram_pigs",
+      "name": "Boar Don't Lift Latches",
+      "giver": "bram",
+      "turnIn": "bram",
+      "requires": ["bandit_rag"],
+      "summary": "Bram Corrick's pigs have been going missing, and Reeve Pell says the Blackhedge bandits take pigs. Find out whether Bram's pigs are at the bandit camp west of the forest track, without starting a fight you can't finish.",
+      "offer": "Pell says it's that Blackhedge rabble taking my pigs. I'd like to know before I go up there with a pitchfork and get myself killed. Go and look. Every Corrick pig has a notch cut in its left ear, my father's mark. If they're there, I'll know. Don't get stuck for a pig, mind. Not even a good one.",
+      "progress": "Notch in the left ear. You can't miss it.",
+      "complete": "Penned up behind their fire like they own them. My pigs. ...I'll not get them back from that lot with a pitchfork. But once that camp's cleared, I'm fetching them home, and I'll not be asking nicely.",
+      "objectives": [
+        {
+          "id": "pen",
+          "type": "examine",
+          "target": "blackhedge_pigpen",
+          "label": "Find Bram's pigs at the Blackhedge camp",
+          "location": "blackhedge_camp"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 220
+      }
     }
   ]
 }

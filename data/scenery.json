@@ -903,6 +903,28 @@
       "position": [0.4, 65],
       "rotation": 5,
       "collider": 0.5
+    },
+    {
+      "model": "fence",
+      "position": [-19.5, -65.5],
+      "rotation": 20,
+      "collider": [
+        [-1, 0, 0.3],
+        [0, 0, 0.3],
+        [1, 0, 0.3]
+      ],
+      "examine": "blackhedge_pigpen",
+      "examineOffset": [0.4, 1.2]
+    },
+    {
+      "model": "fence",
+      "position": [-17.6, -67],
+      "rotation": 110,
+      "collider": [
+        [-1, 0, 0.3],
+        [0, 0, 0.3],
+        [1, 0, 0.3]
+      ]
     }
   ],
   "clearings": [

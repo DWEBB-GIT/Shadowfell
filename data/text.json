@@ -29,7 +29,8 @@
     "boundary_stone": "The old stone that marks where Ashby land ends and Corrick land begins. The turf around its foot has been lifted and laid back, more than once, by someone careful. Underneath is a hollow just big enough for a letter.",
     "ashby_drain": "A stone culvert mouth, half sunk in the bank. Black water seeps out of it into the Ashby barley. It runs back under the hedge, under Corrick land, to the old graves on the hill. The capstones have been lifted and set back, and not long ago: the moss is torn. In the mud there are boot prints, big and hobnailed. Not a farmer's.",
     "blackhedge_camp": "From behind the rock you can see the camp: a fire, a lean-to, crates from carts that never reached Brackenford. Six of them that you can count, knotted black rags round their arms, and a big man in a red coat who never sits down. They are better armed than you and there are more of them. Not today.",
-    "harl_strongbox": "Under the coin and the cheap rings, a letter, sealed in grey wax pressed with a closed eye: 'For the Ashby business. Sour the ground, set the two houses at each other, and the land will come cheap. Payment as agreed. Further work to follow.' It is not signed."
+    "harl_strongbox": "Under the coin and the cheap rings, a letter, sealed in grey wax pressed with a closed eye: 'For the Ashby business. Sour the ground, set the two houses at each other, and the land will come cheap. Payment as agreed. Further work to follow.' It is not signed.",
+    "blackhedge_pigpen": "A pen of hurdles behind the camp, and three fat pigs in it, every one with a notch cut in its left ear. Somebody is eating well on Bram Corrick's account."
   },
   "title": {
     "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",

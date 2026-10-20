@@ -572,6 +572,13 @@
           }
         },
         {
+          "text": "Got my pigs back. Two of them, anyway. The third, I'm told, was supper.",
+          "when": {
+            "quest": "bandit_captain",
+            "status": "done"
+          }
+        },
+        {
           "text": "Ashby and I are digging a drain. Together. If I'm found face down in it, ask her first.",
           "when": {
             "flag": "feud_mended"

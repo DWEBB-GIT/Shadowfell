@@ -5487,6 +5487,10 @@ async function wildlifeAndFeud(browser) {
     r.bandits = {};
     Q.accept('bandit_rag');
     r.bandits.rag = Q.complete('bandit_rag') && g.inventory.count('blackhedge_rag') === 0;
+    // Bram's stolen pigs: a look, not a fight
+    Q.accept('bram_pigs');
+    g.interaction.examine('blackhedge_pigpen');
+    r.bandits.pigs = Q.complete('bram_pigs');
     Q.accept('bandit_scout');
     g.interaction.examine('blackhedge_camp');
     r.bandits.scout = Q.complete('bandit_scout');
@@ -5524,7 +5528,7 @@ async function wildlifeAndFeud(browser) {
     chain.flag && !chain.present.includes('wren') && !chain.present.includes('cal') && chain.wrenHidden && /field's still black/.test(chain.edda) && chain.gossip && chain.afterLoad.truth === 'locked' && !chain.afterLoad.wren,
     JSON.stringify({ present: chain.present, edda: chain.edda, afterLoad: chain.afterLoad }));
   record('Bandits fouled the drain: the rag leads to Reeve Pell and the Blackhedge camp (scout, thin it, kill Harl Voss), whose strongbox shows he was hired by someone sealing with a closed eye',
-    chain.bandits.rag && chain.bandits.scout && chain.bandits.thin && chain.bandits.harlLevel === 8 && chain.bandits.captain, JSON.stringify(chain.bandits));
+    chain.bandits.rag && chain.bandits.pigs && chain.bandits.scout && chain.bandits.thin && chain.bandits.harlLevel === 8 && chain.bandits.captain, JSON.stringify(chain.bandits));
   record('No errors (wildlife and feud)', !errors.length, errors.join(' | '));
   await ctx.close();
 }
