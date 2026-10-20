@@ -850,6 +850,150 @@
       "model": "pine",
       "icon": "pine",
       "description": "A sharp-smelling green herb that only grows in the wet ground around the Stillwater Mere."
+    },
+    {
+      "id": "skinning_knife",
+      "name": "Skinning knife",
+      "kind": "tool",
+      "rarity": "common",
+      "skinningKnife": true,
+      "stack": 1,
+      "price": 8,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A short curved blade, kept sharp enough to shave with. Carry it (it rides in the tool pack) and, once someone has shown you how, you can skin the beasts you kill."
+    },
+    {
+      "id": "tanners_knife",
+      "name": "Agna's flaying knife",
+      "kind": "tool",
+      "rarity": "enhanced",
+      "skinningKnife": true,
+      "skinningSkill": 10,
+      "stack": 1,
+      "price": 40,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "Agna Holt's second-best knife, which she says is better than most people's best. +10 Skinning skill while you carry it."
+    },
+    {
+      "id": "boar_meat",
+      "name": "Boar haunch",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "A fatty haunch of wild boar, coarse-haired at the edges. Good on a spit, if someone shows you how."
+    },
+    {
+      "id": "boar_tusk",
+      "name": "Boar tusk",
+      "kind": "junk",
+      "rarity": "junk",
+      "stack": 20,
+      "price": 5,
+      "model": "cracked_bone",
+      "icon": "cracked_bone",
+      "description": "Yellow, curved and chipped from digging. Children in Brackenford wear them for luck. It did not bring the boar any."
+    },
+    {
+      "id": "boar_hide",
+      "name": "Boar hide",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 4,
+      "model": "hound_pelt",
+      "icon": "hound_pelt",
+      "description": "Thick, bristled hide, still warm. A tanner will turn it into leather; anyone else will just turn up their nose."
+    },
+    {
+      "id": "wolf_meat",
+      "name": "Stringy wolf meat",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "Mostly sinew. The wolves of the ridge do not carry much spare."
+    },
+    {
+      "id": "wolf_pelt",
+      "name": "Ridge wolf pelt",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 7,
+      "model": "hound_pelt",
+      "icon": "hound_pelt",
+      "description": "Pale grey fur, thick for the cold up on the ridge. Agna Holt pays well for whole ones."
+    },
+    {
+      "id": "bristleback_hide",
+      "name": "Old Bristleback's hide",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 1,
+      "price": 35,
+      "model": "hound_pelt",
+      "icon": "hound_pelt",
+      "description": "A hide as thick as a door and nearly as heavy, scarred by thirty years of fences. Every farmer on the Fallen Road would pay to see it."
+    },
+    {
+      "id": "roast_boar",
+      "name": "Spit-roast boar",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 110,
+          "seconds": 18
+        }
+      },
+      "stack": 20,
+      "price": 9,
+      "model": "steak",
+      "icon": "steak",
+      "description": "Crackling on the outside, grease all the way down. Restores 110 health over 18 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "cals_letter",
+      "name": "Folded letter",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 1,
+      "price": 0,
+      "quest": true,
+      "model": "manifest",
+      "icon": "manifest",
+      "description": "Sealed with candle wax and a thumbprint. On the outside, in careful letters: W."
+    },
+    {
+      "id": "grave_rot_nails",
+      "name": "Black coffin nails",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "Square nails gone soft and black, wet with something that is not water. They came out of the old drain, and before that out of coffins."
+    },
+    {
+      "id": "blackhedge_rag",
+      "name": "Knotted black rag",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 1,
+      "price": 0,
+      "quest": true,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "A strip of black cloth, knotted three times. Snagged on the drain stones by someone who did not want to be seen. The Blackhedge bandits wear them round their arms."
     }
   ]
 }

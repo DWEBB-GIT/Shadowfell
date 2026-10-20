@@ -177,7 +177,9 @@ export class QuestUI {
     const q = page.quest;
     if (q) {
       const head = q.status === 'ready' ? 'Ready to hand in' : q.status === 'available' ? 'New quest' : 'In progress';
-      this.el.dlgHead.innerHTML = `<div class="q-name">${esc(q.name)}</div><div class="q-state ${q.status}">${head}</div>`;
+      // one of several ways a story can go: taking it closes the others
+      const choice = q.choice && q.status === 'available' ? '<div class="q-choice">A choice. Taking this closes the other ways.</div>' : '';
+      this.el.dlgHead.innerHTML = `<div class="q-name">${esc(q.name)}</div><div class="q-state ${q.status}">${head}</div>${choice}`;
       this.el.dlgQuest.innerHTML = `<div class="q-sub">Objectives</div>${this._objectivesHTML(q.objectives)}${this._rewardHTML(q.reward)}`;
     } else {
       this.el.dlgHead.innerHTML = '';
@@ -281,8 +283,8 @@ export class QuestUI {
     const { npcs, camera, renderer, quests } = this.game;
     const w = renderer.domElement.clientWidth;
     const h = renderer.domElement.clientHeight;
-    for (const n of npcs.list) {
-      const status = quests.markerFor(n.id);
+    for (const n of npcs.all) {
+      const status = n.present && quests.markerFor(n.id);
       let el = this.marks.get(n.id);
       if (!el) {
         el = document.createElement('div');

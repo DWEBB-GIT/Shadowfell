@@ -20,20 +20,32 @@ import { AMMO_LOC } from './inventory.js';
 // gather (a cast bar shows it; moving or being hit stops it), and they stay
 // in sight at all times. Without the quest, or once gathered and waiting to
 // grow back, a node is greyed out and cannot be taken.
+//
+// Beasts (enemies.json `skin`) can be skinned once their body holds no more
+// coins, if the Warden knows Skinning: see skinnables() below.
+
+// The Skinning rank a beast of this level needs (Dan, 2026-10-20: by level,
+// not by kind of beast): CONFIG.skinning.rankPerLevel for each level above
+// freeLevel, and at least 1.
+export function skinRank(level) {
+  const t = CONFIG.skinning;
+  return Math.max(1, (level - t.freeLevel) * t.rankPerLevel);
+}
 
 export class LootSystem {
   constructor(game) {
     this.game = game;
     this.active = []; // { def, x, z, group, glint, baseY }
     this.regrow = []; // { entry, at }: gathering nodes waiting to grow back
-    this.gathering = null; // { entry, t, total, from }
+    this.gathering = null; // { entry, t, total, from } or, skinning, { skin, name, t, total, from }
     game.events.on('playerHurt', () => this.stopGathering('Interrupted.'));
   }
 
   // the cast bar while gathering: { t, total, name }
   get gatherBar() {
     const g = this.gathering;
-    return g ? { t: g.t, total: g.total, name: `Gathering ${this.describe(g.entry)}` } : null;
+    if (!g) return null;
+    return { t: g.t, total: g.total, name: g.skin ? `Skinning ${g.name}` : `Gathering ${this.describe(g.entry)}` };
   }
 
   // Start gathering a quest node; it is taken when the bar fills.
@@ -223,6 +235,7 @@ export class LootSystem {
     const { worldState, enemies } = this.game;
     const out = [];
     for (const [id, c] of Object.entries(worldState.corpses)) {
+      if (!(c.coins > 0)) continue; // a looted beast waiting for the knife (skinnables)
       const e = enemies.byId(id);
       out.push({ kind: 'corpse', id, x: c.x, z: c.z, name: e ? e.cfg.name : 'body', coins: c.coins });
     }
@@ -261,10 +274,14 @@ export class LootSystem {
     const { worldState, inventory, enemies, events } = this.game;
     const c = worldState.corpses[id];
     if (!c) return false;
-    delete worldState.corpses[id];
     const e = enemies.byId(id);
-    if (c.coins > 0) inventory.addCoins(c.coins, `from the ${e ? e.cfg.name : 'body'}`);
-    if (e) {
+    const coins = c.coins;
+    // a beast's body stays down, empty, for a skinner's knife
+    const skin = this.keepForSkinning(e);
+    if (skin) c.coins = 0;
+    else delete worldState.corpses[id];
+    if (coins > 0) inventory.addCoins(coins, `from the ${e ? e.cfg.name : 'body'}`);
+    if (e && !skin) {
       e.corpse = false; // the body can now sink away
       e.rig.death = Math.max(e.rig.death, 2.5);
     }
@@ -327,10 +344,12 @@ export class LootSystem {
     const g = this.gathering;
     if (g) {
       const p = this.game.player;
-      if (p.dead || p.casting || p.position.distanceTo(g.from) > 0.3 || !this.available(g.entry)) this.stopGathering(p.dead ? '' : 'Interrupted.');
+      const ok = g.skin ? this._skinnable(g.skin) : this.available(g.entry);
+      if (p.dead || p.casting || p.position.distanceTo(g.from) > 0.3 || !ok) this.stopGathering(p.dead ? '' : 'Interrupted.');
       else if ((g.t += dt) >= g.total) {
         this.gathering = null;
-        this.collect(g.entry);
+        if (g.skin) this.skin(g.skin);
+        else this.collect(g.entry);
       }
     }
     for (const l of this.active) {
@@ -339,6 +358,96 @@ export class LootSystem {
       l.glint.material.opacity = pulse;
       l.glint.position.y = 0.3 + Math.sin(time * 1.5 + l.seed) * 0.05;
     }
+  }
+
+  // ------------------------------------------------------------ skinning
+  // A beast with `skin` (the loot table it yields, in enemies.json) leaves
+  // its body, once emptied of coins, for a skinner: Skinning learned, a knife
+  // (an item with `skinningKnife`) in the bags or tool pack, and the rank the
+  // beast's level needs (skinRank; a knife's `skinningSkill` adds to it). It takes
+  // CONFIG.skinning.time like gathering; the skin table's yield goes to the
+  // bags (or beside the body if they are full) and the body sinks away.
+  // The skill rises while the beast is still a challenge (WoW).
+
+  // Should this body wait to be skinned? Only if the Warden could learn to.
+  keepForSkinning(enemy) {
+    return !!(enemy && enemy.cfg.skin && this.game.skills.has('skinning'));
+  }
+
+  _skinnable(id) {
+    const c = this.game.worldState.corpses[id];
+    return !!c && !(c.coins > 0) && !!this.game.enemies.byId(id)?.cfg.skin;
+  }
+
+  // Bodies that can be skinned now: [{ kind: 'skin', id, x, z, name, rank }]
+  skinnables() {
+    const { worldState, enemies, skills } = this.game;
+    if (!skills.has('skinning')) return [];
+    const out = [];
+    for (const [id, c] of Object.entries(worldState.corpses)) {
+      if (!this._skinnable(id)) continue;
+      const e = enemies.byId(id);
+      out.push({ kind: 'skin', id, x: c.x, z: c.z, name: e.cfg.name, rank: skinRank(e.cfg.level) });
+    }
+    return out;
+  }
+
+  // the best knife carried, or null
+  get knife() {
+    const inv = this.game.inventory;
+    let best = null;
+    for (const [id, d] of Object.entries(ITEMS)) if (d.skinningKnife && inv.count(id) > 0 && (!best || (d.skinningSkill || 0) > (best.skinningSkill || 0))) best = d;
+    return best;
+  }
+
+  // Skinning rank with the knife's bonus
+  get skinningSkill() {
+    return this.game.skills.rank('skinning') + (this.knife?.skinningSkill || 0);
+  }
+
+  // What stops this body being skinned ('needs ...'), or null.
+  skinBlock(s) {
+    if (!this.knife) return 'needs a skinning knife';
+    if (this.skinningSkill < s.rank) return `needs Skinning ${s.rank}`;
+    return null;
+  }
+
+  startSkin(s) {
+    const { player, hud } = this.game;
+    if (this.gathering?.skin === s.id || !this._skinnable(s.id)) return false;
+    if (player.casting || player.dead) return false;
+    const why = this.skinBlock(s);
+    if (why) {
+      hud?.error?.(`That ${why}.`);
+      return false;
+    }
+    this.game.fishing?.stop(true);
+    const total = CONFIG.skinning.time;
+    this.gathering = { skin: s.id, name: s.name, t: 0, total, from: player.position.clone() };
+    player.faceTowards(s.x, s.z);
+    player.rig.play('brace', total, 0.9);
+    return true;
+  }
+
+  skin(id) {
+    const { worldState, enemies, inventory, events, skills } = this.game;
+    if (!this._skinnable(id)) return false;
+    const c = worldState.corpses[id];
+    const e = enemies.byId(id);
+    const table = e.cfg.skin;
+    const rank = skinRank(e.cfg.level);
+    delete worldState.corpses[id];
+    e.corpse = false; // the body can now sink away
+    e.rig.death = Math.max(e.rig.death, 2.5);
+    // full bags: what will not fit lies by the body
+    for (const { id: item, count } of rollLoot(DB.lootTables[table], this.game.random)) {
+      if (!inventory.addItem(item, count)) this.dropAt({ id: item, count }, { x: c.x, z: c.z });
+    }
+    const over = skills.rank('skinning') - rank;
+    const t = CONFIG.skinning;
+    if (over < t.easyAfter || (over < t.trivialAfter && this.game.random() < t.easyChance)) skills.raise('skinning');
+    events.emit('skinned', { id, enemy: e.type });
+    return true;
   }
 
   describe(entry) {

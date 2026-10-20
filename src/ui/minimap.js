@@ -347,6 +347,20 @@ export class Minimap {
       ctx.moveTo(-1.2, -2.6);
       ctx.lineTo(1.2, -2.6);
       ctx.stroke();
+    } else if (icon === 'tanner') {
+      // a hide stretched on a frame
+      ctx.moveTo(-3.6, -3.4);
+      ctx.lineTo(-1.2, -2.2);
+      ctx.lineTo(1.2, -2.2);
+      ctx.lineTo(3.6, -3.4);
+      ctx.lineTo(2.6, 0);
+      ctx.lineTo(3.6, 3.4);
+      ctx.lineTo(1, 2.4);
+      ctx.lineTo(-1, 2.4);
+      ctx.lineTo(-3.6, 3.4);
+      ctx.lineTo(-2.6, 0);
+      ctx.closePath();
+      ctx.fill();
     } else if (icon === 'innkeeper') {
       // a tankard
       ctx.fillRect(-3, -2.8, 4.4, 6);

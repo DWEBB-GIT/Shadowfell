@@ -1,5 +1,5 @@
 {
-  "_about": "An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies).",
+  "_about": "An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank).",
   "leashDistance": 18,
   "enemies": [
     {
@@ -74,6 +74,7 @@
       "barHeight": 1.4,
       "meleeAnim": "bite",
       "lootTable": "hound",
+      "skin": "skin_hound",
       "respawn": 75,
       "reputation": {
         "mere_folk": 10
@@ -209,9 +210,179 @@
       "meleeAnim": "bite",
       "uniqueDrop": "greyjaws_fang",
       "lootTable": "hound",
+      "skin": "skin_greyjaw",
       "respawn": 900,
       "reputation": {
         "road_wardens": 60
+      }
+    },
+    {
+      "id": "wild_boar",
+      "name": "Wild Boar",
+      "model": "hound",
+      "type": "normal",
+      "level": 2,
+      "crit": 5,
+      "windup": 0.4,
+      "detection": 6,
+      "meleeRange": 1.1,
+      "speed": 3.6,
+      "radius": 0.5,
+      "xp": 24,
+      "coins": 0,
+      "elite": false,
+      "scale": 0.9,
+      "tint": "#8a5a3a",
+      "roam": 4,
+      "barHeight": 1.3,
+      "meleeAnim": "bite",
+      "lootTable": "wild_boar",
+      "skin": "skin_boar",
+      "respawn": 60
+    },
+    {
+      "id": "ridge_wolf",
+      "name": "Ridge Wolf",
+      "model": "hound",
+      "type": "pack_beast",
+      "level": 4,
+      "crit": 5,
+      "windup": 0.3,
+      "detection": 10,
+      "meleeRange": 1.1,
+      "speed": 5,
+      "radius": 0.45,
+      "xp": 38,
+      "coins": 0,
+      "elite": false,
+      "pack": 8,
+      "scale": 1.05,
+      "tint": "#c8c4b8",
+      "barHeight": 1.4,
+      "meleeAnim": "bite",
+      "lootTable": "ridge_wolf",
+      "skin": "skin_wolf",
+      "respawn": 75,
+      "reputation": {
+        "road_wardens": 10
+      }
+    },
+    {
+      "id": "bristleback",
+      "name": "Old Bristleback",
+      "model": "hound",
+      "type": "elite",
+      "level": 4,
+      "crit": 8,
+      "windup": 0.45,
+      "detection": 9,
+      "meleeRange": 1.6,
+      "speed": 4.2,
+      "radius": 0.8,
+      "xp": 140,
+      "coins": 10,
+      "elite": true,
+      "rareElite": true,
+      "scale": 1.5,
+      "tint": "#5a3a28",
+      "roam": 6,
+      "barHeight": 2.1,
+      "meleeAnim": "bite",
+      "lootTable": "bristleback",
+      "skin": "skin_bristleback",
+      "respawn": 600,
+      "reputation": {
+        "road_wardens": 40
+      }
+    },
+    {
+      "id": "blackhedge_cutthroat",
+      "name": "Blackhedge Cutthroat",
+      "model": "mara",
+      "type": "normal",
+      "level": 6,
+      "crit": 6,
+      "windup": 0.45,
+      "detection": 8,
+      "meleeRange": 1.25,
+      "speed": 3,
+      "radius": 0.45,
+      "xp": 62,
+      "coins": 6,
+      "elite": false,
+      "tint": "#5a4a44",
+      "meleeAnim": "cleave",
+      "lootTable": "blackhedge",
+      "respawn": 150,
+      "reputation": {
+        "road_wardens": 15
+      }
+    },
+    {
+      "id": "blackhedge_archer",
+      "name": "Blackhedge Bowman",
+      "model": "archer",
+      "type": "skirmisher",
+      "level": 6,
+      "crit": 6,
+      "windup": 0.5,
+      "detection": 10,
+      "meleeRange": 1.2,
+      "speed": 2.8,
+      "radius": 0.4,
+      "xp": 66,
+      "coins": 6,
+      "elite": false,
+      "tint": "#8a6a50",
+      "ranged": {
+        "name": "Aimed Shot",
+        "range": 12,
+        "keep": 6,
+        "windup": 1.1,
+        "width": 0.9,
+        "projectile": "arrow",
+        "speed": 24,
+        "interruptible": true
+      },
+      "lootTable": "blackhedge",
+      "respawn": 150,
+      "reputation": {
+        "road_wardens": 15
+      }
+    },
+    {
+      "id": "blackhedge_captain",
+      "name": "Harl Voss",
+      "model": "mara",
+      "type": "elite",
+      "level": 8,
+      "crit": 8,
+      "windup": 0.5,
+      "detection": 9,
+      "meleeRange": 1.4,
+      "speed": 3,
+      "radius": 0.6,
+      "xp": 320,
+      "coins": 30,
+      "elite": true,
+      "scale": 1.25,
+      "tint": "#7a3a30",
+      "barHeight": 2.6,
+      "meleeAnim": "cleave",
+      "telegraph": true,
+      "special": {
+        "name": "Gutting Sweep",
+        "windup": 1.2,
+        "cooldown": 8,
+        "trigger": 3.2,
+        "range": 3.6,
+        "arc": 130,
+        "interruptible": false
+      },
+      "lootTable": "blackhedge_captain",
+      "respawn": 0,
+      "reputation": {
+        "road_wardens": 150
       }
     }
   ]

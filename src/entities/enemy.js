@@ -47,7 +47,7 @@ export class Enemy {
     this.group.name = 'Enemy_' + this.id;
     this.model = game.assets.instance(this.cfg.model);
     this.group.add(this.model);
-    this.rig = new Rig(this.model, this.type);
+    this.rig = new Rig(this.model, this.cfg.model);
     this.materials = Rig.isolateMaterials(this.model);
     // a rare elite reuses its kin's model, sized and tinted
     if (this.cfg.scale) this.model.scale.multiplyScalar(this.cfg.scale);
@@ -465,7 +465,7 @@ export class Enemy {
 
     this.game.collision.resolve(this.position, this.radius);
     this.position.y = heightAt(this.position.x, this.position.z);
-    this.rig.update(dt, speed01 * (this.type === 'brute' ? 0.8 : this.type === 'hound' ? 1 : 0.7));
+    this.rig.update(dt, speed01 * (this.type === 'brute' ? 0.8 : this.cfg.model === 'hound' ? 1 : 0.7));
     this._sync();
   }
 

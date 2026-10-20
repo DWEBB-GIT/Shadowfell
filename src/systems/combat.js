@@ -234,8 +234,9 @@ export class Combat {
     events.emit('log', { text: `The ${enemy.cfg.name} falls still.`, kind: 'kill' });
     progression.addXp(enemy.cfg.xp, { kill: true });
     if (enemy.cfg.reputation) this.game.reputation.addAll(enemy.cfg.reputation);
-    // coins stay on the body until looted (click it, or E / A beside it)
-    if (enemy.cfg.coins > 0) loot.addCorpse(enemy, enemy.cfg.coins);
+    // coins stay on the body until looted (click it, or E / A beside it);
+    // a beast's body also waits for a skinner
+    if (enemy.cfg.coins > 0 || loot.keepForSkinning(enemy)) loot.addCorpse(enemy, enemy.cfg.coins || 0);
     if (enemy.cfg.uniqueDrop) loot.dropUnique(enemy);
     loot.dropFromEnemy(enemy);
     this.game.afterlife.onEnemyDefeated(enemy);

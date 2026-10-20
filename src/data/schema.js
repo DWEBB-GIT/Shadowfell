@@ -56,7 +56,7 @@ export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
 const SCHOOLS = ['physical', 'shadow', 'holy', 'nature', 'fire'];
 // what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
-export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer'];
+export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer', 'tanner'];
 
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
@@ -160,6 +160,8 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
     if (d.kind === 'torch' && !(isNum(d.light) && d.light > 0)) bad('a torch needs light (metres)');
     if (d.bait !== undefined && !(isNum(d.bait) && d.bait > 0)) bad('bait must be a bonus to fishing skill above 0');
     if (d.fishingSkill !== undefined && !(isNum(d.fishingSkill) && d.fishingSkill > 0)) bad('fishingSkill must be a bonus to fishing skill above 0');
+    if (d.skinningSkill !== undefined && !(isNum(d.skinningSkill) && d.skinningSkill > 0 && d.skinningKnife)) bad('skinningSkill must be a bonus above 0, on a knife (skinningKnife: true)');
+    if (d.skinningKnife && d.kind !== 'tool') bad('a skinning knife must be a tool (it rides in the tool pack)');
     // a fishing rod: any one carried lets you fish
     if (d.rod !== undefined && !(d.rod === true && d.kind === 'tool')) bad('rod: true is for tools (fishing rods)');
     if (d.fishingSkill !== undefined && !d.rod) bad('fishingSkill is for rods (rod: true)');
@@ -396,6 +398,9 @@ export function validateGameData(raw, opts = {}) {
     if (e.armour !== undefined && !(isNum(e.armour) && e.armour >= 0)) errors.push(`${w}: armour must be a number of at least 0`);
     if (e.lootTable) ref(w, 'loot table', lootTables, e.lootTable);
     if (e.uniqueDrop) ref(w, 'item', items, e.uniqueDrop);
+    // a beast's skin: the loot table skinning it yields (the rank it needs comes from its level)
+    if (e.skin !== undefined) ref(w + ' skin', 'loot table', lootTables, e.skin);
+    if (e.tint !== undefined && !/^#[0-9a-f]{6}$/i.test(e.tint)) errors.push(`${w}: tint must be a colour like #7a6a66`);
     if (e.ranged && !(isNum(e.ranged.range) && (isNum(e.ranged.damage) || type?.hit !== undefined) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage (or a type) and windup`);
     if (e.special && !(isNum(e.special.damage) || type?.special !== undefined)) errors.push(`${w}: special needs damage (or an elite, heavy or boss type)`);
     if (e.circle && !isNum(e.circle.damage)) errors.push(`${w}: circle needs damage`);
@@ -480,6 +485,7 @@ export function validateGameData(raw, opts = {}) {
     if (n.shop) ref(w, 'shop', shops, n.shop);
     if (n.mapIcon !== undefined && !NPC_MAP_ICONS.includes(n.mapIcon)) errors.push(`${w}: mapIcon must be one of ${NPC_MAP_ICONS.join(', ')}`);
     if (n.dialogue !== undefined) ref(w, 'dialogue', dialogues, n.dialogue);
+    if (n.tint !== undefined && !/^#[0-9a-f]{6}$/i.test(n.tint)) errors.push(`${w}: tint must be a colour like #7a6a66`);
   }
 
   // ---- quests
@@ -515,7 +521,10 @@ export function validateGameData(raw, opts = {}) {
       else if (o.type === 'collect') ref(ow, 'item', items, o.target);
       else if (o.type === 'examine') {
         if (!examine[o.target]) errors.push(`${ow}: names unknown examine point ${o.target}`);
-      } else errors.push(`${ow}: type must be kill, collect or examine`);
+      } else if (o.type === 'talk') {
+        // go and speak to someone: they must be who the quest is handed to
+        if (o.target !== q.turnIn) errors.push(`${ow}: a talk objective names the turn-in npc (${q.turnIn})`);
+      } else errors.push(`${ow}: type must be kill, collect, examine or talk`);
       if (o.count !== undefined && !(isInt(o.count) && o.count >= 1)) errors.push(`${ow}: count must be a whole number of at least 1`);
       if (o.type === 'kill' && enemies[o.target]) {
         const placedCount = Object.values(spawns).filter((s) => s.enemy === o.target).length;
@@ -531,7 +540,12 @@ export function validateGameData(raw, opts = {}) {
       if (!(isInt(it.count ?? 1) && (it.count ?? 1) >= 1)) errors.push(`${w} reward: item count must be a whole number`);
     }
     if (q.setsFlag !== undefined && !isStr(q.setsFlag)) errors.push(`${w}: setsFlag must be a name`);
+    if (q.choice !== undefined && !isStr(q.choice)) errors.push(`${w}: choice must be a name (quests sharing it are one decision)`);
   }
+  // a choice is between two or more quests
+  const choices = {};
+  for (const q of Object.values(quests)) if (isStr(q.choice)) (choices[q.choice] ||= []).push(q.id);
+  for (const [c, ids] of Object.entries(choices)) if (ids.length < 2) errors.push(`quests.json ${ids[0]}: choice ${c} needs at least one other quest to choose between`);
   // a quest that requires itself, however far round, can never be offered
   const seen = {};
   const loops = (id, path) => {
@@ -597,6 +611,7 @@ export function validateGameData(raw, opts = {}) {
   for (const s of worldF.npcSpawns || []) {
     ref('world.json npcSpawns', 'npc', npcs, s.npc);
     pos(`world.json npcSpawn ${s.npc}`, s.position);
+    condition(`world.json npcSpawn ${s.npc} goneWhen`, s.goneWhen);
   }
   for (const [id, s] of Object.entries(spawns)) {
     ref(`world.json enemySpawn ${id}`, 'enemy type', enemies, s.enemy);

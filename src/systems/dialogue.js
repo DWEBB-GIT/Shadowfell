@@ -120,7 +120,7 @@ export class Dialogue {
     } else if (v.kind === 'quest') {
       const q = DB.quests[v.id];
       const status = this.game.quests.status(v.id);
-      page.quest = { id: q.id, name: q.name, status, objectives: this.game.quests.objectives(q.id), reward: q.reward || {} };
+      page.quest = { id: q.id, name: q.name, status, objectives: this.game.quests.objectives(q.id), reward: q.reward || {}, choice: !!q.choice };
       if (status === 'available') {
         page.text = q.offer;
         page.options.push({ id: 'accept', text: 'Accept', icon: 'accept' }, { id: 'menu', text: 'Decline', icon: 'back' });

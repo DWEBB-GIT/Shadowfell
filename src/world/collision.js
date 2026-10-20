@@ -15,8 +15,9 @@ export class Collision {
   }
 
   // `wall`: part of a building's walls, which block line of sight
+  // Returns the circle; setting its `off` lifts it (someone who has left).
   add(x, z, r, wall = false) {
-    const c = { x, z, r, wall };
+    const c = { x, z, r, wall, off: false };
     this.circles.push(c);
     const minX = Math.floor((x - r) / this.cellSize);
     const maxX = Math.floor((x + r) / this.cellSize);
@@ -29,6 +30,7 @@ export class Collision {
         this.grid.get(k).push(c);
       }
     }
+    return c;
   }
 
   _nearby(x, z, r) {
@@ -40,7 +42,7 @@ export class Collision {
     for (let i = minX; i <= maxX; i++) {
       for (let j = minZ; j <= maxZ; j++) {
         const list = this.grid.get(this._key(i, j));
-        if (list) for (const c of list) out.add(c);
+        if (list) for (const c of list) if (!c.off) out.add(c);
       }
     }
     return out;
