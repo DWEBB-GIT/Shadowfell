@@ -172,6 +172,48 @@
       "name": "Ore in Hallow Cut",
       "position": [24, -22],
       "radius": 7
+    },
+    {
+      "id": "ashby_farm",
+      "name": "Ashby farm",
+      "position": [-23, 42],
+      "radius": 8
+    },
+    {
+      "id": "corrick_farm",
+      "name": "Corrick farm",
+      "position": [-23, 23],
+      "radius": 7
+    },
+    {
+      "id": "boundary_stone",
+      "name": "The boundary stone",
+      "position": [-14.5, 31.5],
+      "radius": 3
+    },
+    {
+      "id": "old_drain",
+      "name": "The old drain",
+      "position": [-23, 36],
+      "radius": 4
+    },
+    {
+      "id": "boar_runs",
+      "name": "The boar runs",
+      "position": [17, 31],
+      "radius": 11
+    },
+    {
+      "id": "wolf_ridge",
+      "name": "Wolf ridge",
+      "position": [27, 3],
+      "radius": 6
+    },
+    {
+      "id": "tannery",
+      "name": "Agna's tannery",
+      "position": [16, 84],
+      "radius": 4
     }
   ],
   "npcSpawns": [
@@ -195,6 +237,37 @@
       "npc": "town_board",
       "position": [-4.6, 66],
       "facing": 180
+    },
+    {
+      "npc": "agna",
+      "position": [15.5, 83.6],
+      "facing": 270
+    },
+    {
+      "npc": "edda",
+      "position": [-21, 40.5],
+      "facing": 180
+    },
+    {
+      "npc": "wren",
+      "position": [-17.5, 37.5],
+      "facing": 200,
+      "goneWhen": {
+        "flag": "feud_burned"
+      }
+    },
+    {
+      "npc": "bram",
+      "position": [-21.5, 25],
+      "facing": 0
+    },
+    {
+      "npc": "cal",
+      "position": [-17.5, 26.5],
+      "facing": 20,
+      "goneWhen": {
+        "flag": "feud_burned"
+      }
     }
   ],
   "enemySpawns": [
@@ -277,6 +350,66 @@
       "id": "dummy_forge",
       "enemy": "training_dummy",
       "position": [18.2, -39.4]
+    },
+    {
+      "id": "boar_east_1",
+      "enemy": "wild_boar",
+      "position": [12, 36]
+    },
+    {
+      "id": "boar_east_2",
+      "enemy": "wild_boar",
+      "position": [17, 29]
+    },
+    {
+      "id": "boar_east_3",
+      "enemy": "wild_boar",
+      "position": [21, 39]
+    },
+    {
+      "id": "boar_east_4",
+      "enemy": "wild_boar",
+      "position": [14, 22]
+    },
+    {
+      "id": "boar_east_5",
+      "enemy": "wild_boar",
+      "position": [24, 25]
+    },
+    {
+      "id": "boar_ashby",
+      "enemy": "wild_boar",
+      "position": [-15, 46]
+    },
+    {
+      "id": "boar_corrick",
+      "enemy": "wild_boar",
+      "position": [-16, 19]
+    },
+    {
+      "id": "boar_hedge",
+      "enemy": "wild_boar",
+      "position": [-29, 33]
+    },
+    {
+      "id": "wolf_ridge_1",
+      "enemy": "ridge_wolf",
+      "position": [27, 3]
+    },
+    {
+      "id": "wolf_ridge_2",
+      "enemy": "ridge_wolf",
+      "position": [29.5, 7]
+    },
+    {
+      "id": "wolf_ridge_3",
+      "enemy": "ridge_wolf",
+      "position": [25, -1]
+    },
+    {
+      "id": "bristleback_runs",
+      "enemy": "bristleback",
+      "position": [22, 44]
     }
   ],
   "placedLoot": [
@@ -545,6 +678,66 @@
       "reward": {
         "item": "mere_sorrel"
       }
+    },
+    {
+      "id": "cals_letter",
+      "quest": "feud_letter",
+      "model": "manifest",
+      "scale": 0.6,
+      "position": [-13.6, 32.4],
+      "heightOffset": 0.05,
+      "prompt": "Take the letter from under the stone",
+      "reward": {
+        "item": "cals_letter"
+      }
+    },
+    {
+      "id": "drain_nails_1",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [-23.6, 36.6],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_2",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [-22, 37.4],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_3",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [-25, 37.8],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_4",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [-21, 18],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
     }
   ],
   "dangerZones": [
@@ -675,7 +868,9 @@
     [8, 72, 8],
     [-22, 62, 4.5],
     [-23, 82, 4.5],
-    [20, 88, 4.5]
+    [20, 88, 4.5],
+    [-27, 44, 4.5],
+    [-27, 21, 4.5]
   ],
   "signposts": [
     {

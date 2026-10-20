@@ -156,6 +156,12 @@ export const CONFIG = {
     reach: 3.2, // how close the Warden must be to loot by clicking
     gatherTime: 2, // seconds to gather a quest item (firewood, ore, sorrel...)
   },
+  skinning: {
+    time: 2.2, // seconds to skin a beast
+    easyAfter: 10, // ranks over the beast's: every skin raises the skill until then
+    trivialAfter: 20, // ...then now and then (easyChance), and never from here on
+    easyChance: 0.5,
+  },
 };
 
 

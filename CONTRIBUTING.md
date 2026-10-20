@@ -87,9 +87,10 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
   3. Place the NPC with an `npcSpawns` entry in `world.json`.
 - **A new quest:**
   1. Add a `quests.json` record with a `giver` and `turnIn` npc, and `requires` for any quests that must be done first.
-  2. Give it `objectives`: `kill` an enemy type (counted from every one defeated, since enemies do not return), `collect` an item (taken on hand-in unless `keep`), or `examine` a world point. Add a `location` so the minimap shows where to go.
+  2. Give it `objectives`: `kill` an enemy type (counted from when the quest is taken, since most enemies respawn), `collect` an item (taken on hand-in unless `keep`), `examine` a world point, or `talk` to the turn-in npc (met at once: "go and speak to Bram"). Add a `location` so the minimap shows where to go.
   3. Write what the giver says: `offer`, `progress` and `complete`, plus the `summary` the quest log shows.
   4. The giver shows a gold ! when it can be taken, a grey ? while it is in hand, and a gold ? when it is ready.
+  5. **A choice:** quests that share a `choice` name are one decision (the Ashby feud's three endings). Taking one locks the others; abandoning it opens them again. Give each a `setsFlag`, then let greetings, topics and npc spawns (`goneWhen` in `world.json`) react to the flag, so the world shows what the player chose.
 - **A new spell:** add an `abilities.json` record with a `kind` and the spell engine (`src/systems/spells.js`) runs it with no new code. Kinds and the `tuning` numbers each needs (all need `cooldown`):
   - `cast` (target `enemy`): `castTime`, `damageMin`, `damageMax`, `projectileSpeed`
   - `dot` (target `enemy`): `duration`, `tickInterval`, `tickMultiplier` (× a weapon roll per tick)
@@ -105,6 +106,7 @@ The game runs the same checks (`src/data/schema.js`) when it starts and logs any
 - **An obscured (dark) area:** add an entry to `obscured` in `world.json`: `{ "id", "name", "position": [x, z], "radius", "text" }`. Without a torch (any item of kind `torch`, with a `light` radius, in the off hand) the Warden is pushed back at its edge and `text` shows in the log; with one, the dark thins and they can walk in. It shows black on the minimap. Put something worth finding inside with `placedLoot`, and a `clearings` entry in `scenery.json` so trees stay out.
 - **Water and fish:** add an entry to `water` in `world.json`: `{ "id", "name", "position": [x, z], "radius", "fishTable" }`. The ground dips into a pond there, the water blocks walking, and it shows blue on the minimap. `fishTable` is an ordinary loot table (rarity weights and items per rarity); fish are items like any other and are never shown in the water. Add a `clearings` entry so trees stay out.
 - **Bait:** an item with `bait: <percent>` adds that much to the catch chance while it is in the bags; one is used per strike.
+- **A skinnable beast:** give the enemy type `skin: { "table": <loot table>, "rank": <Skinning rank needed> }`. With Skinning learned (Agna Holt teaches it) and a knife (an item with `skinningKnife: true`, and `skinningSkill` for a bonus) in the bags or tool pack, its body waits once looted and can be skinned for that table. The skill rises while the beast is under 10 ranks below yours, now and then up to 20, then never (`skinning` in `src/config.js`).
 - **A learnable skill:** add a `skills.json` record with a `trainer`, `cost`, `maxRank` and the ability it `teaches`, and give that ability `skill: "<skill id>"` (and `requiresItem` if it needs a tool). The trainer then offers "Teach me ..." in dialogue, and the ability stays out of the spellbook until learned.
 - **A new place:**
   1. Add props to `scenery.json`, with examine text in `text.json`.

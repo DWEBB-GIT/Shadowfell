@@ -189,6 +189,30 @@
           "id": "rest",
           "prompt": "Can I rest here?",
           "node": "hester_rest"
+        },
+        {
+          "id": "farms_mended",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_mended",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "id": "farms_secret",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_secret",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "id": "farms_burned",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_burned",
+          "when": {
+            "flag": "feud_burned"
+          }
         }
       ],
       "nodes": [
@@ -218,6 +242,33 @@
               "text": "Back."
             }
           ]
+        },
+        {
+          "id": "hester_farms_mended",
+          "text": "The Ashbys and the Corricks are digging a drain together. Together! Old Pell says it's the end of the world. And the Corrick lad's been seen walking Wren Ashby home in broad daylight. I'll give it till spring before there's a wedding, and I'll be doing the food.",
+          "replies": [
+            {
+              "text": "Good for them."
+            }
+          ]
+        },
+        {
+          "id": "hester_farms_secret",
+          "text": "The Ashby drain's been stopped, they say, and the barley's coming back. Edda's quieter about the Corricks, which is the strangest thing I've heard all year. Mind, the Corrick lad still drinks here of an evening, and he still leaves early, and he still goes north.",
+          "replies": [
+            {
+              "text": "Is that so?"
+            }
+          ]
+        },
+        {
+          "id": "hester_farms_burned",
+          "text": "You'll have heard. The Corrick hayrick went up in the night, and come morning Wren Ashby and Cal Corrick were gone. Together, if you believe it. Edda says Bram poisoned her field and Bram says Edda burned his rick, and they're both right about something, and neither will ever say what.",
+          "replies": [
+            {
+              "text": "A bad business."
+            }
+          ]
         }
       ]
     },
@@ -230,6 +281,357 @@
       ],
       "topics": [],
       "nodes": []
+    },
+    {
+      "id": "agna",
+      "greetings": [
+        {
+          "text": "Mind the vats. What's in them won't wash off, and neither will the smell."
+        },
+        {
+          "text": "Back with something for me? Let's see if you've learned to keep a knife steady.",
+          "when": {
+            "quest": "agna_first_hides",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "agna_who"
+        },
+        {
+          "id": "skin",
+          "prompt": "How does skinning work?",
+          "node": "agna_skin"
+        },
+        {
+          "id": "where",
+          "prompt": "Where are the best hides?",
+          "node": "agna_where"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "agna_who",
+          "text": "Agna Holt. I tan. Hides come in stiff and stinking and go out soft and stinking a little less. Everyone in Brackenford wears something I've had my hands in, whether they like to think about it or not.",
+          "replies": [
+            {
+              "text": "Can you teach me?",
+              "node": "agna_skin"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "agna_skin",
+          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. Little beasts first: boar. You'll want ten in the skill before a barrow hound's hide comes away whole, and more for the wolves on the ridge. I sell knives. I teach the rest, for a few coins.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "agna_where",
+          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow hounds in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet.",
+          "replies": [
+            {
+              "text": "I'll keep an eye out."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edda",
+      "greetings": [
+        {
+          "text": "If you've come from the Corrick side, you can go back there."
+        },
+        {
+          "text": "You've seen it now. Tell me that's not Corrick's work.",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Well? Did he deny it? Of course he did.",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "done"
+          }
+        },
+        {
+          "text": "We're digging the new drain on Tuesday. With the Corricks. Don't make me say it twice.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "The barley's coming back, now the drain's stopped. I still won't speak to Corrick. Some things don't grow back.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "text": "They say I lit the Corrick hayrick. Let them prove it. My girl's gone, and the field's still black.",
+          "when": {
+            "flag": "feud_burned"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "edda_who"
+        },
+        {
+          "id": "feud",
+          "prompt": "Why do you hate the Corricks?",
+          "node": "edda_feud",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "done"
+          }
+        },
+        {
+          "id": "wren",
+          "prompt": "What happened to Wren?",
+          "node": "edda_wren",
+          "when": {
+            "flag": "feud_burned"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "edda_who",
+          "text": "Edda Ashby. This is Ashby land, north of the hedge, and has been since before there was a road to sell anything on. My husband's in the churchyard. My daughter's in the house, if she knows what's good for her.",
+          "replies": [
+            {
+              "text": "Good day to you."
+            }
+          ]
+        },
+        {
+          "id": "edda_feud",
+          "text": "Bram Corrick's father moved the boundary stone a yard north the year I was born. A yard! My father moved it back. His moved it again. I've stopped counting. Nobody knows where it should stand any more, but I know where it shouldn't.",
+          "replies": [
+            {
+              "text": "A yard, over thirty years?",
+              "node": "edda_yard"
+            },
+            {
+              "text": "I see."
+            }
+          ]
+        },
+        {
+          "id": "edda_yard",
+          "text": "A yard is a yard. You give a Corrick a yard and he'll have your house.",
+          "replies": [
+            {
+              "text": "Of course."
+            }
+          ]
+        },
+        {
+          "id": "edda_wren",
+          "text": "Gone. The same night as the fire. With him. With a Corrick. You'll have known, I expect. Everyone knew but me.",
+          "replies": [
+            {
+              "text": "I'm sorry."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wren",
+      "greetings": [
+        {
+          "text": "Don't mind Mother. She shouts at the crows too."
+        },
+        {
+          "text": "You've got it? Quickly, before she comes round the barn.",
+          "when": {
+            "quest": "feud_letter",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "You know, then. About me and Cal. Please don't tell her. Not yet.",
+          "when": {
+            "quest": "feud_letter",
+            "status": "done"
+          }
+        },
+        {
+          "text": "Cal's coming to supper. Mother's set him a place. She set it as far from hers as the table goes, but she set it.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Still our stone. Still our secret. Thank you.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "wren_who"
+        },
+        {
+          "id": "cal",
+          "prompt": "How did you and Cal meet?",
+          "node": "wren_cal",
+          "when": {
+            "quest": "feud_letter",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "wren_who",
+          "text": "Wren. Edda's daughter, for my sins. I keep the hens and the books and Mother's temper, which is the hardest of the three.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "wren_cal",
+          "text": "Over the hedge, when we were small. We were the only children for a mile and nobody told us we weren't allowed. By the time they did, it was too late. We started using the stone at harvest. It's the one place on the hedge both families keep away from, because both of them are sure it's in the wrong place.",
+          "replies": [
+            {
+              "text": "That's almost funny."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bram",
+      "greetings": [
+        {
+          "text": "If it's about the boar, I know. If it's about Ashby, I don't care."
+        },
+        {
+          "text": "Six dead? Let's hear it, then.",
+          "when": {
+            "quest": "feud_tusks",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Ashby and I are digging a drain. Together. If I'm found face down in it, ask her first.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Ashby's stopped calling me a poisoner. Calls me nothing at all now. It's an improvement.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "text": "My hayrick's ash and my boy's gone. Ran off with the Ashby girl, they say. Did you know? ...Get off my land.",
+          "when": {
+            "flag": "feud_burned"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "bram_who"
+        },
+        {
+          "id": "boar",
+          "prompt": "Tell me about the boar.",
+          "node": "bram_boar"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "bram_who",
+          "text": "Bram Corrick. Corrick land is everything south of that hedge to the old graves. I grow turnips, barley and resentment, and lately the boar have been getting the first two.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "bram_boar",
+          "text": "A whole sounder of them, east of the road, and they come over to my side whenever they've had enough of everybody else's. They come back as fast as you kill them, too. Then there's Old Bristleback. Big as a cart and twice as mean. I've put a bounty on him at the town board.",
+          "replies": [
+            {
+              "text": "I'll thin them out."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cal",
+      "greetings": [
+        {
+          "text": "Afternoon. If Dad asks, I've been mending the fence all day."
+        },
+        {
+          "text": "Did you give it to her? Only her?",
+          "when": {
+            "quest": "feud_letter",
+            "status": "active"
+          }
+        },
+        {
+          "text": "Dad shook her hand. Shook Edda Ashby's hand. I've never seen him do that to anyone. Not even me.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Not a word, eh? Good. One day, maybe.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "cal_who"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "cal_who",
+          "text": "Cal. Bram's son. I do the work and he does the shouting. It's a fair split, he says.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

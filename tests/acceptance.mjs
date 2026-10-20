@@ -2782,7 +2782,7 @@ async function lootRarity(browser) {
   record('A drop rolls its rarity first: a ghoul drops junk, common, enhanced and rarely rare', near(gh.junk, 22.5, 1.5) && near(gh.common, 14.4, 1.2) && near(gh.enhanced, 6.75, 1) && near(gh.rare, 1.35, 0.5) && !gh.epic,
     `per ghoul: junk ${pct(gh.junk).toFixed(1)}%, common ${pct(gh.common).toFixed(1)}%, enhanced ${pct(gh.enhanced).toFixed(1)}%, rare ${pct(gh.rare).toFixed(2)}%, epic 0`);
   record('Items reserved for a boss drop only from that boss', !stats.ghoul.items.witchbane && !stats.hound.items.witchbane && near(stats.seer.items.witchbane, 15, 1.5), `Witchbane: seer ${pct(stats.seer.items.witchbane).toFixed(1)}%, ghouls and hounds never`);
-  record('Hounds always drop their own meat, and often a pelt', stats.hound.items.hound_meat === stats.N && near(stats.hound.items.hound_pelt, 50, 2), `meat ${pct(stats.hound.items.hound_meat)}%, pelt ${pct(stats.hound.items.hound_pelt).toFixed(1)}%`);
+  record('Hounds always drop their own meat; pelts come from skinning', stats.hound.items.hound_meat === stats.N && !stats.hound.items.hound_pelt, `meat ${pct(stats.hound.items.hound_meat)}%, pelt ${pct(stats.hound.items.hound_pelt).toFixed(1)}%`);
 
   // the seer falls and drops her epic blade: purple name, glint and log line
   const epic = await page.evaluate(() => {
@@ -5338,7 +5338,165 @@ async function titles(browser) {
   await ctx.close();
 }
 
-const SECTIONS = { titleAndCharacters, classKits, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes, titles };
+// Wildlife you can grind, Skinning (trainer, knife, ranks) and the Ashby and
+// Corrick feud, whose ending is a choice that sticks (Dan, 2026-10-20).
+async function wildlifeAndFeud(browser) {
+  current = 'Wildlife, skinning and the feud';
+  const { ctx, page, errors } = await freshGame(browser);
+  await begin(page);
+  await setup(page, { x: 15, z: 30 });
+  await pauseLoop(page);
+
+  const kill = (id, x, z) => page.evaluate(({ id, x, z }) => {
+    const g = window.__shadowfall;
+    const e = g.enemies.byId(id);
+    if (x !== undefined) e.position.set(x, 0, z);
+    e.hurt(9999);
+    g.combat.onEnemyDefeated(e);
+  }, { id, x, z });
+
+  // boar come back, so they can be ground
+  await kill('boar_east_1', 15, 31);
+  const grind = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const r = {
+      boars: g.enemies.list.filter((e) => e.type === 'wild_boar').length,
+      wolves: g.enemies.list.filter((e) => e.type === 'ridge_wolf').length,
+      bristleback: !!g.enemies.byId('bristleback_runs'),
+      meat: g.worldState.ground.some((d) => d.id === 'boar_meat'),
+      body: !!g.worldState.corpses.boar_east_1,
+      due: g.worldState.respawnAt.boar_east_1 - g.worldState.time,
+    };
+    g.worldState.time += r.due;
+    g.step(0.05);
+    r.back = !!g.enemies.byId('boar_east_1')?.alive;
+    return r;
+  });
+  record('Eight boar, three ridge wolves and Old Bristleback roam the Fallen Road; boar drop meat and come back a minute after dying', grind.boars === 8 && grind.wolves === 3 && grind.bristleback && grind.meat && !grind.body && grind.due === 60 && grind.back, JSON.stringify(grind));
+
+  // Skinning: learn it from Agna, then a boar's body waits for the knife
+  const learn = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.inventory.addCoins(100);
+    const rows = g.dialogue.trainRows('agna').map((r) => r.id);
+    return { rows, learned: g.skills.learn('skinning'), shop: g.db.shops.agna_tannery.stock };
+  });
+  await setup(page, { x: 15, z: 30 });
+  await kill('boar_east_2', 15.8, 30);
+  await sim(page, 0.1);
+  const noKnife = (await state(page)).prompt;
+  await page.evaluate(() => window.__shadowfall.inventory.addItem('skinning_knife'));
+  await sim(page, 0.1);
+  const withKnife = (await state(page)).prompt;
+  await sim(page, 0.05, { press: ['KeyE'] });
+  const bar = await page.evaluate(() => window.__shadowfall.loot.gatherBar?.name);
+  await sim(page, 2.4);
+  const skinned = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    return { hide: g.inventory.count('boar_hide'), body: !!g.worldState.corpses.boar_east_2, rank: g.skills.rank('skinning') };
+  });
+  record('Agna Holt teaches Skinning and sells the knife; a boar\'s body asks for a knife, then skins over a cast bar for a hide, and the skill rises',
+    learn.rows.includes('train:skinning') && learn.learned && learn.shop.includes('skinning_knife') && noKnife === 'Skin the Wild Boar (needs a skinning knife)' && withKnife === 'Skin the Wild Boar' && bar === 'Skinning Wild Boar' && skinned.hide === 1 && !skinned.body && skinned.rank === 2,
+    JSON.stringify({ learn, noKnife, withKnife, bar, skinned }));
+
+  // a hound needs Skinning 10, and must be looted first (it carries a coin)
+  await kill('hound_den_1', 15.8, 30);
+  const hound = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const r = { skinnableUnlooted: g.loot.skinnables().length };
+    g.loot.lootCorpse('hound_den_1');
+    const s = g.loot.skinnables()[0];
+    r.block = s && g.loot.skinBlock(s);
+    g.skills.ranks.set('skinning', 10);
+    r.ok = g.loot.skinBlock(s);
+    g.loot.skin('hound_den_1');
+    r.pelt = g.inventory.count('hound_pelt');
+    r.rank = g.skills.rank('skinning');
+    // a beast far below your rank teaches nothing
+    g.skills.ranks.set('skinning', 25);
+    return r;
+  });
+  await kill('boar_east_3', 15.8, 30);
+  const grey = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    g.loot.skin('boar_east_3');
+    return g.skills.rank('skinning');
+  });
+  record('A barrow hound is looted first, needs Skinning 10, and gives its pelt; a boar teaches nothing at Skinning 25',
+    hound.skinnableUnlooted === 0 && hound.block === 'needs Skinning 10' && hound.ok === null && hound.pelt === 1 && hound.rank === 11 && grey === 25, JSON.stringify({ hound, grey }));
+
+  // the feud, to its choice
+  const chain = await page.evaluate(() => {
+    const g = window.__shadowfall;
+    const Q = g.quests;
+    const r = {};
+    Q.accept('feud_black_barley');
+    g.interaction.examine('ashby_field');
+    g.interaction.examine('boundary_stone');
+    r.barley = Q.complete('feud_black_barley');
+    Q.accept('feud_over_the_hedge');
+    r.talkReady = Q.status('feud_over_the_hedge');
+    r.bramMark = Q.markerFor('bram');
+    Q.complete('feud_over_the_hedge');
+    Q.accept('feud_tusks');
+    for (const e of g.enemies.list.filter((x) => x.type === 'wild_boar' && x.alive).slice(0, 6)) {
+      e.hurt(9999);
+      g.combat.onEnemyDefeated(e);
+    }
+    r.tusks = Q.complete('feud_tusks');
+    Q.accept('feud_letter');
+    const letter = g.loot.active.find((l) => l.def.id === 'cals_letter');
+    r.letter = g.loot.collect(letter) && Q.complete('feud_letter');
+    Q.accept('feud_what_lies_under');
+    g.interaction.examine('ashby_drain');
+    for (const l of g.loot.active.filter((x) => x.def.id.startsWith('drain_nails')).slice(0, 3)) g.loot.collect(l);
+    r.drain = Q.complete('feud_what_lies_under');
+    r.nails = g.inventory.count('grave_rot_nails');
+    r.open = ['feud_end_truth', 'feud_end_secret', 'feud_end_blame'].map((id) => Q.status(id));
+    // Wren offers the two honest endings; Edda wants a culprit
+    g.npcs.talk(g.npcs.byId('wren'));
+    r.wren = g.dialogue.page.options.filter((o) => o.group === 'quest').map((o) => o.text);
+    g.dialogue.close();
+    g.npcs.talk(g.npcs.byId('edda'));
+    g.dialogue.choose('quest:feud_end_blame');
+    r.choiceNote = document.querySelector('#dialogue-window .q-choice')?.textContent || '';
+    g.dialogue.choose('accept');
+    g.dialogue.close();
+    r.locked = [Q.status('feud_end_truth'), Q.status('feud_end_secret')];
+    Q.abandon('feud_end_blame');
+    r.reopened = Q.status('feud_end_truth');
+    Q.accept('feud_end_blame');
+    r.done = Q.complete('feud_end_blame');
+    r.nailsAfter = g.inventory.count('grave_rot_nails');
+    r.flag = g.worldState.flags.has('feud_burned');
+    g.step(0.05);
+    r.present = g.npcs.list.map((n) => n.id);
+    r.wrenHidden = g.npcs.all.find((n) => n.id === 'wren').group.visible === false;
+    g.npcs.talk(g.npcs.byId('edda'));
+    r.edda = g.dialogue.page.text;
+    g.dialogue.close();
+    g.npcs.talk(g.npcs.byId('hester'));
+    r.gossip = g.dialogue.page.options.some((o) => o.id === 'node:hester_farms_burned');
+    g.dialogue.close();
+    const data = JSON.parse(JSON.stringify(g.save.serialize()));
+    g.save.apply(data);
+    g.step(0.05);
+    r.afterLoad = { truth: Q.status('feud_end_truth'), wren: !!g.npcs.byId('wren') };
+    return r;
+  });
+  record('The feud runs Edda > Bram (a talk quest, ready at once) > boar > Cal\'s letter > the drain, and leaves three endings open',
+    chain.barley && chain.talkReady === 'ready' && chain.bramMark === 'ready' && chain.tusks && chain.letter && chain.drain && chain.nails === 3 && chain.open.every((s) => s === 'available') && chain.wren.join() === 'The Whole Truth,Only the Drain',
+    JSON.stringify(chain));
+  record('The ending is one choice: taking one locks the others (abandoning reopens them), and the offer says so',
+    /closes the other ways/.test(chain.choiceNote) && chain.locked.every((s) => s === 'locked') && chain.reopened === 'available' && chain.done && chain.nailsAfter === 0, JSON.stringify({ note: chain.choiceNote, locked: chain.locked, reopened: chain.reopened }));
+  record('Blaming the Corricks sticks: Wren and Cal are gone, Edda and Hester say so, and it survives a save and load',
+    chain.flag && !chain.present.includes('wren') && !chain.present.includes('cal') && chain.wrenHidden && /field's still black/.test(chain.edda) && chain.gossip && chain.afterLoad.truth === 'locked' && !chain.afterLoad.wren,
+    JSON.stringify({ present: chain.present, edda: chain.edda, afterLoad: chain.afterLoad }));
+  record('No errors (wildlife and feud)', !errors.length, errors.join(' | '));
+  await ctx.close();
+}
+
+const SECTIONS = { titleAndCharacters, classKits, launchAndMovement, combat, exploration, progression, death, persistence, quality, abilities, telegraphs, gamepad, bagsAndGround, spellBar, controls, statsAndDamage, itemDatabase, forge, questsAndMap, clickTargeting, spells, lootRarity, ghostAndCamp, torchAndFishing, targetAndUi, combatFixes, economy, worldBatch, utilityBar, uiLayout, resources, swingTimer, dualWield, townAndCooking, wowCombat, playtest3, playtest4, playtest5, gearRolls, blackwood, atmosphere, targetingFixes, titles, wildlifeAndFeud };
 const only = process.argv.slice(2);
 try {
   for (const [name, run] of Object.entries(SECTIONS)) if (!only.length || only.includes(name)) await run(browser);

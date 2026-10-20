@@ -497,6 +497,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .q-name { color: var(--gold); font-size: 15px; letter-spacing: 0.5px; }
 .q-state { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
 .q-state.ready, .q-state.available { color: #ffd23c; }
+.q-choice { margin-top: 4px; font-size: 12px; font-style: italic; color: #e8a860; }
 .q-sub { margin: 8px 0 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
 .q-rewards { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; }
 .q-reward { display: inline-flex; align-items: center; gap: 5px; }

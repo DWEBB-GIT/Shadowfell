@@ -35,6 +35,15 @@
       "teaches": ["cook"],
       "maxRank": 50,
       "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook."
+    },
+    {
+      "id": "skinning",
+      "name": "Skinning",
+      "trainer": "agna",
+      "cost": 10,
+      "teaches": [],
+      "maxRank": 50,
+      "desc": "Skin the beasts you kill for their hides and pelts (you need a skinning knife). Loot the body first, then skin it. Bigger beasts need a higher rank; the skill rises with every skin that is not yet easy for you."
     }
   ]
 }

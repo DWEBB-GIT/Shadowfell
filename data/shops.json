@@ -25,6 +25,12 @@
       "name": "Innkeeper",
       "sells": ["consumable"],
       "description": "Food, drink and a bed."
+    },
+    {
+      "id": "tanner",
+      "name": "Tanner",
+      "sells": ["tool", "material"],
+      "description": "Knives, hides and leather. Buys anything with fur on."
     }
   ],
   "shops": [
@@ -47,6 +53,12 @@
       "name": "The Ford Inn",
       "vendorType": "innkeeper",
       "stock": ["grilled_perch", "travellers_stew", "healing_draught"]
+    },
+    {
+      "id": "agna_tannery",
+      "name": "Agna's tannery",
+      "vendorType": "tanner",
+      "stock": ["skinning_knife"]
     }
   ]
 }

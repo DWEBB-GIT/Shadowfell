@@ -24,7 +24,10 @@
     "archer_camp": "A smashed crate stamped with the watch tower. Arrows, no bowstrings, and a cold fire. The archers here stopped needing to eat some time ago.",
     "seer_stones": "A ring of stones lit with witchlight. Grave-iron bars have been driven into the earth at its heart, nine of them, in a circle. So this is where Mara's iron went.",
     "shrine_first": "The candles are fresh and someone has left bread in the bowl this morning. Whoever keeps this shrine is not far away.",
-    "well": "The well is deep and the water sweet. Someone has scratched the names of the drowned along the rim; the list stops forty years ago."
+    "well": "The well is deep and the water sweet. Someone has scratched the names of the drowned along the rim; the list stops forty years ago.",
+    "ashby_field": "Barley, or what was barley. The stalks have gone grey and slick, and the ground under them is black and smells of a cellar. It is worst at the south end, by the hedge, and fades the further north you walk.",
+    "boundary_stone": "The old stone that marks where Ashby land ends and Corrick land begins. The turf around its foot has been lifted and laid back, more than once, by someone careful. Underneath is a hollow just big enough for a letter.",
+    "ashby_drain": "A stone culvert mouth, half sunk in the bank. Black water seeps out of it, a trickle at a time, straight into the Ashby barley. It runs back under the hedge, under Corrick land, towards the old graves on the hill. Nobody has cleared it in a lifetime."
   },
   "title": {
     "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
