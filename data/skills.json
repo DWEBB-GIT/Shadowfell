@@ -43,7 +43,7 @@
       "cost": 10,
       "teaches": [],
       "maxRank": 50,
-      "desc": "Skin the beasts you kill for their hides and pelts (you need a skinning knife). Loot the body first, then skin it. Bigger beasts need a higher rank; the skill rises with every skin that is not yet easy for you."
+      "desc": "Skin the beasts you kill for their hides and pelts (you need a skinning knife). Loot the body first, then skin it. Higher-level beasts need a higher rank (5 ranks a level); the skill rises with every skin that is not yet easy for you."
     }
   ]
 }

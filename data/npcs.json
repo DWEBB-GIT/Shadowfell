@@ -89,13 +89,23 @@
     },
     {
       "id": "cal",
-      "name": "Cal Corrick",
+      "name": "Cal Fenner",
       "title": "Farmhand",
       "level": 4,
       "model": "tam",
       "rig": "warden",
       "tint": "#e0c8a0",
       "dialogue": "cal"
+    },
+    {
+      "id": "pell",
+      "name": "Aldous Pell",
+      "title": "Reeve",
+      "level": 14,
+      "model": "tam",
+      "rig": "warden",
+      "tint": "#7a86a8",
+      "dialogue": "pell"
     }
   ]
 }

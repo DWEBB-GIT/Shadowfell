@@ -213,6 +213,14 @@
           "when": {
             "flag": "feud_burned"
           }
+        },
+        {
+          "id": "closed_eye",
+          "prompt": "Heard anything about a closed eye?",
+          "node": "hester_closed_eye",
+          "when": {
+            "flag": "closed_eye_seen"
+          }
         }
       ],
       "nodes": [
@@ -245,7 +253,7 @@
         },
         {
           "id": "hester_farms_mended",
-          "text": "The Ashbys and the Corricks are digging a drain together. Together! Old Pell says it's the end of the world. And the Corrick lad's been seen walking Wren Ashby home in broad daylight. I'll give it till spring before there's a wedding, and I'll be doing the food.",
+          "text": "The Ashbys and the Corricks are digging a drain together. Together! Old Pell says it's the end of the world. And Bram Corrick's hired lad's been seen walking Wren Ashby home in broad daylight. I'll give it till spring before there's a wedding, and I'll be doing the food.",
           "replies": [
             {
               "text": "Good for them."
@@ -254,7 +262,7 @@
         },
         {
           "id": "hester_farms_secret",
-          "text": "The Ashby drain's been stopped, they say, and the barley's coming back. Edda's quieter about the Corricks, which is the strangest thing I've heard all year. Mind, the Corrick lad still drinks here of an evening, and he still leaves early, and he still goes north.",
+          "text": "The Ashby drain's been stopped, they say, and the barley's coming back. Edda's quieter about the Corricks, which is the strangest thing I've heard all year. Mind, Bram Corrick's hired lad still drinks here of an evening, and he still leaves early, and he still goes north.",
           "replies": [
             {
               "text": "Is that so?"
@@ -263,10 +271,19 @@
         },
         {
           "id": "hester_farms_burned",
-          "text": "You'll have heard. The Corrick hayrick went up in the night, and come morning Wren Ashby and Cal Corrick were gone. Together, if you believe it. Edda says Bram poisoned her field and Bram says Edda burned his rick, and they're both right about something, and neither will ever say what.",
+          "text": "You'll have heard. The Corrick hayrick went up in the night, and come morning Wren Ashby and Cal Fenner were gone. Together, if you believe it. Edda says Bram poisoned her field and Bram says Edda burned his rick, and they're both right about something, and neither will ever say what.",
           "replies": [
             {
               "text": "A bad business."
+            }
+          ]
+        },
+        {
+          "id": "hester_closed_eye",
+          "text": "A closed eye? ...No. But a man in a grey travelling coat took a room here in the spring, paid in new silver, and asked who owned the land north of town. He didn't eat. Who doesn't eat at an inn? I'd remember a man who doesn't eat.",
+          "replies": [
+            {
+              "text": "Thank you, Hester."
             }
           ]
         }
@@ -329,7 +346,7 @@
         },
         {
           "id": "agna_skin",
-          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. Little beasts first: boar. You'll want ten in the skill before a barrow hound's hide comes away whole, and more for the wolves on the ridge. I sell knives. I teach the rest, for a few coins.",
+          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. The older and meaner the beast, the more skill its hide takes: a young boar, anyone can manage; a barrow hound wants a bit of practice; the ridge wolves, more again. I sell knives. I teach the rest, for a few coins.",
           "replies": [
             {
               "text": "Thank you."
@@ -338,7 +355,7 @@
         },
         {
           "id": "agna_where",
-          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow hounds in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet.",
+          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow hounds in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet. One day I'll tell you about the things I'd really like to skin. Scales, mostly.",
           "replies": [
             {
               "text": "I'll keep an eye out."
@@ -408,6 +425,15 @@
           "when": {
             "flag": "feud_burned"
           }
+        },
+        {
+          "id": "bandits",
+          "prompt": "What do you know of the Blackhedge bandits?",
+          "node": "edda_bandits",
+          "when": {
+            "quest": "feud_what_lies_under",
+            "status": "done"
+          }
         }
       ],
       "nodes": [
@@ -444,10 +470,19 @@
         },
         {
           "id": "edda_wren",
-          "text": "Gone. The same night as the fire. With him. With a Corrick. You'll have known, I expect. Everyone knew but me.",
+          "text": "Gone. The same night as the fire. With him. With Bram Corrick's hired boy, who hasn't a field to his name. You'll have known, I expect. Everyone knew but me.",
           "replies": [
             {
               "text": "I'm sorry."
+            }
+          ]
+        },
+        {
+          "id": "edda_bandits",
+          "text": "Rabble from the woods. They took my husband's cart once and left him walking. If they've been in my ground, it's because somebody let them in. That's all I'll say.",
+          "replies": [
+            {
+              "text": "I see."
             }
           ]
         }
@@ -514,7 +549,7 @@
         },
         {
           "id": "wren_cal",
-          "text": "Over the hedge, when we were small. We were the only children for a mile and nobody told us we weren't allowed. By the time they did, it was too late. We started using the stone at harvest. It's the one place on the hedge both families keep away from, because both of them are sure it's in the wrong place.",
+          "text": "He came to work for Bram three harvests ago. I saw him over the hedge, mending the side Bram's too proud to mend, and I said something rude, and he said something ruder back. That was that. We use the stone because it's the one place on the hedge both farms keep away from: each is sure it's in the wrong place.",
           "replies": [
             {
               "text": "That's almost funny."
@@ -549,7 +584,7 @@
           }
         },
         {
-          "text": "My hayrick's ash and my boy's gone. Ran off with the Ashby girl, they say. Did you know? ...Get off my land.",
+          "text": "My hayrick's ash and my hired lad's gone. Ran off with the Ashby girl, they say. Did you know? ...Get off my land.",
           "when": {
             "flag": "feud_burned"
           }
@@ -592,7 +627,7 @@
       "id": "cal",
       "greetings": [
         {
-          "text": "Afternoon. If Dad asks, I've been mending the fence all day."
+          "text": "Afternoon. If Mister Corrick asks, I've been mending the fence all day."
         },
         {
           "text": "Did you give it to her? Only her?",
@@ -602,7 +637,7 @@
           }
         },
         {
-          "text": "Dad shook her hand. Shook Edda Ashby's hand. I've never seen him do that to anyone. Not even me.",
+          "text": "Mister Corrick shook her hand. Shook Edda Ashby's hand. I've worked for him three years and never seen him do that.",
           "when": {
             "flag": "feud_mended"
           }
@@ -624,10 +659,67 @@
       "nodes": [
         {
           "id": "cal_who",
-          "text": "Cal. Bram's son. I do the work and he does the shouting. It's a fair split, he says.",
+          "text": "Cal Fenner. I work for Mister Corrick: board, bed and a shilling at harvest. No land, no name worth having. Which is the whole trouble, if you must know.",
           "replies": [
             {
               "text": "Good day."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pell",
+      "greetings": [
+        {
+          "text": "Aldous Pell, reeve. If it's a complaint, there's a queue. The queue is Edda Ashby."
+        },
+        {
+          "text": "Blackhedge is quieter. Not gone. Quieter.",
+          "when": {
+            "quest": "bandit_thin",
+            "status": "done"
+          }
+        },
+        {
+          "text": "A closed eye. I keep thinking about it. You should too.",
+          "when": {
+            "flag": "closed_eye_seen"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "What does a reeve do?",
+          "node": "pell_who"
+        },
+        {
+          "id": "blackhedge",
+          "prompt": "Who are the Blackhedge?",
+          "node": "pell_blackhedge",
+          "when": {
+            "quest": "bandit_rag",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "pell_who",
+          "text": "Keeps the peace, collects the dues, and listens to Edda Ashby. The first two are easy.",
+          "replies": [
+            {
+              "text": "I see."
+            }
+          ]
+        },
+        {
+          "id": "pell_blackhedge",
+          "text": "Local boys gone bad, and a few who were bad before they got here. They take the odd cart on the road and drink the takings. Small time, for all their swagger. You're not ready for them yet, mind. Small time with sharp knives is still sharp knives.",
+          "replies": [
+            {
+              "text": "I'll be careful."
             }
           ]
         }

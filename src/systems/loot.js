@@ -24,6 +24,14 @@ import { AMMO_LOC } from './inventory.js';
 // Beasts (enemies.json `skin`) can be skinned once their body holds no more
 // coins, if the Warden knows Skinning: see skinnables() below.
 
+// The Skinning rank a beast of this level needs (Dan, 2026-10-20: by level,
+// not by kind of beast): CONFIG.skinning.rankPerLevel for each level above
+// freeLevel, and at least 1.
+export function skinRank(level) {
+  const t = CONFIG.skinning;
+  return Math.max(1, (level - t.freeLevel) * t.rankPerLevel);
+}
+
 export class LootSystem {
   constructor(game) {
     this.game = game;
@@ -353,10 +361,10 @@ export class LootSystem {
   }
 
   // ------------------------------------------------------------ skinning
-  // A beast with `skin` ({ table, rank } in enemies.json) leaves its body,
-  // once emptied of coins, for a skinner: Skinning learned, a knife (an item
-  // with `skinningKnife`) in the bags or tool pack, and the rank the beast
-  // needs (a knife's `skinningSkill` adds to it). It takes
+  // A beast with `skin` (the loot table it yields, in enemies.json) leaves
+  // its body, once emptied of coins, for a skinner: Skinning learned, a knife
+  // (an item with `skinningKnife`) in the bags or tool pack, and the rank the
+  // beast's level needs (skinRank; a knife's `skinningSkill` adds to it). It takes
   // CONFIG.skinning.time like gathering; the skin table's yield goes to the
   // bags (or beside the body if they are full) and the body sinks away.
   // The skill rises while the beast is still a challenge (WoW).
@@ -379,7 +387,7 @@ export class LootSystem {
     for (const [id, c] of Object.entries(worldState.corpses)) {
       if (!this._skinnable(id)) continue;
       const e = enemies.byId(id);
-      out.push({ kind: 'skin', id, x: c.x, z: c.z, name: e.cfg.name, rank: e.cfg.skin.rank || 1 });
+      out.push({ kind: 'skin', id, x: c.x, z: c.z, name: e.cfg.name, rank: skinRank(e.cfg.level) });
     }
     return out;
   }
@@ -426,7 +434,8 @@ export class LootSystem {
     if (!this._skinnable(id)) return false;
     const c = worldState.corpses[id];
     const e = enemies.byId(id);
-    const { table, rank = 1 } = e.cfg.skin;
+    const table = e.cfg.skin;
+    const rank = skinRank(e.cfg.level);
     delete worldState.corpses[id];
     e.corpse = false; // the body can now sink away
     e.rig.death = Math.max(e.rig.death, 2.5);

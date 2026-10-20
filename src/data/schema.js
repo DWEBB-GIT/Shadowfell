@@ -398,13 +398,8 @@ export function validateGameData(raw, opts = {}) {
     if (e.armour !== undefined && !(isNum(e.armour) && e.armour >= 0)) errors.push(`${w}: armour must be a number of at least 0`);
     if (e.lootTable) ref(w, 'loot table', lootTables, e.lootTable);
     if (e.uniqueDrop) ref(w, 'item', items, e.uniqueDrop);
-    if (e.skin !== undefined) {
-      if (!e.skin || typeof e.skin !== 'object') errors.push(`${w}: skin must be { table, rank }`);
-      else {
-        ref(w + ' skin', 'loot table', lootTables, e.skin.table);
-        if (e.skin.rank !== undefined && !(isInt(e.skin.rank) && e.skin.rank >= 1)) errors.push(`${w}: skin rank must be a whole number of at least 1`);
-      }
-    }
+    // a beast's skin: the loot table skinning it yields (the rank it needs comes from its level)
+    if (e.skin !== undefined) ref(w + ' skin', 'loot table', lootTables, e.skin);
     if (e.tint !== undefined && !/^#[0-9a-f]{6}$/i.test(e.tint)) errors.push(`${w}: tint must be a colour like #7a6a66`);
     if (e.ranged && !(isNum(e.ranged.range) && (isNum(e.ranged.damage) || type?.hit !== undefined) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage (or a type) and windup`);
     if (e.special && !(isNum(e.special.damage) || type?.special !== undefined)) errors.push(`${w}: special needs damage (or an elite, heavy or boss type)`);

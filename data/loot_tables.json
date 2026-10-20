@@ -498,6 +498,102 @@
           "max": 3
         }
       ]
+    },
+    {
+      "id": "blackhedge",
+      "drops": {
+        "rolls": 1,
+        "chance": 0.55,
+        "rarity": {
+          "junk": 40,
+          "common": 40,
+          "enhanced": 17,
+          "rare": 3
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "bent_arrowhead",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "iron_gloves",
+              "weight": 2
+            },
+            {
+              "item": "hob_boots",
+              "weight": 2
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "iron_gloves",
+              "weight": 2
+            },
+            {
+              "item": "hob_boots",
+              "weight": 2
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            },
+            {
+              "item": "militia_sword",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blackhedge_captain",
+      "drops": {
+        "rolls": 2,
+        "chance": 1,
+        "rarity": {
+          "enhanced": 70,
+          "rare": 30
+        },
+        "items": {
+          "enhanced": [
+            {
+              "item": "militia_sword",
+              "weight": 2
+            },
+            {
+              "item": "iron_shield",
+              "weight": 1
+            },
+            {
+              "item": "hob_boots",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
     }
   ]
 }

@@ -28,7 +28,7 @@ import { WaterAndDark } from './world/waterAndDark.js';
 import { Fishing } from './systems/fishing.js';
 import { Cooking } from './systems/cooking.js';
 import { EnemyManager } from './systems/enemies.js';
-import { LootSystem } from './systems/loot.js';
+import { LootSystem, skinRank } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
 import { Inventory } from './systems/inventory.js';
 import { Stats } from './systems/stats.js';
@@ -89,6 +89,7 @@ class Game {
     this.rollItem = rollItem;
     this.itemView = itemView;
     this.rollLoot = rollLoot;
+    this.skinRank = skinRank;
     this.db = DB;
     this.validateSave = validateSave;
     this.progression = new Progression(this);

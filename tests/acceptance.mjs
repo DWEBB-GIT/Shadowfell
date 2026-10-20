@@ -5384,6 +5384,9 @@ async function wildlifeAndFeud(browser) {
   await setup(page, { x: 15, z: 30 });
   await kill('boar_east_2', 15.8, 30);
   await sim(page, 0.1);
+  // loot what lies around first (E loots everything close by), then the knife
+  await sim(page, 0.1, { press: ['KeyE'] });
+  await sim(page, 0.1);
   const noKnife = (await state(page)).prompt;
   await page.evaluate(() => window.__shadowfall.inventory.addItem('skinning_knife'));
   await sim(page, 0.1);
@@ -5407,8 +5410,10 @@ async function wildlifeAndFeud(browser) {
     g.loot.lootCorpse('hound_den_1');
     const s = g.loot.skinnables()[0];
     r.block = s && g.loot.skinBlock(s);
-    g.skills.ranks.set('skinning', 10);
+    g.skills.ranks.set('skinning', 5);
     r.ok = g.loot.skinBlock(s);
+    // the rank comes from the beast's level, not its kind
+    r.byLevel = ['wild_boar', 'hound', 'ridge_wolf', 'bristleback', 'greyjaw'].map((t) => g.skinRank(g.db.enemies[t].level));
     g.loot.skin('hound_den_1');
     r.pelt = g.inventory.count('hound_pelt');
     r.rank = g.skills.rank('skinning');
@@ -5422,8 +5427,8 @@ async function wildlifeAndFeud(browser) {
     g.loot.skin('boar_east_3');
     return g.skills.rank('skinning');
   });
-  record('A barrow hound is looted first, needs Skinning 10, and gives its pelt; a boar teaches nothing at Skinning 25',
-    hound.skinnableUnlooted === 0 && hound.block === 'needs Skinning 10' && hound.ok === null && hound.pelt === 1 && hound.rank === 11 && grey === 25, JSON.stringify({ hound, grey }));
+  record('Skinning rank comes from level (boar 2: 1, hound 3: 5, wolf and Bristleback 4: 10, Greyjaw 5: 15); a hound is looted first, then skinned for its pelt; a boar teaches nothing at Skinning 25',
+    hound.skinnableUnlooted === 0 && hound.block === 'needs Skinning 5' && hound.ok === null && hound.pelt === 1 && hound.rank === 6 && grey === 25 && hound.byLevel.join() === '1,5,10,10,15', JSON.stringify({ hound, grey }));
 
   // the feud, to its choice
   const chain = await page.evaluate(() => {
@@ -5450,6 +5455,7 @@ async function wildlifeAndFeud(browser) {
     Q.accept('feud_what_lies_under');
     g.interaction.examine('ashby_drain');
     for (const l of g.loot.active.filter((x) => x.def.id.startsWith('drain_nails')).slice(0, 3)) g.loot.collect(l);
+    g.loot.collect(g.loot.active.find((x) => x.def.id === 'blackhedge_rag'));
     r.drain = Q.complete('feud_what_lies_under');
     r.nails = g.inventory.count('grave_rot_nails');
     r.open = ['feud_end_truth', 'feud_end_secret', 'feud_end_blame'].map((id) => Q.status(id));
@@ -5472,6 +5478,26 @@ async function wildlifeAndFeud(browser) {
     g.step(0.05);
     r.present = g.npcs.list.map((n) => n.id);
     r.wrenHidden = g.npcs.all.find((n) => n.id === 'wren').group.visible === false;
+    // the bandits behind it all: the rag goes to the reeve
+    r.bandits = {};
+    Q.accept('bandit_rag');
+    r.bandits.rag = Q.complete('bandit_rag') && g.inventory.count('blackhedge_rag') === 0;
+    Q.accept('bandit_scout');
+    g.interaction.examine('blackhedge_camp');
+    r.bandits.scout = Q.complete('bandit_scout');
+    Q.accept('bandit_thin');
+    for (const e of g.enemies.list.filter((x) => x.type.startsWith('blackhedge_') && x.type !== 'blackhedge_captain')) {
+      e.hurt(99999);
+      g.combat.onEnemyDefeated(e);
+    }
+    r.bandits.thin = Q.complete('bandit_thin');
+    Q.accept('bandit_captain');
+    const harl = g.enemies.byId('blackhedge_harl');
+    r.bandits.harlLevel = harl.cfg.level;
+    harl.hurt(99999);
+    g.combat.onEnemyDefeated(harl);
+    g.interaction.examine('harl_strongbox');
+    r.bandits.captain = Q.complete('bandit_captain') && g.worldState.flags.has('closed_eye_seen');
     g.npcs.talk(g.npcs.byId('edda'));
     r.edda = g.dialogue.page.text;
     g.dialogue.close();
@@ -5492,6 +5518,8 @@ async function wildlifeAndFeud(browser) {
   record('Blaming the Corricks sticks: Wren and Cal are gone, Edda and Hester say so, and it survives a save and load',
     chain.flag && !chain.present.includes('wren') && !chain.present.includes('cal') && chain.wrenHidden && /field's still black/.test(chain.edda) && chain.gossip && chain.afterLoad.truth === 'locked' && !chain.afterLoad.wren,
     JSON.stringify({ present: chain.present, edda: chain.edda, afterLoad: chain.afterLoad }));
+  record('Bandits fouled the drain: the rag leads to Reeve Pell and the Blackhedge camp (scout, thin it, kill Harl Voss), whose strongbox shows he was hired by someone sealing with a closed eye',
+    chain.bandits.rag && chain.bandits.scout && chain.bandits.thin && chain.bandits.harlLevel === 8 && chain.bandits.captain, JSON.stringify(chain.bandits));
   record('No errors (wildlife and feud)', !errors.length, errors.join(' | '));
   await ctx.close();
 }

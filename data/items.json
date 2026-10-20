@@ -982,6 +982,18 @@
       "model": "grave_iron",
       "icon": "grave_iron",
       "description": "Square nails gone soft and black, wet with something that is not water. They came out of the old drain, and before that out of coffins."
+    },
+    {
+      "id": "blackhedge_rag",
+      "name": "Knotted black rag",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 1,
+      "price": 0,
+      "quest": true,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "A strip of black cloth, knotted three times. Snagged on the drain stones by someone who did not want to be seen. The Blackhedge bandits wear them round their arms."
     }
   ]
 }

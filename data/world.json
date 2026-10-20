@@ -214,6 +214,18 @@
       "name": "Agna's tannery",
       "position": [16, 84],
       "radius": 4
+    },
+    {
+      "id": "blackhedge_camp",
+      "name": "Blackhedge camp",
+      "position": [-24, -60],
+      "radius": 8
+    },
+    {
+      "id": "blackhedge_lookout",
+      "name": "The lookout rock",
+      "position": [-13.5, -51.5],
+      "radius": 3
     }
   ],
   "npcSpawns": [
@@ -268,6 +280,11 @@
       "goneWhen": {
         "flag": "feud_burned"
       }
+    },
+    {
+      "npc": "pell",
+      "position": [-1, 66.5],
+      "facing": 270
     }
   ],
   "enemySpawns": [
@@ -410,6 +427,41 @@
       "id": "bristleback_runs",
       "enemy": "bristleback",
       "position": [22, 44]
+    },
+    {
+      "id": "blackhedge_1",
+      "enemy": "blackhedge_cutthroat",
+      "position": [-21, -56.5]
+    },
+    {
+      "id": "blackhedge_2",
+      "enemy": "blackhedge_cutthroat",
+      "position": [-27.5, -57.5]
+    },
+    {
+      "id": "blackhedge_3",
+      "enemy": "blackhedge_cutthroat",
+      "position": [-22.5, -64.5]
+    },
+    {
+      "id": "blackhedge_4",
+      "enemy": "blackhedge_cutthroat",
+      "position": [-28.5, -63]
+    },
+    {
+      "id": "blackhedge_5",
+      "enemy": "blackhedge_archer",
+      "position": [-19.5, -61]
+    },
+    {
+      "id": "blackhedge_6",
+      "enemy": "blackhedge_archer",
+      "position": [-26, -54]
+    },
+    {
+      "id": "blackhedge_harl",
+      "enemy": "blackhedge_captain",
+      "position": [-25.5, -61.5]
     }
   ],
   "placedLoot": [
@@ -738,6 +790,17 @@
       "reward": {
         "item": "grave_rot_nails"
       }
+    },
+    {
+      "id": "blackhedge_rag",
+      "quest": "feud_what_lies_under",
+      "model": "clothes",
+      "scale": 0.6,
+      "position": [-20.2, 17.6],
+      "prompt": "Pull the rag off the drain stones",
+      "reward": {
+        "item": "blackhedge_rag"
+      }
     }
   ],
   "dangerZones": [
@@ -750,6 +813,11 @@
       "position": [-6.4, -114.6],
       "radius": 12,
       "enemySpawn": "seer_glade"
+    },
+    {
+      "position": [-24, -60],
+      "radius": 12,
+      "enemySpawn": "blackhedge_harl"
     }
   ],
   "water": [
