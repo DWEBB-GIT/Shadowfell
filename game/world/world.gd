@@ -51,6 +51,7 @@ func build() -> World:
 	_scatter_ground_cover()
 	_add_lights()
 	_add_mist()
+	_add_sun_shafts()
 	return self
 
 
@@ -509,7 +510,8 @@ func _scatter_ground_cover() -> void:
 		xfs.append(Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(s, sy, s)), Vector3(x, Terrain.height_at(x, z) - 0.02, z)))
 		var hue := 0.2 + rand.next() * 0.06
 		var sat := 0.25 + rand.next() * 0.15
-		var lig := (0.17 + rand.next() * 0.1) * (1 - 0.45 * Terrain.blackwoodness(z))
+		# lighter than the browser build's, which read as black specks here
+		var lig := (0.34 + rand.next() * 0.16) * (1 - 0.4 * Terrain.blackwoodness(z))
 		# the tint multiplies the base colour, as three.js instance colours do
 		cols.append(_hsl(hue, sat, lig))
 		n += 1
@@ -661,6 +663,40 @@ func _add_mist() -> void:
 		m.name = "Mist"
 		group.add_child(m)
 		mist.append({"mesh": m, "x": x, "z": z, "seed": i * 2.1})
+
+
+## Sun shafts falling into the woodland clearings, where the low sun breaks
+## through the canopy. Cheap additive ribbons (see light_shaft.gdshader), only
+## drawn near the camera. In the Blackwood the light is thinner and greener.
+const SHAFT_AXIS := Vector3(14, -26, -6) ## the sun's travel, as Game._place_sun aims it
+
+func _add_sun_shafts() -> void:
+	var shader: Shader = load("res://game/render/light_shaft.gdshader")
+	var axis := SHAFT_AXIS.normalized()
+	var rand := U.Seeded.new(313)
+	for c in Layout.clearings:
+		var deep := Terrain.blackwoodness(c[1]) > 0.5
+		var n := 3 if c[2] > 6 else 2
+		for k in n:
+			var x: float = c[0] + (rand.next() - 0.5) * c[2] * 0.9
+			var z: float = c[1] + (rand.next() - 0.5) * c[2] * 0.9
+			var length := 16.0 + rand.next() * 6
+			var mat := ShaderMaterial.new()
+			mat.shader = shader
+			mat.set_shader_parameter("uAxis", axis)
+			mat.set_shader_parameter("uLength", length)
+			mat.set_shader_parameter("uWidth", 1.4 + rand.next() * 1.8)
+			mat.set_shader_parameter("uSeed", rand.next() * 10)
+			mat.set_shader_parameter("uColor", Color(Color("c8e0a0") if deep else Color("ffd08a"), 0.16 + rand.next() * 0.08))
+			var m := Tex.sprite(mat)
+			# the origin sits up in the canopy so the shaft lands on (x, z)
+			m.position = Vector3(x, Terrain.height_at(x, z), z) - axis * length * 0.95
+			# culling uses the quad's own box: give it the shaft's real reach
+			var reach := axis * length
+			m.custom_aabb = AABB(reach.min(Vector3.ZERO) - Vector3(4, 4, 4), reach.abs() + Vector3(8, 8, 8))
+			m.visibility_range_end = 44.0
+			m.name = "SunShaft"
+			group.add_child(m)
 
 
 func update(dt: float, time: float) -> void:

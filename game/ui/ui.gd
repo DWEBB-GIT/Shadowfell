@@ -4,15 +4,17 @@ extends RefCounted
 ## borders, parchment text, small buttons, money with coin icons, and rich
 ## text that can hold item and spell icons. Every window is built from these.
 
-const PANEL := Color(14 / 255.0, 12 / 255.0, 10 / 255.0, 0.78)
-const PANEL_SOLID := Color("15120f")
-const WINDOW := Color(16 / 255.0, 13 / 255.0, 10 / 255.0, 0.95)
-const BORDER := Color("6b5532")
-const BORDER_DIM := Color("3e3220")
-const GOLD := Color("c9a45c")
-const TEXT := Color("d9cdb0")
-const TEXT_DIM := Color("9a8f78")
-const BRIGHT := Color("efe2c0")
+# Brighter and warmer than the browser build's palette: on top of the graded
+# 3D view the old browns read as flat grey.
+const PANEL := Color(24 / 255.0, 19 / 255.0, 13 / 255.0, 0.84)
+const PANEL_SOLID := Color("1c1711")
+const WINDOW := Color(24 / 255.0, 19 / 255.0, 13 / 255.0, 0.96)
+const BORDER := Color("8f6f3c")
+const BORDER_DIM := Color("57452a")
+const GOLD := Color("e6b85e")
+const TEXT := Color("ebdfc2")
+const TEXT_DIM := Color("b0a386")
+const BRIGHT := Color("fbefcf")
 const UP := Color("8fdf6a")
 const DOWN := Color("e06a5a")
 const GREEN := Color("8cbf78")
@@ -109,6 +111,7 @@ static func box(bg: Color, border: Color, pad := 6, width := 1, sides = null) ->
 	s.bg_color = bg
 	s.border_color = border
 	s.set_border_width_all(width)
+	s.anti_aliasing = false
 	if sides is Vector4:
 		s.content_margin_left = sides.x
 		s.content_margin_top = sides.y
@@ -249,9 +252,9 @@ static func money(n: int) -> String:
 	var s := maxi(0, n) % 100
 	var out := ""
 	if g:
-		out += "[color=#efe2c0]%d[/color]{gold} " % g
+		out += "[color=#ffd56a]%d[/color]{gold} " % g
 	if s or not g:
-		out += "[color=#efe2c0]%d[/color]{silver}" % s
+		out += "[color=#e8edf2]%d[/color]{silver}" % s
 	return out.strip_edges()
 
 
@@ -262,7 +265,7 @@ static var _coins := {}
 static func coin(kind: String) -> Texture2D:
 	if _coins.has(kind):
 		return _coins[kind]
-	var stops := [Color("fff2b0"), Color("e0b030"), Color("7a5410")] if kind == "gold" else [Color("ffffff"), Color("b8c0c8"), Color("5a6068")]
+	var stops := [Color("fff6c0"), Color("f2c030"), Color("8a5c0c")] if kind == "gold" else [Color("ffffff"), Color("cdd6e0"), Color("68707a")]
 	var s := 22
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
 	var c := Vector2(s / 2.0, s / 2.0)

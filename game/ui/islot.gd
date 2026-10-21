@@ -7,8 +7,10 @@ extends Control
 ## It draws itself; the window that owns it decides what it holds and
 ## handles its clicks (`on_input`, `on_hover`).
 
-const ITEM_BG := [Color("1c1712"), Color("0a0807")]
-const KIND_BORDER := {"weapon": Color("6a5a40"), "armor": Color("4f6070"), "bag": Color("6a5030")}
+const ITEM_BG := [Color("3a2f22"), Color("15110c")]
+const BAR_BG := [Color("2a2219"), Color("0e0b08")]
+const EMPTY_BORDER := Color("5e4a2c")
+const KIND_BORDER := {"weapon": Color("8a7450"), "armor": Color("62788c"), "bag": Color("8a6838")}
 
 var loc := ""
 var icon: Texture2D
@@ -20,7 +22,7 @@ var count_size := 12
 var placeholder := ""
 var placeholder_size := 8
 var key := ""
-var border := Color("3a2f20")
+var border := EMPTY_BORDER
 var bar := false ## a spell-bar slot (darker, its own border)
 var worn := "" ## '', 'worn' or 'broken'
 var lit := false
@@ -40,6 +42,7 @@ var on_hover := Callable()
 
 
 static var _bg: GradientTexture2D
+static var _bar_bg: GradientTexture2D
 
 
 func _init(location := "", px := 42) -> void:
@@ -68,17 +71,28 @@ func _gui_input(e: InputEvent) -> void:
 
 static func _item_bg() -> Texture2D:
 	if _bg == null:
-		var g := Gradient.new()
-		g.set_color(0, ITEM_BG[0])
-		g.set_color(1, ITEM_BG[1])
-		_bg = GradientTexture2D.new()
-		_bg.gradient = g
-		_bg.width = 32
-		_bg.height = 32
-		_bg.fill = GradientTexture2D.FILL_RADIAL
-		_bg.fill_from = Vector2(0.5, 0.4)
-		_bg.fill_to = Vector2(1.15, 0.4)
+		_bg = _radial(ITEM_BG)
 	return _bg
+
+
+static func _bar_bg_tex() -> Texture2D:
+	if _bar_bg == null:
+		_bar_bg = _radial(BAR_BG)
+	return _bar_bg
+
+
+static func _radial(stops: Array) -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, stops[0])
+	g.set_color(1, stops[1])
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.width = 32
+	t.height = 32
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.35)
+	t.fill_to = Vector2(1.15, 0.35)
+	return t
 
 
 ## Set what an item slot shows from a stack (or null for an empty slot).
@@ -88,7 +102,7 @@ func show_stack(stack, icons: Icons, ph := "") -> void:
 	count = ""
 	placeholder = ""
 	worn = ""
-	border = Color("3a2f20")
+	border = EMPTY_BORDER
 	if stack != null:
 		var def := Items.view(stack)
 		icon = icons.item(stack.id) if icons else null
@@ -99,7 +113,7 @@ func show_stack(stack, icons: Icons, ph := "") -> void:
 		border = KIND_BORDER.get(def.get("kind"), border)
 		var rarity: String = def.get("rarity", "common")
 		if rarity != "junk" and rarity != "common":
-			border = Color(Items.rarity_colour(rarity), 0.8)
+			border = Items.rarity_colour(rarity)
 		var dur := Items.durability(stack)
 		if dur == 0:
 			worn = "broken"
@@ -114,10 +128,10 @@ func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var a := (0.35 if carried else 1.0) * dim
 	modulate.a = a
-	if bar:
-		draw_rect(r, Color("0b0908"))
-	else:
-		draw_texture_rect(_item_bg(), r, false)
+	draw_texture_rect(_bar_bg_tex() if bar else _item_bg(), r, false)
+	# a faint lit top edge and a shaded bottom, so the slot reads as a recess
+	draw_line(Vector2(1, 1.5), Vector2(size.x - 1, 1.5), Color(1, 0.88, 0.62, 0.10), 1)
+	draw_line(Vector2(1, size.y - 1.5), Vector2(size.x - 1, size.y - 1.5), Color(0, 0, 0, 0.35), 1)
 	var tint := icon_tint
 	if worn == "broken":
 		tint = Color(0.62, 0.32, 0.26)
@@ -208,4 +222,4 @@ func _placeholder(r: Rect2) -> void:
 	var lh := px * 1.15
 	var y0 := r.get_center().y - lh * (lines.size() - 1) / 2.0
 	for i in lines.size():
-		_text(lines[i], Vector2(r.get_center().x, y0 + i * lh), px, Color("5c4f3a"))
+		_text(lines[i], Vector2(r.get_center().x, y0 + i * lh), px, Color("8c7a58"))

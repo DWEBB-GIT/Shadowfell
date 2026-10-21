@@ -299,7 +299,7 @@ func _slot(parent: Node, loc: String, stack, px := 42, ph := "") -> ISlot:
 func _spell_slot(parent: Node, id: String, px := 42) -> ISlot:
 	var s := ISlot.new("k:" + id, px)
 	s.icon = icons.abilities.get(id)
-	s.border = Color("3a2f20")
+	s.border = ISlot.EMPTY_BORDER
 	s.carried = carry == "k:" + id
 	s.on_input = slot_input
 	s.on_hover = slot_hover
@@ -868,8 +868,8 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	var level := ("%d / %d" % [sk.rank(d.id), mx] if d.get("maxRank") else "Learned") if known else "Not learned"
 	var trainer = DB.npcs.get(d.get("trainer", ""))
 	var who: String = trainer.name if trainer else "A trainer"
-	var row := UI.panel(parent, 0, Color("0f0c09"), Color("3a2f20"))
-	row.add_theme_stylebox_override("panel", UI.box(Color("0f0c09"), Color("3a2f20"), 0, 1, Vector4(8, 6, 8, 6)))
+	var row := UI.panel(parent, 0, Color("1a150f"), UI.BORDER_DIM)
+	row.add_theme_stylebox_override("panel", UI.box(Color("1a150f"), UI.BORDER_DIM, 0, 1, Vector4(8, 6, 8, 6)))
 	row.modulate.a = 1.0 if known else 0.55
 	var h := UI.hbox(row, 10)
 	var body := UI.vbox(h, 3)

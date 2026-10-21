@@ -8,6 +8,12 @@ const SUN := 2.3
 ## Godot's directional light comes out brighter than three.js's at the same
 ## scaled intensity; this evens the sun out, matched by side-by-side screenshots.
 const SUN_MATCH := 0.42
+## The colour grade over the 3D view (not the HUD), and how much brighter the
+## sun is than the matched three.js one: a stronger key light against a cooler
+## fill gives the shadows their depth.
+const GRADE := {"brightness": 1.08, "contrast": 1.12, "saturation": 1.25}
+const SUN_BOOST := 1.35
+const AMBIENT := Color("7f93ad")
 
 var started := false
 var time := 0.0
@@ -143,16 +149,34 @@ func _init_renderer() -> void:
 	# three.js's hemisphere light as flat ambient. three.js divides every
 	# light by pi where Godot does not, so its intensities are scaled by 1/pi
 	# (Tex.LIGHT_SCALE), and like three.js there is no tone mapping.
-	env.ambient_light_color = Color("8a9aa8")
+	env.ambient_light_color = AMBIENT
 	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE
 	env.ambient_light_sky_contribution = 0.0 # there is no sky: all of it is this colour
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	# The grade: the matched three.js lighting reads flat and grey on screen,
+	# so colour and contrast are lifted after the fact (Compatibility supports
+	# these adjustments and glow; both cost one cheap full-screen pass).
+	env.adjustment_enabled = true
+	env.adjustment_brightness = GRADE.brightness
+	env.adjustment_contrast = GRADE.contrast
+	env.adjustment_saturation = GRADE.saturation
+	# bright things (flames, witchlights, spell effects) bloom softly
+	env.glow_enabled = true
+	env.glow_normalized = true
+	for i in 7:
+		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
+	env.glow_intensity = 0.7
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 0.85
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = DB.CONFIG.fog.color
 	env.fog_density = 1.0
 	env.fog_depth_begin = DB.CONFIG.fog.near
 	env.fog_depth_end = DB.CONFIG.fog.far
+	# the haze glows warm towards the low sun
+	env.fog_sun_scatter = 0.35
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -166,13 +190,15 @@ func _init_renderer() -> void:
 
 	# dusk: a low amber sun and a warm glow around the Warden
 	sun = DirectionalLight3D.new()
-	sun.light_color = Color("f0c890")
-	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH
+	sun.light_color = Color("ffc888")
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 40.0
+	sun.shadow_opacity = 0.92
+	sun.shadow_blur = 1.5
 	add_child(sun)
 	player_light = Tex.point_light(Color("ffb070"), 5, 9, 1.6)
 	player_light.shadow_enabled = false
@@ -773,7 +799,7 @@ func _update_region() -> void:
 		env.background_color = env.fog_light_color
 		var light := lerpf(1, bw.light, k)
 		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * light
-		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * light
+		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
 	# a little hysteresis so walking along the border does not flicker the name
 	var r := DB.region_at(z)
 	if region != null and r.id != region.id:
