@@ -621,30 +621,26 @@ export class ItemUI {
       tip.innerHTML = lines.join('');
       return;
     }
-    const totals = (d) => {
-      const t = { ...(d.stats || {}) };
-      if (d.damage) t.damage = (d.damage[0] + d.damage[1]) / 2;
-      return t;
-    };
-    const label = (k) => (k === 'damage' ? 'average damage' : STAT_LABEL[k] || k);
+    // each stat line on the hovered item gets its change against the first
+    // worn item; stats only the worn item has are listed as losses
+    const w = worn[0];
+    const sign = (d) => `<span class="${d > 0 ? 'up' : 'down'}">(${d > 0 ? '+' : ''}${d})</span>`;
+    let last = -1;
+    for (const [k, v] of Object.entries(def.stats || {})) {
+      const i = lines.indexOf(`<div class="up">+${v} ${STAT_LABEL[k] || k}</div>`);
+      if (i < 0) continue;
+      last = i;
+      const d = v - (w.stats?.[k] || 0);
+      if (d) lines[i] = lines[i].replace('</div>', ` ${sign(d)}</div>`);
+    }
+    const lost = Object.entries(w.stats || {}).filter(([k]) => !(k in (def.stats || {}))).map(([k, v]) => `<div class="down">-${v} ${STAT_LABEL[k] || k}</div>`);
+    if (lost.length) lines.splice(last < 0 ? lines.findIndex((l) => l.includes('tt-desc')) : last + 1, 0, ...lost);
     const boxes = worn.map((w) => {
       const wl = [`<div class="tt-equipped">Currently equipped</div>`, `<div class="tt-name k-${w.kind} q-${w.rarity}">${w.name}</div>`];
       if (w.damage) wl.push(`<div>${w.damage[0]}–${w.damage[1]} damage</div>`);
       for (const [k, v] of Object.entries(w.stats || {})) wl.push(`<div>+${v} ${STAT_LABEL[k] || k}</div>`);
       return `<div class="tt-box">${wl.join('')}</div>`;
     });
-    const a = totals(def);
-    const diff = worn.map((w) => {
-      const b = totals(w);
-      const out = [];
-      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
-        const d = Math.round(((a[k] || 0) - (b[k] || 0)) * 10) / 10;
-        if (d) out.push(`<div class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d} ${label(k)}</div>`);
-      }
-      return `<div class="tt-diff"><div class="tt-kind">If you replace ${w.name}:</div>${out.join('') || '<div class="tt-kind">No stat change</div>'}</div>`;
-    });
-    const hint = lines.findIndex((l) => l.includes('tt-sell') || l.includes('tt-price'));
-    lines.splice(hint < 0 ? lines.length : hint, 0, ...diff);
     tip.innerHTML = `${boxes.join('')}<div class="tt-box">${lines.join('')}</div>`;
   }
 
