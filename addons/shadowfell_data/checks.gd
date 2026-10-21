@@ -113,6 +113,16 @@ static func _tables(s: DataStore, out: PackedStringArray) -> void:
 			if not (_is_int(a.get("min")) and _is_int(a.get("max")) and a.min >= 0 and a.min <= a.max):
 				bad.call("%s needs whole numbers, min no more than max" % a.get("item"))
 			_reserved(d, id, bad)
+		for qd in t.get("questDrops", []):
+			var q := DataStore.find(s.quests, qd.get("quest"))
+			if s.item(qd.get("item")).is_empty():
+				bad.call("quest drop names unknown item %s" % qd.get("item"))
+			if q.is_empty():
+				bad.call("quest drop names unknown quest %s" % qd.get("quest"))
+			elif not q.get("objectives", []).any(func(o): return o.get("type") == "collect" and o.get("target") == qd.get("item")):
+				bad.call("quest %s has no objective to collect %s" % [q.id, qd.get("item")])
+			if not (qd.get("chance", 0) > 0 and qd.get("chance", 0) <= 1):
+				bad.call("quest drop %s needs a chance above 0%%" % qd.get("item"))
 		if not t.has("drops"):
 			continue
 		var drops: Dictionary = t.drops

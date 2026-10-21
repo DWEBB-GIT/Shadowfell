@@ -55,6 +55,7 @@ The **Game Data** screen (top bar, next to 2D, 3D and Script) edits the data fil
   - **World drops** are level bands (levels 1 to 5, 6 to 10...) of the gear any mob of those levels might carry. Every enemy rolls the band its level falls in as well as its own table, picked by level, so nothing is assigned by hand. Beasts (and anything else with *World drops* off) roll no band.
   - A ghoul in a higher zone is a **level variant**: *Make a level variant* adds an entry that names the ghoul as its `base` and changes only its name, level and tables. *Up to level* gives a level range: each spawn rolls its level in it (fixed per spawn). Place its spawns in `world.json` (`enemySpawns`).
   - Each item shows its chance a kill.
+  - **Quest drops**: an item on an enemy's own table that drops only while the player has the quest and still needs it (a consignment note on a bandit), at its own chance. The quest must ask for the item (a collect objective); the quest's page on the rewards tab shows where it drops.
 - **Quest and chest rewards**: coins, experience and items for each quest (grouped by who gives it) and what each chest holds. Objectives and dialogue stay in the quest editor (`npm run editor`).
 
 Nothing is written until **Save**; **Revert** throws changes away. The checks along the bottom are the rules `npm run validate` applies, so a problem shows before the build refuses it. An item's id is made from its name and locked once saved, because saves, shops and quests use it. `game/tests/data_editor_check.gd` tests the editor on a copy of `data/`.

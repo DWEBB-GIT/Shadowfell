@@ -88,6 +88,13 @@ export class QuestLog {
     });
   }
 
+  // Does a quest the player has taken still need this item? (a quest drop
+  // only falls while it does)
+  needsItem(id, item) {
+    if (this.status(id) !== 'active') return false;
+    return this.objectives(id).some((o, i) => !o.done && DB.quests[id].objectives[i].type === 'collect' && DB.quests[id].objectives[i].target === item);
+  }
+
   // "Barrow Hounds slain: 2/3", or the bare label for one-off objectives
   static line(o) {
     return o.need > 1 || o.type === 'kill' ? `${o.label}: ${o.have}/${o.need}` : o.label;

@@ -156,6 +156,10 @@ export class LootSystem {
     const rand = this.game.random;
     const out = [];
     const drops = rollLoot(DB.lootTables[enemy.cfg.lootTable], rand).concat(rollLoot(worldDropBand(DB.worldDrops, enemy.cfg), rand));
+    // quest drops: only while one of the player's quests still needs the item
+    for (const qd of DB.lootTables[enemy.cfg.lootTable]?.questDrops || []) {
+      if (this.game.quests.needsItem(qd.quest, qd.item) && rand() < qd.chance) drops.push({ id: qd.item, count: 1, rarity: ITEMS[qd.item].rarity });
+    }
     for (const { id, count, rarity } of drops) {
       const a = out.length * 2.1 + enemy.facing;
       const pos = { x: enemy.position.x + Math.sin(a) * 0.8, z: enemy.position.z + Math.cos(a) * 0.8 };

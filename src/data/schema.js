@@ -445,6 +445,16 @@ export function validateGameData(raw, opts = {}) {
   });
   for (const [id, t] of [...Object.entries(lootTables), ...Object.entries(worldDrops)]) {
     const w = `loot_tables.json ${id}`;
+    // quest drops (WoW style): an item that drops only while a quest still
+    // needs it, at its own chance, whatever else the table rolls
+    if (t.questDrops !== undefined && (!Array.isArray(t.questDrops) || worldDrops[id])) errors.push(`${w}: questDrops must be a list (and only on an enemy's own table)`);
+    for (const qd of Array.isArray(t.questDrops) ? t.questDrops : []) {
+      ref(w + ' questDrops', 'item', items, qd.item);
+      ref(w + ' questDrops', 'quest', quests, qd.quest);
+      if (!(isNum(qd.chance) && qd.chance > 0 && qd.chance <= 1)) errors.push(`${w}: quest drop ${qd.item} needs a chance above 0, up to 1`);
+      const q = quests[qd.quest];
+      if (q && !(q.objectives || []).some((o) => o.type === 'collect' && o.target === qd.item)) errors.push(`${w}: quest ${qd.quest} has no objective to collect ${qd.item}`);
+    }
     for (const a of t.always || []) {
       ref(w + ' always', 'item', items, a.item);
       if (items[a.item] && items[a.item].quest) errors.push(`${w}: quest item ${a.item} cannot be loot`);

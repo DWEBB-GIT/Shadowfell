@@ -160,6 +160,10 @@ func drop_from_enemy(enemy) -> Array:
 	var out := []
 	var drops := Items.roll_loot(DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}), rand)
 	drops.append_array(Items.roll_loot(DB.world_drop_band(enemy.cfg), rand))
+	# quest drops: only while one of the player's quests still needs the item
+	for qd in DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}).get("questDrops", []):
+		if game.quests.needs_item(qd.quest, qd.item) and rand.call() < qd.chance:
+			drops.append({"id": qd.item, "count": 1, "rarity": Items.get_def(qd.item).get("rarity")})
 	for drop in drops:
 		var a: float = out.size() * 2.1 + enemy.facing
 		var pos: Vector3 = game.collision.resolve(Vector3(enemy.position.x + sin(a) * 0.8, 0, enemy.position.z + cos(a) * 0.8), 0.2)

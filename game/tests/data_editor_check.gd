@@ -48,6 +48,13 @@ func _initialize() -> void:
 	_ok(s.band_for(_find(s.enemies, "hound")).is_empty(), "beasts roll no world drops")
 	loot._enemy_set(v, "lootTable", null)
 	_ok(v.lootTable == "" and s.resolved(v).lootTable == "", "a variant can drop nothing of its own while its base does")
+	# a quest drop: the bandits' black rag, only while Pell's quest wants it
+	var bh := _find(s.loot_tables, "blackhedge")
+	bh.questDrops = [{"item": "blackhedge_rag", "quest": "bandit_rag", "chance": 0.5}]
+	_ok(Checks.run(s).is_empty(), "a quest drop for an item the quest collects passes the checks")
+	bh.questDrops[0].quest = "missing_delivery"
+	_ok(Array(Checks.run(s)).any(func(p): return p.contains("no objective to collect")), "a quest drop the quest does not ask for is caught")
+	bh.erase("questDrops")
 	_ok(Checks.run(s).is_empty(), "the checks pass: %s" % "\n".join(Checks.run(s)))
 	var saved = s.save_all()
 	_ok(saved.size() == 4, "items, loot tables, enemies and quests are saved: %s" % [saved])

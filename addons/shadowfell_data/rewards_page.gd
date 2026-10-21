@@ -108,6 +108,17 @@ func _quest(q: Dictionary) -> void:
 	UI.note(form, "%s · from %s" % [q.id, s.npc_name(q.get("giver"))])
 	if q.has("summary"):
 		UI.note(form, str(q.summary))
+	# where each thing to collect drops (quest drops on loot tables)
+	for o in q.get("objectives", []):
+		if o.get("type") != "collect":
+			continue
+		var from := PackedStringArray()
+		for t in s.loot_tables:
+			for qd in t.get("questDrops", []):
+				if qd.get("quest") == q.id and qd.get("item") == o.target:
+					from.append("%s (%d%%)" % [t.id, roundi(qd.get("chance", 0) * 100)])
+		if from.size():
+			UI.note(form, "%s drops from: %s" % [o.get("label", o.target), ", ".join(from)], Color("9fd08a"))
 	UI.heading(form, "Reward")
 	if not q.has("reward"):
 		q.reward = {}

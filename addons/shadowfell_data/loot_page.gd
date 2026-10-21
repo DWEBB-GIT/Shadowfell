@@ -313,6 +313,9 @@ func _table_form(t: Dictionary) -> void:
 			t.always.append({"item": id, "min": 1, "max": 1})
 			_touch())))
 
+	if not band:
+		_quest_drops(t)
+
 	# ---- random drops
 	UI.heading(form, "Random drops")
 	if not t.has("drops"):
@@ -526,3 +529,59 @@ func _new_band() -> void:
 	current_table = b
 	_touch()
 	refresh_tree()
+
+
+## Quest drops (WoW style): an item that drops only while one of the player's
+## quests still needs it, at its own chance, whatever else the table rolls.
+func _quest_drops(t: Dictionary) -> void:
+	UI.heading(form, "Quest drops")
+	UI.note(form, "Drops only while the player has the quest and still needs the item (a consignment note on a bandit). The item must be one of the quest's things to collect.")
+	var list: Array = t.get("questDrops", [])
+	var quests := []
+	for q in s.quests:
+		if _collects(q).size():
+			quests.append([q.id, str(q.get("name", q.id))])
+	for qd in list:
+		var h := UI.hbox(form)
+		var q := DataStore.find(s.quests, qd.get("quest"))
+		var qp := UI.choice(quests, qd.get("quest"), func(v):
+			qd.quest = v
+			var c := _collects(DataStore.find(s.quests, v))
+			if not c.has(qd.get("item")) and c.size():
+				qd.item = c[0]
+			_touch())
+		qp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(qp)
+		var items := []
+		for id in _collects(q):
+			items.append([id, s.item(id).get("name", id)])
+		var ip := UI.choice(items, qd.get("item"), func(v):
+			qd.item = v
+			_touch(false))
+		ip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(ip)
+		h.add_child(UI.spin(qd.get("chance", 0.4) * 100, 1, 100, 1, func(v):
+			qd.chance = snappedf(v / 100.0, 0.0001)
+			_touch(false), " %"))
+		h.add_child(UI.button("✕", func():
+			list.erase(qd)
+			if list.is_empty():
+				t.erase("questDrops")
+			_touch(), "Remove"))
+	if quests.is_empty():
+		return
+	form.add_child(UI.button("Add a quest drop", func():
+		var q := DataStore.find(s.quests, quests[0][0])
+		if not t.has("questDrops"):
+			_insert_before(t, "questDrops", list, "always" if t.has("always") else "drops")
+		list.append({"item": _collects(q)[0], "quest": q.id, "chance": 0.4})
+		_touch()))
+
+
+## the items a quest asks the player to collect
+static func _collects(q: Dictionary) -> Array:
+	var out := []
+	for o in q.get("objectives", []):
+		if o.get("type") == "collect" and not out.has(o.get("target")):
+			out.append(o.target)
+	return out
