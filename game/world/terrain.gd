@@ -84,14 +84,14 @@ static func water_level(w: Dictionary) -> float:
 
 static func height_at(x: float, z: float) -> float:
 	var h := _land_height(x, z)
-	for p in _pads:
+	for i in _pads.size():
+		var p: Array = _pads[i]
 		var d := Vector2(x - p[0], z - p[1]).length()
 		if d > p[2] + 3.0:
 			continue
-		var key := "%s,%s" % [p[0], p[1]]
-		if not _pad_level.has(key):
-			_pad_level[key] = _land_height(p[0], p[1])
-		h = lerpf(_pad_level[key], h, smoothstep(p[2], p[2] + 3.0, d))
+		if not _pad_level.has(i):
+			_pad_level[i] = _land_height(p[0], p[1])
+		h = lerpf(_pad_level[i], h, smoothstep(p[2], p[2] + 3.0, d))
 	for w in _water:
 		var d := Vector2(x - w.position[0], z - w.position[1]).length()
 		if d > w.radius + 1.0:
@@ -99,3 +99,11 @@ static func height_at(x: float, z: float) -> float:
 		var k := 1.0 - smoothstep(w.radius - 1.6, w.radius + 0.6, d)
 		h = lerpf(h, water_level(w) - 1.1, k)
 	return h
+
+
+## The pond at a point, if any.
+static func water_at(x: float, z: float, margin := 0.0):
+	for w in _water:
+		if Vector2(x - w.position[0], z - w.position[1]).length() <= w.radius - margin:
+			return w
+	return null

@@ -22,16 +22,58 @@ func _initialize() -> void:
 	for p in JS_HEIGHTS:
 		var h := Terrain.height_at(p[0], p[1])
 		check(absf(h - p[2]) < 0.001, "terrain height at %s,%s is %.5f (browser build %.5f)" % [p[0], p[1], h, p[2]])
-	var world = load("res://game/world/world_builder.gd").new()
-	world.rebuild()
-	var generated: Node = world.get_node("Generated")
-	check(generated.get_node("townsfolk").get_child_count() == data.section("world", "npcSpawns").size(), "every townsperson is placed")
-	check(generated.get_node("enemies").get_child_count() == data.section("world", "enemySpawns").size(), "every enemy is placed")
-	check(generated.get_node("woodland").get_child_count() > 0, "the woodland is planted")
-	world.free()
 	data.free()
-	print("godot tests: %s" % ("all passed" if failures == 0 else "%d failed" % failures))
-	quit(1 if failures else 0)
+
+
+## The game itself: start it, play a little, save. Runs over frames, so the
+## scene is ready and systems update as in play.
+var game
+var frame := 0
+var foe = null
+
+
+func _process(_dt: float) -> bool:
+	frame += 1
+	if frame == 1:
+		Store.dir = "user://test_store" # a clean store, apart from real saves
+		for f in DirAccess.get_files_at(Store.dir):
+			DirAccess.remove_absolute(Store.dir + "/" + f)
+		game = load("res://game/main.tscn").instantiate()
+		root.add_child(game)
+	elif frame == 2:
+		check(game.hud.modal == "title", "the title screen opens first")
+		var made: Dictionary = game.roster.create("Test Warden", "warden")
+		check(made.ok, "a character is created")
+		game.enter_world(made.character.id)
+		check(game.started, "a character enters the world")
+		check(game.npcs.all.size() == Layout.npcs.size(), "every townsperson is placed")
+		check(game.enemies.list.size() == Layout.enemies.size(), "every enemy is placed")
+		check(game.world.group.find_children("Woodland_*", "", true, false).size() > 0, "the woodland is planted")
+		check(game.action_bar.slots.any(func(a): return a != null), "the spell bar has abilities")
+		game.random = func() -> float: return 0.5
+		foe = game.enemies.list[0]
+		for e in game.enemies.list:
+			if e.position.distance_to(game.player.position) < foe.position.distance_to(game.player.position):
+				foe = e
+	elif frame < 600:
+		# walk up to the nearest enemy and fight it with auto attack
+		game.targeting.engage(foe)
+		if foe.alive and foe.position.distance_to(game.player.position) > 1.5:
+			game.move_to = {"x": foe.position.x, "z": foe.position.z, "reach": 1.3}
+		game.step(1.0 / 30)
+	elif frame == 600:
+		check(foe.health < foe.max_health or not foe.alive, "auto attack hurts the enemy")
+		check(game.player.health < game.player.max_health or game.player.dead, "the enemy fights back")
+		if game.player.dead:
+			game.release_spirit()
+			game.afterlife.revive_here()
+		var r: Dictionary = game.manual_save()
+		check(r.ok, "the game saves: %s" % r.get("reason", ""))
+		var back: Dictionary = game.save.read()
+		check(back.status == "ok", "the save reads back as valid: %s" % back.get("errors", ""))
+		print("godot tests: %s" % ("all passed" if failures == 0 else "%d failed" % failures))
+		quit(1 if failures else 0)
+	return false
 
 
 func check(ok: bool, what: String) -> void:
