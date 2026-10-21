@@ -26,6 +26,10 @@ func _process(_delta: float) -> bool:
 		var r = game.roster.create("Shot", "warden")
 		game.enter_world(r.character.id if r.ok else game.roster.list[0].id)
 		game.player.place_at(float(args[1]), float(args[2]))
+		# SHOT_ZOOM=1.4 picks the zoom; SHOT_CLASSIC=1 the classic camera
+		if OS.has_environment("SHOT_ZOOM"):
+			game.zoom = float(OS.get_environment("SHOT_ZOOM"))
+		game.settings.set_value("classicCamera", OS.get_environment("SHOT_CLASSIC") == "1")
 		game._snap_camera()
 	# a fourth argument opens windows: bags,character,quests...
 	if frames == 30 and args.size() >= 4:
