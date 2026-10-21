@@ -32,6 +32,7 @@ The Godot code is a faithful port of the browser build: each file in `src/` has 
 | `game/render/` | Generated effect textures, telegraph and cutaway shaders, sparkles | `src/render/` |
 | `game/ui/` | The HUD and its windows: bags, character panel, spellbook, professions, talents, settings and key binding, cooking, shops, trainers, dialogue, the quest log and tracker, the minimap, names over heads, the title screen and character select, damage numbers. `ui.gd` holds the shared look; `canvas_2d.gd` lets the browser's canvas drawing (spell glyphs, minimap) be ported line for line; item icons and target portraits are snapshots of the real models (`icons.gd`) | `src/ui/` |
 | `game/tests/run_tests.gd` | Headless checks: data, terrain heights against the browser build, then a short game (`npm run godot:test`) | |
+| `game/tests/data_editor_check.gd` | Tests the Game Data editor on a copy of `data/`: files read back unchanged, a new sword saves and passes the checks | |
 | `game/tests/check_scripts.gd` | Compiles every script and lists any that fail | |
 | `game/tests/perf_parts.gd`, `game/tests/perf_render.gd` | Frame cost: CPU time per system, and frame time with parts switched off in turn | |
 | `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor; a fourth argument opens windows (`-- out.png 0 10 bags,character,quests`) | |
@@ -43,6 +44,16 @@ Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web e
 - Lights: three.js divides every light by pi and Godot does not, so intensities are scaled (`Tex.LIGHT_SCALE`, `Tex.OMNI_SCALE`, `Game.SUN_MATCH`). Side-by-side screenshots of both builds match within about 10%.
 - The Compatibility renderer reads vertex colours as sRGB, so model colours (stored linear in .glb files) are converted once when a model loads, and the terrain stores its colours as sRGB.
 - `diffuse_lambert` and `specular_disabled` render black in the Compatibility renderer, so materials keep the defaults.
+
+## Editing game data in Godot
+
+The **Game Data** screen (top bar, next to 2D, 3D and Script) edits the data files from inside the Godot editor. It is an editor plugin in `addons/shadowfell_data`, switched on in Project Settings > Plugins.
+
+- **Items**: New item asks what it is (one-hand weapon, then sword; armour, then slot; potion, food...), its name and rarity. Then set the item level, swing speed, price and description, give each stat a share of its points (the screen shows the damage and stats it will have in game), set what it does when used, and choose its model and sprite. *Import model* copies a .glb into `assets/models`; *Choose sprite* copies a .png into `assets/icons` and the game shows it as the item's icon instead of a picture of the model.
+- **Loot tables**: pick an enemy or boss to choose its loot table and skinning table, or pick a table. A table has drops that come every time (min to max) and random drops: a chance, a rarity by weight, then an item from that rarity's list by weight. Each item shows its chance a kill.
+- **Quest and chest rewards**: coins, experience and items for each quest (grouped by who gives it) and what each chest holds. Objectives and dialogue stay in the quest editor (`npm run editor`).
+
+Nothing is written until **Save**; **Revert** throws changes away. The checks along the bottom are the rules `npm run validate` applies, so a problem shows before the build refuses it. An item's id is made from its name and locked once saved, because saves, shops and quests use it. `game/tests/data_editor_check.gd` tests the editor on a copy of `data/`.
 
 ## Art: made by hand, not by code
 
