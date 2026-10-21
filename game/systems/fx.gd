@@ -75,6 +75,29 @@ func _init(g) -> void:
 	ev.on("itemDropped", func(e): dust(Vector3(e.item.x, game.player.position.y, e.item.z), 4, 0.2))
 
 
+## Draws one of each kind of effect for a moment, out of sight under the
+## ground, so their shaders are compiled now and not on the first hit (a GL
+## driver compiles a shader the first time it draws with it, which stalls
+## that frame).
+func prewarm(pos: Vector3) -> void:
+	var under := pos - Vector3(0, 6, 0)
+	var n := items.size()
+	shockwave(under, 1)
+	sparks(under, 1)
+	flash(under, Color.WHITE)
+	pillar(under)
+	zone(under.x, under.z, 1, 0.1)
+	var tm := ShaderMaterial.new()
+	tm.shader = Telegraphs.SHADER
+	tm.render_priority = 2
+	var t := Tex.ground_quad(tm)
+	t.position = under
+	_add(t, 0.1, func(_it, _k, _dt): pass)
+	for i in range(n, items.size()):
+		items[i].life = minf(items[i].life, 0.1)
+		items[i].obj.position.y = under.y
+
+
 ## `update(it, k, dt)`; `it` is the effect's own dictionary, so it can keep state.
 func _add(obj: Node3D, life: float, update: Callable, state := {}) -> Dictionary:
 	game.scene.add_child(obj)

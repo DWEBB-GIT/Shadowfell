@@ -250,9 +250,27 @@ func _draw() -> void:
 	draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2 + 1, UI.BORDER)
 
 
-func _process(_dt: float) -> void:
-	if is_visible_in_tree():
+## Redrawn when the Warden moves or turns, and a few times a second for the
+## markers (enemies, quests); every frame cost several milliseconds.
+var _drawn_at := Vector4(INF, 0, 0, 0)
+var _since := 0.0
+
+
+func _process(dt: float) -> void:
+	if not is_visible_in_tree() or game.player == null:
+		return
+	_since += dt
+	var p: Vector3 = game.player.position
+	var now := Vector4(p.x, p.z, game.player.facing, zoom)
+	if _since >= 0.2 or _moved(now):
+		_since = 0.0
+		_drawn_at = now
 		map.queue_redraw()
+
+
+func _moved(now: Vector4) -> bool:
+	var d := (now - _drawn_at).abs()
+	return d.x > 0.05 or d.y > 0.05 or d.z > 0.02 or d.w > 0
 
 
 func _draw_map() -> void:

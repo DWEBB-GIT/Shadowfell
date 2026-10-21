@@ -920,7 +920,11 @@ func _refresh_slots() -> void:
 		s.overlay = overlay
 		s.glow = Color(140 / 255.0, 190 / 255.0, 1, 0.55) if a == "brace" and player.is_braced else Color(0, 0, 0, 0)
 		s.border = Color("9cc4ff") if a == "brace" and player.is_braced else Color("2a2218") if cd[0] > 0 or show_gcd else UI.BORDER_DIM
-		s.queue_redraw()
+		# redraw only when something shown changed (sweeps move in 1/90 turns)
+		var sig := [snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
+		if s.get_meta("sig", []) != sig:
+			s.set_meta("sig", sig)
+			s.queue_redraw()
 
 
 ## The cast bar, buffs under the health bar, and the swing timers.

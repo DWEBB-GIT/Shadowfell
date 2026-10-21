@@ -27,6 +27,40 @@ var next_creak := 10.0
 var rng := RandomNumberGenerator.new()
 var warm: Array = [] ## sounds still to render ahead of need, one per frame
 var warming := false
+var _force_variant := -1
+
+
+## Every sound the game can play is made ahead, a little each frame from
+## the title screen on, so no fight or chime stalls a frame to make one.
+func _ready() -> void:
+	warm = [func(): bell(1, 880), func(): bell(1, 440), func(): bell(1, 660), func(): bell(1, 660),
+		func(): chime([392, 523, 659], 0.25), func(): chime([392, 494, 587, 784], 0.22),
+		func(): chime([660, 990], 0.12), func(): chime([330, 415], 0.15), func(): shield_break(),
+		func(): whoosh(0.3, 700), func(): whoosh(0.35, 300), func(): death(true), func(): death(false),
+		func(): growl(55, 1.4), func(): growl(120, 0.35)]
+	for t in [[160, 0.18], [110, 0.25], [90, 0.3], [180, 0.12], [70, 0.6], [60, 0.6], [220, 0.12]]:
+		warm.append(func(): thud(t[0], t[1]))
+	for g in GROWL.values():
+		warm.append(func(): growl(g[0], g[1]))
+	for v in VARIANTS:
+		warm.append(func(): bell(1, 180 + v * 10, "Ambience"))
+		for f in [func(): whoosh(0.18, 900), func(): impact(), func(): coins(), func(): crow(), func(): creak()]:
+			warm.append(func():
+				_force_variant = v
+				f.call()
+				_force_variant = -1)
+
+
+## a few milliseconds of sound-making per frame until all are made
+func _process(_dt: float) -> void:
+	if warm.is_empty():
+		set_process(false)
+		return
+	var until := Time.get_ticks_usec() + 4000
+	warming = true
+	while not warm.is_empty() and Time.get_ticks_usec() < until:
+		warm.pop_front().call()
+	warming = false
 
 
 func _init(g) -> void:
@@ -58,12 +92,6 @@ func start() -> void:
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
 	_bind()
-	# the slow ones (bells, chimes) are made ahead, so their first ring
-	# does not stall a frame
-	warm = [func(): bell(1, 880), func(): bell(1, 440), func(): bell(1, 660), func(): chime([392, 523, 659], 0.25),
-		func(): chime([392, 494, 587, 784], 0.22), func(): chime([660, 990], 0.12), func(): chime([330, 415], 0.15)]
-	for i in VARIANTS:
-		warm.append(func(): bell(1, 180 + i * 10, "Ambience"))
 
 
 func _loop(s: AudioStreamWAV, bus: String) -> AudioStreamPlayer:
@@ -128,7 +156,7 @@ func _bind() -> void:
 # ------------------------------------------------------------- playback
 ## Plays a rendered sound (made the first time it is asked for) at a level.
 func _play(key: String, make: Callable, level := 1.0, bus := "Effects") -> void:
-	if not started or level <= 0:
+	if not warming and (not started or level <= 0):
 		return
 	var s: AudioStreamWAV = cache.get(key)
 	if s == null:
@@ -145,7 +173,7 @@ func _play(key: String, make: Callable, level := 1.0, bus := "Effects") -> void:
 
 
 func _variant() -> int:
-	return rng.randi() % VARIANTS
+	return _force_variant if _force_variant >= 0 else rng.randi() % VARIANTS
 
 
 static func _wav(buf: PackedFloat32Array, rate: int, loop := false) -> AudioStreamWAV:
@@ -414,10 +442,6 @@ func _rumble() -> AudioStreamWAV:
 func update(dt: float) -> void:
 	if not started:
 		return
-	if not warm.is_empty():
-		warming = true
-		warm.pop_front().call()
-		warming = false
 	next_crow -= dt
 	next_bell -= dt
 	next_creak -= dt

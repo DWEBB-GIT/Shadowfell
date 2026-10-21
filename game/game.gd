@@ -274,6 +274,7 @@ func start_game(resume: bool) -> void:
 	hud.hide_title()
 	started = true
 	_snap_camera()
+	fx.prewarm(player.position)
 	if resumed:
 		hud.log_line("You take up the road again.", "lore")
 	else:

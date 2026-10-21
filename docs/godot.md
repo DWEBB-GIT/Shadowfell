@@ -33,6 +33,7 @@ The Godot code is a faithful port of the browser build: each file in `src/` has 
 | `game/ui/` | The HUD and its windows: bags, character panel, spellbook, professions, talents, settings and key binding, cooking, shops, trainers, dialogue, the quest log and tracker, the minimap, names over heads, the title screen and character select, damage numbers. `ui.gd` holds the shared look; `canvas_2d.gd` lets the browser's canvas drawing (spell glyphs, minimap) be ported line for line; item icons and target portraits are snapshots of the real models (`icons.gd`) | `src/ui/` |
 | `game/tests/run_tests.gd` | Headless checks: data, terrain heights against the browser build, then a short game (`npm run godot:test`) | |
 | `game/tests/check_scripts.gd` | Compiles every script and lists any that fail | |
+| `game/tests/perf_parts.gd`, `game/tests/perf_render.gd` | Frame cost: CPU time per system, and frame time with parts switched off in turn | |
 | `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor; a fourth argument opens windows (`-- out.png 0 10 bags,character,quests`) | |
 
 Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web export), one file per key, in the same format as the browser build's saves.
