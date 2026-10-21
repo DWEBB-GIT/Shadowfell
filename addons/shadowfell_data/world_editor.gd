@@ -152,7 +152,7 @@ func save_world() -> PackedStringArray:
 	var saved := PackedStringArray()
 	for f in _files:
 		var path: String = WORLD if f == "world" else SCENERY
-		if IO.to_text(_files[f]) == FileAccess.get_file_as_string(path):
+		if IO.to_text(_files[f], false, true) == FileAccess.get_file_as_string(path):
 			continue
 		var err := IO.save_file(path, _files[f])
 		if err != OK:
@@ -169,8 +169,9 @@ func save_world() -> PackedStringArray:
 ## its own.
 static func _record(g: Dictionary, n: Node3D, ids: Dictionary) -> Dictionary:
 	var r: Dictionary = n.get_meta("record").duplicate(true)
-	var x := snappedf(n.position.x, 0.01)
-	var z := snappedf(n.position.z, 0.01)
+	# to the centimetre, written as typed (4.6, not 4.6000000000000005)
+	var x := String.num(n.position.x, 2).to_float()
+	var z := String.num(n.position.z, 2).to_float()
 	if g.list == "trees":
 		r.x = x
 		r.z = z
@@ -182,9 +183,9 @@ static func _record(g: Dictionary, n: Node3D, ids: Dictionary) -> Dictionary:
 		var t := n.rotation.y
 		if absf(angle_difference(was if g.get("radians") else deg_to_rad(was), t)) > 0.0005:
 			t = wrapf(t, -PI, PI)
-			r[g.turn] = snappedf(t, 0.001) if g.get("radians") else snappedf(rad_to_deg(t), 0.1)
+			r[g.turn] = String.num(t, 3).to_float() if g.get("radians") else String.num(rad_to_deg(t), 1).to_float()
 	if g.has("scale"):
-		var s := snappedf(n.scale.x, 0.01)
+		var s := String.num(n.scale.x, 2).to_float()
 		if not is_equal_approx(s, float(r.get(g.scale, 1.0))):
 			r[g.scale] = s
 	if r.has("id"):

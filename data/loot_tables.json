@@ -75,10 +75,32 @@
       "always": [
         {
           "item": "hound_meat",
-          "min": 1,
+          "min": 0,
           "max": 2
         }
-      ]
+      ],
+      "drops": {
+        "rolls": 1,
+        "chance": 0.3,
+        "rarity": {
+          "junk": 1,
+          "common": 1
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "cracked_bone",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "hound_meat",
+              "weight": 1
+            }
+          ]
+        }
+      }
     },
     {
       "id": "archer",

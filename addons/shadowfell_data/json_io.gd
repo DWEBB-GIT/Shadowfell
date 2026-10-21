@@ -12,6 +12,9 @@ extends RefCounted
 ##    (the quest editor's pretty(), tools/quest-editor/editor.js).
 
 const COMPACT_FILES := ["quests.json"]
+## world.json and scenery.json: plain, but a list of plain values sits on
+## one line ([x, z], [0, 0, 1.3]), as they are written by hand
+const SHORT_LIST_FILES := ["world.json", "scenery.json"]
 
 
 static func load_file(path: String):
@@ -22,7 +25,7 @@ static func load_file(path: String):
 
 
 static func save_file(path: String, data) -> Error:
-	var text := to_text(data, path.get_file() in COMPACT_FILES)
+	var text := to_text(data, path.get_file() in COMPACT_FILES, path.get_file() in SHORT_LIST_FILES)
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return FileAccess.get_open_error()
@@ -31,26 +34,28 @@ static func save_file(path: String, data) -> Error:
 	return OK
 
 
-static func to_text(data, compact := false) -> String:
-	return (_pretty(data, "") if compact else _plain(data, "")) + "\n"
+static func to_text(data, compact := false, short_lists := false) -> String:
+	return (_pretty(data, "") if compact else _plain(data, "", short_lists)) + "\n"
 
 
 # ------------------------------------------------------------------ plain
-static func _plain(v, indent: String) -> String:
+static func _plain(v, indent: String, short_lists := false) -> String:
 	var inner := indent + "  "
 	if v is Array:
 		if v.is_empty():
 			return "[]"
+		if short_lists and _depth(v) == 1:
+			return _inline(v)
 		var parts := PackedStringArray()
 		for x in v:
-			parts.append(inner + _plain(x, inner))
+			parts.append(inner + _plain(x, inner, short_lists))
 		return "[\n" + ",\n".join(parts) + "\n" + indent + "]"
 	if v is Dictionary:
 		if v.is_empty():
 			return "{}"
 		var parts := PackedStringArray()
 		for k in v:
-			parts.append(inner + _scalar(str(k)) + ": " + _plain(v[k], inner))
+			parts.append(inner + _scalar(str(k)) + ": " + _plain(v[k], inner, short_lists))
 		return "{\n" + ",\n".join(parts) + "\n" + indent + "}"
 	return _scalar(v)
 

@@ -1,5 +1,5 @@
 {
-  "_about": "Quests, WoW style. A quest is offered by its `giver` once every quest in `requires` is done, and handed in to its `turnIn` npc once every objective is met. Objectives: kill (an enemy type, counted from when the quest is taken), collect (an item carried; taken on hand-in unless `keep`), examine (a world point), talk (go and speak to the turn-in npc; met at once). Quests sharing a `choice` are one decision: taking one locks the others. `setsFlag` records the outcome for dialogue and the world. `location` names a world.json location for the minimap. `offer`, `progress` and `complete` are what the giver says at each step.",
+  "_about": "A quest is offered by its `giver` once every quest in `requires` is done, and handed in to its `turnIn` npc once every objective is met. Objectives: kill (an enemy type, counted from when the quest is taken), collect (an item carried; taken on hand-in unless `keep`), examine (a world point), talk (go and speak to the turn-in npc; met at once). Quests sharing a `choice` are one decision: taking one locks the others. `setsFlag` records the outcome for dialogue and the world. `location` names a world.json location for the minimap. `offer`, `progress` and `complete` are what the giver says at each step.",
   "quests": [
     {
       "id": "missing_delivery",
