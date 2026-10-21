@@ -109,9 +109,11 @@ static func fx_material(tex: Texture2D, colour: Color, additive := true, billboa
 ## A flat quad lying on the ground (size 1 x 1), like a rotated PlaneGeometry.
 static func ground_quad(mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	var q := PlaneMesh.new()
-	q.size = Vector2(1, 1)
-	mi.mesh = q
+	if not _cache.has("plane"):
+		var q := PlaneMesh.new()
+		q.size = Vector2(1, 1)
+		_cache.plane = q
+	mi.mesh = _cache.plane # shared: a new mesh per spark was uploaded each time
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
@@ -120,9 +122,11 @@ static func ground_quad(mat: Material) -> MeshInstance3D:
 ## A camera-facing quad (a three.js Sprite).
 static func sprite(mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	var q := QuadMesh.new()
-	q.size = Vector2(1, 1)
-	mi.mesh = q
+	if not _cache.has("quad"):
+		var q := QuadMesh.new()
+		q.size = Vector2(1, 1)
+		_cache.quad = q
+	mi.mesh = _cache.quad
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mi
@@ -145,4 +149,8 @@ static func point_light(colour: Color, intensity: float, distance: float, decay 
 	l.omni_range = distance
 	l.omni_attenuation = decay
 	l.shadow_enabled = false
+	# lights past the fog cost per-pixel work for nothing: fade them out
+	l.distance_fade_enabled = true
+	l.distance_fade_begin = 40.0
+	l.distance_fade_length = 10.0
 	return l

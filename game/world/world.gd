@@ -121,6 +121,9 @@ static func build_terrain() -> MeshInstance3D:
 	mat.roughness = 1.0
 	var mesh := MeshInstance3D.new()
 	mesh.name = "Terrain"
+	# the ground only receives shadows: casting them drew the whole terrain
+	# again in the sun's shadow pass for no visible change
+	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mesh.mesh = st.commit()
 	mesh.material_override = mat
 	return mesh
@@ -385,20 +388,42 @@ func _instanced(model: String, list: Array) -> void:
 		src.free()
 		return
 	var mi: MeshInstance3D = meshes[0]
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mi.mesh
-	mm.instance_count = list.size()
-	for i in list.size():
-		var t: Dictionary = list[i]
+	var mat := _cutaway_material(mi)
+	var xfs := []
+	for t in list:
 		var basis := Basis(Vector3.UP, t.r).scaled(Vector3.ONE * t.s)
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(t.x, Terrain.height_at(t.x, t.z) - 0.1, t.z)))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.name = "Woodland_" + model
-	mmi.material_override = _cutaway_material(mi)
-	group.add_child(mmi)
+		xfs.append(Transform3D(basis, Vector3(t.x, Terrain.height_at(t.x, t.z) - 0.1, t.z)))
+	for cell in _cells(xfs):
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mi.mesh
+		mm.instance_count = cell.size()
+		for i in cell.size():
+			mm.set_instance_transform(i, xfs[cell[i]])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.name = "Woodland_" + model
+		mmi.material_override = mat
+		group.add_child(mmi)
 	src.free()
+
+
+## Instances grouped into square cells of the map, as lists of indices. A
+## MultiMesh is culled as one box, so one for the whole world was drawn (and
+## shadowed) in full every frame; one per cell lets the camera and the sun's
+## shadow skip everything out of view.
+const CELL := 24.0
+
+
+static func _cells(xfs: Array) -> Array:
+	var cells := {}
+	for i in xfs.size():
+		var o: Vector3 = xfs[i].origin
+		var key := Vector2i(floori(o.x / CELL), floori(o.z / CELL))
+		if not cells.has(key):
+			cells[key] = []
+		cells[key].append(i)
+	return cells.values()
 
 
 ## Trees between the camera and the player are dissolved with a dither
@@ -461,11 +486,8 @@ func _scatter_ground_cover() -> void:
 	var b: Dictionary = Layout.bounds
 	var rand := U.Seeded.new(77)
 	var count := U.jround(3600 * ((b.maxZ - b.minZ + 12) / 184.0)) # the same density as the first map
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = blade
-	mm.instance_count = count
+	var xfs := []
+	var cols := []
 	var n := 0
 	var i := 0
 	while i < count * 3 and n < count:
@@ -484,20 +506,32 @@ func _scatter_ground_cover() -> void:
 		var rot := rand.next() * PI
 		var s := 0.6 + rand.next() * 0.9
 		var sy := s * (0.7 + rand.next() * 0.8)
-		mm.set_instance_transform(n, Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(s, sy, s)), Vector3(x, Terrain.height_at(x, z) - 0.02, z)))
+		xfs.append(Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(s, sy, s)), Vector3(x, Terrain.height_at(x, z) - 0.02, z)))
 		var hue := 0.2 + rand.next() * 0.06
 		var sat := 0.25 + rand.next() * 0.15
 		var lig := (0.17 + rand.next() * 0.1) * (1 - 0.45 * Terrain.blackwoodness(z))
 		# the tint multiplies the base colour, as three.js instance colours do
-		mm.set_instance_color(n, _hsl(hue, sat, lig))
+		cols.append(_hsl(hue, sat, lig))
 		n += 1
-	mm.visible_instance_count = n
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.material_override = mat
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mmi.name = "GroundCover"
-	group.add_child(mmi)
+	for cell in _cells(xfs):
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = blade
+		mm.instance_count = cell.size()
+		for k in cell.size():
+			mm.set_instance_transform(k, xfs[cell[k]])
+			mm.set_instance_color(k, cols[cell[k]])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = mat
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.name = "GroundCover"
+		# grass is only worth drawing near the player: cells past the fog go
+		# (visibility ranges are per instance, so they cull per local camera)
+		mmi.visibility_range_end = 36.0
+		mmi.visibility_range_end_margin = 4.0
+		group.add_child(mmi)
 
 
 func _add_lights() -> void:

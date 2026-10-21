@@ -349,9 +349,17 @@ func _start_cast(kind: String, player) -> void:
 	game.events.emit("enemyWindup", {"enemy": self, "special": special})
 
 
+const ANIMATE_RANGE := 45.0
+var _flash_shown := false
+
+
 func update(dt: float, player) -> void:
-	flash = maxf(0, flash - dt * 5)
-	Rig.set_emissive(materials, flash_colour, flash * (0.35 if flash_colour == Rig.FLASH_WHITE else 0.6))
+	# the hit flash: materials are only touched while it shows (and once
+	# more to clear it), not every frame for every enemy in the world
+	if flash > 0 or _flash_shown:
+		flash = maxf(0, flash - dt * 5)
+		Rig.set_emissive(materials, flash_colour, flash * (0.35 if flash_colour == Rig.FLASH_WHITE else 0.6))
+		_flash_shown = flash > 0
 	engaged = maxf(0, engaged - dt)
 
 	if dead or cfg.get("dummy", false):
@@ -485,7 +493,10 @@ func update(dt: float, player) -> void:
 
 	position = game.collision.resolve(position, radius)
 	position.y = Terrain.height_at(position.x, position.z)
-	rig.update(dt, speed01 * (0.8 if type == "brute" else 1.0 if cfg.model == "hound" else 0.7))
+	# limbs only move where someone could see them (the camera shows about
+	# 30 m around the Warden)
+	if state != "idle" or U.hyp(dx, dz) < ANIMATE_RANGE:
+		rig.update(dt, speed01 * (0.8 if type == "brute" else 1.0 if cfg.model == "hound" else 0.7))
 	_sync()
 
 

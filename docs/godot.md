@@ -33,6 +33,7 @@ The Godot code is a faithful port of the browser build: each file in `src/` has 
 | `game/ui/` | The HUD and its windows: bags, character panel, spellbook, professions, talents, settings and key binding, cooking, shops, trainers, dialogue, the quest log and tracker, the minimap, names over heads, the title screen and character select, damage numbers. `ui.gd` holds the shared look; `canvas_2d.gd` lets the browser's canvas drawing (spell glyphs, minimap) be ported line for line; item icons and target portraits are snapshots of the real models (`icons.gd`) | `src/ui/` |
 | `game/tests/run_tests.gd` | Headless checks: data, terrain heights against the browser build, then a short game (`npm run godot:test`) | |
 | `game/tests/check_scripts.gd` | Compiles every script and lists any that fail | |
+| `game/tests/perf_parts.gd`, `game/tests/perf_render.gd` | Frame cost: CPU time per system, and frame time with parts switched off in turn | |
 | `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor; a fourth argument opens windows (`-- out.png 0 10 bags,character,quests`) | |
 
 Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web export), one file per key, in the same format as the browser build's saves.
@@ -63,6 +64,29 @@ godot --headless --path . --export-release "Web" build/web/index.html
 ```
 
 Serve the folder from any web server; opening the file directly won't work. The build is about 40 MB, most of which is the engine itself (`index.wasm`), and the game data is about 2 MB. Pages compresses it when it serves it. `game/tests/audio_check.gd` renders every sound and prints how long each took and how loud it peaks.
+
+## Performance: simulate everything, draw what you see
+
+The world is built to work as a shared (later multiplayer) world: every
+system (enemies, respawns, quests, the clock) runs for the whole map no
+matter where the camera is. Only drawing is local to each screen:
+
+- **Loading screen.** `Game.load_world()` runs behind `LoadingScreen` when a
+  character enters the world. It synthesises every sound, draws each model
+  and effect once off-screen (so the GPU compiles their shaders up front)
+  and paints the portraits, then fades out. Nothing hitches the first time
+  you swing, cast or meet an enemy.
+- **Culling in cells.** Trees and ground cover are split into 24 m cells
+  (`World.CELL`), so the camera and the sun's shadow only draw nearby cells.
+- **Draw distance.** The camera's far plane sits just past the fog; grass
+  stops at 36 m (`visibility_range_end`), lamps fade out from 40 m, and the
+  sun's shadows reach 40 m.
+- **Animation.** Idle enemies more than 45 m away skip skeleton updates
+  (their logic still runs).
+- **UI.** The minimap and action bar redraw only when something changes.
+
+To measure: `game/tests/perf_parts.gd` (CPU per system) and
+`game/tests/perf_render.gd` (frame time and triangles).
 
 ## Port plan
 

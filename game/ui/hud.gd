@@ -49,6 +49,7 @@ var quests: QuestUI
 var minimap: Minimap
 var labels: WorldLabels
 var title: TitleScreen
+var loading: LoadingScreen
 
 var root: Control
 var title_area: PanelContainer
@@ -285,6 +286,8 @@ func _build() -> void:
 	title = TitleScreen.new(game)
 	root.add_child(title)
 	title.visible = false
+	loading = LoadingScreen.new()
+	root.add_child(loading)
 
 
 func _radial(inner: Color, outer: Color, from: float) -> TextureRect:
@@ -544,9 +547,21 @@ func hide_title() -> void:
 	refresh_objective()
 
 
+## the loading screen over the world while Game.load_world() warms it up
+func show_loading() -> void:
+	modal = "loading"
+	loading.open()
+
+
+func hide_loading() -> void:
+	if modal == "loading":
+		modal = null
+	loading.close()
+
+
 func _set_world_ui(on: bool) -> void:
 	for c in root.get_children():
-		if c != title:
+		if c != title and c != loading:
 			c.visible = on
 	if on:
 		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt, mute]:
@@ -624,7 +639,7 @@ func over_hud(at: Vector2) -> bool:
 ## and the item windows do not.
 var blocks_gameplay: bool:
 	get:
-		return modal == "title" or modal == "document"
+		return modal == "title" or modal == "document" or modal == "loading"
 
 ## any of the item, quest or dialogue windows
 var any_window_open: bool:
@@ -706,7 +721,7 @@ func hide_death() -> void:
 
 ## Escape / B closes whatever is open. The death screen only closes by respawning.
 func close_modal(force := false) -> bool:
-	if modal == "title" or (modal == "death" and not force):
+	if modal == "title" or modal == "loading" or (modal == "death" and not force):
 		return false
 	if keybind_ui.quick:
 		keybind_ui.set_quick(false)
@@ -920,7 +935,11 @@ func _refresh_slots() -> void:
 		s.overlay = overlay
 		s.glow = Color(140 / 255.0, 190 / 255.0, 1, 0.55) if a == "brace" and player.is_braced else Color(0, 0, 0, 0)
 		s.border = Color("9cc4ff") if a == "brace" and player.is_braced else Color("2a2218") if cd[0] > 0 or show_gcd else UI.BORDER_DIM
-		s.queue_redraw()
+		# redraw only when something shown changed (sweeps move in 1/90 turns)
+		var sig := [snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
+		if s.get_meta("sig", []) != sig:
+			s.set_meta("sig", sig)
+			s.queue_redraw()
 
 
 ## The cast bar, buffs under the health bar, and the swing timers.
