@@ -63,7 +63,7 @@ func _process(_dt: float) -> bool:
 		game.step(1.0 / 30)
 	elif frame == 600:
 		check(foe.health < foe.max_health or not foe.alive, "auto attack hurts the enemy")
-		check(game.player.health < game.player.max_health or game.player.dead, "the enemy fights back")
+		check(game.player.health < game.player.max_health or game.player.dead or not foe.alive, "the enemy fights back (or fell first)")
 		if game.player.dead:
 			game.release_spirit()
 			game.afterlife.revive_here()
