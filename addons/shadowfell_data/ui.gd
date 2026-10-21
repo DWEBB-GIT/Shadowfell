@@ -172,3 +172,110 @@ static func pick_item(near: Control, s: DataStore, filter: Callable, on_pick: Ca
 	near.add_child(pop)
 	pop.popup(Rect2i(Vector2i(near.get_screen_position() + Vector2(0, near.size.y)), Vector2i(340, 380)))
 	search.grab_focus()
+
+
+## Coins from min to max, rolled when given; equal ends save a plain number.
+## `on_change` is called after `d.coins` changes.
+static func coins_row(g: GridContainer, d: Dictionary, on_change: Callable) -> void:
+	var c = d.get("coins", 0)
+	var cur := [int(c.get("min", 0)), int(c.get("max", 0))] if c is Dictionary else [int(c), int(c)]
+	var h := HBoxContainer.new()
+	var lo := spin(cur[0], 0, 100000, 1, func(_v): pass, " min")
+	var hi := spin(cur[1], 0, 100000, 1, func(_v): pass, " max")
+	var save := func(_v):
+		var a := int(lo.value)
+		var b := int(hi.value)
+		if b < a:
+			hi.set_value_no_signal(a)
+			b = a
+		if b <= 0:
+			d.erase("coins")
+		elif a == b:
+			d.coins = a
+		else:
+			d.coins = {"min": a, "max": b}
+		on_change.call()
+	lo.value_changed.connect(save)
+	hi.value_changed.connect(save)
+	h.add_child(lo)
+	h.add_child(hi)
+	row(g, "Coins", h, "Silver given, rolled between min and max. Set both the same for a fixed amount.")
+
+
+## The item list of a reward or chest, each with a count and a remove
+## button, then "Add an item…". Quests name items as `item`, chests as `id`.
+## A new list goes in just after the last of `after` the holder has.
+## `on_change(rebuild)` is called after each change.
+static func item_rows(parent: Node, s: DataStore, holder: Dictionary, key: String, after: Array, on_change: Callable) -> void:
+	var items: Array = holder.get("items", [])
+	for e in items:
+		var h := hbox(parent)
+		h.add_child(item_picker(s, e.get(key), func(id):
+			e[key] = id
+			on_change.call(false)))
+		var cl := Label.new()
+		cl.text = "count"
+		h.add_child(cl)
+		h.add_child(spin(e.get("count", 1), 1, 999, 1, func(v):
+			e.count = v
+			on_change.call(false)))
+		h.add_child(button("✕", func():
+			items.erase(e)
+			if items.is_empty():
+				holder.erase("items")
+			on_change.call(true), "Remove"))
+	parent.add_child(button("Add an item…", func():
+		pick_item(parent, s, Callable(), func(id):
+			if not holder.has("items"):
+				insert_after(holder, "items", items, after)
+			items.append({key: id, "count": 1})
+			on_change.call(true))))
+
+
+## add a key just after the last of `after` that it has, keeping the file's order
+static func insert_after(d: Dictionary, key: String, value, after: Array) -> void:
+	var last := ""
+	for k in d:
+		if after.has(k):
+			last = k
+	var copy := d.duplicate()
+	d.clear()
+	if last == "":
+		d[key] = value
+	for k in copy:
+		d[k] = copy[k]
+		if k == last:
+			d[key] = value
+
+
+## A list of names, each a link; on_click(id)
+static func links(parent: Node, entries: Array, on_click: Callable, empty: String) -> void:
+	if entries.is_empty():
+		note(parent, empty)
+		return
+	var flow := HFlowContainer.new()
+	parent.add_child(flow)
+	for e in entries:
+		var b := LinkButton.new()
+		b.text = str(e[1])
+		b.tooltip_text = str(e[0])
+		b.pressed.connect(func(): on_click.call(e[0]))
+		flow.add_child(b)
+		var gap := Control.new()
+		gap.custom_minimum_size.x = 12
+		flow.add_child(gap)
+
+
+## a multi-line text box that writes into d[key] (an empty optional one is removed)
+static func text_box(d: Dictionary, key: String, on_change: Callable, required := true, height := 64) -> TextEdit:
+	var t := TextEdit.new()
+	t.text = str(d.get(key, ""))
+	t.custom_minimum_size.y = height
+	t.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	t.text_changed.connect(func():
+		if t.text == "" and not required:
+			d.erase(key)
+		else:
+			d[key] = t.text
+		on_change.call())
+	return t

@@ -1,10 +1,12 @@
 @tool
 extends RefCounted
 ## The rules the browser build's `npm run validate` applies to items, loot
-## tables and rewards (src/data/schema.js), so a problem shows in the editor
+## tables, quests, npcs and shops (src/data/schema.js), so a problem shows in the editor
 ## before the build refuses the data.
 
 const DataStore := preload("store.gd")
+## models the game draws in code rather than loading (schema.js PROCEDURAL_MODELS)
+const PROCEDURAL_MODELS := ["training_dummy", "town_board"]
 
 
 static func run(s: DataStore) -> PackedStringArray:
@@ -14,6 +16,9 @@ static func run(s: DataStore) -> PackedStringArray:
 	_bands(s, out)
 	_enemies(s, out)
 	_rewards(s, out)
+	_quests(s, out)
+	_npcs(s, out)
+	_shops(s, out)
 	return out
 
 
@@ -193,17 +198,165 @@ static func _coins_ok(c) -> bool:
 
 
 static func _rewards(s: DataStore, out: PackedStringArray) -> void:
-	for q in s.quests:
-		if not _coins_ok(q.get("reward", {}).get("coins")):
-			out.append("Quest %s: reward coins must be whole silver, or a min to max range" % q.id)
-		for e in q.get("reward", {}).get("items", []):
-			if s.item(e.get("item")).is_empty():
-				out.append("Quest %s: reward names unknown item %s" % [q.id, e.get("item")])
-			if not (_is_int(e.get("count")) and e.count >= 1):
-				out.append("Quest %s: reward %s needs a count of at least 1" % [q.id, e.get("item")])
 	for c in s.chests:
 		if not _coins_ok(c.get("coins")):
 			out.append("Chest %s: coins must be whole silver, or a min to max range" % c.id)
 		for e in c.get("items", []):
 			if s.item(e.get("id")).is_empty():
 				out.append("Chest %s: names unknown item %s" % [c.id, e.get("id")])
+
+
+static func _quests(s: DataStore, out: PackedStringArray) -> void:
+	var seen := {}
+	var choices := {}
+	for q in s.quests:
+		var id := str(q.get("id", ""))
+		var bad := func(msg): out.append("Quest %s: %s" % [id, msg])
+		if seen.has(id):
+			bad.call("the id is used twice")
+		seen[id] = true
+		if id != DataStore.slug(id) or id == "":
+			bad.call("id must be lower_snake_case")
+		for k in ["name", "summary", "progress", "complete"]:
+			if str(q.get(k, "")) == "":
+				bad.call("needs %s text" % k)
+		if not q.get("autoAccept", false) and str(q.get("offer", "")) == "":
+			bad.call("needs an offer (what the giver says)")
+		for k in ["giver", "turnIn"]:
+			if s.npc(q.get(k)).is_empty():
+				bad.call("%s names unknown npc %s" % ["giver" if k == "giver" else "hand-in", q.get(k)])
+		for r in q.get("requires", []):
+			if s.quest(r).is_empty():
+				bad.call("requires unknown quest %s" % r)
+			if r == id:
+				bad.call("cannot require itself")
+		var objs: Array = q.get("objectives", [])
+		if objs.is_empty():
+			bad.call("needs at least one objective")
+		var oids := {}
+		for o in objs:
+			var oid := str(o.get("id", ""))
+			var label := "objective %s" % oid
+			if oid == "" or oids.has(oid):
+				bad.call("each objective needs its own id (%s)" % oid)
+			oids[oid] = true
+			if str(o.get("label", "")) == "":
+				bad.call("%s needs a label" % label)
+			match o.get("type"):
+				"kill":
+					if DataStore.find(s.enemies, o.get("target")).is_empty():
+						bad.call("%s names unknown enemy %s" % [label, o.get("target")])
+					else:
+						var placed := s.enemy_spawns.filter(func(sp): return sp.get("enemy") == o.target).size()
+						if o.get("count", 1) > placed:
+							bad.call("%s needs %d %s but the world only has %d" % [label, o.get("count", 1), o.target, placed])
+				"collect":
+					if s.item(o.get("target")).is_empty():
+						bad.call("%s names unknown item %s" % [label, o.get("target")])
+				"examine":
+					if not s.examine_points.has(o.get("target")):
+						bad.call("%s names unknown examine point %s" % [label, o.get("target")])
+				"talk":
+					if o.get("target") != q.get("turnIn"):
+						bad.call("%s: a talk objective names the hand-in npc (%s)" % [label, q.get("turnIn")])
+				_:
+					bad.call("%s: type must be kill, collect, examine or talk" % label)
+			if o.has("count") and not (_is_int(o.count) and o.count >= 1):
+				bad.call("%s: count must be a whole number of at least 1" % label)
+			if o.has("location") and DataStore.find(s.locations, o.location).is_empty():
+				bad.call("%s names unknown map area %s" % [label, o.location])
+		var r: Dictionary = q.get("reward", {})
+		if not _coins_ok(r.get("coins")):
+			bad.call("reward coins must be whole silver, or a min to max range")
+		if r.has("xp") and not _is_int(r.xp):
+			bad.call("reward xp must be a whole number")
+		for e in r.get("items", []):
+			if s.item(e.get("item")).is_empty():
+				bad.call("reward names unknown item %s" % e.get("item"))
+			if not (_is_int(e.get("count", 1)) and e.get("count", 1) >= 1):
+				bad.call("reward %s needs a count of at least 1" % e.get("item"))
+		for f in r.get("reputation", {}):
+			if DataStore.find(s.factions, f).is_empty():
+				bad.call("reward names unknown faction %s" % f)
+			elif not _is_int(r.reputation[f]):
+				bad.call("reputation with %s must be a whole number" % f)
+		if q.has("choice"):
+			if str(q.choice) == "":
+				bad.call("choice must be a name")
+			else:
+				choices[q.choice] = choices.get(q.choice, []) + [id]
+	for c in choices:
+		if choices[c].size() < 2:
+			out.append("Quest %s: choice %s needs at least one other quest to choose between" % [choices[c][0], c])
+	# a quest that requires itself, however far round, can never be offered
+	for q in s.quests:
+		if _loops(s, q.get("id"), []):
+			out.append("Quest %s: its requirements loop back to it" % q.get("id"))
+
+
+static func _loops(s: DataStore, id, path: Array) -> bool:
+	if path.has(id):
+		return true
+	for r in s.quest(id).get("requires", []):
+		if r != id and _loops(s, r, path + [id]):
+			return true
+	return false
+
+
+static func _npcs(s: DataStore, out: PackedStringArray) -> void:
+	var seen := {}
+	var icons := ["vendor", "blacksmith", "fishing", "cooking", "innkeeper", "trainer", "tanner"]
+	for n in s.npcs:
+		var id := str(n.get("id", ""))
+		var bad := func(msg): out.append("NPC %s: %s" % [id, msg])
+		if seen.has(id):
+			bad.call("the id is used twice")
+		seen[id] = true
+		if id != DataStore.slug(id) or id == "":
+			bad.call("id must be lower_snake_case")
+		if str(n.get("name", "")) == "":
+			bad.call("needs a name")
+		if not (_is_int(n.get("level")) and n.level >= 1):
+			bad.call("needs a level (a whole number, 1 or more)")
+		if not s.models.has(n.get("model")) and not PROCEDURAL_MODELS.has(n.get("model")):
+			bad.call("model %s is not in assets/models" % n.get("model"))
+		if n.has("shop") and s.shop(n.shop).is_empty():
+			bad.call("keeps unknown shop %s" % n.shop)
+		if n.has("dialogue") and s.dialogue(n.dialogue).is_empty():
+			bad.call("names unknown dialogue %s" % n.dialogue)
+		if n.has("mapIcon") and not icons.has(n.mapIcon):
+			bad.call("map icon must be one of " + ", ".join(icons))
+		if n.has("tint") and not (str(n.tint).length() == 7 and str(n.tint).begins_with("#") and str(n.tint).substr(1).is_valid_hex_number()):
+			bad.call("tint must be a colour like #7a6a66")
+	for sp in s.npc_spawns:
+		if s.npc(sp.get("npc")).is_empty():
+			out.append("NPC %s: placed in the world but not in npcs.json" % sp.get("npc"))
+	for d in s.dialogues:
+		if d.get("greetings", []).is_empty() or d.greetings.any(func(g): return str(g.get("text", "")) == ""):
+			out.append("Dialogue %s: needs at least one greeting, each with text" % d.get("id"))
+
+
+static func _shops(s: DataStore, out: PackedStringArray) -> void:
+	var seen := {}
+	for sh in s.shops:
+		var id := str(sh.get("id", ""))
+		var bad := func(msg): out.append("Shop %s: %s" % [id, msg])
+		if seen.has(id):
+			bad.call("the id is used twice")
+		seen[id] = true
+		var vt := s.vendor_type(sh.get("vendorType"))
+		if vt.is_empty():
+			bad.call("unknown vendor type %s" % sh.get("vendorType"))
+		if sh.has("faction") and DataStore.find(s.factions, sh.faction).is_empty():
+			bad.call("unknown faction %s" % sh.faction)
+		for it in sh.get("stock", []):
+			var d := s.item(it)
+			if d.is_empty():
+				bad.call("sells unknown item %s" % it)
+				continue
+			if d.get("quest", false):
+				bad.call("quest item %s cannot be sold" % it)
+			if d.has("reservedFor"):
+				bad.call("%s is a boss's own drop and cannot be sold" % it)
+			if not vt.is_empty() and not vt.get("sells", []).has(d.get("kind")):
+				bad.call("a %s does not sell %s (%s)" % [vt.get("name", ""), DataStore.KIND_NAMES.get(d.get("kind"), d.get("kind")).to_lower(), it])
