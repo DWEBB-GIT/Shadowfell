@@ -52,7 +52,7 @@ func _init(g, spawn: Dictionary) -> void:
 	game = g
 	id = spawn.id
 	type = spawn.type
-	cfg = DB.enemy_cfg[type]
+	cfg = DB.enemy_cfg_at(type, id)
 	home = Vector3(spawn.position[0], 0, spawn.position[1])
 	position = home
 	position.y = Terrain.height_at(position.x, position.z)

@@ -176,6 +176,27 @@ export function validateItems(items, slots, armourTypes, rarities = RARITIES) {
 // Check every data file together. `raw` holds each file's parsed JSON by
 // file name; `opts.models` (optional) is the list of model names that exist,
 // so a typo in a model name is caught too.
+// A level variant (as WoW has one creature entry per zone: a level 2 ghoul by
+// the road, a level 12 one in the barrows) names its `base` enemy and states
+// only what differs. Everything else comes from the base, except a unique drop.
+export function resolveEnemies(list) {
+  const byId = Object.fromEntries((list || []).filter(Boolean).map((e) => [e.id, e]));
+  const resolve = (e, seen) => {
+    if (!e || !e.base || !byId[e.base] || seen.includes(e.base)) return e;
+    const { uniqueDrop: _u, ...from } = resolve(byId[e.base], [...seen, e.id]);
+    return { ...from, ...e };
+  };
+  return (list || []).map((e) => resolve(e, [e && e.id]));
+}
+
+// The world-drop band for an enemy of this level: shared gear every mob of
+// those levels can drop (WoW's world drops), unless it is marked
+// `worldDrops: false` (beasts drop no gear). Null when none fits.
+export function worldDropBand(bands, enemy) {
+  if (!enemy || enemy.worldDrops === false) return null;
+  return (bands || []).find((b) => enemy.level >= b.minLevel && enemy.level <= b.maxLevel) || null;
+}
+
 export function validateGameData(raw, opts = {}) {
   const errors = [];
   const need = (file) => {
@@ -220,8 +241,9 @@ export function validateGameData(raw, opts = {}) {
   const items = indexById(itemsF.items, 'items.json items', errors);
   const archetypes = indexById(archF.archetypes, 'archetypes.json', errors);
   const abilities = indexById(abilF.abilities, 'abilities.json', errors, ABILITY_ID);
-  const enemies = indexById(enemF.enemies, 'enemies.json', errors);
+  const enemies = indexById(resolveEnemies(enemF.enemies), 'enemies.json', errors);
   const lootTables = indexById(lootF.lootTables, 'loot_tables.json', errors);
+  const worldDrops = indexById(lootF.worldDrops || [], 'loot_tables.json worldDrops', errors);
   const vendorTypes = indexById(shopF.vendorTypes, 'shops.json vendorTypes', errors);
   const shops = indexById(shopF.shops, 'shops.json shops', errors);
   const npcs = indexById(npcF.npcs, 'npcs.json', errors);
@@ -399,9 +421,13 @@ export function validateGameData(raw, opts = {}) {
     }
     if (e.armour !== undefined && !(isNum(e.armour) && e.armour >= 0)) errors.push(`${w}: armour must be a number of at least 0`);
     if (e.lootTable) ref(w, 'loot table', lootTables, e.lootTable);
+    if (e.base !== undefined) ref(w + ' base', 'enemy', enemies, e.base);
+    // a spawn rolls its level from level to maxLevel (fixed by the spawn's id)
+    if (e.maxLevel !== undefined && !(isInt(e.maxLevel) && e.maxLevel >= e.level)) errors.push(`${w}: maxLevel must be a whole number of at least its level`);
+    if (e.worldDrops !== undefined && typeof e.worldDrops !== 'boolean') errors.push(`${w}: worldDrops must be true or false`);
     if (e.uniqueDrop) ref(w, 'item', items, e.uniqueDrop);
     // a beast's skin: the loot table skinning it yields (the rank it needs comes from its level)
-    if (e.skin !== undefined) ref(w + ' skin', 'loot table', lootTables, e.skin);
+    if (e.skin) ref(w + ' skin', 'loot table', lootTables, e.skin);
     if (e.tint !== undefined && !/^#[0-9a-f]{6}$/i.test(e.tint)) errors.push(`${w}: tint must be a colour like #7a6a66`);
     if (e.ranged && !(isNum(e.ranged.range) && (isNum(e.ranged.damage) || type?.hit !== undefined) && isNum(e.ranged.windup))) errors.push(`${w}: ranged needs range, damage (or a type) and windup`);
     if (e.special && !(isNum(e.special.damage) || type?.special !== undefined)) errors.push(`${w}: special needs damage (or an elite, heavy or boss type)`);
@@ -409,7 +435,15 @@ export function validateGameData(raw, opts = {}) {
     for (const att of [e.ranged, e.circle]) if (att && att.school && !SCHOOLS.includes(att.school)) errors.push(`${w}: unknown school ${att.school}`);
     if ((e.ranged?.mana || e.circle?.mana) && !(e.mana > 0)) errors.push(`${w}: spends mana but has none`);
   }
-  for (const [id, t] of Object.entries(lootTables)) {
+  // world-drop bands: a level range each, no two overlapping, ids apart from the tables'
+  const bands = Object.values(worldDrops).sort((a, b) => a.minLevel - b.minLevel);
+  bands.forEach((b, i) => {
+    const w = `loot_tables.json worldDrops ${b.id}`;
+    if (!(isInt(b.minLevel) && isInt(b.maxLevel) && b.minLevel >= 1 && b.minLevel <= b.maxLevel)) errors.push(`${w}: needs whole minLevel <= maxLevel`);
+    if (i && b.minLevel <= bands[i - 1].maxLevel) errors.push(`${w}: its levels overlap ${bands[i - 1].id}`);
+    if (lootTables[b.id]) errors.push(`${w}: a loot table has the same id`);
+  });
+  for (const [id, t] of [...Object.entries(lootTables), ...Object.entries(worldDrops)]) {
     const w = `loot_tables.json ${id}`;
     for (const a of t.always || []) {
       ref(w + ' always', 'item', items, a.item);

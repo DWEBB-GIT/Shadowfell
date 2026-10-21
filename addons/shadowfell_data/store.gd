@@ -63,6 +63,7 @@ var items: Array = []
 var rarities: Array = []
 var armour_types: Array = []
 var loot_tables: Array = []
+var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
 var enemies: Array = []
 var quests: Array = []
 var chests: Array = []
@@ -87,6 +88,9 @@ func load_all() -> void:
 	armour_types = files.items.get("armourTypes", [])
 	rarities = files.rarities.get("rarities", [])
 	loot_tables = files.loot_tables.get("lootTables", [])
+	if not files.loot_tables.has("worldDrops"):
+		files.loot_tables.worldDrops = []
+	world_drops = files.loot_tables.worldDrops
 	enemies = files.enemies.get("enemies", [])
 	quests = files.quests.get("quests", [])
 	chests = files.world.get("chests", [])
@@ -156,6 +160,66 @@ func drop_rarities() -> Array:
 	return rarities.filter(func(r): return r.get("drops", true) != false)
 
 
+func table_or_band(id) -> Dictionary:
+	var t := find(loot_tables, id)
+	return t if not t.is_empty() else find(world_drops, id)
+
+
+## a table or band id not yet used by either
+func unique_table_id(base: String) -> String:
+	var id := base
+	var n := 2
+	while not table_or_band(id).is_empty():
+		id = "%s_%d" % [base, n]
+		n += 1
+	return id
+
+
+func is_band(t: Dictionary) -> bool:
+	return world_drops.has(t)
+
+
+## An enemy as the game sees it: a level variant's `base` filled in (as
+## DB.resolve_enemies does), so its level and tables can be read.
+func resolved(e: Dictionary, seen := []) -> Dictionary:
+	var base = e.get("base")
+	if base == null or seen.has(base):
+		return e
+	var b := find(enemies, base)
+	if b.is_empty():
+		return e
+	var out := resolved(b, seen + [e.id]).duplicate(true)
+	out.erase("uniqueDrop")
+	for k in e:
+		out[k] = e[k]
+	return out
+
+
+## the world-drop band an enemy rolls, or {} (none fits, or worldDrops: false)
+func band_for(e: Dictionary) -> Dictionary:
+	var r := resolved(e)
+	if r.get("worldDrops", true) == false:
+		return {}
+	for b in world_drops:
+		if r.get("level", 1) >= b.get("minLevel", 0) and r.get("level", 1) <= b.get("maxLevel", 0):
+			return b
+	return {}
+
+
+## enemies whose level falls in a band (a level range counts if any of it does)
+func band_users(b: Dictionary) -> Array:
+	var out := []
+	for e in enemies:
+		var r := resolved(e)
+		if r.get("worldDrops", true) == false:
+			continue
+		var lo: float = r.get("level", 1)
+		var hi: float = maxf(lo, r.get("maxLevel", lo))
+		if hi >= b.get("minLevel", 0) and lo <= b.get("maxLevel", 0):
+			out.append(e)
+	return out
+
+
 func npc_name(id) -> String:
 	return find(npcs, id).get("name", str(id))
 
@@ -184,7 +248,7 @@ func unique_id(list: Array, base: String) -> String:
 ## Used to warn before an item is deleted.
 func uses_of_item(id: String) -> PackedStringArray:
 	var out := PackedStringArray()
-	for t in loot_tables:
+	for t in loot_tables + world_drops:
 		if _table_has(t, id):
 			out.append("loot table " + t.id)
 	for q in quests:
@@ -217,11 +281,14 @@ static func _table_has(t: Dictionary, id: String) -> bool:
 ## what uses a loot table: enemies (loot or skinning) and fishing waters
 func users_of_table(id: String) -> Array:
 	var out := []
+	# `enemy` is the record in the file; `own` is false when a level variant
+	# only inherits the table from its base
 	for e in enemies:
-		if e.get("lootTable") == id:
-			out.append({"kind": "loot", "enemy": e, "text": "%s drops it" % e.get("name", e.id)})
-		if e.get("skin") == id:
-			out.append({"kind": "skin", "enemy": e, "text": "Skinning %s" % e.get("name", e.id)})
+		var r := resolved(e)
+		if r.get("lootTable") == id:
+			out.append({"kind": "loot", "enemy": e, "own": e.get("lootTable") == id, "text": "%s (%s) drops it" % [r.get("name", e.id), e.id]})
+		if r.get("skin") == id:
+			out.append({"kind": "skin", "enemy": e, "own": e.get("skin") == id, "text": "Skinning %s (%s)" % [r.get("name", e.id), e.id]})
 	for w in waters:
 		if w.get("fishTable") == id:
 			out.append({"kind": "fish", "water": w, "text": "Fishing in %s" % w.get("name", w.get("id", "water"))})

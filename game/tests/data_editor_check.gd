@@ -38,9 +38,19 @@ func _initialize() -> void:
 	q.reward.items.append({"item": "hunters_sword", "count": 1})
 	s.touch("quests")
 	d.description = "A plain blade."
+	# a level 10 to 12 ghoul for another zone: its own entry based on the ghoul
+	var loot = main.pages[1]
+	loot._new_variant(_find(s.enemies, "ghoul"))
+	var v: Dictionary = loot.current_enemy
+	v.level = 6
+	_ok(v.base == "ghoul" and s.resolved(v).model == "ghoul" and s.resolved(v).lootTable == "ghoul", "a level variant takes the rest from its base")
+	_ok(s.band_for(v).get("id") == "world_6_10" and s.band_for(_find(s.enemies, "ghoul")).get("id") == "world_1_5", "world drops are picked by level")
+	_ok(s.band_for(_find(s.enemies, "hound")).is_empty(), "beasts roll no world drops")
+	loot._enemy_set(v, "lootTable", null)
+	_ok(v.lootTable == "" and s.resolved(v).lootTable == "", "a variant can drop nothing of its own while its base does")
 	_ok(Checks.run(s).is_empty(), "the checks pass: %s" % "\n".join(Checks.run(s)))
 	var saved = s.save_all()
-	_ok(saved.size() == 3, "items, loot tables and quests are saved: %s" % [saved])
+	_ok(saved.size() == 4, "items, loot tables, enemies and quests are saved: %s" % [saved])
 
 	# what was written reads back, and the item is in it
 	var back = IO.load_file(COPY + "/items.json")

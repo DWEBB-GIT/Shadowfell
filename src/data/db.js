@@ -39,7 +39,7 @@ import skills from '../../data/skills.json';
 import factions from '../../data/factions.json';
 import recipes from '../../data/recipes.json';
 import titles from '../../data/titles.json';
-import { validateGameData, indexById } from './schema.js';
+import { validateGameData, indexById, resolveEnemies } from './schema.js';
 
 export const RAW = {
   'items.json': items,
@@ -79,9 +79,10 @@ export const DB = {
   spellQueueWindow: abilities.spellQueueWindow,
   castPushback: abilities.castPushback,
   maxPushbacks: abilities.maxPushbacks,
-  enemies: strip(byId(enemies.enemies, 'enemies')),
+  enemies: strip(byId(resolveEnemies(enemies.enemies), 'enemies')),
   leashDistance: enemies.leashDistance,
   lootTables: byId(lootTables.lootTables, 'lootTables'),
+  worldDrops: lootTables.worldDrops || [], // level bands of shared gear (WoW's world drops)
   rarities: byId(rarities.rarities, 'rarities'), // in order, lowest first
   npcs: byId(npcs.npcs, 'npcs'),
   vendorTypes: byId(shops.vendorTypes, 'vendorTypes'),

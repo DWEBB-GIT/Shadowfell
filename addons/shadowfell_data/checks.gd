@@ -11,6 +11,8 @@ static func run(s: DataStore) -> PackedStringArray:
 	var out := PackedStringArray()
 	_items(s, out)
 	_tables(s, out)
+	_bands(s, out)
+	_enemies(s, out)
 	_rewards(s, out)
 	return out
 
@@ -95,9 +97,10 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 
 static func _tables(s: DataStore, out: PackedStringArray) -> void:
 	var seen := {}
-	for t in s.loot_tables:
+	for t in s.loot_tables + s.world_drops:
 		var id: String = str(t.get("id", ""))
-		var bad := func(msg): out.append("Loot table %s: %s" % [id, msg])
+		var label := "World drops" if s.is_band(t) else "Loot table"
+		var bad := func(msg): out.append("%s %s: %s" % [label, id, msg])
 		if seen.has(id):
 			bad.call("the id is used twice")
 		seen[id] = true
@@ -142,6 +145,30 @@ static func _tables(s: DataStore, out: PackedStringArray) -> void:
 				if d.get("rarity") != r and not rolls_up:
 					bad.call("%s is %s and cannot be listed under %s" % [d.id, d.get("rarity"), r])
 				_reserved(d, id, bad)
+
+
+## world-drop bands: whole levels, no two overlapping
+static func _bands(s: DataStore, out: PackedStringArray) -> void:
+	var bands := s.world_drops.duplicate()
+	bands.sort_custom(func(a, b): return a.get("minLevel", 0) < b.get("minLevel", 0))
+	for i in bands.size():
+		var b: Dictionary = bands[i]
+		if not (_is_int(b.get("minLevel")) and _is_int(b.get("maxLevel")) and b.minLevel >= 1 and b.minLevel <= b.maxLevel):
+			out.append("World drops %s: needs whole levels, min no more than max" % b.id)
+		elif i > 0 and b.minLevel <= bands[i - 1].get("maxLevel", 0):
+			out.append("World drops %s: its levels overlap %s" % [b.id, bands[i - 1].id])
+
+
+static func _enemies(s: DataStore, out: PackedStringArray) -> void:
+	for e in s.enemies:
+		var r := s.resolved(e)
+		if e.has("base") and DataStore.find(s.enemies, e.base).is_empty():
+			out.append("Enemy %s: its base %s does not exist" % [e.id, e.base])
+		if r.has("maxLevel") and not (_is_int(r.maxLevel) and r.maxLevel >= r.get("level", 1)):
+			out.append("Enemy %s: max level must be at least its level" % e.id)
+		for k in ["lootTable", "skin"]:
+			if str(r.get(k, "")) != "" and DataStore.find(s.loot_tables, r[k]).is_empty():
+				out.append("Enemy %s: %s names unknown loot table %s" % [e.id, k, r[k]])
 
 
 static func _reserved(d: Dictionary, table: String, bad: Callable) -> void:

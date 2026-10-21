@@ -50,7 +50,11 @@ Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web e
 The **Game Data** screen (top bar, next to 2D, 3D and Script) edits the data files from inside the Godot editor. It is an editor plugin in `addons/shadowfell_data`, switched on in Project Settings > Plugins.
 
 - **Items**: New item asks what it is (one-hand weapon, then sword; armour, then slot; potion, food...), its name and rarity. Then set the item level, swing speed, price and description, give each stat a share of its points (the screen shows the damage and stats it will have in game), set what it does when used, and choose its model and sprite. *Import model* copies a .glb into `assets/models`; *Choose sprite* copies a .png into `assets/icons` and the game shows it as the item's icon instead of a picture of the model.
-- **Loot tables**: pick an enemy or boss to choose its loot table and skinning table, or pick a table. A table has drops that come every time (min to max) and random drops: a chance, a rarity by weight, then an item from that rarity's list by weight. Each item shows its chance a kill.
+- **Loot tables**, built the way WoW does it:
+  - An enemy's **own table** holds only what is its own (a ghoul's bones, a boss's blade). Pick an enemy to choose its own table and skinning table.
+  - **World drops** are level bands (levels 1 to 5, 6 to 10...) of the gear any mob of those levels might carry. Every enemy rolls the band its level falls in as well as its own table, picked by level, so nothing is assigned by hand. Beasts (and anything else with *World drops* off) roll no band.
+  - A ghoul in a higher zone is a **level variant**: *Make a level variant* adds an entry that names the ghoul as its `base` and changes only its name, level and tables. *Up to level* gives a level range: each spawn rolls its level in it (fixed per spawn). Place its spawns in `world.json` (`enemySpawns`).
+  - Each item shows its chance a kill.
 - **Quest and chest rewards**: coins, experience and items for each quest (grouped by who gives it) and what each chest holds. Objectives and dialogue stay in the quest editor (`npm run editor`).
 
 Nothing is written until **Save**; **Revert** throws changes away. The checks along the bottom are the rules `npm run validate` applies, so a problem shows before the build refuses it. An item's id is made from its name and locked once saved, because saves, shops and quests use it. `game/tests/data_editor_check.gd` tests the editor on a copy of `data/`.

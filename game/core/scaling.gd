@@ -197,11 +197,16 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 	return out
 
 
-## Each spawn point's enemy has its own health, +-10% around its type's,
-## fixed by the spawn's id (FNV-1a, as the browser build hashes it).
-static func spawn_health(health: float, spawn_id: String) -> int:
+## A number from 0 to 1 fixed by a spawn's id (FNV-1a).
+static func spawn_roll(spawn_id: String) -> float:
 	var h := 2166136261
 	for i in spawn_id.length():
 		h = ((h ^ spawn_id.unicode_at(i)) * 16777619) & 0xFFFFFFFF
-	var u := float(h) / 4294967296.0
+	return float(h) / 4294967296.0
+
+
+## Each spawn point's enemy has its own health, +-10% around its type's,
+## fixed by the spawn's id (FNV-1a, as the browser build hashes it).
+static func spawn_health(health: float, spawn_id: String) -> int:
+	var u := spawn_roll(spawn_id)
 	return maxi(1, U.jround(health * (1 + S.enemyHealthRoll * (2 * u - 1))))

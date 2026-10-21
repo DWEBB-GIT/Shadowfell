@@ -1,16 +1,14 @@
 {
-  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops.",
+  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops. Like WoW, an enemy's own table holds only what is its own (a ghoul's bones, a boss's blade); the gear any mob of its level might carry comes from `worldDrops`: level bands, each a table of its own with `minLevel` and `maxLevel`. Every enemy rolls the band its level falls in as well as its own table, unless it is marked `worldDrops: false` (beasts drop no gear).",
   "lootTables": [
     {
       "id": "ghoul",
       "drops": {
         "rolls": 1,
-        "chance": 0.45,
+        "chance": 0.35,
         "rarity": {
-          "junk": 50,
-          "common": 32,
-          "enhanced": 15,
-          "rare": 3
+          "junk": 95,
+          "enhanced": 5
         },
         "items": {
           "junk": [
@@ -19,57 +17,9 @@
               "weight": 1
             }
           ],
-          "common": [
-            {
-              "item": "iron_gloves",
-              "weight": 3
-            },
-            {
-              "item": "hob_boots",
-              "weight": 3
-            },
-            {
-              "item": "rusted_falchion",
-              "weight": 2
-            },
-            {
-              "item": "mail_chausses",
-              "weight": 1
-            },
-            {
-              "item": "rusty_dirk",
-              "weight": 2
-            }
-          ],
           "enhanced": [
             {
-              "item": "iron_gloves",
-              "weight": 3
-            },
-            {
-              "item": "hob_boots",
-              "weight": 3
-            },
-            {
-              "item": "rusted_falchion",
-              "weight": 2
-            },
-            {
-              "item": "mail_chausses",
-              "weight": 1
-            },
-            {
-              "item": "rusty_dirk",
-              "weight": 2
-            },
-            {
               "item": "ghoulbone_knife",
-              "weight": 1
-            }
-          ],
-          "rare": [
-            {
-              "item": "old_watch_helm",
               "weight": 1
             }
           ]
@@ -82,30 +32,15 @@
         "rolls": 1,
         "chance": 0.45,
         "rarity": {
-          "junk": 30,
-          "common": 35,
-          "enhanced": 27,
-          "rare": 8
+          "junk": 45,
+          "enhanced": 45,
+          "rare": 10
         },
         "items": {
           "junk": [
             {
               "item": "cracked_bone",
               "weight": 1
-            }
-          ],
-          "common": [
-            {
-              "item": "mail_chausses",
-              "weight": 2
-            },
-            {
-              "item": "warden_hauberk",
-              "weight": 2
-            },
-            {
-              "item": "plate_sabatons",
-              "weight": 2
             }
           ],
           "enhanced": [
@@ -143,44 +78,7 @@
           "min": 1,
           "max": 2
         }
-      ],
-      "drops": {
-        "rolls": 1,
-        "chance": 0.12,
-        "rarity": {
-          "common": 60,
-          "enhanced": 35,
-          "rare": 5
-        },
-        "items": {
-          "common": [
-            {
-              "item": "hob_boots",
-              "weight": 2
-            },
-            {
-              "item": "iron_gloves",
-              "weight": 2
-            }
-          ],
-          "enhanced": [
-            {
-              "item": "hob_boots",
-              "weight": 2
-            },
-            {
-              "item": "iron_gloves",
-              "weight": 2
-            }
-          ],
-          "rare": [
-            {
-              "item": "old_watch_helm",
-              "weight": 1
-            }
-          ]
-        }
-      }
+      ]
     },
     {
       "id": "archer",
@@ -188,69 +86,12 @@
         "rolls": 1,
         "chance": 0.3,
         "rarity": {
-          "junk": 45,
-          "common": 33,
-          "enhanced": 18,
-          "rare": 4
+          "junk": 100
         },
         "items": {
           "junk": [
             {
               "item": "bent_arrowhead",
-              "weight": 1
-            }
-          ],
-          "common": [
-            {
-              "item": "rusted_falchion",
-              "weight": 2
-            },
-            {
-              "item": "warden_hauberk",
-              "weight": 2
-            },
-            {
-              "item": "plate_sabatons",
-              "weight": 2
-            },
-            {
-              "item": "watch_helm",
-              "weight": 2
-            },
-            {
-              "item": "arming_sword",
-              "weight": 2
-            }
-          ],
-          "enhanced": [
-            {
-              "item": "rusted_falchion",
-              "weight": 2
-            },
-            {
-              "item": "warden_hauberk",
-              "weight": 2
-            },
-            {
-              "item": "plate_sabatons",
-              "weight": 2
-            },
-            {
-              "item": "watch_helm",
-              "weight": 2
-            },
-            {
-              "item": "arming_sword",
-              "weight": 2
-            },
-            {
-              "item": "militia_sword",
-              "weight": 1
-            }
-          ],
-          "rare": [
-            {
-              "item": "old_watch_helm",
               "weight": 1
             }
           ]
@@ -367,37 +208,7 @@
           "min": 0,
           "max": 1
         }
-      ],
-      "drops": {
-        "rolls": 1,
-        "chance": 0.08,
-        "rarity": {
-          "common": 70,
-          "enhanced": 30
-        },
-        "items": {
-          "common": [
-            {
-              "item": "hob_boots",
-              "weight": 1
-            },
-            {
-              "item": "iron_gloves",
-              "weight": 1
-            }
-          ],
-          "enhanced": [
-            {
-              "item": "hob_boots",
-              "weight": 1
-            },
-            {
-              "item": "iron_gloves",
-              "weight": 1
-            }
-          ]
-        }
-      }
+      ]
     },
     {
       "id": "bristleback",
@@ -503,59 +314,14 @@
       "id": "blackhedge",
       "drops": {
         "rolls": 1,
-        "chance": 0.55,
+        "chance": 0.4,
         "rarity": {
-          "junk": 40,
-          "common": 40,
-          "enhanced": 17,
-          "rare": 3
+          "junk": 100
         },
         "items": {
           "junk": [
             {
               "item": "bent_arrowhead",
-              "weight": 1
-            }
-          ],
-          "common": [
-            {
-              "item": "iron_gloves",
-              "weight": 2
-            },
-            {
-              "item": "hob_boots",
-              "weight": 2
-            },
-            {
-              "item": "mail_chausses",
-              "weight": 1
-            },
-            {
-              "item": "rusty_dirk",
-              "weight": 2
-            }
-          ],
-          "enhanced": [
-            {
-              "item": "iron_gloves",
-              "weight": 2
-            },
-            {
-              "item": "hob_boots",
-              "weight": 2
-            },
-            {
-              "item": "rusty_dirk",
-              "weight": 2
-            },
-            {
-              "item": "militia_sword",
-              "weight": 1
-            }
-          ],
-          "rare": [
-            {
-              "item": "old_watch_helm",
               "weight": 1
             }
           ]
@@ -584,6 +350,220 @@
             {
               "item": "hob_boots",
               "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "worldDrops": [
+    {
+      "id": "world_1_5",
+      "minLevel": 1,
+      "maxLevel": 5,
+      "drops": {
+        "rolls": 1,
+        "chance": 0.25,
+        "rarity": {
+          "common": 60,
+          "enhanced": 36,
+          "rare": 4
+        },
+        "items": {
+          "common": [
+            {
+              "item": "iron_gloves",
+              "weight": 3
+            },
+            {
+              "item": "hob_boots",
+              "weight": 3
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            },
+            {
+              "item": "watch_helm",
+              "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 1
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 1
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 1
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "iron_gloves",
+              "weight": 3
+            },
+            {
+              "item": "hob_boots",
+              "weight": 3
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 2
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 2
+            },
+            {
+              "item": "watch_helm",
+              "weight": 2
+            },
+            {
+              "item": "arming_sword",
+              "weight": 2
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 1
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 1
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 1
+            },
+            {
+              "item": "iron_shield",
+              "weight": 1
+            },
+            {
+              "item": "militia_sword",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "world_6_10",
+      "minLevel": 6,
+      "maxLevel": 10,
+      "drops": {
+        "rolls": 1,
+        "chance": 0.3,
+        "rarity": {
+          "common": 50,
+          "enhanced": 42,
+          "rare": 8
+        },
+        "items": {
+          "common": [
+            {
+              "item": "iron_gloves",
+              "weight": 1
+            },
+            {
+              "item": "hob_boots",
+              "weight": 1
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 1
+            },
+            {
+              "item": "watch_helm",
+              "weight": 1
+            },
+            {
+              "item": "arming_sword",
+              "weight": 1
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 3
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 3
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 3
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "iron_gloves",
+              "weight": 1
+            },
+            {
+              "item": "hob_boots",
+              "weight": 1
+            },
+            {
+              "item": "rusted_falchion",
+              "weight": 1
+            },
+            {
+              "item": "rusty_dirk",
+              "weight": 1
+            },
+            {
+              "item": "watch_helm",
+              "weight": 1
+            },
+            {
+              "item": "arming_sword",
+              "weight": 1
+            },
+            {
+              "item": "mail_chausses",
+              "weight": 3
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 3
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 3
+            },
+            {
+              "item": "iron_shield",
+              "weight": 2
+            },
+            {
+              "item": "militia_sword",
+              "weight": 2
             }
           ],
           "rare": [
