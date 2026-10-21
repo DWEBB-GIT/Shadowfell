@@ -30,7 +30,11 @@ const CONFIG := {
 	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 9.0, "fogFar": 32.0, "light": 0.68},
 	"camera": {
 		"offset": Vector3(0, 11, 10), "lookAhead": 0.5, "zoomMin": 0.6, "zoomMax": 1.35, "zoomStep": 0.08,
-		"indoorZoom": 0.22, "fov": 45.0, "followSharpness": 8.0, "renderScale": 0.62,
+		"indoorZoom": 0.22, "fov": 45.0,
+		# the camera's angle follows the zoom (Settings: Classic camera keeps
+		# `offset`'s one angle): pitch in degrees above the ground at zoomMin,
+		# at zoom 1 and at zoomMax; distance is `offset`'s length times this
+		"tilt": {"pitchNear": 40.0, "pitchMid": 52.0, "pitchFar": 60.0, "distance": 1.05, "zoomMax": 1.6}, "followSharpness": 8.0, "renderScale": 0.62,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
 	"targeting": {"range": 26.0, "dropRange": 34.0, "clickRadius": 46.0, "softArc": 60.0, "softAimRadius": 2.5, "screenMargin": 0.03},

@@ -10,6 +10,8 @@ const SETTINGS := [
 	{"id": "playerName", "label": "Show your own name over your character", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "default": true},
 	{"id": "clickToMove", "label": "Click on the ground to walk there", "default": false},
+	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "group": "Controls and camera", "default": false},
+	{"id": "classicCamera", "label": "Classic camera (one lower angle at every zoom)", "group": "Controls and camera", "default": false},
 	{"id": "volMaster", "label": "Master volume", "group": "Sound", "default": 70, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "group": "Sound", "default": 100, "min": 0, "max": 100},
 	{"id": "volAmbience", "label": "Ambience (wind, birds, bells)", "group": "Sound", "default": 100, "min": 0, "max": 100},

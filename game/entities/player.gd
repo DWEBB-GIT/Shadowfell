@@ -23,6 +23,10 @@ var rod_tip: Node3D
 
 var position := Vector3.ZERO
 var facing := 0.0 ## radians; 0 faces +z (south)
+## Mouse aim: after an ability turns you, you keep that facing this long even
+## while walking, so the blow is seen to go where it was aimed
+const AIM_HOLD := 0.45
+var aim_hold := 0.0
 var radius: float = DB.CONFIG.player.radius
 var max_health := 100
 var health := 100.0
@@ -184,12 +188,14 @@ func face_towards(x: float, z: float) -> void:
 	var dz := z - position.z
 	if dx * dx + dz * dz > 0.0001:
 		facing = atan2(dx, dz)
+		aim_hold = AIM_HOLD
 
 
 func update(dt: float, controls) -> void:
 	for k in cooldowns:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
+	aim_hold = maxf(0, aim_hold - dt)
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
@@ -256,12 +262,25 @@ func update(dt: float, controls) -> void:
 		if mag > 0:
 			position.x += mv.x * DB.CONFIG.player.speed * dt
 			position.z += mv.z * DB.CONFIG.player.speed * dt
-			# fighting, you keep your target in front of you as you move (strafe)
-			var look := atan2(aim.x - position.x, aim.z - position.z) if (acts.get("strike") or acts.get("shoot")) and aim != null else atan2(mv.x, mv.z)
-			facing = U.turn_towards(facing, look, dt * 14)
+			if game.mouse_aim:
+				# Mouse aim: you face the way you walk, unless you aim on
+				# purpose (left button or right stick held), or an ability
+				# has just turned you
+				var face_aim = controls.get("faceAim")
+				if face_aim != null:
+					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
+				elif aim_hold <= 0:
+					facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
+			else:
+				# fighting, you keep your target in front of you as you move (strafe)
+				var look := atan2(aim.x - position.x, aim.z - position.z) if (acts.get("strike") or acts.get("shoot")) and aim != null else atan2(mv.x, mv.z)
+				facing = U.turn_towards(facing, look, dt * 14)
 			speed01 = mag
 		elif (acts.get("strike") or acts.get("shoot")) and aim != null:
 			facing = U.turn_towards(facing, atan2(aim.x - position.x, aim.z - position.z), dt * DB.attack.turnRate)
+		elif game.mouse_aim and controls.get("faceAim") != null:
+			var fa = controls.faceAim
+			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * 14)
 		# spells first, so a swing coming due never swallows a key press
 		for id in acts:
 			if acts[id] and DB.spells.has(id):
