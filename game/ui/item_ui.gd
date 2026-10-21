@@ -426,7 +426,8 @@ func _render_sockets(inv) -> void:
 			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			sockets.add_child(sep)
 		# a quiver shows how many arrows it holds
-		if s and Items.get_def(s.id).get("holds") == "ammo":
+		# (the tool pack's holds is a list, and Array == String is a script error)
+		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
 			var n: int = inv.arrows_in(i)
 			slot.count = str(n)
 			slot.count_centre = true
