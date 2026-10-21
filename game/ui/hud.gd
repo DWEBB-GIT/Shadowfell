@@ -263,9 +263,13 @@ func _build() -> void:
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
-	vignette = _radial(Color(0, 0, 0, 0), Color(0, 0, 0, 0.55), 0.55)
+	vignette = _radial(Color(0, 0, 0, 0), Color(0, 0, 0, 0.45), 0.6)
 	hurt = _radial(Color(0.59, 0.08, 0.04, 0), Color(0.59, 0.08, 0.04, 0.75), 0.7)
 	hurt.modulate.a = 0
+	# both darken the world, not the HUD: over the panels they turned the
+	# corner UI (money, bags, minimap) a muddy half-grey
+	root.move_child(hurt, 0)
+	root.move_child(vignette, 0)
 
 	items = ItemUI.new(game, self)
 	items.sockets = _sockets_box
@@ -476,7 +480,7 @@ func _build_dock() -> void:
 	cp.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(10, 0, 10, 0)))
 	cp.custom_minimum_size = Vector2(0, 52)
 	cp.size_flags_vertical = Control.SIZE_SHRINK_END
-	coins = UI.rich(cp, 14)
+	coins = UI.rich(cp, 16)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
