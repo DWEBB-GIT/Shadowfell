@@ -408,7 +408,9 @@ func update_marks() -> void:
 		if status == "":
 			l.visible = false
 			continue
-		if l.text != MARK[status]:
+		# 'active' and 'ready' are both ?, so watch the status, not the text
+		if l.get_meta("status", "") != status:
+			l.set_meta("status", status)
 			l.text = MARK[status]
 			l.add_theme_color_override("font_color", Color("b4b4b4") if status == "active" else UI.QUEST_GOLD)
 			l.size = l.get_combined_minimum_size()

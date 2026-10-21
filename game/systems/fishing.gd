@@ -79,7 +79,7 @@ func cast(aim) -> bool:
 var has_rod: bool:
 	get:
 		for id in DB.items:
-			if DB.items[id].get("rod") and game.inventory.count(id) > 0:
+			if DB.items[id].get("rod") and game.inventory.has(id):
 				return true
 		return false
 
@@ -87,13 +87,8 @@ var has_rod: bool:
 ## have some (it is used up when you cast)
 var skill: int:
 	get:
-		var rod := 0
-		for id in DB.items:
-			var d: Dictionary = DB.items[id]
-			if d.get("rod") and d.get("fishingSkill") and game.inventory.count(id) > 0:
-				rod = maxi(rod, int(d.fishingSkill))
 		var bait = _bait()
-		return game.skills.rank("fishing") + rod + (int(DB.items[bait].bait) if bait else 0)
+		return game.skills.effective("fishing") + (int(DB.items[bait].bait) if bait else 0)
 
 
 ## percent chance that a cast gets a bite
@@ -133,14 +128,16 @@ func strike() -> bool:
 		return false
 	var events: Events = game.events
 	var inventory = game.inventory
+	if s.phase == "reel":
+		return true
 	if s.phase != "bite":
 		events.emit("log", {"text": "You strike too soon. Whatever was there is gone.", "kind": "muted"})
-		stop()
+		_reel(s, false)
 		return true
 	if game.random.call() * 100 >= chance:
 		events.emit("log", {"text": "The fish slips the hook.", "kind": "muted"})
 		game.skills.raise("fishing") # a real bite still teaches you something
-		stop()
+		_reel(s, false)
 		return true
 	var caught := Items.roll_loot(DB.loot_tables.get(s.water.get("fishTable", ""), {}), game.random)
 	for c in caught:
@@ -152,8 +149,51 @@ func strike() -> bool:
 		events.emit("log", {"text": "You catch %s %s." % [U.article(name), name], "kind": "loot", "rarity": c.rarity})
 	events.emit("fishCaught", {"items": caught})
 	game.skills.raise("fishing")
-	stop()
+	_reel(s, not caught.is_empty())
 	return true
+
+
+## Strike: the rod snaps up and the bob is plucked out of the water and
+## flies back to the rod tip, with a fish on the hook if one was landed.
+func _reel(s: Dictionary, fish: bool) -> void:
+	var level := Terrain.water_level(s.water)
+	s.phase = "reel"
+	s.t = 0.0
+	s.start = s.bob.position
+	game.player.rig.play("reel", DB.CONFIG.fishing.reelTime + 0.15, 0.3)
+	game.events.emit("splash", {"x": s.x, "y": level, "z": s.z, "small": not fish})
+	if fish:
+		var f := MeshInstance3D.new()
+		f.name = "CaughtFish"
+		var m := SphereMesh.new()
+		m.radius = 0.09
+		m.height = 0.18
+		m.radial_segments = 8
+		m.rings = 4
+		f.mesh = m
+		f.scale = Vector3(0.7, 1, 2.0)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color("9aa6a0")
+		mat.metallic = 0.5
+		mat.roughness = 0.35
+		f.material_override = mat
+		f.position = Vector3(0, -0.16, 0)
+		s.bob.add_child(f)
+
+
+func _update_reel(s: Dictionary, dt: float) -> void:
+	s.t += dt
+	var k: float = minf(1, s.t / DB.CONFIG.fishing.reelTime)
+	var tip: Vector3 = game.player.rod_tip_position()
+	var e := 1 - pow(1 - k, 3) # fast out of the water, easing in at the rod
+	var from: Vector3 = s.start
+	s.bob.position = from.lerp(tip, e) + Vector3(0, sin(k * PI) * 1.2, 0)
+	var f: Node3D = s.bob.get_node_or_null("CaughtFish")
+	if f:
+		f.rotation = Vector3(sin(s.t * 40) * 0.5, 0, sin(s.t * 31) * 0.4) # it thrashes
+	_draw_line(s, 0.0)
+	if k >= 1:
+		stop()
 
 
 ## Reel in (moving, fighting or a new cast ends it).
@@ -180,8 +220,13 @@ func update(dt: float) -> void:
 	s.t += dt
 	s.elapsed += dt
 	var cfg: Dictionary = DB.CONFIG.fishing
-	# the fishing bar has run out with nothing on the line
-	if s.elapsed >= cfg.duration and s.phase != "bite":
+	if s.phase == "reel":
+		_update_reel(s, dt)
+		return
+	# the fishing bar has run out with nothing on the line (a cast nothing
+	# will take to is given up sooner, so it is never a full wait for nothing)
+	var give_up: float = cfg.duration if s.wait < INF else cfg.noBiteAfter
+	if s.elapsed >= give_up and s.phase != "bite":
 		events.emit("log", {"text": "Nothing is biting. You reel in your line.", "kind": "muted"})
 		game.hud.error("Nothing is biting")
 		stop()

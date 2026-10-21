@@ -10,6 +10,7 @@ const TOOL_SOCKET := 4 ## one more socket after the bags, for the tool pack
 
 const ROLLS := {"spread": 0.2, "damageSpread": 0.12, "valuePerPoint": 4}
 const ROLLED_KINDS := ["weapon", "armor", "shield", "jewellery"]
+const SUFFIX_RARITY := "enhanced"
 const RENAMED_STATS := {"might": "strength", "finesse": "agility", "vitality": "stamina"}
 const RETIRED_STATS := ["blockRating"]
 
@@ -18,7 +19,9 @@ static func get_def(id) -> Dictionary:
 	return DB.items.get(id, {})
 
 
-## Gear that drops rolls a little; enhanced drops of common gear gain a suffix.
+## Enhanced drops of common gear gain a suffix (WoW's "of the Bear"). One
+## name is always one item: the stats come from the item and its suffix
+## alone, never a hidden roll, so two Helms of the Old Watch are the same.
 ## `rand` is a Callable returning [0, 1). Returns the rolls, or null.
 static func roll_item(id: String, rand: Callable, rarity = null):
 	var d := get_def(id)
@@ -26,29 +29,20 @@ static func roll_item(id: String, rand: Callable, rarity = null):
 		rarity = d.get("rarity")
 	if d.is_empty() or not ROLLED_KINDS.has(d.kind) or d.get("quest", false):
 		return null
-	var r := {}
-	var stats := {}
-	for k in d.get("stats", {}):
-		var delta := U.jround(d.stats[k] * ROLLS.spread * (2 * rand.call() - 1))
-		if delta:
-			stats[k] = delta
-	if d.has("damage") and d.damage != null:
-		var k: float = 1 + ROLLS.damageSpread * (2 * rand.call() - 1)
-		var lo := maxi(1, U.jround(d.damage[0] * k))
-		var hi := maxi(lo, U.jround(d.damage[1] * k))
-		if lo != int(d.damage[0]) or hi != int(d.damage[1]):
-			r.damage = [lo, hi]
 	if DB.rarities.has(rarity) and DB.rarities[rarity].get("suffix") and d.rarity == "common":
 		var keys := DB.suffixes.keys()
-		r.suffix = keys[mini(keys.size() - 1, int(floor(rand.call() * keys.size())))]
-		var sfx: Array = DB.suffixes[r.suffix].stats
-		var points := Scaling.item_budget(d, rarity) / sfx.size()
-		for k in sfx:
-			var v: float = (points / Scaling.stat_cost(k, d.itemLevel)) * (1 + ROLLS.spread * (2 * rand.call() - 1))
-			stats[k] = stats.get(k, 0) + maxi(1, U.jround(v))
-	if not stats.is_empty():
-		r.stats = stats
-	return r if not r.is_empty() else null
+		return {"suffix": keys[mini(keys.size() - 1, int(floor(rand.call() * keys.size())))]}
+	return null
+
+
+## The stats a suffix adds to an item: its share of the enhanced budget.
+static func suffix_stats(d: Dictionary, suffix: String) -> Dictionary:
+	var out := {}
+	var sfx: Array = DB.suffixes[suffix].stats
+	var points := Scaling.item_budget(d, SUFFIX_RARITY) / sfx.size()
+	for k in sfx:
+		out[k] = maxi(1, U.jround(points / Scaling.stat_cost(k, d.itemLevel)))
+	return out
 
 
 ## What one particular item is: the database entry with its rolls applied.
@@ -75,7 +69,9 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 	if d.is_empty() or r == null:
 		return d
 	var stats: Dictionary = d.get("stats", {}).duplicate()
-	var rs: Dictionary = r.get("stats", {})
+	# older saves kept a small random spread on stats and damage; it is
+	# dropped, so every copy of an item matches (the suffix is all that varies)
+	var rs: Dictionary = suffix_stats(d, r.suffix) if r.has("suffix") and DB.suffixes.has(r.suffix) else {}
 	for k in rs:
 		var key: String = RENAMED_STATS.get(k, k)
 		if not DB.STAT_KEYS.has(key):
@@ -92,21 +88,8 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 		out.name = "%s %s" % [d.name, DB.suffixes[r.suffix].name]
 	out.rarity = "enhanced" if r.has("suffix") and d.rarity == "common" else d.rarity
 	out.stats = stats
-	if r.has("damage"):
-		out.damage = _swing_scale(r.damage, d)
 	out.price = d.get("price", 0) + (U.jround(bonus * ROLLS.valuePerPoint) if r.has("suffix") else 0)
 	return out
-
-
-## Rolls saved before weapon damage became per swing are scaled to match.
-static func _swing_scale(dmg: Array, d: Dictionary) -> Array:
-	var base: float = d.damage[0] + d.damage[1]
-	if dmg[0] + dmg[1] > base * 2:
-		return d.damage
-	if not d.get("speed") or dmg[0] + dmg[1] > base * 0.6:
-		return dmg
-	var k: float = d.speed / 0.6
-	return [U.jround(dmg[0] * k), U.jround(dmg[1] * k)]
 
 
 ## Are these rolls well formed? (saves are checked before they are applied)

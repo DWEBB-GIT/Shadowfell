@@ -185,7 +185,7 @@ func _start(owner, shape, mesh: ArrayMesh, o: Dictionary) -> Dictionary:
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	game.scene.add_child(mi)
-	var t := {"owner": owner, "shape": shape, "mesh": mi, "t": 0.0, "duration": o.duration, "heavy": heavy, "onComplete": o.get("onComplete"), "done": false}
+	var t := {"owner": owner, "shape": shape, "mesh": mi, "t": 0.0, "duration": o.duration, "heavy": heavy, "onComplete": o.get("onComplete"), "done": false, "track": o.get("track"), "lock": o.get("lock", 0.0)}
 	active.append(t)
 	game.events.emit("telegraph", {"owner": owner, "heavy": heavy})
 	return t
@@ -221,6 +221,13 @@ func update(dt: float) -> void:
 			continue
 		t.t += dt
 		var k: float = minf(1, t.t / t.duration)
+		# a tracking line (an archer's aim) follows its mark until the last
+		# `lock` seconds, so it has to be stepped out of late, not early
+		if t.track and t.shape is LineShape and t.t < t.duration - t.lock:
+			t.shape.x = t.owner.position.x
+			t.shape.z = t.owner.position.z
+			t.shape.angle = t.track.call()
+			t.mesh.mesh = line_mesh(t.shape)
 		t.mesh.material_override.set_shader_parameter("uProgress", k)
 		if k >= 1 and not t.done:
 			t.done = true
