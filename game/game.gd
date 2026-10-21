@@ -222,6 +222,66 @@ func enter_world(id: String) -> void:
 	roster.touch(id)
 	hud.set_character(c)
 	start_game(boot_save.status == "ok")
+	load_world()
+
+
+## The warm-up behind the loading screen. The whole world already exists and
+## simulates as one (as a server would for every player); rendering is the
+## local player's view only. This draws everything that view can show once,
+## so shaders are compiled, models loaded, sounds made and portraits painted
+## before the player can move, instead of stalling the first fight.
+func load_world() -> void:
+	hud.show_loading()
+	var tree := get_tree()
+	# the sounds still to make (begun on the title screen)
+	var total := maxi(1, audio.warm.size())
+	while not audio.warm.is_empty():
+		audio.warm_some(25000)
+		hud.loading.show_progress("Gathering sounds…", 0.4 * (1.0 - float(audio.warm.size()) / total))
+		await tree.process_frame
+	# every model and effect drawn once in front of the camera, behind the screen
+	hud.loading.show_progress("Raising the world…", 0.45)
+	var shelf := _model_shelf()
+	fx.prewarm(camera_target)
+	await tree.process_frame
+	await tree.process_frame
+	shelf.queue_free()
+	# target-frame portraits for everyone you can meet
+	var models := {}
+	for e in enemies.list:
+		models[e.cfg.model] = true
+	for n in npcs.list:
+		if n.def.get("model"):
+			models[n.def.model] = true
+	var i := 0
+	for m in models:
+		hud.icons.portrait(m)
+		i += 1
+		if i % 4 == 0:
+			hud.loading.show_progress("Painting faces…", 0.6 + 0.3 * i / models.size())
+			await tree.process_frame
+	hud.loading.show_progress("Lighting the lamps…", 1.0)
+	await tree.process_frame
+	await tree.process_frame
+	hud.hide_loading()
+
+
+## One of every model in assets/models in a grid in front of the camera, so
+## each is loaded and its shaders (and shadow shaders) compiled now.
+func _model_shelf() -> Node3D:
+	var shelf := Node3D.new()
+	shelf.name = "ModelShelf"
+	scene.add_child(shelf)
+	var names: Array = []
+	for f in ResourceLoader.list_directory("res://assets/models/"):
+		if f.ends_with(".glb"):
+			names.append(f.get_basename())
+	var cols := ceili(sqrt(names.size()))
+	for k in names.size():
+		var m := Assets.instance(names[k])
+		m.position = camera_target + Vector3((k % cols - cols / 2.0) * 1.2, 0, (k / cols - cols / 2.0) * 1.2)
+		shelf.add_child(m)
+	return shelf
 
 
 ## Back to character select: the scene is reloaded for a clean slate.
@@ -274,7 +334,6 @@ func start_game(resume: bool) -> void:
 	hud.hide_title()
 	started = true
 	_snap_camera()
-	fx.prewarm(player.position)
 	if resumed:
 		hud.log_line("You take up the road again.", "lore")
 	else:
@@ -554,6 +613,8 @@ func _handle_input(dt: float):
 		zoom = clampf(zoom + notches * c.zoomStep, c.zoomMin, c.zoomMax)
 	if hud.modal == "title":
 		hud.title.update(dt)
+		return null
+	if hud.modal == "loading":
 		return null
 	if input.consume("Escape") and not hud.close_modal():
 		targeting.clear()

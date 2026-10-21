@@ -56,7 +56,13 @@ func _process(_dt: float) -> void:
 	if warm.is_empty():
 		set_process(false)
 		return
-	var until := Time.get_ticks_usec() + 4000
+	warm_some(4000)
+
+
+## makes sounds from the warm list for about `budget` microseconds (the
+## loading screen gives it more)
+func warm_some(budget: int) -> void:
+	var until := Time.get_ticks_usec() + budget
 	warming = true
 	while not warm.is_empty() and Time.get_ticks_usec() < until:
 		warm.pop_front().call()

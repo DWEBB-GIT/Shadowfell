@@ -527,6 +527,10 @@ func _scatter_ground_cover() -> void:
 		mmi.material_override = mat
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.name = "GroundCover"
+		# grass is only worth drawing near the player: cells past the fog go
+		# (visibility ranges are per instance, so they cull per local camera)
+		mmi.visibility_range_end = 36.0
+		mmi.visibility_range_end_margin = 4.0
 		group.add_child(mmi)
 
 

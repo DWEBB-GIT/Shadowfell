@@ -149,4 +149,8 @@ static func point_light(colour: Color, intensity: float, distance: float, decay 
 	l.omni_range = distance
 	l.omni_attenuation = decay
 	l.shadow_enabled = false
+	# lights past the fog cost per-pixel work for nothing: fade them out
+	l.distance_fade_enabled = true
+	l.distance_fade_begin = 40.0
+	l.distance_fade_length = 10.0
 	return l

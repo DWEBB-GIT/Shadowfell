@@ -65,6 +65,29 @@ godot --headless --path . --export-release "Web" build/web/index.html
 
 Serve the folder from any web server; opening the file directly won't work. The build is about 40 MB, most of which is the engine itself (`index.wasm`), and the game data is about 2 MB. Pages compresses it when it serves it. `game/tests/audio_check.gd` renders every sound and prints how long each took and how loud it peaks.
 
+## Performance: simulate everything, draw what you see
+
+The world is built to work as a shared (later multiplayer) world: every
+system (enemies, respawns, quests, the clock) runs for the whole map no
+matter where the camera is. Only drawing is local to each screen:
+
+- **Loading screen.** `Game.load_world()` runs behind `LoadingScreen` when a
+  character enters the world. It synthesises every sound, draws each model
+  and effect once off-screen (so the GPU compiles their shaders up front)
+  and paints the portraits, then fades out. Nothing hitches the first time
+  you swing, cast or meet an enemy.
+- **Culling in cells.** Trees and ground cover are split into 24 m cells
+  (`World.CELL`), so the camera and the sun's shadow only draw nearby cells.
+- **Draw distance.** The camera's far plane sits just past the fog; grass
+  stops at 36 m (`visibility_range_end`), lamps fade out from 40 m, and the
+  sun's shadows reach 40 m.
+- **Animation.** Idle enemies more than 45 m away skip skeleton updates
+  (their logic still runs).
+- **UI.** The minimap and action bar redraw only when something changes.
+
+To measure: `game/tests/perf_parts.gd` (CPU per system) and
+`game/tests/perf_render.gd` (frame time and triangles).
+
 ## Port plan
 
 Each step is its own pull request, and the browser build keeps working throughout.
