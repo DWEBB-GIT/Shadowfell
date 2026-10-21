@@ -4,8 +4,18 @@ extends RefCounted
 ## or more keys; players can change them in the Settings window, or use Quick
 ## bind: hover a bar slot and press a key. Movement stays on WASD and the
 ## arrow keys. A key held with Shift is its own binding, 'Shift+Digit1'.
+##
+## Each control scheme (Settings: Classic controls) keeps its own bindings,
+## so switching back and forth never loses either set. Mouse aim moves the
+## last two spell slots off Q and E (WoW hands strafe there) to R and F, and
+## the right mouse button also fires spell slot 1.
 
 const KEY := "shadowfall.keys.v2"
+const KEY_AIM := "shadowfall.keys.aim"
+## mouse aim's defaults, where they differ from the classic ones
+const AIM_KEYS := {"bar0": ["Digit1", "MouseRight"], "bar4": ["KeyR"], "bar5": ["KeyF"]}
+## mouse buttons: shown on the bar, but never taken by a key press
+const MOUSE := ["MouseRight"]
 const KEY_ACTIONS := [
 	{"id": "bar0", "label": "Spell bar 1", "group": "Spell bar", "keys": ["Digit1"]},
 	{"id": "bar1", "label": "Spell bar 2", "group": "Spell bar", "keys": ["Digit2"]},
@@ -30,10 +40,11 @@ const KEY_ACTIONS := [
 ]
 ## keys nobody may take: movement, Escape and the mouse
 const RESERVED := ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Escape"]
-const NAMES := {"Space": "Space", "Backquote": "`", "Minus": "-", "Equal": "=", "BracketLeft": "[", "BracketRight": "]", "Semicolon": ";", "Quote": "'", "Comma": ",", "Period": ".", "Slash": "/", "Backslash": "\\", "ShiftLeft": "Shift", "ShiftRight": "RShift", "ControlLeft": "Ctrl", "AltLeft": "Alt", "Tab": "Tab", "CapsLock": "Caps", "Enter": "Enter"}
+const NAMES := {"MouseRight": "RMB", "Space": "Space", "Backquote": "`", "Minus": "-", "Equal": "=", "BracketLeft": "[", "BracketRight": "]", "Semicolon": ";", "Quote": "'", "Comma": ",", "Period": ".", "Slash": "/", "Backslash": "\\", "ShiftLeft": "Shift", "ShiftRight": "RShift", "ControlLeft": "Ctrl", "AltLeft": "Alt", "Tab": "Tab", "CapsLock": "Caps", "Enter": "Enter"}
 
 var game
 var map := {}
+var aim := true ## which scheme the bindings are for
 
 
 ## how a key code reads on a button: Digit1 -> 1, KeyQ -> Q, Shift+Digit1 -> Shift-1
@@ -56,17 +67,27 @@ static func combo_of(code: String, shift: bool) -> String:
 	return "Shift+" + code if shift and not code.begins_with("Shift") else code
 
 
-static func _defaults() -> Dictionary:
+static func _defaults(for_aim: bool) -> Dictionary:
 	var m := {}
 	for a in KEY_ACTIONS:
-		m[a.id] = a.keys.duplicate()
+		m[a.id] = (AIM_KEYS[a.id] if for_aim and AIM_KEYS.has(a.id) else a.keys).duplicate()
 	return m
 
 
 func _init(g) -> void:
 	game = g
-	map = _defaults()
-	var text = Store.get_item(KEY)
+	load_scheme(not g.settings.get_value("classicControls"))
+	g.events.on("settingsChanged", func(e):
+		if e.id == "classicControls":
+			load_scheme(not e.value)
+			g.events.emit("keysChanged", {}))
+
+
+## read the bindings of one scheme (defaults, then what the player changed)
+func load_scheme(for_aim: bool) -> void:
+	aim = for_aim
+	map = _defaults(aim)
+	var text = Store.get_item(KEY_AIM if aim else KEY)
 	var saved = JSON.parse_string(text) if text != null else null
 	if typeof(saved) == TYPE_DICTIONARY:
 		for a in KEY_ACTIONS:
@@ -103,7 +124,8 @@ func bind(id: String, code: String) -> bool:
 		return false
 	for k in map:
 		map[k] = map[k].filter(func(c): return c != code)
-	map[id] = [code]
+	# a key replaces the slot's key; the mouse button stays with it
+	map[id] = [code] + map[id].filter(func(c): return MOUSE.has(c))
 	_save()
 	return true
 
@@ -116,10 +138,10 @@ func unbind(id: String) -> void:
 
 
 func reset_all() -> void:
-	map = _defaults()
+	map = _defaults(aim)
 	_save()
 
 
 func _save() -> void:
-	Store.set_item(KEY, JSON.stringify(map))
+	Store.set_item(KEY_AIM if aim else KEY, JSON.stringify(map))
 	game.events.emit("keysChanged", {})

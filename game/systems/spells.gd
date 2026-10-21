@@ -239,7 +239,8 @@ func try_cast(id: String) -> bool:
 			return false
 		# ranged attacks need the target in front of you, in the same arc as
 		# Auto Shot; melee ones turn you to it
-		if is_ranged_attack(spell):
+		# (mouse aim turns you to it either way: the mouse is the aim)
+		if is_ranged_attack(spell) and not game.mouse_aim:
 			if not player.facing_point(target.position.x, target.position.z, DB.attack.coneDegrees / 2.0):
 				game.hud.error("You must be facing your target")
 				return false
@@ -279,6 +280,9 @@ func try_cast(id: String) -> bool:
 		events.emit("castStart", {"id": id})
 		return true
 	if spell.kind == "cleave" or spell.kind == "burst":
+		# mouse aim: the sweep goes where the cursor (or right stick) points
+		if game.mouse_aim and game.raw_aim != null:
+			player.face_towards(game.raw_aim.x, game.raw_aim.z)
 		# the blow lands at its animation's impact frame, a moment after the
 		# key press; it locks nothing and leaves the swing timer alone (WoW)
 		var windup: float = stats.hasted(t.windup)

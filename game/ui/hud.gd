@@ -618,7 +618,7 @@ func apply_key_labels() -> void:
 	var keys = game.keys
 	for i in slots.size():
 		var b: Dictionary = ActionBar.BAR_SLOTS[i]
-		slots[i].key = b.pad if pad_mode else keys.label("bar%d" % i).replace("Shift-", "⇧")
+		slots[i].key = b.pad if pad_mode else keys.label("bar%d" % i).replace("Shift-", "⇧").replace(" / ", "/")
 		slots[i].queue_redraw()
 	for id in micro_keys:
 		var k: String = keys.label(id)

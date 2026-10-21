@@ -20,6 +20,13 @@ var time := 0.0
 var events := Events.new()
 var pending_death = null
 var zoom := 1.0 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
+
+## Mouse aim controls (the default; Settings: Classic controls turns it off):
+## the mouse aims and WASD moves. Left click attacks, talks and loots; hold it
+## to aim at the cursor while walking. Right click fires spell slot 1.
+var mouse_aim: bool:
+	get:
+		return settings == null or not settings.get_value("classicControls")
 var random := func() -> float: return randf() ## every combat roll goes through this (tests pin it)
 
 var scene: Node3D
@@ -501,9 +508,12 @@ func _click(button: String) -> bool:
 	# click on something out of reach walks up to it and then acts.
 	var walk: bool = settings.get_value("clickToMove")
 	move_to = null
-	# a left click on the ground lets go of the target; a right click does not
+	# a left click on the ground lets go of the target; a right click does not.
+	# With mouse aim a left click there attacks whoever is near the cursor.
 	if pick == null:
-		if button == "left":
+		if button == "left" and mouse_aim:
+			_engage_near_cursor()
+		elif button == "left":
 			targeting.clear()
 		var at = _aim_point() if walk and input.mouse.onCanvas else null
 		if at != null:
@@ -519,7 +529,7 @@ func _click(button: String) -> bool:
 		"loot":
 			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), walk)
 		"enemy":
-			if button == "right":
+			if button == "right" or mouse_aim:
 				targeting.engage(o)
 				# walking in, the Warden follows the enemy until it is in reach
 				if not targeting.target_in_reach and walk and not targeting.target_in_shot:
@@ -533,6 +543,28 @@ func _click(button: String) -> bool:
 			targeting.select_friendly(o)
 			_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
 	return true
+
+
+## Mouse aim, left button on open ground (or held): engage the enemy nearest
+## the cursor within reach of your weapon, if you are not already fighting.
+func _engage_near_cursor() -> void:
+	if targeting.attacking and targeting.current != null and targeting.current.alive:
+		return
+	var reach: float = stats.ranged_reach if stats.has_ranged else DB.abilities.strike.range + 1
+	var e = targeting.soft_target(raw_aim, reach)
+	if e != null:
+		targeting.engage(e)
+
+
+## Mouse aim, right button: on someone or something to use it acts as it
+## always did (talk, loot, the bob); anywhere else it fires spell slot 1.
+func _right_click_aim() -> void:
+	if not _over_bob():
+		var pick = _pick_under_cursor()
+		if pick == null or pick.kind == "enemy":
+			input.pressed["MouseRight"] = true
+			return
+	_click("right")
 
 
 ## Click to move: the way to walk this frame, or null. Arriving runs the
@@ -640,7 +672,7 @@ func _handle_input(dt: float):
 	var notches := input.consume_wheel()
 	if notches and started:
 		var c: Dictionary = DB.CONFIG.camera
-		zoom = clampf(zoom + notches * c.zoomStep, c.zoomMin, c.zoomMax)
+		zoom = clampf(zoom + notches * c.zoomStep, c.zoomMin, _zoom_max())
 	if hud.modal == "title":
 		hud.title.update(dt)
 		return null
@@ -713,11 +745,25 @@ func _handle_input(dt: float):
 		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
 		hud.world_tip(hover)
 		_cursor_for(hover)
-	# left click selects, right click attacks, talks or loots
+	# classic: left click selects, right click attacks, talks or loots.
+	# Mouse aim: left click attacks, talks or loots, right click is slot 1.
 	if input.consume_click():
 		_click("left")
 	if input.consume_right_click():
-		_click("right")
+		if mouse_aim:
+			_right_click_aim()
+		else:
+			_click("right")
+	# Mouse aim: the left button held aims you at the cursor (or at your
+	# target, once you are swinging at it); so does the right stick
+	var face_aim = null
+	if mouse_aim:
+		if using_pad:
+			face_aim = aim_now if pad_on and pad.right.z > 0.3 else null
+		elif input.mouse.leftHeld and aim_now != null:
+			_engage_near_cursor()
+			var t = tg.current
+			face_aim = t.position if tg.attacking and t != null and (tg.target_in_reach or tg.target_in_shot) else aim_now
 	# each spell-bar slot has a fixed key; whatever ability sits there fires
 	var util := pad_on and pad.held(B.LEFT)
 	var slots := [
@@ -743,6 +789,7 @@ func _handle_input(dt: float):
 		"move": move,
 		"aim": tg.current.position if actions.strike or actions.shoot else tg.aim_for(aim_now, DB.abilities.strike.range),
 		"rawAim": aim_now,
+		"faceAim": face_aim,
 		"actions": actions,
 	}
 
@@ -862,14 +909,42 @@ func _place_sun(t: Vector3) -> void:
 	sun.look_at(t)
 
 
+func _classic_camera() -> bool:
+	return settings != null and settings.get_value("classicCamera")
+
+
+func _zoom_max() -> float:
+	var c: Dictionary = DB.CONFIG.camera
+	return c.zoomMax if _classic_camera() else c.tilt.zoomMax
+
+
+## Where the camera sits from the player at distance scale `z`. Classic: one
+## angle (CONFIG.camera.offset). Otherwise the angle follows the zoom: low
+## and close for towns and exploring, steeper further out for fights.
+func _camera_offset(z: float) -> Vector3:
+	var c: Dictionary = DB.CONFIG.camera
+	if _classic_camera():
+		return c.offset * z
+	var k: Dictionary = c.tilt
+	var pitch: float
+	if zoom <= 1.0:
+		pitch = lerpf(k.pitchNear, k.pitchMid, clampf(inverse_lerp(c.zoomMin, 1.0, zoom), 0, 1))
+	else:
+		pitch = lerpf(k.pitchMid, k.pitchFar, clampf(inverse_lerp(1.0, k.zoomMax, zoom), 0, 1))
+	var d: float = (c.offset as Vector3).length() * k.distance * z
+	var a := deg_to_rad(pitch)
+	return Vector3(0, sin(a) * d, cos(a) * d)
+
+
 func _place_camera(dt := 0.0) -> void:
 	if not started and hud and hud.showcase:
 		_place_showcase()
 		return
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
+	zoom = minf(zoom, _zoom_max())
 	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
-	var o: Vector3 = DB.CONFIG.camera.offset * z
+	var o := _camera_offset(z)
 	var t := camera_target
 	var sx := 0.0
 	var sy := 0.0
