@@ -52,6 +52,7 @@ var sparkles: Sparkles
 var interaction: Interaction
 var action_bar: ActionBar
 var hud: Hud
+var audio: AudioSystem
 ## set by Log out: the reloaded scene opens on character select
 static var to_select := false
 var fx: Fx
@@ -121,6 +122,8 @@ func _ready() -> void:
 	action_bar = ActionBar.new(self)
 	hud = Hud.new(self)
 	add_child(hud)
+	audio = AudioSystem.new(self)
+	add_child(audio)
 	fx = Fx.new(self)
 	save = SaveManager.new(self)
 
@@ -236,6 +239,7 @@ func log_out() -> void:
 
 
 func start_game(resume: bool) -> void:
+	audio.start()
 	world_state.reset()
 	progression.apply({"level": 1, "xp": 0})
 	inventory.reset()
@@ -680,6 +684,7 @@ func step(dt: float) -> void:
 		loot.update(dt, time)
 		sparkles.update(dt)
 		fx.update(dt)
+		audio.update(dt)
 		if pending_death != null and hud.modal != "death":
 			pending_death.timer -= dt
 			if pending_death.timer <= 0:

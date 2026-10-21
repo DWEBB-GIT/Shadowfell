@@ -29,20 +29,41 @@ static var icons
 static func setup_fonts() -> void:
 	if font:
 		return
-	var names := PackedStringArray(["Palatino Linotype", "Book Antiqua", "Palatino", "Georgia", "serif"])
-	font = SystemFont.new()
-	font.font_names = names
-	bold = SystemFont.new()
-	bold.font_names = names
-	bold.font_weight = 700
-	italic = SystemFont.new()
-	italic.font_names = names
-	italic.font_italic = true
-	# symbols the serif lacks (⇧, ☠, ⚔) come from a sans font
-	var sym := SystemFont.new()
-	sym.font_names = PackedStringArray(["DejaVu Sans", "Segoe UI Symbol", "Noto Sans Symbols2", "sans-serif"])
-	for f in [font, bold, italic]:
-		f.fallbacks = [sym]
+	# The browser build's serif (Palatino, else Georgia) where the system has
+	# it; else, and always on the web (which has no system fonts), the
+	# bundled DejaVu Serif. Symbols the serif lacks (⇧, ☠, ⚔) come from
+	# DejaVu Sans. Licence: game/fonts/DejaVu-LICENSE.txt
+	var serif: FontFile = load("res://game/fonts/DejaVuSerif.ttf")
+	var serif_bold: FontFile = load("res://game/fonts/DejaVuSerif-Bold.ttf")
+	var sym: FontFile = load("res://game/fonts/DejaVuSans.ttf")
+	if OS.has_feature("web"):
+		font = _with([serif, sym])
+		bold = _with([serif_bold, sym])
+	else:
+		var names := PackedStringArray(["Palatino Linotype", "Book Antiqua", "Palatino", "Georgia"])
+		var sys := SystemFont.new()
+		sys.font_names = names
+		sys.allow_system_fallback = false
+		sys.fallbacks = [serif, sym]
+		font = sys
+		var sys_bold := SystemFont.new()
+		sys_bold.font_names = names
+		sys_bold.font_weight = 700
+		sys_bold.allow_system_fallback = false
+		sys_bold.fallbacks = [serif_bold, sym]
+		bold = sys_bold
+	# a slanted copy for italics (lore lines), as the bundled serif has none
+	var it := FontVariation.new()
+	it.base_font = font
+	it.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
+	italic = it
+
+
+static func _with(list: Array) -> FontVariation:
+	var f := FontVariation.new()
+	f.base_font = list[0]
+	f.fallbacks = list.slice(1)
+	return f
 
 
 ## the theme every HUD control inherits: the serif, parchment text, the buttons

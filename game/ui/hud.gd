@@ -104,6 +104,7 @@ var doc_body: RichTextLabel
 var sign_card: PanelContainer
 var sign_text: Label
 var quick_bind_banner: PanelContainer
+var mute: Label
 var vignette: TextureRect
 var hurt: TextureRect
 var vignette_t := 0.0
@@ -257,6 +258,8 @@ func _build() -> void:
 	quick_bind_banner.add_theme_stylebox_override("panel", UI.box(UI.WINDOW, UI.GOLD, 0, 1, Vector4(14, 8, 14, 8)))
 	UI.label(quick_bind_banner, "Quick bind: hover a spell or utility bar slot and press a key. Esc when done.", 14, UI.GOLD)
 	quick_bind_banner.visible = false
+	mute = UI.label(root, "Sound off (Settings, O)", 12, UI.TEXT_DIM, 3)
+	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
 	vignette = _radial(Color(0, 0, 0, 0), Color(0, 0, 0, 0.55), 0.55)
@@ -527,6 +530,7 @@ func hide_title() -> void:
 	modal = null
 	title.close()
 	_set_world_ui(true)
+	mute.visible = muted
 	death.visible = false
 	document.visible = false
 	backdrop.visible = false
@@ -545,9 +549,18 @@ func _set_world_ui(on: bool) -> void:
 		if c != title:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt]:
+		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt, mute]:
 			c.visible = false
 		hurt.modulate.a = 0
+
+
+var muted := false
+
+
+func set_muted(m: bool) -> void:
+	muted = m
+	if modal != "title":
+		mute.visible = m
 
 
 func set_character(c: Dictionary) -> void:
@@ -1014,6 +1027,9 @@ func layout() -> void:
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - bottom.size.y - 8)
 	dock.size = dock.get_combined_minimum_size()
 	dock.position = Vector2(vp.x - 12 - dock.size.x, vp.y - 8 - dock.size.y)
+	# on a narrow screen the bar moves left rather than under the dock
+	if bottom.position.x + bottom.size.x > dock.position.x - 8:
+		bottom.position.x = maxf(12, dock.position.x - 8 - bottom.size.x)
 	minimap.position = Vector2(vp.x - 12 - Minimap.SIZE, 12)
 	target.size = target.get_combined_minimum_size()
 	target.position = Vector2(roundf((vp.x - target.size.x) / 2), 12)
@@ -1035,6 +1051,8 @@ func layout() -> void:
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
+	mute.size = mute.get_combined_minimum_size()
+	mute.position = Vector2(vp.x - 12 - mute.size.x, vp.y - 110 - mute.size.y)
 	for m in [death, document]:
 		m.size = m.get_combined_minimum_size()
 		m.position = ((vp - m.size) / 2).round()
