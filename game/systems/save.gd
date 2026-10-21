@@ -142,6 +142,8 @@ static func validate_save(data) -> Array:
 	if data.has("skills"):
 		var s = data.skills
 		check.call(typeof(s) == TYPE_DICTIONARY and s.keys().all(func(id): return DB.skills.has(id) and _is_int(s[id]) and s[id] >= 1), "skills")
+	if data.has("spells"):
+		check.call(_is_str_array(data.spells), "learned spells")
 	var w = data.get("world")
 	check.call(typeof(w) == TYPE_DICTIONARY, "missing world")
 	if typeof(w) == TYPE_DICTIONARY:
@@ -189,6 +191,7 @@ func serialize() -> Dictionary:
 		"bar": game.action_bar.serialize(),
 		"quests": game.quests.serialize(),
 		"skills": game.skills.serialize(),
+		"spells": game.skills.serialize_spells(),
 		"reputation": game.reputation.serialize(),
 		"renown": game.reputation.serialize_renown(),
 		"titles": game.titles.serialize(),
@@ -248,6 +251,7 @@ func apply(data: Dictionary) -> void:
 	ws.apply(data.world)
 	game.quests.apply(data.get("quests"), ws.flags)
 	game.skills.apply(data.get("skills"))
+	game.skills.apply_spells(data.get("spells"))
 	game.cooking.apply(data.get("cooking"))
 	game.reputation.apply(data.get("reputation"), data.get("renown"))
 	if data.get("bar"):

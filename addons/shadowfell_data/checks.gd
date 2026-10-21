@@ -19,6 +19,10 @@ static func run(s: DataStore) -> PackedStringArray:
 	_quests(s, out)
 	_npcs(s, out)
 	_shops(s, out)
+	_dialogues(s, out)
+	_abilities(s, out)
+	_skills(s, out)
+	_classes(s, out)
 	return out
 
 
@@ -331,9 +335,6 @@ static func _npcs(s: DataStore, out: PackedStringArray) -> void:
 	for sp in s.npc_spawns:
 		if s.npc(sp.get("npc")).is_empty():
 			out.append("NPC %s: placed in the world but not in npcs.json" % sp.get("npc"))
-	for d in s.dialogues:
-		if d.get("greetings", []).is_empty() or d.greetings.any(func(g): return str(g.get("text", "")) == ""):
-			out.append("Dialogue %s: needs at least one greeting, each with text" % d.get("id"))
 
 
 static func _shops(s: DataStore, out: PackedStringArray) -> void:
@@ -360,3 +361,148 @@ static func _shops(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("%s is a boss's own drop and cannot be sold" % it)
 			if not vt.is_empty() and not vt.get("sells", []).has(d.get("kind")):
 				bad.call("a %s does not sell %s (%s)" % [vt.get("name", ""), DataStore.KIND_NAMES.get(d.get("kind"), d.get("kind")).to_lower(), it])
+
+
+## a dialogue `when`: { quest, status }, { flag } or { examined }
+static func _condition(s: DataStore, c, bad: Callable, where: String) -> void:
+	if c == null:
+		return
+	if not c is Dictionary or c.is_empty() or c.keys().any(func(k): return not (k in ["quest", "status", "flag", "examined"])):
+		bad.call("%s: a condition is a quest's status, a flag or an examined point" % where)
+		return
+	if c.has("quest"):
+		if s.quest(c.quest).is_empty():
+			bad.call("%s names unknown quest %s" % [where, c.quest])
+		if not (c.get("status") in ["not_started", "available", "active", "ready", "done"]):
+			bad.call("%s needs a quest status" % where)
+	if c.has("flag") and str(c.flag) == "":
+		bad.call("%s needs a flag name" % where)
+	if c.has("examined") and not s.examine_points.has(c.examined):
+		bad.call("%s names unknown examine point %s" % [where, c.examined])
+
+
+static func _dialogues(s: DataStore, out: PackedStringArray) -> void:
+	for d in s.dialogues:
+		var bad := func(msg): out.append("Dialogue %s: %s" % [d.get("id"), msg])
+		var nodes := {}
+		for n in d.get("nodes", []):
+			if nodes.has(n.get("id")):
+				bad.call("node %s is there twice" % n.get("id"))
+			nodes[n.get("id")] = true
+		if d.get("greetings", []).is_empty():
+			bad.call("needs at least one greeting")
+		for i in d.get("greetings", []).size():
+			var g: Dictionary = d.greetings[i]
+			if str(g.get("text", "")) == "":
+				bad.call("greeting %d needs text" % (i + 1))
+			_condition(s, g.get("when"), bad, "greeting %d" % (i + 1))
+		for t in d.get("topics", []):
+			if str(t.get("prompt", "")) == "":
+				bad.call("topic %s needs what the player asks" % t.get("id"))
+			if not nodes.has(t.get("node")):
+				bad.call("topic %s opens unknown node %s" % [t.get("id"), t.get("node")])
+			_condition(s, t.get("when"), bad, "topic %s" % t.get("id"))
+		for n in d.get("nodes", []):
+			if str(n.get("text", "")) == "":
+				bad.call("node %s needs text" % n.get("id"))
+			if n.get("replies", []).is_empty():
+				bad.call("node %s needs at least one reply" % n.get("id"))
+			for r in n.get("replies", []):
+				if str(r.get("text", "")) == "":
+					bad.call("node %s: a reply needs text" % n.get("id"))
+				if r.has("node") and not nodes.has(r.node):
+					bad.call("node %s: a reply opens unknown node %s" % [n.get("id"), r.node])
+
+
+static func _abilities(s: DataStore, out: PackedStringArray) -> void:
+	var seen := {}
+	var res := s.resource_ids()
+	for a in s.abilities:
+		var id := str(a.get("id", ""))
+		var bad := func(msg): out.append("Ability %s: %s" % [id, msg])
+		if seen.has(id):
+			bad.call("the id is used twice")
+		seen[id] = true
+		if not id.is_valid_ascii_identifier():
+			bad.call("id must be letters and digits, like hallowedBolt")
+		if str(a.get("name", "")) == "" or str(a.get("desc", "")) == "":
+			bad.call("needs a name and a description")
+		if not DataStore.TARGETS.has(a.get("target")):
+			bad.call("target must be an enemy, the ground or yourself")
+		if a.get("target") == "enemy" and not _is_num(a.get("range")):
+			bad.call("an enemy-targeted ability needs a range")
+		if a.has("school") and not DataStore.SCHOOLS.has(a.school):
+			bad.call("unknown school %s" % a.school)
+		if a.has("skill") and s.skill(a.skill).is_empty():
+			bad.call("names unknown skill %s" % a.skill)
+		if not a.get("tuning") is Dictionary or not a.tuning.values().all(func(v): return _is_num(v)):
+			bad.call("its numbers must all be numbers")
+		for f in ["cost", "gain"]:
+			for r in a.get(f, {}):
+				if not res.has(r):
+					bad.call("%s names unknown resource %s" % [f, r])
+				elif not (_is_num(a[f][r]) and a[f][r] > 0):
+					bad.call("%s of %s must be above 0" % [f, r])
+		if a.has("kind"):
+			var k: Dictionary = DataStore.SPELL_KINDS.get(a.kind, {})
+			if k.is_empty():
+				bad.call("unknown kind %s" % a.kind)
+				continue
+			var ok: bool = a.get("target") == "enemy" if k.enemy else (a.get("target") == "self" or (k.get("ground", false) and a.get("target") == "ground"))
+			if not ok:
+				bad.call("a %s spell must target %s" % [a.kind, "an enemy" if k.enemy else "yourself or the ground" if k.get("ground") else "yourself"])
+			if a.has("ranged") and (a.ranged != true or not (a.kind in ["instant", "dot", "cast"])):
+				bad.call("only instant, dot and cast spells can be shot from a bow")
+			for t in DataStore.needed_tuning(a):
+				if not (_is_num(a.get("tuning", {}).get(t)) and a.tuning[t] >= 0):
+					bad.call("a %s spell needs %s of at least 0" % [a.kind, t])
+			if a.kind == "control" and not a.has("applies"):
+				bad.call("a control spell needs an applies aura (Other fields)")
+			if a.kind == "purge" and not a.has("spendsAll"):
+				bad.call("a purge needs spendsAll (Other fields)")
+		for f in ["inShadow", "follow", "spreads"]:
+			if a.has(f) and s.ability(a[f]).is_empty():
+				bad.call("%s names unknown ability %s" % [f, a[f]])
+
+
+static func _skills(s: DataStore, out: PackedStringArray) -> void:
+	var seen := {}
+	for sk in s.skills:
+		var id := str(sk.get("id", ""))
+		var bad := func(msg): out.append("Skill %s: %s" % [id, msg])
+		if seen.has(id):
+			bad.call("the id is used twice")
+		seen[id] = true
+		if str(sk.get("name", "")) == "" or str(sk.get("desc", "")) == "":
+			bad.call("needs a name and a description")
+		if s.npc(sk.get("trainer")).is_empty():
+			bad.call("trainer %s is not an npc" % sk.get("trainer"))
+		if not (_is_int(sk.get("cost")) and sk.cost >= 0):
+			bad.call("cost must be whole coins")
+		if sk.has("maxRank") and not (_is_int(sk.maxRank) and sk.maxRank >= 1):
+			bad.call("top rank must be a whole number of at least 1")
+		for ab in sk.get("teaches", []):
+			if s.ability(ab).is_empty():
+				bad.call("teaches unknown ability %s" % ab)
+			elif s.ability(ab).get("skill") != id:
+				bad.call("teaches %s, which does not name it as its skill" % ab)
+
+
+static func _classes(s: DataStore, out: PackedStringArray) -> void:
+	for c in s.archetypes:
+		var bad := func(msg): out.append("Class %s: %s" % [c.get("name", c.id), msg])
+		for id in c.get("abilities", []):
+			if s.ability(id).is_empty():
+				bad.call("its spellbook names unknown ability %s" % id)
+			elif s.ability(id).has("skill"):
+				bad.call("%s is a skill's tool, not a class spell" % id)
+		for t in c.get("trained", []):
+			var id = t.get("ability")
+			if not c.get("abilities", []).has(id):
+				bad.call("a trainer teaches %s, which is not in its spellbook" % id)
+			if c.get("bar", []).has(id) or c.get("defensive") == id:
+				bad.call("%s is on its starting bar, so a trainer cannot teach it" % id)
+			if s.npc(t.get("trainer")).is_empty():
+				bad.call("%s's trainer %s is not an npc" % [id, t.get("trainer")])
+			if not (_is_int(t.get("level")) and t.level >= 1 and _is_int(t.get("cost")) and t.cost >= 0):
+				bad.call("%s needs a level and a cost in whole numbers" % id)

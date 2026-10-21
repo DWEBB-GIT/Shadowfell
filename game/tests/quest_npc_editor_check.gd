@@ -98,16 +98,68 @@ func _initialize() -> void:
 	chains._connect(&"missing_delivery", 0, &"iron_for_osric", 0)
 	_ok(q.requires == ["missing_delivery"], "drawing an arrow adds it back")
 
+	# dialogue: every one builds; a topic with a node, shown once the quest is done
+	var dlg = main.page_named("Dialogue")
+	for d in s.dialogues:
+		dlg.select(d.id)
+	var od: Dictionary = s.dialogue(n.dialogue)
+	dlg.select(od.id)
+	od.topics.append({"id": "work", "prompt": "Any work?", "node": "osric_work", "when": {"quest": "iron_for_osric", "status": "done"}})
+	od.nodes.append({"id": "osric_work", "text": "Always.", "replies": [{"text": "Good."}]})
+	od.greetings.append({"text": "Back again.", "when": {"flag": "met_osric"}})
+	dlg._build()
+	_ok(Checks.run(s).is_empty(), "a topic, node and conditional greeting pass the checks: %s" % "\n".join(Checks.run(s)))
+	od.nodes[0].replies.append({"text": "Tell me more.", "node": "nowhere"})
+	_ok(Array(Checks.run(s)).any(func(p): return p.contains("opens unknown node nowhere")), "a reply to a missing node is caught")
+	od.nodes[0].replies.pop_back()
+	dlg._rename_node(od, od.nodes[0], "osric_jobs")
+	_ok(od.topics[0].node == "osric_jobs", "renaming a node renames what opens it")
+
+	# skills, abilities and a trainer who teaches a class spell
+	var skills_tab = main.page_named("Skills")
+	var abil = main.page_named("Abilities")
+	for sk in s.skills:
+		skills_tab.select(sk.id)
+	for a in s.abilities:
+		abil.select(a.id)
+	main.open_record("new_skill", "osric_dunn")
+	var sk: Dictionary = skills_tab.current
+	sk.name = "Smithing"
+	skills_tab._rename_new("smithing")
+	sk.desc = "Work iron."
+	var tool: Dictionary = abil.create("buff", "Temper Blade")
+	tool.desc = "Sharper for a while."
+	tool.skill = "smithing"
+	sk.teaches.append(tool.id)
+	_ok(tool.id == "temperBlade" and tool.tuning.has("duration") and tool.target == "self", "a new buff spell starts with the numbers its kind needs: %s" % tool)
+	var spell: Dictionary = abil.create("instant", "Searing Brand")
+	spell.desc = "Burns."
+	var warrior := _find(s.archetypes, "warden")
+	warrior.abilities.append(spell.id)
+	warrior.trained = [{"ability": spell.id, "trainer": "osric_dunn", "level": 3, "cost": 15}]
+	s.touch("archetypes")
+	abil.select(spell.id)
+	npcs.select("osric_dunn")
+	_ok(s.trained_by("osric_dunn").size() == 1, "the trainer lists the class spell they teach")
+	_ok(Checks.run(s).is_empty(), "the new skill, tool and trained spell pass the checks: %s" % "\n".join(Checks.run(s)))
+	warrior.trained.append({"ability": "brace", "trainer": "osric_dunn", "level": 3, "cost": 15})
+	_ok(Array(Checks.run(s)).any(func(p): return p.contains("starting bar")), "a trained spell on the starting bar is caught")
+	warrior.trained.pop_back()
+	abil.current = spell
+	abil._set_kind("dot")
+	_ok(spell.tuning.has("tickInterval") and spell.target == "enemy", "changing a spell's kind adds the numbers it needs")
+	abil._set_kind("instant")
+
 	var saved = s.save_all()
-	_ok(Array(saved).has("npcs.json") and Array(saved).has("shops.json") and Array(saved).has("quests.json") and Array(saved).has("world.json") and Array(saved).has("dialogue.json"), "npcs, shops, quests, world and dialogue are saved: %s" % [saved])
+	_ok(["npcs.json", "shops.json", "quests.json", "world.json", "dialogue.json", "skills.json", "abilities.json", "archetypes.json"].all(func(f): return Array(saved).has(f)), "every file changed is saved: %s" % [saved])
 	var back = IO.load_file(COPY + "/quests.json")
 	_ok(back.quests.any(func(x): return x.id == "iron_for_osric" and x.reward.items[0].item == "arming_sword"), "the quest and its reward are in quests.json")
 	back = IO.load_file(COPY + "/shops.json")
 	_ok(back.shops.any(func(x): return x.id == "osric_dunn_shop" and x.stock == ["arming_sword"]), "the shop and its stock are in shops.json")
 	# the files the editor writes read back byte for byte when unchanged
-	for f in ["shops", "npcs", "dialogue"]:
+	for f in ["shops", "npcs", "dialogue", "skills"]:
 		var text := FileAccess.get_file_as_string("res://data/%s.json" % f)
-		_ok(IO.to_text(IO.load_file("res://data/%s.json" % f), false, f == "shops") == text, "%s.json reads back byte for byte" % f)
+		_ok(IO.to_text(IO.load_file("res://data/%s.json" % f), false, f in ["shops", "skills"]) == text, "%s.json reads back byte for byte" % f)
 	# the game reads the new data
 	main.s.load_all()
 	_ok(Checks.run(main.s).is_empty(), "the saved data passes the checks: %s" % "\n".join(Checks.run(main.s)))

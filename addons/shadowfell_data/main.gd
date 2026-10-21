@@ -12,6 +12,9 @@ const QuestsPage := preload("quests_page.gd")
 const ChainsPage := preload("chains_page.gd")
 const NpcsPage := preload("npcs_page.gd")
 const ChestsPage := preload("chests_page.gd")
+const DialoguePage := preload("dialogue_page.gd")
+const SkillsPage := preload("skills_page.gd")
+const AbilitiesPage := preload("abilities_page.gd")
 
 var s := DataStore.new()
 var pages: Array = []
@@ -39,7 +42,7 @@ func _init(data_dir := "res://data") -> void:
 	tabs = TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(tabs)
-	for p in [ItemsPage.new(), LootPage.new(), QuestsPage.new(), ChainsPage.new(), NpcsPage.new(), ChestsPage.new()]:
+	for p in [ItemsPage.new(), LootPage.new(), QuestsPage.new(), ChainsPage.new(), NpcsPage.new(), DialoguePage.new(), SkillsPage.new(), AbilitiesPage.new(), ChestsPage.new()]:
 		if "problems" in p:
 			p.problems = func(): return found
 		p.setup(s)
@@ -69,14 +72,31 @@ func _queue_check() -> void:
 		_check.call_deferred()
 
 
-## show a record on its tab: kind is quest, npc or new_quest (id = its giver)
+## show a record on its tab: a quest, npc, dialogue, skill or ability, or
+## make a new one (new_quest and new_skill take the npc, new_ability the
+## skill, new_spell the trainer it is for)
 func open_record(kind: String, id) -> void:
-	var page = page_named("NPCs" if kind == "npc" else "Quests")
+	var tab := {"npc": "NPCs", "quest": "Quests", "new_quest": "Quests", "dialogue": "Dialogue", "skill": "Skills", "new_skill": "Skills", "ability": "Abilities", "new_ability": "Abilities", "new_spell": "Abilities"}
+	var page = page_named(tab.get(kind, "Quests"))
 	tabs.current_tab = pages.find(page)
-	if kind == "new_quest":
-		page.new_quest({"giver": id})
-	else:
-		page.select(id)
+	match kind:
+		"new_quest":
+			page.new_quest({"giver": id})
+		"new_skill":
+			page.new_skill({"trainer": id})
+		"new_ability":
+			page._new_dialog(func(a):
+				a.skill = id
+				var sk := s.skill(id)
+				if not sk.has("teaches"):
+					sk.teaches = []
+				sk.teaches.append(a.id)
+				s.touch("skills")
+				page.select(a.id))
+		"new_spell":
+			page._new_dialog()
+		_:
+			page.select(id)
 
 
 func page_named(n: String) -> Control:

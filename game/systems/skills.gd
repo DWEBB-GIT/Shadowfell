@@ -3,9 +3,12 @@ extends RefCounted
 ## Skills learned from trainers (data/skills.json; src/systems/skills.js).
 ## A skill unlocks the abilities it `teaches`. Skills with a `maxRank` rise
 ## with use, as WoW's professions do: fishing goes up by one with each catch.
+## A class's `trained` spells (archetypes.json) are learned from a trainer
+## for coins once the character is high enough level, WoW's class trainers.
 
 var game
 var ranks := {} ## skill id -> rank (1 when learned)
+var spells: Array = [] ## class spells learned from a trainer
 var all_spells := false ## a test hook: every class spell
 
 
@@ -15,6 +18,7 @@ func _init(g) -> void:
 
 func reset() -> void:
 	ranks = {}
+	spells = []
 
 
 func has(id: String) -> bool:
@@ -56,12 +60,51 @@ func knows_ability(ability) -> bool:
 		return true
 	var book: Array = game.stats.archetype.get("abilities", [])
 	if book.has(ability):
-		return true
+		return not needs_training(ability)
 	for id in book:
 		var b: Dictionary = DB.abilities.get(id, {})
-		if b.get("inShadow") == ability or b.get("follow") == ability:
+		if (b.get("inShadow") == ability or b.get("follow") == ability) and not needs_training(id):
 			return true
 	return false
+
+
+## the class's trainer entry for a spell ({ability, trainer, level, cost}), or {}
+func trained_entry(ability) -> Dictionary:
+	for t in game.stats.archetype.get("trained", []):
+		if t.get("ability") == ability:
+			return t
+	return {}
+
+
+## a class spell a trainer teaches that this character has not learned yet
+func needs_training(ability) -> bool:
+	return not all_spells and not trained_entry(ability).is_empty() and not spells.has(ability)
+
+
+## Pay a class trainer and learn a spell; false (with a word why) if not.
+func learn_spell(ability: String) -> bool:
+	var t := trained_entry(ability)
+	var events: Events = game.events
+	if t.is_empty() or spells.has(ability):
+		return false
+	var a: Dictionary = DB.abilities[ability]
+	if game.progression.level < int(t.get("level", 1)):
+		events.emit("log", {"text": "You must be level %d to learn %s." % [t.level, a.name], "kind": "muted", "throttle": "train-level"})
+		return false
+	var cost := int(t.get("cost", 0))
+	if game.inventory.coins < cost:
+		events.emit("log", {"text": "You need %s to learn %s." % [U.money(cost), a.name], "kind": "muted", "throttle": "train-coins"})
+		return false
+	game.inventory.lose_coins(cost)
+	spells.append(ability)
+	var free := ActionBar.free_slot(game.action_bar.slots)
+	if free >= 0:
+		game.action_bar.place(ability, free)
+	events.emit("log", {"text": "You learn %s. It is in your spellbook (P)." % a.name, "kind": "level"})
+	if game.hud:
+		game.hud.toast("Learned: %s" % a.name)
+	events.emit("skillsChanged", {"id": ability})
+	return true
 
 
 ## What a trainer offers that the character has not learned.
@@ -107,6 +150,18 @@ func raise(id: String) -> bool:
 
 func serialize() -> Dictionary:
 	return ranks.duplicate()
+
+
+func serialize_spells() -> Array:
+	return spells.duplicate()
+
+
+func apply_spells(data) -> void:
+	spells = []
+	if typeof(data) == TYPE_ARRAY:
+		for id in data:
+			if typeof(id) == TYPE_STRING and DB.abilities.has(id):
+				spells.append(id)
 
 
 func apply(data) -> void:

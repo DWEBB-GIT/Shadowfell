@@ -317,6 +317,15 @@ export function validateGameData(raw, opts = {}) {
       if (abilities[id]?.skill) errors.push(`${w}: ${id} is a skill's tool, not a class spell`);
     }
     if (a.defensive && !(a.abilities || []).includes(a.defensive)) errors.push(`${w}: its defensive ${a.defensive} must be in its abilities`);
+    // spells learned from a class trainer for coins once high enough level (Godot build)
+    if (a.trained !== undefined && !Array.isArray(a.trained)) errors.push(`${w}: trained must be a list`);
+    for (const t of Array.isArray(a.trained) ? a.trained : []) {
+      ref(`${w} trained`, 'ability', abilities, t.ability);
+      ref(`${w} trained ${t.ability}`, 'trainer npc', npcs, t.trainer);
+      if (!(a.abilities || []).includes(t.ability)) errors.push(`${w}: trained ${t.ability} must be in its abilities`);
+      if ((a.bar || []).includes(t.ability) || t.ability === a.defensive) errors.push(`${w}: trained ${t.ability} cannot be on its starting bar or its defensive`);
+      if (!(isInt(t.level) && t.level >= 1) || !(isInt(t.cost) && t.cost >= 0)) errors.push(`${w}: trained ${t.ability} needs a level and a cost in whole numbers`);
+    }
     if (!Array.isArray(a.bar) || a.bar.length !== 6) errors.push(`${w}: bar must name the 6 spells it starts with`);
     else for (const id of a.bar) if (id !== null && !(a.abilities || []).includes(id)) errors.push(`${w}: bar names ${id}, which is not in its abilities`);
     const g = a.startingGear || {};

@@ -175,6 +175,7 @@ func _build() -> void:
 
 	_greeting(n)
 	_shop(n)
+	_trains(n)
 	_quests(n)
 	_world(n)
 
@@ -198,6 +199,7 @@ func _greeting(n: Dictionary) -> void:
 		greets.insert(0, plain)
 	var t := UI.text_box(plain, "text", func(): s.touch("dialogue"))
 	form.add_child(t)
+	form.add_child(UI.button("Edit all of their dialogue", func(): open_record.emit("dialogue", d.id), "Greetings for each step of a quest, topics and replies, on the Dialogue tab"))
 	var others := greets.size() - 1
 	var topics: int = d.get("topics", []).size()
 	UI.note(form, "Dialogue %s: %d greeting%s that depend on quests or flags, %d topic%s to ask about (edited in data/dialogue.json)." % [d.id, others, "" if others == 1 else "s", topics, "" if topics == 1 else "s"], Color(0.6, 0.6, 0.6))
@@ -287,6 +289,79 @@ func _new_shop(n: Dictionary) -> void:
 	s.shops.append(sh)
 	s.touch("shops")
 	_put("shop", sh.id, true)
+
+
+## what they teach: skills, class spells (archetypes.json `trained`) and recipes
+func _trains(n: Dictionary) -> void:
+	UI.heading(form, "Trains")
+	UI.note(form, "Anything here gives them a Train choice. Map icon Class trainer marks a class trainer on the minimap.", Color(0.6, 0.6, 0.6))
+	UI.note(form, "Skills:")
+	var skills := s.skills.filter(func(sk): return sk.get("trainer") == n.id)
+	for sk in skills:
+		var row := UI.hbox(form)
+		var b := LinkButton.new()
+		b.text = "%s (%d coins)" % [sk.get("name", sk.id), sk.get("cost", 0)]
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func(): open_record.emit("skill", sk.id))
+		row.add_child(b)
+	var bar := UI.hbox(form)
+	var others := s.skills.filter(func(sk): return sk.get("trainer") != n.id).map(func(sk): return [sk.id, "%s (now %s)" % [sk.get("name", sk.id), s.npc_name(sk.get("trainer"))]])
+	if others.size():
+		bar.add_child(UI.choice([[null, "+ teach a skill"]] + others, null, func(v):
+			if v == null:
+				return
+			s.skill(v).trainer = n.id
+			s.touch("skills")
+			_build.call_deferred()))
+	bar.add_child(UI.button("New skill", func(): open_record.emit("new_skill", n.id), "Make a new skill they teach, on the Skills tab"))
+
+	UI.note(form, "Class spells (each class learns its own; the level it needs and the cost):")
+	for e in s.trained_by(n.id):
+		var c: Dictionary = e["class"]
+		var t: Dictionary = e.entry
+		var row := UI.hbox(form)
+		var b := LinkButton.new()
+		b.text = "%s: %s" % [c.get("name", c.id), s.ability_name(t.ability)]
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func(): open_record.emit("ability", t.ability))
+		row.add_child(b)
+		var lv := Label.new()
+		lv.text = "level"
+		row.add_child(lv)
+		row.add_child(UI.spin(t.get("level", 1), 1, 60, 1, func(v):
+			t.level = v
+			s.touch("archetypes")))
+		row.add_child(UI.spin(t.get("cost", 0), 0, 100000, 1, func(v):
+			t.cost = v
+			s.touch("archetypes"), " coins"))
+		row.add_child(UI.button("✕", func():
+			c.trained.erase(t)
+			if c.trained.is_empty():
+				c.erase("trained")
+			s.touch("archetypes")
+			_build.call_deferred(), "They no longer teach it (the class knows it from the start)"))
+	# any class spell not on the class's starting bar and not taught elsewhere
+	var can := []
+	for c in s.archetypes:
+		for id in c.get("abilities", []):
+			if c.get("bar", []).has(id) or c.get("defensive") == id or c.get("trained", []).any(func(t): return t.get("ability") == id):
+				continue
+			can.append([[c.id, id], "%s: %s" % [c.get("name", c.id), s.ability_name(id)]])
+	var add := UI.hbox(form)
+	if can.size():
+		add.add_child(UI.choice([[null, "+ teach a class spell"]] + can, null, func(v):
+			if v == null:
+				return
+			var c := DataStore.find(s.archetypes, v[0])
+			if not c.has("trained"):
+				c.trained = []
+			c.trained.append({"ability": v[1], "trainer": n.id, "level": 2, "cost": 10})
+			s.touch("archetypes")
+			_build.call_deferred()))
+	add.add_child(UI.button("New spell", func(): open_record.emit("new_spell", n.id), "Make a new spell on the Abilities tab; tick a class and choose this trainer there"))
+	var recipes := s.recipes.filter(func(r): return r.get("trainer") == n.id)
+	if recipes.size():
+		UI.note(form, "Recipes: %s (recipes.json)." % ", ".join(recipes.map(func(r): return s.item(r.get("output", {}).get("item")).get("name", r.id))))
 
 
 func _quests(n: Dictionary) -> void:
