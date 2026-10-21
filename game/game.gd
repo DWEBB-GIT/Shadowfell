@@ -52,6 +52,8 @@ var sparkles: Sparkles
 var interaction: Interaction
 var action_bar: ActionBar
 var hud: Hud
+## set by Log out: the reloaded scene opens on character select
+static var to_select := false
 var fx: Fx
 var save: SaveManager
 var roster := Roster.new()
@@ -229,6 +231,7 @@ func log_out() -> void:
 		hud.toast(r.reason)
 		return
 	save.autosave_enabled = false
+	to_select = true
 	get_tree().reload_current_scene()
 
 
@@ -545,6 +548,7 @@ func _handle_input(dt: float):
 		var c: Dictionary = DB.CONFIG.camera
 		zoom = clampf(zoom + notches * c.zoomStep, c.zoomMin, c.zoomMax)
 	if hud.modal == "title":
+		hud.title.update(dt)
 		return null
 	if input.consume("Escape") and not hud.close_modal():
 		targeting.clear()

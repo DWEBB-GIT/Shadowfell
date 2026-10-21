@@ -77,22 +77,22 @@ func _input(e: InputEvent) -> void:
 		_mouse(e.position)
 	elif e is InputEventMouseButton:
 		_mouse(e.position)
-		if not e.pressed:
-			return
-		match e.button_index:
-			MOUSE_BUTTON_LEFT:
-				mouse.clicked = true
-			MOUSE_BUTTON_RIGHT:
-				mouse.rightClicked = true
-			MOUSE_BUTTON_WHEEL_UP:
-				wheel -= 1
-			MOUSE_BUTTON_WHEEL_DOWN:
-				wheel += 1
 
 
-## Clicks on HUD windows never reach here: the GUI takes them first.
-func _unhandled_input(_e: InputEvent) -> void:
-	pass
+## Clicks and the wheel on HUD windows never reach here: the GUI takes them
+## first, so a click on a button does not also walk or select in the world.
+func _unhandled_input(e: InputEvent) -> void:
+	if not (e is InputEventMouseButton) or not e.pressed:
+		return
+	match e.button_index:
+		MOUSE_BUTTON_LEFT:
+			mouse.clicked = true
+		MOUSE_BUTTON_RIGHT:
+			mouse.rightClicked = true
+		MOUSE_BUTTON_WHEEL_UP:
+			wheel -= 1
+		MOUSE_BUTTON_WHEEL_DOWN:
+			wheel += 1
 
 
 func _notification(what: int) -> void:

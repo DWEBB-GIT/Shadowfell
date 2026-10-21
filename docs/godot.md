@@ -30,10 +30,10 @@ The Godot code is a faithful port of the browser build: each file in `src/` has 
 | `game/systems/` | Combat, spells, resources, targeting, loot, quests, dialogue, shops, fishing, cooking, camp, death, reputation, titles, saves, key bindings, settings | `src/systems/` |
 | `game/world/` | Terrain, layout, the world itself (woodland, buildings, lights, mist), ponds and dark places, collision | `src/world/` |
 | `game/render/` | Generated effect textures, telegraph and cutaway shaders, sparkles | `src/render/` |
-| `game/ui/` | The HUD, title screen and damage numbers | `src/ui/` |
+| `game/ui/` | The HUD and its windows: bags, character panel, spellbook, professions, talents, settings and key binding, cooking, shops, trainers, dialogue, the quest log and tracker, the minimap, names over heads, the title screen and character select, damage numbers. `ui.gd` holds the shared look; `canvas_2d.gd` lets the browser's canvas drawing (spell glyphs, minimap) be ported line for line; item icons and target portraits are snapshots of the real models (`icons.gd`) | `src/ui/` |
 | `game/tests/run_tests.gd` | Headless checks: data, terrain heights against the browser build, then a short game (`npm run godot:test`) | |
 | `game/tests/check_scripts.gd` | Compiles every script and lists any that fail | |
-| `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor | |
+| `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor; a fourth argument opens windows (`-- out.png 0 10 bags,character,quests`) | |
 
 Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web export), one file per key, in the same format as the browser build's saves.
 
@@ -60,7 +60,7 @@ Each step is its own pull request, and the browser build keeps working throughou
 
 1. **Done: world and walking.** The project shares the data and models, the world is built from data, and there's a player with WASD movement and the isometric camera.
 2. **Game core and every system** (2026-10-21): combat, targeting, spells and class resources, enemies and telegraphs, loot, chests, quests, dialogue, shops, fishing, cooking, camp, death, reputation, titles, saves and key bindings, with a working HUD (bars, spell bar, cast and swing bars, target frame, log, damage numbers) and a plain title screen.
-3. **Full UI**: bags and character panel, spellbook, quest log and dialogue windows, shops and trainers, the minimap, settings and key binding, the full title screen and character select, item and spell icons, names over heads.
+3. **Done: full UI** (2026-10-21): bags and character panel, spellbook, quest log and dialogue windows, shops and trainers, the minimap, settings and key binding, the full title screen and character select, item and spell icons, names over heads.
 4. **Audio and polish**: the sound effects and music, then a web export check.
 5. **Art pass**: swap placeholder models for asset packs, Mixamo characters and PNG icons.
 6. **Hand-placed world**: move world layout from `world.json` into Godot scenes, so you can place things in the editor instead of typing positions.

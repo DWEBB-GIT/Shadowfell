@@ -1,7 +1,7 @@
 extends SceneTree
 ## Renders the game and saves a picture, for checking a change without
 ## opening the editor (needs a display; on a server use xvfb-run):
-##   godot --path . --script res://game/tests/screenshot.gd -- out.png [x z]
+##   godot --path . --script res://game/tests/screenshot.gd -- out.png [x z [windows]]
 ## With a position it makes a character (in a separate store) and stands
 ## them there; without one it shows the title screen.
 
@@ -27,6 +27,10 @@ func _process(_delta: float) -> bool:
 		game.enter_world(r.character.id if r.ok else game.roster.list[0].id)
 		game.player.place_at(float(args[1]), float(args[2]))
 		game._snap_camera()
+	# a fourth argument opens windows: bags,character,quests...
+	if frames == 30 and args.size() >= 4:
+		for w in args[3].split(","):
+			game.hud.show_window(w)
 	if frames == 60:
 		root.get_texture().get_image().save_png(out)
 		print("saved ", out, " at ", game.player.position)
