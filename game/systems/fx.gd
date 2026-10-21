@@ -1,0 +1,241 @@
+class_name Fx
+extends RefCounted
+## Restrained visual feedback (src/systems/fx.js): a ground shockwave for
+## Shield Break, small sparks on hits, dust, and a faint pillar on level-up.
+## Each effect is a node with a life and an update; it is freed when done.
+
+## the colour of each school of magic (and of a Ranger's tar)
+const SCHOOL_COLOURS := {"holy": Color("ffd070"), "shadow": Color("9a5ae0"), "nature": Color("8ad04a"), "fire": Color("ff8030"), "physical": Color("e8dcc0"), "tar": Color("5a4630")}
+
+var game
+var items := []
+var traps := {}
+var dust_mesh: BoxMesh
+var dust_mat: StandardMaterial3D
+
+
+## The soft round shadow under a character.
+static func blob_shadow(size: float) -> MeshInstance3D:
+	var m := Tex.fx_material(Tex.blob(), Color.WHITE, false)
+	var q := Tex.ground_quad(m)
+	q.scale = Vector3(size, 1, size)
+	q.position.y = 0.03
+	return q
+
+
+func _init(g) -> void:
+	game = g
+	dust_mesh = BoxMesh.new()
+	dust_mesh.size = Vector3(0.12, 0.12, 0.12)
+	dust_mat = StandardMaterial3D.new()
+	dust_mat.albedo_color = Color("6a5c48")
+	var ev: Events = game.events
+	ev.on("burst", func(e): shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
+	ev.on("enemyHit", func(e): sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8))
+	# the weight of a landed blow: the camera kicks (nothing ever pauses)
+	ev.on("hitImpact", func(e):
+		if e.get("heavy") or e.get("crit"):
+			game.shake_camera(DB.CONFIG.impact.critShake if e.get("crit") else DB.CONFIG.impact.shake))
+	ev.on("playerHurt", func(e):
+		game.shake_camera(DB.CONFIG.impact.critShake if e.get("heavy") else DB.CONFIG.impact.shake * 0.6)
+		game.hud.flash_damage())
+	ev.on("levelUp", func(_e): pillar(game.player.position))
+	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
+	# the Grave Slam lands where the telegraph was painted
+	ev.on("graveSlam", func(e):
+		var sh = e.shape
+		var r: float = sh.range * 0.55
+		shockwave(Vector3(sh.x + sin(sh.angle) * r, game.player.position.y, sh.z + cos(sh.angle) * r), sh.range * 0.6))
+	ev.on("playerLunge", func(_e): dust(game.player.position, 6, 0.3))
+	ev.on("braceBlock", func(_e): sparks(game.player.position, 10))
+	ev.on("anvilStrike", func(e):
+		var p: Vector3 = game.player.position
+		if U.hyp(p.x - e.x, p.z - e.z) < 25:
+			sparks(Vector3(e.x, Terrain.height_at(e.x, e.z) - 0.3, e.z), 5))
+	ev.on("playerBrace", func(e): brace_glow(e.get("window", DB.brace.window)))
+	ev.on("projectile", func(e): projectile(e))
+	ev.on("darkCircle", func(e): shockwave(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), e.radius, Color("9a7cff")))
+	# spells (game/systems/spells.gd)
+	ev.on("spellFlash", func(e): flash(e.position, SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
+	ev.on("zone", func(e): zone(e.x, e.z, e.radius, e.duration, SCHOOL_COLOURS.get(e.get("school"), Color("ffd070"))))
+	# a set trap is a small dull ring until it is sprung or wears out
+	ev.on("trap", func(e): traps[e.key] = zone(e.x, e.z, e.radius, e.duration, Color("8a7050"), 0.35))
+	ev.on("trapGone", func(e):
+		var it = traps.get(e.key)
+		if it:
+			it.life = maxf(1e-3, minf(it.life, it.age))
+		traps.erase(e.key))
+	ev.on("cleave", func(e):
+		var r: float = e.range * 0.5
+		var p: Vector3 = e.position
+		shockwave(Vector3(p.x + sin(e.facing) * r, p.y, p.z + cos(e.facing) * r), e.range * 0.7, Color("ffc890")))
+	ev.on("buff", func(_e): pillar(game.player.position, Color("ff9a5a")))
+	ev.on("splash", func(e): splash(e.x, e.y, e.z, e.get("small", false)))
+	ev.on("campPitched", func(e): dust(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), 10, 0.6))
+	ev.on("itemDropped", func(e): dust(Vector3(e.item.x, game.player.position.y, e.item.z), 4, 0.2))
+
+
+## `update(it, k, dt)`; `it` is the effect's own dictionary, so it can keep state.
+func _add(obj: Node3D, life: float, update: Callable, state := {}) -> Dictionary:
+	game.scene.add_child(obj)
+	var it := {"obj": obj, "life": life, "age": 0.0, "update": update}
+	it.merge(state)
+	items.append(it)
+	return it
+
+
+func shockwave(pos: Vector3, radius: float, colour := Color("ffd9a0")) -> void:
+	var ring := Tex.ground_quad(Tex.fx_material(Tex.ring(), colour))
+	ring.position = Vector3(pos.x, pos.y + 0.12, pos.z)
+	_add(ring, 0.45, func(it, k, _dt):
+		var s: float = radius * 2 * (0.3 + k * 0.8)
+		it.obj.scale = Vector3(s, s, s)
+		it.obj.material_override.albedo_color.a = 1 - k)
+	dust(pos, 14, radius * 0.7)
+
+
+func sparks(pos: Vector3, n: int) -> void:
+	for i in n:
+		var s := Tex.sprite(Tex.fx_material(Tex.glint(), Color("ffc890"), true, true))
+		s.scale = Vector3.ONE * 0.25
+		s.position = Vector3(pos.x, pos.y + 1.1, pos.z)
+		var v := Vector3((randf() - 0.5) * 4, 1.5 + randf() * 2.5, (randf() - 0.5) * 4)
+		_add(s, 0.3 + randf() * 0.15, func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v.y -= 12 * dt
+			it.obj.material_override.albedo_color.a = 1 - k, {"v": v})
+
+
+func dust(pos: Vector3, n: int, spread := 0.6) -> void:
+	for i in n:
+		var m := MeshInstance3D.new()
+		m.mesh = dust_mesh
+		m.material_override = dust_mat
+		var a := randf() * TAU
+		var v := Vector3(cos(a) * (1 + randf() * 2), 1 + randf() * 1.5, sin(a) * (1 + randf() * 2))
+		m.position = Vector3(pos.x + cos(a) * spread * randf(), pos.y + 0.1, pos.z + sin(a) * spread * randf())
+		_add(m, 0.6, func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v.y -= 6 * dt
+			it.obj.scale = Vector3.ONE * maxf(0.001, 1 - k), {"v": v})
+
+
+## An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
+## With `follow` (an enemy), it homes in on it as it moves, and arrives
+## after `life` seconds.
+func projectile(p: Dictionary) -> void:
+	var kind = p.get("kind")
+	var follow = p.get("follow")
+	var bolt: bool = kind == "bolt" or kind == "holy"
+	var obj: Node3D
+	if bolt:
+		obj = Tex.sprite(Tex.fx_material(Tex.glint(), Color("ffd98a") if kind == "holy" else Color("9a7cff"), true, true))
+		obj.scale = Vector3.ONE * 0.6
+	elif follow and Assets.has("arrow"):
+		obj = Assets.instance("arrow")
+	else:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.03, 0.03, 0.7)
+		mi.mesh = bm
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = Color("d8c8a0")
+		mi.material_override = mat
+		obj = mi
+	var from: Vector3 = p.from
+	var to: Vector3 = p.to
+	var a := from
+	var b := Vector3(to.x, Terrain.height_at(to.x, to.z) + 1.0, to.z)
+	obj.position = a
+	var life = p.get("life")
+	var time: float = life if life != null else maxf(0.08, a.distance_to(b) / p.speed)
+	_add(obj, maxf(0.05, time), func(it, k, _dt):
+		if it.follow:
+			var fp: Vector3 = it.follow.position
+			it.b = Vector3(fp.x, Terrain.height_at(fp.x, fp.z) + 1.0, fp.z)
+		var o: Node3D = it.obj
+		o.position = it.a.lerp(it.b, k)
+		# a slight arc for arrows
+		if not bolt:
+			o.position.y += sin(k * PI) * minf(1.2, it.a.distance_to(it.b) * 0.04)
+			_look(o, it.b), {"a": a, "b": b, "follow": follow})
+	if not bolt:
+		_look(obj, b)
+
+
+## point a node's +z at a target (three.js lookAt for non-cameras)
+static func _look(o: Node3D, target: Vector3) -> void:
+	var d := target - o.position
+	if d.length_squared() < 1e-6:
+		return
+	o.basis = Basis.looking_at(d, Vector3.UP, true)
+
+
+## a pale shield of light in front of the Warden while Brace is up
+func brace_glow(window: float) -> void:
+	var player = game.player
+	var s := Tex.sprite(Tex.fx_material(Tex.glint(), Color(Color("9cc4ff"), 0), true, true))
+	s.scale = Vector3(1.4, 1.8, 1)
+	_add(s, window, func(it, _k, _dt):
+		var f: float = player.facing
+		it.obj.position = Vector3(player.position.x + sin(f) * 0.6, player.position.y + 1.1, player.position.z + cos(f) * 0.6)
+		it.obj.material_override.albedo_color.a = 0.5 if player.is_braced else 0.0)
+
+
+## rings on the water where the bob lands or a fish takes it
+func splash(x: float, y: float, z: float, small: bool) -> void:
+	for i in (1 if small else 3):
+		var ring := Tex.ground_quad(Tex.fx_material(Tex.ring(), Color("cfe6e0")))
+		ring.position = Vector3(x, y + 0.03, z)
+		var delay := i * 0.12
+		_add(ring, 0.8 + delay, func(it, k, _dt):
+			var t := maxf(0, (k * (0.8 + delay) - delay) / 0.8)
+			var sc := (0.4 if small else 0.6) + t * (0.8 if small else 1.6)
+			it.obj.scale = Vector3(sc, 1, sc)
+			it.obj.material_override.albedo_color.a = 0.8 * (1 - t) if t > 0 else 0.0)
+
+
+## a quick burst of light on a target (Smite)
+func flash(pos: Vector3, colour: Color) -> void:
+	var s := Tex.sprite(Tex.fx_material(Tex.glint(), colour, true, true))
+	_add(s, 0.4, func(it, k, _dt):
+		it.obj.position = Vector3(pos.x, pos.y + 1.2 + k * 0.6, pos.z)
+		it.obj.scale = Vector3.ONE * 1.6 * (1 - k * 0.5)
+		it.obj.material_override.albedo_color.a = 1 - k)
+
+
+## consecrated ground: a glowing ring that stays for the spell's duration
+func zone(x: float, z: float, radius: float, duration: float, colour := Color("ffd070"), strength := 1.0) -> Dictionary:
+	var ring := Tex.ground_quad(Tex.fx_material(Tex.ring(), colour))
+	ring.position = Vector3(x, Terrain.height_at(x, z) + 0.1, z)
+	ring.scale = Vector3(radius * 2, 1, radius * 2)
+	return _add(ring, duration, func(it, k, _dt):
+		it.obj.material_override.albedo_color.a = strength * (0.55 + 0.25 * sin(k * duration * TAU)) * minf(1, (1 - k) * 6))
+
+
+func pillar(pos: Vector3, colour := Color("ffe2a8")) -> void:
+	var col := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.6
+	cm.bottom_radius = 0.8
+	cm.height = 4
+	cm.radial_segments = 10
+	cm.cap_top = false
+	cm.cap_bottom = false
+	col.mesh = cm
+	col.material_override = Tex.fx_material(null, Color(colour, 0))
+	col.position = Vector3(pos.x, pos.y + 2, pos.z)
+	_add(col, 1.4, func(it, k, _dt):
+		it.obj.material_override.albedo_color.a = sin(k * PI) * 0.25
+		it.obj.position = game.player.position + Vector3(0, 2 + k, 0))
+
+
+func update(dt: float) -> void:
+	for it in items.duplicate():
+		it.age += dt
+		var k: float = minf(1, it.age / it.life)
+		it.update.call(it, k, dt)
+		if k >= 1:
+			it.obj.queue_free()
+			items.erase(it)
