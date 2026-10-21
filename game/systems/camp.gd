@@ -21,7 +21,7 @@ var enemies_near: bool:
 	get:
 		var p: Vector3 = game.player.position
 		for e in game.enemies.list:
-			if e.alive and (e.engaged > 0 or U.hyp(e.position.x - p.x, e.position.z - p.z) < DB.CONFIG.camp.clearRadius):
+			if e.alive and (e.engaged > 0 or not e.passive and U.hyp(e.position.x - p.x, e.position.z - p.z) < DB.CONFIG.camp.clearRadius):
 				return true
 		return false
 

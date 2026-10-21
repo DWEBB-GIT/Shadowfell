@@ -206,7 +206,47 @@ static func rich(parent: Node, size := 13, width := 0.0) -> RichTextLabel:
 		r.custom_minimum_size = Vector2(width, 0)
 	if parent:
 		parent.add_child(r)
+	_presize(r, width)
 	return r
+
+
+## Wrapped text is measured at the width it has, and a new label has none
+## until its container lays it out a frame later: without this its first
+## size is as tall as one word per line, and its window flashes huge.
+static func _presize(c: Control, width := 0.0) -> void:
+	var w := width
+	var p := c.get_parent() as Control
+	if w <= 0 and p != null:
+		w = p.size.x
+	if w > 0:
+		c.size = Vector2(w, c.size.y)
+
+
+## a label that wraps at its container's width (see _presize)
+static func wrapped(l: Label) -> Label:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_presize(l)
+	return l
+
+
+## Size a floating panel to its contents, and keep it out of sight while
+## that size is still settling (two frames the same): a window or tip with
+## wrapped text otherwise shows for a frame at the wrong size, very large,
+## before it shrinks into place (Dan, 2026-10-21).
+static func fit_steady(c: Control) -> Vector2:
+	var s := c.get_combined_minimum_size()
+	var f := Engine.get_process_frames()
+	var n: int = c.get_meta("fit_n", 0)
+	if c.get_meta("fit_last", Vector2(-1, -1)) != s:
+		n = 0
+	elif c.get_meta("fit_f", -1) != f:
+		n += 1
+	c.set_meta("fit_last", s)
+	c.set_meta("fit_n", n)
+	c.set_meta("fit_f", f)
+	c.modulate.a = 1.0 if n >= 1 else 0.0
+	c.size = s
+	return s
 
 
 const _TOKEN := "\\{(gold|silver|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
@@ -306,9 +346,7 @@ static func window(parent: Node, title: String, width := 0.0, on_close := Callab
 
 ## a hint line under a window (.window-hint)
 static func hint(parent: Node) -> Label:
-	var l := label(parent, "", 11, TEXT_DIM)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return l
+	return wrapped(label(parent, "", 11, TEXT_DIM))
 
 
 static func clear(n: Node) -> void:

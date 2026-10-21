@@ -66,7 +66,7 @@ var region = null
 var raw_aim = null
 var move_to = null
 var shake := 0.0
-var cursor := -1
+var cursor := "-" ## the cursor shown (Cursors), "" for the arrow
 
 var env: Environment
 var sun: DirectionalLight3D
@@ -423,27 +423,28 @@ func _over_bob() -> bool:
 	return _screen_dist(bob) < DB.CONFIG.fishing.clickRadius
 
 
-## The mouse cursor says what a click would do (WoW): attack over an enemy,
-## talk over a townsperson (crossed out until close enough), a hand over loot.
+## The mouse cursor says what a click would do (WoW): a sword over an
+## enemy, a speech bubble over a townsperson (grey until you are close
+## enough to talk), a hand over loot, a hook over your fishing bob.
 func _cursor_for(pick) -> void:
-	var c := Input.CURSOR_ARROW
+	var c := ""
 	if input.mouse.onCanvas and _over_bob():
-		c = Input.CURSOR_DRAG
+		c = "fish"
 	elif pick != null:
 		var p := player.position
 		var o = pick.obj
 		match pick.kind:
 			"enemy":
-				c = Input.CURSOR_CROSS
+				c = "attack"
 			"npc":
 				var near := U.hyp(o.position.x - p.x, o.position.z - p.z) <= DB.CONFIG.shop.talkRange + 0.5 and not collision.wall_between(p.x, p.z, o.position.x, o.position.z)
-				c = Input.CURSOR_HELP if near else Input.CURSOR_FORBIDDEN
+				c = "talk" if near else "talkFar"
 			"loot", "chest":
 				var reach: float = 2.4 if pick.kind == "chest" else DB.CONFIG.loot.reach
-				c = Input.CURSOR_POINTING_HAND if U.hyp(o.x - p.x, o.z - p.z) <= reach else Input.CURSOR_FORBIDDEN
+				c = "loot" if U.hyp(o.x - p.x, o.z - p.z) <= reach else "lootFar"
 	if c != cursor:
 		cursor = c
-		Input.set_default_cursor_shape(c)
+		Cursors.show(c)
 
 
 func _far(x: float, z: float, reach: float) -> bool:

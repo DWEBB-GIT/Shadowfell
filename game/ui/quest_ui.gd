@@ -181,8 +181,7 @@ func render_dialogue() -> void:
 		if q.choice and q.status == "available":
 			text += "[font_size=12][color=#e8a860][i]A choice. Taking this closes the other ways.[/i][/color][/font_size]\n"
 		UI.set_rich(UI.rich(w.body, 13), text)
-	var says := UI.label(w.body, ("%s %s" % [page.salutation, page.text]) if page.get("salutation", "") != "" else page.text, 14, Color("e6dbc0"))
-	says.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.wrapped(UI.label(w.body, ("%s %s" % [page.salutation, page.text]) if page.get("salutation", "") != "" else page.text, 14, Color("e6dbc0")))
 	if q != null:
 		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward))
 	UI.rule(w.body)
@@ -425,12 +424,12 @@ func layout() -> void:
 	var vp := get_viewport_rect().size
 	for w in [dialogue, trainer]:
 		if w.panel.visible:
-			w.panel.size = w.panel.get_combined_minimum_size()
+			UI.fit_steady(w.panel)
 			w.panel.position = Vector2(12, 136)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
 		p.custom_minimum_size.x = minf(600, vp.x - 24)
-		p.size = p.get_combined_minimum_size()
+		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
 	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 196)
 

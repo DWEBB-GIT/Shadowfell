@@ -101,8 +101,22 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character.tabs[id] = b
 	preview = CharPreview.new(game)
-	spellbook = UI.window(self, "Spells", 300, func(): close("spellbook"))
-	skills_win = UI.window(self, "Professions", 360, func(): close("skills"))
+	spellbook = UI.window(self, "Spells", 500, func(): close("spellbook"))
+	skills_win = UI.window(self, "Professions", 420, func(): close("skills"))
+	# both scroll once they outgrow the screen, with a line of help under
+	for w in [spellbook, skills_win]:
+		w.title.size_flags_horizontal = Control.SIZE_FILL
+		w.sub = UI.label(null, "", 13, UI.TEXT_DIM)
+		w.sub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		w.head.add_child(w.sub)
+		w.head.move_child(w.sub, 1)
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		w.body.add_child(sc)
+		w.scroll = sc
+		w.inner = UI.vbox(sc, 6)
+		w.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		w.foot = UI.hint(w.body)
 	settings_win = UI.window(self, "Settings", 320, func(): close("settings"))
 	talents = UI.window(self, "Talents", 320, func(): close("talents"))
 	var tt := UI.label(talents.body, "Talent trees arrive in a later build. You will earn a point each level from 10 and spend them here.", 15, UI.TEXT_DIM)
@@ -511,7 +525,7 @@ func _render_character(inv) -> void:
 func _equip_col(parent: Node, inv, where: String) -> void:
 	for s in DB.EQUIP_SLOTS:
 		if s.col == where:
-			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), 48, s.label)
+			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), 42, s.label)
 			sl.placeholder_size = 9
 
 
@@ -522,7 +536,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
 	fig.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fig.custom_minimum_size = Vector2(0, 356)
+	fig.custom_minimum_size = Vector2(0, 7 * 42 + 6 * 4) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
 	var right := UI.vbox(body, 4)
@@ -533,7 +547,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	# the ammo slot, beside the ranged slot: which arrows Auto Shot uses
 	# and how many of them you carry
 	var ammo = inv.get_at(Inventory.AMMO_LOC)
-	var a := _slot(bottom, Inventory.AMMO_LOC, ammo, 48, "Ammo")
+	var a := _slot(bottom, Inventory.AMMO_LOC, ammo, 42, "Ammo")
 	a.placeholder_size = 9
 	a.count = str(ammo.count) if ammo else ""
 	a.count_size = 13
@@ -844,21 +858,30 @@ func _render_skills() -> void:
 	w.panel.visible = open.skills
 	if not open.skills:
 		return
-	UI.clear(w.body)
+	UI.clear(w.inner)
 	var sk = game.skills
 	var learned := []
 	var not_yet := []
 	for d in DB.skills.values():
 		(learned if sk.has(d.id) else not_yet).append(d)
+	w.sub.text = "%d of %d learned" % [learned.size(), DB.skills.size()]
 	if learned.is_empty():
-		UI.label(w.body, "You have no professions yet. Trainers in town teach them.", 13, UI.TEXT_DIM).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.wrapped(UI.label(w.inner, "You have no professions yet. Trainers in town teach them.", 13, UI.TEXT_DIM))
+	else:
+		_section(w.inner, "LEARNED")
 	for d in learned:
-		_prof_row(w.body, d)
+		_prof_row(w.inner, d)
 	if not not_yet.is_empty():
-		UI.label(w.body, "NOT YET LEARNED", 10, UI.TEXT_DIM)
+		_section(w.inner, "NOT YET LEARNED")
 		for d in not_yet:
-			_prof_row(w.body, d)
-	UI.hint(w.body).text = "Professions are learned from trainers and rise as you use them. Drag an ability onto your bar."
+			_prof_row(w.inner, d)
+	w.foot.text = "Professions are learned from trainers and rise as you use them. Drag an ability onto your bar."
+
+
+## a small heading over a group of rows
+func _section(parent: Node, text: String) -> void:
+	var l := UI.label(parent, text, 10, UI.GOLD)
+	l.modulate.a = 0.8
 
 
 func _prof_row(parent: Node, d: Dictionary) -> void:
@@ -890,31 +913,62 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	tip_on(row, d.get("desc", "") + ("" if known else " %s teaches it for %s." % [who, U.money(d.get("cost", 0))]), d.name)
 
 
-## spellbook: every ability, ready to drag onto the bar
+## spellbook: every ability, ready to drag onto the bar. A card each, two
+## to a row: the icon to drag, its name, what it costs and how often, and
+## whether it is on the bar (and on which key).
 func _render_spellbook() -> void:
 	var w := spellbook
 	w.panel.visible = open.spellbook
 	if not open.spellbook:
 		return
-	UI.clear(w.body)
-	var bar = game.action_bar
+	UI.clear(w.inner)
+	# professions' abilities (fishing, cooking, camp) live in Professions (U)
+	var ids := []
+	for id in DB.abilities:
+		if ActionBar.bar_ability(game, id) and not DB.abilities[id].get("skill"):
+			ids.append(id)
+	var arch: Dictionary = game.stats.archetype
+	w.sub.text = "%s · %d spells" % [arch.get("name", ""), ids.size()]
+	if ids.is_empty():
+		UI.wrapped(UI.label(w.inner, "No spells yet.", 13, UI.TEXT_DIM))
 	var grid := GridContainer.new()
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
-	w.body.add_child(grid)
-	# professions' abilities (fishing, cooking, camp) live in Professions (U)
-	for id in DB.abilities:
-		var a: Dictionary = DB.abilities[id]
-		if not ActionBar.bar_ability(game, id) or a.get("skill"):
-			continue
-		var row := UI.hbox(grid, 8)
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_spell_slot(row, id)
-		var v := UI.vbox(row, 0)
-		UI.label(v, a.name, 13)
-		UI.label(v, "On the bar" if bar.slots.has(id) else "Not on the bar", 11, UI.TEXT_DIM)
-	UI.hint(w.body).text = "A: pick up / place on the bar   Y: remove from the bar   B: back" if hud.pad_mode else "Drag a spell onto the bar. Drag spells along the bar to rearrange them, or off it to remove them."
+	w.inner.add_child(grid)
+	for id in ids:
+		_spell_card(grid, id)
+	w.foot.text = "A: pick up / place on the bar   Y: remove from the bar   B: back" if hud.pad_mode else "Drag a spell onto the bar. Drag spells along the bar to rearrange them, or off it to remove them."
+
+
+func _spell_card(parent: Node, id: String) -> void:
+	var a: Dictionary = DB.abilities[id]
+	var at: int = game.action_bar.slots.find(id)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", UI.box(Color("15110c"), Color("6b5532") if at >= 0 else Color("2e261a"), 0, 1, Vector4(6, 6, 8, 6)))
+	card.custom_minimum_size = Vector2(230, 0)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(card)
+	var h := UI.hbox(card, 8)
+	_spell_slot(h, id, 40)
+	var v := UI.vbox(h, 1)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	UI.label(v, a.name, 13, Color("f0e4c8"))
+	var facts := []
+	var r = game.resources
+	for k in a.get("cost", {}):
+		facts.append("%s %s" % [U.n(a.cost[k]), r.name_of(k)])
+	for k in a.get("gain", {}):
+		facts.append("+%s %s" % [U.n(a.gain[k]), r.name_of(k)])
+	var cd: float = a.get("tuning", {}).get("cooldown", 0.0)
+	if cd > 0:
+		facts.append("%s sec cooldown" % U.n(cd))
+	if not facts.is_empty():
+		UI.label(v, " · ".join(facts), 11, Color("8fb4f0"))
+	var key: String = game.keys.label("bar%d" % at) if at >= 0 else ""
+	UI.label(v, ("On the bar" + (" · key %s" % key if key != "" else "")) if at >= 0 else "Not on the bar", 10, Color("8cbf78") if at >= 0 else UI.TEXT_DIM)
+	tip_on(card, a.get("desc", ""), a.name)
 
 
 # ------------------------------------------------------------------ layout
@@ -922,15 +976,19 @@ func _render_spellbook() -> void:
 func layout() -> void:
 	var vp := get_viewport_rect().size
 	if character.panel.visible:
-		_fit(character.panel, Vector2(12, 136))
+		# under the player frame, moved up as far as it must to stay on screen
+		var s := _fit(character.panel, Vector2(12, 136))
+		character.panel.position.y = maxf(12, minf(136, vp.y - 12 - s.y))
 	if shop.panel.visible:
 		_fit(shop.panel, Vector2(494 if open.character else 12, 136))
-	if spellbook.panel.visible:
-		var s := _fit(spellbook.panel, Vector2.ZERO)
-		spellbook.panel.position = Vector2(roundf((vp.x - s.x) / 2), vp.y - 140 - s.y)
-	if skills_win.panel.visible:
-		var s := _fit(skills_win.panel, Vector2.ZERO)
-		skills_win.panel.position = Vector2(roundf((vp.x - s.x) / 2), vp.y - 140 - s.y)
+	for w in [spellbook, skills_win]:
+		if w.panel.visible:
+			# above the spell bar, scrolling rather than running off the top
+			var inner: Vector2 = w.inner.get_combined_minimum_size()
+			var room := maxf(120, vp.y - 140 - 12 - 110)
+			w.scroll.custom_minimum_size = Vector2(inner.x + (12 if inner.y > room else 0), minf(inner.y, room))
+			var s := _fit(w.panel, Vector2.ZERO)
+			w.panel.position = Vector2(roundf((vp.x - s.x) / 2), maxf(12, vp.y - 140 - s.y))
 	if settings_win.panel.visible:
 		var inner: Control = settings_win.inner
 		settings_win.scroll.custom_minimum_size = Vector2(296, minf(inner.get_combined_minimum_size().y, vp.y - 290))
@@ -946,7 +1004,7 @@ func layout() -> void:
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
-	p.size = p.get_combined_minimum_size()
+	UI.fit_steady(p)
 	if at != Vector2.ZERO:
 		p.position = at
 	return p.size
@@ -1035,6 +1093,7 @@ func _tip_box(text: String, width: float) -> void:
 			longest = maxf(longest, UI.font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x)
 		width = clampf(longest + 4, 40, 220)
 	r.custom_minimum_size = Vector2(width, 0)
+	r.size = Vector2(width, 0) # measured at its own width from the first frame
 	UI.set_rich(r, text)
 
 
@@ -1044,8 +1103,7 @@ func _place_tip() -> void:
 	if not tooltip.visible:
 		return
 	var vp := get_viewport_rect().size
-	var s := tooltip.get_combined_minimum_size()
-	tooltip.size = s
+	var s := UI.fit_steady(tooltip)
 	var x := vp.x - s.x - 16
 	var bar_top: float = hud.bottom_top()
 	var y := minf(vp.y, bar_top) - s.y - 10
@@ -1250,10 +1308,10 @@ func world_tip(pick) -> void:
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
 	elif pick.kind == "enemy":
-		text = _name_line(key.cfg.name, "#ff8a6a") + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
+		text = _name_line(key.cfg.name, "#f0d050" if key.passive else "#ff8a6a") + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
 	else:
 		text = _name_line(key.name, "#a8e08c") + (_l("<%s>" % _esc(key.def.title), "#9a8f78", 12) if key.def.get("title") else "") + _l("Level %s" % U.n(key.def.get("level", 1)))
-	if tip_key != key or tip_text != text:
+	if not is_same(tip_key, key) or tip_text != text:
 		tip_key = key
 		tip_text = text
 		_set_tip([text], [])
