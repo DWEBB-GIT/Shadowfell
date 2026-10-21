@@ -48,6 +48,9 @@ jobs:
           mkdir -p _site/dist
           cp index.html style.css _site/
           cp dist/shadowfall.js _site/dist/
+          # stamp the commit on the file links so browsers fetch the new build
+          # instead of a cached copy
+          sed -i "s#dist/shadowfall.js#dist/shadowfall.js?v=${GITHUB_SHA::7}#; s#style.css#style.css?v=${GITHUB_SHA::7}#" _site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
