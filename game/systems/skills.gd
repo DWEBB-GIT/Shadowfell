@@ -25,6 +25,24 @@ func rank(id: String) -> int:
 	return ranks.get(id, 0)
 
 
+## What the best tool carried adds to a skill: an item's `<skill>Skill`
+## (fishingSkill, skinningSkill) counts while it is in the bags, the tool
+## pack or equipped. Only the best one counts, as in WoW.
+func tool_bonus(id: String) -> int:
+	var key := id + "Skill"
+	var best := 0
+	for item in DB.items:
+		var d: Dictionary = DB.items[item]
+		if d.has(key) and int(d[key]) > best and game.inventory.has(item):
+			best = int(d[key])
+	return best
+
+
+## The rank plus the best tool's bonus.
+func effective(id: String) -> int:
+	return rank(id) + tool_bonus(id)
+
+
 ## May the character use this ability? A skill's tool once the skill is
 ## learned; a class spell if it is in the class's spellbook, or is the
 ## Shadow or follow-up form of one. Abilities in no class (auto attack) always.

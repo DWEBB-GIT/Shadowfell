@@ -889,7 +889,7 @@ func _refresh_resources() -> void:
 		var i := 0
 		for c in pips.get_children():
 			var on := i < n
-			if c.get_meta("on", null) != on:
+			if not c.has_meta("on") or c.get_meta("on") != on:
 				c.set_meta("on", on)
 				var st := UI.box(Color("e07038") if on else Color("1a1410"), Color.BLACK, 0)
 				st.set_corner_radius_all(6)
@@ -1062,7 +1062,8 @@ func layout() -> void:
 		var r: Control = b[0].root
 		r.position = Vector2(roundf((vp.x - r.size.x) / 2), vp.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
-	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), vp.y - 132 - prompt.size.y)
+	# just over the spell bar, under the cast, gather and skinning bars
+	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), bottom.position.y - 6 - prompt.size.y)
 	for l in [[toast_label, 0.22], [error_label, 0.18]]:
 		var c: Control = l[0]
 		c.size = c.get_combined_minimum_size()

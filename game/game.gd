@@ -352,6 +352,9 @@ func start_game(resume: bool) -> void:
 	if resume and boot_save.status == "ok":
 		save.apply(boot_save.data)
 		resumed = true
+	# the model wears what the class starts with (or the save has on), not
+	# the warden's sword it was built with
+	player.show_equipment(inventory.equipment)
 	recompute_max_health()
 	camp.show()
 	enemies.spawn_all()

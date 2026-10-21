@@ -105,7 +105,8 @@
         "range": 12,
         "keep": 6,
         "windup": 1.1,
-        "width": 0.9,
+        "lock": 0.35,
+        "width": 1.2,
         "projectile": "arrow",
         "speed": 24,
         "interruptible": true
@@ -357,7 +358,8 @@
         "range": 12,
         "keep": 6,
         "windup": 1.1,
-        "width": 0.9,
+        "lock": 0.35,
+        "width": 1.2,
         "projectile": "arrow",
         "speed": 24,
         "interruptible": true

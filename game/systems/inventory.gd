@@ -547,6 +547,9 @@ func _why(loc: String, stack: Dictionary) -> String:
 func _refuse(reason: String) -> Dictionary:
 	if reason:
 		game.events.emit("log", {"text": reason, "kind": "muted", "throttle": "inv-refuse"})
+		# and in red mid-screen, as WoW says "You can't equip that"
+		if game.hud:
+			game.hud.error(reason.trim_suffix("."))
 	return {"ok": false, "reason": reason}
 
 
