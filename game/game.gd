@@ -8,6 +8,12 @@ const SUN := 2.3
 ## Godot's directional light comes out brighter than three.js's at the same
 ## scaled intensity; this evens the sun out, matched by side-by-side screenshots.
 const SUN_MATCH := 0.42
+## The colour grade over the 3D view (not the HUD), and how much brighter the
+## sun is than the matched three.js one: a stronger key light against a cooler
+## fill gives the shadows their depth.
+const GRADE := {"brightness": 1.08, "contrast": 1.12, "saturation": 1.25}
+const SUN_BOOST := 1.35
+const AMBIENT := Color("7f93ad")
 
 var started := false
 var time := 0.0
@@ -66,7 +72,7 @@ var region = null
 var raw_aim = null
 var move_to = null
 var shake := 0.0
-var cursor := -1
+var cursor := "-" ## the cursor shown (Cursors), "" for the arrow
 
 var env: Environment
 var sun: DirectionalLight3D
@@ -143,16 +149,34 @@ func _init_renderer() -> void:
 	# three.js's hemisphere light as flat ambient. three.js divides every
 	# light by pi where Godot does not, so its intensities are scaled by 1/pi
 	# (Tex.LIGHT_SCALE), and like three.js there is no tone mapping.
-	env.ambient_light_color = Color("8a9aa8")
+	env.ambient_light_color = AMBIENT
 	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE
 	env.ambient_light_sky_contribution = 0.0 # there is no sky: all of it is this colour
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	# The grade: the matched three.js lighting reads flat and grey on screen,
+	# so colour and contrast are lifted after the fact (Compatibility supports
+	# these adjustments and glow; both cost one cheap full-screen pass).
+	env.adjustment_enabled = true
+	env.adjustment_brightness = GRADE.brightness
+	env.adjustment_contrast = GRADE.contrast
+	env.adjustment_saturation = GRADE.saturation
+	# bright things (flames, witchlights, spell effects) bloom softly
+	env.glow_enabled = true
+	env.glow_normalized = true
+	for i in 7:
+		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
+	env.glow_intensity = 0.7
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 0.85
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = DB.CONFIG.fog.color
 	env.fog_density = 1.0
 	env.fog_depth_begin = DB.CONFIG.fog.near
 	env.fog_depth_end = DB.CONFIG.fog.far
+	# the haze glows warm towards the low sun
+	env.fog_sun_scatter = 0.35
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -166,13 +190,15 @@ func _init_renderer() -> void:
 
 	# dusk: a low amber sun and a warm glow around the Warden
 	sun = DirectionalLight3D.new()
-	sun.light_color = Color("f0c890")
-	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH
+	sun.light_color = Color("ffc888")
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 40.0
+	sun.shadow_opacity = 0.92
+	sun.shadow_blur = 1.5
 	add_child(sun)
 	player_light = Tex.point_light(Color("ffb070"), 5, 9, 1.6)
 	player_light.shadow_enabled = false
@@ -423,27 +449,28 @@ func _over_bob() -> bool:
 	return _screen_dist(bob) < DB.CONFIG.fishing.clickRadius
 
 
-## The mouse cursor says what a click would do (WoW): attack over an enemy,
-## talk over a townsperson (crossed out until close enough), a hand over loot.
+## The mouse cursor says what a click would do (WoW): a sword over an
+## enemy, a speech bubble over a townsperson (grey until you are close
+## enough to talk), a hand over loot, a hook over your fishing bob.
 func _cursor_for(pick) -> void:
-	var c := Input.CURSOR_ARROW
+	var c := ""
 	if input.mouse.onCanvas and _over_bob():
-		c = Input.CURSOR_DRAG
+		c = "fish"
 	elif pick != null:
 		var p := player.position
 		var o = pick.obj
 		match pick.kind:
 			"enemy":
-				c = Input.CURSOR_CROSS
+				c = "attack"
 			"npc":
 				var near := U.hyp(o.position.x - p.x, o.position.z - p.z) <= DB.CONFIG.shop.talkRange + 0.5 and not collision.wall_between(p.x, p.z, o.position.x, o.position.z)
-				c = Input.CURSOR_HELP if near else Input.CURSOR_FORBIDDEN
+				c = "talk" if near else "talkFar"
 			"loot", "chest":
 				var reach: float = 2.4 if pick.kind == "chest" else DB.CONFIG.loot.reach
-				c = Input.CURSOR_POINTING_HAND if U.hyp(o.x - p.x, o.z - p.z) <= reach else Input.CURSOR_FORBIDDEN
+				c = "loot" if U.hyp(o.x - p.x, o.z - p.z) <= reach else "lootFar"
 	if c != cursor:
 		cursor = c
-		Input.set_default_cursor_shape(c)
+		Cursors.show(c)
 
 
 func _far(x: float, z: float, reach: float) -> bool:
@@ -773,7 +800,7 @@ func _update_region() -> void:
 		env.background_color = env.fog_light_color
 		var light := lerpf(1, bw.light, k)
 		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * light
-		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * light
+		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
 	# a little hysteresis so walking along the border does not flicker the name
 	var r := DB.region_at(z)
 	if region != null and r.id != region.id:

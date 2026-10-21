@@ -39,6 +39,9 @@ var engaged := 0.0 ## seconds to keep showing the health bar
 var dead := false
 var corpse := false ## a body from a saved game, still waiting to be looted
 var wander := {}
+var path := [] ## waypoints (Vector2, x/z) round obstacles to where it is going
+var path_timer := 0.0
+var path_goal := Vector2(INF, INF)
 var group: Node3D
 var model: Node3D
 var rig: Rig
@@ -89,6 +92,11 @@ func _reset_control() -> void:
 	dr = {"n": 0, "quiet": 0.0}
 	stagger_bar = {"value": 0.0, "need": DB.CONFIG.control.bossStaggerNeed} if cfg.get("type") == "boss" else null
 
+
+## passive (data `attitude`): leaves you be until you strike it; shown yellow
+var passive: bool:
+	get:
+		return cfg.get("attitude", "aggressive") == "passive"
 
 var is_elite: bool:
 	get:
@@ -404,7 +412,8 @@ func update(dt: float, player) -> void:
 	else:
 		match state:
 			"idle":
-				if dist < cfg.detection and not hidden:
+				# a passive beast (yellow) pays you no mind until struck
+				if dist < cfg.detection and not hidden and not passive:
 					state = "chase"
 					game.events.emit("enemyAlert", {"enemy": self})
 					_wake_pack()
@@ -419,7 +428,7 @@ func update(dt: float, player) -> void:
 					state = "attack" if dist <= reach else "chase"
 					engaged = maxf(engaged, 2)
 			"return":
-				if dist < cfg.detection * 0.8 and from_home < DB.leash_distance * 0.6 and not hidden:
+				if dist < cfg.detection * 0.8 and from_home < DB.leash_distance * 0.6 and not hidden and not passive:
 					state = "chase"
 				elif from_home < 0.6:
 					state = "idle"
@@ -450,7 +459,7 @@ func update(dt: float, player) -> void:
 			# when the player gets close, and shoots when it is ready
 			facing = atan2(dx, dz)
 			if dist > rg.range * 0.9:
-				_move_towards(player.position.x, player.position.z, move_speed, dt, rg.range * 0.8)
+				_steer_towards(player.position.x, player.position.z, move_speed, dt, rg.range * 0.8)
 				speed01 = 1.0
 			elif dist < rg.keep:
 				position.x -= (dx / dist) * move_speed * 0.75 * dt
@@ -461,7 +470,7 @@ func update(dt: float, player) -> void:
 			elif attack_timer <= 0:
 				_start_shot(player)
 		elif state == "chase":
-			_move_towards(player.position.x, player.position.z, move_speed, dt, reach * 0.85)
+			_steer_towards(player.position.x, player.position.z, move_speed, dt, reach * 0.85)
 			speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
@@ -485,7 +494,7 @@ func update(dt: float, player) -> void:
 	if casting != null:
 		pass # nothing else moves while committed to a telegraphed attack
 	elif state == "return" and stagger <= 0:
-		_move_towards(home.x, home.z, move_speed * 0.8, dt, 0.3)
+		_steer_towards(home.x, home.z, move_speed * 0.8, dt, 0.3)
 		speed01 = 0.8
 		health = minf(max_health, health + dt * 6)
 	elif state == "idle":
@@ -498,6 +507,30 @@ func update(dt: float, player) -> void:
 	if state != "idle" or U.hyp(dx, dz) < ANIMATE_RANGE:
 		rig.update(dt, speed01 * (0.8 if type == "brute" else 1.0 if cfg.model == "hound" else 0.7))
 	_sync()
+
+
+## Go to x/z the way a person would: straight when nothing is in the way,
+## else round the fence, wall or rock by a path (Collision.find_path),
+## looked for again every so often or when the goal moves.
+func _steer_towards(x: float, z: float, speed: float, dt: float, stop_at: float) -> void:
+	var col = game.collision
+	path_timer -= dt
+	var goal := Vector2(x, z)
+	if not col.blocked_between(position.x, position.z, x, z, radius):
+		path = []
+		_move_towards(x, z, speed, dt, stop_at)
+		return
+	if path_timer <= 0 or goal.distance_to(path_goal) > 1.5:
+		path = col.find_path(position.x, position.z, x, z, radius)
+		path_goal = goal
+		path_timer = 0.6 + randf() * 0.3
+	# drop the waypoints already reached
+	while not path.is_empty() and Vector2(position.x, position.z).distance_to(path[0]) < 0.35:
+		path.pop_front()
+	if path.is_empty() or path.size() == 1:
+		_move_towards(x, z, speed, dt, stop_at)
+		return
+	_move_towards(path[0].x, path[0].y, speed, dt, 0.0)
 
 
 func _move_towards(x: float, z: float, speed: float, dt: float, stop_at: float) -> void:

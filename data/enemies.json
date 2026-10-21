@@ -1,10 +1,11 @@
 {
-  "_about": "An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank).",
+  "_about": "`attitude`: \"aggressive\" enemies attack anyone who comes within `detection`; \"passive\" ones (yellow names, like the wild boar) mind their own business until struck. An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank).",
   "leashDistance": 18,
   "enemies": [
     {
       "id": "ghoul",
       "name": "Ashen Ghoul",
+      "attitude": "aggressive",
       "model": "ghoul",
       "type": "normal",
       "level": 1,
@@ -26,6 +27,7 @@
     {
       "id": "brute",
       "name": "Gravebound Brute",
+      "attitude": "aggressive",
       "model": "brute",
       "type": "elite",
       "level": 3,
@@ -58,6 +60,7 @@
     {
       "id": "hound",
       "name": "Barrow Hound",
+      "attitude": "aggressive",
       "model": "hound",
       "type": "pack_beast",
       "level": 3,
@@ -83,6 +86,7 @@
     {
       "id": "archer",
       "name": "Hollow Archer",
+      "attitude": "aggressive",
       "model": "archer",
       "type": "skirmisher",
       "level": 3,
@@ -114,6 +118,7 @@
     {
       "id": "seer",
       "name": "Blackwood Seer",
+      "attitude": "aggressive",
       "model": "seer",
       "type": "elite",
       "level": 5,
@@ -169,6 +174,7 @@
     {
       "id": "training_dummy",
       "name": "Training Dummy",
+      "attitude": "passive",
       "model": "training_dummy",
       "dummy": true,
       "level": 1,
@@ -190,6 +196,7 @@
     {
       "id": "greyjaw",
       "name": "Old Greyjaw",
+      "attitude": "aggressive",
       "model": "hound",
       "type": "elite",
       "level": 5,
@@ -219,6 +226,7 @@
     {
       "id": "wild_boar",
       "name": "Wild Boar",
+      "attitude": "passive",
       "model": "hound",
       "type": "normal",
       "level": 2,
@@ -243,6 +251,7 @@
     {
       "id": "ridge_wolf",
       "name": "Ridge Wolf",
+      "attitude": "aggressive",
       "model": "hound",
       "type": "pack_beast",
       "level": 4,
@@ -270,6 +279,7 @@
     {
       "id": "bristleback",
       "name": "Old Bristleback",
+      "attitude": "aggressive",
       "model": "hound",
       "type": "elite",
       "level": 4,
@@ -298,6 +308,7 @@
     {
       "id": "blackhedge_cutthroat",
       "name": "Blackhedge Cutthroat",
+      "attitude": "aggressive",
       "model": "mara",
       "type": "normal",
       "level": 6,
@@ -321,6 +332,7 @@
     {
       "id": "blackhedge_archer",
       "name": "Blackhedge Bowman",
+      "attitude": "aggressive",
       "model": "archer",
       "type": "skirmisher",
       "level": 6,
@@ -353,6 +365,7 @@
     {
       "id": "blackhedge_captain",
       "name": "Harl Voss",
+      "attitude": "aggressive",
       "model": "mara",
       "type": "elite",
       "level": 8,

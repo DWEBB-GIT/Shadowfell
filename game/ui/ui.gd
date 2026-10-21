@@ -4,15 +4,17 @@ extends RefCounted
 ## borders, parchment text, small buttons, money with coin icons, and rich
 ## text that can hold item and spell icons. Every window is built from these.
 
-const PANEL := Color(14 / 255.0, 12 / 255.0, 10 / 255.0, 0.78)
-const PANEL_SOLID := Color("15120f")
-const WINDOW := Color(16 / 255.0, 13 / 255.0, 10 / 255.0, 0.95)
-const BORDER := Color("6b5532")
-const BORDER_DIM := Color("3e3220")
-const GOLD := Color("c9a45c")
-const TEXT := Color("d9cdb0")
-const TEXT_DIM := Color("9a8f78")
-const BRIGHT := Color("efe2c0")
+# Brighter and warmer than the browser build's palette: on top of the graded
+# 3D view the old browns read as flat grey.
+const PANEL := Color(24 / 255.0, 19 / 255.0, 13 / 255.0, 0.84)
+const PANEL_SOLID := Color("1c1711")
+const WINDOW := Color(24 / 255.0, 19 / 255.0, 13 / 255.0, 0.96)
+const BORDER := Color("8f6f3c")
+const BORDER_DIM := Color("57452a")
+const GOLD := Color("e6b85e")
+const TEXT := Color("ebdfc2")
+const TEXT_DIM := Color("b0a386")
+const BRIGHT := Color("fbefcf")
 const UP := Color("8fdf6a")
 const DOWN := Color("e06a5a")
 const GREEN := Color("8cbf78")
@@ -109,6 +111,7 @@ static func box(bg: Color, border: Color, pad := 6, width := 1, sides = null) ->
 	s.bg_color = bg
 	s.border_color = border
 	s.set_border_width_all(width)
+	s.anti_aliasing = false
 	if sides is Vector4:
 		s.content_margin_left = sides.x
 		s.content_margin_top = sides.y
@@ -206,7 +209,47 @@ static func rich(parent: Node, size := 13, width := 0.0) -> RichTextLabel:
 		r.custom_minimum_size = Vector2(width, 0)
 	if parent:
 		parent.add_child(r)
+	_presize(r, width)
 	return r
+
+
+## Wrapped text is measured at the width it has, and a new label has none
+## until its container lays it out a frame later: without this its first
+## size is as tall as one word per line, and its window flashes huge.
+static func _presize(c: Control, width := 0.0) -> void:
+	var w := width
+	var p := c.get_parent() as Control
+	if w <= 0 and p != null:
+		w = p.size.x
+	if w > 0:
+		c.size = Vector2(w, c.size.y)
+
+
+## a label that wraps at its container's width (see _presize)
+static func wrapped(l: Label) -> Label:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_presize(l)
+	return l
+
+
+## Size a floating panel to its contents, and keep it out of sight while
+## that size is still settling (two frames the same): a window or tip with
+## wrapped text otherwise shows for a frame at the wrong size, very large,
+## before it shrinks into place (Dan, 2026-10-21).
+static func fit_steady(c: Control) -> Vector2:
+	var s := c.get_combined_minimum_size()
+	var f := Engine.get_process_frames()
+	var n: int = c.get_meta("fit_n", 0)
+	if c.get_meta("fit_last", Vector2(-1, -1)) != s:
+		n = 0
+	elif c.get_meta("fit_f", -1) != f:
+		n += 1
+	c.set_meta("fit_last", s)
+	c.set_meta("fit_n", n)
+	c.set_meta("fit_f", f)
+	c.modulate.a = 1.0 if n >= 1 else 0.0
+	c.size = s
+	return s
 
 
 const _TOKEN := "\\{(gold|silver|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
@@ -249,9 +292,9 @@ static func money(n: int) -> String:
 	var s := maxi(0, n) % 100
 	var out := ""
 	if g:
-		out += "[color=#efe2c0]%d[/color]{gold} " % g
+		out += "[color=#ffd56a]%d[/color]{gold} " % g
 	if s or not g:
-		out += "[color=#efe2c0]%d[/color]{silver}" % s
+		out += "[color=#e8edf2]%d[/color]{silver}" % s
 	return out.strip_edges()
 
 
@@ -262,7 +305,7 @@ static var _coins := {}
 static func coin(kind: String) -> Texture2D:
 	if _coins.has(kind):
 		return _coins[kind]
-	var stops := [Color("fff2b0"), Color("e0b030"), Color("7a5410")] if kind == "gold" else [Color("ffffff"), Color("b8c0c8"), Color("5a6068")]
+	var stops := [Color("fff6c0"), Color("f2c030"), Color("8a5c0c")] if kind == "gold" else [Color("ffffff"), Color("cdd6e0"), Color("68707a")]
 	var s := 22
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
 	var c := Vector2(s / 2.0, s / 2.0)
@@ -306,9 +349,7 @@ static func window(parent: Node, title: String, width := 0.0, on_close := Callab
 
 ## a hint line under a window (.window-hint)
 static func hint(parent: Node) -> Label:
-	var l := label(parent, "", 11, TEXT_DIM)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return l
+	return wrapped(label(parent, "", 11, TEXT_DIM))
 
 
 static func clear(n: Node) -> void:

@@ -36,7 +36,7 @@ func _names() -> Array:
 		if not e.alive or game.hud.enemy_bars.has(e.id):
 			continue
 		var h: float = e.cfg.get("barHeight", 3.0 if e.cfg.get("elite") else 2.1)
-		out.append({"text": e.cfg.name, "colour": Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
+		out.append({"text": e.cfg.name, "colour": Color("f0d050") if e.passive else Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
 	return out
 
 

@@ -263,9 +263,13 @@ func _build() -> void:
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
-	vignette = _radial(Color(0, 0, 0, 0), Color(0, 0, 0, 0.55), 0.55)
+	vignette = _radial(Color(0, 0, 0, 0), Color(0, 0, 0, 0.45), 0.6)
 	hurt = _radial(Color(0.59, 0.08, 0.04, 0), Color(0.59, 0.08, 0.04, 0.75), 0.7)
 	hurt.modulate.a = 0
+	# both darken the world, not the HUD: over the panels they turned the
+	# corner UI (money, bags, minimap) a muddy half-grey
+	root.move_child(hurt, 0)
+	root.move_child(vignette, 0)
 
 	items = ItemUI.new(game, self)
 	items.sockets = _sockets_box
@@ -476,7 +480,7 @@ func _build_dock() -> void:
 	cp.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(10, 0, 10, 0)))
 	cp.custom_minimum_size = Vector2(0, 52)
 	cp.size_flags_vertical = Control.SIZE_SHRINK_END
-	coins = UI.rich(cp, 14)
+	coins = UI.rich(cp, 16)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
@@ -1070,6 +1074,7 @@ func layout() -> void:
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
+	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - 12 - mute.size.x, vp.y - 110 - mute.size.y)
 	for m in [death, document]:
@@ -1128,7 +1133,7 @@ func _update_target() -> void:
 	shown_target = shown
 	target.visible = shown != null or friend != null
 	var who = friend if friend != null else shown
-	if who != null and who != portrait_of:
+	if who != null and not is_same(who, portrait_of):
 		portrait_of = who
 		var model = friend.def.get("model") if friend != null else shown.cfg.get("model")
 		target_img.texture = icons.portrait(model) if model else null
@@ -1151,7 +1156,7 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("e8c8a0"))
+	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("f0d050") if shown.passive else Color("e8c8a0"))
 	target_badge.text = U.n(cfg.get("level", 1))
 	var attacking: bool = t != null and tg.attacking
 	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
@@ -1201,7 +1206,7 @@ func _update_enemy_bars() -> void:
 		var h := 12.0 if targeted else 8.0 if elite else 6.0
 		bar.name.visible = elite or targeted or nemesis
 		bar.name.text = ("☠ " if nemesis else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("ffb08a") if targeted else Color("d8c7a0"))
+		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("f0d050") if e.passive else Color("ffb08a") if targeted else Color("d8c7a0"))
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null
