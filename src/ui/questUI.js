@@ -1,4 +1,4 @@
-import { moneyHTML } from './money.js';
+import { coinsHTML, moneyHTML } from './money.js';
 import * as THREE from 'three';
 import { DB } from '../data/db.js';
 import { ITEMS } from '../data/items.js';
@@ -152,7 +152,7 @@ export class QuestUI {
 
   _rewardHTML(r) {
     const parts = [];
-    if (r.coins) parts.push(`<span class="q-reward">${moneyHTML(r.coins)}</span>`);
+    if (r.coins) parts.push(`<span class="q-reward">${coinsHTML(r.coins)}</span>`);
     if (r.xp) parts.push(`<span class="q-reward">${r.xp} experience</span>`);
     for (const [f, n] of Object.entries(r.reputation || {})) parts.push(`<span class="q-reward">+${n} ${esc(DB.factions[f].name)}</span>`);
     for (const g of r.items || []) {

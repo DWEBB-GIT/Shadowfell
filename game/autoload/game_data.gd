@@ -1,3 +1,4 @@
+@tool
 extends Node
 ## Every content file in res://data, loaded once at start. These are the same
 ## JSON files the browser build and the quest editor use, so a change to them

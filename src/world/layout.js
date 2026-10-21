@@ -38,6 +38,9 @@ export const ENEMIES = W.enemySpawns.map((s) => ({ id: s.id, type: s.enemy, posi
 // Static props. `collider` is a circle radius (0 = walk-through) or a list of
 // [x, z, radius] circles in the prop's own space.
 export const PROPS = S.props;
+// Hand-placed trees from the World editor, { model, x, z, s, r, solid };
+// absent until it first saves, and the woodland is scattered by seed.
+export const TREES = S.trees;
 // Areas kept clear of procedurally scattered trees: [x, z, radius].
 export const CLEARINGS = S.clearings;
 // Warm light sources (and the seer's witchlight).

@@ -24,3 +24,18 @@ export function moneyHTML(n) {
   if (silver || !gold) html += `<span class="money"><b>${silver}</b><span class="coin silver" title="Silver"></span></span>`;
   return `<span class="purse">${html}</span>`;
 }
+
+// Coins in the data are a whole number, or a range { min, max } rolled
+// when they are handed over (a chest holding 0 to 150 silver).
+export const coinRange = (c) => (typeof c === 'object' && c ? [c.min ?? 0, c.max ?? c.min ?? 0] : [c || 0, c || 0]);
+
+export function rollCoins(c, rand = Math.random) {
+  const [lo, hi] = coinRange(c);
+  return hi > lo ? lo + Math.floor(rand() * (hi - lo + 1)) : lo;
+}
+
+// moneyHTML for a fixed amount or "min � max"
+export function coinsHTML(c) {
+  const [lo, hi] = coinRange(c);
+  return lo === hi ? moneyHTML(lo) : `${moneyHTML(lo)} � ${moneyHTML(hi)}`;
+}

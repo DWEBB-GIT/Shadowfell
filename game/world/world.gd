@@ -250,7 +250,7 @@ var indoor_blend: float:
 
 ## Not on a building (with room to walk round it), a levelled pad, or a
 ## prop that has a box collider (the cottages).
-func _clear_of_town(x: float, z: float) -> bool:
+static func _clear_of_town(x: float, z: float) -> bool:
 	for b in Layout.buildings:
 		if absf(x - b.position[0]) < b.size[0] / 2.0 + 3 and absf(z - b.position[1]) < b.size[1] / 2.0 + 3:
 			return false
@@ -264,7 +264,7 @@ func _clear_of_town(x: float, z: float) -> bool:
 	return true
 
 
-func _clear(x: float, z: float, margin := 0.0) -> bool:
+static func _clear(x: float, z: float, margin := 0.0) -> bool:
 	for c in Layout.clearings:
 		if U.hyp(x - c[0], z - c[1]) < c[2] + margin:
 			return false
@@ -278,10 +278,33 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 	return false
 
 
+## The woodland: every tree, planted, registered with collision and drawn
+## in batches, one per model.
+func _scatter_woodland() -> void:
+	map_trees = [] # for the minimap
+	var by_model := {}
+	for t in trees():
+		if t.get("solid", true):
+			game.collision.add(t.x, t.z, 0.45 * t.s)
+		map_trees.append(Vector2(t.x, t.z))
+		if not by_model.has(t.model):
+			by_model[t.model] = []
+		by_model[t.model].append(t)
+	for m in by_model:
+		_instanced(m, by_model[m])
+
+
+## Every tree as {model, x, z, s (scale), r (turn, radians), solid}: the
+## hand-placed list in scenery.json (`trees`) once the World editor has
+## saved one, or else the seeded scatter below.
+static func trees() -> Array:
+	var placed = DB.scenery.get("trees")
+	return placed if placed is Array else scattered_trees()
+
+
 ## The woodland, laid out exactly as the browser build lays it (same seeds,
 ## same draws, same order), so every tree stands where it always has.
-func _scatter_woodland() -> void:
-	var collision = game.collision
+static func scattered_trees() -> Array:
 	var road: Dictionary = DB.region_by_id("fallen_road").bounds
 	var rand := U.Seeded.new(1999)
 	var pines := []
@@ -306,7 +329,7 @@ func _scatter_woodland() -> void:
 		if _crowded(pines, x, z, 3.2 if inside else 2.1):
 			continue
 		var s := 0.8 + rand.next() * 0.7
-		var entry := {"x": x, "z": z, "s": s, "r": rand.next() * TAU, "collide": inside or edge > -3}
+		var entry := {"x": x, "z": z, "s": s, "r": rand.next() * TAU, "solid": inside or edge > -3}
 		if inside and rand.next() < 0.12:
 			dead.append(entry)
 		else:
@@ -315,9 +338,10 @@ func _scatter_woodland() -> void:
 	var keep := func(t): return t.z > -47 and t.z < 49 and Terrain.distance_to_road(t.x, t.z) >= 3.4
 	var road_pines := pines.filter(keep)
 	var road_dead := dead.filter(keep)
-	for t in road_pines + road_dead:
-		if t.collide:
-			collision.add(t.x, t.z, 0.45 * t.s)
+	for t in road_pines:
+		t.model = "pine"
+	for t in road_dead:
+		t.model = "dead_tree"
 
 	# The Blackwood: black pines, close-set, with the track the only clear way.
 	var bw: Dictionary = DB.region_by_id("blackwood").bounds
@@ -341,13 +365,13 @@ func _scatter_woodland() -> void:
 		if _crowded(black, x, z, gap) or _crowded(bw_dead, x, z, gap):
 			continue
 		var s := 0.85 + rb.next() * 0.6
-		var entry := {"x": x, "z": z, "s": s, "r": rb.next() * TAU}
+		var entry := {"x": x, "z": z, "s": s, "r": rb.next() * TAU, "solid": inside or edge > -3}
 		if inside and rb.next() < 0.1:
+			entry.model = "dead_tree"
 			bw_dead.append(entry)
 		else:
+			entry.model = "black_pine"
 			black.append(entry)
-		if inside or edge > -3:
-			collision.add(x, z, 0.45 * s)
 	# Brackenford: a few pines about the town and a wood at its edges, never
 	# on the road, a pad or a building
 	var town: Dictionary = DB.region_by_id("brackenford").bounds
@@ -368,16 +392,9 @@ func _scatter_woodland() -> void:
 		if _crowded(town_pines, x, z, 3.2 if inside else 2.1):
 			continue
 		var s := 0.8 + rt.next() * 0.7
-		town_pines.append({"x": x, "z": z, "s": s, "r": rt.next() * TAU})
-		if inside or edge > -3:
-			collision.add(x, z, 0.45 * s)
-	# for the minimap
-	map_trees = []
-	for t in road_pines + town_pines + road_dead + bw_dead + black:
-		map_trees.append(Vector2(t.x, t.z))
-	_instanced("pine", road_pines + town_pines)
-	_instanced("dead_tree", road_dead + bw_dead)
-	_instanced("black_pine", black)
+		town_pines.append({"model": "pine", "x": x, "z": z, "s": s, "r": rt.next() * TAU, "solid": inside or edge > -3})
+	# in the order each model has always been drawn
+	return road_pines + town_pines + road_dead + bw_dead + black
 
 
 func _instanced(model: String, list: Array) -> void:

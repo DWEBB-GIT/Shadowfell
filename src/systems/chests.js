@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { DB } from '../data/db.js';
+import { rollCoins } from '../ui/money.js';
 import { ITEMS } from '../data/items.js';
 import { heightAt } from '../world/terrain.js';
 
@@ -93,7 +94,8 @@ export class Chests {
     for (const it of c.def.items || []) {
       if (!inventory.addItem(it.id, it.count || 1)) loot.dropAt({ id: it.id, count: it.count || 1 }, { x: c.x + 0.9, z: c.z + 0.4 });
     }
-    if (c.def.coins) inventory.addCoins(c.def.coins, `in the ${c.def.name}`);
+    const coins = rollCoins(c.def.coins, this.game.random);
+    if (coins) inventory.addCoins(coins, `in the ${c.def.name}`);
     events.emit('log', { text: `You open the ${c.def.name}.`, kind: 'loot' });
     events.emit('chestOpened', { id: c.def.id });
     this._look(c);

@@ -224,8 +224,9 @@ func complete(id: String) -> bool:
 	if q.get("turnInLog"):
 		events.emit("log", {"text": q.turnInLog, "kind": "lore"})
 	events.emit("log", {"text": "Quest complete: %s." % q.name, "kind": "quest"})
-	if r.get("coins"):
-		inventory.add_coins(r.coins, "from %s" % DB.npcs[q.turnIn].name)
+	var coins := U.roll_coins(r.get("coins"), game.random)
+	if coins:
+		inventory.add_coins(coins, "from %s" % DB.npcs[q.turnIn].name)
 	for g in gifts:
 		inventory.add_item(g.item, g.get("count", 1))
 	if r.get("xp"):

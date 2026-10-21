@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver: a number, or a range {min, max} rolled when opened) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item.",
   "bounds": {
     "minX": -36,
     "maxX": 36,
@@ -580,7 +580,7 @@
     {
       "id": "watch_key",
       "model": "grave_iron",
-      "position": [-24.5, 9.0],
+      "position": [-24.5, 9],
       "heightOffset": 0.05,
       "prompt": "Take the iron key",
       "reward": {
@@ -688,7 +688,7 @@
       "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
-      "position": [-24.6, -7.0],
+      "position": [-24.6, -7],
       "prompt": "Pick the mere sorrel",
       "respawn": 45,
       "reward": {
@@ -712,7 +712,7 @@
       "quest": "tam_sorrel",
       "model": "pine",
       "scale": 0.09,
-      "position": [-27.6, -20.0],
+      "position": [-27.6, -20],
       "prompt": "Pick the mere sorrel",
       "respawn": 45,
       "reward": {
@@ -842,7 +842,7 @@
     {
       "id": "roadside_chest",
       "name": "Traveller's chest",
-      "position": [-9.5, 4.0],
+      "position": [-9.5, 4],
       "facing": 30,
       "coins": 15,
       "items": [
@@ -903,17 +903,17 @@
         [-6, 0.9, -6, 4.5]
       ],
       "furniture": [
-        [-3.8, -3.95, 1.0],
-        [-3.0, -3.95, 0.6],
+        [-3.8, -3.95, 1],
+        [-3, -3.95, 0.6],
         [-4.6, -3.95, 0.6],
         [1.8, -2.9, 0.4],
         [2.6, -2.9, 0.4],
         [3.4, -2.9, 0.4],
         [4.2, -2.9, 0.4],
-        [5.0, -2.9, 0.4],
+        [5, -2.9, 0.4],
         [-2.2, 1.2, 0.6],
         [1.4, 2.4, 0.6],
-        [-1.0, -1.4, 0.6],
+        [-1, -1.4, 0.6],
         [4.7, 3.4, 0.6],
         [5.4, 3.4, 0.5],
         [4.7, 1.6, 0.6],

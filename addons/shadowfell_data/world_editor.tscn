@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cpu3b5w7ixk1p"]
+
+[ext_resource type="Script" uid="uid://chikq111arugn" path="res://addons/shadowfell_data/world_editor.gd" id="1"]
+
+[node name="WorldEditor" type="Node3D" unique_id=642861355]
+script = ExtResource("1")

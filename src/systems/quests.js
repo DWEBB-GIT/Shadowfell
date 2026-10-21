@@ -1,4 +1,5 @@
 import { DB } from '../data/db.js';
+import { rollCoins } from '../ui/money.js';
 import { ENEMIES } from '../world/layout.js';
 
 // Quests, WoW style (data/quests.json). A quest is offered by its giver once
@@ -173,7 +174,8 @@ export class QuestLog {
     if (q.setsFlag) worldState.flags.add(q.setsFlag);
     if (q.turnInLog) events.emit('log', { text: q.turnInLog, kind: 'lore' });
     events.emit('log', { text: `Quest complete: ${q.name}.`, kind: 'quest' });
-    if (r.coins) inventory.addCoins(r.coins, `from ${DB.npcs[q.turnIn].name}`);
+    const coins = rollCoins(r.coins, this.game.random);
+    if (coins) inventory.addCoins(coins, `from ${DB.npcs[q.turnIn].name}`);
     for (const g of gifts) inventory.addItem(g.item, g.count || 1);
     if (r.xp) progression.addXp(r.xp);
     if (r.reputation) this.game.reputation.addAll(r.reputation);
