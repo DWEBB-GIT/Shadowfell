@@ -1,5 +1,5 @@
 {
-  "_about": "Quests, WoW style. A quest is offered by its `giver` once every quest in `requires` is done, and handed in to its `turnIn` npc once every objective is met. Objectives: kill (an enemy type, counted from every one defeated), collect (an item carried; taken on hand-in unless `keep`), examine (a world point). `location` names a world.json location for the minimap. `offer`, `progress` and `complete` are what the giver says at each step.",
+  "_about": "Quests, WoW style. A quest is offered by its `giver` once every quest in `requires` is done, and handed in to its `turnIn` npc once every objective is met. Objectives: kill (an enemy type, counted from when the quest is taken), collect (an item carried; taken on hand-in unless `keep`), examine (a world point), talk (go and speak to the turn-in npc; met at once). Quests sharing a `choice` are one decision: taking one locks the others. `setsFlag` records the outcome for dialogue and the world. `location` names a world.json location for the minimap. `offer`, `progress` and `complete` are what the giver says at each step.",
   "quests": [
     {
       "id": "missing_delivery",
@@ -184,7 +184,7 @@
       "name": "Pelts for the Boat",
       "giver": "town_board",
       "turnIn": "tam",
-      "summary": "Old Tam wants hound pelts to stuff the seams of his boat. Bring him two.",
+      "summary": "Old Tam wants hound pelts to stuff the seams of his boat. Bring him two. Hounds have to be skinned for their pelts: Agna Holt, the tanner in Brackenford, teaches Skinning.",
       "offer": "Boat leaks. Need two pelts to caulk her, hound will do. Bring them to the mere. Tam.",
       "progress": "Still leaking, she is.",
       "complete": "Good thick hides. She'll float another year. Take this, and mind the edge.",
@@ -389,6 +389,503 @@
         }
       ],
       "reward": { "coins": 10, "xp": 80 }
+    },
+    {
+      "id": "agna_first_hides",
+      "name": "First Hides",
+      "giver": "agna",
+      "turnIn": "agna",
+      "summary": "Agna Holt the tanner wants five boar hides, skinned clean, to see whether you have the hands for it.",
+      "offer": "Everyone who comes through that gate thinks they can skin. Most of them bring me something that looks like it lost an argument with a plough. Bring me five boar hides, whole, from the boar east of the road. If they're fit to tan, I'll give you a better knife than the one you're holding.",
+      "progress": "Five hides. Whole. Not in ribbons.",
+      "complete": "Hm. Not bad. Not good, but not bad. Here. My second-best knife. Look after it better than you looked after these.",
+      "objectives": [
+        {
+          "id": "hides",
+          "type": "collect",
+          "target": "boar_hide",
+          "count": 5,
+          "label": "Boar hides",
+          "location": "boar_runs"
+        }
+      ],
+      "reward": {
+        "coins": 8,
+        "xp": 140,
+        "items": [
+          {
+            "item": "tanners_knife",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "agna_wolf_pelts",
+      "name": "Pelts from the Ridge",
+      "giver": "agna",
+      "turnIn": "agna",
+      "requires": ["agna_first_hides"],
+      "summary": "Agna Holt wants four ridge wolf pelts. The wolves hunt the high ground east of the road, south of Hallow Cut. They are level 4, so you need Skinning 10 to skin them.",
+      "offer": "Winter's coming and everyone in Brackenford suddenly remembers they own no warm coat. Wolf pelt. Four of them, from the ridge east of the road. The wolves run in packs, so don't go up there whistling. And you'll want ten in the skill before they come off clean.",
+      "progress": "Four pelts. The ridge, east of the road.",
+      "complete": "Good thick fur. Someone in this town will be warm because of you, and they'll never once think to thank you. That's tanning.",
+      "objectives": [
+        {
+          "id": "pelts",
+          "type": "collect",
+          "target": "wolf_pelt",
+          "count": 4,
+          "label": "Ridge wolf pelts",
+          "location": "wolf_ridge"
+        }
+      ],
+      "reward": {
+        "coins": 22,
+        "xp": 180
+      }
+    },
+    {
+      "id": "board_boar_haunches",
+      "name": "Boar for the Spit",
+      "giver": "town_board",
+      "turnIn": "hester",
+      "summary": "Hester at the Ford Inn wants five boar haunches for the spit. Wild boar root about the fields east of the road and round the farms.",
+      "offer": "BOAR WANTED for the spit. Five haunches, fresh, and I'll pay fair coin. The boar east of the road are fat on everybody's turnips. H. Vale, the Ford Inn.",
+      "progress": "The spit's turning with nothing on it.",
+      "complete": "Now that's a smell to bring folk in out of the rain. Here, and I'll show you the spit if you've the coin.",
+      "objectives": [
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "boar_meat",
+          "count": 5,
+          "label": "Boar haunches",
+          "location": "boar_runs"
+        }
+      ],
+      "reward": {
+        "coins": 15,
+        "xp": 100
+      }
+    },
+    {
+      "id": "board_bristleback",
+      "name": "Bounty: Old Bristleback",
+      "giver": "town_board",
+      "turnIn": "bram",
+      "summary": "Old Bristleback, a boar the size of a cart, has broken every fence on the Fallen Road. Kill it and claim Bram Corrick's bounty at his farm.",
+      "offer": "BOUNTY. OLD BRISTLEBACK, the great boar, has broke my fences nine times this year and gored my good dog. Kill it and bring word to Corrick farm. B. Corrick. (Underneath, in another hand: and good riddance to you both.)",
+      "progress": "Still out there. I can hear my fences going.",
+      "complete": "Dead? Truly? Thirty years that pig's been laughing at me. Here, take it, every coin. I'd give you the dog too, if he'd go.",
+      "objectives": [
+        {
+          "id": "bristleback",
+          "type": "kill",
+          "target": "bristleback",
+          "count": 1,
+          "label": "Old Bristleback slain",
+          "location": "boar_runs"
+        }
+      ],
+      "reward": {
+        "coins": 35,
+        "xp": 200
+      }
+    },
+    {
+      "id": "feud_black_barley",
+      "name": "Black Barley",
+      "giver": "edda",
+      "turnIn": "edda",
+      "summary": "Edda Ashby's barley is rotting in the ground and she is sure the Corricks have poisoned it. Look at the field and the boundary stone on the hedge, then tell her what you saw.",
+      "offer": "Look at it. Look at my barley. Thirty years my family's farmed this ground and it's never once come up black. Then the Corricks start sniffing round the hedge, and now this. Salt, or worse. Go and look at the field, and the stone on the hedge while you're at it. Then come and tell me I'm wrong. You won't.",
+      "progress": "Well? Did you look, or did you just stand there?",
+      "complete": "Lifted turf at the stone. Someone careful, you say. Oh, Bram Corrick's careful. Careful as a fox in a henhouse.",
+      "objectives": [
+        {
+          "id": "field",
+          "type": "examine",
+          "target": "ashby_field",
+          "label": "Look at the black barley",
+          "location": "ashby_farm"
+        },
+        {
+          "id": "stone",
+          "type": "examine",
+          "target": "boundary_stone",
+          "label": "Look at the boundary stone",
+          "location": "boundary_stone"
+        }
+      ],
+      "reward": {
+        "coins": 4,
+        "xp": 120
+      }
+    },
+    {
+      "id": "feud_over_the_hedge",
+      "name": "Over the Hedge",
+      "giver": "edda",
+      "turnIn": "bram",
+      "requires": ["feud_black_barley"],
+      "summary": "Edda wants Bram Corrick told, to his face, that she knows what he has done. He farms the land south of the hedge.",
+      "offer": "I'll not set foot on Corrick land. My mother never did and her mother never did. But you can. Go and tell Bram Corrick I know what he's done to my field, and that the reeve will hear of it.",
+      "progress": "Corrick. South of the hedge. Follow the smell.",
+      "complete": "Poisoned her barley? Me? I've not been over that hedge since her husband's burying, and I only went then to make sure. You tell Edda Ashby she can bring the reeve, and he can count the boar in my fields while he's here.",
+      "objectives": [
+        {
+          "id": "talk",
+          "type": "talk",
+          "target": "bram",
+          "label": "Speak to Bram Corrick",
+          "location": "corrick_farm"
+        }
+      ],
+      "reward": {
+        "xp": 60
+      }
+    },
+    {
+      "id": "feud_tusks",
+      "name": "Tusks in the Turnips",
+      "giver": "bram",
+      "turnIn": "bram",
+      "requires": ["feud_over_the_hedge"],
+      "summary": "Wild boar are tearing up the Corrick fields as well as everyone else's. Kill six, and Bram Corrick may have more to say about the Ashbys.",
+      "offer": "You want to talk about ruined fields? Look east. Wild boar, a sounder of them, rooting up everything I plant and half the road besides. Kill six of the brutes and I'll tell you something about that stone Edda's so worried about.",
+      "progress": "Still hear them grunting. Still not dead, then.",
+      "complete": "That's six fewer mouths. All right. About the stone. I've seen someone at it, late, more than once. Not me. And there's another thing. Three of my pigs gone from the sty since harvest, and I blamed the boar. Boar don't lift gate latches. And my hired lad, Cal. Never in his bed when I look in, and always mud on his boots from the north side. Ask him where he goes. He'll lie to me. He might not lie to you.",
+      "objectives": [
+        {
+          "id": "boars",
+          "type": "kill",
+          "target": "wild_boar",
+          "count": 6,
+          "label": "Wild Boars slain",
+          "location": "boar_runs"
+        }
+      ],
+      "reward": {
+        "coins": 12,
+        "xp": 180
+      }
+    },
+    {
+      "id": "feud_letter",
+      "name": "A Letter Under the Stone",
+      "giver": "cal",
+      "turnIn": "wren",
+      "requires": ["feud_tusks"],
+      "summary": "Cal Fenner, Bram Corrick's hired hand, and Wren Ashby, Edda's daughter, have been leaving each other letters under the boundary stone. With both farms watching it now, Cal wants you to take his last letter to Wren before anyone else finds it.",
+      "offer": "Bram's sent you, hasn't he. Look. It's me at the stone. Me and Wren Ashby. We leave letters under it, have done since harvest. A hired hand with no land and Edda Ashby's only daughter. You can see why we keep it under a stone. Nobody poisoned anybody, we just lift the turf. But Edda's watching the hedge now, and there's a letter under there with my name all over it. Get it out before her mother does. Give it to Wren. Only Wren.",
+      "progress": "Under the stone. Quick, before someone looks.",
+      "complete": "Cal sent you? Give it here. ...Oh, the fool, he's signed it. He always signs it. Thank you. Don't look at me like that. Mother would sooner see me wed a boar than a hired man off Corrick land.",
+      "objectives": [
+        {
+          "id": "letter",
+          "type": "collect",
+          "target": "cals_letter",
+          "label": "Cal's letter, from under the stone",
+          "location": "boundary_stone"
+        }
+      ],
+      "reward": {
+        "xp": 120
+      }
+    },
+    {
+      "id": "feud_what_lies_under",
+      "name": "What Lies Under",
+      "giver": "wren",
+      "turnIn": "wren",
+      "requires": ["feud_letter"],
+      "summary": "Wren Ashby says the barley started dying where the old drain comes out of the bank. Look at the drain mouth on the Ashby side of the hedge, pull three of the black nails out of it (at either end), and look for whatever else is in there.",
+      "offer": "It isn't the Corricks. I've told her and told her. The barley started dying by the old drain, where it comes out of the bank on our side of the hedge. It runs all the way back under Corrick land to the graves on the hill. Mother won't go near it. Look at it for me. Both ends. Whatever's in the water, bring some back. She'll need to see it.",
+      "progress": "The drain, by the hedge. And the far end, up by the graves, if you can stomach it.",
+      "complete": "Coffin nails. Somebody dug up the old graves and pushed these into our drain. On purpose. ...And this. A black rag, knotted three times. The Blackhedge lot wear those, the ones who rob the carts on the road. Why would bandits want our barley dead? ...I've seen one like it before. Hanging on the hook behind Cal's door. He said he found it on the road. Keep the nails. Somebody has to tell Mother, and she'll want proof in her hand. But ask Cal about that rag first. I can't.",
+      "objectives": [
+        {
+          "id": "drain",
+          "type": "examine",
+          "target": "ashby_drain",
+          "label": "Look at the old drain",
+          "location": "old_drain"
+        },
+        {
+          "id": "nails",
+          "type": "collect",
+          "target": "grave_rot_nails",
+          "count": 3,
+          "label": "Black coffin nails",
+          "keep": true,
+          "location": "old_drain"
+        },
+        {
+          "id": "rag",
+          "type": "collect",
+          "target": "blackhedge_rag",
+          "keep": true,
+          "label": "Whatever was caught on the drain stones by the graves",
+          "location": "corrick_farm"
+        }
+      ],
+      "reward": {
+        "xp": 200
+      }
+    },
+    {
+      "id": "feud_end_truth",
+      "name": "The Whole Truth",
+      "giver": "wren",
+      "turnIn": "edda",
+      "requires": ["feud_cals_coin"],
+      "choice": "ashby_feud_ending",
+      "summary": "Tell Edda Ashby everything: the bandits, the coffin nails in the old drain, Cal's night work for them and why he did it, and Wren and Cal and their letters under the stone. Show her the nails.",
+      "offer": "Tell her all of it. The bandits, the drain, the nails. What Cal did, and why. And me and Cal. I'm sick of lifting turf in the dark. If she throws me out, she throws me out. At least the barley will grow.",
+      "progress": "Mother's in the yard. She's always in the yard.",
+      "complete": "Coffin nails. Bandits, in my own ground. And I spent the summer cursing Bram Corrick. ...And my Wren, with Bram's hired boy. Under my nose, all harvest. Give me a moment. No. Give me a lifetime. ...Tell Bram Corrick I'm sorry. Then tell him we're digging a new drain, together. And that boy. Hauling grave-nails into my barley for a shilling a night, to buy my daughter a ring. Of all the stupid, stupid... Tell him he can come to supper. He can dig the drain first. Then never repeat that I said any of it.",
+      "objectives": [
+        {
+          "id": "nails",
+          "type": "collect",
+          "target": "grave_rot_nails",
+          "count": 3,
+          "label": "Black coffin nails, as proof"
+        }
+      ],
+      "setsFlag": "feud_mended",
+      "turnInLog": "The Ashbys and the Corricks will dig the new drain together. Wren and Cal no longer need the stone.",
+      "reward": {
+        "coins": 25,
+        "xp": 300,
+        "items": [
+          {
+            "item": "roast_boar",
+            "count": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "feud_end_secret",
+      "name": "Only the Drain",
+      "giver": "wren",
+      "turnIn": "edda",
+      "requires": ["feud_cals_coin"],
+      "choice": "ashby_feud_ending",
+      "summary": "Tell Edda Ashby about the bandits and the coffin nails in the old drain, and nothing about Wren and Cal, or Cal's part in it. Show her the nails.",
+      "offer": "Tell her about the bandits and the drain. Only that. Not about me and Cal, and not what he did. Not yet. She's lost the barley and Father in the same few years; she'll not lose me to a hired hand on the same day. Let us keep our stone a while longer. Please.",
+      "progress": "Mother's in the yard. Only the drain, mind.",
+      "complete": "Coffin nails. Bandits, in my own ground, all this time. ...So it wasn't Corrick. I'll have the drain stopped and the bank dug out. I'll not apologise to him, mind. He'll have done something, some time. He always has.",
+      "objectives": [
+        {
+          "id": "nails",
+          "type": "collect",
+          "target": "grave_rot_nails",
+          "count": 3,
+          "label": "Black coffin nails, as proof"
+        }
+      ],
+      "setsFlag": "feud_secret",
+      "turnInLog": "The old drain will be stopped. The feud cools, but the hedge stays, and so does the secret under the stone.",
+      "reward": {
+        "coins": 25,
+        "xp": 300
+      }
+    },
+    {
+      "id": "feud_end_blame",
+      "name": "Corrick's Doing",
+      "giver": "edda",
+      "turnIn": "edda",
+      "requires": ["feud_cals_coin"],
+      "choice": "ashby_feud_ending",
+      "summary": "Edda Ashby wants a culprit, and the old drain runs under Corrick land. Give her the coffin nails and tell her the Corricks put them there. Say nothing about bandits.",
+      "offer": "You've been poking round that drain. I've seen you. It runs under Corrick land, every yard of it. Whatever's in it, he put there. I don't want to hear about bandits or bogles. Bring me what you found and say his name, and you'll be paid better than the Corricks could ever pay you.",
+      "progress": "Bring me what you found. And say his name.",
+      "complete": "Coffin nails. Corrick put coffin nails in my water. I knew it. I always knew it. ...Get off my land now. I've a reeve to fetch and a lantern to light, and you'll not want to be here for either.",
+      "objectives": [
+        {
+          "id": "nails",
+          "type": "collect",
+          "target": "grave_rot_nails",
+          "count": 3,
+          "label": "Black coffin nails, as proof"
+        }
+      ],
+      "setsFlag": "feud_burned",
+      "turnInLog": "That night the Corrick hayrick burns. By morning Wren Ashby and Cal Fenner are gone, together, and nobody knows where.",
+      "reward": {
+        "coins": 40,
+        "xp": 300
+      }
+    },
+    {
+      "id": "bandit_rag",
+      "name": "The Black Rag",
+      "giver": "pell",
+      "turnIn": "pell",
+      "requires": ["feud_what_lies_under"],
+      "summary": "Show Reeve Aldous Pell the knotted black rag from the Ashby drain.",
+      "offer": "You've the look of someone with something to show me, and the look of someone who'd rather not. Out with it.",
+      "progress": "Well? Let's see it.",
+      "complete": "Knotted three times. That's Blackhedge. A dozen cutthroats camped in the trees west of the forest track, past the deadfall. They rob carts and anyone poorer than themselves, and lately pigs off Corrick land, I hear. Never bothered with poisoning fields. Never had the wit to. ...Somebody's paying them.",
+      "objectives": [
+        {
+          "id": "rag",
+          "type": "collect",
+          "target": "blackhedge_rag",
+          "label": "Show Pell the black rag"
+        }
+      ],
+      "reward": {
+        "xp": 150
+      }
+    },
+    {
+      "id": "bandit_scout",
+      "name": "Eyes on Blackhedge",
+      "giver": "pell",
+      "turnIn": "pell",
+      "requires": ["bandit_rag"],
+      "summary": "Get close enough to the Blackhedge camp, west of the forest track, to count the bandits, and no closer. Watch from the lookout rock. They are far stronger than you for now (level 6, and their captain level 8).",
+      "offer": "I've two watchmen, and one of them's asleep. I'll not send them up there to die. You, though. Go and look. There's a rock east of the camp you can lie behind. Count them, see who's in charge, and come back. Don't be brave. Brave is how the last fellow ended up in the ditch.",
+      "progress": "Count them. Don't fight them.",
+      "complete": "Six, and a big man in a red coat. Harl Voss. I knew Harl when he was stealing apples. He couldn't plan a picnic. Someone's planning for him.",
+      "objectives": [
+        {
+          "id": "look",
+          "type": "examine",
+          "target": "blackhedge_camp",
+          "label": "Watch the camp from the lookout rock",
+          "location": "blackhedge_lookout"
+        }
+      ],
+      "reward": {
+        "coins": 8,
+        "xp": 200
+      }
+    },
+    {
+      "id": "bandit_thin",
+      "name": "Thinning the Hedge",
+      "giver": "pell",
+      "turnIn": "pell",
+      "requires": ["bandit_scout"],
+      "summary": "Thin out the Blackhedge camp: kill four cutthroats and two bowmen. They are level 6; come back stronger if you must.",
+      "offer": "When you're ready, and not before, I want that camp thinner. Four of the knife men, two of the bows. I'll pay from the town purse. If they're too much for you yet, there's no shame in it. There's only shame in dying in a ditch over it.",
+      "progress": "Still six of them laughing in the trees, last I heard.",
+      "complete": "That'll be talked about at the Ford tonight. Small men, Blackhedge, for all their knives. But small men with a paymaster are worth a closer look.",
+      "objectives": [
+        {
+          "id": "cutthroats",
+          "type": "kill",
+          "target": "blackhedge_cutthroat",
+          "count": 4,
+          "label": "Blackhedge Cutthroats slain",
+          "location": "blackhedge_camp"
+        },
+        {
+          "id": "bowmen",
+          "type": "kill",
+          "target": "blackhedge_archer",
+          "count": 2,
+          "label": "Blackhedge Bowmen slain",
+          "location": "blackhedge_camp"
+        }
+      ],
+      "reward": {
+        "coins": 30,
+        "xp": 400,
+        "reputation": {
+          "road_wardens": 200
+        }
+      }
+    },
+    {
+      "id": "bandit_captain",
+      "name": "Harl Voss",
+      "giver": "pell",
+      "turnIn": "pell",
+      "requires": ["bandit_thin"],
+      "summary": "Kill Harl Voss, the Blackhedge captain (level 8, elite), and search his strongbox for whoever paid him.",
+      "offer": "Harl Voss. Put him down, and go through his things. Men like Harl keep everything, because they can't read well enough to know what's worth burning. I want to know who paid him to sour Edda Ashby's ground.",
+      "progress": "Harl's still breathing, and still being paid by someone.",
+      "complete": "'Sour the ground, set the two houses at each other, and the land will come cheap.' ...Grey wax. A closed eye. I've been reeve here twenty years and I've never seen that seal. Harl was hired, and whoever hired him isn't from Brackenford, and isn't finished. I don't like that I don't know who they are. Keep your eyes open on the road.",
+      "objectives": [
+        {
+          "id": "harl",
+          "type": "kill",
+          "target": "blackhedge_captain",
+          "count": 1,
+          "label": "Harl Voss slain",
+          "location": "blackhedge_camp"
+        },
+        {
+          "id": "box",
+          "type": "examine",
+          "target": "harl_strongbox",
+          "label": "Search Harl's strongbox",
+          "location": "blackhedge_camp"
+        }
+      ],
+      "setsFlag": "closed_eye_seen",
+      "turnInLog": "Somebody hired the Blackhedge bandits to ruin the Ashby farm. Their letters are sealed in grey wax, pressed with a closed eye.",
+      "reward": {
+        "coins": 50,
+        "xp": 600,
+        "reputation": {
+          "road_wardens": 400
+        }
+      }
+    },
+    {
+      "id": "feud_cals_coin",
+      "name": "A Shilling a Night",
+      "giver": "wren",
+      "turnIn": "cal",
+      "requires": ["feud_what_lies_under"],
+      "summary": "Wren Ashby has seen a knotted black rag like the one from the drain hanging behind Cal Fenner's door. Ask Cal about it.",
+      "offer": "That rag. There's one like it on the hook behind Cal's door, I'd swear to it. He's had money lately, too, and he never has money. Go and ask him. I can't. If he lies to me I'll know, and then I'll have to know.",
+      "progress": "Cal. At the Corrick farm. Please.",
+      "complete": "...Where did you get that? Oh, no. No, no. A man with one of those on his arm stopped me on the road at harvest. Said the Ashbys had hired him to clear their old drain and wanted it done quiet, so Edda's pride wouldn't take a knock. A shilling a night to carry sacks up from the graves and lift the capstones. Heavy sacks. I never looked inside. I was saving. For a ring. For Wren. ...I put those nails in her barley, didn't I. I did it to marry her and I've ruined her.",
+      "objectives": [
+        {
+          "id": "talk",
+          "type": "talk",
+          "target": "cal",
+          "label": "Ask Cal Fenner about the black rag",
+          "location": "corrick_farm"
+        }
+      ],
+      "reward": {
+        "xp": 120
+      }
+    },
+    {
+      "id": "bram_pigs",
+      "name": "Boar Don't Lift Latches",
+      "giver": "bram",
+      "turnIn": "bram",
+      "requires": ["bandit_rag"],
+      "summary": "Bram Corrick's pigs have been going missing, and Reeve Pell says the Blackhedge bandits take pigs. Find out whether Bram's pigs are at the bandit camp west of the forest track, without starting a fight you can't finish.",
+      "offer": "Pell says it's that Blackhedge rabble taking my pigs. I'd like to know before I go up there with a pitchfork and get myself killed. Go and look. Every Corrick pig has a notch cut in its left ear, my father's mark. If they're there, I'll know. Don't get stuck for a pig, mind. Not even a good one.",
+      "progress": "Notch in the left ear. You can't miss it.",
+      "complete": "Penned up behind their fire like they own them. My pigs. ...I'll not get them back from that lot with a pitchfork. But once that camp's cleared, I'm fetching them home, and I'll not be asking nicely.",
+      "objectives": [
+        {
+          "id": "pen",
+          "type": "examine",
+          "target": "blackhedge_pigpen",
+          "label": "Find Bram's pigs at the Blackhedge camp",
+          "location": "blackhedge_camp"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 220
+      }
     }
   ]
 }

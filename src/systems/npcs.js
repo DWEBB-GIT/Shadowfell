@@ -3,10 +3,13 @@ import { CONFIG } from '../config.js';
 import { NPCS } from '../world/layout.js';
 import { Rig } from '../entities/rig.js';
 import { heightAt } from '../world/terrain.js';
+import { conditionHolds } from './quests.js';
 
 // Townsfolk. Each NPC stands at its post, works (Mara hammers at her anvil)
 // and turns to face the Warden when they come close. Talking to one opens a
 // conversation (src/systems/dialogue.js), which leads to quests and the shop.
+// A spawn with `goneWhen` (a dialogue condition, such as a story flag) is
+// absent while it holds: the world shows what the Warden's choices did.
 
 const DEG = Math.PI / 180;
 
@@ -26,10 +29,22 @@ class Npc {
     this.model = game.assets.instance(def.model);
     this.group.add(this.model);
     this.rig = new Rig(this.model, 'warden');
+    // townsfolk who share a model are told apart by a tint
+    if (def.tint) for (const m of Rig.isolateMaterials(this.model)) m.color.multiply(new THREE.Color(def.tint));
     this.board = !!def.board; // a notice board: never turns or works
     this.workTimer = 1 + Math.random();
     this.group.position.copy(this.position);
-    game.collision.add(this.position.x, this.position.z, this.radius);
+    this.collider = game.collision.add(this.position.x, this.position.z, this.radius);
+    this.present = true;
+  }
+
+  // Is this person here, given the story so far?
+  updatePresence() {
+    const here = !this.def.goneWhen || !conditionHolds(this.game, this.def.goneWhen);
+    if (here === this.present) return;
+    this.present = here;
+    this.group.visible = here;
+    this.collider.off = !here;
   }
 
   update(dt, player) {
@@ -58,8 +73,13 @@ class Npc {
 export class NpcManager {
   constructor(game) {
     this.game = game;
-    this.list = NPCS.map((d) => new Npc(game, d));
-    for (const n of this.list) game.scene.add(n.group);
+    this.all = NPCS.map((d) => new Npc(game, d));
+    for (const n of this.all) game.scene.add(n.group);
+  }
+
+  // the townsfolk who are here now
+  get list() {
+    return this.all.filter((n) => n.present);
   }
 
   byId(id) {
@@ -67,6 +87,7 @@ export class NpcManager {
   }
 
   update(dt) {
+    for (const n of this.all) n.updatePresence();
     for (const n of this.list) n.update(dt, this.game.player);
   }
 

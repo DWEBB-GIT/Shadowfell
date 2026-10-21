@@ -28,7 +28,7 @@ import { WaterAndDark } from './world/waterAndDark.js';
 import { Fishing } from './systems/fishing.js';
 import { Cooking } from './systems/cooking.js';
 import { EnemyManager } from './systems/enemies.js';
-import { LootSystem } from './systems/loot.js';
+import { LootSystem, skinRank } from './systems/loot.js';
 import { Interaction } from './systems/interaction.js';
 import { Inventory } from './systems/inventory.js';
 import { Stats } from './systems/stats.js';
@@ -89,6 +89,7 @@ class Game {
     this.rollItem = rollItem;
     this.itemView = itemView;
     this.rollLoot = rollLoot;
+    this.skinRank = skinRank;
     this.db = DB;
     this.validateSave = validateSave;
     this.progression = new Progression(this);
@@ -358,7 +359,7 @@ class Game {
       const y = heightAt(x, z);
       consider('sign', sp, Math.min(screen(x, y + 1.0, z), screen(x, y + 1.9, z)));
     }
-    for (const l of loot.lootables()) {
+    for (const l of [...loot.lootables(), ...loot.skinnables()]) {
       const d = screen(l.x, heightAt(l.x, l.z) + 0.3, l.z);
       if (d < CONFIG.loot.clickRadius) consider('loot', l, d);
     }
@@ -422,7 +423,7 @@ class Game {
       reachOr(pick.obj.x, pick.obj.z, 2.4, () => this.chests.open(pick.obj), closer);
     } else if (pick.kind === 'loot') {
       const l = pick.obj;
-      reachOr(l.x, l.z, CONFIG.loot.reach, () => loot.lootArea(l), () => events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' }));
+      reachOr(l.x, l.z, CONFIG.loot.reach, () => (l.kind === 'skin' ? loot.startSkin(l) : loot.lootArea(l)), () => events.emit('log', { text: 'Too far away to loot that.', kind: 'muted', throttle: 'loot-far' }));
     } else if (pick.kind === 'enemy') {
       if (button === 'right') {
         targeting.engage(pick.obj);

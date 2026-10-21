@@ -21,6 +21,11 @@ export class Interaction {
       const own = l.kind === 'corpse' ? `Loot the ${l.name}` : l.entry.def.prompt;
       list.push({ key: 'loot:' + l.id, x: l.x, z: l.z, bias: -0.4, loot: l, prompt: n > 1 ? `${own} (and ${n - 1} more nearby)` : own, run: () => loot.lootArea(l) });
     }
+    // a beast's empty body, for a skinner
+    for (const s of loot.skinnables()) {
+      const why = loot.skinBlock(s);
+      list.push({ key: 'skin:' + s.id, x: s.x, z: s.z, bias: -0.3, prompt: `Skin the ${s.name}${why ? ` (${why})` : ''}`, run: () => loot.startSkin(s) });
+    }
     list.push(...this.game.npcs.interactions());
     list.push(...this.game.chests.interactions());
     for (const sh of SHRINES) {

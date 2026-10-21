@@ -10,6 +10,11 @@ import { ENEMIES } from '../world/layout.js';
 // Items are read from the bags and examine points from what has been looked
 // at. Stored: accepted, done and tracked quests, and the kill counts.
 //
+// A `talk` objective (go and speak to the turn-in npc) is met at once: the
+// quest is handed in by finding them. Quests sharing a `choice` are one
+// decision: once one of them is taken (or done) the others are locked, so
+// the Warden's word sticks.
+//
 // Status of a quest: 'done' | 'ready' (all objectives met) | 'active' |
 // 'available' (can be accepted now) | 'locked'.
 
@@ -59,7 +64,13 @@ export class QuestLog {
     if (!q) return 'locked';
     if (this.done.has(id)) return 'done';
     if (this.accepted.includes(id)) return this.objectives(id).every((o) => o.done) ? 'ready' : 'active';
+    if (q.choice && this.chosen(q.choice)) return 'locked';
     return (q.requires || []).every((r) => this.done.has(r)) ? 'available' : 'locked';
+  }
+
+  // The quest taken (or done) for a choice, or null while it is still open.
+  chosen(choice) {
+    return [...this.accepted, ...this.done].find((id) => DB.quests[id]?.choice === choice) || null;
   }
 
   // Each objective with how far along it is: { id, label, have, need, done, location }
@@ -71,6 +82,7 @@ export class QuestLog {
       if (o.type === 'kill') have = this.kills[id]?.[o.id] || 0;
       else if (o.type === 'collect') have = inventory.count(o.target);
       else if (o.type === 'examine') have = worldState.examined.has(o.target) ? 1 : 0;
+      else if (o.type === 'talk') have = need;
       have = Math.min(have, need);
       return { id: o.id, type: o.type, label: o.label, have, need, done: have >= need, location: o.location || null };
     });

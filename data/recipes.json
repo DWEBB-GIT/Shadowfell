@@ -161,6 +161,25 @@
       "station": "fire",
       "trainer": "hester",
       "cost": 100
+    },
+    {
+      "id": "roast_boar",
+      "skill": "cooking",
+      "rank": 5,
+      "skillUp": [20, 30, 40],
+      "inputs": [
+        {
+          "item": "boar_meat",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "roast_boar",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 4
     }
   ]
 }
