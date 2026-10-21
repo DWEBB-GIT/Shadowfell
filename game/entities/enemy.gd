@@ -36,6 +36,11 @@ var knock := Vector3.ZERO
 var flash := 0.0
 var flash_colour := Rig.FLASH_RED
 var engaged := 0.0 ## seconds to keep showing the health bar
+var since_struck := INF ## seconds since the player last hurt it
+
+## While the player keeps hurting it, an enemy chases past its leash: it
+## gives up only after this long without being struck.
+const LEASH_GRACE := 6.0
 var dead := false
 var corpse := false ## a body from a saved game, still waiting to be looted
 var wander := {}
@@ -185,6 +190,7 @@ func reset() -> void:
 	stagger = 0.0
 	_reset_control()
 	engaged = 0.0
+	since_struck = INF
 	rig.action = null
 	_sync()
 
@@ -199,6 +205,7 @@ func hurt(amount: float, opts := {}) -> float:
 	var dealt := minf(health, amount)
 	health -= dealt
 	engaged = 6.0
+	since_struck = 0.0
 	# damage wakes a sleeper
 	if amount > 0 and asleep:
 		asleep = false
@@ -284,9 +291,15 @@ func _start_shot(player) -> void:
 		"width": r.width,
 		"duration": r.windup,
 		"color": Color("8a6cff") if bolt else Color("e8a040"),
+		# `lock` in the data: the shot follows the player until that many
+		# seconds before it looses
+		"track": (func():
+			facing = atan2(game.player.position.x - position.x, game.player.position.z - position.z)
+			return facing) if r.has("lock") else null,
+		"lock": r.get("lock", 0.0),
 		"onComplete": func(shape):
 			casting = null
-			var end := Vector3(shape.x + sin(angle) * shape.length, 0, shape.z + cos(angle) * shape.length)
+			var end := Vector3(shape.x + sin(shape.angle) * shape.length, 0, shape.z + cos(shape.angle) * shape.length)
 			var p: Vector3 = game.player.position
 			var on_line: bool = shape.contains(p.x, p.z, game.player.radius)
 			# the shot stops at the player if it hits, otherwise flies on
@@ -398,6 +411,7 @@ func update(dt: float, player) -> void:
 		knock *= fade
 
 	staggered = maxf(0, staggered - dt)
+	since_struck += dt
 	dr.quiet += dt
 	if dr.quiet >= DB.CONFIG.control.eliteDrReset:
 		dr.n = 0
@@ -421,7 +435,7 @@ func update(dt: float, player) -> void:
 				# lost in Shadow: it stops where it is, unhurt and unhealed, and looks about
 				if hidden:
 					lose_track()
-				elif from_home > DB.leash_distance or dist > cfg.detection * 2:
+				elif (from_home > DB.leash_distance or dist > cfg.detection * 2) and since_struck >= LEASH_GRACE:
 					state = "return"
 					windup = 0.0
 				else:

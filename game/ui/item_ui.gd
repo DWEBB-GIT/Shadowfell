@@ -426,7 +426,8 @@ func _render_sockets(inv) -> void:
 			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			sockets.add_child(sep)
 		# a quiver shows how many arrows it holds
-		if s and Items.get_def(s.id).get("holds") == "ammo":
+		# (the tool pack's holds is a list, and Array == String is a script error)
+		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
 			var n: int = inv.arrows_in(i)
 			slot.count = str(n)
 			slot.count_centre = true
@@ -821,7 +822,8 @@ func _cook_sig() -> String:
 	return s
 
 
-func _skill_bar(parent: Node, k: float, width := 90) -> void:
+## k: the trained part (gold); extra: what tools add on top (green)
+func _skill_bar(parent: Node, k: float, width := 90, extra := 0.0) -> void:
 	var track := ColorRect.new()
 	track.color = Color.BLACK
 	track.custom_minimum_size = Vector2(width, 4)
@@ -833,6 +835,14 @@ func _skill_bar(parent: Node, k: float, width := 90) -> void:
 	fill.anchor_right = clampf(k, 0, 1)
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
+	if extra > 0:
+		var more := ColorRect.new()
+		more.color = Color("5fd35f")
+		more.anchor_left = clampf(k, 0, 1)
+		more.anchor_bottom = 1
+		more.anchor_right = clampf(k + extra, 0, 1)
+		more.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(more)
 
 
 func _render_settings() -> void:
@@ -888,7 +898,8 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	var sk = game.skills
 	var known: bool = sk.has(d.id)
 	var mx: int = d.get("maxRank", 1)
-	var level := ("%d / %d" % [sk.rank(d.id), mx] if d.get("maxRank") else "Learned") if known else "Not learned"
+	var bonus: int = sk.tool_bonus(d.id) if known and d.get("maxRank") else 0
+	var level := ("%d%s / %d" % [sk.rank(d.id), "+%d" % bonus if bonus else "", mx] if d.get("maxRank") else "Learned") if known else "Not learned"
 	var trainer = DB.npcs.get(d.get("trainer", ""))
 	var who: String = trainer.name if trainer else "A trainer"
 	var row := UI.panel(parent, 0, Color("1a150f"), UI.BORDER_DIM)
@@ -899,8 +910,19 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var top := UI.hbox(body, 6)
 	UI.label(top, d.name, 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UI.label(top, level, 15 if known else 12, Color("f0d070") if known else UI.TEXT_DIM)
-	_skill_bar(body, float(sk.rank(d.id)) / mx if known else 0.0)
+	if bonus:
+		var rl := RichTextLabel.new()
+		rl.bbcode_enabled = true
+		rl.fit_content = true
+		rl.autowrap_mode = TextServer.AUTOWRAP_OFF
+		rl.scroll_active = false
+		rl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rl.add_theme_font_size_override("normal_font_size", 15)
+		rl.text = "[color=#f0d070]%d[/color][color=#5fd35f]+%d[/color][color=#f0d070] / %d[/color]" % [sk.rank(d.id), bonus, mx]
+		top.add_child(rl)
+	else:
+		UI.label(top, level, 15 if known else 12, Color("f0d070") if known else UI.TEXT_DIM)
+	_skill_bar(body, float(sk.rank(d.id)) / mx if known else 0.0, 90, float(bonus) / mx)
 	if not known:
 		UI.label(body, "%s teaches it" % who, 11, UI.TEXT_DIM)
 	var abil := UI.hbox(h, 4)
@@ -1159,6 +1181,17 @@ func _tooltip(loc: String) -> void:
 	if stack == null or loc == "s:0":
 		_hide_tip()
 		return
+	var lines := _stack_lines(stack, loc, shop_price)
+	if loc == Inventory.AMMO_LOC:
+		_set_tip(lines, [])
+	else:
+		_fill(lines, Items.view(stack), loc)
+
+
+## Every line of one item's tooltip, as hovering it in the bags shows it
+## (the compare box shows the worn item the same way).
+func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) -> Array:
+	var inv = game.inventory
 	var def := Items.view(stack)
 	var rare := ["enhanced", "rare", "epic", "legendary"].has(def.get("rarity"))
 	var kind: String = KIND_LABEL.get(def.kind, def.kind.capitalize())
@@ -1215,8 +1248,7 @@ func _tooltip(loc: String) -> void:
 		hint = "Right-click to sell"
 	elif loc == Inventory.AMMO_LOC:
 		lines.insert(lines.size() - 2, _l("Auto Shot uses these. When they run out, the next arrows in your bags take their place. Drag other arrows here to change.", "#8fbf6a", 12))
-		_set_tip(lines, [])
-		return
+		return lines
 	else:
 		var action := ""
 		if def.kind == "ammo":
@@ -1233,15 +1265,16 @@ func _tooltip(loc: String) -> void:
 			action = "Right-click to place in a bag slot"
 		if not hud.pad_mode:
 			hint = action
-	if hint != "":
+	if hint != "" and not compare:
 		lines.append(_l(hint, "#8fbf6a", 12))
-	_fill(lines, def, loc)
+	return lines
 
 
 ## WoW-style compare: gear hovered outside the character panel shows what is
 ## worn in that slot alongside, with the stat changes on the hovered item.
 func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 	var worn := []
+	var worn_at := [] ## where each is worn, for its full tooltip
 	if def.get("slot") and not loc.begins_with("e:") and not loc.begins_with("s:"):
 		var pairs := {"oneHand": ["mainHand", "offHand"], "mainHand": ["mainHand", "offHand"] if def.get("damage") else ["mainHand"], "finger": ["finger1", "finger2"], "trinket": ["trinket1", "trinket2"]}
 		for s in pairs.get(def.slot, [def.slot]):
@@ -1250,6 +1283,7 @@ func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 			# an off-hand shield is not compared against a weapon
 			if w != null and (s != "offHand" or def.slot == "offHand" or w.get("damage")):
 				worn.append(w)
+				worn_at.append(s)
 	if worn.is_empty():
 		_set_tip(lines, [])
 		return
@@ -1260,13 +1294,9 @@ func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 		return t
 	var label := func(k: String) -> String: return "average damage" if k == "damage" else STAT_LABEL.get(k, k)
 	var boxes := []
-	for w in worn:
-		var wl := [_l("CURRENTLY EQUIPPED", "#9a8f78", 11), _name_line(w.name, UI.hex(Items.rarity_colour(w.get("rarity", "common"))))]
-		if w.get("damage"):
-			wl.append(_l("%s–%s damage" % [U.n(w.damage[0]), U.n(w.damage[1])]))
-		for k in w.get("stats", {}):
-			wl.append(_l("+%s %s" % [U.n(w.stats[k]), STAT_LABEL.get(k, k)]))
-		boxes.append("".join(wl))
+	for s in worn_at:
+		var at: String = "e:" + s
+		boxes.append(_l("CURRENTLY EQUIPPED", "#9a8f78", 11) + "".join(_stack_lines(game.inventory.get_at(at), at, null, true)))
 	var a: Dictionary = totals.call(def)
 	var diffs := []
 	for w in worn:

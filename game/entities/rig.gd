@@ -197,6 +197,12 @@ func _apply_action(dt: float) -> void:
 			_rot("Arm_R", 0, -1.0 - 1.7 * raise)
 			_rot("Arm_L", 0, -0.35)
 			_rot("Torso", 0, -0.12 * raise + 0.1 * swing * (1 - k))
+		"reel":
+			# the rod snaps up and back as the line comes out of the water
+			var yank := ease_(minf(1, k * 3)) * (1 - maxf(0, (k - 0.65) / 0.35))
+			_rot("Arm_R", 0, -1.0 - 1.9 * yank)
+			_rot("Arm_L", 0, -0.35 - 0.4 * yank)
+			_rot("Torso", 0, -0.22 * yank)
 		"cast":
 			_rot("Arm_R", 0, -2.2 * raise + 0.6 * swing * (1 - k))
 			_rot("Arm_L", 0, -1.8 * raise)

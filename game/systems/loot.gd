@@ -428,15 +428,14 @@ var knife:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("skinningKnife") and inv.count(id) > 0 and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
+			if d.get("skinningKnife") and inv.has(id) and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
 				best = d
 		return best
 
 ## Skinning rank with the knife's bonus
 var skinning_skill: int:
 	get:
-		var k = knife
-		return game.skills.rank("skinning") + (int(k.get("skinningSkill", 0)) if k else 0)
+		return game.skills.effective("skinning")
 
 
 ## What stops this body being skinned ('needs ...'), or "".
