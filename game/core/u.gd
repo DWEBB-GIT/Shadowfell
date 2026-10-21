@@ -1,3 +1,4 @@
+@tool
 class_name U
 extends RefCounted
 ## Small helpers the ported systems share, so GDScript behaves like the

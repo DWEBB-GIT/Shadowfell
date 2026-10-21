@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildTerrain, heightAt, distanceToRoad, distanceToMainRoad, seededRandom, blackwoodness } from './terrain.js';
-import { BOUNDS, regionById, PROPS, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS, PADS } from './layout.js';
+import { BOUNDS, regionById, PROPS, TREES, CLEARINGS, LIGHTS, WITCHLIGHTS, BUILDINGS, PADS } from './layout.js';
 import { SIGNPOSTS, signpostLines } from './signposts.js';
 
 const DEG = Math.PI / 180;
@@ -207,6 +207,18 @@ export class World {
 
   _scatterWoodland() {
     const { collision } = this.game;
+    // Trees placed by hand in Godot's World editor (scenery.json `trees`)
+    // replace the seeded scatter below once there are any.
+    if (Array.isArray(TREES)) {
+      const byModel = {};
+      for (const t of TREES) {
+        if (t.solid !== false) collision.add(t.x, t.z, 0.45 * t.s);
+        (byModel[t.model] ||= []).push(t);
+      }
+      this.mapTrees = TREES.map((t) => [t.x, t.z]);
+      for (const [model, list] of Object.entries(byModel)) this._instanced(model, list);
+      return;
+    }
     // The Fallen Road's woodland, laid out exactly as it always has been
     // (same seed, same bounds), less whatever now stands on the forest
     // track or beyond the old northern edge, where the Blackwood begins.

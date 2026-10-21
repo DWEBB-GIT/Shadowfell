@@ -705,6 +705,11 @@ export function validateGameData(raw, opts = {}) {
     const box = c && !Array.isArray(c) && typeof c === 'object' && Array.isArray(c.box) && c.box.length === 2 && c.box.every((v) => isNum(v) && v > 0);
     if (!(c === undefined || isNum(c) || box || (Array.isArray(c) && c.every((x) => Array.isArray(x) && x.length === 3 && x.every(isNum))))) errors.push(`${w}: collider must be a radius, a list of [x, z, radius] or { "box": [width, depth] }`);
   });
+  (sceneF.trees || []).forEach((t, i) => {
+    const w = `scenery.json tree #${i + 1}`;
+    model(w, t.model);
+    if (![t.x, t.z, t.s, t.r].every(Number.isFinite)) errors.push(`${w}: needs numbers x, z, s and r`);
+  });
   for (const l of sceneF.lights || []) pos('scenery.json light', l.position);
 
   // ---- buildings you can enter, cooking stations, levelled ground
