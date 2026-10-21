@@ -179,24 +179,42 @@ func _draw() -> void:
 		draw_rect(r.grow(2), Color("f2d27a"), false, 2)
 
 
-## the conic cooldown wash: what is left of the turn, clockwise from the top
+## the conic cooldown wash: what is left of the turn. The lit part grows
+## clockwise from the top, as in WoW, so the dark part's edge sweeps
+## clockwise too (Dan, 2026-10-21). Its edge is a true ray to the slot's
+## border, through the corners, so it moves at an even pace.
 func _sweep(r: Rect2, k: float, col: Color) -> void:
 	k = clampf(k, 0, 1)
+	if k <= 0.002:
+		return
+	if k >= 0.998:
+		draw_rect(r, col)
+		return
 	var c := r.get_center()
-	var reach := r.size.length()
-	var pts := PackedVector2Array([c])
-	var steps := maxi(2, int(ceil(k * 32)))
-	for i in steps + 1:
-		var a := -PI / 2 + TAU * k * i / steps
-		var p := c + Vector2(cos(a), sin(a)) * reach
-		pts.append(Vector2(clampf(p.x, r.position.x, r.end.x), clampf(p.y, r.position.y, r.end.y)))
-	if pts.size() >= 3:
-		var clean := PackedVector2Array()
-		for p in pts:
-			if clean.is_empty() or clean[-1].distance_to(p) > 0.05:
-				clean.append(p)
-		if clean.size() >= 3 and not Geometry2D.triangulate_polygon(clean).is_empty():
-			draw_colored_polygon(clean, col)
+	var h := r.size / 2
+	var a0 := -PI / 2 + TAU * (1 - k)
+	var a1 := -PI / 2 + TAU
+	var pts := PackedVector2Array([c, _edge(c, h, a0)])
+	var corners := []
+	for q in [Vector2(h.x, h.y), Vector2(-h.x, h.y), Vector2(-h.x, -h.y), Vector2(h.x, -h.y)]:
+		var ang := atan2(q.y, q.x)
+		while ang < -PI / 2:
+			ang += TAU
+		if ang > a0 and ang < a1:
+			corners.append([ang, c + q])
+	corners.sort_custom(func(x, y): return x[0] < y[0])
+	for q in corners:
+		pts.append(q[1])
+	pts.append(_edge(c, h, a1))
+	draw_colored_polygon(pts, col)
+
+
+## where a ray from the centre at angle `a` meets the slot's border
+static func _edge(c: Vector2, h: Vector2, a: float) -> Vector2:
+	var d := Vector2(cos(a), sin(a))
+	var tx := h.x / absf(d.x) if absf(d.x) > 1e-6 else INF
+	var ty := h.y / absf(d.y) if absf(d.y) > 1e-6 else INF
+	return c + d * minf(tx, ty)
 
 
 func _text(t: String, at: Vector2, px: int, col: Color, outline := false) -> void:

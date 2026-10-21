@@ -382,6 +382,8 @@ export function validateGameData(raw, opts = {}) {
   for (const [id, e] of Object.entries(enemies)) {
     const w = `enemies.json ${id}`;
     if (!isStr(e.name)) errors.push(`${w}: needs a name`);
+    // aggressive: attacks on sight; passive (yellow): only once struck
+    if (!['aggressive', 'passive'].includes(e.attitude)) errors.push(`${w}: attitude must be aggressive or passive`);
     model(w, e.model);
     repRefs(`enemies.json ${e.id}`, e.reputation);
     if (e.respawn !== undefined && !(isNum(e.respawn) && e.respawn >= 0)) errors.push(`enemies.json ${e.id}: respawn must be seconds (0 = never)`);

@@ -1,7 +1,8 @@
 class_name Npcs
 extends RefCounted
 ## Townsfolk (src/systems/npcs.js). Each NPC stands at its post, works (Mara
-## hammers at her anvil) and turns to face the player when they come close.
+## hammers at her anvil) and turns to face the player when they talk to them
+## (Dan, 2026-10-21: not just for walking past).
 ## Talking to one opens a conversation (dialogue.gd), which leads to quests
 ## and the shop. A spawn with `goneWhen` (a dialogue condition, such as a
 ## story flag) is absent while it holds.
@@ -62,7 +63,9 @@ class Npc:
 	func update(dt: float, player) -> void:
 		var dx: float = player.position.x - position.x
 		var dz: float = player.position.z - position.z
-		var near: bool = U.hyp(dx, dz) < 4.5 and not player.dead
+		# only someone you are talking to turns to you, and keeps an eye on
+		# you until you walk off
+		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
 		var anvil = def.get("anvil")
 		var want: float
 		if board:
