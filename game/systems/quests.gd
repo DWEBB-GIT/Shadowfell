@@ -122,6 +122,19 @@ func objectives(id: String) -> Array:
 	return out
 
 
+## Does a quest the player has taken still need this item? (a quest drop
+## only falls while it does)
+func needs_item(id: String, item: String) -> bool:
+	if status(id) != "active":
+		return false
+	var objs := objectives(id)
+	for i in objs.size():
+		var o: Dictionary = DB.quests[id].objectives[i]
+		if not objs[i].done and o.type == "collect" and o.target == item:
+			return true
+	return false
+
+
 ## "Barrow Hounds slain: 2/3", or the bare label for one-off objectives
 static func line(o: Dictionary) -> String:
 	return "%s: %d/%d" % [o.label, o.have, o.need] if o.need > 1 or o.type == "kill" else o.label

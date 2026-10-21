@@ -153,12 +153,18 @@ func _add_ground(stack: Dictionary, pos: Vector3) -> Dictionary:
 	return g
 
 
-## Roll the enemy's loot table (rarity first, then the item) and lay what
-## drops around the body. Gear rolls its stats as it drops.
+## Roll the enemy's own loot table, then the world drops for its level
+## (rarity first, then the item), and lay what drops around the body. Gear rolls its stats as it drops.
 func drop_from_enemy(enemy) -> Array:
 	var rand: Callable = game.random
 	var out := []
-	for drop in Items.roll_loot(DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}), rand):
+	var drops := Items.roll_loot(DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}), rand)
+	drops.append_array(Items.roll_loot(DB.world_drop_band(enemy.cfg), rand))
+	# quest drops: only while one of the player's quests still needs the item
+	for qd in DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}).get("questDrops", []):
+		if game.quests.needs_item(qd.quest, qd.item) and rand.call() < qd.chance:
+			drops.append({"id": qd.item, "count": 1, "rarity": Items.get_def(qd.item).get("rarity")})
+	for drop in drops:
 		var a: float = out.size() * 2.1 + enemy.facing
 		var pos: Vector3 = game.collision.resolve(Vector3(enemy.position.x + sin(a) * 0.8, 0, enemy.position.z + cos(a) * 0.8), 0.2)
 		var rolls = Items.roll_item(drop.id, rand, drop.rarity)
@@ -391,13 +397,13 @@ func update(dt: float, time: float) -> void:
 # ------------------------------------------------------------ skinning
 ## Should this body wait to be skinned? Only if the player could learn to.
 func keep_for_skinning(enemy) -> bool:
-	return enemy != null and enemy.cfg.get("skin") != null and game.skills.has("skinning")
+	return enemy != null and enemy.cfg.get("skin", "") != "" and game.skills.has("skinning")
 
 
 func _skinnable(id: String) -> bool:
 	var c = game.world_state.corpses.get(id)
 	var e = game.enemies.by_id(id)
-	return c != null and not (c.coins > 0) and e != null and e.cfg.get("skin") != null
+	return c != null and not (c.coins > 0) and e != null and e.cfg.get("skin", "") != ""
 
 
 ## Bodies that can be skinned now: [{ kind: 'skin', id, x, z, name, rank }]

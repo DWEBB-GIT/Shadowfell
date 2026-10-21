@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LOOT, UNIQUE_DROPS, ITEMS, RARITY, itemView, rollItem, rollLoot } from '../data/items.js';
 import { DB } from '../data/db.js';
+import { worldDropBand } from '../data/schema.js';
 import { heightAt } from '../world/terrain.js';
 import { CONFIG } from '../config.js';
 import { AMMO_LOC } from './inventory.js';
@@ -149,12 +150,17 @@ export class LootSystem {
   // Gear and materials an enemy drops, from its table in data/drops.json.
   // Gear rolls its stats as it drops. Drops lie beside the body and are
   // saved like anything else on the ground, so they wait to be looted.
-  // Roll the enemy's loot table (rarity first, then the item) and lay what
-  // drops around the body.
+  // Roll the enemy's own loot table, then the world drops for its level
+  // (rarity first, then the item), and lay what drops around the body.
   dropFromEnemy(enemy) {
     const rand = this.game.random;
     const out = [];
-    for (const { id, count, rarity } of rollLoot(DB.lootTables[enemy.cfg.lootTable], rand)) {
+    const drops = rollLoot(DB.lootTables[enemy.cfg.lootTable], rand).concat(rollLoot(worldDropBand(DB.worldDrops, enemy.cfg), rand));
+    // quest drops: only while one of the player's quests still needs the item
+    for (const qd of DB.lootTables[enemy.cfg.lootTable]?.questDrops || []) {
+      if (this.game.quests.needsItem(qd.quest, qd.item) && rand() < qd.chance) drops.push({ id: qd.item, count: 1, rarity: ITEMS[qd.item].rarity });
+    }
+    for (const { id, count, rarity } of drops) {
       const a = out.length * 2.1 + enemy.facing;
       const pos = { x: enemy.position.x + Math.sin(a) * 0.8, z: enemy.position.z + Math.cos(a) * 0.8 };
       this.game.collision.resolve(pos, 0.2);

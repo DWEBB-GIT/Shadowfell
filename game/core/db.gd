@@ -73,6 +73,7 @@ static var archetypes := {}
 static var abilities := {}
 static var enemies := {} ## raw records
 static var loot_tables := {}
+static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
 static var rarities := {} ## in order, lowest first (Dictionary keeps insertion order)
 static var npcs := {}
 static var vendor_types := {}
@@ -118,8 +119,9 @@ static func setup(data) -> void:
 	suffixes = data.table("suffixes")
 	archetypes = data.table("archetypes")
 	abilities = data.table("abilities")
-	enemies = data.table("enemies")
+	enemies = resolve_enemies(data.table("enemies"))
 	loot_tables = data.table("lootTables")
+	world_drops = data.table("worldDrops").values()
 	rarities = data.table("rarities")
 	npcs = data.table("npcs")
 	vendor_types = data.table("vendorTypes")
@@ -148,6 +150,7 @@ static func setup(data) -> void:
 	cast_pushback = f.abilities.castPushback
 	max_pushbacks = int(f.abilities.maxPushbacks)
 	enemy_cfg.clear()
+	_cfg_at_level.clear()
 	for id in enemies:
 		enemy_cfg[id] = Scaling.scaled_enemy(enemies[id], CONFIG.stats, attack.abilityWeaponSeconds)
 	spells.clear()
@@ -196,3 +199,53 @@ static func region_by_id(id: String) -> Dictionary:
 
 static func examine_text(id: String) -> String:
 	return text.examine.get(id, "")
+
+
+## A level variant (as WoW has one creature entry per zone: a level 2 ghoul by
+## the road, a level 12 one in the barrows) names its `base` enemy and states
+## only what differs. Everything else comes from the base, bar a unique drop.
+static func resolve_enemies(raw: Dictionary) -> Dictionary:
+	var out := {}
+	for id in raw:
+		out[id] = _resolved(raw, id, [id])
+	return out
+
+
+static func _resolved(raw: Dictionary, id: String, seen: Array) -> Dictionary:
+	var e: Dictionary = raw[id]
+	var base = e.get("base")
+	if base == null or not raw.has(base) or seen.has(base):
+		return e
+	var out := _resolved(raw, base, seen + [base]).duplicate(true)
+	out.erase("uniqueDrop")
+	for k in e:
+		out[k] = e[k]
+	return out
+
+
+static var _cfg_at_level := {}
+
+## An enemy type's numbers at the level a spawn rolled (from its level to its
+## maxLevel, fixed by the spawn's id).
+static func enemy_cfg_at(type: String, spawn_id: String) -> Dictionary:
+	var e: Dictionary = enemies[type]
+	if not e.has("maxLevel") or e.maxLevel <= e.level:
+		return enemy_cfg[type]
+	var level := int(e.level) + int(Scaling.spawn_roll(spawn_id + "#level") * (int(e.maxLevel) - int(e.level) + 1))
+	var key := "%s@%d" % [type, level]
+	if not _cfg_at_level.has(key):
+		var at := e.duplicate()
+		at.level = level
+		_cfg_at_level[key] = Scaling.scaled_enemy(at, CONFIG.stats, attack.abilityWeaponSeconds)
+	return _cfg_at_level[key]
+
+
+## The world-drop band for an enemy of this level, or {} (none fits, or the
+## enemy is marked worldDrops: false, as beasts drop no gear).
+static func world_drop_band(cfg: Dictionary) -> Dictionary:
+	if cfg.get("worldDrops", true) == false:
+		return {}
+	for b in world_drops:
+		if cfg.get("level", 1) >= b.minLevel and cfg.get("level", 1) <= b.maxLevel:
+			return b
+	return {}

@@ -2763,10 +2763,12 @@ async function lootRarity(browser) {
   const stats = await page.evaluate(() => {
     const g = window.__shadowfall;
     const N = 20000;
-    const count = (table) => {
+    // an enemy rolls its own table, then its level's world-drop band
+    const count = (table, band) => {
       const out = { rarity: {}, items: {} };
+      const world = g.db.worldDrops.find((b) => b.id === band);
       for (let i = 0; i < N; i++) {
-        for (const d of g.rollLoot(g.db.lootTables[table], Math.random)) {
+        for (const d of g.rollLoot(g.db.lootTables[table], Math.random).concat(g.rollLoot(world, Math.random))) {
           const r = g.itemView({ id: d.id, rolls: g.rollItem(d.id, Math.random, d.rarity) }).rarity;
           out.rarity[r] = (out.rarity[r] || 0) + 1;
           out.items[d.id] = (out.items[d.id] || 0) + 1;
@@ -2774,12 +2776,12 @@ async function lootRarity(browser) {
       }
       return out;
     };
-    return { ghoul: count('ghoul'), hound: count('hound'), seer: count('seer'), N };
+    return { ghoul: count('ghoul', 'world_1_5'), hound: count('hound'), seer: count('seer'), N };
   });
   const pct = (n) => (100 * (n || 0)) / stats.N;
   const near = (n, want, tol) => Math.abs(pct(n) - want) <= tol;
   const gh = stats.ghoul.rarity;
-  record('A drop rolls its rarity first: a ghoul drops junk, common, enhanced and rarely rare', near(gh.junk, 22.5, 1.5) && near(gh.common, 14.4, 1.2) && near(gh.enhanced, 6.75, 1) && near(gh.rare, 1.35, 0.5) && !gh.epic,
+  record('A drop rolls its rarity first: a ghoul drops junk, common, enhanced and rarely rare', near(gh.junk, 33.25, 1.5) && near(gh.common, 15, 1.2) && near(gh.enhanced, 10.75, 1) && near(gh.rare, 1, 0.5) && !gh.epic,
     `per ghoul: junk ${pct(gh.junk).toFixed(1)}%, common ${pct(gh.common).toFixed(1)}%, enhanced ${pct(gh.enhanced).toFixed(1)}%, rare ${pct(gh.rare).toFixed(2)}%, epic 0`);
   record('Items reserved for a boss drop only from that boss', !stats.ghoul.items.witchbane && !stats.hound.items.witchbane && near(stats.seer.items.witchbane, 15, 1.5), `Witchbane: seer ${pct(stats.seer.items.witchbane).toFixed(1)}%, ghouls and hounds never`);
   record('Hounds always drop their own meat; pelts come from skinning', stats.hound.items.hound_meat === stats.N && !stats.hound.items.hound_pelt, `meat ${pct(stats.hound.items.hound_meat)}%, pelt ${pct(stats.hound.items.hound_pelt).toFixed(1)}%`);

@@ -47,7 +47,7 @@ if (budgets.length) {
 
 // the checks must catch typical mistakes, or they are no use
 const broken = [
-  ['a loot table naming an item that does not exist', (d) => (d['loot_tables.json'].lootTables[0].drops.items.common[0].item = 'iron_glvoes'), /unknown item iron_glvoes/],
+  ['a loot table naming an item that does not exist', (d) => (d['loot_tables.json'].lootTables[0].drops.items.junk[0].item = 'iron_glvoes'), /unknown item iron_glvoes/],
   ['two items with the same id', (d) => d['items.json'].items.push({ ...d['items.json'].items[0] }), /duplicate id/],
   ['a shop selling a quest item', (d) => d['shops.json'].shops[0].stock.push('manifest'), /quest item manifest cannot be sold/],
   ['an npc pointing at a missing shop', (d) => (d['npcs.json'].npcs[0].shop = 'nowhere'), /unknown shop nowhere/],
@@ -68,6 +68,8 @@ const broken = [
   ['a recipe cooking an item that does not exist', (d) => (d['recipes.json'].recipes[0].output.item = 'grilled_prech'), /unknown item grilled_prech/],
   ['a title needing a skill rank that does not exist', (d) => (d['titles.json'].titles.find((t) => t.id === 'angler').requires = [{ skill: 'fishing', rank: 99 }]), /angler: a skill condition needs a rank the skill can reach/],
   ['a titled greeting that never says the title', (d) => d['titles.json'].greetings.titled.push('Hello.'), /must say \{title\}/],
+  ['a level variant of an enemy that does not exist', (d) => d['enemies.json'].enemies.push({ id: 'barrow_ghoul', base: 'ghool', level: 12 }), /barrow_ghoul base: names unknown enemy ghool/],
+  ['world-drop bands whose levels overlap', (d) => d['loot_tables.json'].worldDrops.push({ ...d['loot_tables.json'].worldDrops[0], id: 'world_extra', minLevel: 4, maxLevel: 7 }), /its levels overlap/],
   ['an enemy of an unknown type', (d) => (d['enemies.json'].enemies[0].type = 'dragonkin'), /type must be one of/],
 ];
 const selfTest = [];

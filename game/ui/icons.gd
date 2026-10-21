@@ -12,7 +12,10 @@ const ITEM_SIZE := 64
 const GLYPH_SIZE := 64
 const PORTRAIT_SIZE := 96
 
+const SPRITES := "res://assets/icons/%s.png"
+
 var items := {} ## model -> Texture2D
+var _sprites := {} ## sprite -> Texture2D, or null if the file is missing
 var abilities := {} ## ability id -> Texture2D
 var _portraits := {} ## model -> Texture2D
 
@@ -138,7 +141,17 @@ func item(id) -> Texture2D:
 	if id == null:
 		return null
 	var def := Items.get_def(id)
-	return items.get(def.get("model", "")) if def else null
+	if def.is_empty():
+		return null
+	# a painted sprite (assets/icons) wins over the picture of its model
+	var sprite = def.get("sprite")
+	if sprite:
+		if not _sprites.has(sprite):
+			var path := SPRITES % sprite
+			_sprites[sprite] = load(path) if ResourceLoader.exists(path) else null
+		if _sprites[sprite]:
+			return _sprites[sprite]
+	return items.get(def.get("model", ""))
 
 
 # ------------------------------------------------------------------ portraits
