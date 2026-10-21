@@ -33,6 +33,20 @@ static func money(amount) -> String:
 	return " ".join(parts)
 
 
+## Coins in the data are whole silver, or a range {min, max} rolled when
+## handed over (money.js coinRange).
+static func coin_range(c) -> Array:
+	if c is Dictionary:
+		var lo := int(c.get("min", 0))
+		return [lo, int(c.get("max", lo))]
+	return [int(c) if c else 0, int(c) if c else 0]
+
+
+static func roll_coins(c, rand: Callable) -> int:
+	var r := coin_range(c)
+	return r[0] + int(floor(rand.call() * (r[1] - r[0] + 1))) if r[1] > r[0] else r[0]
+
+
 ## "a" or "an" before a word.
 static func article(word: String) -> String:
 	return "an" if word.length() > 0 and "aeiouAEIOU".contains(word[0]) else "a"

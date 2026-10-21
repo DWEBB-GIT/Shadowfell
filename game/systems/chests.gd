@@ -100,8 +100,9 @@ func open(c: Dictionary) -> bool:
 	for it in c.def.get("items", []):
 		if not inventory.add_item(it.id, it.get("count", 1)):
 			game.loot.drop_at({"id": it.id, "count": it.get("count", 1)}, Vector3(c.x + 0.9, 0, c.z + 0.4))
-	if c.def.get("coins"):
-		inventory.add_coins(c.def.coins, "in the %s" % c.def.name)
+	var coins := U.roll_coins(c.def.get("coins"), game.random)
+	if coins:
+		inventory.add_coins(coins, "in the %s" % c.def.name)
 	events.emit("log", {"text": "You open the %s." % c.def.name, "kind": "loot"})
 	events.emit("chestOpened", {"id": c.def.id})
 	_look(c)

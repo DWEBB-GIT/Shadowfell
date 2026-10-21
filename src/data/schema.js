@@ -92,6 +92,8 @@ const ABILITY_ID = /^[a-z][a-zA-Z0-9]*$/; // abilities are camelCase, as saved s
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isInt = (v) => Number.isInteger(v);
+// coins: absent, whole silver, or a range { min, max } rolled when given
+const coinsOk = (c) => c === undefined || (isInt(c) && c >= 0) || (c !== null && typeof c === 'object' && isInt(c.min) && isInt(c.max) && c.min >= 0 && c.max >= c.min);
 const isStr = (v) => typeof v === 'string' && v.length > 0;
 const isStrList = (v) => Array.isArray(v) && v.every(isStr);
 const isVec2 = (v) => Array.isArray(v) && v.length === 2 && v.every(isNum);
@@ -580,7 +582,8 @@ export function validateGameData(raw, opts = {}) {
     }
     const r = q.reward || {};
     repRefs(w, r.reputation);
-    if (!(isInt(r.coins ?? 0) && isInt(r.xp ?? 0))) errors.push(`${w}: reward coins and xp must be whole numbers`);
+    if (!isInt(r.xp ?? 0)) errors.push(`${w}: reward xp must be a whole number`);
+    if (!coinsOk(r.coins)) errors.push(`${w}: reward coins must be whole silver, or a range { min, max }`);
     for (const it of r.items || []) {
       ref(w + ' reward', 'item', items, it.item);
       if (!(isInt(it.count ?? 1) && (it.count ?? 1) >= 1)) errors.push(`${w} reward: item count must be a whole number`);
@@ -680,7 +683,7 @@ export function validateGameData(raw, opts = {}) {
     pos(w, c.position);
     if (!isStr(c.name)) errors.push(`${w}: needs a name`);
     for (const it of c.items || []) ref(w, 'item', items, it.id);
-    if (c.coins !== undefined && !(isInt(c.coins) && c.coins >= 0)) errors.push(`${w}: coins must be whole silver`);
+    if (!coinsOk(c.coins)) errors.push(`${w}: coins must be whole silver, or a range { min, max }`);
     if (c.lock) {
       if (!c.lock.key && !c.lock.pick) errors.push(`${w}: a lock needs a key or a pick rank`);
       if (c.lock.key) ref(w, 'key item', items, c.lock.key);

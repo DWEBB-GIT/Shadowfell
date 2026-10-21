@@ -186,14 +186,24 @@ static func _reserved(d: Dictionary, table: String, bad: Callable) -> void:
 		bad.call("%s is kept for %s only" % [d.id, ", ".join(d.reservedFor)])
 
 
+static func _coins_ok(c) -> bool:
+	if c is Dictionary:
+		return _is_int(c.get("min")) and _is_int(c.get("max")) and c.min >= 0 and c.max >= c.min
+	return c == null or (_is_int(c) and c >= 0)
+
+
 static func _rewards(s: DataStore, out: PackedStringArray) -> void:
 	for q in s.quests:
+		if not _coins_ok(q.get("reward", {}).get("coins")):
+			out.append("Quest %s: reward coins must be whole silver, or a min to max range" % q.id)
 		for e in q.get("reward", {}).get("items", []):
 			if s.item(e.get("item")).is_empty():
 				out.append("Quest %s: reward names unknown item %s" % [q.id, e.get("item")])
 			if not (_is_int(e.get("count")) and e.count >= 1):
 				out.append("Quest %s: reward %s needs a count of at least 1" % [q.id, e.get("item")])
 	for c in s.chests:
+		if not _coins_ok(c.get("coins")):
+			out.append("Chest %s: coins must be whole silver, or a min to max range" % c.id)
 		for e in c.get("items", []):
 			if s.item(e.get("id")).is_empty():
 				out.append("Chest %s: names unknown item %s" % [c.id, e.get("id")])

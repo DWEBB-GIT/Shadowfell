@@ -147,7 +147,8 @@ func _sub(text: String) -> String:
 func _rewards(r: Dictionary) -> String:
 	var parts := []
 	if r.get("coins"):
-		parts.append(UI.money(r.coins))
+		var cr := U.coin_range(r.coins)
+		parts.append(UI.money(cr[0]) if cr[0] == cr[1] else "%s – %s" % [UI.money(cr[0]), UI.money(cr[1])])
 	if r.get("xp"):
 		parts.append("%s experience" % U.n(r.xp))
 	for f in r.get("reputation", {}):

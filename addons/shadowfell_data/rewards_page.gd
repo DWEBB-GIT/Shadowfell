@@ -124,7 +124,7 @@ func _quest(q: Dictionary) -> void:
 		q.reward = {}
 	var r: Dictionary = q.reward
 	var g := UI.grid(form)
-	UI.row(g, "Coins", UI.spin(r.get("coins", 0), 0, 100000, 1, func(v): _num(r, "coins", v, "quests")))
+	_coins(g, r, "quests")
 	UI.row(g, "Experience", UI.spin(r.get("xp", 0), 0, 1000000, 5, func(v): _num(r, "xp", v, "quests")))
 	_item_rows(r, "item", "quests", ["coins", "xp"])
 	if r.has("reputation"):
@@ -135,8 +135,35 @@ func _chest(c: Dictionary) -> void:
 	UI.note(form, c.id)
 	UI.heading(form, "Inside")
 	var g := UI.grid(form)
-	UI.row(g, "Coins", UI.spin(c.get("coins", 0), 0, 100000, 1, func(v): _num(c, "coins", v, "world")))
+	_coins(g, c, "world")
 	_item_rows(c, "id", "world", ["coins"])
+
+
+## coins from min to max, rolled when given; equal ends save a plain number
+func _coins(g: GridContainer, d: Dictionary, file: String) -> void:
+	var c = d.get("coins", 0)
+	var cur := [int(c.get("min", 0)), int(c.get("max", 0))] if c is Dictionary else [int(c), int(c)]
+	var h := HBoxContainer.new()
+	var lo := UI.spin(cur[0], 0, 100000, 1, func(_v): pass, " min")
+	var hi := UI.spin(cur[1], 0, 100000, 1, func(_v): pass, " max")
+	var save := func(_v):
+		var a := int(lo.value)
+		var b := int(hi.value)
+		if b < a:
+			hi.set_value_no_signal(a)
+			b = a
+		if b <= 0:
+			d.erase("coins")
+		elif a == b:
+			d.coins = a
+		else:
+			d.coins = {"min": a, "max": b}
+		s.touch(file)
+	lo.value_changed.connect(save)
+	hi.value_changed.connect(save)
+	h.add_child(lo)
+	h.add_child(hi)
+	UI.row(g, "Coins", h, "Silver given, rolled between min and max. Set both the same for a fixed amount.")
 
 
 func _num(d: Dictionary, key: String, v: float, file: String) -> void:

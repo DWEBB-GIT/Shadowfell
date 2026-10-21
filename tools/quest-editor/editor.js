@@ -309,7 +309,7 @@ function renderSide() {
 
     el('h4', {}, 'Reward preview'),
     el('div', { class: 'reward-card' },
-      el('div', {}, el('span', { class: 'coins' }, `${r.coins || 0} coins`), ` · ${r.xp || 0} XP`),
+      el('div', {}, el('span', { class: 'coins' }, `${typeof r.coins === 'object' && r.coins ? `${r.coins.min}–${r.coins.max}` : r.coins || 0} coins`), ` · ${r.xp || 0} XP`),
       ...(r.items || []).map((it) => el('div', { style: `color:${ref.itemColour[it.item] || '#ccc'}` }, `${it.count > 1 ? it.count + ' × ' : ''}${nameOf('items', it.item)}`)),
       ...Object.entries(r.reputation || {}).map(([f, n]) => el('div', { class: 'hint' }, `+${n} ${nameOf('factions', f)}`)),
     ),
