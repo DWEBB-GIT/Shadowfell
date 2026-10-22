@@ -219,6 +219,8 @@ export function validateGameData(raw, opts = {}) {
   const sceneF = need('scenery.json');
   const textF = need('text.json');
   const skillF = need('skills.json');
+  const buildF = raw['builds.json'] || {}; // build layers (game/systems/builds.gd); optional
+  const STATUS_IDS = new Set((buildF.statuses || []).map((x) => x.id));
 
   const armourTypes = indexById(itemsF.armourTypes, 'items.json armourTypes', errors);
   const suffixes = indexById(itemsF.suffixes, 'items.json suffixes', errors);
@@ -376,12 +378,22 @@ export function validateGameData(raw, opts = {}) {
         if (a.kind === 'purge' && !a.spendsAll) errors.push(`${w}: purge needs spendsAll`);
       }
     }
+    const change = (where, c) => {
+      for (const k of ['tuning', 'add', 'scale']) if (c[k] !== undefined && !Object.values(c[k]).every(isNum)) errors.push(`${where}: ${k} must map tuning keys to numbers`);
+      if (c.applies !== undefined) aura(`${where} applies`, c.applies);
+      if (c.follow !== undefined) ref(`${where} follow`, 'ability', abilities, c.follow);
+      if (c.bonusVs?.status !== undefined && !STATUS_IDS.has(c.bonusVs.status)) errors.push(`${where}: bonusVs names an unknown status ${c.bonusVs.status}`);
+      if (c.execute !== undefined && !(isNum(c.execute.below) && isNum(c.execute.percent))) errors.push(`${where}: execute needs below and percent`);
+      for (const k of Object.keys(c.cost || {}).concat(Object.keys(c.gain || {}))) if (!RESOURCE_IDS.has(k)) errors.push(`${where}: names an unknown resource ${k}`);
+    };
     const aura = (where, x) => {
       if (!x || typeof x !== 'object' || !isStr(x.name)) return errors.push(`${where}: needs a name and numbers`);
       for (const [key, v] of Object.entries(x)) {
         if (key === 'name' || key.startsWith('_')) continue;
         if (key === 'then') aura(where + ' then', v);
-        else if (!AURA_KEYS.includes(key) || !isNum(v)) errors.push(`${where}: ${key} must be one of ${AURA_KEYS.join(', ')}, a number`);
+        else if (key === 'status') {
+          if (!STATUS_IDS.has(v)) errors.push(`${where}: status names an unknown status ${v}`);
+        } else if (!AURA_KEYS.includes(key) || !isNum(v)) errors.push(`${where}: ${key} must be one of ${AURA_KEYS.join(', ')}, a number`);
       }
       if (!(isNum(x.duration) && x.duration > 0)) errors.push(`${where}: needs a duration above 0`);
     };
@@ -389,17 +401,59 @@ export function validateGameData(raw, opts = {}) {
     for (const f of ['inShadow', 'follow', 'spreads']) if (a[f] !== undefined) ref(`${w} ${f}`, 'ability', abilities, a[f]);
     if (a.spreads && abilities[a.spreads]?.kind !== 'dot') errors.push(`${w}: spreads must name a dot`);
     if (a.spendsAll !== undefined && !RESOURCE_IDS.has(a.spendsAll)) errors.push(`${w}: spendsAll names an unknown resource ${a.spendsAll}`);
+    if (a.status !== undefined && !STATUS_IDS.has(a.status)) errors.push(`${w}: status names an unknown status ${a.status}`);
     if (a.bonusVs !== undefined) {
-      ref(`${w} bonusVs`, 'ability', abilities, a.bonusVs.aura);
+      if (a.bonusVs.status !== undefined) {
+        if (!STATUS_IDS.has(a.bonusVs.status)) errors.push(`${w}: bonusVs names an unknown status ${a.bonusVs.status}`);
+      } else ref(`${w} bonusVs`, 'ability', abilities, a.bonusVs.aura);
       if (!isNum(a.bonusVs.percent)) errors.push(`${w}: bonusVs needs a percent`);
     }
     if (a.stacks !== undefined && !(isStr(a.stacks.id) && isStr(a.stacks.name) && ['max', 'duration', 'critBonus'].every((k) => isNum(a.stacks[k]) && a.stacks[k] > 0))) errors.push(`${w}: stacks needs an id, a name, max, duration and critBonus`);
+    if (a.upgrades !== undefined) {
+      const u = a.upgrades;
+      if (!u.enhanced || !isStr(u.enhanced.text)) errors.push(`${w}: upgrades need an enhanced rank with text`);
+      else change(`${w} enhanced`, u.enhanced);
+      if (!Array.isArray(u.forks) || u.forks.length > 2) errors.push(`${w}: upgrades need a list of up to 2 forks`);
+      const seen = new Set();
+      for (const f of u.forks || []) {
+        if (!isStr(f.id) || !isStr(f.name) || !isStr(f.text)) errors.push(`${w}: each fork needs an id, a name and text`);
+        if (seen.has(f.id)) errors.push(`${w}: fork ${f.id} is repeated`);
+        seen.add(f.id);
+        change(`${w} fork ${f.id}`, f);
+      }
+    }
     for (const [lo, v] of Object.entries(a.loadouts || {})) {
       if (!LOADOUTS.includes(lo)) errors.push(`${w}: loadouts must be ${LOADOUTS.join(', ')}`);
       if (v.tuning && !Object.values(v.tuning).every(isNum)) errors.push(`${w}: loadout ${lo} tuning must be numbers`);
       for (const k of Object.keys(v.gain || {})) if (!RESOURCE_IDS.has(k)) errors.push(`${w}: loadout ${lo} gain names an unknown resource ${k}`);
     }
   }
+
+  // ---- build layers (builds.json): statuses, key passives, legendary powers
+  const EFFECT_KINDS = ['statusDamage', 'execute', 'hitStacks', 'spendHeal', 'critBuild', 'dotHaste', 'zoneFortify', 'trap'];
+  const powers = indexById(buildF.powers || [], 'builds.json powers', errors);
+  indexById(buildF.statuses || [], 'builds.json statuses', errors);
+  const effects = (w, list) => {
+    for (const e of list || []) {
+      if (!EFFECT_KINDS.includes(e.kind)) errors.push(`${w}: effect kind must be one of ${EFFECT_KINDS.join(', ')}`);
+      if (e.status !== undefined && !STATUS_IDS.has(e.status)) errors.push(`${w}: names an unknown status ${e.status}`);
+      if (e.spell !== undefined) ref(`${w} spell`, 'ability', abilities, e.spell);
+      if (e.resource !== undefined && !RESOURCE_IDS.has(e.resource)) errors.push(`${w}: names an unknown resource ${e.resource}`);
+    }
+  };
+  for (const [id, k] of Object.entries(indexById(buildF.keyPassives || [], 'builds.json keyPassives', errors, ABILITY_ID))) {
+    ref(`builds.json keyPassive ${id}`, 'archetype', archetypes, k.archetype);
+    if (!isStr(k.name) || !isStr(k.text) || !Array.isArray(k.effects) || !k.effects.length) errors.push(`builds.json keyPassive ${id}: needs a name, text and effects`);
+    effects(`builds.json keyPassive ${id}`, k.effects);
+  }
+  for (const [id, pw] of Object.entries(powers)) {
+    const w = `builds.json power ${id}`;
+    if (!isStr(pw.name) || !isStr(pw.text)) errors.push(`${w}: needs a name and text`);
+    for (const sp of [pw.spell, ...(pw.spells || [])].filter((x) => x !== undefined)) ref(`${w} spell`, 'ability', abilities, sp);
+    if (!pw.changes && !pw.effects) errors.push(`${w}: needs changes (to a spell) or effects`);
+    effects(w, pw.effects);
+  }
+  for (const [id, it] of Object.entries(items)) if (it.power !== undefined) ref(`items.json ${id} power`, 'power', powers, it.power);
 
   // ---- enemies and loot tables
   if (!isNum(enemF.leashDistance)) errors.push('enemies.json: leashDistance must be a number');

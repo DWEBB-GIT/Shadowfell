@@ -87,6 +87,10 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 	if r.has("suffix"):
 		out.name = "%s %s" % [d.name, DB.suffixes[r.suffix].name]
 	out.rarity = "enhanced" if r.has("suffix") and d.rarity == "common" else d.rarity
+	if r.has("power"):
+		# a legendary power moved onto it at the forge
+		out.power = r.power
+		out.rarity = "legendary"
 	out.stats = stats
 	out.price = d.get("price", 0) + (U.jround(bonus * ROLLS.valuePerPoint) if r.has("suffix") else 0)
 	return out
@@ -114,7 +118,20 @@ static func valid_rolls(id: String, r) -> bool:
 			return false
 	if r.has("suffix") and not DB.suffixes.has(r.suffix):
 		return false
+	if r.has("power") and Builds.power_def(r.power).is_empty():
+		return false
 	return true
+
+
+## The legendary power an item carries (its own, or one moved onto it), or "".
+static func power_of(stack) -> String:
+	if stack == null:
+		return ""
+	var r = stack.get("rolls")
+	if typeof(r) == TYPE_DICTIONARY and typeof(r.get("power")) == TYPE_STRING:
+		return r.power
+	var p = get_def(stack.get("id")).get("power")
+	return p if typeof(p) == TYPE_STRING else ""
 
 
 static func _is_int(v) -> bool:

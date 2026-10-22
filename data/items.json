@@ -403,6 +403,98 @@
       "description": "The seer kept this blade bound in roots so no hand could lift it against her. The witchlight in the fuller has not gone out."
     },
     {
+      "id": "bloodletter",
+      "name": "Bloodletter",
+      "kind": "weapon",
+      "rarity": "legendary",
+      "slot": "mainHand",
+      "itemLevel": 5,
+      "speed": 2.8,
+      "statSplit": {
+        "strength": 2,
+        "stamina": 1
+      },
+      "power": "bloodletter",
+      "reservedFor": [
+        "brute",
+        "blackhedge_captain"
+      ],
+      "stack": 1,
+      "price": 300,
+      "model": "blackwood_cleaver",
+      "icon": "blackwood_cleaver",
+      "description": "A watchman's cleaver that never came clean. Every cut it makes keeps bleeding."
+    },
+    {
+      "id": "plague_saints_wraps",
+      "name": "Plague-Saint's Wraps",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "hands",
+      "armourType": "leather",
+      "itemLevel": 5,
+      "statSplit": {
+        "intellect": 1,
+        "stamina": 1,
+        "haste": 1
+      },
+      "power": "contagion",
+      "reservedFor": [
+        "seer"
+      ],
+      "stack": 1,
+      "price": 280,
+      "model": "iron_gloves",
+      "icon": "iron_gloves",
+      "description": "Linen bindings from a barrow priest's hands, stiff with old sickness. What they touch, spreads."
+    },
+    {
+      "id": "shadowstep_boots",
+      "name": "Shadowstep Boots",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "feet",
+      "armourType": "leather",
+      "itemLevel": 5,
+      "statSplit": {
+        "agility": 1,
+        "stamina": 1,
+        "haste": 1
+      },
+      "power": "shadowstep",
+      "reservedFor": [
+        "blackhedge_captain"
+      ],
+      "stack": 1,
+      "price": 280,
+      "model": "hob_boots",
+      "icon": "hob_boots",
+      "description": "A Blackhedge scout's boots, soled with felt. Nobody ever heard him leave."
+    },
+    {
+      "id": "hunters_patience",
+      "name": "Hunter's Patience",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "head",
+      "armourType": "leather",
+      "itemLevel": 5,
+      "statSplit": {
+        "agility": 1,
+        "stamina": 1,
+        "haste": 1
+      },
+      "power": "hunters_patience",
+      "reservedFor": [
+        "bristleback"
+      ],
+      "stack": 1,
+      "price": 280,
+      "model": "watch_helm",
+      "icon": "watch_helm",
+      "description": "A boar-hunter's cap with a tusk sewn to the brim. Its last owner waited three days for Bristleback. He waited too long."
+    },
+    {
       "id": "arming_sword",
       "name": "Arming sword",
       "kind": "weapon",

@@ -164,7 +164,12 @@ func _take(id: String, n: float) -> float:
 	else:
 		values[id] = had - paid
 	var b = bar(id)
-	var heal = b.get("healPerSpent") if b else null
+	var heal = b.get("healPerSpent", 0.0) if b else 0.0
+	# Unbroken, Soul Tithe: spending heals (more)
+	if game.builds:
+		for e in game.builds.effects("spendHeal"):
+			if e.resource == id:
+				heal += e.percentPerPoint
 	if heal and paid > 0:
 		var p = game.player
 		var healed: float = p.heal(p.max_health * heal * paid / 100.0)

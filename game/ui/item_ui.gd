@@ -118,9 +118,16 @@ func _build() -> void:
 		w.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		w.foot = UI.hint(w.body)
 	settings_win = UI.window(self, "Settings", 320, func(): close("settings"))
-	talents = UI.window(self, "Talents", 320, func(): close("talents"))
-	var tt := UI.label(talents.body, "Talent trees arrive in a later build. You will earn a point each level from 10 and spend them here.", 15, UI.TEXT_DIM)
-	tt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	talents = UI.window(self, "Talents", 470, func(): close("talents"))
+	talents.sub = UI.label(null, "", 13, UI.TEXT_DIM)
+	talents.head.add_child(talents.sub)
+	talents.head.move_child(talents.sub, 1)
+	var tsc := ScrollContainer.new()
+	tsc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tsc.custom_minimum_size = Vector2(0, 420)
+	talents.body.add_child(tsc)
+	talents.inner = UI.vbox(tsc, 6)
+	talents.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cooking = UI.window(self, "Cooking", 380, func(): close("cooking"))
 	shop = UI.window(self, "", 330, func(): game.merchant.close())
 	shop.sub = UI.label(null, "", 13, UI.TEXT_DIM)
@@ -390,7 +397,7 @@ func render() -> void:
 	_render_bags(inv)
 	_render_character(inv)
 	_render_shop(inv)
-	talents.panel.visible = open.talents
+	_render_talents()
 	_render_cooking()
 	_render_settings()
 	_render_skills()
@@ -963,6 +970,87 @@ func _render_spellbook() -> void:
 	w.foot.text = "A: pick up / place on the bar   Y: remove from the bar   B: back" if hud.pad_mode else "Drag a spell onto the bar. Drag spells along the bar to rearrange them, or off it to remove them."
 
 
+## What changes a spell now: its Enhanced rank, its fork, legendary powers.
+func _upgrade_lines(id: String) -> Array:
+	var out := []
+	var b = game.builds
+	var up = DB.abilities.get(id, {}).get("upgrades")
+	if up != null and b.has_enhanced(id):
+		out.append(_l("Enhanced: %s" % _esc(up.enhanced.text), "#8fbf6a", 12))
+		for f in up.forks:
+			if f.id == b.fork_of(id):
+				out.append(_l("%s: %s" % [_esc(f.name), _esc(f.text)], "#8fbf6a", 12))
+	for p in b.powers():
+		if p.get("spell") == id or p.get("spells", []).has(id):
+			out.append(_l("%s: %s" % [_esc(p.name), _esc(p.text)], UI.hex(Items.rarity_colour("legendary")), 12))
+	return out
+
+
+# ------------------------------------------------------------------ talents
+## Path points buy each spell's Enhanced rank, then one of its two forks;
+## one key passive per character (builds.gd, data/builds.json).
+func _render_talents() -> void:
+	var w := talents
+	w.panel.visible = open.talents
+	if not open.talents:
+		return
+	UI.clear(w.inner)
+	var b = game.builds
+	var rule := Builds.points_rule()
+	w.sub.text = "%d of %d path points free" % [b.points_free, b.points_total]
+	if b.points_total == 0:
+		UI.wrapped(UI.label(w.inner, "Path points start at level %d: one each level. Each buys a spell's Enhanced rank, then one of its two forks." % int(rule.fromLevel), 13, UI.TEXT_DIM))
+	# the key passive
+	UI.label(w.inner, "Key passive", 15, Color("e8c070"))
+	var kp_row := UI.hbox(w.inner, 6)
+	for p in Builds.passives_for(game.stats.archetype.get("id", "")):
+		var chosen: bool = b.key_passive == p.id
+		var pid: String = p.id
+		var btn := UI.button(kp_row, ("✓ " if chosen else "") + p.name, func():
+			b.choose_passive(pid)
+			render(), 13)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.disabled = chosen or not b.key_passive_open
+		tip_on(btn, p.text, p.name)
+	if not b.key_passive_open:
+		UI.wrapped(UI.label(w.inner, "Opens at level %d. You may change it later." % int(DB.builds.get("keyPassiveLevel", 10)), 12, UI.TEXT_DIM))
+	# spell upgrades
+	UI.label(w.inner, "Spell upgrades", 15, Color("e8c070"))
+	for id in game.stats.archetype.get("abilities", []):
+		var a: Dictionary = DB.abilities.get(id, {})
+		var up = a.get("upgrades")
+		if up == null or not game.skills.knows_ability(id):
+			continue
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", UI.box(Color("15110c"), Color("6b5532") if b.has_enhanced(id) else Color("2e261a"), 0, 1, Vector4(6, 6, 8, 6)))
+		w.inner.add_child(card)
+		var h := UI.hbox(card, 8)
+		_spell_slot(h, id, 36)
+		var v := UI.vbox(h, 3)
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.label(v, a.name, 13, Color("f0e4c8"))
+		var row := UI.hbox(v, 4)
+		var sid: String = id
+		var enh := UI.button(row, "✓ Enhanced" if b.has_enhanced(id) else "Enhance", func():
+			b.enhance(sid)
+			render(), 12)
+		enh.disabled = b.has_enhanced(id) or b.points_free < int(rule.get("enhancedCost", 1))
+		tip_on(enh, up.enhanced.text, "Enhanced " + a.name)
+		for f in up.forks:
+			var fid: String = f.id
+			var mine: bool = b.fork_of(id) == fid
+			var fb := UI.button(row, ("✓ " if mine else "") + f.name, func():
+				b.choose_fork(sid, fid)
+				render(), 12)
+			fb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			fb.disabled = mine or b.fork_of(id) != "" or not b.has_enhanced(id) or b.points_free < int(rule.get("forkCost", 1))
+			tip_on(fb, f.text, f.name)
+	if b.points_spent > 0:
+		UI.button(w.inner, "Take back all path points", func():
+			b.respec()
+			render(), 12)
+
+
 func _spell_card(parent: Node, id: String) -> void:
 	var a: Dictionary = DB.abilities[id]
 	var at: int = game.action_bar.slots.find(id)
@@ -1165,6 +1253,7 @@ func _tooltip(loc: String) -> void:
 		if req != "":
 			lines.append(_l(_esc(req), "#ff4a3a" if Spells.missing_gear(game, ab) != "" else UI.hex(UI.TEXT), 12))
 		lines.append(_l("[i]%s[/i]" % _esc(ab.get("desc", "")), "#d0b878"))
+		lines.append_array(_upgrade_lines(id))
 		_set_tip(lines, [])
 		return
 	var inv = game.inventory
@@ -1225,6 +1314,9 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("+%s %s" % [U.n(def.stats[k]), STAT_LABEL.get(k, k)], UI.hex(UI.UP)))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
+	var power := Builds.power_def(Items.power_of(stack))
+	if not power.is_empty():
+		lines.append(_l("%s: %s" % [_esc(power.name), _esc(power.text)], UI.hex(Items.rarity_colour("legendary"))))
 	var dur := Items.durability(stack)
 	if dur != -1:
 		lines.append(_l("Broken: gives no stats until repaired", UI.hex(UI.DOWN)) if dur == 0 else _l("Durability %d / 100" % dur, UI.hex(UI.DOWN) if dur <= 25 else ""))

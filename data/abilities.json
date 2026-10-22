@@ -53,6 +53,34 @@
       },
       "cost": {
         "focus": 20
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "15% more damage.",
+          "scale": {
+            "damageMultiplier": 1.15
+          }
+        },
+        "forks": [
+          {
+            "id": "exposingShot",
+            "name": "Exposing Shot",
+            "text": "The target is Exposed: it takes 8% more damage for 6 seconds.",
+            "applies": {
+              "name": "Exposed",
+              "duration": 6,
+              "damageTaken": 8
+            }
+          },
+          {
+            "id": "leanShot",
+            "name": "Lean Shot",
+            "text": "Costs 12 Focus instead of 20.",
+            "cost": {
+              "focus": 12
+            }
+          }
+        ]
       }
     },
     {
@@ -72,7 +100,8 @@
       },
       "cost": {
         "focus": 25
-      }
+      },
+      "status": "poisoned"
     },
     {
       "id": "shieldBreak",
@@ -117,6 +146,34 @@
         "name": "Dazed",
         "duration": 1,
         "stun": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "shoulderCharge",
+            "name": "Shoulder Charge",
+            "text": "Dazes for 2 seconds instead of 1.",
+            "applies": {
+              "name": "Dazed",
+              "duration": 2,
+              "stun": 1
+            }
+          },
+          {
+            "id": "warPath",
+            "name": "War Path",
+            "text": "Builds 30 Resolve instead of 15.",
+            "gain": {
+              "resolve": 30
+            }
+          }
+        ]
       }
     },
     {
@@ -146,6 +203,32 @@
             "blocks": 2
           }
         }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "ironWall",
+            "name": "Iron Wall",
+            "text": "The guard lasts 1 second longer.",
+            "add": {
+              "window": 1
+            }
+          },
+          {
+            "id": "retaliation",
+            "name": "Retaliation",
+            "text": "Bracing gives you 20 Resolve.",
+            "gain": {
+              "resolve": 20
+            }
+          }
+        ]
       }
     },
     {
@@ -184,7 +267,8 @@
       },
       "cost": {
         "resolve": 20
-      }
+      },
+      "status": "bleeding"
     },
     {
       "id": "heavyStrike",
@@ -219,6 +303,32 @@
             "resolve": 20
           }
         }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "15% more damage.",
+          "scale": {
+            "damageMultiplier": 1.15
+          }
+        },
+        "forks": [
+          {
+            "id": "rending",
+            "name": "Rending Strike",
+            "text": "Also leaves the target Bleeding (Rend).",
+            "follow": "rend"
+          },
+          {
+            "id": "sundering",
+            "name": "Sundering Strike",
+            "text": "The target is Sundered: it takes 10% more damage for 6 seconds.",
+            "applies": {
+              "name": "Sundered",
+              "duration": 6,
+              "damageTaken": 10
+            }
+          }
+        ]
       }
     },
     {
@@ -236,6 +346,35 @@
       },
       "cost": {
         "resolve": 30
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "executioner",
+            "name": "Executioner",
+            "text": "50% more damage to enemies below 35% health.",
+            "execute": {
+              "below": 35,
+              "percent": 50
+            }
+          },
+          {
+            "id": "bonebreaker",
+            "name": "Bonebreaker",
+            "text": "Stuns the target for 1.5 seconds.",
+            "applies": {
+              "name": "Stunned",
+              "duration": 1.5,
+              "stun": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -273,6 +412,33 @@
       },
       "cost": {
         "mana": 30
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Lasts 3 seconds longer.",
+          "add": {
+            "duration": 3
+          }
+        },
+        "forks": [
+          {
+            "id": "sanctuary",
+            "name": "Sanctuary",
+            "text": "Heals 3% of your health each second instead of 2%.",
+            "tuning": {
+              "healPercent": 3
+            }
+          },
+          {
+            "id": "holyFire",
+            "name": "Holy Fire",
+            "text": "Burns enemies for 50% more.",
+            "scale": {
+              "damageMin": 1.5,
+              "damageMax": 1.5
+            }
+          }
+        ]
       }
     },
     {
@@ -316,6 +482,31 @@
             "maxTargets": 3
           }
         }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Hits one more enemy.",
+          "add": {
+            "maxTargets": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "bleedingEdge",
+            "name": "Bleeding Edge",
+            "text": "Every enemy hit is left Bleeding (Rend).",
+            "follow": "rend"
+          },
+          {
+            "id": "wideArc",
+            "name": "Wide Arc",
+            "text": "A 40 degree wider arc that reaches 0.6 metres further.",
+            "add": {
+              "coneDegrees": 40,
+              "range": 0.6
+            }
+          }
+        ]
       }
     },
     {
@@ -331,6 +522,32 @@
       },
       "gain": {
         "resolve": 25
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Lasts 5 seconds longer.",
+          "add": {
+            "duration": 5
+          }
+        },
+        "forks": [
+          {
+            "id": "rallyingCry",
+            "name": "Rallying Cry",
+            "text": "You are also Fortified while it lasts: 15% less damage taken.",
+            "add": {
+              "reduction": 15
+            }
+          },
+          {
+            "id": "bloodCry",
+            "name": "Blood Cry",
+            "text": "Raises your damage by 30% instead of 20%.",
+            "add": {
+              "damageBonus": 10
+            }
+          }
+        ]
       }
     },
     {
@@ -408,6 +625,30 @@
       },
       "gain": {
         "combo": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "15% more damage.",
+          "scale": {
+            "damageMultiplier": 1.15
+          }
+        },
+        "forks": [
+          {
+            "id": "serrated",
+            "name": "Serrated Strike",
+            "text": "Also leaves the target Bleeding (Rend).",
+            "follow": "rend"
+          },
+          {
+            "id": "lightfoot",
+            "name": "Lightfoot",
+            "text": "Costs 30 Energy instead of 40.",
+            "cost": {
+              "energy": 30
+            }
+          }
+        ]
       }
     },
     {
@@ -447,6 +688,7 @@
       "spendsAll": "combo",
       "bonusVs": {
         "aura": "poisonedBlade",
+        "status": "poisoned",
         "percent": 30
       },
       "desc": "Cut with both weapons at once, spending all your combo points: 60% of normalised weapon damage, plus 50% for each point, with each hand. Poisoned targets take 30% more. Triggers the global cooldown.",
@@ -458,6 +700,34 @@
       },
       "cost": {
         "energy": 35
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "10% more damage for each combo point.",
+          "add": {
+            "perPoint": 0.1
+          }
+        },
+        "forks": [
+          {
+            "id": "assassinate",
+            "name": "Assassinate",
+            "text": "60% more damage to enemies below 30% health.",
+            "execute": {
+              "below": 30,
+              "percent": 60
+            }
+          },
+          {
+            "id": "twinFangs",
+            "name": "Twin Fangs",
+            "text": "Poisoned targets take 60% more instead of 30%.",
+            "bonusVs": {
+              "status": "poisoned",
+              "percent": 60
+            }
+          }
+        ]
       }
     },
     {
@@ -481,7 +751,37 @@
       },
       "applies": {
         "name": "Poisoned",
-        "duration": 12
+        "duration": 12,
+        "status": "poisoned"
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Poisoned lasts 18 seconds.",
+          "applies": {
+            "name": "Poisoned",
+            "duration": 18,
+            "status": "poisoned"
+          }
+        },
+        "forks": [
+          {
+            "id": "virulent",
+            "name": "Virulent",
+            "text": "When a Poisoned enemy dies, the poison jumps to the nearest enemy.",
+            "spreadsOnDeath": true
+          },
+          {
+            "id": "crippling",
+            "name": "Crippling Poison",
+            "text": "Poisoned enemies are also slowed by 30%.",
+            "applies": {
+              "name": "Poisoned",
+              "duration": 18,
+              "status": "poisoned",
+              "slow": 30
+            }
+          }
+        ]
       }
     },
     {
@@ -502,6 +802,32 @@
         "name": "Asleep",
         "duration": 10,
         "sleep": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 5 seconds shorter.",
+          "add": {
+            "cooldown": -5
+          }
+        },
+        "forks": [
+          {
+            "id": "deepSleep",
+            "name": "Deep Sleep",
+            "text": "Sleeps for 15 seconds.",
+            "applies": {
+              "name": "Asleep",
+              "duration": 15,
+              "sleep": 1
+            }
+          },
+          {
+            "id": "drowse",
+            "name": "Drowse",
+            "text": "Reaches 10 metres.",
+            "range": 10
+          }
+        ]
       }
     },
     {
@@ -513,6 +839,15 @@
       "tuning": {
         "cooldown": 15,
         "offGlobalCooldown": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 3 seconds shorter.",
+          "add": {
+            "cooldown": -3
+          }
+        },
+        "forks": []
       }
     },
     {
@@ -529,6 +864,32 @@
         "blocks": 2,
         "miss": 1,
         "offGlobalCooldown": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 4 seconds shorter.",
+          "add": {
+            "cooldown": -4
+          }
+        },
+        "forks": [
+          {
+            "id": "evasion",
+            "name": "Evasion",
+            "text": "One more attack misses you.",
+            "add": {
+              "blocks": 1
+            }
+          },
+          {
+            "id": "longGuile",
+            "name": "Long Guile",
+            "text": "Lasts 4 seconds longer.",
+            "add": {
+              "window": 4
+            }
+          }
+        ]
       }
     },
     {
@@ -548,7 +909,34 @@
       },
       "cost": {
         "focus": 25
-      }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The burn deals 20% more.",
+          "scale": {
+            "tickMultiplier": 1.2
+          }
+        },
+        "forks": [
+          {
+            "id": "wildfire",
+            "name": "Wildfire",
+            "text": "When a Burning enemy dies, the fire jumps to the nearest enemy.",
+            "spreadsOnDeath": true
+          },
+          {
+            "id": "pitchArrow",
+            "name": "Pitch Arrow",
+            "text": "Burning enemies are also slowed by 25%.",
+            "applies": {
+              "name": "Pitch",
+              "duration": 10,
+              "slow": 25
+            }
+          }
+        ]
+      },
+      "status": "burning"
     },
     {
       "id": "tarTrap",
@@ -566,6 +954,32 @@
         "radius": 3,
         "duration": 8,
         "slow": 50
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The tar pool is 1 metre wider.",
+          "add": {
+            "radius": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "stickyTar",
+            "name": "Sticky Tar",
+            "text": "Slows by 70% instead of 50%.",
+            "tuning": {
+              "slow": 70
+            }
+          },
+          {
+            "id": "twinSnares",
+            "name": "More Snares",
+            "text": "Up to 3 traps at once.",
+            "add": {
+              "maxTraps": 1
+            }
+          }
+        ]
       }
     },
     {
@@ -585,6 +999,30 @@
       },
       "cost": {
         "focus": 35
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "fanOfArrows",
+            "name": "Fan of Arrows",
+            "text": "Up to 5 arrows.",
+            "add": {
+              "maxTargets": 2
+            }
+          },
+          {
+            "id": "fireVolley",
+            "name": "Fire Volley",
+            "text": "Every arrow sets its target Burning (Flaming Arrow).",
+            "follow": "flamingArrow"
+          }
+        ]
       }
     },
     {
@@ -608,6 +1046,37 @@
         "name": "Marked",
         "duration": 10,
         "damageTaken": 15
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Draws 0.5 seconds faster.",
+          "add": {
+            "castTime": -0.5
+          }
+        },
+        "forks": [
+          {
+            "id": "deadeye",
+            "name": "Deadeye",
+            "text": "Marked targets take 25% more instead of 15%.",
+            "applies": {
+              "name": "Marked",
+              "duration": 10,
+              "damageTaken": 25
+            }
+          },
+          {
+            "id": "pinningShot",
+            "name": "Pinning Shot",
+            "text": "Marked targets are also slowed by 50%.",
+            "applies": {
+              "name": "Pinned",
+              "duration": 10,
+              "damageTaken": 15,
+              "slow": 50
+            }
+          }
+        ]
       }
     },
     {
@@ -622,6 +1091,32 @@
         "distance": 8,
         "duration": 0.35,
         "offGlobalCooldown": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 4 seconds shorter.",
+          "add": {
+            "cooldown": -4
+          }
+        },
+        "forks": [
+          {
+            "id": "longLeap",
+            "name": "Long Leap",
+            "text": "Leaps 12 metres.",
+            "add": {
+              "distance": 4
+            }
+          },
+          {
+            "id": "quickRecovery",
+            "name": "Quick Recovery",
+            "text": "Cooldown 4 seconds shorter again.",
+            "add": {
+              "cooldown": -4
+            }
+          }
+        ]
       }
     },
     {
@@ -641,6 +1136,28 @@
       },
       "cost": {
         "mana": 15
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Casts 0.3 seconds faster.",
+          "add": {
+            "castTime": -0.3
+          }
+        },
+        "forks": [
+          {
+            "id": "rottingBolt",
+            "name": "Rotting Bolt",
+            "text": "Also afflicts the target with Rot.",
+            "follow": "rot"
+          },
+          {
+            "id": "hexingBolt",
+            "name": "Hexing Bolt",
+            "text": "Also curses the target with Hex of Withering.",
+            "follow": "hexOfWithering"
+          }
+        ]
       }
     },
     {
@@ -661,7 +1178,32 @@
       },
       "cost": {
         "mana": 20
-      }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Ticks deal 25% more.",
+          "scale": {
+            "tickMultiplier": 1.25
+          }
+        },
+        "forks": [
+          {
+            "id": "contagion",
+            "name": "Contagion",
+            "text": "When a Blighted enemy dies, the Rot jumps to the nearest enemy.",
+            "spreadsOnDeath": true
+          },
+          {
+            "id": "deepRot",
+            "name": "Deep Rot",
+            "text": "Lasts 18 seconds.",
+            "tuning": {
+              "duration": 18
+            }
+          }
+        ]
+      },
+      "status": "blighted"
     },
     {
       "id": "graveBloom",
@@ -682,6 +1224,32 @@
       },
       "cost": {
         "mana": 35
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "1 metre wider.",
+          "add": {
+            "radius": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "chokingBloom",
+            "name": "Choking Bloom",
+            "text": "Enemies inside are slowed by 30%.",
+            "tuning": {
+              "slow": 30
+            }
+          },
+          {
+            "id": "lastingBloom",
+            "name": "Lasting Bloom",
+            "text": "Lasts 3 seconds longer.",
+            "add": {
+              "duration": 3
+            }
+          }
+        ]
       }
     },
     {
@@ -703,6 +1271,42 @@
         "duration": 15,
         "damageDealt": -20,
         "slow": 30
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Withering takes 30% off their damage instead of 20%.",
+          "applies": {
+            "name": "Withering",
+            "duration": 15,
+            "damageDealt": -30,
+            "slow": 30
+          }
+        },
+        "forks": [
+          {
+            "id": "frailty",
+            "name": "Hex of Frailty",
+            "text": "Withering targets also take 10% more damage.",
+            "applies": {
+              "name": "Withering",
+              "duration": 15,
+              "damageDealt": -30,
+              "slow": 30,
+              "damageTaken": 10
+            }
+          },
+          {
+            "id": "bindingHex",
+            "name": "Binding Hex",
+            "text": "Slows by 50% instead of 30%.",
+            "applies": {
+              "name": "Withering",
+              "duration": 15,
+              "damageDealt": -30,
+              "slow": 50
+            }
+          }
+        ]
       }
     },
     {
@@ -717,6 +1321,32 @@
         "cooldown": 10,
         "healPerPoint": 0.3,
         "extend": 4
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Heals 0.4% per point instead of 0.3%.",
+          "add": {
+            "healPerPoint": 0.1
+          }
+        },
+        "forks": [
+          {
+            "id": "prolong",
+            "name": "Prolong",
+            "text": "Your Rot and curses last 8 seconds longer instead of 4.",
+            "add": {
+              "extend": 4
+            }
+          },
+          {
+            "id": "swiftPurge",
+            "name": "Swift Purge",
+            "text": "Cooldown 4 seconds shorter.",
+            "add": {
+              "cooldown": -4
+            }
+          }
+        ]
       }
     },
     {
@@ -738,6 +1368,33 @@
       },
       "cost": {
         "mana": 25
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Drains 25% more.",
+          "scale": {
+            "damageMin": 1.25,
+            "damageMax": 1.25
+          }
+        },
+        "forks": [
+          {
+            "id": "longSiphon",
+            "name": "Long Siphon",
+            "text": "Channels for 4.5 seconds.",
+            "add": {
+              "castTime": 1.5
+            }
+          },
+          {
+            "id": "quickSiphon",
+            "name": "Quick Siphon",
+            "text": "Cooldown 4 seconds shorter.",
+            "add": {
+              "cooldown": -4
+            }
+          }
+        ]
       }
     },
     {
@@ -762,6 +1419,34 @@
       },
       "cost": {
         "mana": 10
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "15% more damage.",
+          "scale": {
+            "damageMultiplier": 1.15
+          }
+        },
+        "forks": [
+          {
+            "id": "zealous",
+            "name": "Zealous",
+            "text": "Up to 5 Righteous stacks instead of 3.",
+            "stacks": {
+              "id": "righteous",
+              "name": "Righteous",
+              "max": 5,
+              "duration": 10,
+              "critBonus": 10
+            }
+          },
+          {
+            "id": "searing",
+            "name": "Searing Strike",
+            "text": "Also sets the target Burning (Light's Burn).",
+            "follow": "lightsBurn"
+          }
+        ]
       }
     },
     {
@@ -780,6 +1465,36 @@
       },
       "cost": {
         "mana": 25
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "stunningHammer",
+            "name": "Stunning Hammer",
+            "text": "Stuns the target for 1 second.",
+            "applies": {
+              "name": "Stunned",
+              "duration": 1,
+              "stun": 1
+            }
+          },
+          {
+            "id": "judgement",
+            "name": "Judgement",
+            "text": "The target is Judged: it takes 10% more damage for 8 seconds.",
+            "applies": {
+              "name": "Judged",
+              "duration": 8,
+              "damageTaken": 10
+            }
+          }
+        ]
       }
     },
     {
@@ -798,7 +1513,8 @@
         "damageMin": 1,
         "damageMax": 1,
         "tickMultiplier": 0.6
-      }
+      },
+      "status": "burning"
     },
     {
       "id": "divineStorm",
@@ -818,6 +1534,33 @@
       },
       "cost": {
         "mana": 30
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "0.5 metres wider.",
+          "add": {
+            "radius": 0.5
+          }
+        },
+        "forks": [
+          {
+            "id": "healingStorm",
+            "name": "Healing Storm",
+            "text": "Heals you 2% of your health for each enemy hit.",
+            "tuning": {
+              "healPerHit": 2
+            }
+          },
+          {
+            "id": "thunderingStorm",
+            "name": "Thundering Storm",
+            "text": "Interrupts casts and staggers harder.",
+            "tuning": {
+              "interrupts": 1,
+              "stagger": 0.5
+            }
+          }
+        ]
       }
     },
     {
@@ -843,6 +1586,47 @@
           "duration": 2,
           "stun": 1
         }
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 5 seconds shorter.",
+          "add": {
+            "cooldown": -5
+          }
+        },
+        "forks": [
+          {
+            "id": "longKneel",
+            "name": "Long Kneel",
+            "text": "The stun lasts 3 seconds.",
+            "applies": {
+              "name": "Kneeling",
+              "duration": 2,
+              "slow": 50,
+              "then": {
+                "name": "Stunned",
+                "duration": 3,
+                "stun": 1
+              }
+            }
+          },
+          {
+            "id": "humbled",
+            "name": "Humbled",
+            "text": "Kneeling targets take 15% more damage.",
+            "applies": {
+              "name": "Kneeling",
+              "duration": 2,
+              "slow": 50,
+              "damageTaken": 15,
+              "then": {
+                "name": "Stunned",
+                "duration": 2,
+                "stun": 1
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -861,6 +1645,32 @@
       },
       "cost": {
         "mana": 20
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Absorbs 30% of your health instead of 25%.",
+          "tuning": {
+            "absorbPercent": 30
+          }
+        },
+        "forks": [
+          {
+            "id": "bastion",
+            "name": "Bastion",
+            "text": "Lasts 15 seconds.",
+            "tuning": {
+              "duration": 15
+            }
+          },
+          {
+            "id": "radiance",
+            "name": "Radiance",
+            "text": "Cooldown 8 seconds shorter.",
+            "add": {
+              "cooldown": -8
+            }
+          }
+        ]
       }
     }
   ]

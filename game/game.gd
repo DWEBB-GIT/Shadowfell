@@ -43,6 +43,7 @@ var inventory: Inventory
 var quests: Quests
 var combat: Combat
 var spells: Spells
+var builds: Builds
 var resources: Resources
 var afterlife: Afterlife
 var skills: Skills
@@ -111,6 +112,7 @@ func _ready() -> void:
 	quests = Quests.new(self)
 	combat = Combat.new(self)
 	spells = Spells.new(self)
+	builds = Builds.new(self)
 	resources = Resources.new(self)
 	afterlife = Afterlife.new(self)
 	skills = Skills.new(self)
@@ -343,6 +345,7 @@ func start_game(resume: bool) -> void:
 	region = null # named again, quietly, from wherever the Warden stands
 	afterlife.reset()
 	skills.reset()
+	builds.reset()
 	reputation.reset()
 	titles.reset()
 	pending_death = null

@@ -239,6 +239,14 @@ func hurt(amount: float, opts := {}) -> float:
 	elif health <= 0:
 		dead = true
 		state = "dead"
+		# the killing blow throws the body back, further the more it overkilled
+		# (bosses and elites with a stagger bar just fall)
+		var src = from if from != null else (game.player.position if game.player else null)
+		if src != null and stagger_bar == null:
+			var away := Vector3(position.x - src.x, 0, position.z - src.z)
+			if away.length_squared() > 0.0001:
+				var over := maxf(0, amount - dealt) / maxf(1, max_health)
+				knock = away.normalized() * clampf(0.35 + over * 3, 0.35, 1.6) * 6
 		windup = 0.0
 		_cancel_cast()
 		rig.die()
@@ -392,6 +400,12 @@ func update(dt: float, player) -> void:
 			knock = Vector3.ZERO
 			position.x = home.x
 			position.z = home.z
+		elif knock.length_squared() > 0.001:
+			# the body slides with its killing blow
+			var fade := exp(-9 * dt)
+			position += knock * ((1 - fade) / 9)
+			position.y = Terrain.height_at(position.x, position.z)
+			knock *= fade
 		rig.update(dt, 0)
 		_sync()
 		return
