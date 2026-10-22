@@ -57,6 +57,9 @@ func release() -> bool:
 	var player = game.player
 	if not player.dead or ghost:
 		return false
+	# fallen while Wanted here: you wake in the lock-up instead (law.gd)
+	if game.law != null and game.law.jail_on_death():
+		return true
 	var at: Vector3 = player.position
 	_place_corpse(at.x, at.z, player.facing)
 	var dest := rest_point()

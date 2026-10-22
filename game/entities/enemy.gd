@@ -57,7 +57,7 @@ func _init(g, spawn: Dictionary) -> void:
 	game = g
 	id = spawn.id
 	type = spawn.type
-	cfg = DB.enemy_cfg_at(type, id)
+	cfg = DB.enemy_cfg_at(type, id, int(spawn.get("level", 0)))
 	home = Vector3(spawn.position[0], 0, spawn.position[1])
 	position = home
 	position.y = Terrain.height_at(position.x, position.z)
@@ -98,10 +98,22 @@ func _reset_control() -> void:
 	stagger_bar = {"value": 0.0, "need": DB.CONFIG.control.bossStaggerNeed} if cfg.get("type") == "boss" else null
 
 
-## passive (data `attitude`): leaves you be until you strike it; shown yellow
+## passive (data `attitude`): leaves you be until you strike it; shown yellow.
+## The watch (`lawful: "guard"`) is passive until you are Wanted (law.gd).
 var passive: bool:
 	get:
+		if cfg.get("lawful") == "guard" and game.law != null and game.law.hostile(self):
+			return false
 		return cfg.get("attitude", "aggressive") == "passive"
+
+## livestock and the watch (`lawful`) cannot be harmed unless you meant it:
+## the crime key held when you attacked (sanctioned), or a watch that is
+## after you anyway
+var sanctioned := false
+var sanctioned_crime := false ## the assault on it has been reckoned (law.gd)
+var protected: bool:
+	get:
+		return game.law != null and game.law.protected(self)
 
 var is_elite: bool:
 	get:
@@ -198,7 +210,7 @@ func reset() -> void:
 ## opts: stagger, knockFrom, knockback, heavy, quiet (the damage only; its
 ## flash and flinch are shown later)
 func hurt(amount: float, opts := {}) -> float:
-	if dead:
+	if dead or protected:
 		return 0.0
 	var stag: float = opts.get("stagger", 0.15)
 	var heavy: bool = opts.get("heavy", false)
@@ -525,6 +537,12 @@ func update(dt: float, player) -> void:
 		_steer_towards(home.x, home.z, move_speed * 0.8, dt, 0.3)
 		speed01 = 0.8
 		health = minf(max_health, health + dt * 6)
+	elif state == "idle" and game.law != null and is_same(game.law.summoned, self) and not player.dead:
+		# a watchman sent to have a word: walks up to you and speaks
+		_steer_towards(player.position.x, player.position.z, move_speed * 0.8, dt, 1.6)
+		speed01 = 0.8
+		if dist <= DB.infamy.get("guardReach", 2.4):
+			game.law.confront(self)
 	elif state == "idle":
 		speed01 = _idle_shuffle(dt)
 

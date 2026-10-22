@@ -112,6 +112,9 @@ var page:
 	get:
 		if npc == null:
 			return null
+		# a watchman has his say (law.gd)
+		if npc.id == "watch":
+			return game.law.page()
 		var def: Dictionary = DB.npcs[npc.id]
 		var pg := {"name": def.name, "title": def.get("title", ""), "text": "", "options": []}
 		var v: Dictionary = view
@@ -135,6 +138,7 @@ var page:
 					pg.options.append({"id": "train", "text": "Train (%d to learn)" % n if n else "Train", "icon": "train", "group": "service"})
 				if DB.builds.get("forge", {}).get("npc") == npc.id and not _power_items().is_empty():
 					pg.options.append({"id": "forge", "text": "Move a legendary power", "icon": "shop", "group": "service"})
+				_service_options(def, pg)
 				if def.get("innkeeper") and game.world_state.rest_point != "inn:" + npc.id:
 					pg.options.append({"id": "home", "text": "Make this inn your home", "icon": "home", "group": "service"})
 				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})
@@ -159,6 +163,8 @@ var page:
 				if pg.options.is_empty():
 					pg.text = "You have nothing else that goes there. Bring me a piece for that place and I'll do it."
 				pg.options.append({"id": "forge", "text": "Back", "icon": "back"})
+			"temper", "scrap", "scrapItem", "reforge", "reforgeItem", "punch", "gems", "gemSet", "gemSetItem", "gemRemove", "tale":
+				_service_page(v, pg)
 			"node":
 				var node = null
 				for n in d.nodes:
@@ -181,6 +187,178 @@ var page:
 					pg.text = q.get("progress", "")
 					pg.options.append({"id": "menu", "text": "Back", "icon": "back"})
 		return pg
+
+
+# ------------------------------------------------------------ services
+## A smith's, jeweller's, bard's and reeve's choices on the greeting page.
+func _service_options(def: Dictionary, pg: Dictionary) -> void:
+	if def.get("forge"):
+		pg.options.append({"id": "smith:temper", "text": "Temper gear", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "smith:scrap", "text": "Scrap gear", "icon": "shop", "group": "service"})
+		if game.skills.has("mining"):
+			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
+	if def.get("jeweller"):
+		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "jw:remove", "text": "Take gems out (free)", "icon": "shop", "group": "service"})
+	if Boons.bard().get("npc") == npc.id:
+		var price := int(Boons.bard().get("price", 5))
+		if game.boons.tale_ready:
+			pg.options.append({"id": "tale", "text": "Hear a tale (%s)" % U.money(price), "icon": "talk", "group": "service", "disabled": game.inventory.coins < price})
+	for j in Law.file().get("jurisdictions", []):
+		if j.get("reeve") != npc.id:
+			continue
+		var owed := int(game.law.bounty.get(j.id, 0))
+		if owed > 0:
+			pg.options.append({"id": "reeve:pay:" + j.id, "text": "Pay your bounty (%s)" % U.money(owed), "icon": "accept", "group": "service", "disabled": game.inventory.coins < owed})
+		if game.law.infamy > 0:
+			var pts := minf(5, game.law.infamy)
+			var price: int = game.law.atone_price(pts)
+			pg.options.append({"id": "reeve:atone", "text": "Give %s to the widows' fund (Infamy -%s)" % [U.money(price), U.n(pts)], "icon": "accept", "group": "service", "disabled": game.inventory.coins < price})
+
+
+func _gear_name(loc: String) -> String:
+	var st = game.inventory.get_at(loc)
+	return "%s%s" % [Items.view(st).name, " (worn)" if loc.begins_with("e:") else ""] if st != null else ""
+
+
+func _service_page(v: Dictionary, pg: Dictionary) -> void:
+	var fg = game.forge
+	var inv = game.inventory
+	var back := {"id": "menu", "text": "Back", "icon": "back"}
+	match v.kind:
+		"temper":
+			pg.text = "Each rank I put on is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces take more ranks. Bring bars and whetstones for the piece's level, and coin."
+			for loc in fg.gear_locations():
+				var st = inv.get_at(loc)
+				var cost: Dictionary = fg.temper_cost(st)
+				if cost.is_empty():
+					continue
+				pg.options.append({"id": "temper:" + loc, "text": "%s → +%d: %s" % [_gear_name(loc), cost.rank, fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
+			if pg.options.is_empty():
+				pg.text += "\n\nNothing you carry can take a temper. Plain gear can't, and the rest is as good as I can make it."
+		"scrap":
+			pg.text = "I'll melt it down. You get its metal back, three parts in four of every bar and whetstone you put into it, and every stone in it. I'll tell you what you'll get before I light the fire."
+			for loc in fg.gear_locations():
+				pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})
+		"scrapItem":
+			var st = inv.get_at(v.src)
+			pg.text = "Scrap %s? %s It's gone for good." % [Items.view(st).name, fg.scrap_text(st)] if st != null else ""
+			if st != null:
+				pg.options.append({"id": "scrapit", "text": "Scrap it", "icon": "accept"})
+			back = {"id": "smith:scrap", "text": "Back", "icon": "back"}
+		"reforge":
+			pg.text = "One stat on a piece, swapped for another. It's not more power, it's a better fit. Pick the piece."
+			for loc in fg.gear_locations():
+				if not fg.reforge_options(inv.get_at(loc)).is_empty():
+					pg.options.append({"id": "reforge:" + loc, "text": "%s (%s)" % [_gear_name(loc), U.money(fg.reforge_price(inv.get_at(loc)))], "icon": "talk"})
+		"reforgeItem":
+			var st = inv.get_at(v.src)
+			pg.text = "What should %s give instead? %s a time; doing it again undoes the last." % [Items.view(st).name, U.money(fg.reforge_price(st))] if st != null else ""
+			if st != null:
+				for o in fg.reforge_options(st):
+					for to in o.to:
+						pg.options.append({"id": "rf:%s:%s" % [o.from, to], "text": "%s → %s" % [o.from.capitalize(), to.capitalize()], "icon": "accept", "disabled": inv.coins < fg.reforge_price(st)})
+			back = {"id": "smith:reforge", "text": "Back", "icon": "back"}
+		"punch":
+			pg.text = "A socket takes a little from the piece, and a stone of the right quality gives it back. Punching one takes skyiron, and I'll only do one a piece."
+			for loc in fg.gear_locations():
+				var cost: Dictionary = fg.punch_cost(inv.get_at(loc))
+				if not cost.is_empty():
+					pg.options.append({"id": "punch:" + loc, "text": "%s: %s" % [_gear_name(loc), fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
+			if pg.options.is_empty():
+				pg.text += "\n\nNothing you carry will take one: green gear or better, and not already punched."
+		"gems":
+			pg.text = "Five shards of a kind make a chipped stone. Three of one quality make one of the next."
+			for rc in fg.combine_rows():
+				pg.options.append({"id": "make:" + rc.to, "text": "%s (%d %s, you have %d)" % [Items.get_def(rc.to).name, rc.count, Items.get_def(rc.from).name, rc.have], "icon": "accept", "disabled": not rc.can})
+			if pg.options.is_empty():
+				pg.text += "\n\nYou've no shards or stones. Miners find them in the rock."
+		"gemSet":
+			pg.text = "Which piece? It needs an empty socket."
+			for loc in fg.socketed_with_room():
+				pg.options.append({"id": "setin:" + loc, "text": _gear_name(loc), "icon": "talk"})
+			if pg.options.is_empty():
+				pg.text = "Nothing you carry has an empty socket. A smith can punch one."
+		"gemSetItem":
+			pg.text = "Which stone?"
+			for g in fg.gems_for(v.src):
+				pg.options.append({"id": "gem:" + g, "text": "%s: %s" % [Items.get_def(g).name, Gems.bonus_text(g)], "icon": "accept"})
+			if pg.options.is_empty():
+				pg.text = "You've no stone that sits in that."
+			back = {"id": "jw:set", "text": "Back", "icon": "back"}
+		"gemRemove":
+			pg.text = "I'll take them out whole. No charge."
+			for loc in fg.socketed_with_gems():
+				pg.options.append({"id": "unset:" + loc, "text": _gear_name(loc), "icon": "accept"})
+			if pg.options.is_empty():
+				pg.text = "There's nothing set in anything you carry."
+		"tale":
+			pg.text = v.get("text", "")
+	pg.options.append(back)
+
+
+## A service choice; true if it was one (and was acted on).
+func _service_choose(id: String, v: Dictionary) -> bool:
+	var fg = game.forge
+	var views := {"smith:temper": "temper", "smith:scrap": "scrap", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
+	if views.has(id):
+		view = {"kind": views[id]}
+		return true
+	if id == "smith:smelt":
+		close()
+		game.hud.show_window("smelting")
+		return true
+	if id.begins_with("temper:"):
+		fg.temper(id.substr(7))
+		return true
+	if id.begins_with("scrap:"):
+		view = {"kind": "scrapItem", "src": id.substr(6)}
+		return true
+	if id == "scrapit" and v.kind == "scrapItem":
+		fg.scrap(v.src)
+		view = {"kind": "scrap"}
+		return true
+	if id.begins_with("reforge:"):
+		view = {"kind": "reforgeItem", "src": id.substr(8)}
+		return true
+	if id.begins_with("rf:") and v.kind == "reforgeItem":
+		var parts := id.split(":")
+		if fg.reforge(v.src, parts[1], parts[2]):
+			view = {"kind": "reforge"}
+		return true
+	if id.begins_with("punch:"):
+		fg.punch(id.substr(6))
+		return true
+	if id.begins_with("make:"):
+		fg.combine(id.substr(5))
+		return true
+	if id.begins_with("setin:"):
+		view = {"kind": "gemSetItem", "src": id.substr(6)}
+		return true
+	if id.begins_with("gem:") and v.kind == "gemSetItem":
+		if fg.set_gem(v.src, id.substr(4)):
+			view = {"kind": "gemSet"}
+		return true
+	if id.begins_with("unset:"):
+		fg.remove_gems(id.substr(6))
+		return true
+	if id == "tale":
+		var tale: String = game.boons.hear_tale()
+		if tale != "":
+			view = {"kind": "tale", "text": tale}
+		return true
+	if id.begins_with("reeve:pay:"):
+		for j in Law.file().get("jurisdictions", []):
+			if j.id == id.substr(10):
+				game.law.pay(j)
+		return true
+	if id == "reeve:atone":
+		game.law.atone(minf(5, game.law.infamy))
+		return true
+	return false
 
 
 # ------------------------------------------------------------ the forge
@@ -257,9 +435,14 @@ func _imprint(src: String, dst: String) -> bool:
 func choose(id: String) -> bool:
 	if npc == null:
 		return false
+	if npc.id == "watch":
+		return game.law.choose(id)
 	var events: Events = game.events
 	var v: Dictionary = view
 	var def: Dictionary = DB.npcs[npc.id]
+	if _service_choose(id, v):
+		events.emit("dialogueChanged", {})
+		return true
 	if id == "bye":
 		if not def.get("board"):
 			events.emit("log", {"text": '%s: "%s"' % [def.name, game.titles.address("farewells")], "kind": "say"})

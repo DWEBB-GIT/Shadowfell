@@ -139,6 +139,9 @@ static func validate_save(data) -> Array:
 	if data.has("cooking"):
 		var c = data.cooking
 		check.call(typeof(c) == TYPE_DICTIONARY and _is_str_array(c.get("recipes")) and c.recipes.all(func(id): return DB.recipes.has(id)), "recipes")
+	if data.has("law"):
+		var l = data.law
+		check.call(typeof(l) == TYPE_DICTIONARY and _is_num(l.get("infamy", 0)) and typeof(l.get("bounty", {})) == TYPE_DICTIONARY, "crime and infamy")
 	if data.has("skills"):
 		var s = data.skills
 		check.call(typeof(s) == TYPE_DICTIONARY and s.keys().all(func(id): return DB.skills.has(id) and _is_int(s[id]) and s[id] >= 1), "skills")
@@ -197,6 +200,8 @@ func serialize() -> Dictionary:
 		"titles": game.titles.serialize(),
 		"cooking": game.cooking.serialize(),
 		"builds": game.builds.serialize(),
+		"law": game.law.serialize(),
+		"boons": game.boons.serialize(),
 	}
 
 
@@ -260,6 +265,8 @@ func apply(data: Dictionary) -> void:
 	progression.apply(data.progression)
 	inventory.apply(data.inventory)
 	game.builds.apply(data.get("builds"))
+	game.law.apply(data.get("law"))
+	game.boons.apply(data.get("boons"))
 	# renown and titles; saves from before renown start with what their
 	# finished quests, levels and reputation would have earned
 	if not data.get("renown"):

@@ -1,5 +1,5 @@
 {
-  "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done) or { level }. NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
+  "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done), { level }, { infamy } (at least that much) or { crime } (seen committing it once). NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
   "mockChance": 0.2,
   "greetings": {
     "untitled": ["Hello there.", "Hey you!", "You. Yes, you.", "Mm? What is it?", "Oh. Hello."],
@@ -88,6 +88,33 @@
       "mock": 0.5,
       "desc": "You've done enough to claim it. Whether anyone believes you is another matter.",
       "mocks": ["Hero! Ha. Heroes don't come to Brackenford.", "Hello, Hero. Saved anyone today?", "The Hero. Every village has one. Ours is you, apparently."]
+    },
+    {
+      "id": "pig_thief",
+      "name": "Pig Thief",
+      "renown": 0,
+      "mock": 0.8,
+      "requires": [{ "crime": "livestock" }],
+      "desc": "Someone saw you with one of Bram Corrick's sows. Brackenford will never let it go.",
+      "mocks": ["Oi, Pig Thief! Bram's counting his sows.", "Lock up the bacon, it's the Pig Thief.", "The Pig Thief! Smells like it, too."]
+    },
+    {
+      "id": "the_wanted",
+      "name": "the Wanted",
+      "renown": 0,
+      "mock": 0.5,
+      "requires": [{ "infamy": 15 }],
+      "desc": "Your face is on the reeve's board. Some folk step aside for you now. Others reach for the bell rope.",
+      "mocks": ["Hello, Wanted. I've not seen you, mind.", "The Wanted, bold as brass. Pell's watchmen are just round the corner."]
+    },
+    {
+      "id": "outlaw",
+      "name": "Outlaw",
+      "renown": 0,
+      "mock": 0.3,
+      "requires": [{ "infamy": 40 }],
+      "desc": "No law will have you. Thatch Corrow keeps a rope with your name on it.",
+      "mocks": ["Outlaw. Keep walking.", "We don't want your coin, Outlaw. Or your kind."]
     }
   ]
 }

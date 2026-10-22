@@ -62,6 +62,10 @@ var merchant: Merchant
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
+var mining: Mining
+var forge: Forge
+var law: Law
+var boons: Boons
 var sparkles: Sparkles
 var interaction: Interaction
 var action_bar: ActionBar
@@ -132,6 +136,10 @@ func _ready() -> void:
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
+	mining = Mining.new(self)
+	forge = Forge.new(self)
+	law = Law.new(self)
+	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
 	interaction = Interaction.new(self)
 	action_bar = ActionBar.new(self)
@@ -346,6 +354,8 @@ func start_game(resume: bool) -> void:
 	afterlife.reset()
 	skills.reset()
 	builds.reset()
+	law.reset()
+	boons.reset()
 	reputation.reset()
 	titles.reset()
 	pending_death = null
@@ -370,6 +380,7 @@ func start_game(resume: bool) -> void:
 	enemies.spawn_all()
 	loot.spawn_all()
 	chests.spawn_all()
+	mining.spawn_all()
 	hud.hide_title()
 	started = true
 	_snap_camera()
@@ -815,6 +826,9 @@ func step(dt: float) -> void:
 		camp.update(dt, time)
 		fishing.update(dt)
 		cooking.update(dt)
+		mining.update(dt, time)
+		law.update(dt)
+		boons.update(dt)
 		water_and_dark.update(dt, time)
 		enemies.update(dt)
 		npcs.update(dt)

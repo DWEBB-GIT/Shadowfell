@@ -42,9 +42,24 @@ func tool_bonus(id: String) -> int:
 	return best
 
 
-## The rank plus the best tool's bonus.
+## The rank plus the best tool's bonus, plus gathering gems (Moonstone) worn.
 func effective(id: String) -> int:
-	return rank(id) + tool_bonus(id)
+	return rank(id) + tool_bonus(id) + (gem_bonus() if ["mining", "skinning", "fishing"].has(id) else 0)
+
+
+## What Moonstones set in worn gear add to gathering skills.
+func gem_bonus() -> int:
+	var n := 0.0
+	var inv = game.inventory
+	if inv == null:
+		return 0
+	for slot in inv.equipment:
+		var s = inv.equipment[slot]
+		if s != null:
+			for g in Items.gems_of(s):
+				if g != null:
+					n += Gems.effect(g, "gatherSkill")
+	return int(n)
 
 
 ## May the character use this ability? A skill's tool once the skill is

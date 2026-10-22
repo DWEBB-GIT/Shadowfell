@@ -57,14 +57,24 @@ func update() -> void:
 func price_of(id: String) -> int:
 	var shop = DB.shops.get(current) if current != null else null
 	var off: float = game.reputation.discount(shop.get("faction")) if shop else 0.0
-	var price: float = Items.get_def(id).get("price", 0)
+	var price: float = Items.get_def(id).get("price", 0) * (1 + game.law.markup / 100.0)
 	return maxi(1 if off and price else 0, int(floor(price * (100 - off) / 100.0)))
+
+
+## An Outlaw is not served (data/infamy.json); says so, and returns true.
+func refuses() -> bool:
+	if not game.law.outlaw:
+		return false
+	game.events.emit("log", {"text": "%s won't deal with an outlaw." % (def.name if def else "The merchant"), "kind": "muted", "throttle": "shop-refuse"})
+	return true
 
 
 func buy(id: String) -> bool:
 	var inventory = game.inventory
 	var events: Events = game.events
 	if current == null or not stock.has(id):
+		return false
+	if refuses():
 		return false
 	var price := price_of(id)
 	var name: String = Items.get_def(id).name
@@ -86,7 +96,7 @@ func buy(id: String) -> bool:
 func sell(loc: String) -> bool:
 	var inventory = game.inventory
 	var events: Events = game.events
-	if current == null:
+	if current == null or refuses():
 		return false
 	var stack = inventory.get_at(loc)
 	if stack == null or loc.begins_with("s:") or loc == Inventory.AMMO_LOC:

@@ -58,6 +58,10 @@ const S := {
 
 const GEAR := ["weapon", "armor", "shield", "jewellery"]
 
+## the share of an item's stat budget each socket takes (forge.json
+## `sockets.share`); a gem of the item's quality gives it back (gems.json)
+static var socket_share := 0.0
+
 
 static func growth(level: float) -> float:
 	return level + S.levelOffset
@@ -138,12 +142,18 @@ static func spend_points(points: float, split, item_level: float) -> Dictionary:
 
 
 ## A gear record with its numbers filled in from its item level.
-static func scaled_item(d: Dictionary) -> Dictionary:
+## `levels`: tempering ranks, each worth one item level; `sockets`: how many
+## sockets it has (each takes `socket_share` of the budget), -1 for its own.
+static func scaled_item(d: Dictionary, levels := 0, sockets := -1) -> Dictionary:
 	if not is_scaled_item(d):
 		return d
+	if levels:
+		d = d.duplicate()
+		d.itemLevel = d.itemLevel + levels
+	var n: int = sockets if sockets >= 0 else int(d.get("sockets", 0))
 	var main := item_main(d)
 	var stats: Dictionary = main.stats.duplicate()
-	var spent := spend_points(item_budget(d), d.get("statSplit"), d.itemLevel)
+	var spent := spend_points(item_budget(d) * maxf(0, 1 - socket_share * n), d.get("statSplit"), d.itemLevel)
 	for k in spent:
 		stats[k] = stats.get(k, 0) + spent[k]
 	for k in d.get("stats", {}):

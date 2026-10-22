@@ -1,9 +1,31 @@
 {
-  "_about": "Player-facing writing that is not owned by an item, npc or quest: the intro, readable documents and examine text.",
+  "_about": "Player-facing writing that is not owned by an item, npc or quest: the intro, readable documents and examine text. A document with `lore: true` makes you Inspired the first time you read it (boons.json).",
   "intro": "You came up the Fallen Road for work, not glory. A blacksmith named Mara Venn will pay for word of a missing iron delivery. That is reason enough.",
   "documents": {
+    "torn_page": {
+      "title": "A Torn Page",
+      "lore": true,
+      "body": [
+        "<p class=\"doc-head\">Half a page, torn from a ledger, trodden into the road</p>",
+        "<p>...paid in full for the bells, six, small. Hollin's man to take them up the Fallen Road and leave them where he is told, and not at the chapel, whatever the priest says.</p>",
+        "<p>The hedge-lads to keep the road quiet while it is done. Pay them in the new silver. They will not ask where it comes from. They never do.</p>",
+        "<p class=\"doc-margin\">Below, pressed into the paper rather than written: a circle with a line drawn across it, like an eye kept shut.</p>"
+      ]
+    },
+    "blackhedge_orders": {
+      "title": "Folded Orders",
+      "lore": true,
+      "body": [
+        "<p class=\"doc-head\">A square of good paper, folded small, in a hand far neater than any Blackhedge man's</p>",
+        "<p>Keep the drain at Ashby's running foul until the harvest is in and the farms are at each other's throats. Folk who hate their neighbours do not look up the road.</p>",
+        "<p>Take what pigs you like. Let Corrick blame Ashby. Let the reeve blame you, if he must; you will be paid for the trouble.</p>",
+        "<p>Burn this.</p>",
+        "<p class=\"doc-margin\">It is sealed with black wax, pressed with a closed eye.</p>"
+      ]
+    },
     "manifest": {
       "title": "Carriage Manifest",
+      "lore": true,
       "body": [
         "<p class=\"doc-head\">HOLLIN &amp; DAUGHTERS, CARTERS<br>Fallen Road toll, third day of Thawmonth</p>",
         "<p><b>Consignment:</b> grave-iron, <s>twelve</s> <i>nine</i> bars, bearing the mark of Venn's forge.</p>",

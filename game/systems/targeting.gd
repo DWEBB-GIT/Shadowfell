@@ -73,7 +73,7 @@ func on_screen(e) -> bool:
 ## Can a key or soft lock pick this enemy? Living, and either on screen or
 ## already fighting you.
 func targetable(e) -> bool:
-	return e != null and e.alive and (in_combat_with_player(e) or on_screen(e))
+	return e != null and e.alive and not e.protected and (in_combat_with_player(e) or on_screen(e))
 
 
 ## The enemy a soft lock picks for an ability with reach `range`, given an
@@ -146,8 +146,12 @@ func clear():
 	return select(null)
 
 
-## Select an enemy and start swinging at it.
+## Select an enemy and start swinging at it. Livestock and the watch only
+## with the crime key held (Alt): a mis-click never makes you a criminal.
 func engage(enemy) -> bool:
+	if enemy != null and not game.law.may_attack(enemy):
+		select(enemy)
+		return false
 	if select(enemy) == null:
 		return false
 	if not attacking:

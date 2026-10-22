@@ -786,7 +786,7 @@ export function validateGameData(raw, opts = {}) {
   }
   for (const s of worldF.stations || []) {
     pos(`world.json station ${s.id}`, s.position);
-    if (s.kind !== 'fire') errors.push(`world.json station ${s.id}: kind must be fire`);
+    if (!['fire', 'forge'].includes(s.kind)) errors.push(`world.json station ${s.id}: kind must be fire or forge`);
   }
   for (const s of worldF.signposts || []) {
     const w = `world.json signpost ${s.id}`;
@@ -813,13 +813,15 @@ export function validateGameData(raw, opts = {}) {
       ref(w, 'item', items, x.item);
       if (!(isInt(x.count) && x.count >= 1)) errors.push(`${w}: counts must be whole numbers of at least 1`);
     }
-    if (r.station !== 'fire') errors.push(`${w}: station must be fire`);
+    if (!['fire', 'forge'].includes(r.station)) errors.push(`${w}: station must be fire or forge`);
     if (r.trainer !== undefined) {
       ref(w, 'trainer npc', npcs, r.trainer);
       if (!(isInt(r.cost) && r.cost >= 0)) errors.push(`${w}: a taught recipe needs a cost in coins`);
     }
   }
 
+  const infF = raw['infamy.json'];
+  const crimeIds = new Set((infF?.crimes || []).map((c) => c.id));
   // ---- titles (renown itself is checked with factions)
   const titF = raw['titles.json'];
   if (!titF) errors.push('titles.json: missing');
@@ -847,10 +849,56 @@ export function validateGameData(raw, opts = {}) {
           ref(w, 'faction', factions, r.faction);
           if (!standingIds.includes(r.standing)) errors.push(`${w}: names unknown standing ${r.standing}`);
         } else if (r.quest !== undefined) ref(w, 'quest', quests, r.quest);
-        else if (!(isInt(r.level) && r.level >= 1)) errors.push(`${w}: each condition needs a skill, slain, faction, quest or level`);
+        else if (r.infamy !== undefined) { if (!(isNum(r.infamy) && r.infamy > 0)) errors.push(`${w}: an infamy condition needs a number above 0`); }
+        else if (r.crime !== undefined) { if (!crimeIds.has(r.crime)) errors.push(`${w}: names unknown crime ${r.crime}`); }
+        else if (!(isInt(r.level) && r.level >= 1)) errors.push(`${w}: each condition needs a skill, slain, faction, quest, level, infamy or crime`);
       }
     }
   }
+
+  // ---- mining, the forge, gems, crime and boons (the Godot build's systems; each file is optional)
+  const minF = raw['mining.json'];
+  if (minF) {
+    const rocks = indexById(minF.rocks, 'mining.json rocks', errors);
+    for (const [id, r] of Object.entries(rocks)) {
+      const w = `mining.json rock ${id}`;
+      if (!isStr(r.name) || !(isInt(r.rank) && r.rank >= 1)) errors.push(`${w}: needs a name and a rank`);
+      if (!(Array.isArray(r.swings) && r.swings.length === 2 && r.swings.every(isInt) && r.swings[0] >= 1 && r.swings[0] <= r.swings[1])) errors.push(`${w}: swings must be [min, max]`);
+      for (const k of ['stone', 'ore']) if (r[k]) ref(w + ' ' + k, 'item', items, r[k].item);
+      for (const g of r.gems?.shards || []) ref(w + ' gems', 'item', items, g.item);
+    }
+    for (const g of indexById(minF.veinGroups, 'mining.json veinGroups', errors) && minF.veinGroups || []) {
+      const w = `mining.json veinGroup ${g.id}`;
+      for (const r of g.rocks || []) ref(w, 'rock', rocks, r.rock);
+      if (!(isInt(g.live) && g.live >= 1 && g.live < (g.outcrops || []).length)) errors.push(`${w}: live must be at least 1 and fewer than its outcrops`);
+      (g.outcrops || []).forEach((p, i) => pos(`${w} outcrop ${i}`, p));
+    }
+  }
+  const forF = raw['forge.json'];
+  if (forF) {
+    for (const b of [...(forF.temper?.bars || []), ...(forF.temper?.whetstones || [])]) ref('forge.json temper', 'item', items, b.item);
+    if (forF.temper?.lastRank) ref('forge.json lastRank', 'item', items, forF.temper.lastRank.item);
+    if (forF.sockets?.punch) ref('forge.json sockets punch', 'item', items, forF.sockets.punch.item);
+    for (const r of Object.keys(forF.temper?.caps || {})) if (!rarities[r]) errors.push(`forge.json temper caps: unknown rarity ${r}`);
+  }
+  const gemF = raw['gems.json'];
+  if (gemF) {
+    for (const t of indexById(gemF.gemTypes, 'gems.json gemTypes', errors) && gemF.gemTypes || []) {
+      ref(`gems.json ${t.id}`, 'item', items, t.shard);
+      for (const k of t.stats || (t.stat ? [t.stat] : [])) if (!STAT_KEYS.includes(k)) errors.push(`gems.json ${t.id}: unknown stat ${k}`);
+    }
+  }
+  if (infF) {
+    for (const j of infF.jurisdictions || []) {
+      ref(`infamy.json ${j.id}`, 'reeve npc', npcs, j.reeve);
+      for (const r of j.regions || []) ref(`infamy.json ${j.id}`, 'region', regions, r);
+      pos(`infamy.json ${j.id} gaol`, j.gaol);
+    }
+    if (infF.hunter) ref('infamy.json hunter', 'enemy', enemies, infF.hunter.enemy);
+  }
+  for (const e of Object.values(enemies)) if (e.lawful !== undefined && !['guard', 'livestock'].includes(e.lawful)) errors.push(`enemies.json ${e.id}: lawful must be guard or livestock`);
+  const boonF = raw['boons.json'];
+  if (boonF?.bard) ref('boons.json bard', 'npc', npcs, boonF.bard.npc);
 
   // ---- text
   if (!isStr(textF.intro)) errors.push('text.json: needs an intro');

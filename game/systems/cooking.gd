@@ -89,15 +89,27 @@ func can_make(r: Dictionary) -> int:
 
 var near_fire: String:
 	get:
-		var p: Vector3 = game.player.position
+		return near_station("fire")
+
+
+## The station of this kind you stand at (its name), or "": `fire` (your
+## camp or a hearth), `forge` (a forge, for smelting).
+func near_station(kind: String) -> String:
+	var p: Vector3 = game.player.position
+	if kind == "fire":
 		var range_: float = ability.tuning.fireRange
 		var camp = game.world_state.camp
 		if camp != null and U.hyp(p.x - camp.x, p.z - camp.z) <= range_:
 			return "your camp"
-		for st in Layout.stations:
-			if st.kind == "fire" and U.hyp(p.x - st.position[0], p.z - st.position[1]) <= st.radius:
-				return st.name
-		return ""
+	for st in Layout.stations:
+		if st.kind == kind and U.hyp(p.x - st.position[0], p.z - st.position[1]) <= st.radius:
+			return st.name
+	return ""
+
+
+## A crafting skill's window, verb and button (skills.json `craft`).
+static func craft_of(sk: String) -> Dictionary:
+	return DB.skills.get(sk, {}).get("craft", {"window": "Cooking", "verb": "cook", "button": "Cook", "station": "a fire"})
 
 
 ## what a trainer can teach you now (you must know the skill first)
@@ -137,8 +149,8 @@ func blocked(r: Dictionary) -> String:
 		return "Requires %s %d." % [DB.skills[r.skill].name, r.rank]
 	if can_make(r) < 1:
 		return "You are missing ingredients."
-	if near_fire == "":
-		return "Requires a cooking fire."
+	if near_station(r.get("station", "fire")) == "":
+		return "Requires %s." % ("a cooking fire" if r.get("station", "fire") == "fire" else "a " + r.station)
 	if player.dead or player.casting != null or player.lunge != null:
 		return "You can't do that now."
 	if player.moving:
@@ -178,7 +190,7 @@ func _finish(r: Dictionary) -> void:
 		inventory.remove_count(x.item, x.count)
 	inventory.add_item(r.output.item, r.output.count, true)
 	var name: String = Items.get_def(r.output.item).name
-	game.events.emit("log", {"text": "You cook %s%s." % ["%d " % r.output.count if r.output.count > 1 else "", name], "kind": "loot"})
+	game.events.emit("log", {"text": "You %s %s%s." % [craft_of(r.skill).get("verb", "make"), "%d " % r.output.count if r.output.count > 1 else "", name], "kind": "loot"})
 	var c: float = SKILL_UP_CHANCE.get(colour(r), 0.0)
 	if c > 0 and game.random.call() < c:
 		game.skills.raise(r.skill)
@@ -196,7 +208,7 @@ func update(dt: float) -> void:
 				var r: Dictionary = DB.recipes[c.id]
 				_finish(r)
 				c.left -= 1
-				if c.left > 0 and can_make(r) > 0 and near_fire != "":
+				if c.left > 0 and can_make(r) > 0 and near_station(r.get("station", "fire")) != "":
 					c.t = 0.0
 					player.rig.play("brace", c.total, 0.9)
 				else:
@@ -225,7 +237,7 @@ func update(dt: float) -> void:
 			var t: Dictionary = ability.tuning
 			if not e.get("fed", false) and e.total - e.left >= t.wellFedAfter - 1e-6:
 				e.fed = true
-				_set_well_fed(t.wellFedSeconds)
+				_set_well_fed(t.wellFedSeconds * (1 + _jade() / 100.0))
 				game.events.emit("log", {"text": "You are Well Fed: +%s Stamina for %d minutes." % [U.n(t.wellFedStamina), U.jround(t.wellFedSeconds / 60.0)], "kind": "level"})
 				if game.hud:
 					game.hud.toast("Well Fed")
@@ -233,6 +245,18 @@ func update(dt: float) -> void:
 			var full: bool = player.health >= player.max_health
 			if e.left <= 0 or (full and e.get("fed", false)):
 				stop_eating("You feel full." if full else "")
+
+
+## What Jade set in worn gear adds to Well Fed (percent).
+func _jade() -> float:
+	var n := 0.0
+	for slot in game.inventory.equipment:
+		var s = game.inventory.equipment[slot]
+		if s != null:
+			for g in Items.gems_of(s):
+				if g != null:
+					n += Gems.effect(g, "buffDuration")
+	return n
 
 
 # ------------------------------------------------------------ food

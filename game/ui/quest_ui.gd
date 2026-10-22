@@ -222,6 +222,9 @@ func _option(parent: Node, o: Dictionary, focused: bool) -> void:
 	b.add_theme_color_override("font_hover_color", col)
 	b.text = o.text
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# a choice you can't take yet (too poor, missing materials) stays, dimmed
+	if o.get("disabled", false):
+		b.modulate.a = 0.5
 	var id: String = o.id
 	b.pressed.connect(func(): game.dialogue.choose(id))
 	parent.add_child(b)

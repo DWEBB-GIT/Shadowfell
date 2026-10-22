@@ -1,5 +1,5 @@
 {
-  "_about": "Recipes for crafting skills (cooking). `rank`: the skill rank needed to make it. `skillUp`: the ranks at which it turns yellow, green and grey: below yellow (orange) every craft raises the skill, yellow most of the time, green now and then, grey never (WoW). `inputs` are used up, `output` is made. `station`: what must be close by (`fire`: a camp or a hearth). `trainer` and `cost`: who teaches it, for how many coins; a recipe without a trainer comes with the skill.",
+  "_about": "Recipes for crafting skills (cooking). `rank`: the skill rank needed to make it. `skillUp`: the ranks at which it turns yellow, green and grey: below yellow (orange) every craft raises the skill, yellow most of the time, green now and then, grey never (WoW). `inputs` are used up, `output` is made. `station`: what must be close by (`fire`: a camp or a hearth; `forge`: a forge, for smelting). `trainer` and `cost`: who teaches it, for how many coins; a recipe without a trainer comes with the skill.",
   "recipes": [
     {
       "id": "grilled_perch",
@@ -180,6 +180,115 @@
       "station": "fire",
       "trainer": "hester",
       "cost": 4
+    },
+    {
+      "id": "smelt_copper",
+      "skill": "mining",
+      "rank": 1,
+      "skillUp": [
+        15,
+        25,
+        35
+      ],
+      "inputs": [
+        {
+          "item": "copper_ore",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "copper_bar",
+        "count": 1
+      },
+      "station": "forge"
+    },
+    {
+      "id": "grind_whetstone",
+      "skill": "mining",
+      "rank": 1,
+      "skillUp": [
+        10,
+        20,
+        30
+      ],
+      "inputs": [
+        {
+          "item": "rough_stone",
+          "count": 2
+        }
+      ],
+      "output": {
+        "item": "whetstone",
+        "count": 1
+      },
+      "station": "forge"
+    },
+    {
+      "id": "smelt_bronze",
+      "skill": "mining",
+      "rank": 10,
+      "skillUp": [
+        25,
+        35,
+        45
+      ],
+      "inputs": [
+        {
+          "item": "copper_ore",
+          "count": 1
+        },
+        {
+          "item": "tin_ore",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "bronze_bar",
+        "count": 2
+      },
+      "station": "forge"
+    },
+    {
+      "id": "smelt_iron",
+      "skill": "mining",
+      "rank": 20,
+      "skillUp": [
+        35,
+        45,
+        55
+      ],
+      "inputs": [
+        {
+          "item": "iron_ore",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "iron_bar",
+        "count": 1
+      },
+      "station": "forge"
+    },
+    {
+      "id": "grind_heavy_whetstone",
+      "skill": "mining",
+      "rank": 30,
+      "skillUp": [
+        40,
+        50,
+        60
+      ],
+      "inputs": [
+        {
+          "item": "granite",
+          "count": 2
+        }
+      ],
+      "output": {
+        "item": "heavy_whetstone",
+        "count": 1
+      },
+      "station": "forge"
     }
   ]
 }

@@ -690,6 +690,7 @@ func open_document(id: String) -> void:
 	var doc = DB.text.documents.get(id)
 	if doc == null:
 		return
+	game.events.emit("documentRead", {"id": id})
 	modal = "document"
 	doc_title.text = doc.title
 	var body = doc.body
@@ -955,7 +956,8 @@ func _refresh_spells() -> void:
 	if player.casting != null:
 		c = {"t": player.casting.t, "total": player.casting.total, "name": DB.spells[player.casting.id].name}
 	elif k != null:
-		c = {"t": k.t, "total": k.total, "name": "Cooking %s%s" % [Items.get_def(DB.recipes[k.id].output.item).name, " (%d)" % k.left if k.left > 1 else ""]}
+		var rc: Dictionary = DB.recipes[k.id]
+		c = {"t": k.t, "total": k.total, "name": "%s %s%s" % [Cooking.craft_of(rc.skill).get("window", "Making"), Items.get_def(rc.output.item).name, " (%d)" % k.left if k.left > 1 else ""]}
 	elif e != null:
 		c = {"t": e.total - e.left, "total": e.total, "name": "Eating %s" % Items.get_def(e.id).name}
 	elif game.fishing.bar != null:
@@ -963,6 +965,8 @@ func _refresh_spells() -> void:
 		c.name = "Fishing"
 	elif game.loot.gather_bar != null:
 		c = game.loot.gather_bar
+	elif game.mining.bar != null:
+		c = game.mining.bar
 	cast.root.visible = c != null
 	if c != null:
 		set_fill(cast, c.t / c.total)
@@ -1001,6 +1005,9 @@ func _refresh_spells() -> void:
 	var fed = game.cooking.well_fed_aura
 	if fed != null:
 		list.append(fed)
+	for extra in [game.boons.aura, game.law.aura]:
+		if extra != null:
+			list.append(extra)
 	_auras(buffs, list)
 	_auras(target_auras, game.spells.dots_on(shown_target) if shown_target != null else [], true)
 

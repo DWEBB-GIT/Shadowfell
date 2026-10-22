@@ -1,5 +1,5 @@
 {
-  "_about": "Skills the Warden can learn from a trainer for coins. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
+  "_about": "Skills the Warden can learn from a trainer for coins. `craft`: a skill with recipes (recipes.json) names its crafting window, the verb in the log, its button and where you must stand. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
   "skills": [
     {
       "id": "camping",
@@ -34,7 +34,8 @@
       "cost": 10,
       "teaches": ["cook"],
       "maxRank": 50,
-      "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook."
+      "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook.",
+      "craft": { "window": "Cooking", "verb": "cook", "button": "Cook", "station": "a fire: your camp or a hearth" }
     },
     {
       "id": "skinning",
@@ -44,6 +45,16 @@
       "teaches": [],
       "maxRank": 50,
       "desc": "Skin the beasts you kill for their hides and pelts (you need a skinning knife). Loot the body first, then skin it. Higher-level beasts need a higher rank (5 ranks a level); the skill rises with every skin that is not yet easy for you."
+    },
+    {
+      "id": "mining",
+      "name": "Mining",
+      "trainer": "orrin",
+      "cost": 10,
+      "teaches": [],
+      "maxRank": 50,
+      "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick), and smelt ore into bars at a forge. Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Harder rock needs a higher rank (5 ranks an ore level); the skill rises with every swing that is not yet easy for you, and as you smelt.",
+      "craft": { "window": "Smelting", "verb": "smelt", "button": "Smelt", "station": "a forge" }
     }
   ]
 }

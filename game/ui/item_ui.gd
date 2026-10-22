@@ -16,7 +16,7 @@ extends Control
 ## Every action is a request to the Inventory, which decides what is allowed.
 
 const STAT_LABEL := {"stamina": "Stamina", "strength": "Strength", "agility": "Agility", "intellect": "Intellect", "armour": "armour", "resistance": "resistance", "block": "% block chance", "haste": "% haste"}
-const KIND_LABEL := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "bag": "Bag", "ammo": "Arrows", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key"}
+const KIND_LABEL := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "bag": "Bag", "ammo": "Arrows", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key", "gem": "Gem"}
 const RECIPE_COLOUR := {"orange": Color("ff8040"), "yellow": Color("ffe040"), "green": Color("40c040"), "grey": Color("909090"), "red": Color("c03030")}
 const REP_COLOUR := {"hostile": Color("8a3a2a"), "neutral": Color("8a7a3a")}
 
@@ -44,6 +44,7 @@ var skills_win: Dictionary
 var settings_win: Dictionary
 var talents: Dictionary
 var cooking: Dictionary
+var craft_skill := "cooking" ## whose recipes the crafting window shows
 var shop: Dictionary
 var tooltip: HBoxContainer
 var ghost: TextureRect
@@ -256,6 +257,11 @@ func toggle(which: String) -> void:
 
 
 func show_window(which: String) -> void:
+	# one crafting window, for whichever skill's recipes (Cooking, Smelting)
+	if which == "cooking" or which == "smelting":
+		craft_skill = "mining" if which == "smelting" else "cooking"
+		which = "cooking"
+		_cook_last = ""
 	if which == "bags":
 		for i in _sockets():
 			open_bags[i] = true
@@ -787,16 +793,20 @@ func _render_cooking() -> void:
 	_cook_last = _cook_sig()
 	var ck = game.cooking
 	var inv = game.inventory
-	var rank: int = ck.rank("cooking")
-	var mx: int = DB.skills.cooking.maxRank
-	UI.label(w.body, "Cooking %d / %d" % [rank, mx], 13, Color("f0d070"))
+	var sk := craft_skill
+	var craft := Cooking.craft_of(sk)
+	w.title.text = craft.get("window", "Cooking")
+	var rank: int = ck.rank(sk)
+	var mx: int = DB.skills[sk].maxRank
+	UI.label(w.body, "%s %d / %d" % [DB.skills[sk].name, rank, mx], 13, Color("f0d070"))
 	_skill_bar(w.body, float(rank) / mx, 0)
-	var fire: String = ck.near_fire
-	UI.label(w.body, "Cooking at %s." % fire if fire != "" else "You need a fire: your camp or a hearth.", 12, UI.TEXT_DIM if fire != "" else Color("d06a50"))
+	var list: Array = ck.known(sk)
+	var station: String = list[0].get("station", "fire") if not list.is_empty() else ("forge" if sk == "mining" else "fire")
+	var here: String = ck.near_station(station)
+	UI.label(w.body, "At %s." % here if here != "" else "You need %s." % craft.get("station", "a fire"), 12, UI.TEXT_DIM if here != "" else Color("d06a50"))
 	var busy = ck.crafting
-	var list: Array = ck.known("cooking")
 	if list.is_empty():
-		var l := UI.label(w.body, "You know no recipes. Hester at the Ford Inn teaches Cooking.", 13, UI.TEXT_DIM)
+		var l := UI.label(w.body, "You know no recipes yet. Trainers teach them.", 13, UI.TEXT_DIM)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for r in list:
 		var out := Items.get_def(r.output.item)
@@ -805,7 +815,7 @@ func _render_cooking() -> void:
 		for x in r.inputs:
 			var have: int = inv.count(x.item)
 			need.append("[color=%s]%s %d/%d[/color]" % ["#9a8f78" if have >= x.count else "#d06a50", UI.esc(Items.get_def(x.item).name), have, x.count])
-		var ok: bool = n > 0 and fire != "" and busy == null and rank >= r.rank
+		var ok: bool = n > 0 and ck.near_station(r.get("station", "fire")) != "" and busy == null and rank >= r.rank
 		var row := UI.hbox(w.body, 8)
 		var ic := TextureRect.new()
 		ic.texture = _icon_for(r.output.item)
@@ -814,17 +824,20 @@ func _render_cooking() -> void:
 		row.add_child(ic)
 		var txt := UI.rich(row, 11)
 		txt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		UI.set_rich(txt, "[font_size=13][color=%s]%s%s[/color][/font_size]\n%s" % [UI.hex(RECIPE_COLOUR.get(ck.colour(r), UI.TEXT)), UI.esc(out.name), " [%d]" % n if n else "", ", ".join(need)])
+		UI.set_rich(txt, "[font_size=13][color=%s]%s%s%s[/color][/font_size]\n%s" % [UI.hex(RECIPE_COLOUR.get(ck.colour(r), UI.TEXT)), UI.esc(out.name), " ×%d" % r.output.count if r.output.count > 1 else "", " [%d]" % n if n else "", ", ".join(need)])
 		var id: String = r.id
-		UI.button(row, "Cook", func(): game.cooking.start(id, 1)).disabled = not ok
+		UI.button(row, craft.get("button", "Make"), func(): game.cooking.start(id, 1)).disabled = not ok
 		UI.button(row, "All", func(): game.cooking.start(id, 1 << 30)).disabled = not (ok and n > 1)
 		UI.rule(w.body, Color("2a2218"))
 
 
 func _cook_sig() -> String:
 	var ck = game.cooking
-	var s := "%d|%s|%s|%d" % [ck.rank("cooking"), ck.near_fire, ck.crafting != null, game.inventory.free_slots()]
-	for r in ck.known("cooking"):
+	var sk := craft_skill
+	var list: Array = ck.known(sk)
+	var station: String = list[0].get("station", "fire") if not list.is_empty() else "fire"
+	var s := "%s|%d|%s|%s|%d" % [sk, ck.rank(sk), ck.near_station(station), ck.crafting != null, game.inventory.free_slots()]
+	for r in list:
 		s += "|%d" % ck.can_make(r)
 	return s
 
@@ -939,6 +952,8 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 				_spell_slot(abil, a, 36)
 		if d.id == "cooking":
 			UI.button(abil, "Cookbook", func(): show_window("cooking"))
+		if d.id == "mining":
+			UI.button(abil, "Smelting", func(): show_window("smelting"))
 	tip_on(row, d.get("desc", "") + ("" if known else " %s teaches it for %s." % [who, U.money(d.get("cost", 0))]), d.name)
 
 
@@ -1312,6 +1327,17 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("(%.1f damage per second%s)" % [mine, cmp]))
 	for k in def.get("stats", {}):
 		lines.append(_l("+%s %s" % [U.n(def.stats[k]), STAT_LABEL.get(k, k)], UI.hex(UI.UP)))
+	# forge work: reforged stat, sockets and the gems in them
+	var rf = def.get("reforged")
+	if typeof(rf) == TYPE_DICTIONARY:
+		lines.append(_l("Reforged: %s into %s" % [STAT_LABEL.get(rf.from, rf.from), STAT_LABEL.get(rf.to, rf.to)], "#a0c8e8", 12))
+	for g in Items.gems_of(stack):
+		lines.append(_l("◆ %s: %s" % [_esc(Items.get_def(g).name), _esc(Gems.bonus_text(g))], UI.hex(Items.rarity_colour(Items.get_def(g).get("rarity", "common")))) if g != null else _l("◇ Empty socket", "#9a8f78"))
+	if def.get("kind") == "gem":
+		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
+	var cap: int = game.forge.temper_cap(stack) if Items.ROLLED_KINDS.has(def.kind) else 0
+	if cap > 0:
+		lines.append(_l("Tempered %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	var power := Builds.power_def(Items.power_of(stack))

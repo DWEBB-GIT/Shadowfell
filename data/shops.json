@@ -59,6 +59,14 @@
       "name": "Agna's tannery",
       "vendorType": "tanner",
       "stock": ["skinning_knife"]
+    },
+    {
+      "id": "orrin_picks",
+      "name": "Orrin's picks",
+      "vendorType": "outfitter",
+      "stock": [
+        "mining_pick"
+      ]
     }
   ]
 }

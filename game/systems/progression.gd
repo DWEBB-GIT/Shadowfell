@@ -23,9 +23,16 @@ func add_xp(amount: int, kill := false) -> void:
 	var events = game.events
 	var bonus := mini(int(floor(rested)), amount) if kill else 0
 	rested = maxf(0, rested - bonus)
-	amount += bonus
+	# Inspired (boons.gd): a share more, on the base amount, beside rested
+	var inspired := U.jround(amount * game.boons.xp_bonus / 100.0) if game.boons != null else 0
+	amount += bonus + inspired
 	xp += amount
-	events.emit("log", {"text": "+%d experience (%d rested bonus)." % [amount, bonus] if bonus else "+%d experience." % amount, "kind": "xp"})
+	var extra := []
+	if bonus:
+		extra.append("%d rested bonus" % bonus)
+	if inspired:
+		extra.append("%d inspired" % inspired)
+	events.emit("log", {"text": "+%d experience (%s)." % [amount, ", ".join(extra)] if not extra.is_empty() else "+%d experience." % amount, "kind": "xp"})
 	while xp >= xp_to_next:
 		var before: Dictionary = game.stats.snapshot()
 		xp -= xp_to_next

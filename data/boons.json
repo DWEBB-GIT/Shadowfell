@@ -1,0 +1,14 @@
+{
+  "_about": "Timed boons (Godot build: game/systems/boons.gd). `inspired`: `xpBonus` percent more experience from everything for `seconds` of play (the clock stops while you are logged off). It stacks with rested experience but not with itself: a new one starts the clock again. You are Inspired by reading a lore document (text.json documents with `lore: true`) for the first time, or by paying the bard (`bard.npc`) `bard.price` for a tale, once a day. Each tale (`bard.tales`, told in turn) is a scrap of a longer story.",
+  "inspired": { "name": "Inspired", "xpBonus": 10, "seconds": 1800, "desc": "A story has your blood up. +10% experience." },
+  "bard": {
+    "npc": "wenna",
+    "price": 5,
+    "tales": [
+      "Sit, then. You know the Blackhedge lot? Hedge-thieves, my gran called them, pig-takers and purse-cutters. But last winter they paid for their ale in new silver, every coin of it, and not one of them could say where it came from.",
+      "There's a song they don't sing at the Ford any more. About the bells of the old chapel, and the six they cast to replace them, and the carter who was paid to take the new ones somewhere other than the chapel. Nobody remembers where. Nobody wants to.",
+      "A man came through in the spring with an eye tattooed shut on the back of his hand. Paid Hester double for a room and never slept in it. Pell asked his name. He laughed and said names were for people who meant to be remembered.",
+      "Old Tam says the mere was a quarry once, before the water came. Says if you swim out to the middle on a still night you can hear picks, deep down, still working. Old Tam says a lot of things."
+    ]
+  }
+}

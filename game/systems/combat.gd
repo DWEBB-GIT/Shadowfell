@@ -136,7 +136,7 @@ func select_strike_target(aim):
 	var best = null
 	var best_score := INF
 	for e in game.enemies.list:
-		if not e.alive:
+		if not e.alive or e.protected:
 			continue
 		var dx: float = e.position.x - player.position.x
 		var dz: float = e.position.z - player.position.z
