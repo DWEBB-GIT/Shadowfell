@@ -1,5 +1,5 @@
 {
-  "_about": "Set dressing: props (with optional colliders and examine points), clearings kept free of trees, lights and witchlight glows. Props reference models by name; examine ids reference text.json.",
+  "_about": "Set dressing: props (with optional colliders and examine points), clearings kept free of trees, lights and witchlight glows. `motes`: drifting glowing motes (fireflies, wisps) over a spot, only drawn near the camera. `fairyRings`: a ring of glowing toadstools with an examine point. Props reference models by name; examine ids reference text.json.",
   "props": [
     {
       "model": "cart",
@@ -940,6 +940,7 @@
     }
   ],
   "clearings": [
+    [27, -77, 5], [24, -108, 5], [-29, -119, 4], [9.5, -104, 4], [14, -62, 5.5], [-31, -30, 4], [-13.5, -38.5, 5],
     [-6, 33, 5],
     [9.6, 5.2, 5],
     [-7.8, -5, 8],
@@ -1096,6 +1097,17 @@
       "distance": 9,
       "flicker": true
     }
+  ],
+  "motes": [
+    {"position": [-24, -14], "radius": 7, "count": 26, "color": "#d8f070", "height": 1.2},
+    {"position": [-21, 34], "radius": 10, "count": 18, "color": "#e8f080", "height": 1.4},
+    {"position": [-31, -30], "radius": 4, "count": 22, "color": "#c8a8ff", "height": 1.0},
+    {"position": [-6.4, -115], "radius": 8, "count": 24, "color": "#80f0c0", "height": 1.8},
+    {"position": [-27, -90], "radius": 6, "count": 12, "color": "#a0c0ff", "height": 1.4},
+    {"position": [2, -64], "radius": 8, "count": 14, "color": "#b0f0a0", "height": 1.6}
+  ],
+  "fairyRings": [
+    {"position": [-31, -30], "radius": 2.2, "examine": "fairy_ring"}
   ],
   "witchlights": [
     [-6.4, -119.8, 0],
