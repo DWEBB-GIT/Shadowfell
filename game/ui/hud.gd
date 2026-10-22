@@ -664,6 +664,7 @@ func window_gamepad(pad, dt: float) -> void:
 func toggle_panel(which: String) -> void:
 	if modal:
 		return
+	game.audio.sfx("quest_log" if which == "quests" else "panel", 0.6)
 	if which == "quests":
 		quests.toggle_log()
 	else:
