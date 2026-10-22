@@ -4,6 +4,7 @@ extends Control
 ## (src/ui/damageNumbers.js).
 ##   dealt  parchment white      taken  dull red "-n"
 ##   crit   amber, "!"           block  grey "Block"     heal  green "+n"
+##   xp     purple "+n XP", over a fallen enemy
 ## Each number is sized against your usual white hit: bigger than usual
 ## reads bigger. Crits stay longer, and a crit of twice your usual hit or
 ## more pulses once as it lands. Tuning in CONFIG.damageNumbers.
@@ -12,6 +13,7 @@ const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
 	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "heal": Color("8cbf78"),
+	"xp": Color("b77cff"),
 }
 
 var game
@@ -23,6 +25,7 @@ func _init(g) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	game.events.on("damageNumber", add)
+	game.events.on("xpGained", func(e): add({"target": e.target, "amount": e.amount, "kind": "xp"}))
 
 
 ## how big a number is against the usual hit (1 = the base font)
@@ -52,10 +55,10 @@ func add(e: Dictionary) -> void:
 	var text: String
 	var cls := kind
 	var ratio := 1.0
-	if kind == "heal":
+	if kind == "heal" or kind == "xp":
 		if amount <= 0:
 			return
-		text = "+%s" % U.n(amount)
+		text = "+%s%s" % [U.n(amount), " XP" if kind == "xp" else ""]
 	elif blocked and amount == 0:
 		text = "Block"
 		cls = "block"
@@ -82,7 +85,13 @@ func add(e: Dictionary) -> void:
 	var high := 2.6 if cfg and cfg.get("elite") else 1.8
 	# spread numbers a little so quick hits do not stack exactly
 	var dx := (items.size() % 3) * 18 - 18
-	items.append({"label": l, "pos": target.position + Vector3(0, high, 0), "t": 0.0, "dx": dx, "crit": crit, "pulse": pulse, "life": t.critLife if crit else t.life})
+	var life: float = t.critLife if crit else t.life
+	if kind == "xp":
+		# above the killing blow's number, and it stays a while
+		high += 0.6
+		dx = 0
+		life = t.critLife
+	items.append({"label": l, "pos": target.position + Vector3(0, high, 0), "t": 0.0, "dx": dx, "crit": crit, "pulse": pulse, "life": life})
 	while items.size() > MAX:
 		items.pop_front().label.queue_free()
 

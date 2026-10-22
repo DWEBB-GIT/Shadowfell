@@ -420,6 +420,15 @@ One average hit from full health kills you at these gaps, from a normal enemy / 
 
 **Why 1.2.** It keeps 3 levels up hard work and 5 up a fight you plan. At 1.25, one normal enemy 5 levels up kills a level 10 Warden in plate and any cloth wearer; at 1.15, a Warden in full greens wins a fight 10 levels up from level 15 on. Changing it is one number (`levelGap`).
 
+### Experience (2026-10-22)
+
+Because of the level gap, levelling faster than the content is what makes fights trivial: two levels over a zone and its enemies fall in one or two shots. So experience is paced to the content (`CONFIG.progression` in `game/core/db.gd`):
+
+- **The curve:** level L to L+1 needs 280 + 200 × (L − 1): 280, 480, 680 ... 1880 at level 9, 9,720 in all to reach level 10. Every Act 1 quest handed in comes to about level 6; the rest comes from kills, so Act 1 ends near level 10. (It was 100 + 60 × (L − 1), 3,060 to level 10, which the quests alone overshot.)
+- **Kills pay by the gap, WoW style** (`DB.kill_xp`): a fifth less for each level the enemy is below you, nothing once it is 5 or more below (grey), and 5% more for each level above, up to 20%.
+- **Stronger variants pay more:** a level variant's experience grows on the same line as its health, `xp × (level + 4) / (base level + 4)`.
+- Quest experience is as written. A kill shows a purple "+N XP" over the body, rested and Inspired included.
+
 ## Today's items and enemies
 
 Weapons show damage per swing at their own speed; armour is on the ×10 scale.

@@ -682,38 +682,75 @@ func _add_mist() -> void:
 		mist.append({"mesh": m, "x": x, "z": z, "seed": i * 2.1})
 
 
-## Sun shafts falling into the woodland clearings, where the low sun breaks
-## through the canopy. Cheap additive ribbons (see light_shaft.gdshader), only
-## drawn near the camera. In the Blackwood the light is thinner and greener.
+## Sun shafts where the low sun pokes through the canopy: only between trees
+## that stand close together (a gap in a thick crown), a few per wood and
+## well apart, never over open ground. Cheap additive ribbons (see
+## light_shaft.gdshader), only drawn near the camera. In the Blackwood the
+## light is thinner and greener.
 const SHAFT_AXIS := Vector3(14, -26, -6) ## the sun's travel, as Game._place_sun aims it
+const SHAFT_CANOPY := 4 ## trees within SHAFT_NEAR of a gap for it to count as canopy
+const SHAFT_NEAR := 6.0
+const SHAFT_GAP := 22.0 ## metres between shafts
+const SHAFT_MAX := 28
 
 func _add_sun_shafts() -> void:
 	var shader: Shader = load("res://game/render/light_shaft.gdshader")
 	var axis := SHAFT_AXIS.normalized()
 	var rand := U.Seeded.new(313)
-	for c in Layout.clearings:
-		var deep := Terrain.blackwoodness(c[1]) > 0.5
-		var n := 3 if c[2] > 6 else 2
-		for k in n:
-			var x: float = c[0] + (rand.next() - 0.5) * c[2] * 0.9
-			var z: float = c[1] + (rand.next() - 0.5) * c[2] * 0.9
-			var length := 16.0 + rand.next() * 6
-			var mat := ShaderMaterial.new()
-			mat.shader = shader
-			mat.set_shader_parameter("uAxis", axis)
-			mat.set_shader_parameter("uLength", length)
-			mat.set_shader_parameter("uWidth", 1.4 + rand.next() * 1.8)
-			mat.set_shader_parameter("uSeed", rand.next() * 10)
-			mat.set_shader_parameter("uColor", Color(Color("c8e0a0") if deep else Color("ffd08a"), 0.16 + rand.next() * 0.08))
-			var m := Tex.sprite(mat)
-			# the origin sits up in the canopy so the shaft lands on (x, z)
-			m.position = Vector3(x, Terrain.height_at(x, z), z) - axis * length * 0.95
-			# culling uses the quad's own box: give it the shaft's real reach
-			var reach := axis * length
-			m.custom_aabb = AABB(reach.min(Vector3.ZERO) - Vector3(4, 4, 4), reach.abs() + Vector3(8, 8, 8))
-			m.visibility_range_end = 44.0
-			m.name = "SunShaft"
-			group.add_child(m)
+	# the trees in 6 m cells, to count neighbours cheaply
+	var cells := {}
+	var all := trees()
+	for t in all:
+		var key := Vector2i(floori(t.x / SHAFT_NEAR), floori(t.z / SHAFT_NEAR))
+		if not cells.has(key):
+			cells[key] = []
+		cells[key].append(t)
+	var near := func(x: float, z: float) -> Array:
+		var out := []
+		var cx := floori(x / SHAFT_NEAR)
+		var cz := floori(z / SHAFT_NEAR)
+		for i in range(-1, 2):
+			for j in range(-1, 2):
+				for t in cells.get(Vector2i(cx + i, cz + j), []):
+					if U.hyp(t.x - x, t.z - z) < SHAFT_NEAR:
+						out.append(t)
+		return out
+	var placed := []
+	for t in all:
+		if placed.size() >= SHAFT_MAX:
+			break
+		if not t.get("solid", true) or rand.next() > 0.35:
+			continue
+		var around: Array = near.call(t.x, t.z)
+		if around.size() < SHAFT_CANOPY + 1:
+			continue
+		# the light falls in the gap between this tree and a neighbour
+		var o: Dictionary = around[int(rand.next() * around.size())]
+		if o == t:
+			continue
+		var x: float = (t.x + o.x) / 2.0
+		var z: float = (t.z + o.z) / 2.0
+		if U.hyp(t.x - o.x, t.z - o.z) < 2.5 or _crowded(placed, x, z, SHAFT_GAP):
+			continue
+		placed.append({"x": x, "z": z})
+		var deep := Terrain.blackwoodness(z) > 0.5
+		var length := 10.0 + rand.next() * 3
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		mat.set_shader_parameter("uAxis", axis)
+		mat.set_shader_parameter("uLength", length)
+		mat.set_shader_parameter("uWidth", 1.0 + rand.next() * 1.0)
+		mat.set_shader_parameter("uSeed", rand.next() * 10)
+		mat.set_shader_parameter("uColor", Color(Color("c8e0a0") if deep else Color("ffd08a"), 0.13 + rand.next() * 0.06))
+		var m := Tex.sprite(mat)
+		# the origin sits up in the crowns so the shaft lands on (x, z)
+		m.position = Vector3(x, Terrain.height_at(x, z), z) - axis * length * 0.95
+		# culling uses the quad's own box: give it the shaft's real reach
+		var reach := axis * length
+		m.custom_aabb = AABB(reach.min(Vector3.ZERO) - Vector3(4, 4, 4), reach.abs() + Vector3(8, 8, 8))
+		m.visibility_range_end = 44.0
+		m.name = "SunShaft"
+		group.add_child(m)
 
 
 func update(dt: float, time: float) -> void:
