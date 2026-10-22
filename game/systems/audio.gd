@@ -6,11 +6,43 @@ extends Node
 ## (oscillators, noise, filters, the same envelopes) and then replayed.
 ## Sounds with a random part keep a few rendered variants.
 ## Three buses, as the Settings sliders: master, effects and ambience.
+## Dan's recorded sounds (assets/sounds) replace the synth where one fits;
+## a name in SFX with several files picks one at random each time.
 
 const RATE := 22050 ## effects
 const AMB_RATE := 11025 ## the wind and rumble loops (nothing high in them)
 const VOICES := 16
 const VARIANTS := 4
+const SFX_DIR := "res://assets/sounds/"
+const SFX := {
+	"swing": ["sword_swing_1.wav", "sword_swing_2.wav", "sword_swing_3.wav"],
+	"hit": ["sword_hit_1.wav", "sword_hit_2.wav", "sword_hit_3.wav"],
+	"parry": ["parry_1.wav", "parry_2.wav", "parry_3.wav"],
+	"shot": ["bow_shot_1.wav", "bow_shot_2.wav"],
+	"block": ["shield_block.mp3"],
+	"lunge": ["heavy_whoosh.mp3"],
+	"wolf": ["wolf_growl.mp3"],
+	"gold": ["gold.ogg"],
+	"pickup": ["pickup.ogg"],
+	"equip": ["equip_1.ogg", "equip_2.ogg"],
+	"level_up": ["level_up.mp3"],
+	"quest_complete": ["quest_complete.wav"],
+	"quest_log": ["quest_log.mp3"],
+	"panel": ["panel_open.mp3"],
+	"potion": ["potion_drink.mp3"],
+	"chest": ["chest_open_1.wav", "chest_open_2.wav"],
+	"buy": ["buy.ogg"],
+	"mine": ["mine_1.wav", "mine_2.wav", "mine_3.wav", "mine_4.wav", "mine_5.wav"],
+	"skin": ["skin.mp3"],
+	"shrine": ["shrine.wav"],
+	"campfire": ["campfire.mp3"],
+	"step_dirt": ["step_dirt_1.wav", "step_dirt_2.wav", "step_dirt_3.wav", "step_dirt_4.wav", "step_dirt_5.wav"],
+	"step_stone": ["step_stone_1.wav", "step_stone_2.wav", "step_stone_3.wav", "step_stone_4.wav", "step_stone_5.wav"],
+	"step_wood": ["step_wood_1.wav", "step_wood_2.wav", "step_wood_3.wav", "step_wood_4.wav"],
+}
+## region id -> ambience loop (anywhere else keeps the forest)
+const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
+const STEP_GAP := 0.42 ## seconds between footsteps at a walk
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
 var game
@@ -28,6 +60,10 @@ var rng := RandomNumberGenerator.new()
 var warm: Array = [] ## sounds still to render ahead of need, one per frame
 var warming := false
 var _force_variant := -1
+var sfx_cache := {} ## file -> AudioStream
+var amb_loop: AudioStreamPlayer
+var amb_file := ""
+var step_t := 0.0
 
 
 ## Every sound the game can play is made ahead, a little each frame from
@@ -97,6 +133,13 @@ func start() -> void:
 	wind = _loop(_wind(), "Ambience")
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
+	amb_loop = AudioStreamPlayer.new()
+	amb_loop.bus = "Ambience"
+	amb_loop.volume_db = -8.0
+	add_child(amb_loop)
+	game.events.on("regionChanged", func(e): _ambience(str(e.region.get("id", ""))))
+	if game.get("region") != null:
+		_ambience(str(game.region.get("id", "")))
 	_bind()
 
 
@@ -121,31 +164,42 @@ func apply_volumes() -> void:
 
 func _bind() -> void:
 	var ev = game.events
-	ev.on("playerSwing", func(_e): whoosh(0.18, 900))
+	ev.on("playerSwing", func(_e): sfx("swing", 0.7))
+	ev.on("playerShot", func(_e): sfx("shot", 0.7))
 	ev.on("enemyHit", func(e):
 		if e.get("kind") != "strike":
 			return
-		impact()
+		sfx("hit")
 		if e.get("crit"):
 			thud(90, 0.3)) # a crit lands with a deeper crunch
 	ev.on("burst", func(_e): shield_break())
 	ev.on("playerBrace", func(_e): thud(180, 0.12))
 	ev.on("braceBlock", func(_e):
-		impact()
-		bell(0.12, 660))
-	ev.on("corpseLooted", func(_e): coins())
+		sfx("block"))
+	ev.on("enemyWhiff", func(_e): sfx("parry", 0.6))
+	ev.on("corpseLooted", func(_e): sfx("gold"))
 	ev.on("enemyWindup", func(e):
+		if e.enemy.type == "hound":
+			sfx("wolf", 0.6)
+			return
 		var g: Array = GROWL.get(e.enemy.type, [120, 0.35])
 		growl(g[0], g[1]))
 	ev.on("playerHurt", func(_e): thud(110, 0.25))
 	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
-	ev.on("lootCollected", func(_e): chime([660, 990], 0.12))
-	ev.on("coins", func(_e): coins())
-	ev.on("levelUp", func(_e): chime([392, 523, 659], 0.25))
-	ev.on("shrineRest", func(_e): bell(0.25, 440))
-	ev.on("draught", func(_e): chime([330, 415], 0.15))
+	ev.on("lootCollected", func(_e): sfx("pickup"))
+	ev.on("coins", func(_e): sfx("gold"))
+	ev.on("levelUp", func(_e): sfx("level_up"))
+	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
+	ev.on("draught", func(_e): sfx("potion"))
+	ev.on("equipmentChanged", func(_e = null): sfx("equip", 0.7))
+	ev.on("chestOpened", func(_e): sfx("chest"))
+	ev.on("itemBought", func(_e): sfx("buy"))
+	ev.on("itemSold", func(_e): sfx("gold"))
+	ev.on("mined", func(_e): sfx("mine"))
+	ev.on("skinned", func(_e): sfx("skin"))
+	ev.on("campPitched", func(_e): sfx("campfire", 0.6))
 	ev.on("playerDied", func(_e): growl(55, 1.4))
-	ev.on("playerLunge", func(_e): whoosh(0.3, 700))
+	ev.on("playerLunge", func(_e): sfx("lunge"))
 	ev.on("graveSlam", func(_e):
 		thud(60, 0.6)
 		shield_break())
@@ -156,10 +210,65 @@ func _bind() -> void:
 		var d := U.hyp(p.x - e.x, p.z - e.z)
 		if d < 22:
 			bell(0.05 * maxf(0, 1 - d / 22), 880))
-	ev.on("questComplete", func(_e): chime([392, 494, 587, 784], 0.22))
+	ev.on("questComplete", func(_e): sfx("quest_complete", 0.8))
 
 
 # ------------------------------------------------------------- playback
+## Plays one of Dan's recorded sounds by its SFX name.
+func sfx(id: String, level := 1.0) -> void:
+	if not started or level <= 0 or not SFX.has(id):
+		return
+	var files: Array = SFX[id]
+	var s = _stream(files[rng.randi() % files.size()])
+	if s == null:
+		return
+	var p: AudioStreamPlayer = voices[next_voice]
+	next_voice = (next_voice + 1) % voices.size()
+	p.stream = s
+	p.bus = "Effects"
+	p.volume_db = linear_to_db(level)
+	p.play()
+
+
+func _stream(file: String) -> AudioStream:
+	if not sfx_cache.has(file):
+		sfx_cache[file] = load(SFX_DIR + file)
+	return sfx_cache[file]
+
+
+## the region's ambience loop; the same file carries on across a border
+func _ambience(region_id: String) -> void:
+	var file: String = AMB_LOOPS.get(region_id, "amb_forest.mp3")
+	if file == amb_file:
+		return
+	amb_file = file
+	var s = _stream(file)
+	if s == null:
+		return
+	s = s.duplicate()
+	s.loop = true
+	amb_loop.stream = s
+	amb_loop.play()
+
+
+## footsteps while the player moves: wood indoors, stone in town, dirt elsewhere
+func _footsteps(dt: float) -> void:
+	var pl = game.player
+	if pl == null or not pl.moving:
+		step_t = 0.0
+		return
+	step_t -= dt
+	if step_t > 0:
+		return
+	step_t = STEP_GAP
+	var surface := "step_dirt"
+	if game.world.indoors != null:
+		surface = "step_wood"
+	elif amb_file == "amb_town.mp3":
+		surface = "step_stone"
+	sfx(surface, 0.35)
+
+
 ## Plays a rendered sound (made the first time it is asked for) at a level.
 func _play(key: String, make: Callable, level := 1.0, bus := "Effects") -> void:
 	if not warming and (not started or level <= 0):
@@ -448,6 +557,7 @@ func _rumble() -> AudioStreamWAV:
 func update(dt: float) -> void:
 	if not started:
 		return
+	_footsteps(dt)
 	next_crow -= dt
 	next_bell -= dt
 	next_creak -= dt
