@@ -11,3 +11,4 @@ __pycache__/
 # Godot editor cache (rebuilt on open)
 .godot/
 build/
+data/build.json

@@ -128,7 +128,12 @@ func _build_main() -> void:
 	var t: Dictionary = DB.text.title
 	var sub := UI.label(col, ("%s  ·  %s" % [t.tagline, t.build]).to_upper(), 12, UI.TEXT_DIM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var ver := UI.label(col, "Godot build", 10, Color(UI.TEXT_DIM, 0.75))
+	var stamp := "Godot build"
+	if FileAccess.file_exists("res://data/build.json"):
+		var b = JSON.parse_string(FileAccess.get_file_as_string("res://data/build.json"))
+		if b is Dictionary:
+			stamp = "Godot build %s · %s" % [b.get("commit", "?"), b.get("time", "")]
+	var ver := UI.label(col, stamp, 10, Color(UI.TEXT_DIM, 0.75))
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.version = ver
 	var intro := UI.label(col, DB.text.intro, 15, Color("c6bba0"))
