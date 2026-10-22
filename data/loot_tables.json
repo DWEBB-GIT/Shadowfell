@@ -34,7 +34,8 @@
         "rarity": {
           "junk": 45,
           "enhanced": 45,
-          "rare": 10
+          "rare": 10,
+          "legendary": 15
         },
         "items": {
           "junk": [
@@ -64,6 +65,12 @@
           "rare": [
             {
               "item": "old_watch_helm",
+              "weight": 1
+            }
+          ],
+          "legendary": [
+            {
+              "item": "bloodletter",
               "weight": 1
             }
           ]
@@ -135,7 +142,8 @@
         "rarity": {
           "enhanced": 80,
           "rare": 5,
-          "epic": 15
+          "epic": 15,
+          "legendary": 15
         },
         "items": {
           "enhanced": [
@@ -157,6 +165,12 @@
           "epic": [
             {
               "item": "witchbane",
+              "weight": 1
+            }
+          ],
+          "legendary": [
+            {
+              "item": "plague_saints_wraps",
               "weight": 1
             }
           ]
@@ -251,7 +265,8 @@
         "chance": 1,
         "rarity": {
           "enhanced": 75,
-          "rare": 25
+          "rare": 25,
+          "legendary": 15
         },
         "items": {
           "enhanced": [
@@ -271,6 +286,12 @@
           "rare": [
             {
               "item": "old_watch_helm",
+              "weight": 1
+            }
+          ],
+          "legendary": [
+            {
+              "item": "hunters_patience",
               "weight": 1
             }
           ]
@@ -357,7 +378,8 @@
         "chance": 1,
         "rarity": {
           "enhanced": 70,
-          "rare": 30
+          "rare": 30,
+          "legendary": 15
         },
         "items": {
           "enhanced": [
@@ -377,6 +399,16 @@
           "rare": [
             {
               "item": "old_watch_helm",
+              "weight": 1
+            }
+          ],
+          "legendary": [
+            {
+              "item": "bloodletter",
+              "weight": 1
+            },
+            {
+              "item": "shadowstep_boots",
               "weight": 1
             }
           ]

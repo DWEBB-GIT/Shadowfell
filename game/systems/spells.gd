@@ -146,7 +146,7 @@ func dots_on(enemy) -> Array:
 	var out := []
 	for d in dots:
 		if d.enemy == enemy:
-			out.append({"id": d.id, "left": d.left, "total": DB.spells[d.id].tuning.duration})
+			out.append({"id": d.id, "left": d.left, "total": tuned(d.id).tuning.duration})
 	for a in auras:
 		if a.enemy == enemy:
 			out.append({"id": a.id.split(":")[0], "name": a.name, "left": a.left, "total": a.total})
@@ -163,6 +163,21 @@ func has_aura(enemy, id: String) -> bool:
 	return false
 
 
+## the nearest living enemy within 8 metres of a dead one that does not
+## already carry this effect (Contagion, Wildfire, Virulent)
+func _spread_target(from, id: String):
+	var best = null
+	var bd := 8.0
+	for e in game.enemies.list:
+		if not e.alive or e == from or has_aura(e, id):
+			continue
+		var d := U.hyp(e.position.x - from.position.x, e.position.z - from.position.z)
+		if d <= bd:
+			best = e
+			bd = d
+	return best
+
+
 ## the spell as it is now: Weapon Master's loadout changes, and the Shadow
 ## version of an ability (Strike becomes Ambush)
 func tuned(id):
@@ -176,7 +191,70 @@ func tuned(id):
 		spell = spell.duplicate()
 		spell.tuning = U.merged(spell.tuning, lo.get("tuning", {}))
 		spell.gain = lo.get("gain", spell.get("gain"))
+	# path upgrades, forks and legendary powers (builds.gd)
+	if game.builds:
+		for c in game.builds.changes_for(spell.id):
+			spell = Builds.apply_change(spell, c)
 	return spell
+
+
+# ------------------------------------------------------------ status tags
+## Does `enemy` carry a status (data/builds.json `statuses`)? Damage over
+## time and auras name theirs (`status`); the rest are read off what an
+## effect does: a slow is Slowed, a stun or sleep Stunned, more damage taken
+## Vulnerable, less dealt Weakened, a full stagger bar Staggered.
+func has_status(enemy, status: String) -> bool:
+	if enemy == null or not enemy.alive:
+		return false
+	match status:
+		"staggered":
+			return enemy.staggered > 0
+		"slowed":
+			if enemy.mods.get("slow", 0.0) > 0:
+				return true
+	for d in dots:
+		if d.enemy == enemy and DB.spells[d.id].get("status") == status:
+			return true
+	for a in auras:
+		if a.enemy != enemy:
+			continue
+		if a.get("status", "") == status:
+			return true
+		match status:
+			"slowed":
+				if a.slow > 0:
+					return true
+			"stunned":
+				if a.stun or a.sleep:
+					return true
+			"vulnerable":
+				if a.damageTaken > 0:
+					return true
+			"weakened":
+				if a.damageDealt < 0:
+					return true
+	return false
+
+
+## % less damage you take from Fortified (Rallying Cry, Bulwark)
+var fortify: float:
+	get:
+		var n := 0.0
+		for b in buffs.values():
+			n += b.get("reduction", 0)
+		return minf(60, n)
+
+
+## what a spell going off does for your key passive: Zeal stacks
+func _cast_effects(spell: Dictionary) -> void:
+	if not game.builds:
+		return
+	for e in game.builds.effects("critBuild"):
+		if spell.get("school") != e.school:
+			continue
+		var b = buffs.get("critBuild")
+		var n := mini(int(e.max), (int(b.get("stacks", 0)) if b else 0) + 1)
+		buffs["critBuild"] = {"name": e.name, "icon": spell.id, "left": e.duration, "total": e.duration, "stacks": n, "critBonus": e.percent}
 
 
 # --------------------------------------------------------------- casting
@@ -293,6 +371,7 @@ func try_cast(id: String) -> bool:
 			blows.append({"id": spell.id, "t": windup + 0.3 * k, "spell": spell})
 		player.rig.play("slam" if spell.kind == "burst" else "strike", anim, windup / anim)
 		player.cooldowns[id] = t.cooldown
+		_cast_effects(spell)
 		return true
 	player.cooldowns[id] = t.cooldown
 	_go(spell, target)
@@ -377,6 +456,7 @@ func _go(spell: Dictionary, target) -> void:
 	var player = game.player
 	var events: Events = game.events
 	var t: Dictionary = spell.tuning
+	_cast_effects(spell)
 	if spell.get("ranged"):
 		_shoot(spell, target)
 		return
@@ -405,7 +485,7 @@ func _go(spell: Dictionary, target) -> void:
 		"aoe":
 			player.rig.play("slam", 0.5, 0.5)
 			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
-			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": 0, "damage": t.get("damageMax", 0) > 0})
+			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": t.get("slow", 0), "damage": t.get("damageMax", 0) > 0})
 			events.emit("zone", {"id": spell.id, "x": at.x, "z": at.z, "radius": t.radius, "duration": t.duration, "school": spell.get("school")})
 			events.emit("log", {"text": "%s takes root." % spell.name if spell.get("target") == "ground" else "You consecrate the ground: %s." % spell.name, "kind": "hit"})
 		"guard":
@@ -430,7 +510,7 @@ func _go(spell: Dictionary, target) -> void:
 			game.camp.pitch(player.position.x, player.position.z)
 		"buff":
 			player.rig.play("brace", 0.6, 0.4)
-			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "damageBonus": t.damageBonus}
+			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "damageBonus": t.damageBonus, "reduction": t.get("reduction", 0)}
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "%s: your damage is raised by %s%% for %s seconds." % [spell.name, U.n(t.damageBonus), U.n(t.duration)], "kind": "hit"})
 		"stealth":
@@ -438,7 +518,10 @@ func _go(spell: Dictionary, target) -> void:
 		"trap":
 			player.rig.play("slam", 0.45, 0.5)
 			var key := "%s-%.3f" % [spell.id, game.time]
-			traps.append({"id": spell.id, "key": key, "x": player.position.x, "z": player.position.z, "arm": t.armTime, "left": t.lifetime})
+			var arm: float = t.armTime
+			for e in (game.builds.effects("trap") if game.builds else []):
+				arm = minf(arm, e.get("armTime", arm))
+			traps.append({"id": spell.id, "key": key, "x": player.position.x, "z": player.position.z, "arm": arm, "left": t.lifetime})
 			while traps.filter(func(x): return x.id == spell.id).size() > t.maxTraps:
 				var old = null
 				for x in traps:
@@ -493,7 +576,10 @@ func _weapon_base(t: Dictionary) -> float:
 
 func _bonus_vs(spell: Dictionary, enemy) -> float:
 	var bv = spell.get("bonusVs")
-	return 1 + bv.percent / 100.0 if bv and has_aura(enemy, bv.aura) else 1.0
+	if not bv:
+		return 1.0
+	var has: bool = has_status(enemy, bv.status) if bv.has("status") else has_aura(enemy, bv.get("aura", ""))
+	return 1 + bv.percent / 100.0 if has else 1.0
 
 
 ## what follows a spell's hit on its target: its aura, a follow-up effect,
@@ -502,13 +588,13 @@ func _landed(spell: Dictionary, enemy, hit) -> void:
 	if not enemy.alive and hit != null:
 		return
 	if spell.get("applies"):
-		apply_aura(spell.id, enemy, spell.applies)
-	var f = DB.spells.get(spell.get("follow", ""))
+		apply_aura(spell.id, enemy, spell.applies, spell.get("spreadsOnDeath", false))
+	var f = tuned(spell.get("follow", ""))
 	if f != null and enemy.alive:
 		if f.kind == "dot":
 			_apply_dot(f, enemy, null, true)
-		if f.get("applies"):
-			apply_aura(f.id, enemy, f.applies)
+		elif f.get("applies"):
+			apply_aura(f.id, enemy, f.applies, f.get("spreadsOnDeath", false))
 	if spell.get("stacks") and hit != null:
 		var s: Dictionary = spell.stacks
 		var b = buffs.get(s.id)
@@ -518,7 +604,7 @@ func _landed(spell: Dictionary, enemy, hit) -> void:
 
 ## Put an aura on an enemy (or refresh it). Stuns and sleeps go through
 ## the enemy's control rules: a boss only staggers, an elite wears it off.
-func apply_aura(id: String, enemy, aura: Dictionary) -> void:
+func apply_aura(id: String, enemy, aura: Dictionary, spreads := false) -> void:
 	if not enemy.alive:
 		return
 	var left: float = aura.duration
@@ -532,7 +618,7 @@ func apply_aura(id: String, enemy, aura: Dictionary) -> void:
 	for a in auras:
 		if a.enemy == enemy and a.id == id:
 			had = a
-	var rec := {"enemy": enemy, "id": id, "name": aura.name, "left": left, "total": left, "then": aura.get("then")}
+	var rec := {"enemy": enemy, "id": id, "name": aura.name, "left": left, "total": left, "then": aura.get("then"), "status": aura.get("status", ""), "spreads": spreads, "aura": aura}
 	for k in AURA_EFFECTS:
 		rec[k] = aura.get(k, 0)
 	if had != null:
@@ -554,6 +640,8 @@ func _apply_dot(spell: Dictionary, target, ammo = null, quiet := false) -> void:
 		had.ammo = ammo
 	else:
 		dots.append({"enemy": target, "id": spell.id, "left": t.duration, "next": t.tickInterval, "ammo": ammo})
+	if spell.get("applies"):
+		apply_aura(spell.id, target, spell.applies)
 	if quiet:
 		return
 	target.hurt(0, {"stagger": 0.1}) # they notice
@@ -644,7 +732,9 @@ func resolve(id: String, spell = null) -> Array:
 		return []
 	var most := 0
 	for e in hits:
-		most = maxi(most, _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": 0.2, "knockFrom": player.position, "knockback": 0.3}).amount)
+		var hit := _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": 0.2, "knockFrom": player.position, "knockback": 0.3})
+		most = maxi(most, hit.amount)
+		_landed(spell, e, hit)
 	events.emit("log", {"text": "%s hits %s for %d." % [spell.name, "the " + hits[0].cfg.name if hits.size() == 1 else "%d foes" % hits.size(), most], "kind": "hit"})
 	return hits
 
@@ -656,7 +746,12 @@ func _burst(spell: Dictionary) -> Array:
 	var hits: Array = game.enemies.list.filter(func(e): return e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius)
 	var most := 0
 	for e in hits:
-		most = maxi(most, _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": t.stagger, "knockFrom": player.position, "knockback": t.knockback, "heavy": bool(t.get("interrupts", false))}).amount)
+		var hit := _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": t.stagger, "knockFrom": player.position, "knockback": t.knockback, "heavy": bool(t.get("interrupts", false))})
+		most = maxi(most, hit.amount)
+		_landed(spell, e, hit)
+	# Healing Storm: a share of your health for each enemy hit
+	if t.get("healPerHit") and not hits.is_empty():
+		_heal_number(player.heal(player.max_health * t.healPerHit * hits.size() / 100.0))
 	events.emit("burst", {"id": spell.id, "position": player.position, "radius": t.radius, "hits": hits, "school": spell.get("school")})
 	# striking engages: auto attack the target, or the first foe left standing
 	var tg = game.targeting
@@ -713,12 +808,25 @@ func hit_mods(enemy, weapon := true) -> Dictionary:
 		var dz: float = player.position.z - enemy.position.z
 		var behind: bool = dx * sin(enemy.facing) + dz * cos(enemy.facing) < 0
 		force_crit = shadow_grace > 0 or hidden or behind
-	return {"mult": enemy.damage_taken_scale, "critBonus": crit_bonus, "forceCrit": force_crit}
+	var mult: float = enemy.damage_taken_scale
+	if game.builds:
+		for e in game.builds.effects("statusDamage"):
+			if has_status(enemy, e.status):
+				mult *= 1 + e.percent / 100.0
+	return {"mult": mult, "critBonus": crit_bonus, "forceCrit": force_crit}
 
 
 ## after a hit of yours: a crit uses up the Righteous stacks
 func after_hit(hit) -> void:
-	if hit == null or not hit.crit:
+	if hit == null:
+		return
+	# Bloodlust: every hit that lands adds a stack
+	if game.builds and hit.amount > 0:
+		for e in game.builds.effects("hitStacks"):
+			var b = buffs.get("hitStacks")
+			var n := mini(int(e.max), (int(b.get("stacks", 0)) if b else 0) + 1)
+			buffs["hitStacks"] = {"name": e.name, "icon": "battleCry", "left": e.duration, "total": e.duration, "stacks": n, "damageBonus": e.percent * n}
+	if not hit.crit:
 		return
 	for id in buffs.keys():
 		if buffs[id].get("critBonus"):
@@ -731,6 +839,7 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	var t: Dictionary = spell.tuning
 	var weapon: bool = spell.get("ranged", false) or t.has("damageMultiplier") or (t.has("tickMultiplier") and not t.has("damageMin"))
 	var m := hit_mods(enemy, weapon)
+	mult *= _execute_scale(spell, enemy)
 	var school: String = spell.get("school", "physical")
 	var hit := Stats.compute_hit(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit})
 	after_hit(hit)
@@ -747,6 +856,24 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	elif spell.kind != "dot" and not game.targeting.attacking:
 		game.targeting.engage(enemy)
 	return hit
+
+
+## Executes (Assassinate, Executioner, the Assassin passive): more damage
+## to an enemy below a share of its health
+func _execute_scale(spell: Dictionary, enemy) -> float:
+	var list := []
+	if spell.get("execute"):
+		list.append(spell.execute)
+	if game.builds:
+		for e in game.builds.effects("execute"):
+			if not e.get("spenders") or spell.get("spendsAll"):
+				list.append(e)
+	var s := 1.0
+	var share: float = 100.0 * enemy.health / maxf(1, enemy.max_health)
+	for e in list:
+		if share < e.below:
+			s *= 1 + e.percent / 100.0
+	return s
 
 
 ## Empowered Light: a swing that landed echoes with holy damage
@@ -902,16 +1029,27 @@ func update(dt: float) -> void:
 			buffs.erase(id)
 			events.emit("log", {"text": "%s fades." % b.name, "kind": "muted"})
 
+	# Rotheart: damage over time ticks faster while Overcorrupted
+	var dot_rate := 1.0
+	if game.builds:
+		for e in game.builds.effects("dotHaste"):
+			if not e.get("whileOverload") or game.resources.overload:
+				dot_rate += e.percent / 100.0
 	for i in range(dots.size() - 1, -1, -1):
 		if i >= dots.size():
 			continue
 		var d: Dictionary = dots[i]
-		var spell: Dictionary = DB.spells[d.id]
+		var spell: Dictionary = tuned(d.id)
 		if not d.enemy.alive:
 			dots.remove_at(i)
+			if spell.get("spreadsOnDeath"):
+				var to = _spread_target(d.enemy, d.id)
+				if to != null:
+					_apply_dot(spell, to, d.get("ammo"), true)
+					events.emit("log", {"text": "%s spreads to the %s." % [spell.name, to.cfg.name], "kind": "hit"})
 			continue
 		d.left -= dt
-		d.next -= dt
+		d.next -= dt * dot_rate
 		if d.next <= 1e-6:
 			var t: Dictionary = spell.tuning
 			d.next += t.tickInterval
@@ -937,6 +1075,10 @@ func update(dt: float) -> void:
 		var a: Dictionary = auras[i]
 		a.left -= dt
 		var woke: bool = a.sleep and not a.enemy.asleep
+		if not a.enemy.alive and a.get("spreads"):
+			var to = _spread_target(a.enemy, a.id)
+			if to != null:
+				apply_aura(a.id, to, a.aura, true)
 		if not a.enemy.alive or woke or a.left <= 1e-6:
 			auras.remove_at(i)
 			if a.then and a.enemy.alive and not woke:
@@ -945,7 +1087,7 @@ func update(dt: float) -> void:
 	# traps arm, wait, and spring on the first enemy to step on one
 	for i in range(traps.size() - 1, -1, -1):
 		var tr: Dictionary = traps[i]
-		var spell: Dictionary = DB.spells[tr.id]
+		var spell: Dictionary = tuned(tr.id)
 		var t: Dictionary = spell.tuning
 		tr.arm -= dt
 		tr.left -= dt
@@ -962,10 +1104,13 @@ func update(dt: float) -> void:
 			zones.append({"id": tr.id, "x": tr.x, "z": tr.z, "left": t.duration, "next": INF, "radius": t.radius, "slow": t.slow, "damage": false})
 			events.emit("zone", {"id": tr.id, "x": tr.x, "z": tr.z, "radius": t.radius, "duration": t.duration, "school": "tar"})
 			events.emit("log", {"text": "The %s springs your %s." % [prey.cfg.name, spell.name], "kind": "hit"})
+			for e in (game.builds.effects("trap") if game.builds else []):
+				if e.get("applies"):
+					apply_aura(tr.id + ":snare", prey, e.applies)
 
 	for i in range(zones.size() - 1, -1, -1):
 		var z: Dictionary = zones[i]
-		var spell: Dictionary = DB.spells[z.id]
+		var spell: Dictionary = tuned(z.id)
 		var t: Dictionary = spell.tuning
 		z.left -= dt
 		z.next -= dt
@@ -980,8 +1125,13 @@ func update(dt: float) -> void:
 				if spread != null and e.alive:
 					_apply_dot(spread, e, null, dots.any(func(d): return d.enemy == e and d.id == spread.id))
 			# Hallowed Ground heals you while you stand in it
-			if t.get("healPercent") and U.hyp(player.position.x - z.x, player.position.z - z.z) <= z.radius:
+			var inside: bool = U.hyp(player.position.x - z.x, player.position.z - z.z) <= z.radius
+			if t.get("healPercent") and inside:
 				_heal_number(player.heal(player.max_health * t.healPercent / 100.0))
+			# Bulwark: Fortified while you stand in it
+			for e in (game.builds.effects("zoneFortify") if game.builds and inside else []):
+				if e.spell == z.id:
+					buffs["fortified"] = {"name": "Fortified", "icon": z.id, "left": t.tickInterval + 0.25, "total": t.tickInterval + 0.25, "reduction": e.percent}
 		if z.left <= 1e-6:
 			zones.erase(z)
 

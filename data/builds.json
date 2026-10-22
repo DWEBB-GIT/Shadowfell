@@ -1,0 +1,36 @@
+{
+  "_about": "Build layers (after Diablo 4): status tags that spells, passives and powers share; path points that buy spell upgrades (each spell's Enhanced rank and its two forks live on its record in abilities.json); one key passive per character; and legendary powers carried by items. Effects name a kind the engine knows (game/systems/builds.gd lists them).",
+  "pathPoints": { "fromLevel": 10, "perLevel": 1, "enhancedCost": 1, "forkCost": 1 },
+  "keyPassiveLevel": 10,
+  "forge": { "npc": "mara", "price": 50 },
+  "statuses": [
+    { "id": "bleeding", "name": "Bleeding", "colour": "#c0392b", "about": "Physical damage over time (Rend)." },
+    { "id": "burning", "name": "Burning", "colour": "#e67e22", "about": "Fire or holy damage over time (Flaming Arrow, Light's Burn)." },
+    { "id": "poisoned", "name": "Poisoned", "colour": "#6ab04c", "about": "Nature poison (Poisoned Blade, Venom Arrow)." },
+    { "id": "blighted", "name": "Blighted", "colour": "#8e44ad", "about": "Shadow rot (Rot)." },
+    { "id": "slowed", "name": "Slowed", "colour": "#5dade2", "about": "Any effect that slows: tar, hexes, Kneeling." },
+    { "id": "stunned", "name": "Stunned", "colour": "#f4d03f", "about": "Stunned or asleep." },
+    { "id": "vulnerable", "name": "Vulnerable", "colour": "#e84393", "about": "Takes more damage (Marked, Sundered)." },
+    { "id": "weakened", "name": "Weakened", "colour": "#95a5a6", "about": "Deals less damage (Withering)." },
+    { "id": "staggered", "name": "Staggered", "colour": "#f39c12", "about": "A boss whose stagger bar is full." },
+    { "id": "fortified", "name": "Fortified", "colour": "#d4ac0d", "about": "On you: you take less damage." }
+  ],
+  "keyPassives": [
+    { "id": "bloodlust", "archetype": "warden", "name": "Bloodlust", "text": "Every hit you land gives a Bloodlust stack: +2% damage, up to 10. The stacks fade 5 seconds after your last hit.", "effects": [{ "kind": "hitStacks", "name": "Bloodlust", "max": 10, "percent": 2, "duration": 5 }] },
+    { "id": "unbroken", "archetype": "warden", "name": "Unbroken", "text": "Resolve you spend heals you twice as much.", "effects": [{ "kind": "spendHeal", "resource": "resolve", "percentPerPoint": 0.2 }] },
+    { "id": "assassin", "archetype": "rogue", "name": "Assassin", "text": "Finishers (Double Cut) deal 40% more damage to enemies below 30% health.", "effects": [{ "kind": "execute", "below": 30, "percent": 40, "spenders": true }] },
+    { "id": "venomous", "archetype": "rogue", "name": "Venomous", "text": "All your damage is 15% higher against Poisoned enemies.", "effects": [{ "kind": "statusDamage", "status": "poisoned", "percent": 15 }] },
+    { "id": "trapper", "archetype": "ranger", "name": "Trapper", "text": "Your traps arm at once, and the enemy that springs one is stunned for 2 seconds.", "effects": [{ "kind": "trap", "armTime": 0, "applies": { "name": "Snared", "duration": 2, "stun": 1 } }] },
+    { "id": "kindling", "archetype": "ranger", "name": "Kindling", "text": "All your damage is 15% higher against Burning enemies.", "effects": [{ "kind": "statusDamage", "status": "burning", "percent": 15 }] },
+    { "id": "rotheart", "archetype": "occultist", "name": "Rotheart", "text": "While Overcorrupted, your damage over time ticks 30% faster.", "effects": [{ "kind": "dotHaste", "percent": 30, "whileOverload": true }] },
+    { "id": "soulTithe", "archetype": "occultist", "name": "Soul Tithe", "text": "Corruption you spend heals you: 0.3% of your health per point, on top of Purge.", "effects": [{ "kind": "spendHeal", "resource": "corruption", "percentPerPoint": 0.3 }] },
+    { "id": "zealot", "archetype": "paladin", "name": "Zealot", "text": "Each Holy spell you use gives a Zeal stack: +5% crit chance, up to 5. Your next crit uses them all up.", "effects": [{ "kind": "critBuild", "school": "holy", "name": "Zeal", "percent": 5, "max": 5, "duration": 12 }] },
+    { "id": "bulwark", "archetype": "paladin", "name": "Bulwark", "text": "While you stand in your own Hallowed Ground you are Fortified: 20% less damage taken.", "effects": [{ "kind": "zoneFortify", "spell": "hallowedGround", "percent": 20 }] }
+  ],
+  "powers": [
+    { "id": "bloodletter", "name": "Bloodletter", "text": "Cleave leaves every enemy it hits Bleeding (Rend).", "spell": "cleave", "changes": { "follow": "rend" } },
+    { "id": "contagion", "name": "Contagion", "text": "When an enemy dies, your Rot and Flaming Arrow on it jump to the nearest enemy.", "spells": ["rot", "flamingArrow"], "changes": { "spreadsOnDeath": true } },
+    { "id": "shadowstep", "name": "Shadowstep", "text": "Shadow's cooldown is 5 seconds shorter.", "spell": "shadow", "changes": { "add": { "cooldown": -5 } } },
+    { "id": "hunters_patience", "name": "Hunter's Patience", "text": "All your damage is 10% higher against Slowed enemies.", "effects": [{ "kind": "statusDamage", "status": "slowed", "percent": 10 }] }
+  ]
+}

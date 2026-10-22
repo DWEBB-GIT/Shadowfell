@@ -196,6 +196,7 @@ func serialize() -> Dictionary:
 		"renown": game.reputation.serialize_renown(),
 		"titles": game.titles.serialize(),
 		"cooking": game.cooking.serialize(),
+		"builds": game.builds.serialize(),
 	}
 
 
@@ -258,6 +259,7 @@ func apply(data: Dictionary) -> void:
 		game.action_bar.apply(data.bar)
 	progression.apply(data.progression)
 	inventory.apply(data.inventory)
+	game.builds.apply(data.get("builds"))
 	# renown and titles; saves from before renown start with what their
 	# finished quests, levels and reputation would have earned
 	if not data.get("renown"):

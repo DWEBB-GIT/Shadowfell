@@ -19,6 +19,7 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | `dialogue.json` | What townsfolk say: `greetings` (the last whose `when` holds), `topics`, and `nodes` with `replies` | nodes, quests |
 | `world.json` | Bounds, regions, roads, player start, shrines, named `locations` (quest areas on the map), `water`, `obscured` areas, and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
 | `scenery.json` | Props (with colliders and examine points), clearings kept free of trees, lights | models, examine text |
+| `builds.json` | Build layers: `statuses` (Bleeding, Slowed, Vulnerable...), `pathPoints` (spell upgrades: each spell's Enhanced rank and two forks are its `upgrades` in abilities.json), `keyPassives` (one per character), legendary `powers` (an item's `power`, or one moved at the `forge`) | archetypes, abilities, items |
 | `text.json` | The intro, readable documents, and examine text | |
 
 Engine tuning that is not content, such as the damage formula's constants, camera, fog, loot radius and shop sell fraction, stays in `src/config.js`. Growth by level (the armour constant, the level gap, item budgets, weapon damage and the enemy table) is in `src/data/scaling.js`, with the formulas that turn an item's level and an enemy's type into numbers. `docs/stats-and-damage.md` explains them.
