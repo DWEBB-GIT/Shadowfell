@@ -43,7 +43,7 @@ static func missing_gear(g, ability) -> String:
 	if ability.get("ranged"):
 		if not g.stats.has_ranged:
 			return requirement_text(ability).replace(", and arrows", "")
-		return "" if g.inventory.ammo else "You have no arrows"
+		return "" if g.inventory.ammo else "Out of Ammo"
 	var need = ability.get("requires")
 	if not need:
 		return ""

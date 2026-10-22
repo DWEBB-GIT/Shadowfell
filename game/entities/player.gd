@@ -429,6 +429,9 @@ func try_shoot(aim) -> bool:
 		return false
 	var stats = game.stats
 	if not game.inventory.ammo:
+		# WoW style, red in the middle of the screen
+		if game.hud:
+			game.hud.error("Out of Ammo")
 		game.events.emit("log", {"text": "You have no arrows. Buy them from Mara or Tam.", "kind": "muted", "throttle": "no-ammo"})
 		return false
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
