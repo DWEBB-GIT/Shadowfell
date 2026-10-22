@@ -1,0 +1,27 @@
+{
+  "_about": "Crime, Bounty and Infamy, after Fable (Godot build: game/systems/law.gd). A crime only counts if someone sees it: a townsperson or a guard within `witnessRange` metres with no wall between. A seen crime adds its `bounty`, makes you Wanted at once if it is `wanted`, (coins owed to the reeve of the `jurisdictions` entry whose `regions` hold the place) and its `infamy` (lasting), and you show Amber for `amberSeconds` while the nearest guard of that jurisdiction comes over: a first small offence there (bounty under `warnBelow`) earns a warning; otherwise pay the fine, go quietly to the `gaol`, or resist (you are then Wanted there, as you are once your bounty reaches `wantedAt`). Guards (enemies with `lawful: \"guard\"`) attack the Wanted on sight; dying while Wanted wakes you in the gaol, the bounty paid from your purse. Infamy of `outlawAt` or more makes you an Outlaw everywhere, and the `hunter` comes for you on the roads every `every` seconds (min, max), a level stronger each time he is beaten. Merchants charge `markup` percent more from each step of Infamy, and will not serve an Outlaw. Infamy fades only by atonement: the reeve takes `atone.coinsPerPoint` coins a point for the widows' fund. Livestock and guards (`lawful` enemies) can only be attacked while the `crime` key (Alt) is held, so a mis-click never makes you a criminal.",
+  "witnessRange": 16,
+  "amberSeconds": 60,
+  "warnBelow": 30,
+  "wantedAt": 60,
+  "outlawAt": 40,
+  "guardReach": 2.4,
+  "crimes": [
+    { "id": "assault", "name": "assaulting the watch", "bounty": 25, "infamy": 2, "wanted": true },
+    { "id": "livestock", "name": "killing livestock", "bounty": 20, "infamy": 2 },
+    { "id": "murder", "name": "killing a watchman", "bounty": 120, "infamy": 15, "wanted": true },
+    { "id": "resisting", "name": "resisting arrest", "bounty": 40, "infamy": 3, "wanted": true }
+  ],
+  "jurisdictions": [
+    { "id": "brackenford", "name": "Brackenford", "reeve": "pell", "regions": ["brackenford", "fallen_road"], "gaol": [1.5, 63.5], "gaolName": "the Brackenford lock-up" }
+  ],
+  "guardLines": {
+    "warn": ["Oi. I saw that. First and last time, understood? Go on, before I change my mind.", "That's Corrick's beast you've had. Once, I'll let it go. Twice, and it's the lock-up."],
+    "fine": ["Stop right there. You've broken the peace. That's {bounty} owed to the reeve. Pay it now, or come quietly.", "I know your face now. {bounty} to the reeve, or a night in the lock-up. Your choice."],
+    "outlaw": ["You. I know what you are. Drop the blade."]
+  },
+  "nameplates": { "clean": "#f0e6c8", "amber": "#f0b040", "wanted": "#ff5a40", "outlaw": "#8a6aa8" },
+  "markup": [ { "infamy": 10, "percent": 10 }, { "infamy": 25, "percent": 25 } ],
+  "atone": { "coinsPerPoint": 4 },
+  "hunter": { "enemy": "reeves_hound", "every": [240, 480], "spawnDistance": 24, "scarLevels": 1, "names": ["Thatch Corrow, the Reeve's Hound", "Thatch Corrow, Twice-Scarred", "Thatch Corrow, the Unkillable"] }
+}

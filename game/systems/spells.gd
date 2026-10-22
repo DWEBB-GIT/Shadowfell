@@ -169,7 +169,7 @@ func _spread_target(from, id: String):
 	var best = null
 	var bd := 8.0
 	for e in game.enemies.list:
-		if not e.alive or e == from or has_aura(e, id):
+		if not e.alive or e.protected or e == from or has_aura(e, id):
 			continue
 		var d := U.hyp(e.position.x - from.position.x, e.position.z - from.position.z)
 		if d <= bd:
@@ -387,6 +387,9 @@ func _target_for(spell: Dictionary, optional := false):
 	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= range_ + e.radius * 0.6
 	var cur = targeting.current
 	if cur != null and cur.alive:
+		# livestock and the watch: only with the crime key held (Alt)
+		if not game.law.may_attack(cur):
+			return false if optional else null
 		if in_range.call(cur):
 			return cur
 		game.hud.error("Out of range")
@@ -668,7 +671,7 @@ func _shoot(spell: Dictionary, target) -> void:
 	var targets := [target]
 	if t.get("maxTargets", 1) > 1:
 		var dist := func(e): return U.hyp(e.position.x - target.position.x, e.position.z - target.position.z)
-		var near: Array = game.enemies.list.filter(func(e): return e.alive and e != target and dist.call(e) <= t.spread)
+		var near: Array = game.enemies.list.filter(func(e): return e.alive and not e.protected and e != target and dist.call(e) <= t.spread)
 		near.sort_custom(func(a, b): return dist.call(a) < dist.call(b))
 		targets.append_array(near.slice(0, int(t.maxTargets) - 1))
 	for e in targets:
@@ -714,7 +717,7 @@ func resolve(id: String, spell = null) -> Array:
 	var cos_limit := cos(deg_to_rad(t.coneDegrees / 2.0))
 	var in_cone := []
 	for e in game.enemies.list:
-		if not e.alive:
+		if not e.alive or e.protected:
 			continue
 		var dx: float = e.position.x - player.position.x
 		var dz: float = e.position.z - player.position.z
@@ -743,7 +746,7 @@ func _burst(spell: Dictionary) -> Array:
 	var player = game.player
 	var events: Events = game.events
 	var t: Dictionary = spell.tuning
-	var hits: Array = game.enemies.list.filter(func(e): return e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius)
+	var hits: Array = game.enemies.list.filter(func(e): return e.alive and not e.protected and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius)
 	var most := 0
 	for e in hits:
 		var hit := _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": t.stagger, "knockFrom": player.position, "knockback": t.knockback, "heavy": bool(t.get("interrupts", false))})
@@ -775,7 +778,7 @@ func _charge_hit(spell: Dictionary) -> Array:
 	var best = cur if cur != null and cur.alive and dist.call(cur) <= t.hitRadius + 0.4 else null
 	if best == null:
 		for e in game.enemies.list:
-			if e.alive and dist.call(e) <= t.hitRadius and (best == null or dist.call(e) < dist.call(best)):
+			if e.alive and not e.protected and dist.call(e) <= t.hitRadius and (best == null or dist.call(e) < dist.call(best)):
 				best = e
 	if best == null:
 		game.events.emit("playerMiss", {})

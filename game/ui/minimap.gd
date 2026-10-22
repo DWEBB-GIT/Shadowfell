@@ -220,6 +220,10 @@ func markers() -> Array:
 		var status: String = quests.marker_for(n.id)
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
 		out.append({"x": n.position.x, "z": n.position.z, "kind": quest if quest != "" else "npc", "icon": n.def.get("mapIcon"), "label": n.name})
+	# a miner sees where the live veins glint (WoW's Find Minerals)
+	if game.skills.has("mining"):
+		for v in game.mining.veins():
+			out.append({"x": v.x, "z": v.z, "kind": "vein", "label": v.name})
 	for e in game.enemies.list:
 		if Targeting.in_combat_with_player(e):
 			out.append({"x": e.position.x, "z": e.position.z, "kind": "foe", "label": e.cfg.name})
@@ -324,6 +328,17 @@ func _draw_map() -> void:
 			g.begin_path()
 			g.arc(s.x, s.y, 2.6, 0, TAU)
 			g.fill()
+		elif m.kind == "vein" and inside:
+			g.fill_style = "#f0d890"
+			g.stroke_style = "#000"
+			g.line_width = 1
+			g.begin_path()
+			g.move_to(s.x, s.y - 3)
+			g.line_to(s.x + 3, s.y)
+			g.line_to(s.x, s.y + 3)
+			g.line_to(s.x - 3, s.y)
+			g.fill()
+			g.stroke()
 		elif m.kind == "foe" and inside:
 			g.fill_style = "#ff3a2a"
 			g.stroke_style = "#000"

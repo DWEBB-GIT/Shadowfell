@@ -20,7 +20,12 @@ Shadowfall is data-driven. **Content lives in `/data` as JSON, and code lives in
 | `world.json` | Bounds, regions, roads, player start, shrines, named `locations` (quest areas on the map), `water`, `obscured` areas, and where NPCs, enemies and loot are placed | npcs, enemy types, items, documents |
 | `scenery.json` | Props (with colliders and examine points), clearings kept free of trees, lights | models, examine text |
 | `builds.json` | Build layers: `statuses` (Bleeding, Slowed, Vulnerable...), `pathPoints` (spell upgrades: each spell's Enhanced rank and two forks are its `upgrades` in abilities.json), `keyPassives` (one per character), legendary `powers` (an item's `power`, or one moved at the `forge`) | archetypes, abilities, items |
-| `text.json` | The intro, readable documents, and examine text | |
+| `mining.json` | Mining: `rocks` (rank, swings, stone/ore/gem-shard yields, tint), `veinGroups` (outcrop positions, how many are `live`, which rocks, `respawn`: a spent vein relights on a different outcrop), `rich` veins, swing `tuning` | items |
+| `forge.json` | Smith services at any npc with `forge: true`: `temper` (caps by rarity, rank costs, bar and whetstone bands, skyiron last rank), `scrap` (refund share), `reforge`, `sockets` (budget share, punching) | items |
+| `gems.json` | Gems made at any `jeweller: true` npc: `gemQualities` (Chipped to Perfect, how many of the last make one) and `gemTypes` (stats or effect, shard, slots). Gem items are generated as `<type>_<quality>` | items |
+| `infamy.json` | The law: `crimes` (bounty, infamy, Wanted), `jurisdictions` (reeve, regions, gaol), guard lines, nameplate thresholds, outlaw `markup`, atonement, and the `hunter` | npcs, enemy types, regions |
+| `boons.json` | Timed boons: `inspired` (XP bonus, length) and the `bard` who sells a tale once a day | npcs |
+| `text.json` | The intro, readable documents (`lore: true` ones Inspire on first read), and examine text | |
 
 Engine tuning that is not content, such as the damage formula's constants, camera, fog, loot radius and shop sell fraction, stays in `src/config.js`. Growth by level (the armour constant, the level gap, item budgets, weapon damage and the enemy table) is in `src/data/scaling.js`, with the formulas that turn an item's level and an enemy's type into numbers. `docs/stats-and-damage.md` explains them.
 

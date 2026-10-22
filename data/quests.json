@@ -718,7 +718,8 @@
       "turnInLog": "That night the Corrick hayrick burns. By morning Wren Ashby and Cal Fenner are gone, together, and nobody knows where.",
       "reward": {
         "coins": 40,
-        "xp": 300
+        "xp": 300,
+        "infamy": 8
       }
     },
     {

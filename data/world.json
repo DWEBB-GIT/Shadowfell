@@ -285,7 +285,10 @@
       "npc": "pell",
       "position": [-1, 66.5],
       "facing": 270
-    }
+    },
+    {"npc": "orrin", "position": [19.5, 79], "facing": 200},
+    {"npc": "ysolde", "position": [-1.5, 84.5], "facing": 150},
+    {"npc": "wenna", "position": [6.2, 73.6], "facing": 120}
   ],
   "enemySpawns": [
     {
@@ -462,7 +465,13 @@
       "id": "blackhedge_harl",
       "enemy": "blackhedge_captain",
       "position": [-25.5, -61.5]
-    }
+    },
+    {"id": "watch_ford_1", "enemy": "town_guard", "position": [-5.5, 60]},
+    {"id": "watch_ford_2", "enemy": "town_guard", "position": [1, 80]},
+    {"id": "watch_ford_3", "enemy": "town_guard", "position": [-12.5, 74]},
+    {"id": "corrick_sow_1", "enemy": "corrick_pig", "position": [-27, 19.5]},
+    {"id": "corrick_sow_2", "enemy": "corrick_pig", "position": [-27.5, 26]},
+    {"id": "corrick_sow_3", "enemy": "corrick_pig", "position": [-30, 22.5]}
   ],
   "placedLoot": [
     {
@@ -801,7 +810,9 @@
       "reward": {
         "item": "blackhedge_rag"
       }
-    }
+    },
+    {"id": "torn_page", "model": "manifest", "scale": 0.6, "position": [-6.5, 93], "heightOffset": 0.05, "prompt": "Pick up the torn page", "reward": {"item": "torn_page"}, "opensDocument": "torn_page"},
+    {"id": "blackhedge_orders", "model": "manifest", "scale": 0.6, "position": [-21.5, -62.5], "heightOffset": 0.05, "prompt": "Take the folded orders", "reward": {"item": "blackhedge_orders"}, "opensDocument": "blackhedge_orders"}
   ],
   "dangerZones": [
     {
@@ -930,6 +941,13 @@
       "kind": "fire",
       "position": [4.2, 68.4],
       "radius": 2.6
+    },
+    {
+      "id": "mara_forge",
+      "name": "Mara's forge",
+      "kind": "forge",
+      "position": [13.4, -41.6],
+      "radius": 4.5
     }
   ],
   "pads": [

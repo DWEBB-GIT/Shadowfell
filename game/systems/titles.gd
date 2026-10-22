@@ -18,7 +18,7 @@ func _init(g) -> void:
 	var ev: Events = game.events
 	ev.on("enemyDefeated", func(e): _slay(e.enemy.type, e.enemy.cfg))
 	ev.on("dummyBeaten", func(e): _slay(e.enemy.type, e.enemy.cfg))
-	for e in ["skillsChanged", "reputationChanged"]:
+	for e in ["skillsChanged", "reputationChanged", "lawChanged"]:
 		ev.on(e, func(_e): _check_new())
 
 
@@ -63,6 +63,10 @@ func locked_because(id: String) -> String:
 			return "Complete %s" % DB.quests[r.quest].name
 		if r.get("level") and game.progression.level < r.level:
 			return "Requires level %s" % U.n(r.level)
+		if r.has("infamy") and game.law.infamy < r.infamy:
+			return "Requires %s Infamy" % U.n(r.infamy)
+		if r.has("crime") and not game.law.crimes.has(r.crime):
+			return "Be seen %s" % Law.crime_def(r.crime).get("name", r.crime)
 	return ""
 
 

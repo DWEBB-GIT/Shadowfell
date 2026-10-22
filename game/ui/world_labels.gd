@@ -27,7 +27,8 @@ func _names() -> Array:
 	var settings = game.settings
 	var player = game.player
 	if settings.get_value("playerName") and game.character and not player.dead:
-		out.append({"text": game.character.name, "colour": Color("f0e6c8"), "at": player.position + Vector3(0, 2.15, 0)})
+		# your name in the law's colour: clean, Amber (seen), red (Wanted), Outlaw
+		out.append({"text": game.character.name, "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15, 0)})
 	if not settings.get_value("names"):
 		return out
 	for n in game.npcs.list:
@@ -36,7 +37,8 @@ func _names() -> Array:
 		if not e.alive or game.hud.enemy_bars.has(e.id):
 			continue
 		var h: float = e.cfg.get("barHeight", 3.0 if e.cfg.get("elite") else 2.1)
-		out.append({"text": e.cfg.name, "colour": Color("f0d050") if e.passive else Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
+		var lawful: bool = e.cfg.get("lawful", "") != "" and e.protected
+		out.append({"text": e.cfg.name, "colour": Color("9ee070") if lawful else Color("f0d050") if e.passive else Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
 	return out
 
 

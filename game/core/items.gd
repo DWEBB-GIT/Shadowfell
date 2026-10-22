@@ -68,32 +68,89 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 	var r = stack.get("rolls")
 	if d.is_empty() or r == null:
 		return d
-	var stats: Dictionary = d.get("stats", {}).duplicate()
+	# forge work (forge.json): tempering ranks (each one an item level), a
+	# punched socket; both work the gear's numbers out again from its record
+	var temper := int(r.get("temper", 0))
+	var sockets := sockets_of(stack)
+	var base := d
+	if (temper > 0 or sockets != int(d.get("sockets", 0))) and DB.raw_items.has(d.id):
+		base = Scaling.scaled_item(DB.raw_items[d.id], temper, sockets)
+	var level: float = base.get("itemLevel", 1)
+	var stats: Dictionary = base.get("stats", {}).duplicate()
 	# older saves kept a small random spread on stats and damage; it is
 	# dropped, so every copy of an item matches (the suffix is all that varies)
-	var rs: Dictionary = suffix_stats(d, r.suffix) if r.has("suffix") and DB.suffixes.has(r.suffix) else {}
+	var rs: Dictionary = suffix_stats(base, r.suffix) if r.has("suffix") and DB.suffixes.has(r.suffix) else {}
 	for k in rs:
 		var key: String = RENAMED_STATS.get(k, k)
 		if not DB.STAT_KEYS.has(key):
 			continue
 		stats[key] = stats.get(key, 0) + rs[k]
+	# reforged: one stat's points spent on another instead
+	var rf = r.get("reforge")
+	if typeof(rf) == TYPE_DICTIONARY and stats.has(rf.get("from")) and DB.STAT_KEYS.has(rf.get("to")):
+		var points: float = stats[rf.from] * Scaling.stat_cost(rf.from, level)
+		stats.erase(rf.from)
+		stats[rf.to] = stats.get(rf.to, 0) + maxi(1, U.jround(points / Scaling.stat_cost(rf.to, level)))
+	# gems in the sockets give back what the sockets took
+	var gems := gems_of(stack)
+	for g in gems:
+		if g != null:
+			var gs := Gems.stats(g)
+			for k in gs:
+				stats[k] = stats.get(k, 0) + gs[k]
 	for k in stats.keys():
 		if stats[k] <= 0:
 			stats.erase(k)
 	var bonus := 0.0
 	for k in rs:
-		bonus += maxf(0, rs[k]) * Scaling.stat_cost(RENAMED_STATS.get(k, k), d.get("itemLevel", 1))
-	var out := d.duplicate()
+		bonus += maxf(0, rs[k]) * Scaling.stat_cost(RENAMED_STATS.get(k, k), level)
+	var out := base.duplicate()
 	if r.has("suffix"):
 		out.name = "%s %s" % [d.name, DB.suffixes[r.suffix].name]
+	if temper > 0:
+		out.name = "%s +%d" % [out.name, temper]
+		out.temper = temper
 	out.rarity = "enhanced" if r.has("suffix") and d.rarity == "common" else d.rarity
 	if r.has("power"):
 		# a legendary power moved onto it at the forge
 		out.power = r.power
 		out.rarity = "legendary"
+	if typeof(rf) == TYPE_DICTIONARY:
+		out.reforged = rf
+	out.sockets = sockets
+	out.gems = gems
 	out.stats = stats
 	out.price = d.get("price", 0) + (U.jround(bonus * ROLLS.valuePerPoint) if r.has("suffix") else 0)
 	return out
+
+
+## How many sockets an item has: its own (items.json `sockets`) and one a
+## forge punched (rolls `socket`).
+static func sockets_of(stack) -> int:
+	if stack == null:
+		return 0
+	var r = stack.get("rolls")
+	var punched: int = int(r.get("socket", 0)) if typeof(r) == TYPE_DICTIONARY else 0
+	return int(get_def(stack.get("id")).get("sockets", 0)) + punched
+
+
+## The gems in an item's sockets, one entry a socket (null when empty).
+static func gems_of(stack) -> Array:
+	var n := sockets_of(stack)
+	var out := []
+	out.resize(n)
+	var r = stack.get("rolls") if stack != null else null
+	var g = r.get("gems") if typeof(r) == TYPE_DICTIONARY else null
+	if typeof(g) == TYPE_ARRAY:
+		for i in mini(n, g.size()):
+			out[i] = g[i]
+	return out
+
+
+## Tempering ranks on an item.
+static func temper_of(stack) -> int:
+	var r = stack.get("rolls") if stack != null else null
+	return int(r.get("temper", 0)) if typeof(r) == TYPE_DICTIONARY else 0
 
 
 ## Are these rolls well formed? (saves are checked before they are applied)
@@ -120,6 +177,20 @@ static func valid_rolls(id: String, r) -> bool:
 		return false
 	if r.has("power") and Builds.power_def(r.power).is_empty():
 		return false
+	if r.has("temper") and not (_is_int(r.temper) and r.temper >= 0 and r.temper <= 10):
+		return false
+	if r.has("socket") and not (_is_int(r.socket) and r.socket >= 0 and r.socket <= 2):
+		return false
+	if r.has("reforge"):
+		var rf = r.reforge
+		if typeof(rf) != TYPE_DICTIONARY or not DB.STAT_KEYS.has(rf.get("from")) or not DB.STAT_KEYS.has(rf.get("to")):
+			return false
+	if r.has("gems"):
+		if typeof(r.gems) != TYPE_ARRAY or r.gems.size() > 3:
+			return false
+		for g in r.gems:
+			if g != null and (typeof(g) != TYPE_STRING or get_def(g).get("kind") != "gem"):
+				return false
 	return true
 
 

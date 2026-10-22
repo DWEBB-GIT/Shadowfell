@@ -756,6 +756,147 @@
           ]
         }
       ]
+    },
+    {
+      "id": "orrin",
+      "greetings": [
+        {
+          "text": "Mind your feet. Half the rock round here's loose and the other half's waiting to be."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "orrin_who"
+        },
+        {
+          "id": "veins",
+          "prompt": "Where do I find ore?",
+          "node": "orrin_veins"
+        },
+        {
+          "id": "smelt",
+          "prompt": "What do I do with ore?",
+          "node": "orrin_smelt"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "orrin_who",
+          "text": "Orrin Flint. I dug the Hallow Cut for thirty years, until they started burying folk in it. Now I sell picks and teach the young ones which end to hold.",
+          "replies": [
+            {
+              "text": "Teach me, then.",
+              "node": "orrin_veins"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "orrin_veins",
+          "text": "Rock moves, near enough. You'll find a ridge with eight outcrops and only three holding ore. Strip one and it goes bare, and a day later another on that same ridge starts to glint. So learn the ridges, not the stones. The fields east of town are soft; the Hallow Cut and the wolf ridge give copper and tin; the bogs in the Blackwood give iron, and there's granite and coal below the barrows, for them as can reach it. Now and then a vein runs rich. Swing till it's bare.",
+          "replies": [
+            {
+              "text": "And gems?",
+              "node": "orrin_gems"
+            },
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "orrin_gems",
+          "text": "Every swing there's a chance of a shard. Red ones, gold ones, black ones from the granite. Take them to Ysolde, by the well. Five shards make a stone; she'll set it in your gear if it has a socket.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "orrin_smelt",
+          "text": "Take it to a forge. Mara's, up at the watch post, is the only one this side of the Blackwood. Copper smelts on its own; copper and tin together make bronze, two bars for the pair. Grind your rough stone into whetstones while you're there: a smith wants both bars and whetstones to temper your gear.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ysolde",
+      "greetings": [
+        {
+          "text": "Don't touch the tray. Look all you like, but don't touch."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "ysolde_who"
+        },
+        {
+          "id": "gems",
+          "prompt": "How do gems work?",
+          "node": "ysolde_gems"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ysolde_who",
+          "text": "Ysolde Marrow. I cut stones for people who can't afford good ones and set them for people who think they can. Mostly I wait for the miners to bring me shards.",
+          "replies": [
+            {
+              "text": "How do gems work?",
+              "node": "ysolde_gems"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "ysolde_gems",
+          "text": "Five shards of a kind make a chipped stone. Three chipped make a flawed one, three flawed a clear, and so on up. A stone sits in a socket: some gear comes with one, and a smith can punch one more with skyiron. A socket costs the piece a little of its strength, and a stone of the piece's own quality gives it back. A better stone, and you're ahead. I take them out free, whenever you like. I never break a stone.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wenna",
+      "greetings": [
+        {
+          "text": "A coin for a tale? No? I'll tell it to the fire, then. It's a better listener."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "wenna_who"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "wenna_who",
+          "text": "Wenna Tallow. I sing for my supper, and when Hester's feeling mean, for my bed as well. I know every story told on this road, and a few nobody's meant to tell. A tale a day, for five coins. They stir the blood: you'll learn faster for a while after.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

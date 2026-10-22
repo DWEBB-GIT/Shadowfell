@@ -33,6 +33,14 @@ func _candidates() -> Array:
 			if st.kind != "fire":
 				continue
 			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius, "prompt": "Cook at %s" % st.name, "run": func(): game.hud.show_window("cooking")})
+	# a forge opens Smelting once you know Mining
+	if game.skills.has("mining"):
+		for st in Layout.stations:
+			if st.kind != "forge":
+				continue
+			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.4, "reach": st.radius, "prompt": "Smelt at %s" % st.name, "run": func(): game.hud.show_window("smelting")})
+	# a glinting ore vein, for a miner
+	list.append_array(game.mining.interactions())
 	for sp in Layout.signposts:
 		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
 	for p in game.world.examine_points:

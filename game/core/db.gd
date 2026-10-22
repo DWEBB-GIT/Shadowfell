@@ -44,7 +44,7 @@ const CONFIG := {
 	"draught": {"cooldown": 1.0},
 }
 
-const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key", "bag", "ammo", "consumable", "material", "junk", "document"]
+const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key", "bag", "ammo", "consumable", "material", "junk", "document", "gem"]
 const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste"]
 const DURABLE_KINDS := ["weapon", "armor", "shield", "jewellery"]
 ## Character slots, laid out as in WoW: `col` is where the panel shows it.
@@ -71,6 +71,8 @@ const EQUIP_SLOTS := [
 static var ready := false
 ## items with gear numbers worked out (scaled), by id
 static var items := {}
+## items as written in data/items.json (a tempered item is worked out again from these)
+static var raw_items := {}
 static var armour_types := {}
 static var suffixes := {}
 static var archetypes := {}
@@ -98,6 +100,11 @@ static var scenery: Dictionary = {}
 static var text: Dictionary = {}
 static var ability_file: Dictionary = {}
 static var builds: Dictionary = {} ## data/builds.json (Builds)
+static var mining: Dictionary = {} ## data/mining.json (Mining)
+static var forge: Dictionary = {} ## data/forge.json (Forge)
+static var gems: Dictionary = {} ## data/gems.json (Gems)
+static var infamy: Dictionary = {} ## data/infamy.json (Law)
+static var boons: Dictionary = {} ## data/boons.json (Boons)
 static var leash_distance := 18.0
 
 ## Tuning taken from the content, under the names gameplay code uses
@@ -117,9 +124,16 @@ static var spells := {}
 
 static func setup(data) -> void:
 	var f: Dictionary = data.files
+	forge = f.get("forge", {})
+	gems = f.get("gems", {})
+	Scaling.socket_share = forge.get("sockets", {}).get("share", 0.0)
 	items.clear()
-	for id in data.table("items"):
-		items[id] = Scaling.scaled_item(data.table("items")[id])
+	raw_items = data.table("items")
+	for id in raw_items:
+		items[id] = Scaling.scaled_item(raw_items[id])
+	# every gem type in every quality is an item (gems.json)
+	for g in Gems.item_records():
+		items[g.id] = g
 	armour_types = data.table("armourTypes")
 	suffixes = data.table("suffixes")
 	archetypes = data.table("archetypes")
@@ -147,6 +161,9 @@ static func setup(data) -> void:
 	text = f.text
 	ability_file = f.abilities
 	builds = f.get("builds", {})
+	mining = f.get("mining", {})
+	infamy = f.get("infamy", {})
+	boons = f.get("boons", {})
 	leash_distance = f.enemies.get("leashDistance", 18)
 	attack = abilities.strike.tuning
 	auto_shot = abilities.autoShot.tuning
@@ -233,11 +250,13 @@ static var _cfg_at_level := {}
 
 ## An enemy type's numbers at the level a spawn rolled (from its level to its
 ## maxLevel, fixed by the spawn's id).
-static func enemy_cfg_at(type: String, spawn_id: String) -> Dictionary:
+## `level` > 0: that level instead (a hunter who comes back stronger).
+static func enemy_cfg_at(type: String, spawn_id: String, level := 0) -> Dictionary:
 	var e: Dictionary = enemies[type]
-	if not e.has("maxLevel") or e.maxLevel <= e.level:
+	if level <= 0 and (not e.has("maxLevel") or e.maxLevel <= e.level):
 		return enemy_cfg[type]
-	var level := int(e.level) + int(Scaling.spawn_roll(spawn_id + "#level") * (int(e.maxLevel) - int(e.level) + 1))
+	if level <= 0:
+		level = int(e.level) + int(Scaling.spawn_roll(spawn_id + "#level") * (int(e.maxLevel) - int(e.level) + 1))
 	var key := "%s@%d" % [type, level]
 	if not _cfg_at_level.has(key):
 		var at := e.duplicate()

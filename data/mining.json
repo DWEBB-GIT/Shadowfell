@@ -1,0 +1,198 @@
+{
+  "_about": "Mining (Godot build: game/systems/mining.gd). `rocks` are the kinds of vein, lowest first: `rank` is the Mining rank needed (5 ranks an ore level, like Skinning), `swings` how many swings a vein holds (min, max), and each swing yields `stone` and `ore` at their chance and a gem shard at `gems.chance` (a shard picked by weight). `tint` colours a live vein's rock. `veinGroups` place outcrops in the world: only `live` of a group's `outcrops` hold ore at once; a mined-out vein goes bare and, after `respawn` seconds (min, max), a different random bare outcrop in the group starts to glint, holding a rock picked by weight from `rocks`. Now and then (`rich.chance`) a vein is rich: `rich.extraSwings` more swings and `rich.gemChance` times the gem chance. Rocks above rank 50 are for later acts and are placed nowhere yet.",
+  "tuning": { "swingTime": 2.4, "reach": 2.6, "easyAfter": 10, "trivialAfter": 20, "easyChance": 0.5, "model": "rock1", "scale": 0.5, "bareTint": "#6a665e" },
+  "rich": { "chance": 0.12, "extraSwings": 3, "gemChance": 3 },
+  "rocks": [
+    {
+      "id": "fieldstone",
+      "name": "Fieldstone",
+      "oreLevel": 1,
+      "rank": 1,
+      "tint": "#a49c8a",
+      "swings": [2, 3],
+      "stone": { "item": "rough_stone", "chance": 0.9 },
+      "gems": { "chance": 0.06, "shards": [{ "item": "garnet_shard", "weight": 1 }, { "item": "amber_shard", "weight": 1 }] }
+    },
+    {
+      "id": "copper_vein",
+      "name": "Copper vein",
+      "oreLevel": 2,
+      "rank": 1,
+      "tint": "#3f9a78",
+      "swings": [2, 4],
+      "stone": { "item": "rough_stone", "chance": 0.35 },
+      "ore": { "item": "copper_ore", "chance": 1 },
+      "gems": { "chance": 0.04, "shards": [{ "item": "garnet_shard", "weight": 1 }, { "item": "amber_shard", "weight": 1 }] }
+    },
+    {
+      "id": "tin_vein",
+      "name": "Tin vein",
+      "oreLevel": 4,
+      "rank": 10,
+      "tint": "#c8c8bc",
+      "swings": [2, 4],
+      "stone": { "item": "rough_stone", "chance": 0.35 },
+      "ore": { "item": "tin_ore", "chance": 1 },
+      "gems": { "chance": 0.05, "shards": [{ "item": "garnet_shard", "weight": 1 }, { "item": "amber_shard", "weight": 1 }] }
+    },
+    {
+      "id": "bog_iron",
+      "name": "Bog iron",
+      "oreLevel": 6,
+      "rank": 20,
+      "tint": "#9a4a2a",
+      "swings": [2, 4],
+      "stone": { "item": "rough_stone", "chance": 0.3 },
+      "ore": { "item": "iron_ore", "chance": 1 },
+      "gems": { "chance": 0.05, "shards": [{ "item": "garnet_shard", "weight": 1 }, { "item": "amber_shard", "weight": 1 }] }
+    },
+    {
+      "id": "granite_coal",
+      "name": "Granite and coal seam",
+      "oreLevel": 8,
+      "rank": 30,
+      "tint": "#2c2a2a",
+      "swings": [3, 4],
+      "stone": { "item": "granite", "chance": 0.85 },
+      "ore": { "item": "coal", "chance": 0.7 },
+      "gems": { "chance": 0.07, "shards": [{ "item": "onyx_shard", "weight": 2 }, { "item": "garnet_shard", "weight": 1 }, { "item": "amber_shard", "weight": 1 }] }
+    },
+    {
+      "id": "silver_vein",
+      "name": "Silver vein",
+      "oreLevel": 12,
+      "rank": 50,
+      "tint": "#d8dce4",
+      "swings": [2, 4],
+      "stone": { "item": "rough_stone", "chance": 0.3 },
+      "ore": { "item": "silver_ore", "chance": 1 },
+      "gems": { "chance": 0.06, "shards": [{ "item": "moonstone_shard", "weight": 1 }] }
+    },
+    {
+      "id": "slate_shelf",
+      "name": "Slate shelf",
+      "oreLevel": 15,
+      "rank": 65,
+      "tint": "#46505a",
+      "swings": [3, 4],
+      "stone": { "item": "slate", "chance": 0.9 },
+      "gems": { "chance": 0.07, "shards": [{ "item": "topaz_shard", "weight": 1 }] }
+    },
+    {
+      "id": "gold_vein",
+      "name": "Gold vein",
+      "oreLevel": 18,
+      "rank": 80,
+      "tint": "#e0b030",
+      "swings": [2, 3],
+      "stone": { "item": "rough_stone", "chance": 0.3 },
+      "ore": { "item": "gold_ore", "chance": 1 },
+      "gems": { "chance": 0.07, "shards": [{ "item": "sapphire_shard", "weight": 1 }] }
+    },
+    {
+      "id": "mithril_vein",
+      "name": "Mithril vein",
+      "oreLevel": 25,
+      "rank": 115,
+      "tint": "#a0c8e8",
+      "swings": [2, 3],
+      "stone": { "item": "granite", "chance": 0.3 },
+      "ore": { "item": "mithril_ore", "chance": 1 },
+      "gems": { "chance": 0.06, "shards": [{ "item": "sapphire_shard", "weight": 1 }, { "item": "moonstone_shard", "weight": 1 }] }
+    },
+    {
+      "id": "marble_face",
+      "name": "Marble face",
+      "oreLevel": 28,
+      "rank": 130,
+      "tint": "#ece8e0",
+      "swings": [3, 4],
+      "stone": { "item": "marble", "chance": 0.9 },
+      "gems": { "chance": 0.08, "shards": [{ "item": "catseye_shard", "weight": 1 }] }
+    },
+    {
+      "id": "cobalt_vein",
+      "name": "Cobalt vein",
+      "oreLevel": 32,
+      "rank": 150,
+      "tint": "#2a4ab0",
+      "swings": [2, 3],
+      "stone": { "item": "slate", "chance": 0.3 },
+      "ore": { "item": "cobalt_ore", "chance": 1 },
+      "gems": { "chance": 0.06, "shards": [{ "item": "catseye_shard", "weight": 1 }, { "item": "topaz_shard", "weight": 1 }] }
+    },
+    {
+      "id": "jade_seam",
+      "name": "Jade seam",
+      "oreLevel": 38,
+      "rank": 180,
+      "tint": "#4aa070",
+      "swings": [2, 3],
+      "stone": { "item": "marble", "chance": 0.3 },
+      "ore": { "item": "jade", "chance": 1 },
+      "gems": { "chance": 0.25, "shards": [{ "item": "jade_shard", "weight": 3 }, { "item": "catseye_shard", "weight": 1 }] }
+    },
+    {
+      "id": "iridium_vein",
+      "name": "Iridium vein",
+      "oreLevel": 45,
+      "rank": 215,
+      "tint": "#c0a0e0",
+      "swings": [2, 3],
+      "stone": { "item": "granite", "chance": 0.3 },
+      "ore": { "item": "iridium_ore", "chance": 1 },
+      "gems": { "chance": 0.07, "shards": [{ "item": "sapphire_shard", "weight": 1 }, { "item": "jade_shard", "weight": 1 }] }
+    },
+    {
+      "id": "fallen_star",
+      "name": "Fallen star",
+      "oreLevel": 50,
+      "rank": 240,
+      "tint": "#f0f0ff",
+      "swings": [1, 2],
+      "ore": { "item": "skyiron", "chance": 1 }
+    }
+  ],
+  "veinGroups": [
+    {
+      "id": "ford_fields",
+      "name": "the fields east of Brackenford",
+      "live": 2,
+      "respawn": [40, 80],
+      "rocks": [{ "rock": "fieldstone", "weight": 3 }, { "rock": "copper_vein", "weight": 2 }],
+      "outcrops": [[22, 55], [27, 54], [31, 59], [26, 62.5], [20.5, 60], [30.5, 65]]
+    },
+    {
+      "id": "hallow_cut",
+      "name": "Hallow Cut",
+      "live": 3,
+      "respawn": [45, 90],
+      "rocks": [{ "rock": "copper_vein", "weight": 3 }, { "rock": "tin_vein", "weight": 2 }, { "rock": "fieldstone", "weight": 1 }],
+      "outcrops": [[13, -24], [14, -16.5], [32, -18], [31.5, -27.5], [23, -30.5], [16.5, -30], [30, -11], [20.5, -10.5]]
+    },
+    {
+      "id": "wolf_ridge",
+      "name": "the wolf ridge",
+      "live": 3,
+      "respawn": [45, 90],
+      "rocks": [{ "rock": "tin_vein", "weight": 2 }, { "rock": "copper_vein", "weight": 1 }, { "rock": "bog_iron", "weight": 2 }],
+      "outcrops": [[30.5, 7], [32, 1], [29, -3.5], [22.5, 5.5], [33.5, 12.5], [20, 0.5], [25.5, -5.5]]
+    },
+    {
+      "id": "blackwood_bog",
+      "name": "the Blackwood bog",
+      "live": 2,
+      "respawn": [50, 100],
+      "rocks": [{ "rock": "bog_iron", "weight": 3 }, { "rock": "tin_vein", "weight": 1 }],
+      "outcrops": [[20, -66], [26, -64], [29.5, -71], [23, -75.5], [18, -72], [27.5, -78.5]]
+    },
+    {
+      "id": "barrow_granite",
+      "name": "the granite shelf below the barrows",
+      "live": 2,
+      "respawn": [60, 110],
+      "rocks": [{ "rock": "granite_coal", "weight": 3 }, { "rock": "bog_iron", "weight": 1 }],
+      "outcrops": [[20, -104], [27, -103], [30.5, -110], [24, -114.5], [18, -111], [29.5, -118]]
+    }
+  ]
+}

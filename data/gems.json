@@ -1,0 +1,22 @@
+{
+  "_about": "Gems (Godot build: game/core/gems.gd). Shards from mining are combined at a jeweller (an npc with `jeweller: true`): `gemQualities` lowest first, the first made from `count` shards of a type, each later one from `count` gems of the quality below. Every type and quality pair is a gem item (id `<type>_<quality>`, made by the engine, so it is not listed in items.json). A gem in a socket gives `pointsPerLevel` x (its quality's `level` + 4) stat points, the same slice of the item budget a socket takes from its item (forge.json `sockets.share`), spent on its type's `stat` (or shared between its `stats`), so a gem of the item's own quality only fills the socket back; a better gem is an upgrade. `effect` gems give something other than stats: `gatherSkill` (Mining, Skinning and Fishing ranks) or `buffDuration` (percent longer Well Fed), by quality from `perQuality`. `slots`: the only slots it fits. Gems come out free at any jeweller and are never destroyed.",
+  "pointsPerLevel": 0.13,
+  "gemQualities": [
+    { "id": "chipped", "name": "Chipped", "level": 5, "rarity": "common", "count": 5, "price": 4 },
+    { "id": "flawed", "name": "Flawed", "level": 12, "rarity": "enhanced", "count": 3, "price": 15 },
+    { "id": "clear", "name": "Clear", "level": 20, "rarity": "rare", "count": 3, "price": 50 },
+    { "id": "flawless", "name": "Flawless", "level": 30, "rarity": "epic", "count": 3, "price": 160 },
+    { "id": "perfect", "name": "Perfect", "level": 45, "rarity": "legendary", "count": 3, "price": 500 }
+  ],
+  "gemTypes": [
+    { "id": "garnet", "name": "Garnet", "shard": "garnet_shard", "stat": "strength", "model": "rock0", "desc": "A red stone that lends its bearer strength." },
+    { "id": "amber", "name": "Amber", "shard": "amber_shard", "stat": "stamina", "model": "rock0", "desc": "Old resin, warm to the touch. It lends stamina." },
+    { "id": "onyx", "name": "Onyx", "shard": "onyx_shard", "stat": "armour", "model": "rock0", "desc": "Banded black stone that turns blows aside." },
+    { "id": "moonstone", "name": "Moonstone", "shard": "moonstone_shard", "effect": "gatherSkill", "perQuality": [2, 4, 6, 9, 12], "model": "rock0", "desc": "A gatherer's stone: it raises Mining, Skinning and Fishing." },
+    { "id": "topaz", "name": "Topaz", "shard": "topaz_shard", "stat": "haste", "model": "rock0", "desc": "A quick yellow stone. Its haste counts towards the 30% cap like any gear." },
+    { "id": "sapphire", "name": "Sapphire", "shard": "sapphire_shard", "stat": "intellect", "model": "rock0", "desc": "A deep blue stone for those who think before they strike." },
+    { "id": "catseye", "name": "Cat's-eye", "shard": "catseye_shard", "stat": "agility", "model": "rock0", "desc": "A line of light slides across it as it turns. It lends agility." },
+    { "id": "jade", "name": "Jade", "shard": "jade_shard", "effect": "buffDuration", "perQuality": [5, 10, 15, 20, 30], "model": "rock0", "desc": "A cook's and camper's stone: Well Fed lasts longer." },
+    { "id": "starstone", "name": "Starstone", "shard": "skyiron", "shardCount": 1, "stats": ["strength", "agility", "intellect", "stamina"], "slots": ["mainHand", "oneHand", "ranged"], "model": "grave_iron", "desc": "Cut from skyiron. A little of every stat, and it only sits in a weapon." }
+  ]
+}

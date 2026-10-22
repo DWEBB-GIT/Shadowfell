@@ -423,7 +423,8 @@
       "price": 300,
       "model": "blackwood_cleaver",
       "icon": "blackwood_cleaver",
-      "description": "A watchman's cleaver that never came clean. Every cut it makes keeps bleeding."
+      "description": "A watchman's cleaver that never came clean. Every cut it makes keeps bleeding.",
+      "sockets": 1
     },
     {
       "id": "plague_saints_wraps",
@@ -492,7 +493,8 @@
       "price": 280,
       "model": "watch_helm",
       "icon": "watch_helm",
-      "description": "A boar-hunter's cap with a tusk sewn to the brim. Its last owner waited three days for Bristleback. He waited too long."
+      "description": "A boar-hunter's cap with a tusk sewn to the brim. Its last owner waited three days for Bristleback. He waited too long.",
+      "sockets": 1
     },
     {
       "id": "arming_sword",
@@ -849,7 +851,8 @@
       "price": 90,
       "model": "bone_knife",
       "icon": "bone_knife",
-      "description": "The old hound's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling."
+      "description": "The old hound's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling.",
+      "sockets": 1
     },
     {
       "id": "bramble_carp",
@@ -1086,6 +1089,403 @@
       "model": "clothes",
       "icon": "clothes",
       "description": "A strip of black cloth, knotted three times. Snagged on the drain stones by someone who did not want to be seen. The Blackhedge bandits wear them round their arms."
+    },
+    {
+      "id": "mining_pick",
+      "name": "Mining pick",
+      "kind": "tool",
+      "rarity": "common",
+      "miningPick": true,
+      "stack": 1,
+      "price": 8,
+      "model": "worn_sword",
+      "icon": "worn_sword",
+      "description": "A short iron pick with an ash haft worn smooth. Carry it (it rides in the tool pack) and, once someone has shown you how, you can mine the ore veins that glint in the rock."
+    },
+    {
+      "id": "rough_stone",
+      "name": "Rough stone",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 1,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Grey fieldstone in fist-sized lumps. Smiths grind it into whetstones."
+    },
+    {
+      "id": "granite",
+      "name": "Granite block",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Speckled and hard enough to blunt a cheap pick. It makes heavy whetstones."
+    },
+    {
+      "id": "slate",
+      "name": "Slate",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 4,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Thin dark sheets that ring when tapped. Roofers pay for it."
+    },
+    {
+      "id": "marble",
+      "name": "Marble",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "White stone veined with grey, cold in the hand."
+    },
+    {
+      "id": "copper_ore",
+      "name": "Copper ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Green-crusted rock with a red shine underneath. A forge smelts it into copper bars."
+    },
+    {
+      "id": "tin_ore",
+      "name": "Tin ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Dull black grains in pale rock. Smelted with copper, it makes bronze."
+    },
+    {
+      "id": "iron_ore",
+      "name": "Iron ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 4,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Heavy, rust-streaked stone from the bogs and ridges. A forge smelts it into iron bars."
+    },
+    {
+      "id": "coal",
+      "name": "Coal",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Black, crumbly and warm to burn. Smiths will want it for steel, one day."
+    },
+    {
+      "id": "silver_ore",
+      "name": "Silver ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 8,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Grey ore with a bright edge where the pick bit."
+    },
+    {
+      "id": "gold_ore",
+      "name": "Gold ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 12,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Yellow flecks in white quartz. Heavier than it looks."
+    },
+    {
+      "id": "mithril_ore",
+      "name": "Mithril ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 20,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Blue-white metal in the rock, light as tin and harder than steel."
+    },
+    {
+      "id": "cobalt_ore",
+      "name": "Cobalt ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 25,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Deep blue ore that stains the fingers."
+    },
+    {
+      "id": "iridium_ore",
+      "name": "Iridium ore",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 35,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "A dense, glittering ore that almost no forge can melt."
+    },
+    {
+      "id": "jade",
+      "name": "Raw jade",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 15,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "A green stone, cloudy until it is cut. A jeweller can split it into shards."
+    },
+    {
+      "id": "skyiron",
+      "name": "Skyiron",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 100,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "Metal from a fallen star, still faintly warm. Smiths need it for the last temper on the finest gear, and to punch a socket."
+    },
+    {
+      "id": "copper_bar",
+      "name": "Copper bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 4,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A bar of soft red copper. Tempers gear up to level 5."
+    },
+    {
+      "id": "bronze_bar",
+      "name": "Bronze bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "Copper and tin, smelted together. Tempers gear up to level 10."
+    },
+    {
+      "id": "iron_bar",
+      "name": "Iron bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 8,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A grey iron bar. Tempers gear up to level 16."
+    },
+    {
+      "id": "silver_bar",
+      "name": "Silver bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 16,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A bright silver bar. Tempers gear up to level 22."
+    },
+    {
+      "id": "gold_bar",
+      "name": "Gold bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 24,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A heavy gold bar. Tempers gear up to level 30."
+    },
+    {
+      "id": "mithril_bar",
+      "name": "Mithril bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 40,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A pale mithril bar. Tempers gear up to level 38."
+    },
+    {
+      "id": "cobalt_bar",
+      "name": "Cobalt bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 50,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A dark blue bar. Tempers gear up to level 46."
+    },
+    {
+      "id": "iridium_bar",
+      "name": "Iridium bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 70,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A bar of iridium, the hardest metal a forge can work."
+    },
+    {
+      "id": "whetstone",
+      "name": "Whetstone",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Ground from rough stone. A smith uses it to temper gear up to level 8."
+    },
+    {
+      "id": "heavy_whetstone",
+      "name": "Heavy whetstone",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Ground from granite. A smith uses it to temper gear above level 8."
+    },
+    {
+      "id": "garnet_shard",
+      "name": "Garnet shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Deep red and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "amber_shard",
+      "name": "Amber shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Honey-gold and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "onyx_shard",
+      "name": "Onyx shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Black and banded and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "moonstone_shard",
+      "name": "Moonstone shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Milky blue and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "topaz_shard",
+      "name": "Topaz shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Bright yellow and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "sapphire_shard",
+      "name": "Sapphire shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Deep blue and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "catseye_shard",
+      "name": "Cat's-eye shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Gold with a sliding line of light and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "jade_shard",
+      "name": "Jade shard",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Clouded green and no bigger than a fingernail. Five of them make a gem at a jeweller."
+    },
+    {
+      "id": "torn_page",
+      "name": "Torn ledger page",
+      "kind": "document",
+      "rarity": "common",
+      "stack": 1,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "description": "Half a page from someone's accounts, trodden into the road. Right-click to read it."
+    },
+    {
+      "id": "blackhedge_orders",
+      "name": "Folded orders",
+      "kind": "document",
+      "rarity": "common",
+      "stack": 1,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "description": "Good paper, folded small, sealed in black wax. Right-click to read it."
     }
   ]
 }

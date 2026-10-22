@@ -29,6 +29,7 @@ const KEY_ACTIONS := [
 	{"id": "bar9", "label": "Utility 4", "group": "Utility bar", "keys": ["Shift+Digit4"]},
 	{"id": "interact", "label": "Interact", "group": "Actions", "keys": ["Space"]},
 	{"id": "cycleTarget", "label": "Next target", "group": "Actions", "keys": ["Tab"]},
+	{"id": "crime", "label": "Hold to attack townsfolk", "group": "Actions", "keys": ["AltLeft"]},
 	{"id": "character", "label": "Character", "group": "Menus", "keys": ["KeyC"]},
 	{"id": "spellbook", "label": "Spells", "group": "Menus", "keys": ["KeyP"]},
 	{"id": "talents", "label": "Talents", "group": "Menus", "keys": ["KeyN"]},
@@ -106,6 +107,14 @@ func label(id: String) -> String:
 
 func is_bound(code: String) -> bool:
 	return map.values().any(func(k): return k.has(code))
+
+
+## is one of this action's keys held down now?
+func held(id: String) -> bool:
+	for k in keys(id):
+		if game.input.is_held(k):
+			return true
+	return false
 
 
 ## was this action's key pressed this frame? (consumes the press)
