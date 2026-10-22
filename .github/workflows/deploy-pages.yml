@@ -1,8 +1,8 @@
 name: Build and Deploy Pages
 
-# Builds the bundle from source on every push to main and publishes the playable
-# site (index.html, style.css, dist/) to GitHub Pages. Building here means the
-# live game always matches the source, even if a commit forgot to rebuild dist.
+# Exports the Godot game (preset "Web", single-threaded) on every push to main
+# and publishes it to GitHub Pages, so the live game always matches the source.
+# data/build.json carries the commit and build time shown on the title screen.
 # Needs Settings > Pages > Build and deployment > Source = "GitHub Actions".
 
 on:
@@ -28,29 +28,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate data
-        run: npm run validate
-
-      - name: Build
-        run: npm run build
-
-      - name: Assemble site
+      - name: Install Godot and web export templates
         run: |
-          mkdir -p _site/dist
-          cp index.html style.css _site/
-          cp dist/shadowfall.js _site/dist/
-          # stamp the commit on the file links so browsers fetch the new build
-          # instead of a cached copy
-          sed -i "s#dist/shadowfall.js#dist/shadowfall.js?v=${GITHUB_SHA::7}#; s#style.css#style.css?v=${GITHUB_SHA::7}#" _site/index.html
+          V=4.7-stable
+          URL=https://github.com/godotengine/godot/releases/download/$V
+          curl -sSLo godot.zip $URL/Godot_v${V}_linux.x86_64.zip
+          unzip -q godot.zip && mv Godot_v${V}_linux.x86_64 godot
+          curl -sSLo templates.tpz $URL/Godot_v${V}_export_templates.tpz
+          T=~/.local/share/godot/export_templates/${V/-/.}
+          mkdir -p $T
+          unzip -q -j templates.tpz 'templates/web_nothreads_*' 'templates/version.txt' -d $T
+          rm godot.zip templates.tpz
+
+      - name: Stamp build version
+        run: |
+          echo "{\"commit\": \"${GITHUB_SHA::7}\", \"time\": \"$(date -u +'%Y-%m-%d %H:%M') UTC\"}" > data/build.json
+
+      - name: Export Godot web build
+        run: |
+          mkdir -p _site
+          ./godot --headless --path . --import || true
+          ./godot --headless --path . --export-release "Web" _site/index.html
+          test -f _site/index.wasm
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
