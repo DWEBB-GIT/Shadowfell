@@ -20,7 +20,7 @@ func _process(_d: float) -> bool:
 	var a: AudioSystem = game.audio
 	var t0 := Time.get_ticks_msec()
 	a.start()
-	print("start (wind and rumble loops): %d ms" % (Time.get_ticks_msec() - t0))
+	print("start (rumble loop): %d ms" % (Time.get_ticks_msec() - t0))
 	var calls := {
 		"whoosh": func(): a.whoosh(0.18, 900), "impact": func(): a.impact(), "thud": func(): a.thud(110, 0.25),
 		"shieldBreak": func(): a.shield_break(), "growl": func(): a.growl(70, 0.5), "death": func(): a.death(true),

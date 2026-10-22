@@ -15,7 +15,7 @@ const CONFIG := {
 	"death": {"coinLossFraction": 0.2, "coinLossCap": 5, "screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 25.0, "revengeXp": 0.5},
 	"fishing": {"castTime": 0.6, "duration": 12.0, "biteMin": 2.0, "biteMax": 8.0, "biteWindow": 1.4, "biteBase": 85.0, "bitePerSkill": 0.5, "biteCap": 97.0, "noBiteAfter": 6.0, "reelTime": 0.45, "baseChance": 75.0, "chancePerRank": 0.6, "clickRadius": 60.0},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedPerSecond": 0.01, "restedCap": 1.0},
-	"progression": {"firstLevelXp": 100, "xpGrowthPerLevel": 60},
+	"progression": {"firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
 	"stats": {
 		"healthBase": 40.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
 		"powerPerMainStat": 0.25, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
@@ -196,6 +196,19 @@ static func xp_for_next_level(level: int) -> int:
 	return CONFIG.progression.firstLevelXp + (level - 1) * CONFIG.progression.xpGrowthPerLevel
 
 
+## Experience for killing an enemy of `enemy_level` at `player_level`, WoW
+## style: a fifth less for each level it is below you, nothing once it is
+## `greyGap` levels below (grey), and 5% more for each level above (up to 4).
+static func kill_xp(xp: float, player_level: int, enemy_level: int) -> int:
+	var pr: Dictionary = CONFIG.progression
+	var gap := player_level - enemy_level
+	if gap >= pr.greyGap:
+		return 0
+	if gap > 0:
+		return U.jround(xp * (1.0 - float(gap) / pr.greyGap))
+	return U.jround(xp * (1.0 + pr.aboveBonus / 100.0 * mini(-gap, pr.aboveCap)))
+
+
 ## Does an item with this `slot` go in that character slot?
 static func slot_fits(slot_id: String, item_slot) -> bool:
 	for s in EQUIP_SLOTS:
@@ -261,6 +274,8 @@ static func enemy_cfg_at(type: String, spawn_id: String, level := 0) -> Dictiona
 	if not _cfg_at_level.has(key):
 		var at := e.duplicate()
 		at.level = level
+		# a stronger variant pays more, on the same growth line as its health
+		at.xp = U.jround(float(e.get("xp", 0)) * Scaling.growth(level) / Scaling.growth(e.level))
 		_cfg_at_level[key] = Scaling.scaled_enemy(at, CONFIG.stats, attack.abilityWeaponSeconds)
 	return _cfg_at_level[key]
 

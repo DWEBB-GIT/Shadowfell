@@ -258,7 +258,10 @@ func on_enemy_defeated(enemy) -> void:
 		ws.respawn_at[enemy.id] = ws.time + enemy.cfg.respawn
 	game.events.emit("enemyDefeated", {"enemy": enemy})
 	game.events.emit("log", {"text": "The %s falls still." % enemy.cfg.name, "kind": "kill"})
-	game.progression.add_xp(enemy.cfg.xp, true)
+	var xp := DB.kill_xp(enemy.cfg.xp, game.progression.level, int(enemy.cfg.get("level", 1)))
+	if xp > 0:
+		# the purple "+N XP" over the body (hud.gd), rested and Inspired included
+		game.events.emit("xpGained", {"target": enemy, "amount": game.progression.add_xp(xp, true)})
 	if enemy.cfg.get("reputation"):
 		game.reputation.add_all(enemy.cfg.reputation)
 	# coins stay on the body until looted; a beast's body also waits for a skinner

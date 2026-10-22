@@ -19,7 +19,8 @@ var xp_to_next: int:
 
 
 ## `kill`: experience from a kill, which rested experience doubles.
-func add_xp(amount: int, kill := false) -> void:
+## Returns what was gained, bonuses included.
+func add_xp(amount: int, kill := false) -> int:
 	var events = game.events
 	var bonus := mini(int(floor(rested)), amount) if kill else 0
 	rested = maxf(0, rested - bonus)
@@ -51,6 +52,7 @@ func add_xp(amount: int, kill := false) -> void:
 			parts.append("%s +%s" % [g.label, U.n(g.diff)])
 		events.emit("log", {"text": "You feel steadier. Level %d: %s." % [level, ", ".join(parts)], "kind": "level"})
 	events.emit("statsChanged")
+	return amount
 
 
 func serialize() -> Dictionary:

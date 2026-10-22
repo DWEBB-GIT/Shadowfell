@@ -278,7 +278,7 @@ static func enemy_block(cfg: Dictionary) -> Dictionary:
 ## opts: base, mult, school, canCrit, canBlock, critBonus, forceCrit
 static func compute_hit(rand: Callable, attacker: Dictionary, defender: Dictionary, opts: Dictionary) -> Dictionary:
 	var school: String = opts.get("school", "physical")
-	var dmg: float = opts.base * opts.get("mult", 1.0) * Scaling.level_gap_factor(attacker.level, defender.level)
+	var dmg: float = opts.base * opts.get("mult", 1.0)
 	var crit: bool = opts.get("canCrit", true) and (opts.get("forceCrit", false) or rand.call() * 100 < attacker.crit + opts.get("critBonus", 0))
 	if crit:
 		dmg *= attacker.critMultiplier

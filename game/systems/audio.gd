@@ -10,7 +10,7 @@ extends Node
 ## a name in SFX with several files picks one at random each time.
 
 const RATE := 22050 ## effects
-const AMB_RATE := 11025 ## the wind and rumble loops (nothing high in them)
+const AMB_RATE := 11025 ## the rumble loop (nothing high in them)
 const VOICES := 16
 const VARIANTS := 4
 const SFX_DIR := "res://assets/sounds/"
@@ -50,7 +50,6 @@ var started := false
 var cache := {} ## recipe key -> AudioStreamWAV
 var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
-var wind: AudioStreamPlayer
 var rumble: AudioStreamPlayer
 var rumble_level := 0.0
 var next_crow := 6.0
@@ -130,7 +129,6 @@ func start() -> void:
 	game.events.on("settingsChanged", func(e):
 		if str(e.get("id", "")).begins_with("vol"):
 			apply_volumes())
-	wind = _loop(_wind(), "Ambience")
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
 	amb_loop = AudioStreamPlayer.new()
@@ -520,28 +518,6 @@ func creak() -> void:
 		_tone(b, 0, 1.0, "sawtooth", func(t): return lerpf(140, to, clampf(t / 0.8, 0, 1)), [0.3, 0.025, 0.6], Biquad.new("bandpass", 600, 8, RATE))
 		return b
 	_play("creak%d" % _variant(), make, 1.0, "Ambience")
-
-
-## The wind: band-passed noise whose centre and loudness drift. Rendered as
-## a 24 s loop, with the drifts (0.09 and 0.13 Hz in the browser) rounded to
-## whole turns of the loop and the ends cross-faded so it never clicks.
-func _wind() -> AudioStreamWAV:
-	var dur := 24.0
-	var fade := int(1.0 * AMB_RATE)
-	var n := int(dur * AMB_RATE)
-	var raw := PackedFloat32Array()
-	raw.resize(n + fade)
-	var f := Biquad.new("bandpass", 420, 0.6, AMB_RATE)
-	for i in raw.size():
-		var t := float(i) / AMB_RATE
-		if i % 16 == 0:
-			f.tune(420 + 220 * sin(TAU * 2.0 / dur * t))
-		raw[i] = f.step(randf() * 2 - 1) * (0.06 + 0.03 * sin(TAU * 3.0 / dur * t))
-	for i in fade:
-		var k := float(i) / fade
-		raw[i] = raw[i] * k + raw[n + i] * (1 - k)
-	raw.resize(n)
-	return _wav(raw, AMB_RATE, true)
 
 
 ## a low sawtooth rumble, louder near an elite's ground (one second loop)

@@ -386,39 +386,28 @@ Fight length and danger are one pair of numbers, `enemyHealthSeconds` and `enemy
 
 ### Level gaps
 
-```
-damage × 1.2 ^ (attacker's level − target's level)
-```
+**No level multiplier (Dan, 2026-10-22).** Being a level above an enemy adds no damage by itself, as in WoW: a higher level only means more stats (yours from level gains and gear, an enemy's from its level on the growth line). Armour still reduces damage against the wearer's own level. (Until 2026-10-22 every hit was ×1.2 per level of gap, `levelGap`; that is gone.)
 
-An enemy 5 levels above you hits 2.5 times as hard and takes 2.5 times as long to kill; one 5 levels below does the reverse. A hit always does at least 1 damage.
+What that leaves, a level 9 ranger with starting gear against a ghoul (bow shots to kill it / its hits to kill you):
 
-A par Warden in plate and shield, with its abilities, against one normal enemy. Each cell is its hits to kill you / the seconds you need to kill it, then the share of your health the fight costs. These figures are from before the 16 Oct raise; every enemy now has about 1.55 times the health and 1.5 times the hit, so each fight costs about 2.3 times the share shown:
+| Ghoul | Shots to kill | Its hits on you |
+|---|---|---|
+| level 1 (8 below) | 1.1 | 27 |
+| level 7 (2 below) | 3.4 | 15 |
+| level 9 (same) | 4.2 | 13 |
+| level 11 (2 above) | 4.9 | 12 |
+| level 13 (4 above) | 5.6 | 11 |
 
-| Enemy | Its hits on you | Level 10 Warden | Level 20 | Level 40 |
-|---|---|---|---|---|
-| 10 below | ×0.16 | | 328 / 0.3 s, 0% | 282 / 0.4 s, 0% |
-| 5 below | ×0.4 | 126 / 0.7 s, 0% | 109 / 0.9 s, 1% | 100 / 1.1 s, 1% |
-| 3 below | ×0.58 | 75 / 1.3 s, 1% | 70 / 1.5 s, 2% | 66 / 1.6 s, 2% |
-| Same level | ×1 | 36 / 3.0 s, 6% | 36 / 3.0 s, 6% | 36 / 3.0 s, 6% |
-| 3 above | ×1.7 | 18 / 6.4 s, 27% | 19 / 5.9 s, 23% | 20 / 5.5 s, 21% |
-| 5 above | ×2.5 | 11 / 10 s, 69% | 12 / 9.1 s, 55% | 13 / 8.3 s, 47% |
-| 10 above | ×6.2 | 3.7 / 33 s, you die | 4.2 / 27 s, you die | 4.8 / 23 s, you die |
-| 15 above | ×15.4 | 1.2 / 101 s, you die | 1.5 / 77 s, you die | 1.8 / 62 s, you die |
+So enemies above you are tougher in proportion to their stats only, and ones far below still fall fast because your stats have outgrown theirs; grey enemies give no experience.
 
-- **3 levels up** is hard work: one enemy at a time, about a quarter of your health each.
-- **5 levels up** is a fight you plan: one normal enemy costs a Warden in plate half to two-thirds of its health, and a cloth wearer most or all of it.
-- **10 levels up** kills a Warden in plate in four or five hits and a cloth wearer in three.
-- **Each level of gap** makes an enemy about 1.5 times as dangerous, so 4 wolves two levels up are as dangerous as 6 or 7 at your level.
+### Experience (2026-10-22)
 
-One average hit from full health kills you at these gaps, from a normal enemy / an ogre:
+Levelling faster than the content makes fights trivial, so experience is paced to the content (`CONFIG.progression` in `game/core/db.gd`):
 
-| Character | Level 5 | Level 10 | Level 20 | Level 40 |
-|---|---|---|---|---|
-| Par, cloth | +13 / +9 | +14 / +9 | +15 / +10 | +16 / +10 |
-| Par Warden, plate and shield | +16 / +11 | +17 / +11 | +17 / +12 | +18 / +13 |
-| Full greens, plate and shield | +18 / +13 | +19 / +14 | +21 / +15 | +22 / +16 |
-
-**Why 1.2.** It keeps 3 levels up hard work and 5 up a fight you plan. At 1.25, one normal enemy 5 levels up kills a level 10 Warden in plate and any cloth wearer; at 1.15, a Warden in full greens wins a fight 10 levels up from level 15 on. Changing it is one number (`levelGap`).
+- **The curve:** level L to L+1 needs 280 + 200 × (L − 1): 280, 480, 680 ... 1880 at level 9, 9,720 in all to reach level 10. Every Act 1 quest handed in comes to about level 6; the rest comes from kills, so Act 1 ends near level 10. (It was 100 + 60 × (L − 1), 3,060 to level 10, which the quests alone overshot.)
+- **Kills pay by the gap, WoW style** (`DB.kill_xp`): a fifth less for each level the enemy is below you, nothing once it is 5 or more below (grey), and 5% more for each level above, up to 20%.
+- **Stronger variants pay more:** a level variant's experience grows on the same line as its health, `xp × (level + 4) / (base level + 4)`.
+- Quest experience is as written. A kill shows a purple "+N XP" over the body, rested and Inspired included.
 
 ## Today's items and enemies
 

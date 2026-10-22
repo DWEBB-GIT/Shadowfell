@@ -3,14 +3,13 @@ extends RefCounted
 ## Growth by level: a port of src/data/scaling.js. Everything that gets bigger
 ## with level grows on one line, n = level + 4: the armour constant, item
 ## armour, stat budgets, weapon damage, spell damage and the enemy table.
-## When levels differ every hit is x1.2 per level the attacker is above its
-## target. The design and its tables are in docs/stats-and-damage.md.
+## Level itself adds no damage (Dan, 2026-10-22): a higher level only means
+## bigger stats, as in WoW. The design and its tables are in docs/stats-and-damage.md.
 
 const S := {
 	"levelOffset": 4,
 	"armourConstant": 400,
 	"armourPerLevel": 100,
-	"levelGap": 1.2,
 	"critAgility": 0.4,
 	"slotWeights": {
 		"head": 1.0, "chest": 1.0, "legs": 1.0, "mainHand": 1.0,
@@ -69,12 +68,6 @@ static func growth(level: float) -> float:
 
 static func armour_k(level: float) -> float:
 	return S.armourConstant + S.armourPerLevel * level
-
-
-static func level_gap_factor(attacker_level, target_level) -> float:
-	var a: float = attacker_level if attacker_level else 1.0
-	var t: float = target_level if target_level else 1.0
-	return pow(S.levelGap, a - t)
 
 
 static func spell_scale(level: float) -> float:
