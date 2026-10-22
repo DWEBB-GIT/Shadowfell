@@ -57,6 +57,31 @@ const EXTRAS := {
 	"skinningSkill": ["Skinning skill bonus", "float", ["tool"]],
 }
 
+## Spells the generic spell engine runs (schema.js SPELL_KINDS): what each
+## targets (enemy, or self, or self or the ground) and the tuning it needs.
+const SPELL_KINDS := {
+	"cast": {"enemy": true, "tuning": ["castTime", "damageMin", "damageMax", "projectileSpeed"], "about": "A cast at an enemy: a bolt flies once the cast ends. Moving interrupts it."},
+	"dot": {"enemy": true, "tuning": ["duration", "tickInterval", "tickMultiplier"], "about": "Damage over time on an enemy (a bleed, poison or curse)."},
+	"instant": {"enemy": true, "tuning": ["damageMin", "damageMax"], "about": "Instant damage to an enemy. With damageMultiplier instead, it rolls your weapon."},
+	"aoe": {"enemy": false, "ground": true, "tuning": ["radius", "duration", "tickInterval", "damageMin", "damageMax"], "about": "Damage every tick to enemies in a circle around you or on the ground."},
+	"cleave": {"enemy": false, "tuning": ["damageMultiplier", "coneDegrees", "range", "maxTargets", "windup"], "about": "A swing in a cone in front of you."},
+	"burst": {"enemy": false, "tuning": ["damageMultiplier", "radius", "windup", "stagger", "knockback"], "about": "A blow around you that staggers and knocks back."},
+	"charge": {"enemy": true, "tuning": ["damageMultiplier", "distance", "duration", "hitRadius"], "about": "Rush at an enemy and strike."},
+	"leap": {"enemy": false, "tuning": ["distance", "duration"], "about": "A jump back."},
+	"guard": {"enemy": false, "tuning": ["window"], "about": "Block or dodge hits for a moment (Brace, Guile)."},
+	"interrupt": {"enemy": true, "tuning": ["lockout", "damageMin", "damageMax"], "about": "Breaks an enemy's cast."},
+	"control": {"enemy": true, "tuning": [], "about": "Only its `applies` aura: a sleep, hex or stun."},
+	"buff": {"enemy": false, "tuning": ["duration", "damageBonus"], "about": "More damage for a while."},
+	"stealth": {"enemy": false, "tuning": [], "about": "Hide in shadow."},
+	"trap": {"enemy": false, "tuning": ["armTime", "triggerRadius", "lifetime", "maxTraps", "radius", "duration", "slow"], "about": "A trap on the ground that slows."},
+	"purge": {"enemy": false, "tuning": ["healPerPoint", "extend"], "about": "Spends all of a bar (spendsAll) to heal."},
+	"channel": {"enemy": true, "tuning": ["castTime", "tickInterval", "damageMin", "damageMax", "healPercent"], "about": "Drains an enemy while you hold still."},
+	"shield": {"enemy": false, "tuning": ["duration", "absorbPercent"], "about": "A shield that soaks damage."},
+	"camp": {"enemy": false, "tuning": ["castTime"], "about": "Set Camp."},
+}
+const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire"]
+const TARGETS := ["enemy", "ground", "self"]
+
 var files := {} ## name -> parsed file
 var dirty := {} ## name -> true
 var items: Array = []
@@ -69,6 +94,19 @@ var quests: Array = []
 var chests: Array = []
 var waters: Array = []
 var npcs: Array = []
+var npc_spawns: Array = []
+var enemy_spawns: Array = []
+var shops: Array = []
+var vendor_types: Array = []
+var dialogues: Array = []
+var factions: Array = []
+var locations: Array = []
+var skills: Array = []
+var abilities: Array = []
+var archetypes: Array = []
+var recipes: Array = []
+## examine points (text.json), which a quest can ask the player to look at
+var examine_points: PackedStringArray = []
 ## models in assets/models, and sprites in assets/icons
 var models: PackedStringArray = []
 var sprites: PackedStringArray = []
@@ -79,7 +117,7 @@ signal changed
 func load_all() -> void:
 	files.clear()
 	dirty.clear()
-	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs"]:
+	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs", "shops", "dialogue", "factions", "text", "skills", "abilities", "archetypes", "recipes"]:
 		files[f] = IO.load_file(_path(f))
 		if files[f] == null:
 			files[f] = {}
@@ -96,6 +134,26 @@ func load_all() -> void:
 	chests = files.world.get("chests", [])
 	waters = files.world.get("water", [])
 	npcs = files.npcs.get("npcs", [])
+	if not files.world.has("npcSpawns"):
+		files.world.npcSpawns = []
+	npc_spawns = files.world.npcSpawns
+	enemy_spawns = files.world.get("enemySpawns", [])
+	locations = files.world.get("locations", [])
+	if not files.shops.has("shops"):
+		files.shops.shops = []
+	shops = files.shops.shops
+	vendor_types = files.shops.get("vendorTypes", [])
+	if not files.dialogue.has("dialogues"):
+		files.dialogue.dialogues = []
+	dialogues = files.dialogue.dialogues
+	factions = files.factions.get("factions", [])
+	examine_points = PackedStringArray(files.text.get("examine", {}).keys())
+	if not files.skills.has("skills"):
+		files.skills.skills = []
+	skills = files.skills.skills
+	abilities = files.abilities.get("abilities", [])
+	archetypes = files.archetypes.get("archetypes", [])
+	recipes = files.recipes.get("recipes", [])
 	scan_art()
 
 
@@ -224,6 +282,172 @@ func npc_name(id) -> String:
 	return find(npcs, id).get("name", str(id))
 
 
+func npc(id) -> Dictionary:
+	return find(npcs, id)
+
+
+func quest(id) -> Dictionary:
+	return find(quests, id)
+
+
+func shop(id) -> Dictionary:
+	return find(shops, id)
+
+
+func vendor_type(id) -> Dictionary:
+	return find(vendor_types, id)
+
+
+func dialogue(id) -> Dictionary:
+	return find(dialogues, id)
+
+
+## the tuning a spell must have: a weapon or bow instant rolls the weapon
+## (damageMultiplier), a bow cast too (schema.js)
+static func needed_tuning(a: Dictionary) -> Array:
+	var k: Dictionary = SPELL_KINDS.get(a.get("kind"), {})
+	if k.is_empty():
+		return []
+	var weapon: bool = a.get("ranged") == true or a.get("tuning", {}).has("damageMultiplier")
+	if a.kind == "instant" and weapon:
+		return ["cooldown", "damageMultiplier"]
+	if a.kind == "cast" and a.get("ranged") == true:
+		return ["cooldown", "castTime", "damageMultiplier"]
+	return ["cooldown"] + k.tuning
+
+
+## mana and every class bar: what a cost or gain may name
+func resource_ids() -> Array:
+	var out := ["mana"]
+	for a in archetypes:
+		for b in a.get("resources", {}).get("bars", []):
+			if not out.has(b.get("id")):
+				out.append(b.get("id"))
+	return out
+
+
+## the classes whose spellbook holds an ability
+func classes_with(id) -> Array:
+	return archetypes.filter(func(a): return a.get("abilities", []).has(id))
+
+
+func ability(id) -> Dictionary:
+	return find(abilities, id)
+
+
+func skill(id) -> Dictionary:
+	return find(skills, id)
+
+
+func ability_name(id) -> String:
+	return str(ability(id).get("name", id))
+
+
+## [id, label] pairs of the class spells and skill tools, by name
+func ability_choices(filter := Callable()) -> Array:
+	var out := []
+	for a in abilities:
+		if filter.is_valid() and not filter.call(a):
+			continue
+		out.append([a.id, "%s (%s)" % [a.get("name", a.id), a.id]])
+	out.sort_custom(func(x, y): return x[1] < y[1])
+	return out
+
+
+## [{class, entry}] for every class spell a trainer teaches
+func trained_by(npc_id) -> Array:
+	var out := []
+	for a in archetypes:
+		for t in a.get("trained", []):
+			if t.get("trainer") == npc_id:
+				out.append({"class": a, "entry": t})
+	return out
+
+
+## every condition an npc's lines check: a quest's status, a flag or a place looked at
+static func condition_text(c) -> String:
+	if not c is Dictionary or c.is_empty():
+		return "always"
+	if c.has("quest"):
+		return "quest %s is %s" % [c.quest, str(c.get("status", "")).replace("_", " ")]
+	if c.has("flag"):
+		return "flag %s is set" % c.flag
+	if c.has("examined"):
+		return "looked at %s" % c.examined
+	return JSON.stringify(c)
+
+
+func enemy_name(id) -> String:
+	var e := find(enemies, id)
+	return "%s (level %d)" % [resolved(e).get("name", id), resolved(e).get("level", 1)] if not e.is_empty() else str(id)
+
+
+## [id, label] pairs for dropdowns
+func npc_choices() -> Array:
+	return npcs.map(func(n): return [n.id, "%s (%s)" % [n.get("name", n.id), n.get("title", n.id)] if n.has("title") else n.get("name", n.id)])
+
+
+func location_choices() -> Array:
+	return locations.map(func(l): return [l.id, l.get("name", l.id)])
+
+
+func faction_choices() -> Array:
+	return factions.map(func(f): return [f.id, f.get("name", f.id)])
+
+
+## where an npc stands in the world (world.json npcSpawns), or {}
+func spawn_of(npc_id) -> Dictionary:
+	for sp in npc_spawns:
+		if sp.get("npc") == npc_id:
+			return sp
+	return {}
+
+
+## quests that require this one (the ones it unlocks)
+func quests_after(id) -> Array:
+	return quests.filter(func(q): return q.get("requires", []).has(id))
+
+
+## Dialogue lines that check a quest: [{npc, text, status}]
+func dialogue_mentions(quest_id) -> Array:
+	var out := []
+	for d in dialogues:
+		_mentions(d, d.id, quest_id, out)
+	return out
+
+
+static func _mentions(node, who: String, quest_id, out: Array) -> void:
+	if node is Array:
+		for x in node:
+			_mentions(x, who, quest_id, out)
+	elif node is Dictionary:
+		var w = node.get("when")
+		if w is Dictionary and w.get("quest") == quest_id:
+			out.append({"npc": who, "text": str(node.get("text", node.get("prompt", node.get("id", "")))), "status": w.get("status", "")})
+		for k in node:
+			if k != "when":
+				_mentions(node[k], who, quest_id, out)
+
+
+## the npcs (and skills) that name an npc, to warn before it is deleted
+func uses_of_npc(id: String) -> PackedStringArray:
+	var out := PackedStringArray()
+	for q in quests:
+		if q.get("giver") == id or q.get("turnIn") == id:
+			out.append("quest " + q.id)
+	for sk in skills:
+		if sk.get("trainer") == id:
+			out.append("skill " + sk.get("id", ""))
+	for a in archetypes:
+		for t in a.get("trained", []):
+			if t.get("trainer") == id:
+				out.append("%s spell %s" % [a.get("name", a.id), t.get("ability")])
+	for r in recipes:
+		if r.get("trainer") == id:
+			out.append("recipe " + r.get("id", ""))
+	return out
+
+
 ## lower_snake_case from a name: "Hunter's Sword" -> hunters_sword
 static func slug(name: String) -> String:
 	var s := name.to_lower().replace("'", "")
@@ -260,7 +484,10 @@ func uses_of_item(id: String) -> PackedStringArray:
 			if e.get("id") == id:
 				out.append("chest " + c.id)
 	# files the editor does not load, searched as text
-	for f in ["shops", "recipes", "archetypes", "world", "dialogue", "npcs"]:
+	for sh in shops:
+		if sh.get("stock", []).has(id):
+			out.append("shop " + sh.id)
+	for f in ["recipes", "archetypes", "world", "dialogue", "npcs"]:
 		var text := FileAccess.get_file_as_string(_path(f))
 		if text.contains("\"%s\"" % id) and not out.has(f + ".json"):
 			out.append(f + ".json")

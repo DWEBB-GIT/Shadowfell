@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
-## Adds a "Game Data" screen next to 2D, 3D and Script: items, loot tables
-## and rewards, read from and saved to data/*.json.
+## Adds a "Game Data" screen next to 2D, 3D and Script: items, loot tables,
+## quests, npcs and their shops, and chests, read from and saved to data/*.json.
 
 const Main := preload("main.gd")
 

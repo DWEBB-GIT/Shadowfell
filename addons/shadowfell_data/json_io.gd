@@ -12,9 +12,10 @@ extends RefCounted
 ##    (the quest editor's pretty(), tools/quest-editor/editor.js).
 
 const COMPACT_FILES := ["quests.json"]
-## world.json and scenery.json: plain, but a list of plain values sits on
+## world.json, scenery.json, shops.json, abilities.json, archetypes.json and
+## skills.json: plain, but a list of plain values sits on
 ## one line ([x, z], [0, 0, 1.3]), as they are written by hand
-const SHORT_LIST_FILES := ["world.json", "scenery.json"]
+const SHORT_LIST_FILES := ["world.json", "scenery.json", "shops.json", "abilities.json", "archetypes.json", "skills.json"]
 
 
 static func load_file(path: String):

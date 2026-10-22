@@ -83,6 +83,16 @@ func train_rows(npc_id = null) -> Array:
 		var known: bool = skills.has(s.id)
 		var teaches: Array = s.get("teaches", [])
 		rows.append({"id": "train:" + s.id, "name": s.name, "kind": "Skill", "ability": teaches[0] if not teaches.is_empty() else null, "desc": s.get("desc", ""), "need": "" if known else "Teaches a new skill", "cost": s.cost, "state": "known" if known else "poor" if coins < s.cost else "learn"})
+	# class spells this trainer teaches the character's class
+	for t in game.stats.archetype.get("trained", []):
+		if t.get("trainer") != npc_id or not DB.abilities.has(t.get("ability")):
+			continue
+		var a: Dictionary = DB.abilities[t.ability]
+		var known: bool = skills.spells.has(t.ability)
+		var lvl := int(t.get("level", 1))
+		var cost := int(t.get("cost", 0))
+		var low: bool = game.progression.level < lvl
+		rows.append({"id": "spell:" + t.ability, "name": a.name, "kind": "%s spell" % game.stats.archetype.name, "ability": t.ability, "desc": a.get("desc", ""), "need": "Requires level %d" % lvl if low else "Level %d" % lvl, "cost": cost, "state": "known" if known else "locked" if low else "poor" if coins < cost else "learn"})
 	for r in DB.recipes.values():
 		if r.get("trainer") != npc_id:
 			continue
@@ -268,6 +278,9 @@ func choose(id: String) -> bool:
 			return false
 	elif id.begins_with("recipe:"):
 		if not game.cooking.learn_recipe(id.substr(7)):
+			return false
+	elif id.begins_with("spell:"):
+		if not game.skills.learn_spell(id.substr(6)):
 			return false
 	elif id == "forge":
 		view = {"kind": "forge"}

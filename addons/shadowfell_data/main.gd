@@ -1,6 +1,6 @@
 @tool
 extends VBoxContainer
-## The Game Data screen: a toolbar (save, revert, checks) over three tabs.
+## The Game Data screen: a toolbar (save, revert, checks) over the tabs.
 ## Nothing is written until Save; the game reads the files when it starts.
 
 const DataStore := preload("store.gd")
@@ -8,13 +8,21 @@ const Checks := preload("checks.gd")
 const UI := preload("ui.gd")
 const ItemsPage := preload("items_page.gd")
 const LootPage := preload("loot_page.gd")
-const RewardsPage := preload("rewards_page.gd")
+const QuestsPage := preload("quests_page.gd")
+const ChainsPage := preload("chains_page.gd")
+const NpcsPage := preload("npcs_page.gd")
+const ChestsPage := preload("chests_page.gd")
+const DialoguePage := preload("dialogue_page.gd")
+const SkillsPage := preload("skills_page.gd")
+const AbilitiesPage := preload("abilities_page.gd")
 
 var s := DataStore.new()
 var pages: Array = []
 var status: Label
 var save_button: Button
 var problems: ItemList
+var tabs: TabContainer
+var found := PackedStringArray() ## the checks that fail, as last run
 var _check_queued := false
 
 
@@ -31,13 +39,17 @@ func _init(data_dir := "res://data") -> void:
 	status = Label.new()
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(status)
-	var tabs := TabContainer.new()
+	tabs = TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(tabs)
-	for p in [ItemsPage.new(), LootPage.new(), RewardsPage.new()]:
+	for p in [ItemsPage.new(), LootPage.new(), QuestsPage.new(), ChainsPage.new(), NpcsPage.new(), DialoguePage.new(), SkillsPage.new(), AbilitiesPage.new(), ChestsPage.new()]:
+		if "problems" in p:
+			p.problems = func(): return found
 		p.setup(s)
 		tabs.add_child(p)
 		pages.append(p)
+		if p.has_signal("open_record"):
+			p.open_record.connect(open_record)
 	# a new item's "Add to loot table" and the loot tab stay in step
 	tabs.tab_changed.connect(func(_i): _refresh_lists())
 	problems = ItemList.new()
@@ -60,21 +72,59 @@ func _queue_check() -> void:
 		_check.call_deferred()
 
 
+## show a record on its tab: a quest, npc, dialogue, skill or ability, or
+## make a new one (new_quest and new_skill take the npc, new_ability the
+## skill, new_spell the trainer it is for)
+func open_record(kind: String, id) -> void:
+	var tab := {"npc": "NPCs", "quest": "Quests", "new_quest": "Quests", "dialogue": "Dialogue", "skill": "Skills", "new_skill": "Skills", "ability": "Abilities", "new_ability": "Abilities", "new_spell": "Abilities"}
+	var page = page_named(tab.get(kind, "Quests"))
+	tabs.current_tab = pages.find(page)
+	match kind:
+		"new_quest":
+			page.new_quest({"giver": id})
+		"new_skill":
+			page.new_skill({"trainer": id})
+		"new_ability":
+			page._new_dialog(func(a):
+				a.skill = id
+				var sk := s.skill(id)
+				if not sk.has("teaches"):
+					sk.teaches = []
+				sk.teaches.append(a.id)
+				s.touch("skills")
+				page.select(a.id))
+		"new_spell":
+			page._new_dialog()
+		_:
+			page.select(id)
+
+
+func page_named(n: String) -> Control:
+	for p in pages:
+		if p.name == n:
+			return p
+	return null
+
+
 func _check() -> void:
 	_check_queued = false
-	var found := Checks.run(s)
+	found = Checks.run(s)
 	problems.clear()
 	for p in found:
 		var i := problems.add_item(p)
 		problems.set_item_custom_fg_color(i, Color("e08070"))
 	problems.visible = found.size() > 0
+	# a quest that fails a check shows red in the list
+	var quests = page_named("Quests")
+	if quests and quests.is_visible_in_tree():
+		quests.refresh_tree()
 	var unsaved := ", ".join(s.dirty.keys().map(func(f): return f + ".json"))
 	status.text = ("Unsaved: " + unsaved if unsaved != "" else "All saved") + ("   ·   %d check%s fail" % [found.size(), "" if found.size() == 1 else "s"] if found.size() else "   ·   all checks pass")
 	save_button.disabled = s.dirty.is_empty()
 
 
 func save() -> void:
-	var found := Checks.run(s)
+	found = Checks.run(s)
 	var saved := s.save_all()
 	for p in pages:
 		if "new_ids" in p:
