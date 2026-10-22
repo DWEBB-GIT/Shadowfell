@@ -592,7 +592,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
 		"gap",
 		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
-		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe. A foe above your level hits %d%% harder for each level, one below that much softer" % roundi((Scaling.S.levelGap - 1) * 100)],
+		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
 		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
 		"gap",
