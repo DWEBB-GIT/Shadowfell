@@ -887,6 +887,122 @@
         "coins": 10,
         "xp": 220
       }
+    },
+    {
+      "id": "rats_in_the_grain",
+      "name": "Rats in the Grain",
+      "giver": "edda",
+      "turnIn": "edda",
+      "summary": "Rats are at the Ashby granary, the Corrick sties and the old drain between the farms. Kill eight Granary Rats for Edda Ashby.",
+      "offer": "Rats. In the granary, in the feed, in my boots of a morning. More than any year I can remember, and fat with it. Kill eight of the things and I'll pay you in coin, not in turnips.",
+      "progress": "Still hear them in the thatch at night.",
+      "complete": "Eight. Thank you. You know what's odd? They all come up the same way, out of the old drain by the hedge. Never used to. Something's changed down there.",
+      "objectives": [
+        {
+          "id": "rats",
+          "type": "kill",
+          "target": "granary_rat",
+          "count": 8,
+          "label": "Granary Rats slain",
+          "location": "granary"
+        }
+      ],
+      "reward": {
+        "coins": 8,
+        "xp": 120
+      }
+    },
+    {
+      "id": "board_poachers_mere",
+      "name": "Nets on the Mere",
+      "giver": "town_board",
+      "turnIn": "pell",
+      "summary": "Blackhedge poachers are netting Stillwater Mere bare. Drive them off: kill three Poachers and two Netmen, then report to Reeve Pell.",
+      "offer": "NOTICE: poachers are stripping Stillwater Mere of fish and fowl, and the Mere folk have been threatened at knifepoint. Any who drive them off will be paid by the Reeve, Aldous Pell.",
+      "progress": "The Mere's still being emptied. I can smell the smokehouse from here.",
+      "complete": "Blackhedge again, netting fish they can't eat in a season. Someone is buying it all, salted and barrelled. And paying in new coin, freshly struck. Small men don't have new coin. Keep that in mind.",
+      "objectives": [
+        {
+          "id": "poachers",
+          "type": "kill",
+          "target": "blackhedge_poacher",
+          "count": 3,
+          "label": "Blackhedge Poachers slain",
+          "location": "stillwater_mere"
+        },
+        {
+          "id": "netmen",
+          "type": "kill",
+          "target": "blackhedge_netman",
+          "count": 2,
+          "label": "Blackhedge Netmen slain",
+          "location": "stillwater_mere"
+        }
+      ],
+      "reward": {
+        "coins": 15,
+        "xp": 220,
+        "reputation": {
+          "road_wardens": 100
+        }
+      }
+    },
+    {
+      "id": "board_prowlers",
+      "name": "Prowlers in the Pines",
+      "giver": "town_board",
+      "turnIn": "pell",
+      "requires": [
+        "board_poachers_mere"
+      ],
+      "summary": "Grey prowlers run in packs through the Blackwood and have started taking the woodcutters' dogs. Kill ten Blackwood Prowlers and report to Reeve Pell.",
+      "offer": "BOUNTY: ten silver-weight in coin for any who thin the prowler packs in the Blackwood. They hunt in fours. Do not go alone unless you are certain of yourself.",
+      "progress": "The woodcutters won't go past the deadfall yet.",
+      "complete": "Ten? You'll be smelling of wet dog for a week. The woodcutters say they're running from something deeper in, not hunting. I don't like that either.",
+      "objectives": [
+        {
+          "id": "prowlers",
+          "type": "kill",
+          "target": "blackwood_prowler",
+          "count": 10,
+          "label": "Blackwood Prowlers slain",
+          "location": "prowler_runs"
+        }
+      ],
+      "reward": {
+        "coins": 25,
+        "xp": 420,
+        "reputation": {
+          "road_wardens": 150
+        }
+      }
+    },
+    {
+      "id": "board_ogre",
+      "name": "The Ogre in the Deadfall",
+      "giver": "town_board",
+      "turnIn": "pell",
+      "summary": "An ogre has made its lair in the deadfall by the forest track, rolling logs onto carts. Put it down and report to Reeve Pell.",
+      "offer": "WANTED, DEAD: the ogre at the deadfall on the forest track. It has smashed two carts and a woodcutter's leg. It is large and slow. Do not stand in front of it.",
+      "progress": "Still squatting in the deadfall, they say, picking its teeth with a fence post.",
+      "complete": "Dead? Well. I'll have the carters toast you, though most of them will claim they softened it up for you.",
+      "objectives": [
+        {
+          "id": "ogre",
+          "type": "kill",
+          "target": "deadfall_ogre",
+          "count": 1,
+          "label": "Deadfall Ogre slain",
+          "location": "ogre_deadfall"
+        }
+      ],
+      "reward": {
+        "coins": 30,
+        "xp": 360,
+        "reputation": {
+          "road_wardens": 150
+        }
+      }
     }
   ]
 }

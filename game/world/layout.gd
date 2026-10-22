@@ -13,6 +13,8 @@ static var props: Array
 static var clearings: Array
 static var lights: Array
 static var witchlights: Array
+static var motes: Array
+static var fairy_rings: Array
 static var water: Array
 static var obscured: Array
 static var buildings: Array
@@ -48,6 +50,8 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	clearings = s.clearings
 	lights = s.lights
 	witchlights = s.witchlights
+	motes = s.get("motes", [])
+	fairy_rings = s.get("fairyRings", [])
 	water = w.get("water", [])
 	obscured = w.get("obscured", [])
 	buildings = w.get("buildings", [])

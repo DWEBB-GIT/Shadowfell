@@ -414,6 +414,57 @@
           ]
         }
       }
+    },
+    {
+      "id": "deadfall_ogre",
+      "always": [
+        {
+          "item": "cracked_bone",
+          "min": 0,
+          "max": 2
+        }
+      ],
+      "drops": {
+        "rolls": 1,
+        "chance": 0.6,
+        "rarity": {
+          "junk": 40,
+          "enhanced": 50,
+          "rare": 10
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "cracked_bone",
+              "weight": 1
+            }
+          ],
+          "enhanced": [
+            {
+              "item": "mail_chausses",
+              "weight": 2
+            },
+            {
+              "item": "warden_hauberk",
+              "weight": 2
+            },
+            {
+              "item": "plate_sabatons",
+              "weight": 2
+            },
+            {
+              "item": "iron_shield",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
     }
   ],
   "worldDrops": [

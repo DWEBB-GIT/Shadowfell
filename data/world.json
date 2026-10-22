@@ -226,6 +226,36 @@
       "name": "The lookout rock",
       "position": [-13.5, -51.5],
       "radius": 3
+    },
+    {
+      "id": "granary",
+      "name": "The Ashby granary",
+      "position": [-28, 45],
+      "radius": 5
+    },
+    {
+      "id": "fairy_ring",
+      "name": "The Fairy Ring",
+      "position": [-31, -30],
+      "radius": 4
+    },
+    {
+      "id": "wolf_hollow",
+      "name": "Wolf Hollow",
+      "position": [-13.5, -38.5],
+      "radius": 6
+    },
+    {
+      "id": "prowler_runs",
+      "name": "The Prowler Runs",
+      "position": [26, -77],
+      "radius": 7
+    },
+    {
+      "id": "ogre_deadfall",
+      "name": "The Ogre's Deadfall",
+      "position": [14, -62],
+      "radius": 6
     }
   ],
   "npcSpawns": [
@@ -472,6 +502,51 @@
     {"id": "corrick_sow_1", "enemy": "corrick_pig", "position": [-27, 19.5]},
     {"id": "corrick_sow_2", "enemy": "corrick_pig", "position": [-27.5, 26]},
     {"id": "corrick_sow_3", "enemy": "corrick_pig", "position": [-30, 22.5]}
+,
+    {"id": "rat_ashby_1", "enemy": "granary_rat", "position": [-28, 45]},
+    {"id": "rat_ashby_2", "enemy": "granary_rat", "position": [-29.5, 47]},
+    {"id": "rat_ashby_3", "enemy": "granary_rat", "position": [-26.5, 47.5]},
+    {"id": "rat_ashby_4", "enemy": "granary_rat", "position": [-30, 43]},
+    {"id": "rat_corrick_1", "enemy": "granary_rat", "position": [-19, 16]},
+    {"id": "rat_corrick_2", "enemy": "granary_rat", "position": [-20.5, 14]},
+    {"id": "rat_corrick_3", "enemy": "granary_rat", "position": [-17.5, 13.5]},
+    {"id": "rat_corrick_4", "enemy": "granary_rat", "position": [-21, 17.5]},
+    {"id": "rat_drain_1", "enemy": "granary_rat", "position": [-25, 37]},
+    {"id": "rat_drain_2", "enemy": "granary_rat", "position": [-21, 38.5]},
+    {"id": "rat_drain_3", "enemy": "granary_rat", "position": [-24, 34.5]},
+    {"id": "fox_1", "enemy": "hedge_fox", "position": [-31, 5]},
+    {"id": "fox_2", "enemy": "hedge_fox", "position": [-33, -4]},
+    {"id": "fox_3", "enemy": "hedge_fox", "position": [-14, 1]},
+    {"id": "fox_4", "enemy": "hedge_fox", "position": [12, 10]},
+    {"id": "fox_5", "enemy": "hedge_fox", "position": [18, 15]},
+    {"id": "boar_far_1", "enemy": "wild_boar", "position": [29, 31]},
+    {"id": "boar_far_2", "enemy": "wild_boar", "position": [31, 19]},
+    {"id": "boar_far_3", "enemy": "wild_boar", "position": [8, 28]},
+    {"id": "wolf_ridge_4", "enemy": "ridge_wolf", "position": [30, 10]},
+    {"id": "wolf_hollow_1", "enemy": "ridge_wolf", "position": [-14, -36]},
+    {"id": "wolf_hollow_2", "enemy": "ridge_wolf", "position": [-11, -38]},
+    {"id": "wolf_hollow_3", "enemy": "ridge_wolf", "position": [-16, -39]},
+    {"id": "wolf_hollow_4", "enemy": "ridge_wolf", "position": [-13, -41]},
+    {"id": "poacher_mere_1", "enemy": "blackhedge_poacher", "position": [-20, -18]},
+    {"id": "poacher_mere_2", "enemy": "blackhedge_poacher", "position": [-28, -10]},
+    {"id": "poacher_mere_3", "enemy": "blackhedge_poacher", "position": [-27, -19]},
+    {"id": "netman_mere_1", "enemy": "blackhedge_netman", "position": [-19, -11]},
+    {"id": "netman_mere_2", "enemy": "blackhedge_netman", "position": [-30, -15]},
+    {"id": "prowler_east_1", "enemy": "blackwood_prowler", "position": [26, -74]},
+    {"id": "prowler_east_2", "enemy": "blackwood_prowler", "position": [29, -77]},
+    {"id": "prowler_east_3", "enemy": "blackwood_prowler", "position": [24, -78]},
+    {"id": "prowler_east_4", "enemy": "blackwood_prowler", "position": [28, -81]},
+    {"id": "prowler_south_1", "enemy": "blackwood_prowler", "position": [24, -105]},
+    {"id": "prowler_south_2", "enemy": "blackwood_prowler", "position": [27, -108]},
+    {"id": "prowler_south_3", "enemy": "blackwood_prowler", "position": [22, -110]},
+    {"id": "prowler_south_4", "enemy": "blackwood_prowler", "position": [26, -112]},
+    {"id": "prowler_west_1", "enemy": "blackwood_prowler", "position": [-29, -118]},
+    {"id": "prowler_west_2", "enemy": "blackwood_prowler", "position": [-32, -121]},
+    {"id": "prowler_west_3", "enemy": "blackwood_prowler", "position": [-26, -121]},
+    {"id": "prowler_track_1", "enemy": "blackwood_prowler", "position": [8, -104]},
+    {"id": "prowler_track_2", "enemy": "blackwood_prowler", "position": [11, -101]},
+    {"id": "prowler_track_3", "enemy": "blackwood_prowler", "position": [10, -107]},
+    {"id": "ogre_deadfall", "enemy": "deadfall_ogre", "position": [14, -62]}
   ],
   "placedLoot": [
     {

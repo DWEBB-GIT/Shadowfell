@@ -52,6 +52,8 @@ func build() -> World:
 	_add_lights()
 	_add_mist()
 	_add_sun_shafts()
+	_add_motes()
+	_add_fairy_rings()
 	return self
 
 
@@ -637,6 +639,87 @@ func _add_lights() -> void:
 		glow.name = "Witchlight"
 		group.add_child(glow)
 		flames.append({"flame": null, "glow": glow, "seed": x * 3.1})
+
+
+## Drifting glowing motes (scenery.json `motes`): fireflies over the mere and
+## the hedges, wisps in the Blackwood's glades. One CPU particle cloud per
+## spot (works in Compatibility and on the web), only drawn near the camera.
+func _add_motes() -> void:
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(0.14, 0.14)
+	for m in Layout.motes:
+		var x: float = m.position[0]
+		var z: float = m.position[1]
+		var c := Color(m.get("color", "#d8f070"))
+		var mat := Tex.fx_material(Tex.glint(), c, true, true)
+		mat.disable_fog = true
+		var p := CPUParticles3D.new()
+		p.name = "Motes"
+		p.mesh = mesh
+		p.material_override = mat
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.amount = int(m.get("count", 16))
+		p.lifetime = 6.0
+		p.preprocess = 6.0
+		p.randomness = 1.0
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		var r: float = m.get("radius", 5.0)
+		p.emission_box_extents = Vector3(r, 0.7, r)
+		p.direction = Vector3(0, 1, 0)
+		p.spread = 180.0
+		p.gravity = Vector3.ZERO
+		p.initial_velocity_min = 0.05
+		p.initial_velocity_max = 0.3
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.4
+		var fade := Gradient.new()
+		fade.set_color(0, Color(1, 1, 1, 0))
+		fade.set_color(1, Color(1, 1, 1, 0))
+		fade.add_point(0.3, Color(1, 1, 1, 1))
+		fade.add_point(0.55, Color(1, 1, 1, 0.25))
+		fade.add_point(0.75, Color(1, 1, 1, 1))
+		p.color_ramp = fade
+		p.visibility_range_end = 45.0
+		p.position = Vector3(x, Terrain.height_at(x, z) + m.get("height", 1.2), z)
+		group.add_child(p)
+
+
+## A ring of glowing toadstools (scenery.json `fairyRings`) with an examine
+## point at its middle. The caps pulse slowly, like the witchlights.
+func _add_fairy_rings() -> void:
+	var cap := SphereMesh.new()
+	cap.radius = 0.1
+	cap.height = 0.09
+	cap.radial_segments = 6
+	cap.rings = 2
+	for fr in Layout.fairy_rings:
+		var x: float = fr.position[0]
+		var z: float = fr.position[1]
+		var r: float = fr.get("radius", 2.0)
+		var n := 13
+		for i in n:
+			var a := TAU * i / n + sin(i * 2.3) * 0.12
+			var cx := x + cos(a) * r * (1 + sin(i * 1.7) * 0.06)
+			var cz := z + sin(a) * r * (1 + sin(i * 1.7) * 0.06)
+			var y := Terrain.height_at(cx, cz)
+			var mi := MeshInstance3D.new()
+			mi.mesh = cap
+			var cm := _unshaded(Color("e8dcff"))
+			cm.disable_fog = true
+			mi.material_override = cm
+			mi.position = Vector3(cx, y + 0.07, cz)
+			mi.scale = Vector3.ONE * (0.8 + fmod(i * 0.37, 0.5))
+			group.add_child(mi)
+			var gm := Tex.fx_material(Tex.glint(), Color(Color("b090ff"), 0.6), true, true)
+			gm.disable_fog = true
+			var glow := Tex.sprite(gm)
+			glow.scale = Vector3.ONE * 0.7
+			glow.position = Vector3(cx, y + 0.15, cz)
+			glow.name = "FairyGlow"
+			group.add_child(glow)
+			flames.append({"flame": null, "glow": glow, "seed": i * 1.9})
+		if fr.get("examine"):
+			examine_points.append({"id": fr.examine, "x": x, "z": z})
 
 
 static func _unshaded(c: Color) -> StandardMaterial3D:
