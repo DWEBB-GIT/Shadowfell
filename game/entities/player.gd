@@ -312,7 +312,9 @@ var is_braced: bool:
 ## % less damage taken from a guard that softens blows (Brace with a weapon alone)
 var damage_reduction: float:
 	get:
-		return guard_rule.get("reduction", 0) if braced > 0 and guard_rule else 0.0
+		var guard: float = guard_rule.get("reduction", 0) if braced > 0 and guard_rule else 0.0
+		# Fortified (Rallying Cry, Bulwark) stacks with it
+		return minf(80, guard + (game.spells.fortify if game.spells else 0.0))
 
 
 ## Called by combat when a blow lands: "" or how the guard took it.

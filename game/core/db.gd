@@ -97,6 +97,7 @@ static var world: Dictionary = {}
 static var scenery: Dictionary = {}
 static var text: Dictionary = {}
 static var ability_file: Dictionary = {}
+static var builds: Dictionary = {} ## data/builds.json (Builds)
 static var leash_distance := 18.0
 
 ## Tuning taken from the content, under the names gameplay code uses
@@ -145,6 +146,7 @@ static func setup(data) -> void:
 	scenery = f.scenery
 	text = f.text
 	ability_file = f.abilities
+	builds = f.get("builds", {})
 	leash_distance = f.enemies.get("leashDistance", 18)
 	attack = abilities.strike.tuning
 	auto_shot = abilities.autoShot.tuning
