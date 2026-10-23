@@ -36,6 +36,8 @@ const SFX := {
 	"skin": ["skin.mp3"],
 	"shrine": ["shrine.wav"],
 	"campfire": ["campfire.mp3"],
+	"fish_cast": ["fishing_cast.mp3"],
+	"fish_out": ["fishing_out.mp3"],
 	"step_dirt": ["step_dirt_1.wav", "step_dirt_2.wav", "step_dirt_3.wav", "step_dirt_4.wav", "step_dirt_5.wav"],
 	"step_stone": ["step_stone_1.wav", "step_stone_2.wav", "step_stone_3.wav", "step_stone_4.wav", "step_stone_5.wav"],
 	"step_wood": ["step_wood_1.wav", "step_wood_2.wav", "step_wood_3.wav", "step_wood_4.wav"],
@@ -164,6 +166,8 @@ func _bind() -> void:
 	var ev = game.events
 	ev.on("playerSwing", func(_e): sfx("swing", 0.7))
 	ev.on("playerShot", func(_e): sfx("shot", 0.7))
+	ev.on("fishCast", func(_e): sfx("fish_cast", 0.8))
+	ev.on("fishReel", func(_e): sfx("fish_out", 0.8))
 	ev.on("enemyHit", func(e):
 		if e.get("kind") != "strike":
 			return
