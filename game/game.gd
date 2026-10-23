@@ -464,6 +464,10 @@ func _pick_under_cursor():
 		var d := _screen_dist(Vector3(l.x, Terrain.height_at(l.x, l.z) + 0.3, l.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["loot", l, d])
+	for v in mining.veins():
+		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
+		if d < DB.CONFIG.loot.clickRadius:
+			cands.append(["vein", v, d])
 	for c in cands:
 		if c[2] < best_d:
 			best_d = c[2]
@@ -498,6 +502,8 @@ func _cursor_for(pick) -> void:
 			"loot", "chest":
 				var reach: float = 2.4 if pick.kind == "chest" else DB.CONFIG.loot.reach
 				c = "loot" if U.hyp(o.x - p.x, o.z - p.z) <= reach else "lootFar"
+			"vein":
+				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
 	if c != cursor:
 		cursor = c
 		Cursors.show(c)
@@ -548,6 +554,8 @@ func _click(button: String) -> bool:
 			_reach_or(o.x, o.z, 2.4, func(): chests.open(o), closer, walk)
 		"loot":
 			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), walk)
+		"vein":
+			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, walk)
 		"enemy":
 			if button == "right" or mouse_aim:
 				targeting.engage(o)
