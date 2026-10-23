@@ -45,7 +45,7 @@ const S := {
 	"statCost": {"strength": 1.0, "agility": 1.0, "intellect": 1.0, "stamina": 1.0, "armour": 0.02, "resistance": 0.02},
 	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0},
 	"budgetTolerance": 0.1,
-	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 10, "staminaPerLevel": 2},
+	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 13, "staminaPerLevel": 3},
 	"enemyHealthSeconds": 11.5,
 	"enemyHitShare": 50,
 	"enemyHealthRoll": 0.1,
