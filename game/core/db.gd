@@ -18,9 +18,9 @@ const CONFIG := {
 	"progression": {"firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
 	"stats": {
 		"healthBase": 40.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
-		"powerPerMainStat": 0.25, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
+		"powerPerMainStat": 0.3, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
 		"mitigationCap": 75.0, "blockCap": 50.0, "blockReduction": 30.0, "hasteCap": 30.0, "gcdFloor": 1.0,
-		"enemyVariance": 0.15, "fistDamage": [1, 2], "fistSpeed": 2.0, "offHandDamage": 0.5, "offHandResolve": 0.5,
+		"enemyVariance": 0.35, "fistDamage": [1, 2], "fistSpeed": 2.0, "offHandDamage": 0.5, "offHandResolve": 0.5,
 	},
 	"interaction": {"radius": 2.2},
 	"durability": {"deathLoss": 10, "repairFraction": 0.5},

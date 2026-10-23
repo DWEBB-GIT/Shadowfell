@@ -571,7 +571,6 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var prog = game.progression
 	var st = game.stats
 	var t: Dictionary = st.totals
-	var lg = prog.last_gains
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
@@ -587,8 +586,8 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Health", "%d / %d" % [ceili(p.health), p.max_health], "", "health"],
 		"gap",
 		["Stamina", U.n(t.stamina), "+%s health per point" % U.n(conf.healthPerStamina), "stamina"],
-		["Strength", U.n(t.strength), "Main attribute: adds to every swing and ability" if arch.get("mainStat") == "strength" else "", "strength"],
-		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d" % [1.0 / st.agility_per_crit, lvl], "agility"],
+		["Strength", U.n(t.strength), "Adds to every swing and weapon ability" if st.power_stat == "strength" else "", "strength"],
+		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d%s" % [1.0 / st.agility_per_crit, lvl, "; adds to every swing and weapon ability" if st.power_stat == "agility" else ""], "agility"],
 		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
 		"gap",
 		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
@@ -596,7 +595,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
 		"gap",
-		["Weapon", "%s / %.1fs" % ["–".join(st.swing_range.map(func(x): return U.n(x))), st.attack_cooldown], "%s: %s damage, speed %.1f; each auto attack swing adds strength" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), st.weapon_speed]],
+		["Melee hit", "%s / %.1fs" % ["–".join(st.swing_range.map(func(x): return U.n(x))), st.attack_cooldown], "Your hit with %s: its own %s damage, speed %.1f, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), st.weapon_speed, U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
 	]
 	if st.dual_wielding:
 		rows.append(["Off hand", "%s / %.1fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
@@ -621,13 +620,8 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var value := UI.rich(cell, 13)
 		value.autowrap_mode = TextServer.AUTOWRAP_OFF
-		# stats that rose at the last level-up keep a green "+n" for a while
-		var gain := ""
-		if r.size() > 3 and lg != null:
-			for g in lg.gains:
-				if g.id == r[3]:
-					gain = " [color=#8cbf78][font_size=11]+%s[/font_size][/color]" % U.n(g.diff)
-		UI.set_rich(value, "[right][color=#efe2c0]%s[/color]%s[/right]" % [UI.esc(r[1]), gain])
+		# one total per stat: level, class and gear are already in it (Dan, 2026-10-23)
+		UI.set_rich(value, "[right][color=#efe2c0]%s[/color][/right]" % UI.esc(r[1]))
 		var v := UI.vbox(null, 1)
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		v.add_child(cell)

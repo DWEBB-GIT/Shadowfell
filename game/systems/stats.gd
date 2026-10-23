@@ -61,9 +61,17 @@ var max_mana: int:
 		var m = archetype.get("resources", {}).get("mana")
 		return U.jround(m.base + totals.intellect * m.perIntellect) if m else 0
 
+## Weapon power comes from Strength or Agility: a class whose main attribute
+## is Strength or Agility uses it, a caster uses Strength (Intellect feeds
+## spells, not swings).
+var power_stat: String:
+	get:
+		var m: String = archetype.get("mainStat", "strength")
+		return m if m == "strength" or m == "agility" else "strength"
+
 var power: float:
 	get:
-		return totals.get(archetype.mainStat, 0) * S().powerPerMainStat
+		return totals.get(power_stat, 0) * S().powerPerMainStat
 
 ## Ranged power comes from Agility at half a main stat's rate (a class may say its own share).
 var ranged_power: float:

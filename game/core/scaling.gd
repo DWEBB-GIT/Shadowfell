@@ -22,9 +22,16 @@ const S := {
 	"armourFactors": {"cloth": 3, "leather": 6, "mail": 9, "plate": 12},
 	"shieldArmour": 20,
 	"shieldBlock": 10,
-	"weaponDps": 0.45,
-	"rangedDamage": 0.5,
-	"weaponSpread": 0.4,
+	"weaponDps": 0.23,
+	## each weapon type's share of weaponDps and its spread either side
+	## (Dan, 2026-10-23: at level 1 a dagger 1-2, a sword 1-4, a two-hander
+	## 3-5 at 2.9 s, a bow 2-5 at 2.5 s); a weapon with no type is a sword
+	"weaponTypes": {
+		"dagger": {"dps": 0.8, "spread": 0.33},
+		"sword": {"dps": 1.0, "spread": 0.6},
+		"twoHand": {"dps": 1.2, "spread": 0.25},
+		"bow": {"dps": 1.2, "spread": 0.43},
+	},
 	"rarity": {
 		"junk": {"budget": 0.0, "main": 1.0},
 		"common": {"budget": 0.0, "main": 1.0},
@@ -39,8 +46,8 @@ const S := {
 	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0},
 	"budgetTolerance": 0.1,
 	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 10, "staminaPerLevel": 2},
-	"enemyHealthSeconds": 7,
-	"enemyHitShare": 12,
+	"enemyHealthSeconds": 11.5,
+	"enemyHitShare": 50,
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
 		"fodder": {"health": 0.5, "hit": 0.5, "interval": 1.35, "armour": "none"},
@@ -112,8 +119,9 @@ static func item_main(d: Dictionary) -> Dictionary:
 		stats.armour = U.jround(S.shieldArmour * n * main)
 		stats.block = U.jround(S.shieldBlock * main)
 	elif d.kind == "weapon":
-		var swing: float = S.weaponDps * n * main * d.speed * (S.rangedDamage if d.get("slot") == "ranged" else 1.0)
-		damage = [maxi(1, U.jround(swing * (1 - S.weaponSpread))), maxi(1, U.jround(swing * (1 + S.weaponSpread)))]
+		var wt: Dictionary = S.weaponTypes.get(d.get("weaponType", "sword"), S.weaponTypes.sword)
+		var swing: float = S.weaponDps * n * main * d.speed * wt.dps
+		damage = [maxi(1, U.jround(swing * (1 - wt.spread))), maxi(1, U.jround(swing * (1 + wt.spread)))]
 	return {"stats": stats, "damage": damage}
 
 
