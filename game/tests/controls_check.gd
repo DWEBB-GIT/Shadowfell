@@ -6,6 +6,7 @@ var failures := 0
 var game
 var frame := 0
 var foe = null
+var start := Vector3.ZERO ## where keyboard turning starts
 var t0 := 0 ## the frame the world is ready (after the loading screen)
 
 
@@ -70,6 +71,28 @@ func _process(_dt: float) -> bool:
 		var to_foe := atan2(foe.position.x - game.player.position.x, foe.position.z - game.player.position.z)
 		check(absf(angle_difference(game.player.facing, to_foe)) < 0.5, "classic: in reach, you keep facing your target as you walk")
 		game.settings.set_value("classicControls", false)
+		# keyboard turning: D turns on the spot, W walks the way you face
+		game.targeting.stop_attack()
+		game.settings.set_value("tankControls", true)
+		game.player.position = foe.position + Vector3(8, 0, 0)
+		start = game.player.position
+		game.player.facing = 0.0
+		game.input.held["KeyD"] = true
+	elif f == 45:
+		check(not game.player.moving, "keyboard turning: turning is not moving")
+	elif f == 54:
+		var at: Vector3 = game.player.position - start
+		check(Vector2(at.x, at.z).length() < 0.05, "keyboard turning: D turns without walking (%s)" % at)
+		check(game.player.facing < -0.2, "keyboard turning: D turns you clockwise (%.2f)" % game.player.facing)
+		game.input.held.erase("KeyD")
+		game.input.held["KeyW"] = true
+	elif f == 64:
+		var p0: Vector3 = game.player.position
+		game.input.held.erase("KeyW")
+		var fwd := Vector2(sin(game.player.facing), cos(game.player.facing))
+		var d := Vector2(p0.x - start.x, p0.z - start.z)
+		check(d.length() > 0.3 and d.normalized().dot(fwd) > 0.9, "keyboard turning: W walks the way you face (%s, %s)" % [d, fwd])
+		game.settings.set_value("tankControls", false)
 		print("controls checks: %s" % ("all passed" if failures == 0 else "%d failed" % failures))
 		quit(1 if failures else 0)
 	return false

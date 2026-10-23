@@ -319,11 +319,28 @@ func update(dt: float, controls) -> void:
 		var mv: Dictionary = controls.move
 		var acts: Dictionary = controls.get("actions", {})
 		var aim = controls.get("aim")
+		# keyboard turning: turning on the spot is not moving, so it never
+		# breaks a cast; walking goes the way you face, backing up slower
+		var tank = controls.get("tank")
+		var turning := false
+		if tank != null:
+			turning = tank.x != 0
+			if turning:
+				facing = wrapf(facing - tank.x * DB.CONFIG.player.turnRate * dt, -PI, PI)
+				aim_hold = 0
+			var walk: float = tank.y * (DB.CONFIG.player.backpedal if tank.y < 0 else 1.0)
+			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			position.x += mv.x * DB.CONFIG.player.speed * dt
 			position.z += mv.z * DB.CONFIG.player.speed * dt
-			if game.mouse_aim:
+			if tank != null:
+				# you face where the keys turn you; the left button held
+				# (mouse aim) still turns you to the cursor
+				var face_aim = controls.get("faceAim")
+				if face_aim != null and not turning:
+					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
+			elif game.mouse_aim:
 				# Mouse aim: you face the way you walk, unless you aim on
 				# purpose (left button or right stick held), or an ability
 				# has just turned you
@@ -337,6 +354,8 @@ func update(dt: float, controls) -> void:
 				var look := atan2(aim.x - position.x, aim.z - position.z) if (acts.get("strike") or acts.get("shoot")) and aim != null else atan2(mv.x, mv.z)
 				facing = U.turn_towards(facing, look, dt * 14)
 			speed01 = mag
+		elif turning:
+			pass
 		elif (acts.get("strike") or acts.get("shoot")) and aim != null:
 			facing = U.turn_towards(facing, atan2(aim.x - position.x, aim.z - position.z), dt * DB.attack.turnRate)
 		elif game.mouse_aim and controls.get("faceAim") != null:

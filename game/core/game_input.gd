@@ -150,6 +150,22 @@ func end_frame() -> void:
 	mouse.rightClicked = false
 
 
+## Keyboard turning: x is the turn (D/right arrow +1, turns clockwise), y the
+## walk (W/up arrow +1 forward, S/down arrow -1 back)
+func tank_axis() -> Vector2:
+	var turn := 0.0
+	var walk := 0.0
+	if is_held("KeyW") or is_held("ArrowUp"):
+		walk += 1
+	if is_held("KeyS") or is_held("ArrowDown"):
+		walk -= 1
+	if is_held("KeyA") or is_held("ArrowLeft"):
+		turn -= 1
+	if is_held("KeyD") or is_held("ArrowRight"):
+		turn += 1
+	return Vector2(turn, walk)
+
+
 ## Movement axis in world space: W is north (-z), D is east (+x); the arrow
 ## keys move too. Diagonal input is normalised.
 func move_axis() -> Vector2:
