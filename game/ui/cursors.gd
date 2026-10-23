@@ -26,6 +26,10 @@ static func _hand(fill: String) -> String:
 const HOOK := "<g fill='none' stroke-linecap='round'><path d='M19 6 V18 a6 6 0 0 1 -12 0 V12 L4 15' stroke='#000' stroke-width='4.5'/><path d='M19 6 V18 a6 6 0 0 1 -12 0 V12 L4 15' stroke='#d8dce0' stroke-width='2.2'/><circle cx='19' cy='4' r='2.4' stroke='#000' stroke-width='3.5'/><circle cx='19' cy='4' r='2.4' stroke='#d8dce0' stroke-width='1.6'/></g>"
 
 
+static func _pick(head: String) -> String:
+	return "<path d='M6 26 L18 14' stroke='#000' stroke-width='5' stroke-linecap='round'/><path d='M6 26 L18 14' stroke='#a07040' stroke-width='3' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='#000' stroke-width='5.5' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='%s' stroke-width='3.2' stroke-linecap='round'/>" % head
+
+
 ## [svg body, hotspot] per cursor name
 static func _defs() -> Dictionary:
 	return {
@@ -35,6 +39,8 @@ static func _defs() -> Dictionary:
 		"talkFar": [_speech("#7a7a7a"), Vector2(2, 2)],
 		"loot": [_hand("#f0d070"), Vector2(2, 2)],
 		"lootFar": [_hand("#7a7a7a"), Vector2(2, 2)],
+		"mine": [_pick("#c8ccd4"), Vector2(8, 6)],
+		"mineFar": [_pick("#7a7a7a"), Vector2(8, 6)],
 	}
 
 
