@@ -9,7 +9,7 @@ extends RefCounted
 ## Engine tuning: the numbers that shape how the game plays and looks.
 ## Content lives in /data. Kept as in src/config.js.
 const CONFIG := {
-	"player": {"archetype": "warden", "speed": 5.6, "runGait": 1.3, "radius": 0.4, "startCoins": 8, "startDraughts": 1},
+	"player": {"archetype": "warden", "speed": 5.6, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 8, "startDraughts": 1},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	"death": {"coinLossFraction": 0.2, "coinLossCap": 5, "screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 25.0, "revengeXp": 0.5},

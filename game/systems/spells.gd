@@ -315,15 +315,8 @@ func try_cast(id: String) -> bool:
 		target = _target_for(spell)
 		if not target:
 			return false
-		# ranged attacks need the target in front of you, in the same arc as
-		# Auto Shot; melee ones turn you to it
-		# (mouse aim turns you to it either way: the mouse is the aim)
-		if is_ranged_attack(spell) and not game.mouse_aim:
-			if not player.facing_point(target.position.x, target.position.z, DB.attack.coneDegrees / 2.0):
-				game.hud.error("You must be facing your target")
-				return false
-		else:
-			player.face_towards(target.position.x, target.position.z)
+		# a spell at an enemy turns you to it (Diablo): facing never blocks a cast
+		player.face_towards(target.position.x, target.position.z)
 		# striking from Shadow: the blow still counts as from Shadow (Opportunist)
 		break_shadow()
 		# a spell at an enemy engages it (not Sleep: a swing would wake it)
@@ -998,6 +991,9 @@ func update(dt: float) -> void:
 					if st.has_ranged:
 						player.cooldowns.ranged = maxf(player.cooldowns.ranged, st.attack_cooldown_for("ranged"))
 					events.emit("castEnd", {"id": c.id, "done": true})
+					# it lands facing its target, wherever you turned meanwhile
+					if c.target != null:
+						player.face_towards(c.target.position.x, c.target.position.z)
 					_go(spell, c.target)
 
 	# cleaves and bursts land at their impact frame

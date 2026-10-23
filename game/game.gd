@@ -27,6 +27,12 @@ var zoom := 1.0 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
 var mouse_aim: bool:
 	get:
 		return settings == null or not settings.get_value("classicControls")
+## Keyboard turning (Settings: tankControls, WoW style): A and D turn you on
+## the spot, W walks the way you face, S backs up slowly. Works with either
+## click scheme; the gamepad stick and click-to-move still walk directly.
+var tank_controls: bool:
+	get:
+		return settings != null and settings.get_value("tankControls")
 var random := func() -> float: return randf() ## every combat roll goes through this (tests pin it)
 
 var scene: Node3D
@@ -746,6 +752,10 @@ func _handle_input(dt: float):
 	var keys_move: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": km.x, "z": km.y}
 	var cm = _click_move(keys_move)
 	var move: Dictionary = cm if cm != null else keys_move
+	# keyboard turning: the keys turn and walk you, relative to your facing
+	var tank = null
+	if tank_controls and cm == null and not (pad_on and pad.left.z > 0):
+		tank = input.tank_axis()
 	var using_pad := pad_on and (pad.left.z > 0 or pad.right.z > 0 or hud.pad_mode)
 	var p := func(b: int) -> bool: return pad_on and pad.pressed(b)
 	var aim_now = _pad_aim() if using_pad else _aim_point()
@@ -808,6 +818,7 @@ func _handle_input(dt: float):
 		"aim": tg.current.position if actions.strike or actions.shoot else tg.aim_for(aim_now, DB.abilities.strike.range),
 		"rawAim": aim_now,
 		"faceAim": face_aim,
+		"tank": tank,
 		"actions": actions,
 	}
 
