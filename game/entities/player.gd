@@ -48,6 +48,12 @@ var opener_off := false
 var last_swing_at = null
 var last_main_impact_at = null
 var eating = null
+var sheathed := false ## weapons put away on the back (Z)
+var sheath_parts: Array = [] ## the copies worn on the back while sheathed
+## where a sheathed blade and shield sit on the torso
+const SHEATH_BLADE := Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0, 0.15, -0.24))
+const SHEATH_TILT := 0.45
+const SHEATH_SHIELD := Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.05, -0.26))
 var hidden := false
 
 
@@ -149,6 +155,61 @@ func show_equipment(equipment: Dictionary) -> void:
 			shield.scale = Vector3.ONE * 0.95
 			larm.add_child(shield)
 	hold_bow(false)
+	_show_sheath()
+
+
+var sitting: bool:
+	get:
+		return rig.pose == "rest"
+
+
+## X: sit on the ground, or stand. Moving, fighting or casting stands you up.
+func set_sitting(on: bool) -> void:
+	if on == sitting or (on and (rig.pose != null or eating != null)):
+		return
+	rig.pose = "rest" if on else null
+
+
+## Z: put your weapons away on your back, or draw them again. Fighting
+## draws them on its own.
+func set_sheathed(on: bool) -> void:
+	if on == sheathed:
+		return
+	sheathed = on
+	if on:
+		_show_sheath()
+	else:
+		show_equipment(game.inventory.equipment)
+	game.events.emit("log", {"text": "You sheathe your weapons." if on else "You draw your weapons.", "kind": "muted", "throttle": "sheathe"})
+
+
+## While sheathed, copies of what is in your hands ride on your back
+## (crossed when there are two) and the hands are empty.
+func _show_sheath() -> void:
+	for n in sheath_parts:
+		_free(n)
+	sheath_parts = []
+	var torso := _part("Torso")
+	if not sheathed or not torso:
+		return
+	var held := []
+	if weapon_part and weapon_part.visible:
+		held.append([weapon_part, "weapon"])
+	var off = game.inventory.equipment.get("offHand")
+	var off_kind: String = Items.get_def(off.id).get("kind", "") if off else ""
+	if shield and shield.visible and off_kind != "torch":
+		held.append([shield, off_kind])
+	for i in held.size():
+		var n: Node3D = held[i][0]
+		var copy := n.duplicate() as Node3D
+		torso.add_child(copy)
+		if held[i][1] == "shield":
+			copy.transform = SHEATH_SHIELD
+		else:
+			var side := -1.0 if i == 0 else 1.0
+			copy.transform = Transform3D(Basis(Vector3.BACK, side * SHEATH_TILT) * SHEATH_BLADE.basis, SHEATH_BLADE.origin + Vector3(side * 0.04, 0, 0))
+		sheath_parts.append(copy)
+		n.visible = false
 
 
 ## Fishing: the rod in the right hand (the weapon put away) and the fishing pose.
@@ -285,6 +346,9 @@ func update(dt: float, controls) -> void:
 		for id in acts:
 			if acts[id] and DB.spells.has(id):
 				game.spells.try_cast(id)
+		# fighting draws your weapons
+		if sheathed and (acts.get("strike") or acts.get("shoot")):
+			set_sheathed(false)
 		if acts.get("strike"):
 			try_strike(aim)
 			try_strike_off(aim)
@@ -298,6 +362,8 @@ func update(dt: float, controls) -> void:
 		if acts.get("cook"):
 			game.hud.toggle_window("cooking")
 
+	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
+		set_sitting(false)
 	position = game.collision.resolve(position, radius)
 	position.y = Terrain.height_at(position.x, position.z)
 	moving = speed01 > 0
@@ -388,16 +454,22 @@ func try_strike_off(aim) -> bool:
 		return false
 	var gap: float = DB.attack.staggerGap
 	var anim: float = stats.swing_animation_for("off")
-	var ready: float = minf(DB.attack.openerWindup, anim * 0.7) + gap if opener_off else minf(windup, DB.attack.readyWindup)
+	# the off-hand opener needs no windup of its own: the half-swing rule below places it
+	var ready: float = minf(windup, DB.attack.readyWindup)
 	var t := maxf(cooldowns.attackOff, ready)
+	# WoW style: the off hand lands half a swing after the main hand, so blows
+	# alternate main, off, main rather than coming in pairs
+	var half: float = minf(stats.attack_cooldown_for("main"), stats.attack_cooldown_for("off")) * 0.5
 	var main: float = pending.t if pending != null and pending.type == "strike" else cooldowns.attack
 	var since: float = game.time - (last_main_impact_at if last_main_impact_at != null else -INF)
 	if absf(main - t) < gap:
-		cooldowns.attackOff = main + gap
+		cooldowns.attackOff = main + half
 		return false
-	if since + t < gap:
-		cooldowns.attackOff = gap - since
-		return false
+	if since + t < half - 1e-3:
+		cooldowns.attackOff = half - since
+		if cooldowns.attackOff > windup:
+			return false
+		t = cooldowns.attackOff
 	opener_off = false
 	pending_off = {"t": t, "aim": {"x": aim.x, "z": aim.z} if aim != null else null}
 	rig.play_off(anim, t / anim)

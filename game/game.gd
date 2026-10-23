@@ -737,6 +737,10 @@ func _handle_input(dt: float):
 		return {"move": {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}, "aim": null, "actions": {}}
 	if player.dead:
 		return null
+	if keys.pressed("sheathe"):
+		player.set_sheathed(not player.sheathed)
+	if keys.pressed("sit"):
+		player.set_sitting(not player.sitting)
 
 	var km := input.move_axis()
 	var keys_move: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": km.x, "z": km.y}

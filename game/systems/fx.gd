@@ -54,6 +54,11 @@ func _init(g) -> void:
 			sparks(Vector3(e.x, Terrain.height_at(e.x, e.z) - 0.3, e.z), 5))
 	ev.on("playerBrace", func(e): brace_glow(e.get("window", DB.brace.window)))
 	ev.on("projectile", func(e): projectile(e))
+	# a channel that drains (Siphon Life) draws a beam from the target to you
+	ev.on("castStart", func(e):
+		var c = game.player.casting
+		if c != null and c.channel and c.target != null and c.spell.tuning.get("healPercent", 0) > 0:
+			siphon_beam(c, SCHOOL_COLOURS.get(c.spell.get("school"), Color("9a5ae0"))))
 	ev.on("darkCircle", func(e): shockwave(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), e.radius, Color("9a7cff")))
 	# spells (game/systems/spells.gd)
 	ev.on("spellFlash", func(e): flash(e.position, SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
@@ -235,6 +240,50 @@ func zone(x: float, z: float, radius: float, duration: float, colour := Color("f
 	ring.scale = Vector3(radius * 2, 1, radius * 2)
 	return _add(ring, duration, func(it, k, _dt):
 		it.obj.material_override.albedo_color.a = strength * (0.55 + 0.25 * sin(k * duration * TAU)) * minf(1, (1 - k) * 6))
+
+
+## a beam of drained life from the target to the caster, for as long as the
+## channel lasts, with motes of light running along it towards the caster
+func siphon_beam(cast: Dictionary, colour: Color) -> void:
+	var beam := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.1
+	cm.bottom_radius = 0.1
+	cm.height = 1
+	cm.radial_segments = 6
+	cm.cap_top = false
+	cm.cap_bottom = false
+	beam.mesh = cm
+	beam.material_override = Tex.fx_material(null, Color(colour, 0))
+	var motes := []
+	for i in 4:
+		var m := Tex.sprite(Tex.fx_material(Tex.glint(), colour, true, true))
+		m.scale = Vector3.ONE * 0.45
+		beam.add_child(m)
+		motes.append(m)
+	var player = game.player
+	_add(beam, cast.total + 1.0, func(it, _k, dt):
+		var on: bool = is_same(player.casting, cast) and cast.target.alive
+		it.fade = minf(1, it.fade + dt * 6) if on else it.fade - dt * 5
+		if it.fade <= 0:
+			it.life = it.age
+			return
+		var a: Vector3 = cast.target.position + Vector3(0, 1.1, 0)
+		var b: Vector3 = player.position + Vector3(0, 1.1, 0)
+		var d := b - a
+		var len := maxf(0.1, d.length())
+		it.obj.global_position = (a + b) * 0.5
+		var up := d / len
+		var side := up.cross(Vector3.FORWARD if absf(up.y) < 0.99 else Vector3.RIGHT).normalized()
+		# the cylinder's own y runs along the beam, stretched to its length
+		it.obj.global_basis = Basis(side, up * len, side.cross(up))
+		it.obj.material_override.albedo_color.a = it.fade * (0.55 + 0.2 * sin(it.age * 18))
+		for i in motes.size():
+			var f: float = fmod(it.age * 1.6 + i / float(motes.size()), 1.0)
+			var mo: Node3D = motes[i]
+			mo.global_position = a + d * f
+			mo.global_basis = Basis.IDENTITY.scaled(Vector3.ONE * 0.45 * (0.6 + 0.4 * sin(f * PI)))
+			mo.material_override.albedo_color.a = it.fade * sin(f * PI), {"fade": 0.0})
 
 
 func pillar(pos: Vector3, colour := Color("ffe2a8")) -> void:

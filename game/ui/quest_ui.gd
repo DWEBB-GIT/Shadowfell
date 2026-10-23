@@ -437,7 +437,7 @@ func layout() -> void:
 		p.custom_minimum_size.x = minf(600, vp.x - 24)
 		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
-	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 196)
+	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 204)
 
 
 # --------------------------------------------------------- gamepad

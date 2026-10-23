@@ -31,19 +31,17 @@ const PROP_STYLE := {
 	"rock1": ["dot", "#6c6a62", 0.8],
 	"bone_pile": ["dot", "#b0a890", 0.6],
 }
-## keeps every draw inside the round map
-const MASK := """
-shader_type canvas_item;
-varying vec2 local;
-void vertex() { local = VERTEX; }
-void fragment() { if (distance(local, vec2(84.0)) > 83.0) { discard; } }
-"""
+const SEGMENTS := 72 ## sides of the round window the map is shown through
 
 var game
 var zoom := 1
 var picture: Texture2D
 var origin := Vector2.ZERO
 var map: Control
+var view: SubViewport ## the square map is drawn here, then shown through a circle
+var location: Label ## where you are, on a bar across the foot of the map
+var _circle := PackedVector2Array()
+var _circle_uv := PackedVector2Array()
 var zoom_buttons: Array = [] ## + and −, for the HUD to give them tips
 
 
@@ -54,16 +52,34 @@ func _init(g) -> void:
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_CROSS
+	# the map is drawn square, off screen, and shown through a true circle
+	# (a polygon), so nothing outside the circle can ever show
+	view = SubViewport.new()
+	view.size = Vector2i(int(SIZE), int(SIZE))
+	view.disable_3d = true
+	view.transparent_bg = true
+	view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(view)
 	map = Control.new()
 	map.size = size
 	map.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sh := Shader.new()
-	sh.code = MASK
-	var mat := ShaderMaterial.new()
-	mat.shader = sh
-	map.material = mat
 	map.draw.connect(_draw_map)
-	add_child(map)
+	view.add_child(map)
+	var r := SIZE / 2
+	for i in SEGMENTS:
+		var a := TAU * i / SEGMENTS
+		var v := Vector2(cos(a), sin(a))
+		_circle.append(Vector2(r, r) + v * (r - 1))
+		_circle_uv.append(Vector2(0.5, 0.5) + v * (r - 1) / SIZE)
+	# where you are: a bar across the foot of the circle
+	location = UI.label(self, "", 11, UI.GOLD)
+	location.add_theme_stylebox_override("normal", _round_box(4))
+	location.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	location.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	location.clip_text = true
+	location.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	location.size = Vector2(124, 18)
+	location.position = Vector2(SIZE / 2 - 62, SIZE - 9)
 	# the N badge and the zoom buttons
 	var north := UI.label(self, "N", 11, UI.GOLD)
 	north.add_theme_stylebox_override("normal", _round_box(8))
@@ -250,8 +266,12 @@ func _far(x: float, z: float, r := 0.0) -> bool:
 # ---------------------------------------------------------------- draw
 func _draw() -> void:
 	# the frame: a dark ring and the warm border (style.css #minimap)
-	draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2 + 3, Color.BLACK)
-	draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2 + 1, UI.BORDER)
+	var c := Vector2(SIZE, SIZE) / 2
+	draw_circle(c, SIZE / 2 + 3, Color.BLACK)
+	draw_circle(c, SIZE / 2 + 1, UI.BORDER)
+	draw_polygon(_circle, PackedColorArray([Color.WHITE]), _circle_uv, view.get_texture())
+	# a smooth rim over the polygon's edge
+	draw_arc(c, SIZE / 2 - 0.5, 0, TAU, SEGMENTS, UI.BORDER, 1.5, true)
 
 
 ## Redrawn when the Warden moves or turns, and a few times a second for the
@@ -268,8 +288,19 @@ func _process(dt: float) -> void:
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
 	if _since >= 0.2 or _moved(now):
 		_since = 0.0
+		var here := place_name()
+		if location.text != here:
+			location.text = here
 		_drawn_at = now
 		map.queue_redraw()
+
+
+## The name of where you stand: the building you are in, else the region.
+func place_name() -> String:
+	var inside = game.world.indoors if game.world else null
+	if inside is Dictionary and inside.get("def", {}).get("name"):
+		return inside.def.name
+	return game.region.get("name", "") if game.region is Dictionary else ""
 
 
 func _moved(now: Vector4) -> bool:

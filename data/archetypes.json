@@ -200,7 +200,7 @@
             "colour": "#8a4ac8",
             "max": 100,
             "start": "empty",
-            "perDotTick": 4,
+            "perDotTick": 1.3333,
             "decayAfter": 6,
             "decayPerSecond": 5,
             "overload": {

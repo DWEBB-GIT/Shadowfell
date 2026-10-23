@@ -17,7 +17,7 @@ var action = null ## { type, t, duration, impact, auto }
 var off_action = null
 var flinch := 0.0
 var death := -1.0 ## -1 alive, otherwise seconds since death
-var pose = null ## a held pose ('fish', 'sit') when no action plays
+var pose = null ## a held pose ('fish', 'sit' to eat, 'rest' to sit) when no action plays
 
 
 static func ease_(t: float) -> float:
@@ -105,6 +105,14 @@ func update(dt: float, speed01: float) -> void:
 		_rot("Leg_R", 0, -1.35)
 		_rot("Arm_R", 0, -0.9 + sin(time * 3) * 0.25)
 		_rot("Arm_L", 0, -0.5)
+		model.position.y = -0.5
+	elif pose == "rest" and action == null:
+		# sitting on the ground, hands on the knees
+		_rot("Leg_L", 0, -1.45)
+		_rot("Leg_R", 0, -1.35)
+		_rot("Arm_R", 0, -0.55)
+		_rot("Arm_L", 0, -0.55)
+		_rot("Torso", 0, 0.08 + breathe)
 		model.position.y = -0.5
 	elif death < 0:
 		model.position.y = 0

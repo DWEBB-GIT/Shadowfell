@@ -275,7 +275,7 @@ static func enemy_block(cfg: Dictionary) -> Dictionary:
 
 ## The damage formula: base x mult x level gap -> crit? -> armour or
 ## resistance -> block? -> round, at least 1.
-## opts: base, mult, school, canCrit, canBlock, critBonus, forceCrit
+## opts: base, mult, school, canCrit, canBlock, critBonus, forceCrit, carry
 static func compute_hit(rand: Callable, attacker: Dictionary, defender: Dictionary, opts: Dictionary) -> Dictionary:
 	var school: String = opts.get("school", "physical")
 	var dmg: float = opts.base * opts.get("mult", 1.0)
@@ -286,6 +286,12 @@ static func compute_hit(rand: Callable, attacker: Dictionary, defender: Dictiona
 	var blocked := 0
 	if opts.get("canBlock", false) and defender.block > 0 and rand.call() * 100 < defender.block:
 		blocked = U.jround(dmg * S().blockReduction / 100.0)
+	if opts.has("carry"):
+		# small, frequent ticks (damage over time) keep their fractions for the
+		# next tick, so splitting a dot into more ticks never changes its total
+		var whole: float = dmg + opts.carry - blocked
+		var n := maxi(0, floori(whole))
+		return {"amount": n, "crit": crit, "blocked": blocked, "school": school, "carry": whole - n}
 	var amount := maxi(1, U.jround(dmg) - blocked)
 	return {"amount": amount, "crit": crit, "blocked": blocked, "school": school}
 

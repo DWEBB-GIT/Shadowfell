@@ -116,7 +116,7 @@ func interactions() -> Array:
 		return []
 	var out := []
 	if corpse != null:
-		out.append({"key": "corpse", "x": corpse.x, "z": corpse.z, "bias": -1.0, "reach": DB.CONFIG.death.corpseReach, "prompt": "Return to your body", "run": func(): revive_at_corpse()})
+		out.append({"key": "corpse", "x": corpse.x, "z": corpse.z, "bias": -1.0, "reach": DB.CONFIG.death.corpseReach, "prompt": "Return to your body", "big": true, "run": func(): revive_at_corpse()})
 	var r := rest_point()
 	out.append({"key": "revive-here", "x": r.x, "z": r.z, "bias": 0.0, "reach": DB.CONFIG.death.restReach, "prompt": "Return to life here (lose %s)" % U.money(coin_loss) if coin_loss else "Return to life here", "run": func(): revive_here()})
 	return out
@@ -145,7 +145,50 @@ func _place_corpse(x: float, z: float, facing: float) -> void:
 	mesh.position = Vector3(x, Terrain.height_at(x, z) + 0.15, z)
 	mesh.name = "Corpse"
 	game.scene.add_child(mesh)
+	_make_glow(mesh)
 	corpse = {"x": x, "z": z, "mesh": mesh}
+
+
+## The body glows and a pale beacon rises over it, so a spirit can find it
+## from far off through the grey of death.
+func _make_glow(mesh: Node3D) -> void:
+	var colour := Color("bfe4ff")
+	var overlay := Tex.fx_material(null, Color(colour, 0.3))
+	var stack: Array = [mesh]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is GeometryInstance3D:
+			n.material_overlay = overlay
+		stack.append_array(n.get_children())
+	# the beacon stands upright whatever way the body lies
+	var holder := Node3D.new()
+	holder.top_level = true
+	mesh.add_child(holder)
+	holder.global_position = mesh.global_position
+	var beam := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.25
+	cm.bottom_radius = 0.7
+	cm.height = 24
+	cm.radial_segments = 10
+	cm.cap_top = false
+	cm.cap_bottom = false
+	beam.mesh = cm
+	beam.material_override = Tex.fx_material(null, Color(colour, 0.22))
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	beam.position.y = 12
+	holder.add_child(beam)
+	var light := OmniLight3D.new()
+	light.light_color = colour
+	light.light_energy = 2.5
+	light.omni_range = 7
+	light.position.y = 1.2
+	holder.add_child(light)
+	var tw := holder.create_tween().set_loops()
+	tw.tween_property(beam.material_override, "albedo_color:a", 0.08, 0.9).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(overlay, "albedo_color:a", 0.12, 0.9).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(beam.material_override, "albedo_color:a", 0.22, 0.9).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(overlay, "albedo_color:a", 0.3, 0.9).set_trans(Tween.TRANS_SINE)
 
 
 # ------------------------------------------------------------- revenge

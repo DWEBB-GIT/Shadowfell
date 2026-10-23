@@ -207,7 +207,7 @@ func _build_settings() -> void:
 	hud.keybind_ui.list = UI.vbox(v, 1)
 	var foot := UI.hbox(v, 6)
 	UI.button(foot, "Save the game", func(): game.manual_save())
-	UI.button(foot, "Save and return to characters", func(): game.log_out())
+	UI.button(foot, "Logout", func(): game.log_out())
 
 
 # ------------------------------------------------------------------ state

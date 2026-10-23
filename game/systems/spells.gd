@@ -838,13 +838,22 @@ func after_hit(hit) -> void:
 
 ## One hit of a spell on an enemy: the shared damage formula, the number,
 ## the log line ({name} and {n} filled in), and the kill.
-func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, hurt_opts := {"stagger": 0.12}) -> Dictionary:
+## `carry`: a dot passes itself, so its tick keeps the fraction of a point
+## left over for the next tick (see Stats.compute_hit)
+func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, hurt_opts := {"stagger": 0.12}, carry = null) -> Dictionary:
 	var t: Dictionary = spell.tuning
 	var weapon: bool = spell.get("ranged", false) or t.has("damageMultiplier") or (t.has("tickMultiplier") and not t.has("damageMin"))
 	var m := hit_mods(enemy, weapon)
 	mult *= _execute_scale(spell, enemy)
 	var school: String = spell.get("school", "physical")
-	var hit := Stats.compute_hit(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit})
+	var o := {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit}
+	if carry != null:
+		o.carry = carry.get("carry", 0.0)
+	var hit := Stats.compute_hit(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), o)
+	if carry != null:
+		carry.carry = hit.carry
+		if hit.amount <= 0:
+			return hit
 	after_hit(hit)
 	enemy.hurt(hit.amount, hurt_opts)
 	var events: Events = game.events
@@ -1063,11 +1072,11 @@ func update(dt: float) -> void:
 				base = _spell_base(t)
 			else:
 				base = Stats.weapon_roll(game.random, game.stats)
-			var hit := _damage(spell, d.enemy, base, "", t.tickMultiplier, {"stagger": 0.0})
+			var hit := _damage(spell, d.enemy, base, "", t.tickMultiplier, {"stagger": 0.0}, d)
 			events.emit("dotTick", {"id": d.id, "damage": hit.amount})
 			# Leech: a share of every tick heals you
 			var leech: float = trait_.get("dotHealPercent", 0) if trait_.get("id") == "leech" else 0.0
-			if leech:
+			if leech and hit.amount > 0:
 				_heal_number(player.heal(hit.amount * leech / 100.0))
 		if d.left <= 1e-6:
 			dots.erase(d)
