@@ -22,6 +22,9 @@ const BAR_SLOTS := [
 ## the bow abilities go onto free spell slots the first time a bow is equipped
 const BOW_ABILITIES := ["quickShot", "venomArrow"]
 const UTILITY_ABILITIES := ["fish", "setCamp", "cook"]
+## what every new character carries (inventory.gd) and has on the utility bar
+const STARTER_FOOD := "trail_bread"
+const STARTER_DRINK := "spring_water"
 ## abilities that no longer exist, mapped to what replaced them (old saves)
 const RENAMED := {"dodge": "brace", "draught": "item:healing_draught"}
 
@@ -31,10 +34,12 @@ var clicked := {} ## abilities clicked on the bar this frame
 var had_bow := false
 
 
-## a class's starting bar: its six spells, then a draught on the first utility slot
+## a class's starting bar: its six spells, then on the utility slots a
+## draught, food, a drink for a class with mana, and Return Home
 static func default_bar(archetype: Dictionary) -> Array:
 	var out: Array = archetype.bar.duplicate()
-	out.append_array(["item:healing_draught", null, null, null])
+	var drink = "item:" + STARTER_DRINK if archetype.get("resources", {}).has("mana") else null
+	out.append_array(["item:healing_draught", "item:" + STARTER_FOOD, drink, "returnHome"])
 	return out
 
 
@@ -79,9 +84,10 @@ static func free_spell_slot(s: Array) -> int:
 	return -1
 
 
-## what may sit in a utility slot: items and skill tools, never class spells
+## what may sit in a utility slot: items, skill tools and portals, never class spells
 static func utility_ok(a) -> bool:
-	return not a or item_ref(a) != null or DB.abilities.get(a, {}).has("skill")
+	var ab: Dictionary = DB.abilities.get(a, {}) if a else {}
+	return not a or item_ref(a) != null or ab.has("skill") or ab.get("kind") == "portal"
 
 
 ## may this ability sit on the bar (and show in the spellbook)?

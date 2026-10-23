@@ -841,8 +841,12 @@ func refresh_stats() -> void:
 	hp.text.text = "%d / %d" % [maxi(0, ceili(player.health)), player.max_health]
 	_refresh_resources()
 	var k: float = float(prog.xp) / prog.xp_to_next
-	set_fill(xp, k)
-	xp.text.text = "Level %d  ·  %d / %d experience (%d%%)%s" % [prog.level, prog.xp, prog.xp_to_next, floori(k * 100), "  ·  %d rested" % floori(prog.rested) if prog.rested >= 1 else ""]
+	if prog.level >= DB.CONFIG.progression.maxLevel:
+		set_fill(xp, 1.0)
+		xp.text.text = "Level %d  ·  maximum level" % prog.level
+	else:
+		set_fill(xp, k)
+		xp.text.text = "Level %d  ·  %d / %d experience (%d%%)%s" % [prog.level, prog.xp, prog.xp_to_next, floori(k * 100), "  ·  %d%% rested" % prog.rested_percent if prog.rested >= 1 else ""]
 	var c: int = game.inventory.coins
 	if c != _coins_shown:
 		_coins_shown = c

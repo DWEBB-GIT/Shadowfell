@@ -60,10 +60,16 @@ func reset() -> void:
 	sockets[0].slots[0] = {"id": "healing_draught", "count": DB.CONFIG.player.startDraughts}
 	ammo_choice = null
 	var arch: Dictionary = game.stats.archetype if game.stats else DB.archetypes[DB.CONFIG.player.archetype]
+	# food for everyone, and a drink for a class with mana
+	var bag: Array = sockets[0].slots
+	bag[1] = {"id": ActionBar.STARTER_FOOD, "count": DB.CONFIG.player.startFood}
+	if arch.get("resources", {}).has("mana"):
+		bag[2] = {"id": ActionBar.STARTER_DRINK, "count": DB.CONFIG.player.startDrinks}
 	var gear: Dictionary = arch.get("startingGear", {})
 	for slot in gear:
 		if slot == "ammo":
-			sockets[0].slots[1] = {"id": gear.ammo[0], "count": int(gear.ammo[1])}
+			var at: int = bag.find(null)
+			bag[at] = {"id": gear.ammo[0], "count": int(gear.ammo[1])}
 			ammo_choice = gear.ammo[0]
 		else:
 			equipment[slot] = {"id": gear[slot], "count": 1}
@@ -586,7 +592,7 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
-	if def.get("use", {}).has("food"):
+	if def.get("use", {}).has("food") or def.get("use", {}).has("drink"):
 		return game.cooking.eat(loc)
 	if def.kind == "consumable":
 		return use_draught(loc)

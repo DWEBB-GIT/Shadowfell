@@ -6,8 +6,8 @@
       "name": "Camping",
       "trainer": "tam",
       "cost": 10,
-      "teaches": ["setCamp"],
-      "desc": "Pitch a camp anywhere quiet. Your spirit rises there if you fall, and resting by it builds rested experience."
+      "teaches": ["setCamp", "returnToCamp"],
+      "desc": "Pitch a camp anywhere quiet. Your spirit rises there if you fall, resting by it builds rested experience, and Return to Camp brings you back to it."
     },
     {
       "id": "fishing",

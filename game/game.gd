@@ -446,6 +446,13 @@ func _pick_under_cursor():
 	var best_d: float = DB.CONFIG.targeting.clickRadius
 	# (lambdas capture by value: collect the candidates, then choose)
 	var cands := []
+	if player.ghost:
+		for c in interaction.click_points():
+			var d := _screen_dist(Vector3(c.x, Terrain.height_at(c.x, c.z) + 0.6, c.z))
+			if d < best_d:
+				best_d = d
+				best = {"kind": "point", "obj": c}
+		return best
 	for e in enemies.list:
 		# the body and the feet both count, so tall and short foes are easy to click
 		if e.alive:
@@ -468,6 +475,10 @@ func _pick_under_cursor():
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["vein", v, d])
+	for c in interaction.click_points():
+		var d := _screen_dist(Vector3(c.x, Terrain.height_at(c.x, c.z) + 0.6, c.z))
+		if d < DB.CONFIG.loot.clickRadius:
+			cands.append(["point", c, d])
 	for c in cands:
 		if c[2] < best_d:
 			best_d = c[2]
@@ -504,6 +515,8 @@ func _cursor_for(pick) -> void:
 				c = "loot" if U.hyp(o.x - p.x, o.z - p.z) <= reach else "lootFar"
 			"vein":
 				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
+			"point":
+				c = "lootFar" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else "loot"
 	if c != cursor:
 		cursor = c
 		Cursors.show(c)
@@ -556,6 +569,8 @@ func _click(button: String) -> bool:
 			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), walk)
 		"vein":
 			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, walk)
+		"point":
+			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
 			if button == "right" or mouse_aim:
 				targeting.engage(o)
@@ -745,8 +760,13 @@ func _handle_input(dt: float):
 	var pad_on := not pad_menu
 	# a spirit only walks
 	if player.ghost:
-		input.consume_click()
-		input.consume_right_click()
+		# a click on your body or the rest point acts, as Space does
+		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
+		_cursor_for(hover)
+		var clicked := input.consume_click()
+		if input.consume_right_click() or clicked:
+			if hover != null:
+				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), false)
 		var gm := input.move_axis()
 		return {"move": {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}, "aim": null, "actions": {}}
 	if player.dead:

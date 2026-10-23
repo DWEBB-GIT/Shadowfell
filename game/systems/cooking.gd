@@ -234,6 +234,7 @@ func update(dt: float) -> void:
 				e.carry -= whole
 				if player.health < player.max_health:
 					player.heal(whole)
+			game.resources.add("mana", e.get("manaPerSecond", 0.0) * step)
 			var t: Dictionary = ability.tuning
 			if not e.get("fed", false) and e.total - e.left >= t.wellFedAfter - 1e-6:
 				e.fed = true
@@ -242,9 +243,9 @@ func update(dt: float) -> void:
 				if game.hud:
 					game.hud.toast("Well Fed")
 			# full and fed: get up
-			var full: bool = player.health >= player.max_health
+			var full: bool = game.resources.mana >= game.resources.max_mana if e.get("drink") else player.health >= player.max_health
 			if e.left <= 0 or (full and e.get("fed", false)):
-				stop_eating("You feel full." if full else "")
+				stop_eating(("You are no longer thirsty." if e.get("drink") else "You feel full.") if full else "")
 
 
 ## What Jade set in worn gear adds to Well Fed (percent).
@@ -260,27 +261,35 @@ func _jade() -> float:
 
 
 # ------------------------------------------------------------ food
-## Sit and eat a dish from your bags (out of combat only).
+## Sit and eat a dish (or drink a drink) from your bags, out of combat only.
+## Food heals and, once eaten long enough, makes you Well Fed; a drink
+## restores mana.
 func eat(loc: String) -> bool:
 	var player = game.player
 	var inventory = game.inventory
 	var s = inventory.get_at(loc)
-	var food = Items.get_def(s.id).get("use", {}).get("food") if s != null else null
+	var use: Dictionary = Items.get_def(s.id).get("use", {}) if s != null else {}
+	var food = use.get("food", use.get("drink"))
 	if food == null or player.dead:
 		return false
+	var drink: bool = not use.has("food")
 	if game.resources.in_combat or game.targeting.attacking:
-		game.hud.error("You can't eat while fighting.")
+		game.hud.error("You can't drink while fighting." if drink else "You can't eat while fighting.")
 		return false
-	# at full health you still eat for Well Fed, unless you already are
-	if player.health >= player.max_health and well_fed > 0:
+	# at full health you still eat for Well Fed, unless you already are (or the food gives none)
+	var feeds: bool = not drink and food.get("wellFed", true)
+	if drink and game.resources.mana >= game.resources.max_mana:
+		game.events.emit("log", {"text": "You are not thirsty.", "kind": "muted", "throttle": "not-hungry"})
+		return false
+	if not drink and player.health >= player.max_health and (well_fed > 0 or not feeds):
 		game.events.emit("log", {"text": "You are not hungry.", "kind": "muted", "throttle": "not-hungry"})
 		return false
 	stop()
 	var id: String = s.id
 	inventory.take(loc, 1)
-	player.eating = {"id": id, "perSecond": food.heal / food.seconds, "left": food.seconds, "total": food.seconds, "carry": 0.0, "fed": false}
+	player.eating = {"id": id, "perSecond": food.get("heal", 0) / food.seconds, "manaPerSecond": food.get("mana", 0) / food.seconds, "left": food.seconds, "total": food.seconds, "carry": 0.0, "fed": not feeds, "drink": drink}
 	player.rig.pose = "sit"
-	game.events.emit("log", {"text": "You sit and eat the %s." % Items.get_def(id).name.to_lower(), "kind": "heal"})
+	game.events.emit("log", {"text": "You sit and %s the %s." % ["drink" if drink else "eat", Items.get_def(id).name.to_lower()], "kind": "heal"})
 	return true
 
 

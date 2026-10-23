@@ -17,6 +17,8 @@ var next_ground_uid := 1
 var flags := {} ## story facts, e.g. 'manifest_delivered'
 var camp = null ## { x, z } of the camp, if one is pitched
 var rest_point := "shrine" ## 'camp', 'shrine' or 'inn:<npc>'
+var home := "" ## 'inn:<npc>' once an innkeeper keeps a bed for you (Return Home goes there)
+var portal_ready := {} ## portal ability id -> world time it can be cast again
 var nemesis = null ## the enemy spawn id that last killed you
 var time := 0.0 ## seconds of play in this world (respawn timers run on it)
 var respawn_at := {} ## enemy spawn id -> world time it comes back
@@ -40,6 +42,8 @@ func reset() -> void:
 	flags = {}
 	camp = null
 	rest_point = "shrine"
+	home = ""
+	portal_ready = {}
 	nemesis = null
 	time = 0.0
 	respawn_at = {}
@@ -76,6 +80,8 @@ func serialize() -> Dictionary:
 		"flags": flags.keys(),
 		"camp": camp.duplicate() if camp else null,
 		"restPoint": rest_point,
+		"home": home,
+		"portalReady": portal_ready.duplicate(),
 		"nemesis": nemesis,
 		"time": U.jround(time),
 		"respawnAt": respawn_at.duplicate(),
@@ -111,6 +117,14 @@ func apply(data: Dictionary) -> void:
 	camp = data.camp.duplicate() if data.get("camp") else null
 	var rp = data.get("restPoint")
 	rest_point = "camp" if rp == "camp" and camp else rp if typeof(rp) == TYPE_STRING and rp.begins_with("inn:") else "shrine"
+	# saves from before homes: an inn you rest at is your home too
+	var h = data.get("home", rp)
+	home = h if typeof(h) == TYPE_STRING and h.begins_with("inn:") else ""
+	portal_ready = {}
+	var pr = data.get("portalReady", {})
+	if typeof(pr) == TYPE_DICTIONARY:
+		for k in pr:
+			portal_ready[k] = float(pr[k])
 	nemesis = data.get("nemesis") if typeof(data.get("nemesis")) == TYPE_STRING else null
 	time = float(data.get("time", 0.0))
 	respawn_at = {}
