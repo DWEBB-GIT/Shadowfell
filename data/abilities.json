@@ -1167,14 +1167,14 @@
       "school": "shadow",
       "target": "enemy",
       "range": 20,
-      "desc": "An instant curse of rot: your target takes shadow damage every 3 seconds for 12 seconds. Using it again refreshes it. Triggers the global cooldown.",
+      "desc": "An instant curse of rot: your target takes shadow damage every second for 12 seconds. Using it again refreshes it. Triggers the global cooldown.",
       "tuning": {
         "cooldown": 0,
         "duration": 12,
-        "tickInterval": 3,
+        "tickInterval": 1,
         "damageMin": 1,
         "damageMax": 2,
-        "tickMultiplier": 1
+        "tickMultiplier": 0.3333
       },
       "cost": {
         "mana": 20

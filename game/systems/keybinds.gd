@@ -30,6 +30,8 @@ const KEY_ACTIONS := [
 	{"id": "interact", "label": "Interact", "group": "Actions", "keys": ["Space"]},
 	{"id": "cycleTarget", "label": "Next target", "group": "Actions", "keys": ["Tab"]},
 	{"id": "crime", "label": "Hold to attack townsfolk", "group": "Actions", "keys": ["AltLeft"]},
+	{"id": "sheathe", "label": "Sheathe / draw weapons", "group": "Actions", "keys": ["KeyZ"]},
+	{"id": "sit", "label": "Sit / stand", "group": "Actions", "keys": ["KeyX"]},
 	{"id": "character", "label": "Character", "group": "Menus", "keys": ["KeyC"]},
 	{"id": "spellbook", "label": "Spells", "group": "Menus", "keys": ["KeyP"]},
 	{"id": "talents", "label": "Talents", "group": "Menus", "keys": ["KeyN"]},

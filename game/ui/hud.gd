@@ -89,6 +89,7 @@ var prompt: PanelContainer
 var prompt_key: Label
 var prompt_text: Label
 var _prompt_shown := ""
+var _prompt_big := false ## a prompt that matters most (back to your body) sits large mid-screen
 var toast_label: Label
 var toast_left := 0.0
 var error_label: Label
@@ -1071,7 +1072,7 @@ func layout() -> void:
 		r.position = Vector2(roundf((vp.x - r.size.x) / 2), vp.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
 	# just over the spell bar, under the cast, gather and skinning bars
-	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), bottom.position.y - 6 - prompt.size.y)
+	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else bottom.position.y - 6 - prompt.size.y)
 	for l in [[toast_label, 0.22], [error_label, 0.18]]:
 		var c: Control = l[0]
 		c.size = c.get_combined_minimum_size()
@@ -1117,10 +1118,15 @@ func update(dt := 0.0) -> void:
 	var c = game.interaction.current
 	var text: String = c.prompt if c != null and not modal else ""
 	var key: String = "A" if pad_mode else (game.keys.label("interact") if game.keys.label("interact") != "" else "Space")
-	if _prompt_shown != text + key:
+	var big: bool = c != null and c.get("big", false)
+	if _prompt_shown != text + key or _prompt_big != big:
 		_prompt_shown = text + key
+		_prompt_big = big
 		prompt_key.text = key
 		prompt_text.text = text
+		prompt_key.add_theme_font_size_override("font_size", 26 if big else 12)
+		prompt_text.add_theme_font_size_override("font_size", 30 if big else 14)
+		prompt.size = Vector2.ZERO
 	prompt.visible = text != ""
 
 	_update_target()
