@@ -161,6 +161,7 @@ func _reel(s: Dictionary, fish: bool) -> void:
 	s.t = 0.0
 	s.start = s.bob.position
 	game.player.rig.play("reel", DB.CONFIG.fishing.reelTime + 0.15, 0.3)
+	game.events.emit("fishReel", {"fish": fish})
 	game.events.emit("splash", {"x": s.x, "y": level, "z": s.z, "small": not fish})
 	if fish:
 		var f := MeshInstance3D.new()
