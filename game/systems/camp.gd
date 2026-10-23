@@ -118,11 +118,57 @@ func update(_dt: float, time: float) -> void:
 	var where := resting
 	if ring:
 		ring.material_override.albedo_color.a = 0.6 + sin(time * 3) * 0.1 if where == "camp" else 0.3
-	if where != "":
+	# rested experience builds slowly while you rest: a share of a level a
+	# second, up to 100% rested (a full level), faster under an inn's roof
+	if where != "" and prog.level < DB.CONFIG.progression.maxLevel:
 		var cap: float = prog.xp_to_next * DB.CONFIG.camp.restedCap
 		if prog.rested < cap:
 			var was: float = prog.rested
-			prog.rested = minf(cap, prog.rested + prog.xp_to_next * DB.CONFIG.camp.restedPerSecond * _dt)
+			prog.rested = minf(cap, prog.rested + prog.xp_to_next * _dt / DB.CONFIG.camp.restedFullSeconds[where])
 			if was == 0:
 				var text := "You rest at the inn. You feel rested." if where == "inn" else "You rest by the fire. You feel rested."
 				game.events.emit("log", {"text": text, "kind": "heal", "throttle": "rested"})
+			elif floori(was / cap * 10) < floori(prog.rested / cap * 10):
+				game.events.emit("statsChanged")
+	# portal cooldowns run on world time, so dying or reloading never resets them
+	var ws = game.world_state
+	for id in ws.portal_ready:
+		game.player.cooldowns[id] = maxf(game.player.cooldowns.get(id, 0.0), ws.portal_ready[id] - ws.time)
+
+
+# ------------------------------------------------------------ portals
+## Where a portal takes you: 'camp' (your fire) or 'home' (the inn you made
+## your home), as { x, z, label }, or {} if there is nowhere to go.
+func portal_point(dest: String) -> Dictionary:
+	var ws = game.world_state
+	if dest == "camp" and ws.camp != null:
+		return {"x": ws.camp.x + 1.4, "z": ws.camp.z, "label": "your camp"}
+	if dest == "home" and ws.home != "":
+		var p: Dictionary = game.afterlife.inn_point()
+		if not p.is_empty():
+			return p
+	return {}
+
+
+## Can the portal be cast now? Says why not.
+func portal_ok(dest: String) -> bool:
+	if portal_point(dest).is_empty():
+		game.hud.error("You have no camp" if dest == "camp" else "You have no home. Ask an innkeeper for a bed")
+		return false
+	if game.resources.in_combat or game.targeting.attacking:
+		game.hud.error("You can't do that while fighting")
+		return false
+	return true
+
+
+## The cast finished: step through to the camp or home.
+func portal(id: String, dest: String, cooldown: float) -> void:
+	var p := portal_point(dest)
+	if p.is_empty():
+		return
+	var ws = game.world_state
+	ws.portal_ready[id] = ws.time + cooldown
+	game.targeting.clear()
+	game.player.place_at(p.x, p.z)
+	game.events.emit("portal", {"to": dest})
+	game.events.emit("log", {"text": "You return to %s." % p.label, "kind": "lore"})

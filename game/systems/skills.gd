@@ -71,6 +71,8 @@ func knows_ability(ability) -> bool:
 		return false
 	if a.has("skill"):
 		return has(a.skill)
+	if a.get("everyone"):
+		return true
 	if not a.has("kind") or all_spells:
 		return true
 	var book: Array = game.stats.archetype.get("abilities", [])

@@ -563,6 +563,32 @@
       }
     },
     {
+      "id": "returnToCamp",
+      "name": "Return to Camp",
+      "kind": "portal",
+      "portal": "camp",
+      "target": "self",
+      "skill": "camping",
+      "desc": "Spend 10 seconds gathering yourself, then step back to your camp, wherever it is. Not while fighting. Moving interrupts it. Once every 30 minutes.",
+      "tuning": {
+        "castTime": 10,
+        "cooldown": 1800
+      }
+    },
+    {
+      "id": "returnHome",
+      "name": "Return Home",
+      "kind": "portal",
+      "portal": "home",
+      "target": "self",
+      "everyone": true,
+      "desc": "Spend 10 seconds thinking of your bed, then step back to the inn you made your home (ask an innkeeper). Not while fighting. Moving interrupts it. Once every 30 minutes.",
+      "tuning": {
+        "castTime": 10,
+        "cooldown": 1800
+      }
+    },
+    {
       "id": "fish",
       "name": "Fishing",
       "target": "ground",

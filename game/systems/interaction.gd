@@ -52,6 +52,17 @@ func _candidates() -> Array:
 	return list
 
 
+## What Space reaches that has no clickable body of its own (shrines,
+## hearths, forges, things to examine; a ghost's body and rest point), so a
+## mouse click reaches it too (game.gd).
+func click_points() -> Array:
+	if game.player.ghost:
+		return game.afterlife.interactions()
+	if game.player.dead:
+		return []
+	return _candidates().filter(func(c): return c.key.begins_with("shrine") or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+
+
 func examine(id: String) -> void:
 	var ws = game.world_state
 	var first: bool = not ws.examined.has(id)

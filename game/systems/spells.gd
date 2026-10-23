@@ -288,7 +288,9 @@ func try_cast(id: String) -> bool:
 	if spell.kind == "camp" and game.camp.enemies_near:
 		game.hud.error("You cannot make camp with enemies close by")
 		return false
-	var casts: bool = spell.kind == "cast" or spell.kind == "camp" or spell.kind == "channel"
+	if spell.kind == "portal" and not game.camp.portal_ok(spell.portal):
+		return false
+	var casts: bool = spell.kind == "cast" or spell.kind == "camp" or spell.kind == "portal" or spell.kind == "channel"
 	if casts and player.moving:
 		game.hud.error("You can't do that while moving")
 		return false
@@ -327,7 +329,7 @@ func try_cast(id: String) -> bool:
 	if not off_gcd:
 		player.cooldowns.gcd = stats.global_cooldown
 	# a cast pays when it finishes (WoW); everything else pays now
-	if spell.kind != "cast" and spell.kind != "camp":
+	if spell.kind != "cast" and spell.kind != "camp" and spell.kind != "portal":
 		var points: float = game.resources.spend(spell)
 		if spell.get("spendsAll"):
 			spell = spell.duplicate()
@@ -504,6 +506,8 @@ func _go(spell: Dictionary, target) -> void:
 				events.emit("log", {"text": "%s: the %s was not casting." % [spell.name, target.cfg.name], "kind": "muted"})
 		"camp":
 			game.camp.pitch(player.position.x, player.position.z)
+		"portal":
+			game.camp.portal(spell.id, spell.portal, t.cooldown)
 		"buff":
 			player.rig.play("brace", 0.6, 0.4)
 			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "damageBonus": t.damageBonus, "reduction": t.get("reduction", 0)}

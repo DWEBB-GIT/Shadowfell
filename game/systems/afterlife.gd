@@ -28,9 +28,9 @@ func rest_point() -> Dictionary:
 		return {"x": ws.camp.x + 1.4, "z": ws.camp.z, "label": "by your camp", "kind": "camp"}
 	# an inn you made your home: you wake by its hearth
 	if typeof(ws.rest_point) == TYPE_STRING and ws.rest_point.begins_with("inn:"):
-		for b in Layout.buildings:
-			if b.get("rest"):
-				return {"x": b.position[0] + b.light[0] + 1.2, "z": b.position[1] + b.light[1] + 1.4, "label": "at %s" % b.name, "kind": "inn"}
+		var inn := inn_point()
+		if not inn.is_empty():
+			return {"x": inn.x, "z": inn.z, "label": "at %s" % inn.label, "kind": "inn"}
 	var sh = Layout.shrines[0]
 	for x in Layout.shrines:
 		if x.id == ws.shrine_activated:
@@ -38,6 +38,14 @@ func rest_point() -> Dictionary:
 	if ws.respawn != null:
 		return {"x": ws.respawn.x, "z": ws.respawn.z, "label": sh.label, "kind": "shrine"}
 	return {"x": Layout.player_start.position[0], "z": Layout.player_start.position[1], "label": "at the road's end", "kind": "start"}
+
+
+## by the inn's hearth, as { x, z, label }, or {} if there is no inn
+func inn_point() -> Dictionary:
+	for b in Layout.buildings:
+		if b.get("rest"):
+			return {"x": b.position[0] + b.light[0] + 1.2, "z": b.position[1] + b.light[1] + 1.4, "label": b.name}
+	return {}
 
 
 # --------------------------------------------------------------- dying

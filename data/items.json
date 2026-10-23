@@ -717,6 +717,41 @@
       "description": "Black as the mere's bottom and nearly as old. Tam has caught two in forty years."
     },
     {
+      "id": "trail_bread",
+      "name": "Trail bread",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 45,
+          "seconds": 15,
+          "wellFed": false
+        }
+      },
+      "stack": 20,
+      "price": 1,
+      "model": "stew",
+      "icon": "stew",
+      "description": "A heel of dark bread, hard enough to knock with. Restores 45 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "spring_water",
+      "name": "Spring water",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "drink": {
+          "mana": 120,
+          "seconds": 15
+        }
+      },
+      "stack": 20,
+      "price": 1,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Cold water in a stoppered skin. Restores 120 mana over 15 seconds while you sit and drink."
+    },
+    {
       "id": "grilled_perch",
       "name": "Grilled perch",
       "kind": "consumable",

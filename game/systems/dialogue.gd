@@ -139,7 +139,7 @@ var page:
 				if DB.builds.get("forge", {}).get("npc") == npc.id and not _power_items().is_empty():
 					pg.options.append({"id": "forge", "text": "Move a legendary power", "icon": "shop", "group": "service"})
 				_service_options(def, pg)
-				if def.get("innkeeper") and game.world_state.rest_point != "inn:" + npc.id:
+				if def.get("innkeeper") and (game.world_state.rest_point != "inn:" + npc.id or game.world_state.home != "inn:" + npc.id):
 					pg.options.append({"id": "home", "text": "Make this inn your home", "icon": "home", "group": "service"})
 				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})
 			"train":
@@ -475,7 +475,8 @@ func choose(id: String) -> bool:
 		view = {"kind": "menu"}
 	elif id == "home":
 		game.world_state.rest_point = "inn:" + npc.id
-		events.emit("log", {"text": "%s keeps a bed for you. If you fall, you will wake at the inn." % def.name, "kind": "heal"})
+		game.world_state.home = "inn:" + npc.id
+		events.emit("log", {"text": "%s keeps a bed for you. If you fall, you will wake at the inn, and Return Home brings you back here." % def.name, "kind": "heal"})
 		game.hud.toast("This inn is now your home")
 	elif id.begins_with("quest:"):
 		view = {"kind": "quest", "id": id.substr(6)}
