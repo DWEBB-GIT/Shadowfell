@@ -9,7 +9,7 @@
         "strength": 4,
         "agility": 2,
         "intellect": 1,
-        "stamina": 10,
+        "stamina": 13,
         "armour": 0,
         "resistance": 0,
         "block": 0,
@@ -17,7 +17,7 @@
       },
       "perLevel": {
         "strength": 2,
-        "stamina": 2
+        "stamina": 3
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,
@@ -173,7 +173,7 @@
         "strength": 1,
         "agility": 1,
         "intellect": 6,
-        "stamina": 9,
+        "stamina": 5,
         "armour": 0,
         "resistance": 0,
         "block": 0,
@@ -233,7 +233,7 @@
         "strength": 4,
         "agility": 1,
         "intellect": 3,
-        "stamina": 10,
+        "stamina": 13,
         "armour": 0,
         "resistance": 0,
         "block": 0,
@@ -241,7 +241,7 @@
       },
       "perLevel": {
         "strength": 2,
-        "stamina": 2
+        "stamina": 3
       },
       "armourTypes": ["cloth", "leather", "mail", "plate"],
       "shields": true,

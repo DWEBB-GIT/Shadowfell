@@ -10,6 +10,27 @@ Where the numbers live:
 
 A balance pass changes a constant, not every item and enemy.
 
+## Level 1 retune (Dan, 2026-10-23)
+
+Dan's targets for the opening levels, built in the Godot game (`game/core/scaling.gd`, `game/core/db.gd`). Where an older table further down disagrees, this section wins; the browser build in `src/` keeps the old numbers.
+
+| | Target | Built |
+|---|---|---|
+| Normal enemy health, level 1 / 2 | 30–40 / 50–55 | 36 / 50 (±10% per spawn point): `enemyHealthSeconds` 11.5 |
+| Normal enemy hit, level 1 | 1–3 | 2 ±35%, so 1–3: `enemyHitShare` 50, `enemyVariance` 0.35 |
+| Player health, level 1 | 50–100 by class: cloth lowest, then leather, then plate | Occultist (cloth) 50, Rogue 68 and Ranger 74 (leather), Warrior and Paladin (plate) 98: 20 + 6 a point of Stamina |
+| Dagger, level 1 | 1–2 | 1–2 at 1.6 s |
+| One-hand sword, level 1 | 1–4 | 1–4 at 2.2 s |
+| Two-hander, level 1 | 3–5 at 2.9 s | 3–5 (no two-handers in the game yet) |
+| Bow, level 1 | 2–5 at 2.5 s | 2–5; the hunting bow is now item level 1, 2.5 s |
+| Warrior with a level 1 two-hander | 8–12 a hit | 9–11 (14–16 on a crit) |
+
+- **Weapon damage:** a second = 0.23 × (item level + 4) × rarity × the weapon type's share; one swing = that × speed, ± the type's spread. Types (`weaponTypes`): dagger 0.8 ±33%, sword 1.0 ±60% (any weapon with no type), two-hander 1.2 ±25%, bow 1.2 ±43%. Bows no longer take half damage (`rangedDamage` is gone); ranged power is still half rate from Agility.
+- **Power:** 0.3 a point (was 0.25), and it comes from **Strength or Agility only**. A Strength or Agility class uses its main attribute; a caster (the Occultist) uses Strength, so Intellect feeds spells and mana, never swings.
+- **What a hit is:** the character panel's "Melee hit" is the weapon's own damage plus power × speed ÷ 0.6, so it is always above the weapon's tooltip; its tooltip shows the split.
+- **Health by armour:** base Stamina cloth 5, leather 8–9, plate 13; Stamina a level 2 for cloth and leather, 3 for plate (level 10: 158, 176–182, 260). Par (the yardstick for enemy hits) is the plate Warden.
+- **The character panel** shows one total per stat (class, level and gear together), with no green "+n" after a level-up.
+
 ## In short
 
 - **Four attributes:** Strength, Agility, Intellect and Stamina.
@@ -28,12 +49,12 @@ A balance pass changes a constant, not every item and enemy.
 
 | Stat | Comes from | What it does |
 |---|---|---|
-| Strength | Archetype, level, gear | The Warden's main attribute: 0.25 power a point |
+| Strength | Archetype, level, gear | The Warden's main attribute: 0.3 power a point (casters' weapon power too) |
 | Agility | Archetype, level, gear | Crit chance: 1% per 0.4 × (level + 4) Agility (0.5% a point at level 1); a rogue's main attribute later |
 | Intellect | Archetype, level, gear | 0.25 spell power and 10 mana a point (mana for archetypes that use it) |
-| Stamina | Archetype, level, gear | 40 health + 6 a point |
+| Stamina | Archetype, level, gear | 20 health + 6 a point |
 | Weapon damage | Main hand | A min–max range per swing, from the weapon's item level, rarity and speed |
-| Power | Main attribute | Added to every ability hit, and to every swing in proportion to the weapon's speed |
+| Power | Strength or Agility | Added to every ability hit, and to every swing in proportion to the weapon's speed |
 | Spell power | Intellect | Added to every spell hit |
 | Crit chance | 5% + Agility ÷ (0.4 × (level + 4)) | Chance of a critical hit, which does 150% |
 | Armour | Gear | Physical reduction = armour ÷ (armour + 400 + 100 × your level), capped at 75% |
@@ -47,7 +68,7 @@ A balance pass changes a constant, not every item and enemy.
 auto attack swing = roll(weapon min..max) + power × weapon speed ÷ 0.6
 weapon ability    = (roll(the weapon's damage over 0.6 s) + power) × ability multiplier
 spell             = roll(spell min..max) × (level + 4) ÷ 5 + spell power
-enemy blow        = the enemy's damage × (1 ± 15%)
+enemy blow        = the enemy's damage × (1 ± 35%)
 
 then, for every hit:
   × 1.2 ^ (attacker's level − target's level)        the level gap
@@ -96,7 +117,7 @@ When the clock starts: as in WoW, a fresh fight opens the moment you reach the t
 
 ### Bows and Auto Shot
 
-A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.8 s, 20 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You must stand still to shoot (WoW Classic; Dan, 2026-10-16, because shooting on the move made melee pointless): moving calls off a draw and holds Auto Shot until you stop. A bow is a pulling weapon for the Warden: bows have half a melee weapon's weapon damage (`rangedDamage` 0.5 in scaling.js), and ranged power comes from Agility at half the main-stat rate (`rangedPowerShare`), never from Strength. The hunting bow reaches 20 m. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
+A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bow, 2.5 s, 20 m). While auto attack is on and the target is beyond melee reach but within the bow's range, **Auto Shot** looses an arrow each time the ranged clock (`cooldowns.ranged`, T = bow speed ÷ (1 + haste)) runs out. The draw starts early, so the arrow leaves the string as the clock runs out; it homes in on the target at 30 m/s and does its damage on arrival. You must stand still to shoot (WoW Classic; Dan, 2026-10-16, because shooting on the move made melee pointless): moving calls off a draw and holds Auto Shot until you stop. A bow is a pulling weapon for the Warden: bows use the bow weapon type (1.2 of a sword's damage a second, since 2026-10-23), and ranged power comes from Agility at half the main-stat rate (`rangedPowerShare`), never from Strength. The hunting bow reaches 20 m. When the target comes into melee reach the sword takes over; when it leaves, the bow does. The swing bar shows whichever is in use. The bow rides on your back and comes to the left hand to shoot.
 
 **Arrows** (Dan, 2026-10-16: Classic style, with a quiver). Each shot uses one arrow; with none, Auto Shot does not fire and the log says so. Arrows (`kind: "ammo"`) stack to 200 and are sold by the hundred (`buyCount`): rough arrows (1 silver, Mara and Tam) and barbed arrows (6 silver, Tam). Each adds `ammoDps` damage for every second of bow speed (rough +0.25, barbed +0.75). Auto Shot uses the best arrows you carry. A **quiver** (Tam, 25 silver) goes in a bag slot like a bag, holds only arrows (`holds: "ammo"`, six stacks), takes new arrows first, and makes Auto Shot 10% faster (`rangedHaste`, on top of haste).
 
@@ -114,8 +135,8 @@ A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes 
 
 | One-handers | Item level | Speed | Damage a swing |
 |---|---|---|---|
-| Arming sword (white) | 2 | 2.4 s | 4–9 |
-| Rusty dirk (white) | 2 | 1.6 s | 3–6 |
+| Arming sword (white) | 2 | 2.4 s | 1–5 (was 4–9) |
+| Rusty dirk (white) | 2 | 1.6 s | 1–2 (was 3–6) |
 | Militia sword (green, +Strength) | 4 | 2.5 s | from the formula |
 | Ghoulbone knife (green, +Agility, +haste) | 4 | 1.7 s | from the formula |
 
