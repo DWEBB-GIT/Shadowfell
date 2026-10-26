@@ -102,8 +102,15 @@ matter where the camera is. Only drawing is local to each screen:
   and effect once off-screen (so the GPU compiles their shaders up front)
   and paints the portraits, then fades out. Nothing hitches the first time
   you swing, cast or meet an enemy.
-- **Culling in cells.** Trees and ground cover are split into 24 m cells
-  (`World.CELL`), so the camera and the sun's shadow only draw nearby cells.
+- **Streaming the world.** The whole world (5 x 7.7 km) is one baked file,
+  `data/terrain/world.bin`: 128 m tiles of heights, walkability, surface and
+  zone, each compressed and only unpacked when something asks about it
+  (`Terrain`). `Land` builds 64 m chunks of ground, trees, rocks and grass
+  within 112 m of the camera, a few milliseconds per frame, and frees them
+  past 176 m. Trees are placed the same way every time from the chunk's
+  position, and their collision is registered per chunk on demand, so the
+  game never depends on what one screen happens to draw (safe for
+  multiplayer).
 - **Draw distance.** The camera's far plane sits just past the fog; grass
   stops at 36 m (`visibility_range_end`), lamps fade out from 40 m, and the
   sun's shadows reach 40 m.
@@ -113,6 +120,29 @@ matter where the camera is. Only drawing is local to each screen:
 
 To measure: `game/tests/perf_parts.gd` (CPU per system) and
 `game/tests/perf_render.gd` (frame time and triangles).
+
+## The world map and how it is built
+
+Dan's painted map is the master. `data/world_map.json` holds it traced
+(`world`: coast, zones, settlements, routes, landmarks; `terrain`: mountains,
+forests, rivers; `act1`: Act 1's regions, valleys, POIs and story notes).
+`tools/world/bake_world.py` turns it into `data/terrain/world.bin` and
+`data/terrain/water.json` (rivers and lakes); run it again after changing
+the map (`python3 tools/world/bake_world.py`, needs numpy and Pillow). It
+prints which places can't be reached on foot; only boat-only places and
+mountain landmarks should be listed.
+
+- High ground, the sea and rivers can't be walked; roads, tracks, fords and
+  clearings around every settlement and POI always can.
+- `WorldMap` answers which region and valley you are in; `Discovery` puts a
+  marker on each POI, discovers it when you come within 30 m (a banner and
+  some XP) and runs the boat ferries (Space at a jetty).
+- M opens the world map (`WorldMapUI`): zones, roads, boats, the places
+  you've found and you.
+- Act 1 sits in the world at `world.act1Offset`; positions in
+  `data/world.json` are world positions.
+- `game/tests/world_check.gd` checks the tiles, regions, chunk cost,
+  discovery, boats and saves.
 
 ## Port plan
 

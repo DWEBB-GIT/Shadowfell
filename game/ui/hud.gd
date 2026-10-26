@@ -92,6 +92,11 @@ var _prompt_shown := ""
 var _prompt_big := false ## a prompt that matters most (back to your body) sits large mid-screen
 var toast_label: Label
 var toast_left := 0.0
+var zone_banner: VBoxContainer ## a zone's name across the top of the screen as you enter it
+var zone_title: Label
+var zone_sub: Label
+var zone_left := 0.0
+var world_map: WorldMapUI
 var error_label: Label
 var error_left := 0.0
 var levelup: PanelContainer
@@ -137,9 +142,13 @@ func _init(g) -> void:
 	ev.on("regionChanged", func(e):
 		region_label.text = e.region.name.to_upper()
 		if e.announce:
-			toast(e.region.name)
+			var lv := str(e.region.get("levels", ""))
+			show_zone(e.region.name, ("Levels " + lv) if lv != "" and lv[0].is_valid_int() else lv)
 			if e.region.id == "blackwood":
 				log_line("The pines close overhead and the road light fails. The Blackwood.", "lore", "enter-blackwood"))
+	ev.on("subzoneChanged", func(e):
+		if e.announce and e.name != "" and zone_left < 2.0:
+			show_zone(e.name, game.region.get("name", "") if game.region is Dictionary else "", 2.6))
 	ev.on("levelUp", show_level_up)
 	ev.on("barChanged", func(_e): render_bar())
 	ev.on("enemyHit", _fought)
@@ -233,6 +242,22 @@ func _build() -> void:
 	prompt_text = UI.label(ph, "", 14)
 	prompt.visible = false
 
+	world_map = WorldMapUI.new(game)
+	root.add_child(world_map)
+	zone_banner = VBoxContainer.new()
+	zone_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	zone_banner.add_theme_constant_override("separation", 0)
+	root.add_child(zone_banner)
+	zone_title = UI.label(zone_banner, "", 34, UI.GOLD)
+	zone_title.add_theme_font_override("font", _spaced(34, 4))
+	zone_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	zone_title.add_theme_constant_override("outline_size", 8)
+	zone_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	zone_sub = UI.label(zone_banner, "", 15, UI.TEXT)
+	zone_sub.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	zone_sub.add_theme_constant_override("outline_size", 6)
+	zone_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	zone_banner.modulate.a = 0
 	toast_label = UI.label(root, "", 18, UI.GOLD)
 	toast_label.add_theme_stylebox_override("normal", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(18, 6, 18, 6)))
 	toast_label.modulate.a = 0
@@ -569,7 +594,7 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt, mute]:
+		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt, mute, world_map]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -672,9 +697,23 @@ func toggle_panel(which: String) -> void:
 		items.toggle(which)
 
 
+func toggle_world_map() -> void:
+	if modal:
+		return
+	game.audio.sfx("panel", 0.6)
+	if world_map.visible:
+		world_map.visible = false
+	else:
+		root.move_child(world_map, -1) # over the rest of the HUD
+		world_map.open()
+
+
 func show_window(which: String) -> void:
 	if which == "quests":
 		quests.toggle_log(true)
+	elif which == "map":
+		root.move_child(world_map, -1)
+		world_map.open()
 	else:
 		items.show_window(which)
 
@@ -737,6 +776,9 @@ func close_modal(force := false) -> bool:
 		document.visible = false
 		backdrop.visible = false
 		modal = null
+		return true
+	if world_map.visible:
+		world_map.visible = false
 		return true
 	if quests.close_all():
 		return true
@@ -810,6 +852,17 @@ func _update_signpost() -> void:
 func error(text: String) -> void:
 	error_label.text = text
 	error_left = 1.4
+
+
+## WoW-style: the place's name large across the top, a line under it.
+func show_zone(title: String, sub: String, seconds := 3.6) -> void:
+	zone_title.text = title
+	zone_sub.text = sub
+	zone_sub.visible = sub != ""
+	zone_left = seconds
+	zone_banner.size = zone_banner.get_combined_minimum_size()
+	var vp := root.get_viewport_rect().size if root.is_inside_tree() else Vector2(1280, 720)
+	zone_banner.position = Vector2(roundf((vp.x - zone_banner.size.x) / 2), roundf(vp.y * 0.1))
 
 
 func toast(text: String, kind := "") -> void:
@@ -1101,6 +1154,8 @@ func update(dt := 0.0) -> void:
 	# fading messages
 	toast_left = maxf(0, toast_left - dt)
 	toast_label.modulate.a = minf(1, toast_left / 0.4)
+	zone_left = maxf(0, zone_left - dt)
+	zone_banner.modulate.a = minf(1, zone_left / 0.8)
 	error_left = maxf(0, error_left - dt)
 	error_label.modulate.a = minf(1, error_left / 0.6)
 	vignette_t = maxf(0, vignette_t - dt)

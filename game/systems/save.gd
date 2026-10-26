@@ -8,6 +8,9 @@ extends RefCounted
 const SAVE_KEY := "shadowfall.save"
 const BACKUP_KEY := "shadowfall.save.unreadable"
 const SAVE_VERSION := 2
+## The world's layout: 1 was the 72 x 225 m strip, 2 the whole world
+## (data/world_map.json). Older saves start again at the Last Cart.
+const MAP_VERSION := 2
 
 var game
 var autosave_enabled := true
@@ -181,6 +184,7 @@ func serialize() -> Dictionary:
 	var player = game.player
 	return {
 		"version": SAVE_VERSION,
+		"map": MAP_VERSION,
 		"savedAt": Time.get_datetime_string_from_system(true) + "Z",
 		"player": {
 			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
@@ -254,7 +258,10 @@ func apply(data: Dictionary) -> void:
 	var progression = game.progression
 	var inventory = game.inventory
 	var ws = game.world_state
+	var old_map := int(data.get("map", 1)) < MAP_VERSION
 	ws.apply(data.world)
+	if old_map:
+		ws.forget_places()
 	game.quests.apply(data.get("quests"), ws.flags)
 	game.skills.apply(data.get("skills"))
 	game.skills.apply_spells(data.get("spells"))
@@ -285,7 +292,11 @@ func apply(data: Dictionary) -> void:
 	game.recompute_max_health()
 	player.health = minf(data.player.health, player.max_health)
 	game.resources.reset()
-	player.place_at(data.player.position.x, data.player.position.z, data.player.facing)
+	if old_map:
+		var start: Dictionary = DB.world.playerStart
+		player.place_at(start.position[0], start.position[1], deg_to_rad(start.get("facing", 180)))
+	else:
+		player.place_at(data.player.position.x, data.player.position.z, data.player.facing)
 
 
 func autosave() -> void:

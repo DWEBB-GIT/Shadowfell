@@ -350,7 +350,7 @@ func info(c: Dictionary) -> Dictionary:
 	var r: Dictionary = game.save.read(c.key)
 	if r.status == "ok":
 		var d: Dictionary = r.data
-		return {"ok": true, "level": U.n(d.progression.level), "where": DB.region_at(d.player.position[1] if d.player.position is Array else d.player.position.z).name}
+		return {"ok": true, "level": U.n(d.progression.level), "where": (DB.region_at(d.player.position[0], d.player.position[1]) if d.player.position is Array else DB.region_at(d.player.position.x, d.player.position.z)).get("name", "")}
 	if r.status == "none":
 		return {"ok": true, "level": "1", "where": "Not yet set out"}
 	return {"ok": false, "level": "?", "where": "Save unreadable"}

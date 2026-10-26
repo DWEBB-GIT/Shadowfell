@@ -68,6 +68,7 @@ var merchant: Merchant
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
+var discovery: Discovery ## POI markers, discovering places, boats
 var mining: Mining
 var forge: Forge
 var law: Law
@@ -99,6 +100,9 @@ var camera: Camera3D
 var camera_target := Vector3.ZERO
 var fog_base = null
 var _bwk := -1.0
+var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
+var _region_at := Vector2(INF, INF)
+var _region_from := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -142,6 +146,7 @@ func _ready() -> void:
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
+	discovery = Discovery.new(self).build()
 	mining = Mining.new(self)
 	forge = Forge.new(self)
 	law = Law.new(self)
@@ -754,6 +759,8 @@ func _handle_input(dt: float):
 		if keys.pressed(w):
 			hud.toggle_panel(w)
 	# D-pad right opens and closes the log (it moves the highlight in the bags)
+	if keys.pressed("map"):
+		hud.toggle_world_map()
 	if keys.pressed("quests") or (not hud.any_window_open and not dialogue.is_open and pad.pressed(B.RIGHT)):
 		hud.toggle_panel("quests")
 	# With a window open the pad drives the window; the world keeps running
@@ -888,6 +895,7 @@ func step(dt: float) -> void:
 		law.update(dt)
 		boons.update(dt)
 		water_and_dark.update(dt, time)
+		discovery.update(dt)
 		enemies.update(dt)
 		npcs.update(dt)
 		merchant.update()
@@ -904,18 +912,20 @@ func step(dt: float) -> void:
 			if pending_death.timer <= 0:
 				hud.show_death(pending_death.loss, respawn_point().kind)
 	world.update(dt, Time.get_ticks_msec() / 1000.0)
-	_update_region()
+	_update_region(dt)
 	world.update_indoors(dt, player.position)
 	_update_camera(dt)
 	if started:
 		hud.update(dt)
 
 
-## Which region the Warden is in, and the air there: the fog and light
-## shade smoothly from the Fallen Road's dusk into the Blackwood's gloom.
-func _update_region() -> void:
-	var z := player.position.z
-	var k := Terrain.blackwoodness(z)
+## Which region and named place the Warden is in, and the air there: the
+## fog and light shade smoothly into the gloom of the Blackwood and other
+## dark woods. The region is looked up every few metres, and a new one only
+## counts once you are a little way into it, so a border does not flicker.
+func _update_region(dt: float) -> void:
+	var p := player.position
+	var k := move_toward(_bwk, Terrain.gloom(p.x, p.z), dt * 0.6) if _bwk >= 0.0 else Terrain.gloom(p.x, p.z)
 	if k != _bwk:
 		_bwk = k
 		var bw: Dictionary = DB.CONFIG.blackwood
@@ -926,24 +936,24 @@ func _update_region() -> void:
 		var light := lerpf(1, bw.light, k)
 		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * light
 		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
-	# a little hysteresis so walking along the border does not flicker the name
-	var r := DB.region_at(z)
+	if region != null and Vector2(p.x - _region_at.x, p.z - _region_at.y).length() < 2.0:
+		return
+	_region_at = Vector2(p.x, p.z)
+	var r := DB.region_at(p.x, p.z)
 	if region != null and r.id != region.id:
-		var ahead := 1.5 if _region_index(r) > _region_index(region) else -1.5
-		if DB.region_at(z + ahead).id != r.id:
+		# only once a few metres in (looking ahead along the way you walk)
+		var ahead := Vector2(p.x - _region_from.x, p.z - _region_from.y).normalized() * 6.0
+		if DB.region_at(p.x - ahead.x, p.z - ahead.y).id != r.id:
 			r = region
+	_region_from = Vector2(p.x, p.z)
 	if region == null or r.id != region.id:
 		var first: bool = region != null
 		region = r
 		events.emit("regionChanged", {"region": r, "announce": first and started})
-
-
-func _region_index(r: Dictionary) -> int:
-	var regions: Array = DB.world.regions
-	for i in regions.size():
-		if regions[i].id == r.id:
-			return i
-	return -1
+	var sub := WorldMap.subzone_at(p.x, p.z)
+	if sub != subzone:
+		subzone = sub
+		events.emit("subzoneChanged", {"name": sub, "announce": started})
 
 
 func _snap_camera() -> void:

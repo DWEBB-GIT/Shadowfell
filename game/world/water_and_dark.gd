@@ -41,6 +41,8 @@ static func flat_ring(inner: float, outer: float, segs: int) -> ArrayMesh:
 
 func build() -> WaterAndDark:
 	for w in Layout.water:
+		if w.get("carved"):
+			continue # a lake in the land itself (Land draws it, the ground blocks it)
 		var level := Terrain.water_level(w)
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = Color(Color.hex(0x1f3a3cff), 0.88)

@@ -96,6 +96,8 @@ static var renown: Dictionary = {}
 static var title_lines: Dictionary = {}
 static var mock_chance := 0.2
 static var world: Dictionary = {}
+static var world_map: Dictionary = {} ## data/world_map.json (WorldMap): the whole world's design map and Act 1's layout
+static var water: Dictionary = {} ## data/terrain/water.json: sea level, rivers and lakes, baked with the terrain
 static var scenery: Dictionary = {}
 static var text: Dictionary = {}
 static var ability_file: Dictionary = {}
@@ -180,8 +182,11 @@ static func setup(data) -> void:
 	for id in abilities:
 		if abilities[id].has("kind"):
 			spells[id] = abilities[id]
+	world_map = f.get("world_map", {})
+	water = JSON.parse_string(FileAccess.get_file_as_string("res://data/terrain/water.json")) if FileAccess.file_exists("res://data/terrain/water.json") else {}
 	Terrain.setup(world)
 	Layout.setup(world, scenery)
+	WorldMap.setup()
 	ready = true
 
 
@@ -217,13 +222,10 @@ static func slot_fits(slot_id: String, item_slot) -> bool:
 	return false
 
 
-## Regions are bands along the road; the one at `z`.
-static func region_at(z: float) -> Dictionary:
-	var regions: Array = world.regions
-	for r in regions:
-		if r.minZ == null or z >= r.minZ:
-			return r
-	return regions[regions.size() - 1]
+## The region (world.json `regions`) at a place: Brackenford, one of Act 1's
+## regions, or a world zone (see WorldMap.region_at).
+static func region_at(x: float, z: float) -> Dictionary:
+	return WorldMap.region_at(x, z)
 
 
 static func region_by_id(id: String) -> Dictionary:
@@ -234,6 +236,9 @@ static func region_by_id(id: String) -> Dictionary:
 
 
 static func examine_text(id: String) -> String:
+	if id.begins_with("poi:"):
+		var p := WorldMap.poi(id.substr(4))
+		return "%s. %s" % [p.get("name", ""), p.get("note", "")] if not p.is_empty() else ""
 	return text.examine.get(id, "")
 
 
