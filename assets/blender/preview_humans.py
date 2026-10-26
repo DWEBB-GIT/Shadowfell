@@ -1,4 +1,4 @@
-"""
+﻿"""
 Renders a posed line-up of the modular humans, to check shapes and skinning:
     blender --background --python assets/blender/build_humans.py -- --preview <dir>
 """
@@ -16,6 +16,9 @@ LINEUP = [
     ("female", "A", "Long", None, {}, (0.55, 0.38, 0.26, 1), (0.08, 0.06, 0.05, 1)),
     ("male", "C", "Cropped", "Full", {"chest": "cloth", "legs": "cloth", "feet": "cloth", "waist": "cloth",
                                       "head": "cloth"}, (0.66, 0.50, 0.40, 1), (0.40, 0.36, 0.32, 1)),
+    ("male", "C", "Short", "Full", {"chest": "leather", "legs": "leather", "feet": "leather", "hands": "leather",
+                                    "waist": "leather", "wrists": "leather", "shoulders": "leather"},
+     (0.72, 0.52, 0.40, 1), (0.22, 0.13, 0.08, 1)),
     ("female", "B", "Ponytail", None, {"chest": "leather", "legs": "leather", "feet": "leather", "hands": "leather",
                                        "waist": "leather", "wrists": "leather", "back": "leather"},
      (0.86, 0.68, 0.56, 1), (0.45, 0.20, 0.08, 1)),
@@ -94,7 +97,7 @@ def render(out_dir):
 
     cam = bpy.data.objects.new("Camera", bpy.data.cameras.new("Camera"))
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = 6.4
+    cam.data.ortho_scale = 7.6
     scene.collection.objects.link(cam)
     scene.camera = cam
     for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
@@ -103,7 +106,7 @@ def render(out_dir):
             break
         except TypeError:
             continue
-    scene.render.resolution_x = 1800
+    scene.render.resolution_x = 2100
     scene.render.resolution_y = 760
     scene.view_settings.view_transform = "Standard"
 

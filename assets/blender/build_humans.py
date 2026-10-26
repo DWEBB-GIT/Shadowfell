@@ -61,6 +61,9 @@ P = {
     "leather": (0.32, 0.21, 0.12),
     "leather_dark": (0.19, 0.12, 0.08),
     "fur": (0.28, 0.25, 0.21),
+    "gambeson": (0.21, 0.21, 0.23),
+    "trousers": (0.17, 0.16, 0.15),
+    "red_cloth": (0.38, 0.12, 0.09),
     "mail": (0.37, 0.38, 0.40),
     "steel": (0.54, 0.55, 0.56),
     "steel_dark": (0.31, 0.32, 0.34),
@@ -128,9 +131,12 @@ BI = {b: i for i, b in enumerate(BONES)}
 
 BODIES = {
     # s: height scale; sh: shoulder joint x; upper/fore: arm lengths; hip: hip joint x;
-    # arm: limb girth; hand: hand size
-    "male": dict(sex="male", s=1.0, sh=.180, upper=.280, fore=.260, hip=.095, arm=1.0, hand=1.0),
-    "female": dict(sex="female", s=.955, sh=.163, upper=.262, fore=.245, hip=.100, arm=.86, hand=.9),
+    # arm/leg: limb girth; hand/foot: hand and boot size; tw: chest and shoulder breadth; neck: neck girth.
+    # Heroic proportions, as on the concept sheet: broad shoulders, thick necks, big hands and feet.
+    "male": dict(sex="male", s=1.0, sh=.200, upper=.275, fore=.255, hip=.100, arm=1.18, leg=1.12, hand=1.22,
+                 foot=1.18, tw=1.13, neck=1.25),
+    "female": dict(sex="female", s=.955, sh=.172, upper=.260, fore=.243, hip=.102, arm=.94, leg=1.02, hand=1.02,
+                   foot=1.05, tw=1.03, neck=1.05),
 }
 
 
@@ -155,8 +161,8 @@ def joints(B):
         J[bone("UpLeg", si)] = Vector((x, 0, .93 * s))
         J[bone("Leg", si)] = Vector((x, -.01, .51 * s))
         J[bone("Foot", si)] = Vector((x, .02, .09 * s))
-        J[bone("ToeBase", si)] = Vector((x, -.09 * s, .02))
-        J[bone("Toe_End", si)] = Vector((x, -.17 * s, .02))
+        J[bone("ToeBase", si)] = Vector((x, -.09 * s * B["foot"], .02))
+        J[bone("Toe_End", si)] = Vector((x, -.17 * s * B["foot"], .02))
     return J
 
 
@@ -263,16 +269,33 @@ def ring_point(r, u, v, t):
 def front_y(r, x, n=8):
     """Where the front of a body ring (u=X, v=FRONT) is at a given |x|."""
     pts = [ring_point(r, SIDE, FRONT, 2 * math.pi * i / n)[0] for i in range(n)]
-    x = abs(x) + r["c"].x
+    # past the ring's side, use its side
+    x = min(abs(x), max(p.x for p in pts) - r["c"].x - 1e-4) + r["c"].x
     best = None
     for a, b in zip(pts, pts[1:] + pts[:1]):
-        if a.y < r["c"].y and b.y < r["c"].y + 1e-6 and (a.x - x) * (b.x - x) <= 0 and a.x != b.x:
+        cy = r["c"].y + 1e-6
+        if min(a.y, b.y) < cy - 2e-6 and max(a.y, b.y) < cy and (a.x - x) * (b.x - x) <= 0 and a.x != b.x:
             t = (x - a.x) / (b.x - a.x)
             y = lerp(a.y, b.y, t)
             slope = math.atan2(b.y - a.y, b.x - a.x)
             if best is None or y < best[0]:
                 best = (y, slope)
     return best
+
+
+def back_y(r, x):
+    """Where the back of a body ring is at a given |x|."""
+    m = dict(r, f=r["b"], b=r["f"])
+    return 2 * r["c"].y - front_y(m, x)[0]
+
+
+def surface_w(r, x, back=False):
+    """A ring's weights at the point on its surface above x."""
+    if not callable(r["w"]):
+        return r["w"]
+    ct = max(-1.0, min(1.0, (x - r["c"].x) / r["rx"]))
+    st = math.sqrt(1 - ct * ct) * (-1 if back else 1)
+    return r["w"](ct, st)
 
 
 def shoulders_w(base_w, k=.8):
@@ -463,7 +486,16 @@ class Body:
                     (1.35, .150, .097, .022, .010, wt(Spine2=1)),
                     (1.43, .146, .080, 0, 0, shoulders_w(wt(Spine2=1))),
                     (1.48, .052, .050, 0, 0, wt(Spine2=.3, Neck=.7))]
-        return [R((0, 0, self.z(z)), rx, ry, w, f, b) for z, rx, ry, f, b, w in rows]
+        out = []
+        for j, (z, rx, ry, f, b, w) in enumerate(rows):
+            if j == len(rows) - 1:
+                rx, ry = rx * self.B["neck"], ry * self.B["neck"]
+            else:
+                t = max(0.0, min(1.0, (z - 1.10) / .26))
+                rx *= lerp(1.0, self.B["tw"], t)
+                ry *= lerp(1.0, (1 + self.B["tw"]) / 2, t)
+            out.append(R((0, 0, self.z(z)), rx, ry, w, f, b))
+        return out
 
     def pelvis(self):
         if self.male:
@@ -484,6 +516,7 @@ class Body:
         out = []
         for z, rr, w in zip((.93, .83, .68, .52), r, ws):
             z = self.z(z)
+            rr *= self.B["leg"]
             out.append(R(self._leg_line(si, "UpLeg", "Leg", z), rr, rr * 1.05, w))
         return out
 
@@ -493,17 +526,18 @@ class Body:
         out = []
         for z, rr, w, b in zip((.52, .44, .28, .12), r, ws, (0, .012, .004, 0)):
             z = self.z(z)
+            rr *= self.B["leg"]
             out.append(R(self._leg_line(si, "Leg", "Foot", z), rr, rr, w, b=b))
         return out
 
     def foot(self, si):
-        k = 1.0 if self.male else .92
+        k = (1.0 if self.male else .92) * self.B["foot"]
         x = self.B["hip"] * si
         rows = [(.055, .045, .033, .040, wt(si, Foot=1)),
                 (.005, .060, .044, .058, wt(si, Foot=.7, Leg=.3)),
                 (-.075, .035, .047, .034, wt(si, Foot=.5, ToeBase=.5)),
                 (-.155, .024, .040, .022, wt(si, ToeBase=1))]
-        return [R((x, y * k, zc), rx * k, rz, w) for y, zc, rx, rz, w in rows]
+        return [R((x, y * k, zc * k), rx * k, rz * k, w) for y, zc, rx, rz, w in rows]
 
     def _arm_at(self, si, dx):
         a = self.J[bone("Arm", si)]
@@ -546,19 +580,19 @@ class Body:
 
     HEADS = {
         # z, rx, ry, y offset, front bulge  (neck, neck top, jaw, mouth, eyes, brow, crown, cap)
-        ("male", "A"): [(.080, .094, .006), (.087, .100, .004), (.086, .099, .006)],
-        ("male", "B"): [(.074, .092, .004), (.083, .098, .004), (.083, .098, .006)],
-        ("male", "C"): [(.085, .096, .006), (.090, .101, .004), (.089, .101, .012)],
+        ("male", "A"): [(.082, .094, .006), (.087, .100, .004), (.086, .099, .013)],
+        ("male", "B"): [(.076, .092, .004), (.083, .098, .004), (.083, .098, .012)],
+        ("male", "C"): [(.088, .096, .006), (.090, .101, .004), (.089, .101, .018)],
         ("female", "A"): [(.072, .088, .005), (.082, .095, .004), (.082, .094, .005)],
         ("female", "B"): [(.078, .090, .005), (.084, .096, .003), (.083, .095, .004)],
         ("female", "C"): [(.070, .088, .006), (.081, .094, .004), (.081, .094, .008)],
     }
-    JAWS = {("male", "A"): (.068, .076), ("male", "B"): (.062, .072), ("male", "C"): (.076, .080),
+    JAWS = {("male", "A"): (.074, .078), ("male", "B"): (.066, .074), ("male", "C"): (.080, .082),
             ("female", "A"): (.060, .068), ("female", "B"): (.066, .072), ("female", "C"): (.055, .066)}
 
     def head(self, variant):
         sex = self.B["sex"]
-        neck = .052 if self.male else .046
+        neck = (.052 if self.male else .046) * self.B["neck"]
         jaw = self.JAWS[(sex, variant)]
         mid = self.HEADS[(sex, variant)]
         top = (.067, .082) if self.male else (.064, .078)
@@ -663,7 +697,8 @@ def build_face(b: Body, variant, add):
     # nose
     nz = (ez + mz) * .5 + .006
     ny = front_y(ring_at(rings, 2, nz), 0)[0]
-    nose = [R((0, ny + .006, nz), .011, .022, hw), R((0, ny - .018, nz - .008), .007, .008, hw)]
+    big = 1.25 if b.male else 1.0
+    nose = [R((0, ny + .006, nz), .011 * big, .022 * big, hw), R((0, ny - .018 * big, nz - .01), .008 * big, .008, hw)]
     p.loft(nose, SKIN, u=SIDE, v=UP, n=4, phase=math.pi / 4, smooth=False)
     # mouth
     my = front_y(mouth, 0)[0]
@@ -744,7 +779,7 @@ def build_beards(b: Body, add):
         for r in rings:
             r["w"] = hw
         p.loft(rings, HAIR, caps=(bool(chin), False), var=.10,
-               skip=lambda k, i: not (0 <= i <= 3) or (k == len(rings) - 2 and i in (1, 2)))
+               skip=lambda k, i: not (0 <= i <= 3))
         my = front_y(mouth, 0)[0]
         for sx in (1, -1):
             p.box((sx * .016, my - .004, mouth["c"].z + .006), (.016, .005, .004), hw, HAIR, rot=(0, 0, sx * 14))
@@ -790,6 +825,41 @@ def skirt(b, rows):
     return [R((0, 0, b.z(z)), rx, ry, skirt_w(a)) for z, rx, ry, a in rows]
 
 
+def strap(p, b, shell, sx, back, colour, width=.022):
+    """A strap from one shoulder to the other hip, lying on the chest (or back)."""
+    pts, ws = [], []
+    for j in range(8):
+        t = j / 7
+        z = lerp(b.z(1.44), b.z(.99), t)
+        x = lerp(sx * .10, -sx * .13, t)
+        r = ring_at(shell, 2, z)
+        y = back_y(r, x) + .006 if back else front_y(r, x)[0] - .006
+        pts.append(Vector((x, y, z)))
+        ws.append(surface_w(r, x, back))
+    p.tube(pts, [width] * len(pts), ws, base(colour), up=FRONT, flat=.28, smooth=False)
+
+
+def tabard(p, b, colour, trim):
+    """Cloth flaps hanging front and back from the belt."""
+    for sy in (1, -1):
+        rows = [(1.00, .110, .085, wt(Hips=1)), (.82, .142, .095, skirt_w(.35)), (.62, .150, .105, skirt_w(.55))]
+        k = 1.0 if b.male else 1.08
+        rings = [R((0, sy * -y * k * (1 if sy > 0 else .92), b.z(z)), rx, .008, w) for z, y, rx, w in rows]
+        p.loft(rings, lambda kk, i: base(trim) if kk == 1 else base(colour), var=.10, smooth=False)
+
+
+def cowl(p, b, colour):
+    """A thick scarf wrapped round the neck, drooping over the chest."""
+    torso = b.torso()
+    neck, sh = torso[6], torso[5]
+    droop = lambda ct, st: UP * (-max(0.0, st) ** 2 * .05)
+    rings = [R((0, -.005, b.z(1.34)), sh["rx"] + .045, sh["ry"] + .06, shoulders_w(wt(Spine2=1), .5), d=droop),
+             R((0, 0, b.z(1.43)), sh["rx"] + .03, sh["ry"] + .05, shoulders_w(wt(Spine2=1), .7)),
+             R((0, .005, b.z(1.50)), neck["rx"] + .04, neck["ry"] + .04, wt(Spine2=.3, Neck=.7)),
+             R((0, .012, b.z(1.53)), neck["rx"] + .02, neck["ry"] + .022, wt(Neck=.6, Head=.4))]
+    p.loft(rings, base(colour), caps=(False, False), var=.12, smooth=False)
+
+
 def build_chest(b: Body, add):
     t = Part("Chest_Cloth")  # robe
     rings = skirt(b, [(.60, .19, .13, .6), (.74, .185, .125, .5), (.86, .172, .116, .25)])
@@ -799,12 +869,20 @@ def build_chest(b: Body, add):
     sleeves(t, b, .013, lambda k, i: base("robe_trim") if k == 5 else base("robe"), lower=True)
     add(t, "chest", variant="cloth", hides=["Torso", "Arms_Upper", "Arms_Lower"])
 
-    t = Part("Chest_Leather")  # jerkin over a linen shirt
-    rings = skirt(b, [(.80, .172, .118, .35), (.86, .168, .115, .25)]) + chest_shell(b, .014)
-    belt = 2  # the band from the skirt into the waist ring
-    t.loft(rings, lambda k, i: base("linen") if k == len(rings) - 2 else
-           base("leather_dark") if k == belt else base("leather"), caps=(False, True), var=.08)
-    sleeves(t, b, .009, base("linen"), upto=.03)
+    t = Part("Chest_Leather", smooth=False)  # the Wanderer: gambeson, red cowl, cross straps, tabard
+    shell = chest_shell(b, .016)
+    rings = skirt(b, [(.84, .172, .118, .3), (.88, .168, .116, .25)]) + shell
+    t.loft(rings, lambda k, i: base("cloth_dark") if k == 0 else base("gambeson"), caps=(False, True), var=.12)
+    sleeves(t, b, .013, lambda k, i: base("cloth_dark") if k == 3 else base("gambeson"), upto=.03, flat=True)
+    for back in (False, True):
+        for sx in (1, -1):
+            strap(t, b, shell, sx, back, "leather")
+        cz = b.z(1.22)
+        r = ring_at(shell, 2, cz)
+        y = back_y(r, 0) + .01 if back else front_y(r, 0)[0] - .01
+        t.box((0, y, cz), (.022, .007, .02), surface_w(r, 0, back), base("iron"))
+    tabard(t, b, "red_cloth", "leather_dark")
+    cowl(t, b, "red_cloth")
     add(t, "chest", variant="leather", hides=["Torso", "Arms_Upper"])
 
     t = Part("Chest_Mail")  # hauberk
@@ -843,9 +921,9 @@ def build_legs(b: Body, add):
     add(p, "legs", variant="cloth", hides=hides)
 
     p = Part("Legs_Leather")
-    legs_shell(p, b, .011, base("leather_dark"), base("leather"), base("leather"))
+    legs_shell(p, b, .011, base("leather_dark"), base("trousers"), base("trousers"))
     for si in (1, -1):
-        knee_box(p, b, si, base("leather_dark"), size=(.03, .008, .032), out=.062)
+        knee_box(p, b, si, base("leather"), size=(.042, .018, .05), out=.066 * b.B["leg"])
     add(p, "legs", variant="leather", hides=hides)
 
     p = Part("Legs_Mail")
@@ -860,7 +938,7 @@ def build_legs(b: Body, add):
 
 
 def build_feet(b: Body, add):
-    def boot(name, d, look, shaft, sole="leather_dark", flat=False, cap=None):
+    def boot(name, d, look, shaft, sole="leather_dark", flat=False, cap=None, straps=()):
         p = Part(name, smooth=not flat)
         for si in (1, -1):
             foot = grow(b.foot(si), d)
@@ -869,9 +947,11 @@ def build_feet(b: Body, add):
             if shaft:
                 shin = b.shin(si)
                 rings = [grow([ring_at(shin, 2, b.z(z))], d + .004)[0] for z in shaft]
-                rings[-1]["rx"] += .008
-                rings[-1]["ry"] += .008
-                p.loft(rings, look, caps=(False, False), var=.07)
+                cuff = .018 if straps else .008  # strapped boots get a wide turned-down cuff
+                rings[-1]["rx"] += cuff
+                rings[-1]["ry"] += cuff
+                p.loft(rings, lambda k, i: base("leather_dark") if k in straps else look, caps=(False, False),
+                       var=.07, smooth=False if straps else None)
             if cap:
                 toe = foot[-1]["c"]
                 p.box((toe.x, toe.y + .01, .03), (.04, .03, .026), wt(si, ToeBase=1), base(cap))
@@ -879,7 +959,8 @@ def build_feet(b: Body, add):
 
     add(boot("Feet_Cloth", .006, base("rag"), (.10, .17), sole="cloth_dark"), "feet", variant="cloth",
         hides=["Feet"])
-    add(boot("Feet_Leather", .010, base("leather"), (.10, .22, .34)), "feet", variant="leather", hides=["Feet"])
+    add(boot("Feet_Leather", .012, base("leather"), (.10, .18, .22, .30, .40), straps=(1, 3)), "feet",
+        variant="leather", hides=["Feet"])
     add(boot("Feet_Mail", .010, base("leather_dark"), (.10, .22, .36), cap="iron"), "feet", variant="mail",
         hides=["Feet"])
     add(boot("Feet_Plate", .013, base("steel"), (.10, .22, .32), sole="iron", flat=True), "feet",
@@ -927,7 +1008,7 @@ def build_wrists(b: Body, add):
         return p
 
     add(bracer("Wrists_Cloth", .006, base("rag")), "wrists", variant="cloth")
-    add(bracer("Wrists_Leather", .010, base("leather"), band="leather_dark"), "wrists", variant="leather")
+    add(bracer("Wrists_Leather", .016, base("leather"), band="leather_dark", flat=True), "wrists", variant="leather")
     add(bracer("Wrists_Mail", .010, base("mail")), "wrists", variant="mail")
     add(bracer("Wrists_Plate", .013, base("steel"), flat=True), "wrists", variant="plate")
 
@@ -946,10 +1027,14 @@ def build_waist(b: Body, add):
         if buckle:
             p.box((0, fy - .002, zc), (.022, .005, .019), wt(Hips=1), base(buckle))
         if pouch:
-            p.box((.11, fy + .03, zc - .045), (.03, .02, .035), wt(Hips=1), base(pouch), rot=(0, 0, 25))
+            for sx in (1, -1):
+                p.box((sx * .12, fy + .035, zc - .04), (.032, .022, .036), wt(Hips=1), base(pouch),
+                      rot=(0, 0, sx * 28), taper=.9)
+                p.box((sx * .12, fy + .022, zc - .012), (.034, .024, .008), wt(Hips=1), base("leather_dark"),
+                      rot=(0, 0, sx * 28))
         if tail:
-            p.box((.09, fy + .02, zc - .09), (.022, .008, .09), wt(Hips=.6, LeftUpLeg=.4) if False else
-                  {bone("Hips"): .6, bone("UpLeg", 1): .4}, base(tail), rot=(0, 0, 20))
+            p.box((.09, fy + .02, zc - .09), (.022, .008, .09), {bone("Hips"): .6, bone("UpLeg", 1): .4},
+                  base(tail), rot=(0, 0, 20))
         return p
 
     add(belt("Waist_Cloth", .022, base("robe_trim"), None, tail="robe_trim"), "waist", variant="cloth")
@@ -962,7 +1047,7 @@ def build_shoulders(b: Body, add):
     def pad(p, si, look, size, lames=0, rim=None):
         a = b.J[bone("Arm", si)]
         k = 1.0 if b.male else .9
-        lx, ly, lz = size
+        lx, ly, lz = (v * b.B["arm"] for v in size)
         flat = lambda ct, st: UP * (max(0.0, -ct) * lx * .9)
         rows = [(-.06, .45, wt(si, Shoulder=.6, Arm=.4)), (-.01, 1.0, wt(si, Shoulder=.4, Arm=.6)),
                 (.06, .95, wt(si, Arm=.85, Shoulder=.15)), (.10 * k, .7, wt(si, Arm=1))]
@@ -983,7 +1068,7 @@ def build_shoulders(b: Body, add):
     p.loft(rings[::-1], lambda k, i: base("robe_trim") if k == 0 else base("cloak"), caps=(False, True), var=.08)
     add(p, "shoulders", variant="cloth")
 
-    for name, look, size, lames, rim in (("leather", base("leather"), (.068, .072, .03), 0, "leather_dark"),
+    for name, look, size, lames, rim in (("leather", base("leather"), (.078, .082, .032), 1, "leather_dark"),
                                          ("mail", base("mail"), (.074, .078, .028), 1, "leather_dark"),
                                          ("plate", base("steel"), (.082, .086, .034), 2, "steel_dark")):
         p = Part(f"Shoulders_{name.title()}", smooth=False)
