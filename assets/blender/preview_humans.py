@@ -9,6 +9,7 @@ import bpy
 from mathutils import Quaternion, Vector
 
 import build_humans as bh
+import texture_humans as tx
 
 # (body, face, hair, beard, {slot: armour type}, skin, hair colour)
 LINEUP = [
@@ -76,11 +77,13 @@ def render(out_dir):
                 hidden.update(info["hides"])
                 hidden.update(p for p in parts if parts[p]["slot"] in ("face", "hair", "beard")
                               and parts[p]["slot"].title() in info["hides"])
+        skin_m = tx.tint(bh.MATSET[1], skin)
+        hair_m = tx.tint(bh.MATSET[2], hair_c)
         for name, info in parts.items():
             obj = info["obj"]
             obj.hide_render = name in hidden
-            obj.data.materials[1] = bh.get_material("M_Skin", skin)
-            obj.data.materials[2] = bh.get_material("M_Hair", hair_c)
+            obj.data.materials[1] = skin_m
+            obj.data.materials[2] = hair_m
         arm.location.x = (n - (len(LINEUP) - 1) / 2) * 0.85
         arm.rotation_euler.z = math.radians(-20)
         pose(arm, n)
@@ -116,3 +119,13 @@ def render(out_dir):
         scene.render.filepath = os.path.join(out_dir, f"humans_{label}.png")
         bpy.ops.render.render(write_still=True)
         print("preview ->", scene.render.filepath)
+
+    # close-ups of the heads, three-quarter on
+    scene.render.resolution_x = scene.render.resolution_y = 520
+    cam.data.ortho_scale = .62
+    for n in range(len(LINEUP)):
+        x = (n - (len(LINEUP) - 1) / 2) * 0.85
+        cam.location = (x - 4.6, -11.1, 1.66)
+        cam.rotation_euler = (math.radians(90), 0, math.radians(-22.5))
+        scene.render.filepath = os.path.join(out_dir, f"head_{n}.png")
+        bpy.ops.render.render(write_still=True)

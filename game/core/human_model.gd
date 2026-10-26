@@ -4,7 +4,8 @@ extends Node3D
 ## assets/blender/build_humans.py): one Mixamo-named skeleton with every part
 ## as its own skinned mesh. Shows one face, hair and beard, one armour piece
 ## per gear slot, and hides the body under armour (human_parts.json says what
-## each piece hides). Skin and hair are tinted per character.
+## each piece hides). Every part of a body shares one painted texture; skin
+## and hair are painted near-white there and tinted per character.
 
 const PARTS := "res://assets/models/human_parts.json"
 const LOOK_SLOTS := ["face", "hair", "beard"]
@@ -19,6 +20,7 @@ var looks := {"face": "A", "hair": "Short", "beard": ""}
 ## gear slot -> armour type ("cloth", "leather", "mail", "plate")
 var armour := {}
 var _meshes := {}
+var _base := StandardMaterial3D.new()
 var _skin := StandardMaterial3D.new()
 var _hair := StandardMaterial3D.new()
 
@@ -43,8 +45,7 @@ func _build() -> void:
 	model = Assets.instance(manifest().bodies[sex])
 	add_child(model)
 	skeleton = model.find_children("*", "Skeleton3D", true, false)[0]
-	for m in [_skin, _hair]:
-		m.vertex_color_use_as_albedo = true
+	for m in [_base, _skin, _hair]:
 		m.roughness = 1.0
 	set_skin(Color(0.80, 0.60, 0.48))
 	set_hair(Color(0.16, 0.11, 0.07))
@@ -53,7 +54,12 @@ func _build() -> void:
 		for i in mi.mesh.get_surface_count():
 			var src := mi.mesh.surface_get_material(i)
 			var mat_name := src.resource_name if src else ""
-			if mat_name == "M_Skin":
+			if src is BaseMaterial3D and src.albedo_texture and not _base.albedo_texture:
+				for m in [_base, _skin, _hair]:
+					m.albedo_texture = src.albedo_texture
+			if mat_name == "M_Base":
+				mi.set_surface_override_material(i, _base)
+			elif mat_name == "M_Skin":
 				mi.set_surface_override_material(i, _skin)
 			elif mat_name == "M_Hair":
 				mi.set_surface_override_material(i, _hair)

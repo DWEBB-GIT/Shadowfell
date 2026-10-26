@@ -29,6 +29,9 @@ func _initialize() -> void:
 		check(sk.get_bone_count() == HumanModel.manifest().bones.size(), sex + ": bone count")
 		for b in HumanModel.manifest().bones:
 			check(sk.find_bone(b) >= 0, sex + ": has bone " + b)
+		var tex: Texture2D = h._base.albedo_texture
+		check(tex != null and tex.get_width() == 512, sex + ": painted 512 texture")
+		check(h._skin.albedo_texture == tex and h._hair.albedo_texture == tex, sex + ": skin and hair share it")
 		var v := visible_parts(h)
 		check("Face_B" in v and "Hair_Long" in v and "Beard_Full" in v and "Torso" in v, sex + ": base look " + str(v))
 		check(not ("Chest_Plate" in v), sex + ": no armour by default")

@@ -22,9 +22,11 @@ Conventions (the game code relies on these):
   * Every part is lofted from rings, and each ring carries its own bone
     weights, so armour built from the body's rings bends exactly as the body
     under it does.
-  * Colour lives in the per-corner colour attribute "Col". M_Base is painted
-    by vertex colour; M_Skin and M_Hair are near-white and tinted in game, so
-    skin tone and hair colour can change per character.
+  * Every part of a body shares one painted 512x512 texture, made by
+    texture_humans.py from each face's palette colour (the corner attribute
+    "Col") and material class ("Cls"). M_Skin and M_Hair are painted
+    near-white and tinted in game, so skin tone and hair colour can change per
+    character.
 """
 import json
 import math
@@ -35,6 +37,9 @@ import sys
 import bpy  # must be imported before bmesh when running as a Python module
 import bmesh
 from mathutils import Matrix, Quaternion, Vector
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import texture_humans  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "models"))
@@ -74,12 +79,15 @@ P = {
     "black": (0.03, 0.03, 0.03),
 }
 WHITE = (1.0, 1.0, 1.0)
-SKIN = ("M_Skin", WHITE)
-HAIR = ("M_Hair", WHITE)
+# a look is (material, colour, paint class); the class picks how texture_humans paints it
+SKIN = ("M_Skin", WHITE, "skin")
+HAIR = ("M_Hair", WHITE, "hair")
+CLASSES = ["skin", "hair"] + list(P)
+MATSET = []  # M_Base, M_Skin and M_Hair of the body being built
 
 
 def base(c):
-    return ("M_Base", P[c])
+    return ("M_Base", P[c], c)
 
 
 # --------------------------------------------------------------- skeleton
@@ -323,34 +331,6 @@ def skirt_w(a, base_w=None):
 
 
 # ------------------------------------------------------------------- part
-def get_material(name, tint=None):
-    key = name if tint is None else f"{name}.{tint}"
-    mat = bpy.data.materials.get(key)
-    if mat:
-        return mat
-    mat = bpy.data.materials.new(key)
-    try:
-        mat.use_nodes = True
-    except Exception:
-        pass
-    nt = mat.node_tree
-    bsdf = nt.nodes.get("Principled BSDF")
-    attr = nt.nodes.new("ShaderNodeVertexColor")
-    attr.layer_name = "Col"
-    out = attr.outputs["Color"]
-    if tint is not None:
-        mul = nt.nodes.new("ShaderNodeMix")
-        mul.data_type = "RGBA"
-        mul.blend_type = "MULTIPLY"
-        mul.inputs["Factor"].default_value = 1.0
-        nt.links.new(out, mul.inputs["A"])
-        mul.inputs["B"].default_value = tint
-        out = mul.outputs["Result"]
-    nt.links.new(out, bsdf.inputs["Base Color"])
-    bsdf.inputs["Roughness"].default_value = 0.95
-    return mat
-
-
 class Part:
     """One skinned mesh, built from lofts that carry their own weights."""
 
@@ -359,6 +339,7 @@ class Part:
         self.smooth = smooth
         self.bm = bmesh.new()
         self.col = self.bm.loops.layers.color.new("Col")
+        self.cls = self.bm.loops.layers.float_color.new("Cls")
         self.dl = self.bm.verts.layers.deform.verify()
 
     def _vert(self, p, w):
@@ -378,12 +359,14 @@ class Part:
         f.normal_update()
         if f.normal.dot(f.calc_center_median() - ref) < 0:
             f.normal_flip()
-        mat, color = look
+        mat, color, cls = look
         f.material_index = MATS.index(mat)
-        k = 1.0 + rng.uniform(-var, var)
+        k = 1.0 + rng.uniform(-var, var) * .5
         c = tuple(max(0.0, min(1.0, ch * k)) for ch in color) + (1.0,)
+        ci = (CLASSES.index(cls) + 1) / 64
         for loop in f.loops:
             loop[self.col] = c
+            loop[self.cls] = (ci, ci, ci, 1.0)
         f.smooth = self.smooth if smooth is None else smooth
         return f
 
@@ -437,6 +420,22 @@ class Part:
             rings.append(R(p, radii[i] * flat, radii[i], weights[i], u=u, v=v))
         return self.loft(rings, look, n=n, phase=phase, caps=caps, var=var, smooth=smooth)
 
+    def sheet(self, rows, w, look, closed=True, cap=False, ref=None, var=.06, smooth=None, skip=None):
+        """Quads between rows of points (every row the same length), facing away
+        from ref; w is the bone weights for all of it. cap closes the last row."""
+        lk = look if callable(look) else (lambda k, i: look)
+        grid = [[self._vert(pt, w) for pt in row] for row in rows]
+        n = len(rows[0])
+        for k in range(len(rows) - 1):
+            for i in range(n if closed else n - 1):
+                if skip and skip(k, i):
+                    continue
+                j = (i + 1) % n
+                self._face([grid[k][i], grid[k][j], grid[k + 1][j], grid[k + 1][i]], lk(k, i), ref, var, smooth)
+        if cap:
+            self._face(grid[-1], lk(len(rows) - 2, -1), ref, var, smooth)
+        return [v for row in grid for v in row]
+
     def to_object(self, arm):
         me = bpy.data.meshes.new(self.name)
         self.bm.to_mesh(me)
@@ -444,8 +443,8 @@ class Part:
         if "Col" in me.color_attributes:
             me.color_attributes.active_color = me.color_attributes["Col"]
             me.color_attributes.render_color_index = me.color_attributes.find("Col")
-        for m in MATS:
-            me.materials.append(get_material(m))
+        for m in MATSET:
+            me.materials.append(m)
         obj = bpy.data.objects.new(self.name, me)
         bpy.context.scene.collection.objects.link(obj)
         for b in BONES:
@@ -465,6 +464,7 @@ class Body:
         self.male = B["sex"] == "male"
         self.s = B["s"]
         self.J = joints(B)
+        self._heads = {}
 
     def z(self, z):
         return z * self.s
@@ -620,6 +620,62 @@ class Body:
             out.append(r)
         return out
 
+    # the sculpting on each face: chin and jaw push, cheekbones, brow ridge, eye sockets, nose size
+    FACES = {
+        ("male", "A"): dict(chin=.010, jaw=.007, cheek=.006, brow=.006, nose=1.15),
+        ("male", "B"): dict(chin=.006, jaw=.004, cheek=.008, brow=.005, nose=1.0),
+        ("male", "C"): dict(chin=.013, jaw=.009, cheek=.005, brow=.008, nose=1.3),
+        ("female", "A"): dict(chin=.006, jaw=.002, cheek=.006, brow=.002, nose=.9),
+        ("female", "B"): dict(chin=.005, jaw=.003, cheek=.008, brow=.003, nose=.95),
+        ("female", "C"): dict(chin=.007, jaw=.001, cheek=.005, brow=.002, nose=.85),
+    }
+
+    def head_d(self, variant, z):
+        """The sculpting of a head ring at height z, as a ring offset function."""
+        F = self.FACES[(self.B["sex"], variant)]
+        zz = z / self.s
+
+        def g(x, m, w):
+            return math.exp(-((x - m) / w) ** 2)
+
+        def d(ct, st):
+            fx, front = abs(ct), max(0.0, st)
+            out = (F["chin"] * g(zz, 1.556, .014) * g(fx, 0, .32) * front
+                   + F["jaw"] * g(zz, 1.565, .016) * g(fx, .92, .15)
+                   + .004 * g(zz, 1.600, .012) * g(fx, 0, .45) * front  # mouth
+                   + F["cheek"] * g(zz, 1.638, .014) * g(fx, .70, .16) * front
+                   - .007 * g(zz, 1.667, .012) * g(fx, .38, .12) * front  # eye sockets
+                   + F["brow"] * g(zz, 1.692, .010) * g(fx, .30, .30) * front
+                   + .004 * g(zz, 1.73, .04) * max(0.0, -st))  # back of the skull
+            dz = -.008 * g(zz, 1.548, .006) * g(fx, 0, .35) * front  # the chin hangs below the jaw
+            return Vector((ct * out, -st * out, dz))
+        return d
+
+    def head_ring(self, variant, z):
+        """A ring of the sculpted head at height z."""
+        if variant not in self._heads:
+            self._heads[variant] = self.head(variant)
+        r = ring_at(self._heads[variant], 2, z)
+        r["d"] = self.head_d(variant, z)
+        return r
+
+    def head_front(self, variant, z, x):
+        """The point on the front of a head at height z nearest to x across."""
+        r = self.head_ring(variant, z)
+        pts = [ring_point(r, SIDE, FRONT, math.radians(a / 2))[0] for a in range(0, 181)]
+        return min(pts, key=lambda p: abs(p.x - x))
+
+    def head_out(self, z, t, m):
+        """The outermost of the heads at height z and angle t, pushed out by m: hair and beards sit on it."""
+        best = None
+        for v in "ABC":
+            r = self.head_ring(v, z)
+            p = ring_point(r, SIDE, FRONT, t)[0]
+            off = Vector((p.x, p.y - r["c"].y, 0))
+            if best is None or off.length > best[1].length:
+                best = (p, off)
+        return best[0] + best[1].normalized() * m
+
 
 def flat_bottom(verts, z=0.0):
     for v in verts:
@@ -676,33 +732,43 @@ def build_body(b: Body, add):
     build_beards(b, add)
 
 
+FACE_Z = (1.45, 1.535, 1.548, 1.568, 1.600, 1.632, 1.665, 1.692, 1.728, 1.762, 1.790, 1.806, 1.818)
+
+
 def build_face(b: Body, variant, add):
+    """A sculpted head; the lips, eye shadows and stubble are painted on."""
     p = Part(f"Face_{variant}")
-    rings = b.head(variant)
-    p.loft(rings, SKIN, var=.035)
+    p.loft([b.head_ring(variant, b.z(z)) for z in FACE_Z], SKIN, n=16, caps=(False, True), var=.03)
     hw = wt(Head=1)
-    mouth, eyes, brow = rings[3], rings[4], rings[5]
-    ez, mz = eyes["c"].z, mouth["c"].z
+    ez, mz = b.z(1.665), b.z(1.600)
+
+    def on_face(z, x0, x, x1):
+        a, e, c = (b.head_front(variant, z, xx) for xx in (x0, x, x1))
+        return e, math.degrees(math.atan2(c.y - a.y, c.x - a.x))
+
     for sx in (1, -1):
-        y, slope = front_y(eyes, .033)
-        rz = -math.degrees(slope) * sx
-        p.box((sx * .033, y - .001, ez + .002), (.011, .004, .0055), hw, base("eye"), rot=(0, 0, rz))
+        # eyes sit in their sockets, turned with the face
+        e, ang = on_face(ez, .022, .033, .044)
+        p.box((sx * e.x, e.y + .0015, ez), (.0105, .003, .0058), hw, base("eye"), rot=(0, 0, sx * ang))
         # brows take the hair colour
-        yb, sb = front_y(ring_at(rings, 2, ez + b.z(.024)), .034)
-        p.box((sx * .034, yb - .002, ez + b.z(.024)), (.016, .004, .0035), hw, HAIR,
-              rot=(0, 0, -math.degrees(sb) * sx))
-        # ears
-        p.box((sx * (eyes["rx"] + .004), eyes["c"].y + .006, ez - .008), (.006, .016, .022), hw, SKIN,
-              rot=(0, 0, sx * 8))
-    # nose
-    nz = (ez + mz) * .5 + .006
-    ny = front_y(ring_at(rings, 2, nz), 0)[0]
-    big = 1.25 if b.male else 1.0
-    nose = [R((0, ny + .006, nz), .011 * big, .022 * big, hw), R((0, ny - .018 * big, nz - .01), .008 * big, .008, hw)]
-    p.loft(nose, SKIN, u=SIDE, v=UP, n=4, phase=math.pi / 4, smooth=False)
-    # mouth
-    my = front_y(mouth, 0)[0]
-    p.box((0, my, mz - .002), (.016 if b.male else .014, .003, .0032), hw, base("lips"))
+        bz = ez + b.z(.022)
+        e, ang = on_face(bz, .020, .034, .048)
+        p.box((sx * e.x, e.y - .001, bz), (.016, .004, .0035), hw, HAIR, rot=(0, 0, sx * ang))
+        # ears: a flattened loft standing out from the side of the head
+        side = ring_point(b.head_ring(variant, b.z(1.657)), SIDE, FRONT, 0.0)[0]
+        ear = [R((sx * (side.x + .002 + .006 * (dz + .024) / .046), side.y + .008 + dz * .25, side.z + dz),
+                 ln, th, hw) for dz, ln, th in ((-.024, .006, .003), (-.008, .013, .005), (.010, .014, .005),
+                                                (.022, .007, .003))]
+        p.loft(ear, SKIN, u=FRONT, v=SIDE, n=4, phase=0, var=.03, smooth=False)
+    # nose: a three-sided wedge from between the eyes to the tip
+    k = b.FACES[(b.B["sex"], variant)]["nose"]
+    root = b.head_front(variant, ez - b.z(.004), 0)
+    tip = b.head_front(variant, b.z(1.628), 0)
+    under = b.head_front(variant, b.z(1.614), 0)
+    pts = [root + Vector((0, .006, 0)), Vector((0, root.y - .006 * k, ez - b.z(.018))),
+           Vector((0, tip.y - .014 * k, tip.z)), Vector((0, under.y - .005 * k, b.z(1.616)))]
+    p.tube(pts, [.006 * k, .008 * k, .010 * k, .007 * k], [hw] * 4, SKIN, n=3, phase=0, up=FRONT, var=.03,
+           smooth=False)
     add(p, "face", variant=variant)
 
 
@@ -724,73 +790,112 @@ def _hair_rings(b: Body, m, levels, front_line, w=None):
     return rings
 
 
-def hair_cap(p: Part, b: Body, m=.014, bottom=1.625, front_line=1.75, look=HAIR):
-    levels = [bottom, (bottom + 1.735) / 2, 1.735, 1.79]
-    p.loft(_hair_rings(b, m, levels, front_line), look, var=.10, smooth=False)
+HAIRLINES = {
+    # hairline height at the front, over the ears, at the sideburns and at the nape;
+    # thickness; how far alternate locks hang below the hairline
+    "Short": (1.745, 1.69, 1.645, 1.585, .013, .012),
+    "Cropped": (1.765, 1.70, 1.665, 1.62, .007, .004),
+    "Long": (1.735, 1.63, 1.63, 1.57, .015, .008),
+    "Tied": (1.752, 1.675, 1.655, 1.60, .009, .003),
+}
+
+
+def _hairline(t, front, side, burn, nape):
+    a = math.degrees(math.atan2(math.sin(t), abs(math.cos(t))))  # -90 at the back, 90 at the front
+    pts = ((-90, nape), (-50, nape + .03), (-15, side - .01), (0, side), (22.5, burn), (45, side + .015),
+           (67.5, front - .01), (90, front))
+    for (a0, z0), (a1, z1) in zip(pts, pts[1:]):
+        if a <= a1:
+            return lerp(z0, z1, (a - a0) / (a1 - a0))
+    return pts[-1][1]
+
+
+def hair_cap(p: Part, b: Body, style, n=16):
+    """A cap of hair over the scalp, with a jagged hairline of locks."""
+    front, side, burn, nape, m, zig = HAIRLINES[style]
+    ts = [2 * math.pi * i / n for i in range(n)]
+    rows = []
+    for k, f in enumerate((0, .4, .75, 1.0)):
+        row = []
+        for i, t in enumerate(ts):
+            z = lerp(_hairline(t, front, side, burn, nape), 1.795, f) - (zig * (i % 2) if k == 0 else 0)
+            row.append(b.head_out(b.z(z), t, m * (1 + .5 * f) + (.004 if k == 0 else 0)))
+        rows.append(row)
+    rows.append([b.head_out(b.z(1.818), t, m * 1.4) for t in ts])
+    p.sheet(rows, wt(Head=1), HAIR, cap=True, ref=Vector((0, 0, b.z(1.66))), var=.08, smooth=False)
 
 
 def build_hair(b: Body, add):
-    p = Part("Hair_Short")
-    hair_cap(p, b)
-    add(p, "hair", variant="Short")
-
-    p = Part("Hair_Cropped")
-    hair_cap(p, b, m=.007, bottom=1.66, front_line=1.765)
-    add(p, "hair", variant="Cropped")
+    for style in ("Short", "Cropped"):
+        p = Part(f"Hair_{style}")
+        hair_cap(p, b, style)
+        add(p, "hair", variant=style)
 
     z = b.z
     p = Part("Hair_Long")
-    hair_cap(p, b, m=.015)
+    hair_cap(p, b, "Long")
     curl = lambda ct, st: FRONT * (ct * ct * .035)
-    rows = [(1.74, .085, .080, .03, wt(Head=1)), (1.62, .108, .088, .022, wt(Head=1)),
-            (1.50, .100, .086, .018, wt(Head=.5, Neck=.5)), (1.38, .128, .092, .014, wt(Neck=.4, Spine2=.6)),
-            (1.28, .134, .084, .010, wt(Spine2=1))]
-    p.loft([R((0, y, z(zz)), rx, ry, w, d=curl) for zz, y, rx, ry, w in rows], HAIR, var=.10, smooth=False)
+    ends = lambda ct, st: curl(ct, st) - UP * (.035 * (1 + math.cos(8 * math.atan2(st, ct))) / 2)
+    rows = [(1.74, .085, .080, .03, wt(Head=1), curl), (1.62, .108, .088, .022, wt(Head=1), curl),
+            (1.50, .100, .086, .018, wt(Head=.5, Neck=.5), curl),
+            (1.38, .128, .092, .014, wt(Neck=.4, Spine2=.6), curl), (1.28, .134, .084, .010, wt(Spine2=1), ends)]
+    p.loft([R((0, y, z(zz)), rx, ry, w, d=d) for zz, y, rx, ry, w, d in rows], HAIR, n=16, caps=(False, False),
+           var=.08, smooth=False)
     add(p, "hair", variant="Long")
 
     p = Part("Hair_Ponytail")
-    hair_cap(p, b)
-    pts = [Vector((0, .095, z(1.71))), Vector((0, .128, z(1.63))), Vector((0, .140, z(1.52))),
-           Vector((0, .135, z(1.40)))]
-    p.tube(pts, [.030, .025, .019, .010],
-           [wt(Head=1), wt(Head=1), wt(Head=.5, Neck=.5), wt(Neck=.5, Spine2=.5)], HAIR, n=6, phase=0,
-           up=FRONT, var=.10, smooth=False)
+    hair_cap(p, b, "Tied")
+    pts = [Vector((0, .098, z(1.715))), Vector((0, .130, z(1.66))), Vector((0, .145, z(1.58))),
+           Vector((0, .142, z(1.49))), Vector((0, .132, z(1.40)))]
+    p.tube(pts, [.024, .028, .024, .017, .006],
+           [wt(Head=1), wt(Head=1), wt(Head=.5, Neck=.5), wt(Neck=.5, Spine2=.5), wt(Spine2=1)], HAIR, n=6,
+           phase=0, up=FRONT, var=.08, smooth=False)
+    p.tube([Vector((0, .100, z(1.722))), Vector((0, .116, z(1.698)))], [.020, .020], [wt(Head=1)] * 2,
+           base("leather_dark"), n=6, phase=0, up=FRONT, smooth=False)
     add(p, "hair", variant="Ponytail")
 
     p = Part("Hair_Bun")
-    hair_cap(p, b)
+    hair_cap(p, b, "Tied")
     c = Vector((0, .100, z(1.765)))
     p.loft([R(c + UP * .04, .018, .018, wt(Head=1)), R(c + UP * .012, .044, .040, wt(Head=1)),
             R(c - UP * .022, .040, .036, wt(Head=1)), R(c - UP * .040, .015, .015, wt(Head=1))],
-           HAIR, var=.10, smooth=False)
+           HAIR, var=.08, smooth=False)
+    p.loft([R(c - UP * .045 - FRONT * .004, .030, .026, wt(Head=1)), R(c - UP * .030, .034, .030, wt(Head=1))],
+           base("leather_dark"), caps=(False, False), smooth=False)
     add(p, "hair", variant="Bun")
 
 
 def build_beards(b: Body, add):
-    env = b.head_envelope()
-    jaw, mouth = env[2], env[3]
+    """Beards cover the jaw from ear to ear, leaving the mouth clear, and fit every face."""
     hw = wt(Head=1)
-    front = lambda k, i: i in (1, 2) or (k == 0)  # n=8: faces 0..3 are the front half
+    ts = [math.radians(a) for a in range(-10, 191, 20)]  # ear to ear round the front; the chin is i=5
+    ref = Vector((0, 0, b.z(1.60)))
+    mouth = lambda k, i: (k >= 2 and i in (4, 5)) or (k >= 3 and i in (3, 6))
 
-    def beard(name, grow_by, chin):
-        p = Part(name, smooth=False)
-        rings = [R(jaw["c"] + FRONT * .045 - UP * chin, .030, .022, hw)] if chin else []
-        rings += grow([jaw, mouth], grow_by)
-        for r in rings:
-            r["w"] = hw
-        p.loft(rings, HAIR, caps=(bool(chin), False), var=.10,
-               skip=lambda k, i: not (0 <= i <= 3))
-        my = front_y(mouth, 0)[0]
+    def row(z, m, drop=0.0, fwd=0.0):
+        out = []
+        for t in ts:
+            fr = max(0.0, math.sin(t)) ** 3
+            out.append(b.head_out(b.z(z), t, m) + Vector((0, -fwd * fr, -drop * fr)))
+        return out
+
+    def moustache(p, m):
         for sx in (1, -1):
-            p.box((sx * .016, my - .004, mouth["c"].z + .006), (.016, .005, .004), hw, HAIR, rot=(0, 0, sx * 14))
+            e = b.head_out(b.z(1.607), math.radians(90 - 11 * sx), m)
+            p.box((e.x, e.y, e.z), (.017, .005, .0045), hw, HAIR, rot=(0, 0, sx * 14))
+
+    def beard(name, m, drop, fwd):
+        p = Part(name, smooth=False)
+        rows = [row(1.535, -.004), row(1.548, m, drop, fwd), row(1.570, m * 1.1), row(1.600, m * .9),
+                row(1.632, m * .7), row(1.652, m * .35)]
+        p.sheet(rows, hw, HAIR, closed=False, ref=ref, var=.08, skip=mouth)
+        moustache(p, .004)
         return p
 
-    add(beard("Beard_Full", .012, b.z(.04)), "beard", variant="Full")
-    add(beard("Beard_Short", .005, 0), "beard", variant="Short")
+    add(beard("Beard_Full", .012, .045, .02), "beard", variant="Full")
+    add(beard("Beard_Short", .006, .008, .006), "beard", variant="Short")
     p = Part("Beard_Moustache", smooth=False)
-    my = front_y(mouth, 0)[0]
-    for sx in (1, -1):
-        p.box((sx * .017, my - .004, mouth["c"].z + .006), (.017, .005, .0045), hw, HAIR, rot=(0, 0, sx * 14))
+    moustache(p, .004)
     add(p, "beard", variant="Moustache")
 
 
@@ -1155,6 +1260,7 @@ def build_head(b: Body, add):
 def build_human(key):
     b = Body(key)
     arm = make_armature(b.J)
+    MATSET[:] = [bpy.data.materials.new(m) for m in MATS]
     parts = {}
 
     def add(p, slot, variant=None, hides=()):
@@ -1172,6 +1278,8 @@ def build_human(key):
     build_waist(b, add)
     build_legs(b, add)
     build_feet(b, add)
+    texture_humans.texture([i["obj"] for i in parts.values()], MATSET, key, CLASSES,
+                           dict(eye_z=b.z(1.665), mouth_z=b.z(1.600), male=b.male))
     return arm, parts
 
 
@@ -1179,7 +1287,7 @@ def export(path):
     bpy.ops.export_scene.gltf(
         filepath=path,
         export_format="GLB",
-        export_vertex_color="ACTIVE",
+        export_vertex_color="NONE",
         export_all_vertex_colors=False,
         export_yup=True,
         export_apply=True,
@@ -1242,8 +1350,16 @@ def main():
         rng.seed(1997)
         arm, parts = build_human(key)
         path = os.path.join(OUT, f"human_{key}.glb")
+        # the texture is saved beside the .blend, to paint over in Blender
+        img = bpy.data.images[f"human_{key}_diffuse"]
+        img.filepath_raw = os.path.join(HERE, f"human_{key}_diffuse.png")
+        img.file_format = "PNG"
+        img.save()
         export(path)
-        # an editable copy for working on by hand in Blender
+        # an editable copy for working on by hand in Blender, with a default skin tone and hair colour
+        img.filepath = f"//human_{key}_diffuse.png"
+        texture_humans.tint(MATSET[1], (0.80, 0.60, 0.48, 1), copy=False)
+        texture_humans.tint(MATSET[2], (0.16, 0.11, 0.07, 1), copy=False)
         organise(parts)
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(HERE, f"human_{key}.blend"))
         tris = {n: i["tris"] for n, i in parts.items()}
