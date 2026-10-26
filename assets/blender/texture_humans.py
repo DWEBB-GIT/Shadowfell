@@ -28,8 +28,8 @@ MARGIN = 4  # pixels of bleed round each island
 DENSITY = {"Face": 1.9, "Hair": 1.35, "Beard": 1.35, "Hands": 1.2, "Head": 1.2}
 
 CLOTH = {"linen", "cloth", "cloth_dark", "rag", "robe", "robe_trim", "cloak", "cloak_dark", "cloak_red",
-         "gambeson", "trousers", "red_cloth"}
-LEATHER = {"leather", "leather_dark", "lips"}
+         "gambeson", "trousers", "red_cloth", "shirt", "cape"}
+LEATHER = {"leather", "leather_dark", "lips", "boot"}
 METAL = {"steel", "steel_dark", "iron", "brass"}
 RUSTY = {"iron", "steel_dark"}
 
