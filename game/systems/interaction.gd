@@ -27,18 +27,23 @@ func _candidates() -> Array:
 	list.append_array(game.chests.interactions())
 	for sh in Layout.shrines:
 		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "run": func(): game.rest_at_shrine(sh)})
-	# a hearth opens Cooking once you know the skill
-	if game.skills.has("cooking"):
-		for st in Layout.stations:
-			if st.kind != "fire":
-				continue
-			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius, "prompt": "Cook at %s" % st.name, "run": func(): game.hud.show_window("cooking")})
-	# a forge opens Smelting once you know Mining
-	if game.skills.has("mining"):
-		for st in Layout.stations:
-			if st.kind != "forge":
-				continue
-			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.4, "reach": st.radius, "prompt": "Smelt at %s" % st.name, "run": func(): game.hud.show_window("smelting")})
+	# a hearth prompts Cooking and a forge prompts Smelting; without the
+	# skill the prompt still shows and says where to learn it
+	for st in Layout.stations:
+		var sk: String = {"fire": "cooking", "forge": "mining"}.get(st.kind, "")
+		if sk == "":
+			continue
+		var verb: String = "Cook" if sk == "cooking" else "Smelt"
+		var win: String = "cooking" if sk == "cooking" else "smelting"
+		var known: bool = game.skills.has(sk)
+		var skill_name: String = DB.skills.get(sk, {}).get("name", sk.capitalize())
+		list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
+			"prompt": "%s at %s" % [verb, st.name] if known else "%s at %s (learn %s first)" % [verb, st.name, skill_name],
+			"run": func():
+				if game.skills.has(sk):
+					game.hud.show_window(win)
+				else:
+					game.hud.error("You need to learn %s from a trainer first." % skill_name)})
 	# a glinting ore vein, for a miner
 	list.append_array(game.mining.interactions())
 	for sp in Layout.signposts:
