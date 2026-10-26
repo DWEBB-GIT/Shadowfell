@@ -9,6 +9,7 @@ const SCHOOL_COLOURS := {"holy": Color("ffd070"), "shadow": Color("9a5ae0"), "na
 
 var game
 var items := []
+var move_mark = null
 var traps := {}
 var dust_mesh: BoxMesh
 var dust_mat: StandardMaterial3D
@@ -231,6 +232,19 @@ func flash(pos: Vector3, colour: Color) -> void:
 		it.obj.position = Vector3(pos.x, pos.y + 1.2 + k * 0.6, pos.z)
 		it.obj.scale = Vector3.ONE * 1.6 * (1 - k * 0.5)
 		it.obj.material_override.albedo_color.a = 1 - k)
+
+
+## click to move: a yellow ring that pulses twice where the walk is headed
+func move_marker(x: float, z: float) -> void:
+	if move_mark != null and is_instance_valid(move_mark.obj):
+		move_mark.life = 0.001
+	var ring := Tex.ground_quad(Tex.fx_material(Tex.ring(), Color("ffd84a")))
+	ring.position = Vector3(x, Terrain.height_at(x, z) + 0.1, z)
+	move_mark = _add(ring, 0.8, func(it, k, _dt):
+		var t: float = fmod(k * 2, 1)
+		var s: float = 1.1 - t * 0.6
+		it.obj.scale = Vector3(s, 1, s)
+		it.obj.material_override.albedo_color.a = (1 - t) * (1 - k * 0.5))
 
 
 ## consecrated ground: a glowing ring that stays for the spell's duration

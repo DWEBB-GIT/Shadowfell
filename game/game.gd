@@ -556,7 +556,9 @@ func _click(button: String) -> bool:
 			targeting.clear()
 		var at = _aim_point() if walk and input.mouse.onCanvas else null
 		if at != null:
-			move_to = {"x": at.x, "z": at.z, "reach": 0.25}
+			# holding the button keeps walking towards the cursor (Diablo / WoW)
+			move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": button}
+			fx.move_marker(at.x, at.z)
 		return false
 	var closer := func(): hud.error("You need to be closer to interact with that target.")
 	var o = pick.obj
@@ -626,6 +628,19 @@ func _click_move(keys_move: Dictionary):
 			return null
 		m.x = m.follow.position.x
 		m.z = m.follow.position.z
+	elif m.has("hold"):
+		var held: bool = input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld
+		var at = _aim_point() if held and input.mouse.onCanvas else null
+		if at != null:
+			m.x = at.x
+			m.z = at.z
+			# keep walking while held, however close the cursor is
+			if U.hyp(m.x - p.x, m.z - p.z) <= 0.4:
+				return null
+		else:
+			# let go: the marker shows where the walk ends
+			m.erase("hold")
+			fx.move_marker(m.x, m.z)
 	var dx: float = m.x - p.x
 	var dz: float = m.z - p.z
 	var d := U.hyp(dx, dz)
