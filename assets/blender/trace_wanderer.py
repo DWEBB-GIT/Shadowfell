@@ -32,6 +32,7 @@ PX = 175.8  # sheet pixels per metre
 # view: (left, top, right, bottom) on the sheet, the figure's axis on the sheet
 VIEWS = {"front": ((300, 120, 480, 470), 392), "side": ((470, 120, 610, 470), 533),
          "back": ((595, 120, 755, 470), 675)}
+HEAD_SHIFT = {"front": 2.9, "back": 3.9}  # sheet pixels the head sits right of the body's axis
 BG = np.array([0.069, 0.088, 0.104])
 
 UP = Vector((0, 0, 1))
@@ -92,10 +93,16 @@ class Sheet:
         sp = self.spans(view, z)
         return min(sp, key=lambda s: 0 if s[0] <= x <= s[1] else min(abs(s[0] - x), abs(s[1] - x)))
 
+    def axis(self, view, z):
+        """Where the figure's axis is on the sheet at height z: the head sits a little off
+        the body's axis in the front and back views, so the face lands where it is painted
+        (front: midway between the painted eyes at 388.8 and 401; back: the skull's centre)."""
+        t = np.clip((np.asarray(z) - 1.55) / .03, 0, 1)
+        return VIEWS[view][1] + HEAD_SHIFT.get(view, 0.0) * t
+
     def colour(self, view, u, z):
         """Bilinear sRGB colour at a point of a view (u across, as in spans)."""
-        (_, _, _, _), axis = VIEWS[view]
-        sx = axis + u * PX - .5
+        sx = self.axis(view, z) + u * PX - .5
         sy = GROUND - z * PX - .5
         x0, y0 = np.floor(sx).astype(int), np.floor(sy).astype(int)
         fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
@@ -105,8 +112,8 @@ class Sheet:
                 + (g(y0 + 1, x0) * (1 - fx) + g(y0 + 1, x0 + 1) * fx) * fy)
 
     def inside(self, view, u, z):
-        (x0, y0, x1, y1), axis = VIEWS[view]
-        sx = np.round(axis + u * PX).astype(int) - x0
+        (x0, y0, x1, y1), _ = VIEWS[view]
+        sx = np.round(self.axis(view, z) + u * PX).astype(int) - x0
         sy = np.round(GROUND - z * PX).astype(int) - y0
         ok = (sx >= 0) & (sx < x1 - x0) & (sy >= 0) & (sy < y1 - y0)
         out = np.zeros(len(sx), bool)
@@ -236,22 +243,42 @@ def build(sheet):
         n = max(1, int(round((b - a) / step)))
         return [a + (b - a) * i / n for i in range(n + 1)]
 
-    # head: front width and side depth, symmetric about the axis
-    rows = []
-    for z in zs(1.585, 1.825, .024):
+    # head: the front view's width (less the ears) and the side view's profile. The profile's
+    # front edge is the nose; the rest of the face sits back from it, and only the middle
+    # of the ring comes forward to meet it.
+    nose = lambda z: .02 * math.exp(-((z - 1.655) / .022) ** 2)
+    rows = [ring(0, .015, .056, .056, z, 20, 2.0) for z in (1.53, 1.56)]  # the neck, down into the scarf
+    for z in zs(1.585, 1.83, .0125):
         a, b = S.around("front", z, 0)
-        f0, f1 = side_run(z, .04)
         half = max(.02, (b - a) / 2)
-        rows.append(ring(0, (f0 + f1) / 2, half, (f1 - f0) / 2, z, 16, 2.2))
-    B.loft("Head", "Head", rows)
+        if 1.635 < z < 1.725:
+            half = min(half, .088)  # the ears stand out of the outline here
+        f0, f1 = side_run(z, .05)
+        f0 = max(f0, -.075)  # not the hood hanging behind the neck
+        if z < 1.635:  # the beard narrows to the chin; the scarf's outline is wider
+            t = (z - 1.585) / .05
+            half = min(half, lerp(.058, .082, t))
+            f0, f1 = max(f0, lerp(-.02, -.06, t)), min(f1, .15)
+        face = f1 - nose(z)
+        pts = ring(0, (f0 + face) / 2, half, (face - f0) / 2, z, 20, 2.3)
+        for q in pts:
+            q.y -= nose(z) * max(0.0, 1 - abs(q.x) / .03)
+        rows.append(pts)
+    B.loft("Head", "Head", rows, caps=(False, True))
+    for s in (1, -1):  # ears
+        ez, ef = 1.672, .03
+        rows = [ring(s * (.088 + dx), ef + df, .006, rf, z, 6, 2.0) for z, dx, df, rf in
+                ((1.645, .004, -.004, .010), (1.665, .010, 0, .016), (1.69, .012, -.004, .016),
+                 (1.705, .006, -.008, .009))]
+        B.loft(f"Ear{s}", "Head", rows)
 
     # the scarf over the shoulders, up to the chin
     rows = []
-    for z, half in ((1.44, .205), (1.47, .205), (1.50, .20), (1.53, .185), (1.56, .165), (1.59, .135),
-                    (1.61, .11)):
+    for z, half in ((1.44, .205), (1.47, .205), (1.50, .20), (1.53, .185), (1.55, .16), (1.563, .135),
+                    (1.575, .11)):
         f0, f1 = side_run(z)
         rows.append(ring(0, (f0 + f1) / 2, half, (f1 - f0) / 2, z, 16, 2.6))
-    B.loft("Cowl", "Torso", rows)
+    B.loft("Cowl", "Torso", rows, caps=(False, False))
 
     # tunic from the hem to the shoulders; the cape behind takes the back 3 cm
     rows, dep = [], None
@@ -272,7 +299,7 @@ def build(sheet):
         dep = f0, f1
         back = f0 + (.03 if z < 1.40 else .0)
         rows.append(ring(0, (back + f1) / 2, half, (f1 - back) / 2, z, 16, 2.6))
-    B.loft("Tunic", "Torso", rows[::-1])
+    B.loft("Tunic", "Torso", rows[::-1], caps=(False, False))
 
     # the cape: a curved slab down the back
     rows = []
@@ -297,12 +324,12 @@ def build(sheet):
             else:
                 prev = cx, half = limb(z, s * .3, prev, .085)
             rows.append(ring(s * cx, 0, half, half * .92, z, 8, 2.3))
-        B.loft(f"Arm{s}", "Arms", rows, caps=(False, True))
+        B.loft(f"Arm{s}", "Arms", rows, caps=(False, False))
         rows = []
         for z in [.955 - i * .03 for i in range(7)]:
             prev = cx, half = limb(z, s * .34, prev, .07)
             rows.append(ring(s * cx, -.005, half, half * .75, z, 8, 2.3))
-        B.loft(f"Hand{s}", "Hands", rows)
+        B.loft(f"Hand{s}", "Hands", rows, caps=(False, True))
         # leg: under the tunic, then the measured knee cops and boots
         rows, prev, dep = [], None, None
         for z in [.78 - i * .04 for i in range(17)]:
@@ -315,7 +342,7 @@ def build(sheet):
                 f0, f1 = dep[0] - dep[1], dep[0] + dep[1]
             dep = (f0 + f1) / 2, min(.11, (f1 - f0) / 2)
             rows.append(ring(s * cx, dep[0], half, dep[1], z, 10, 2.4))
-        B.loft(f"Leg{s}", "Legs", rows)
+        B.loft(f"Leg{s}", "Legs", rows, caps=(False, False))
         # boot foot: horizontal slices, toe to heel from the side view
         rows = []
         for z in (.13, .10, .065, .03, .005):
@@ -323,7 +350,7 @@ def build(sheet):
             f0, f1 = side_run(z, 0)
             f0, f1 = max(f0, -.19), min(f1, .16)
             rows.append(ring(s * cx, (f0 + f1) / 2, half, (f1 - f0) / 2, z, 10, 3.0))
-        B.loft(f"Foot{s}", "Feet", rows)
+        B.loft(f"Foot{s}", "Feet", rows, caps=(False, True))
     return B
 
 
@@ -374,7 +401,7 @@ def project(sheet, D, objs):
     loose = np.zeros((len(p), 3))
     lw = np.zeros(len(p))
     for view, (toward, u) in views.items():
-        facing = np.clip(n @ np.array(toward), 0, 1) ** 2
+        facing = np.clip(n @ np.array(toward), 0, 1) ** 4 + 1e-3  # a little of every view, for the tops of things
         col = sheet.colour(view, u, p[:, 2])
         inside = sheet.inside(view, u, p[:, 2])
         seen = np.zeros(len(p), bool)
@@ -408,12 +435,12 @@ def main():
         weigh(obj, part, segs)
         objs.append(obj)
     # the face gets the most texels, then the hands
-    tx.DENSITY.update({"Head": 3.0, "Hand1": 1.5, "Hand-1": 1.5})
+    tx.DENSITY.update({"Head": 3.0, "Ear1": 3.0, "Ear-1": 3.0, "Hand1": 1.5, "Hand-1": 1.5})
     tx.unwrap(objs)
     D = tx.bake(objs)
     rgb, m = project(sheet, D, objs)
     # the sheet is already lit; lift it so the game's own light lands near the sheet's look
-    rgb = 1 - (1 - np.clip(rgb, 0, 1)) ** 1.45
+    rgb = np.clip(rgb, 0, 1) ** .8
     # skin and hair: divide out their usual colour so the game can tint them
     cls = np.rint(D["data"][:, 2] * 64).astype(int) - 1
     base = {}

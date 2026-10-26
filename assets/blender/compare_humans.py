@@ -29,6 +29,12 @@ VIEWS = {
     "side": ((470, 120, 610, 470), 533, Vector((1, 0, 0))),
     "back": ((595, 120, 755, 470), 675, Vector((0, -1, 0))),
 }
+# the heads, close up; the axis here is the head's own centre on the sheet
+HEADS = {
+    "front": ((362, 125, 428, 187), 395.2, Vector((0, 1, 0))),
+    "side": ((500, 125, 566, 187), 533, Vector((1, 0, 0))),
+    "back": ((646, 125, 712, 187), 678.9, Vector((0, -1, 0))),
+}
 WANDERER = {"chest": "leather", "legs": "leather", "feet": "leather", "hands": "leather", "waist": "leather",
             "wrists": "leather", "shoulders": "leather", "back": "leather"}
 SCALE = 3  # output pixels per sheet pixel
@@ -106,11 +112,11 @@ def read_png(path):
     return px.reshape(h, w, 4)[::-1]  # top row first
 
 
-def render_view(scene, cam, view, out_dir):
-    (x0, y0, x1, y1), axis, look = VIEWS[view]
+def render_view(scene, cam, view, box, axis, look, scale, out_dir):
+    x0, y0, x1, y1 = box
     w, h = (x1 - x0) / PX_PER_M, (y1 - y0) / PX_PER_M
-    scene.render.resolution_x = (x1 - x0) * SCALE
-    scene.render.resolution_y = (y1 - y0) * SCALE
+    scene.render.resolution_x = (x1 - x0) * scale
+    scene.render.resolution_y = (y1 - y0) * scale
     cam.data.ortho_scale = max(w, h)
     # the camera's centre, relative to the figure's axis, and its height above the ground
     across = ((x0 + x1) / 2 - axis) / PX_PER_M
@@ -131,23 +137,24 @@ def main():
     trace_wanderer.main()  # already standing as the sheet does, with the sheet's skin and hair
     scene, cam = scene_setup()
     sheet = read_png(SHEET)
-    strips = []
-    for view in VIEWS:
-        (x0, y0, x1, y1), _, _ = VIEWS[view]
-        ref = sheet[y0:y1, x0:x1]
-        ref = np.repeat(np.repeat(ref, SCALE, 0), SCALE, 1)
-        model = render_view(scene, cam, view, out_dir)
-        gap = np.zeros((ref.shape[0], 12, 4), np.float32)
-        gap[..., 3] = 1
-        strips += [ref, model[:ref.shape[0], :ref.shape[1]], gap, gap]
-    pic = np.concatenate(strips[:-2], 1)
-    h, w = pic.shape[:2]
-    img = bpy.data.images.new("compare", w, h, alpha=True)
-    img.pixels.foreach_set(np.ascontiguousarray(pic[::-1]).ravel())
-    img.filepath_raw = os.path.join(out_dir, "compare.png")
-    img.file_format = "PNG"
-    img.save()
-    print("compare ->", img.filepath_raw)
+    for name, views, scale in (("compare", VIEWS, SCALE), ("compare_head", HEADS, 8)):
+        strips = []
+        for view, (box, axis, look) in views.items():
+            x0, y0, x1, y1 = box
+            ref = sheet[y0:y1, x0:x1]
+            ref = np.repeat(np.repeat(ref, scale, 0), scale, 1)
+            model = render_view(scene, cam, f"{name}_{view}", box, axis, look, scale, out_dir)
+            gap = np.zeros((ref.shape[0], 12, 4), np.float32)
+            gap[..., 3] = 1
+            strips += [ref, model[:ref.shape[0], :ref.shape[1]], gap, gap]
+        pic = np.concatenate(strips[:-2], 1)
+        h, w = pic.shape[:2]
+        img = bpy.data.images.new(name, w, h, alpha=True)
+        img.pixels.foreach_set(np.ascontiguousarray(pic[::-1]).ravel())
+        img.filepath_raw = os.path.join(out_dir, name + ".png")
+        img.file_format = "PNG"
+        img.save()
+        print("compare ->", img.filepath_raw)
 
 
 if __name__ == "__main__":
