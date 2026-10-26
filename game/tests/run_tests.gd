@@ -3,9 +3,6 @@ extends SceneTree
 ##   godot --headless --path . --script res://game/tests/run_tests.gd
 ## (npm run godot:test does the same). Exits 1 if anything fails.
 
-# heightAt() from src/world/terrain.js at a few points, so both builds agree
-const JS_HEIGHTS := [[-6, 33, 0.15082], [0, 0, 0.29], [22.5, -19.5, 0.15119], [-24, -14, -1.63163], [8, 72, 0.74378], [4.6, -63, 0.49001], [-6.4, -115, -0.68835], [30, 90, -0.02694], [-40, -130, 6.49159]]
-
 var failures := 0
 
 
@@ -18,10 +15,17 @@ func _initialize() -> void:
 		check(not data.get_record("npcs", s.npc).is_empty(), "npc spawn %s names a known npc" % s.npc)
 	for s in data.section("world", "enemySpawns"):
 		check(not data.get_record("enemies", s.enemy).is_empty(), "enemy spawn %s names a known enemy" % s.id)
-	Terrain.setup(data.files.world)
-	for p in JS_HEIGHTS:
-		var h := Terrain.height_at(p[0], p[1])
-		check(absf(h - p[2]) < 0.001, "terrain height at %s,%s is %.5f (browser build %.5f)" % [p[0], p[1], h, p[2]])
+	# the baked ground (tools/world/bake_world.py): everything placed stands
+	# on open ground, and the start is in Act 1
+	DB.ensure()
+	for list in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "stations", "signposts"]:
+		for s in data.section("world", list):
+			check(Terrain.walk_at(s.position[0], s.position[1]) >= 0.5, "%s %s stands on open ground" % [list, s.get("id", s.get("npc", ""))])
+	for g in data.files.mining.veinGroups:
+		for o in g.outcrops:
+			check(Terrain.walk_at(o[0], o[1]) >= 0.5, "vein outcrop of %s stands on open ground" % g.id)
+	var start: Array = data.section("world", "playerStart").position
+	check(WorldMap.act1_box.has_point(Vector2(start[0], start[1])), "the player starts in Act 1")
 	data.free()
 
 

@@ -46,11 +46,12 @@ func _candidates() -> Array:
 					game.hud.error("You need to learn %s from a trainer first." % skill_name)})
 	# a glinting ore vein, for a miner
 	list.append_array(game.mining.interactions())
+	list.append_array(game.discovery.interactions())
 	for sp in Layout.signposts:
 		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
 	for p in game.world.examine_points:
 		var seen: bool = game.world_state.examined.has(p.id)
-		var c := {"key": "examine:" + p.id, "x": p.x, "z": p.z, "bias": 0.6 if seen else 0.2, "prompt": "Examine the cart" if p.id == "cart" else "Examine", "run": func(): examine(p.id)}
+		var c := {"key": "examine:" + p.id, "x": p.x, "z": p.z, "bias": 0.6 if seen else 0.2, "prompt": "Examine the cart" if p.id == "cart" else "Look around %s" % WorldMap.poi(p.id.substr(4)).get("name", "") if p.id.begins_with("poi:") else "Examine", "run": func(): examine(p.id)}
 		if p.id == "watch_post":
 			c.reach = 3.2
 		list.append(c)

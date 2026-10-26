@@ -13,7 +13,7 @@
     { "id": "resisting", "name": "resisting arrest", "bounty": 40, "infamy": 3, "wanted": true }
   ],
   "jurisdictions": [
-    { "id": "brackenford", "name": "Brackenford", "reeve": "pell", "regions": ["brackenford", "fallen_road"], "gaol": [1.5, 63.5], "gaolName": "the Brackenford lock-up" }
+    { "id": "brackenford", "name": "Brackenford", "reeve": "pell", "regions": ["brackenford", "bracken_vale"], "gaol": [-616.5, 424.5], "gaolName": "the Brackenford lock-up" }
   ],
   "guardLines": {
     "warn": ["Oi. I saw that. First and last time, understood? Go on, before I change my mind.", "That's Corrick's beast you've had. Once, I'll let it go. Twice, and it's the lock-up."],

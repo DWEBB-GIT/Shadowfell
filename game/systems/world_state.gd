@@ -22,6 +22,7 @@ var portal_ready := {} ## portal ability id -> world time it can be cast again
 var nemesis = null ## the enemy spawn id that last killed you
 var time := 0.0 ## seconds of play in this world (respawn timers run on it)
 var respawn_at := {} ## enemy spawn id -> world time it comes back
+var discovered := {} ## POI ids (WorldMap.pois) the player has been to
 
 
 func _init(g) -> void:
@@ -66,6 +67,18 @@ func mark_collected(id: String) -> void:
 	drops.erase(id)
 
 
+## Saves from the old 72 x 225 m map: places on it mean nothing in the big
+## world, so the camp, drops, bodies and dropped items are let go.
+func forget_places() -> void:
+	camp = null
+	respawn = null
+	ground = []
+	drops = {}
+	corpses = {}
+	if rest_point == "camp":
+		rest_point = "shrine"
+
+
 func serialize() -> Dictionary:
 	return {
 		"defeated": defeated.keys(),
@@ -85,6 +98,7 @@ func serialize() -> Dictionary:
 		"nemesis": nemesis,
 		"time": U.jround(time),
 		"respawnAt": respawn_at.duplicate(),
+		"discovered": discovered.keys(),
 	}
 
 
@@ -127,6 +141,7 @@ func apply(data: Dictionary) -> void:
 			portal_ready[k] = float(pr[k])
 	nemesis = data.get("nemesis") if typeof(data.get("nemesis")) == TYPE_STRING else null
 	time = float(data.get("time", 0.0))
+	discovered = _set_of(data.get("discovered"))
 	respawn_at = {}
 	var ra = data.get("respawnAt", {})
 	if typeof(ra) == TYPE_DICTIONARY:

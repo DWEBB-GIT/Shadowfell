@@ -84,7 +84,7 @@ static func crime_def(id: String) -> Dictionary:
 
 ## The jurisdiction (a reeve's area) at a place, or {} where there is no law.
 static func jurisdiction_at(x: float, z: float) -> Dictionary:
-	var r := DB.region_at(z)
+	var r := DB.region_at(x, z)
 	for j in file().get("jurisdictions", []):
 		if j.regions.has(r.get("id", "")):
 			return j

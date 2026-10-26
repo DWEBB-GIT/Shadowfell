@@ -19,7 +19,6 @@ const SCENERY := "res://data/scenery.json"
 const GROUPS := [
 	{"name": "Chests", "file": "world", "list": "chests", "turn": "facing"},
 	{"name": "Props", "file": "scenery", "list": "props", "turn": "rotation", "scale": "scale"},
-	{"name": "Trees", "file": "scenery", "list": "trees", "turn": "r", "radians": true, "scale": "s"},
 	{"name": "Loot", "file": "world", "list": "placedLoot", "scale": "scale"},
 	{"name": "NPCs", "file": "world", "list": "npcSpawns", "turn": "facing"},
 	{"name": "Enemies", "file": "world", "list": "enemySpawns"},
@@ -48,7 +47,15 @@ func rebuild() -> void:
 	if _files.world == null or _files.scenery == null:
 		push_error("World editor: cannot read the data files")
 		return
-	var terrain := World.build_terrain()
+	# the ground under everything placed (the whole world is too big to show)
+	var lo := Vector2(INF, INF)
+	var hi := -lo
+	for g in GROUPS:
+		for r in _files[g.file].get(g.list, []):
+			var p := Vector2(r.position[0], r.position[1])
+			lo = lo.min(p)
+			hi = hi.max(p)
+	var terrain := Land.build_area(lo.x - 40, lo.y - 40, hi.x + 40, hi.y + 40)
 	add_child(terrain) # not owned: it cannot be picked or saved
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, 35, 0)
@@ -58,7 +65,7 @@ func rebuild() -> void:
 		holder.name = g.name
 		add_child(holder)
 		_own(holder)
-		var list: Array = World.trees() if g.list == "trees" else _files[g.file].get(g.list, [])
+		var list: Array = _files[g.file].get(g.list, [])
 		for i in list.size():
 			holder.add_child(_marker(g, list[i], i))
 			_own(holder.get_child(-1))

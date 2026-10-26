@@ -12,3 +12,4 @@ __pycache__/
 .godot/
 build/
 data/build.json
+tools/world/preview.png

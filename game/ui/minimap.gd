@@ -2,8 +2,8 @@ class_name Minimap
 extends Control
 ## A round minimap in the top-right corner, north up (src/ui/minimap.js; the
 ## camera never turns, so up on the map is up on the screen). The ground,
-## roads, trees and props are painted once into a picture of the whole
-## world; each frame draws the part around the Warden, then the markers on
+## roads, water and props round the Warden are painted into a picture (again
+## when they walk out of it); each frame draws the part around them, then the markers on
 ## top: townsfolk with their quest marks, shrines, the places current
 ## objectives point to, and the Warden as an arrow. Quest marks out of range
 ## sit on the rim, pointing the way, but only within
@@ -12,10 +12,8 @@ extends Control
 ## enemies fighting you show as red dots.
 
 const SIZE := 168.0 ## pixels across
-const PX := 4.0 ## picture pixels per metre
+const PX := 3.0 ## picture pixels per metre
 const ZOOMS := [2.2, 3.2, 4.6] ## screen pixels per metre
-const PAD := 24.0 ## metres painted beyond the world's edge (the woods go on)
-const GROUND := {"fallen_road": "#4a4634", "blackwood": "#26302a"}
 const PROP_STYLE := {
 	"watch_post": ["rect", "#8a6a44", 4.5],
 	"forge": ["rect", "#8a6a44", 3],
@@ -111,66 +109,112 @@ func set_zoom(z: int) -> void:
 	zoom = clampi(z, 0, ZOOMS.size() - 1)
 
 
-# ------------------------------------------------- the world, painted once
-func _paint() -> void:
-	var b: Dictionary = Layout.bounds
-	origin = Vector2(b.minX - PAD, b.minZ - PAD)
-	var w := int((b.maxX - b.minX + PAD * 2) * PX)
-	var h := int((b.maxZ - b.minZ + PAD * 2) * PX)
-	var vp := SubViewport.new()
-	vp.size = Vector2i(w, h)
-	vp.disable_3d = true
-	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-	var c := Control.new()
-	c.size = Vector2(w, h)
-	c.draw.connect(func(): _paint_world(Canvas2D.new(c), w, h))
-	vp.add_child(c)
-	add_child(vp)
-	picture = vp.get_texture()
+# ------------------------------------------- the land around you, painted
+## The world is far too big to paint whole, so a square WINDOW metres across
+## around the Warden is painted once, and painted again round the new spot
+## when they walk more than REPAINT metres from its middle.
+const WINDOW := 384.0
+const REPAINT := 96.0
+var _paint_vp: SubViewport
+var _paint_canvas: Control
+var _painted_at := Vector2(INF, INF)
+var _ground_tex: ImageTexture ## kept: the paint pass draws it after _paint_world returns
+
+
+func _paint(at: Vector2) -> void:
+	_painted_at = at
+	origin = at - Vector2(WINDOW, WINDOW) / 2
+	var w := int(WINDOW * PX)
+	if _paint_vp == null:
+		_paint_vp = SubViewport.new()
+		_paint_vp.size = Vector2i(w, w)
+		_paint_vp.disable_3d = true
+		_paint_canvas = Control.new()
+		_paint_canvas.size = Vector2(w, w)
+		_paint_canvas.draw.connect(func(): _paint_world(Canvas2D.new(_paint_canvas), w, w))
+		_paint_vp.add_child(_paint_canvas)
+		add_child(_paint_vp)
+		picture = _paint_vp.get_texture()
+	_paint_canvas.queue_redraw()
+	_paint_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+## The ground's colour on the map: open ground by what it is, high ground
+## dark, water blue.
+const MAP_GROUND := {
+	Terrain.SEA: "#22404a", Terrain.MEADOW: "#4a4634", Terrain.MARSH: "#3e4a38", Terrain.DOWNS: "#5c5c40",
+	Terrain.BLACKWOOD: "#26302a", Terrain.ROCK: "#5a5650", Terrain.MOOR: "#4e4240", Terrain.SAND: "#8a7c5a",
+	Terrain.FARMLAND: "#525030", Terrain.FOREST: "#2e3a28", Terrain.SNOW: "#b8bcc0", Terrain.DESERT: "#8a6c44",
+	Terrain.ASH: "#3a302c", Terrain.SWAMP: "#30382a", Terrain.JUNGLE: "#2a4224", Terrain.HAUNTED: "#2c2a32",
+}
+
+
+func _ground_picture() -> ImageTexture:
+	var c := Terrain.cell()
+	var n := int(WINDOW / c) + 1
+	var img := Image.create(n, n, false, Image.FORMAT_RGB8)
+	var o := Terrain.grid_origin()
+	var a0 := roundi((origin.x - o.x) / c)
+	var b0 := roundi((origin.y - o.y) / c)
+	for j in n:
+		for i in n:
+			var s := Terrain.grid(a0 + i, b0 + j)
+			var col := Color(MAP_GROUND.get(s[2], "#4a4634"))
+			if s[0] < 0.3:
+				col = Color(MAP_GROUND[Terrain.SEA])
+			elif s[1] < 0.5:
+				col = col.darkened(0.55 - s[1] * 0.4)
+			img.set_pixel(i, j, col)
+	return ImageTexture.create_from_image(img)
 
 
 func _paint_world(g: Canvas2D, w: float, h: float) -> void:
-	var b: Dictionary = Layout.bounds
 	var X := func(x: float) -> float: return (x - origin.x) * PX
 	var Z := func(z: float) -> float: return (z - origin.y) * PX
 	g.round_caps = true
-	# ground by region, blended across the border
-	var border: float = DB.region_by_id("fallen_road").minZ
-	var grad := g.create_linear_gradient(0, Z.call(border - 6), 0, Z.call(border + 6))
-	Canvas2D.add_color_stop(grad, 0, GROUND.blackwood)
-	Canvas2D.add_color_stop(grad, 1, GROUND.fallen_road)
-	g.fill_style = grad
-	g.fill_rect(0, 0, w, h)
+	# the ground, a pixel per 4 m sample, smoothed
+	var c := Terrain.cell()
+	_ground_tex = _ground_picture()
+	var ground := _ground_tex
+	var gs := ground.get_size()
+	g.draw_image(ground, X.call(Terrain.grid_origin().x + roundi((origin.x - Terrain.grid_origin().x) / c) * c) - c * PX / 2, Z.call(Terrain.grid_origin().y + roundi((origin.y - Terrain.grid_origin().y) / c) * c) - c * PX / 2, gs.x * c * PX, gs.y * c * PX)
 	# clearings read a little lighter
 	g.fill_style = "rgba(160, 150, 110, 0.10)"
 	for cl in Layout.clearings:
 		g.begin_path()
 		g.arc(X.call(cl[0]), Z.call(cl[1]), cl[2] * PX, 0, TAU)
 		g.fill()
-	# trees: dark dots, darker in the Blackwood
-	for t in game.world.map_trees:
-		g.fill_style = "rgba(8, 14, 10, 0.75)" if t.y < border else "rgba(22, 30, 18, 0.7)"
+	# rivers and lakes
+	g.stroke_style = "#2c5056"
+	for r in DB.water.get("rivers", []):
+		g.line_width = (r.width + 2.0) * PX
 		g.begin_path()
-		g.arc(X.call(t.x), Z.call(t.y), 1.3 * PX, 0, TAU)
+		for i in r.points.size():
+			var q: Array = r.points[i]
+			if i:
+				g.line_to(X.call(q[0]), Z.call(q[1]))
+			else:
+				g.move_to(X.call(q[0]), Z.call(q[1]))
+		g.stroke()
+	for l in DB.water.get("lakes", []):
+		g.fill_style = "#2c5056"
+		g.begin_path()
+		g.ellipse(X.call(l.center[0]), Z.call(l.center[1]), l.rx * PX, l.rz * PX, 0, 0, TAU)
 		g.fill()
 	# roads
-	for road in DB.world.roads:
-		g.stroke_style = "#9c8358" if road.id == "fallen_road" else "#7a6848"
-		g.line_width = road.halfWidth * 1.6 * PX
+	for road in Terrain.roads():
+		if road.half <= 0:
+			continue
+		g.stroke_style = "#9c8358" if road.kind == "road" else "#7a6848"
+		g.line_width = maxf(road.half * 1.6, 2.2) * PX
 		g.begin_path()
 		for i in road.points.size():
-			var p: Array = road.points[i]
+			var q: Array = road.points[i]
 			if i:
-				g.line_to(X.call(p[0]), Z.call(p[1]))
+				g.line_to(X.call(q[0]), Z.call(q[1]))
 			else:
-				g.move_to(X.call(p[0]), Z.call(p[1]))
+				g.move_to(X.call(q[0]), Z.call(q[1]))
 		g.stroke()
-		# round joins on a wide road
-		g.fill_style = g.stroke_style
-		for p in road.points:
-			g.begin_path()
-			g.arc(X.call(p[0]), Z.call(p[1]), g.line_width / 2, 0, TAU)
-			g.fill()
 	# props
 	for p in Layout.props:
 		var style = PROP_STYLE.get(p.get("model", ""))
@@ -192,6 +236,8 @@ func _paint_world(g: Canvas2D, w: float, h: float) -> void:
 			g.restore()
 	# ponds, and the places too dark to see into
 	for wt in Layout.water:
+		if wt.get("carved"):
+			continue
 		g.fill_style = "#2c5056"
 		g.begin_path()
 		g.arc(X.call(wt.position[0]), Z.call(wt.position[1]), wt.radius * PX, 0, TAU)
@@ -201,14 +247,6 @@ func _paint_world(g: Canvas2D, w: float, h: float) -> void:
 		g.begin_path()
 		g.arc(X.call(o.position[0]), Z.call(o.position[1]), o.radius * PX, 0, TAU)
 		g.fill()
-	# beyond the world's edge: darkness
-	g.fill_style = "rgba(0, 0, 0, 0.55)"
-	var top: float = Z.call(b.minZ)
-	var bot: float = Z.call(b.maxZ)
-	g.fill_rect(0, 0, w, top)
-	g.fill_rect(0, bot, w, h - bot)
-	g.fill_rect(0, top, X.call(b.minX), bot - top)
-	g.fill_rect(X.call(b.maxX), top, w - X.call(b.maxX), bot - top)
 
 
 # ------------------------------------------------------------ markers
@@ -312,10 +350,10 @@ func _draw_map() -> void:
 	if game.player == null or not game.started and not game.hud.showcase:
 		map.draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2, Color.BLACK)
 		return
-	if picture == null:
-		_paint()
-	var g := Canvas2D.new(map)
 	var p: Vector3 = game.player.position
+	if picture == null or Vector2(p.x, p.z).distance_to(_painted_at) > REPAINT:
+		_paint(Vector2(p.x, p.z))
+	var g := Canvas2D.new(map)
 	var scale: float = ZOOMS[zoom]
 	var R := SIZE / 2
 	g.fill_style = "#000"
