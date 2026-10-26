@@ -7,7 +7,7 @@ extends Node
 
 var held := {}
 var pressed := {}
-var mouse := {"x": 0.0, "y": 0.0, "ndcX": 0.0, "ndcY": 0.0, "clicked": false, "rightClicked": false, "leftHeld": false, "onCanvas": true}
+var mouse := {"x": 0.0, "y": 0.0, "ndcX": 0.0, "ndcY": 0.0, "clicked": false, "rightClicked": false, "leftHeld": false, "rightHeld": false, "onCanvas": true}
 var wheel := 0
 var capture := Callable() ## set while Settings waits for a key to bind
 var is_bound := func(_code): return false ## key bindings say which other keys the game uses
@@ -80,6 +80,8 @@ func _input(e: InputEvent) -> void:
 		# a held left button (mouse aim) lets go wherever the mouse is
 		if e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			mouse.leftHeld = false
+		elif e.button_index == MOUSE_BUTTON_RIGHT and not e.pressed:
+			mouse.rightHeld = false
 
 
 ## Clicks and the wheel on HUD windows never reach here: the GUI takes them
@@ -93,6 +95,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			mouse.leftHeld = true
 		MOUSE_BUTTON_RIGHT:
 			mouse.rightClicked = true
+			mouse.rightHeld = true
 		MOUSE_BUTTON_WHEEL_UP:
 			wheel -= 1
 		MOUSE_BUTTON_WHEEL_DOWN:
@@ -103,6 +106,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		held.clear()
 		mouse.leftHeld = false
+		mouse.rightHeld = false
 
 
 func _mouse(p: Vector2) -> void:
