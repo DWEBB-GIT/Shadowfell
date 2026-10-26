@@ -1,0 +1,321 @@
+{
+ "skeleton": "mixamorig",
+ "bones": [
+  "mixamorig_Hips",
+  "mixamorig_Spine",
+  "mixamorig_Spine1",
+  "mixamorig_Spine2",
+  "mixamorig_Neck",
+  "mixamorig_Head",
+  "mixamorig_HeadTop_End",
+  "mixamorig_LeftShoulder",
+  "mixamorig_LeftArm",
+  "mixamorig_LeftForeArm",
+  "mixamorig_LeftHand",
+  "mixamorig_LeftHandThumb1",
+  "mixamorig_LeftHandThumb2",
+  "mixamorig_LeftHandThumb3",
+  "mixamorig_LeftHandThumb4",
+  "mixamorig_LeftHandIndex1",
+  "mixamorig_LeftHandIndex2",
+  "mixamorig_LeftHandIndex3",
+  "mixamorig_LeftHandIndex4",
+  "mixamorig_LeftHandMiddle1",
+  "mixamorig_LeftHandMiddle2",
+  "mixamorig_LeftHandMiddle3",
+  "mixamorig_LeftHandMiddle4",
+  "mixamorig_LeftHandRing1",
+  "mixamorig_LeftHandRing2",
+  "mixamorig_LeftHandRing3",
+  "mixamorig_LeftHandRing4",
+  "mixamorig_LeftHandPinky1",
+  "mixamorig_LeftHandPinky2",
+  "mixamorig_LeftHandPinky3",
+  "mixamorig_LeftHandPinky4",
+  "mixamorig_RightShoulder",
+  "mixamorig_RightArm",
+  "mixamorig_RightForeArm",
+  "mixamorig_RightHand",
+  "mixamorig_RightHandThumb1",
+  "mixamorig_RightHandThumb2",
+  "mixamorig_RightHandThumb3",
+  "mixamorig_RightHandThumb4",
+  "mixamorig_RightHandIndex1",
+  "mixamorig_RightHandIndex2",
+  "mixamorig_RightHandIndex3",
+  "mixamorig_RightHandIndex4",
+  "mixamorig_RightHandMiddle1",
+  "mixamorig_RightHandMiddle2",
+  "mixamorig_RightHandMiddle3",
+  "mixamorig_RightHandMiddle4",
+  "mixamorig_RightHandRing1",
+  "mixamorig_RightHandRing2",
+  "mixamorig_RightHandRing3",
+  "mixamorig_RightHandRing4",
+  "mixamorig_RightHandPinky1",
+  "mixamorig_RightHandPinky2",
+  "mixamorig_RightHandPinky3",
+  "mixamorig_RightHandPinky4",
+  "mixamorig_LeftUpLeg",
+  "mixamorig_LeftLeg",
+  "mixamorig_LeftFoot",
+  "mixamorig_LeftToeBase",
+  "mixamorig_LeftToe_End",
+  "mixamorig_RightUpLeg",
+  "mixamorig_RightLeg",
+  "mixamorig_RightFoot",
+  "mixamorig_RightToeBase",
+  "mixamorig_RightToe_End"
+ ],
+ "hand_bones": {
+  "main": "mixamorig_RightHand",
+  "off": "mixamorig_LeftHand"
+ },
+ "body": [
+  "Torso",
+  "Arms_Upper",
+  "Arms_Lower",
+  "Hands",
+  "Legs_Upper",
+  "Legs_Lower",
+  "Feet"
+ ],
+ "looks": {
+  "face": {
+   "A": "Face_A",
+   "B": "Face_B",
+   "C": "Face_C"
+  },
+  "hair": {
+   "Short": "Hair_Short",
+   "Cropped": "Hair_Cropped",
+   "Long": "Hair_Long",
+   "Ponytail": "Hair_Ponytail",
+   "Bun": "Hair_Bun"
+  },
+  "beard": {
+   "Full": "Beard_Full",
+   "Short": "Beard_Short",
+   "Moustache": "Beard_Moustache"
+  }
+ },
+ "armour": {
+  "head": {
+   "cloth": {
+    "part": "Head_Cloth",
+    "hides": [
+     "Hair"
+    ]
+   },
+   "leather": {
+    "part": "Head_Leather",
+    "hides": [
+     "Hair"
+    ]
+   },
+   "mail": {
+    "part": "Head_Mail",
+    "hides": [
+     "Hair"
+    ]
+   },
+   "plate": {
+    "part": "Head_Plate",
+    "hides": [
+     "Hair",
+     "Beard",
+     "Face"
+    ]
+   }
+  },
+  "shoulders": {
+   "cloth": {
+    "part": "Shoulders_Cloth",
+    "hides": []
+   },
+   "leather": {
+    "part": "Shoulders_Leather",
+    "hides": []
+   },
+   "mail": {
+    "part": "Shoulders_Mail",
+    "hides": []
+   },
+   "plate": {
+    "part": "Shoulders_Plate",
+    "hides": []
+   }
+  },
+  "back": {
+   "cloth": {
+    "part": "Back_Cloth",
+    "hides": []
+   },
+   "leather": {
+    "part": "Back_Leather",
+    "hides": []
+   },
+   "mail": {
+    "part": "Back_Mail",
+    "hides": []
+   },
+   "plate": {
+    "part": "Back_Plate",
+    "hides": []
+   }
+  },
+  "chest": {
+   "cloth": {
+    "part": "Chest_Cloth",
+    "hides": [
+     "Torso",
+     "Arms_Upper",
+     "Arms_Lower"
+    ]
+   },
+   "leather": {
+    "part": "Chest_Leather",
+    "hides": [
+     "Torso",
+     "Arms_Upper"
+    ]
+   },
+   "mail": {
+    "part": "Chest_Mail",
+    "hides": [
+     "Torso",
+     "Arms_Upper"
+    ]
+   },
+   "plate": {
+    "part": "Chest_Plate",
+    "hides": [
+     "Torso",
+     "Arms_Upper"
+    ]
+   }
+  },
+  "wrists": {
+   "cloth": {
+    "part": "Wrists_Cloth",
+    "hides": []
+   },
+   "leather": {
+    "part": "Wrists_Leather",
+    "hides": []
+   },
+   "mail": {
+    "part": "Wrists_Mail",
+    "hides": []
+   },
+   "plate": {
+    "part": "Wrists_Plate",
+    "hides": []
+   }
+  },
+  "hands": {
+   "cloth": {
+    "part": "Hands_Cloth",
+    "hides": [
+     "Hands"
+    ]
+   },
+   "leather": {
+    "part": "Hands_Leather",
+    "hides": [
+     "Hands"
+    ]
+   },
+   "mail": {
+    "part": "Hands_Mail",
+    "hides": [
+     "Hands"
+    ]
+   },
+   "plate": {
+    "part": "Hands_Plate",
+    "hides": [
+     "Hands"
+    ]
+   }
+  },
+  "waist": {
+   "cloth": {
+    "part": "Waist_Cloth",
+    "hides": []
+   },
+   "leather": {
+    "part": "Waist_Leather",
+    "hides": []
+   },
+   "mail": {
+    "part": "Waist_Mail",
+    "hides": []
+   },
+   "plate": {
+    "part": "Waist_Plate",
+    "hides": []
+   }
+  },
+  "legs": {
+   "cloth": {
+    "part": "Legs_Cloth",
+    "hides": [
+     "Legs_Upper",
+     "Legs_Lower"
+    ]
+   },
+   "leather": {
+    "part": "Legs_Leather",
+    "hides": [
+     "Legs_Upper",
+     "Legs_Lower"
+    ]
+   },
+   "mail": {
+    "part": "Legs_Mail",
+    "hides": [
+     "Legs_Upper",
+     "Legs_Lower"
+    ]
+   },
+   "plate": {
+    "part": "Legs_Plate",
+    "hides": [
+     "Legs_Upper",
+     "Legs_Lower"
+    ]
+   }
+  },
+  "feet": {
+   "cloth": {
+    "part": "Feet_Cloth",
+    "hides": [
+     "Feet"
+    ]
+   },
+   "leather": {
+    "part": "Feet_Leather",
+    "hides": [
+     "Feet"
+    ]
+   },
+   "mail": {
+    "part": "Feet_Mail",
+    "hides": [
+     "Feet"
+    ]
+   },
+   "plate": {
+    "part": "Feet_Plate",
+    "hides": [
+     "Feet"
+    ]
+   }
+  }
+ },
+ "bodies": {
+  "male": "human_male",
+  "female": "human_female"
+ }
+}
