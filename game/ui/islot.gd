@@ -32,6 +32,7 @@ var hovered := false
 var dim := 1.0 ## the whole slot's opacity (an empty bar slot)
 var icon_tint := Color.WHITE
 var cooldown := 0.0 ## 0..1 of a turn still to go (the browser's conic sweep)
+var cd_left := 0.0 ## seconds still to go, drawn as a countdown over the sweep
 var gcd := 0.0
 var glow := Color(0, 0, 0, 0) ## an outer glow (Brace up, an active item)
 var inner := Color(0, 0, 0, 0) ## an inner ring
@@ -150,6 +151,14 @@ func _draw() -> void:
 		_sweep(r, cooldown, Color(0, 0, 0, 0.72))
 	if gcd > 0:
 		_sweep(r, gcd, Color(20 / 255.0, 16 / 255.0, 10 / 255.0, 0.62))
+	# the seconds left, WoW-style (tenths under 3 s on short ones would flicker, so whole seconds)
+	if cd_left > 0.05 and cooldown > 0:
+		var txt := "%dm" % ceili(cd_left / 60.0) if cd_left >= 60 else str(ceili(cd_left))
+		var fs := 18 if bar else 15
+		var tw := UI.bold.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var tp := Vector2((size.x - tw) / 2, (size.y + UI.bold.get_ascent(fs) - UI.bold.get_descent(fs)) / 2)
+		draw_string_outline(UI.bold, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color.BLACK)
+		draw_string(UI.bold, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("fff0c8"))
 	var edge := border
 	if hovered and not bar:
 		edge = UI.GOLD

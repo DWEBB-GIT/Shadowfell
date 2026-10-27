@@ -40,6 +40,7 @@ var origin := Vector2.ZERO
 var map: Control
 var view: SubViewport ## the square map is drawn here, then shown through a circle
 var location: Label ## where you are, on a bar across the foot of the map
+var coords: Label ## X / Y in world metres, under the map
 var _circle := PackedVector2Array()
 var _circle_uv := PackedVector2Array()
 var zoom_buttons: Array = [] ## + and −, for the HUD to give them tips
@@ -80,6 +81,10 @@ func _init(g) -> void:
 	location.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	location.size = Vector2(124, 18)
 	location.position = Vector2(SIZE / 2 - 62, SIZE - 9)
+	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
+	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	coords.size = Vector2(124, 14)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 11)
 	# the N badge and the zoom buttons
 	var north := UI.label(self, "N", 11, UI.GOLD)
 	north.add_theme_stylebox_override("normal", _round_box(8))
@@ -291,6 +296,9 @@ func _process(dt: float) -> void:
 		var here := place_name()
 		if location.text != here:
 			location.text = here
+		var xy := "X: %d   Y: %d" % [roundi(p.x), roundi(p.z)]
+		if coords.text != xy:
+			coords.text = xy
 		_drawn_at = now
 		map.queue_redraw()
 
