@@ -1183,9 +1183,9 @@ func layout() -> void:
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - m - mute.size.x, dock.position.y - 6 - mute.size.y)
-	for m in [death, document]:
-		m.size = m.get_combined_minimum_size()
-		m.position = ((vp - m.size) / 2).round()
+	for win in [death, document]:
+		win.size = win.get_combined_minimum_size()
+		win.position = ((vp - win.size) / 2).round()
 
 
 func update(dt := 0.0) -> void:
