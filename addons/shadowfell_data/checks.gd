@@ -97,8 +97,9 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 		if d.has("use"):
 			var u: Dictionary = d.use
 			var food: Dictionary = u.get("food", {})
-			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0)):
-				bad.call("its use must heal, or be food that heals over some seconds")
+			var drink: Dictionary = u.get("drink", {})
+			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0)):
+				bad.call("its use must heal, be food that heals over some seconds or a drink that restores mana over some seconds")
 		for t in d.get("reservedFor", []):
 			if not table_ids.has(t):
 				bad.call("reserved for unknown loot table %s" % t)
@@ -504,5 +505,7 @@ static func _classes(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("%s is on its starting bar, so a trainer cannot teach it" % id)
 			if s.npc(t.get("trainer")).is_empty():
 				bad.call("%s's trainer %s is not an npc" % [id, t.get("trainer")])
+			if t.has("quest") and s.quest(t.quest).is_empty():
+				bad.call("%s waits on unknown quest %s" % [id, t.quest])
 			if not (_is_int(t.get("level")) and t.level >= 1 and _is_int(t.get("cost")) and t.cost >= 0):
 				bad.call("%s needs a level and a cost in whole numbers" % id)

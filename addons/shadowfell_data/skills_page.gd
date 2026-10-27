@@ -138,6 +138,23 @@ func _build() -> void:
 		_changed()), "0: it does not rise. Otherwise it rises with use up to this rank, as Fishing and Cooking do.")
 	UI.row(g, "Description", UI.text_box(sk, "desc", _changed, true, 64))
 
+	UI.heading(form, "Crafting")
+	var has_craft: bool = sk.get("craft") is Dictionary
+	form.add_child(UI.check(has_craft, "Has recipes: a crafting window (like Cooking and Smelting)", func(on):
+		if on:
+			sk.craft = {"window": sk.get("name", "Crafting"), "verb": "make", "button": "Make", "station": "a workbench"}
+		else:
+			sk.erase("craft")
+		_changed(true)))
+	if has_craft:
+		var cr: Dictionary = sk.craft
+		var cg := UI.grid(form)
+		for f in [["window", "Window title", "The crafting window's name."], ["verb", "Verb", "In the log: You %s the ..."], ["button", "Button", "The button that makes it."], ["station", "Station", "Where it is done, in words: a forge, a fire..."]]:
+			var key: String = f[0]
+			UI.row(cg, f[1], UI.line(str(cr.get(key, "")), func(txt):
+				cr[key] = txt
+				_changed()), f[2])
+
 	UI.heading(form, "Teaches")
 	UI.note(form, "Abilities that come with the skill, for its spellbook page (Professions). Each names this skill as its skill.", Color(0.6, 0.6, 0.6))
 	if not sk.has("teaches"):

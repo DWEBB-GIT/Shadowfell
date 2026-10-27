@@ -8,6 +8,7 @@ extends SceneTree
 const Main := preload("res://addons/shadowfell_data/main.gd")
 const IO := preload("res://addons/shadowfell_data/json_io.gd")
 const Checks := preload("res://addons/shadowfell_data/checks.gd")
+const DataStore := preload("res://addons/shadowfell_data/store.gd")
 const Chains := preload("res://addons/shadowfell_data/chains_page.gd")
 
 const COPY := "user://quest_npc_editor_check"
@@ -145,6 +146,25 @@ func _initialize() -> void:
 	warrior.trained.append({"ability": "brace", "trainer": "osric_dunn", "level": 3, "cost": 15})
 	_ok(Array(Checks.run(s)).any(func(p): return p.contains("starting bar")), "a trained spell on the starting bar is caught")
 	warrior.trained.pop_back()
+	# a trainer can teach any spell, gated by a quest; a starting-bar spell
+	# taught by a trainer leaves the bar
+	var t: Dictionary = s.set_spell_source(warrior, "lunge", "trained", "osric_dunn")
+	t.quest = "iron_for_osric"
+	_ok(not warrior.bar.has("lunge") and DataStore.spell_source(warrior, "lunge") == "trained" and t.trainer == "osric_dunn", "teaching a starting-bar spell takes it off the bar")
+	s.set_spell_source(warrior, "venomArrow", "trained", "osric_dunn")
+	_ok(warrior.abilities.has("venomArrow"), "teaching another class's spell puts it in this class's spellbook")
+	npcs.select("osric_dunn")
+	abil.select("lunge")
+	_ok(s.trained_by("osric_dunn").size() == 3 and Checks.run(s).is_empty(), "the quest-gated spells pass the checks: %s" % "\n".join(Checks.run(s)))
+	t.quest = "no_such_quest"
+	_ok(Array(Checks.run(s)).any(func(p): return p.contains("unknown quest")), "an unknown gate quest is caught")
+	s.set_spell_source(warrior, "lunge", "bar")
+	s.set_spell_source(warrior, "venomArrow", "")
+	_ok(warrior.bar.has("lunge") and DataStore.spell_source(warrior, "venomArrow") == "", "and both go back")
+	for page in ["Items", "Skills", "Quests"]:
+		var pg = main.page_named(page)
+		for r in (s.items if page == "Items" else s.skills if page == "Skills" else s.quests):
+			pg.select(r.id)
 	abil.current = spell
 	abil._set_kind("dot")
 	_ok(spell.tuning.has("tickInterval") and spell.target == "enemy", "changing a spell's kind adds the numbers it needs")
