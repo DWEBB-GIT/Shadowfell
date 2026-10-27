@@ -503,7 +503,7 @@ func _render_bags(inv) -> void:
 		var s = inv.sockets[i]
 		if not s or not open_bags.has(i):
 			continue
-		var frame := UI.panel(bags, 8, Color(16 / 255.0, 13 / 255.0, 10 / 255.0, 0.94))
+		var frame := UI.panel(bags, 8, UI.WINDOW)
 		var v := UI.vbox(frame, 6)
 		var head := UI.hbox(v, 8)
 		var t := UI.label(head, "Backpack" if i == 0 else Items.get_def(s.id).name, 14, UI.GOLD)

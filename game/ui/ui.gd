@@ -1,7 +1,7 @@
 class_name UI
 extends RefCounted
-## The HUD's shared look (style.css): dark translucent panels with thin warm
-## borders, parchment text, small buttons, money with coin icons, and rich
+## The HUD's shared look: dark panels in bronze frames from Dan's UI kit
+## (assets/ui), parchment text, small buttons, money with coin icons, and rich
 ## text that can hold item and spell icons. Every window is built from these.
 
 # Brighter and warmer than the browser build's palette: on top of the graded
@@ -81,12 +81,12 @@ static func theme() -> Theme:
 	t.set_font_size("normal_font_size", "RichTextLabel", 13)
 	t.set_font_size("bold_font_size", "RichTextLabel", 13)
 	t.set_font_size("italics_font_size", "RichTextLabel", 13)
-	# .btn: dark wood with a warm border; gold edge on hover
-	t.set_stylebox("normal", "Button", box(Color("1d1812"), BORDER, 0, 1, Vector4(8, 2, 8, 2)))
-	t.set_stylebox("hover", "Button", box(Color("2a2219"), GOLD, 0, 1, Vector4(8, 2, 8, 2)))
-	t.set_stylebox("pressed", "Button", box(Color("2a2219"), GOLD, 0, 1, Vector4(8, 2, 8, 2)))
-	t.set_stylebox("focus", "Button", box(Color(0, 0, 0, 0), GOLD, 0, 1))
-	t.set_stylebox("disabled", "Button", box(Color("1d1812"), BORDER_DIM, 0, 1, Vector4(8, 2, 8, 2)))
+	# .btn: a small bronze frame (the UI kit); a gold frame on hover
+	t.set_stylebox("normal", "Button", frame(Vector4(6, 1, 6, 1), "button", 6))
+	t.set_stylebox("hover", "Button", frame(Vector4(6, 1, 6, 1), "button_hover", 7))
+	t.set_stylebox("pressed", "Button", frame(Vector4(6, 2, 6, 0), "button_pressed", 6))
+	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	t.set_stylebox("disabled", "Button", frame(Vector4(6, 1, 6, 1), "button_disabled", 6))
 	t.set_color("font_color", "Button", TEXT)
 	t.set_color("font_hover_color", "Button", Color("f2e6c6"))
 	t.set_color("font_pressed_color", "Button", Color("f2e6c6"))
@@ -96,7 +96,7 @@ static func theme() -> Theme:
 	t.set_stylebox("normal", "LineEdit", box(Color(16 / 255.0, 13 / 255.0, 10 / 255.0, 0.92), BORDER, 0, 1, Vector4(10, 7, 10, 7)))
 	t.set_stylebox("focus", "LineEdit", box(Color(0, 0, 0, 0), GOLD, 0, 1))
 	t.set_color("font_color", "LineEdit", Color("f2e6c6"))
-	t.set_stylebox("panel", "PanelContainer", box(PANEL, BORDER, 6))
+	t.set_stylebox("panel", "PanelContainer", frame(6))
 	t.set_stylebox("slider", "HSlider", box(Color("0b0908"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
 	t.set_stylebox("grabber_area", "HSlider", box(Color("6b5a2c"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
 	t.set_stylebox("grabber_area_highlight", "HSlider", box(Color("a48a45"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
@@ -122,9 +122,60 @@ static func box(bg: Color, border: Color, pad := 6, width := 1, sides = null) ->
 	return s
 
 
+## The UI kit's textures (assets/ui), cut from Dan's style sheet.
+static var _kit := {}
+
+
+static func kit(name: String) -> Texture2D:
+	if not _kit.has(name):
+		_kit[name] = load("res://assets/ui/%s.png" % name)
+	return _kit[name]
+
+
+## A bronze nine-patch frame from the UI kit: `tex` names the texture and
+## `margin` its frame width in texture pixels. The padding (all sides, or
+## left, top, right, bottom) is box()'s, but never less than the frame.
+static func frame(sides = 6, tex := "panel", margin := 8) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = kit(tex)
+	s.set_texture_margin_all(margin)
+	var inset := minf(margin * 0.6, 8)
+	var v: Vector4 = sides if sides is Vector4 else Vector4(sides, sides, sides, sides)
+	s.content_margin_left = maxf(v.x, inset)
+	s.content_margin_top = maxf(v.y, inset)
+	s.content_margin_right = maxf(v.z, inset)
+	s.content_margin_bottom = maxf(v.w, inset)
+	return s
+
+
+## the action bar's frame: thick bronze with an end cap on each side
+static func capped_frame(sides = 6) -> CappedFrame:
+	var s := CappedFrame.new()
+	s.inner = frame(sides, "bar_frame", 10)
+	s.left = kit("cap_left")
+	s.right = kit("cap_right")
+	s.content_margin_left = s.inner.content_margin_left + s.cap_room
+	s.content_margin_top = s.inner.content_margin_top
+	s.content_margin_right = s.inner.content_margin_right + s.cap_room
+	s.content_margin_bottom = s.inner.content_margin_bottom
+	return s
+
+
+## a bar's empty track: the kit's dark stone strip
+static func bar_track() -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = kit("bar_track")
+	s.set_texture_margin_all(4)
+	s.set_content_margin_all(0)
+	return s
+
+
 static func panel(parent: Node, pad := 6, bg := PANEL, border := BORDER) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", box(bg, border, pad))
+	if border == BORDER and (bg == PANEL or bg == WINDOW):
+		p.add_theme_stylebox_override("panel", frame(pad, "panel" if bg == PANEL else "window", 8 if bg == PANEL else 20))
+	else:
+		p.add_theme_stylebox_override("panel", box(bg, border, pad))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	if parent:
 		parent.add_child(p)
@@ -332,7 +383,7 @@ static func coin(kind: String) -> Texture2D:
 ## close button, a rule, then the body.
 static func window(parent: Node, title: String, width := 0.0, on_close := Callable()) -> Dictionary:
 	var p := panel(parent, 0, WINDOW, BORDER)
-	p.add_theme_stylebox_override("panel", box(WINDOW, BORDER, 0, 1, Vector4(12, 10, 12, 12)))
+	p.add_theme_stylebox_override("panel", frame(Vector4(12, 10, 12, 12), "window", 20))
 	if width > 0:
 		p.custom_minimum_size = Vector2(width, 0)
 	var v := vbox(p, 6)
