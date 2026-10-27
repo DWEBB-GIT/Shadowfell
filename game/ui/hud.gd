@@ -955,11 +955,11 @@ static func html_to_bbcode(h: String) -> String:
 	return re.sub(s, "", true).strip_edges()
 
 
-func show_death(coins_lost: int, destination: String) -> void:
+func show_death(_coins_lost: int, destination: String) -> void:
 	close_modal(true)
 	modal = "death"
 	var where := "by your camp" if destination == "camp" else "at the last shrine you rested at" if destination == "shrine" else "at the road's end"
-	death_text.text = "Your spirit will rise %s. Walk back to your body to live again with nothing lost, or return to life where you rise%s." % [where, ", %s lighter" % U.money(coins_lost) if coins_lost > 0 else ""]
+	death_text.text = "Your spirit will rise %s. What you carried lies in a grave by your body: reach it within %d minutes, before scavengers do. Walk back to your body, or return to life where you rise; either way you come back wounded." % [where, roundi(DB.CONFIG.death.graveSeconds / 60.0)]
 	backdrop.visible = true
 	death.visible = true
 
@@ -1348,7 +1348,7 @@ func _refresh_spells() -> void:
 	var fed = game.cooking.well_fed_aura
 	if fed != null:
 		list.append(fed)
-	for extra in [game.boons.aura, game.law.aura]:
+	for extra in [game.boons.aura, game.law.aura, game.afterlife.wound_aura]:
 		if extra != null:
 			list.append(extra)
 	_auras(buffs, list)

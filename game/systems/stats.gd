@@ -54,7 +54,8 @@ var totals: Dictionary:
 
 var max_health: int:
 	get:
-		return int(S().healthBase + totals.stamina * S().healthPerStamina)
+		var wounded: float = game.afterlife.wound_factor if game.afterlife else 1.0
+		return int((S().healthBase + totals.stamina * S().healthPerStamina) * wounded)
 
 var max_mana: int:
 	get:
@@ -92,7 +93,9 @@ var agility_per_crit: float:
 
 var spell_scale: float:
 	get:
-		return Scaling.spell_scale(game.progression.level)
+		# spells do not grow with level on their own (Dan, 2026-10-27): a
+		# stronger version is a new rank learned from a trainer
+		return 1.0
 
 var armour: float:
 	get:
