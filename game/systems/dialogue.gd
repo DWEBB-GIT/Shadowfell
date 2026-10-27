@@ -173,7 +173,7 @@ var page:
 				if pg.options.is_empty():
 					pg.text = "You have nothing else that goes there. Bring me a piece for that place and I'll do it."
 				pg.options.append({"id": "forge", "text": "Back", "icon": "back"})
-			"enchant", "disenchant", "disenchantItem", "scrap", "scrapItem", "reforge", "reforgeItem", "punch", "gems", "gemSet", "gemSetItem", "gemRemove", "tale":
+			"enchant", "scrap", "scrapItem", "reforge", "reforgeItem", "punch", "gems", "gemSet", "gemSetItem", "gemRemove", "tale":
 				_service_page(v, pg)
 			"node":
 				var node = null
@@ -205,12 +205,11 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 	if def.get("forge"):
 		pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
-		pg.options.append({"id": "smith:scrap", "text": "Scrap gear", "icon": "shop", "group": "service"})
 		if game.skills.has("mining"):
 			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
 	if def.get("enchanter"):
 		pg.options.append({"id": "ench:enchant", "text": "Enchant gear", "icon": "shop", "group": "service"})
-		pg.options.append({"id": "ench:disenchant", "text": "Disenchant gear", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (dust and gems)", "icon": "shop", "group": "service"})
 	if def.get("jeweller"):
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
@@ -254,29 +253,19 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 				pg.options.append({"id": "enchant:" + loc, "text": "%s → +%d: %s" % [_gear_name(loc), cost.rank, fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
 			if pg.options.is_empty():
 				pg.text += "\n\nNothing you carry will take an enchantment. Plain gear has no magic to wake, and the rest holds all it can."
-		"disenchant":
-			pg.text = "I'll draw the magic out and leave it as dust. You get three parts in four of every mote I ever put into it, and every stone in it. I'll tell you what you'll get first."
+		"scrap":
+			pg.text = "I'll break it down and draw the magic out as dust. You get three parts in four of every mote I ever put into it, and every stone in it. The rest is ash. I'll tell you what you'll get first."
 			for loc in fg.gear_locations():
-				if not fg.disenchant_preview(inv.get_at(loc)).is_empty():
-					pg.options.append({"id": "disenchant:" + loc, "text": _gear_name(loc), "icon": "talk"})
+				if not fg.scrap_preview(inv.get_at(loc)).is_empty():
+					pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})
 			if pg.options.is_empty():
 				pg.text += "\n\nThere's no magic in anything you carry. Plain gear gives nothing."
-		"disenchantItem":
-			var st = inv.get_at(v.src)
-			pg.text = "Disenchant %s? %s It crumbles for good." % [Items.view(st).name, fg.disenchant_text(st)] if st != null else ""
-			if st != null:
-				pg.options.append({"id": "disenchantit", "text": "Disenchant it", "icon": "accept"})
-			back = {"id": "ench:disenchant", "text": "Back", "icon": "back"}
-		"scrap":
-			pg.text = "I'll melt it down. You get its metal back and every stone in it. Any enchantment burns off in the fire, so take magic to an enchanter first. I'll tell you what you'll get before I light it."
-			for loc in fg.gear_locations():
-				pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})
 		"scrapItem":
 			var st = inv.get_at(v.src)
 			pg.text = "Scrap %s? %s It's gone for good." % [Items.view(st).name, fg.scrap_text(st)] if st != null else ""
 			if st != null:
 				pg.options.append({"id": "scrapit", "text": "Scrap it", "icon": "accept"})
-			back = {"id": "smith:scrap", "text": "Back", "icon": "back"}
+			back = {"id": "ench:scrap", "text": "Back", "icon": "back"}
 		"reforge":
 			pg.text = "One stat on a piece, swapped for another. It's not more power, it's a better fit. Pick the piece."
 			for loc in fg.gear_locations():
@@ -335,7 +324,7 @@ func _heal_price() -> int:
 ## A service choice; true if it was one (and was acted on).
 func _service_choose(id: String, v: Dictionary) -> bool:
 	var fg = game.forge
-	var views := {"ench:enchant": "enchant", "ench:disenchant": "disenchant", "smith:scrap": "scrap", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
+	var views := {"ench:enchant": "enchant", "ench:scrap": "scrap", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
 	if views.has(id):
 		view = {"kind": views[id]}
 		return true
@@ -345,13 +334,6 @@ func _service_choose(id: String, v: Dictionary) -> bool:
 		return true
 	if id.begins_with("enchant:"):
 		fg.temper(id.substr(8))
-		return true
-	if id.begins_with("disenchant:"):
-		view = {"kind": "disenchantItem", "src": id.substr(11)}
-		return true
-	if id == "disenchantit" and v.kind == "disenchantItem":
-		fg.disenchant(v.src)
-		view = {"kind": "disenchant"}
 		return true
 	if id.begins_with("scrap:"):
 		view = {"kind": "scrapItem", "src": id.substr(6)}

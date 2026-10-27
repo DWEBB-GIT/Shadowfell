@@ -10,9 +10,8 @@ extends RefCounted
 ## - Enchant (an enchanter): +1 item level a rank, up to a cap by rarity;
 ##   each rank costs more dust (of the item's level band) and coins. In code
 ##   and saves a rank is still called `temper`.
-## - Disenchant (an enchanter): break magic gear into dust, `refund` of
-##   every enchanting material put in, and its gems; preview first.
-## - Scrap (a smith): destroy an item for its base metal and its gems.
+## - Scrap (an enchanter): break magic gear into dust, `refund` of every
+##   enchanting material put in, and its gems; preview first. No metal.
 ## - Reforge: swap one stat for another, from options shown up front.
 ## - Sockets: a forge punches one (skyiron); a jeweller makes gems from
 ##   shards, sets them, and takes them out free.
@@ -147,12 +146,13 @@ func temper(loc: String) -> bool:
 	return true
 
 
-## What disenchanting gives: { items: [{ item, count }], gems: [ids] }, or {}
-## when the item holds no magic (plain gear).
-func disenchant_preview(stack: Dictionary) -> Dictionary:
+## What scrapping gives: { items: [{ item, count }], gems: [ids] }, or {}
+## when the item holds no magic (plain gear). Gear breaks down into dust and
+## its gems, never metal or leather.
+func scrap_preview(stack: Dictionary) -> Dictionary:
 	var d := Items.get_def(stack.id)
 	var v := Items.view(stack)
-	var de: Dictionary = enchant_rules().get("disenchant", {})
+	var de: Dictionary = enchant_rules().get("scrap", {})
 	var n := int(de.get("dust", {}).get(v.get("rarity", "common"), 0))
 	if n <= 0 or not d.has("itemLevel"):
 		return {}
@@ -176,35 +176,19 @@ func disenchant_preview(stack: Dictionary) -> Dictionary:
 	return _preview(got, stack)
 
 
-func disenchant(loc: String) -> bool:
+func scrap(loc: String) -> bool:
 	var st = game.inventory.get_at(loc)
 	if st == null or not gear_locations().has(loc):
 		return false
-	var p := disenchant_preview(st)
+	var p := scrap_preview(st)
 	if p.is_empty():
-		_say("There's no magic in that to draw out")
+		_say("There's nothing in that worth breaking down")
 		return false
 	var name_was: String = Items.view(st).name
 	_break(loc, p)
-	game.events.emit("log", {"text": "Disenchanted: %s. %s" % [name_was, _list_text(p)], "kind": "loot"})
-	game.events.emit("itemDisenchanted", {"id": st.id})
+	game.events.emit("log", {"text": "Scrapped: %s. %s" % [name_was, _list_text(p)], "kind": "loot"})
+	game.events.emit("itemScrapped", {"id": st.id})
 	return true
-
-
-# ------------------------------------------------------------ scrapping
-## What scrapping gives: { items: [{ item, count }], gems: [ids] }. A smith
-## gets the metal back, never the magic (an enchanter disenchants instead).
-func scrap_preview(stack: Dictionary) -> Dictionary:
-	var d := Items.get_def(stack.id)
-	var v := Items.view(stack)
-	var sc: Dictionary = rules().get("scrap", {})
-	var got := {}
-	var level: float = d.get("itemLevel", 1)
-	if not sc.get("noMetal", []).has(d.get("armourType", "")):
-		var n := int(sc.get("baseBars", {}).get(v.rarity, 0))
-		if n > 0:
-			got[_band(sc.get("bars", []), level)] = n
-	return _preview(got, stack)
 
 
 func _preview(got: Dictionary, stack: Dictionary) -> Dictionary:
@@ -230,19 +214,6 @@ func _break(loc: String, p: Dictionary) -> void:
 	inv._changed()
 
 
-func scrap(loc: String) -> bool:
-	var st = game.inventory.get_at(loc)
-	if st == null or not gear_locations().has(loc):
-		return false
-	var p := scrap_preview(st)
-	var name_was: String = Items.view(st).name
-	_break(loc, p)
-	game.events.emit("anvilStrike", {"x": game.player.position.x, "z": game.player.position.z})
-	game.events.emit("log", {"text": "Scrapped: %s. %s" % [name_was, _list_text(p)], "kind": "loot"})
-	game.events.emit("itemScrapped", {"id": st.id})
-	return true
-
-
 func _list_text(p: Dictionary) -> String:
 	var parts := []
 	for x in p.get("items", []):
@@ -254,10 +225,6 @@ func _list_text(p: Dictionary) -> String:
 
 func scrap_text(stack: Dictionary) -> String:
 	return _list_text(scrap_preview(stack))
-
-
-func disenchant_text(stack: Dictionary) -> String:
-	return _list_text(disenchant_preview(stack))
 
 
 # ------------------------------------------------------------ reforging

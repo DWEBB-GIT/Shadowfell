@@ -126,22 +126,20 @@ func _temper_and_scrap() -> void:
 	# epic and legendary: the last rank needs a soulshard
 	var last: Dictionary = Forge.rank_cost(5, 7, 7, "legendary")
 	check(last.items.any(func(x): return x.item == "soulshard"), "a legendary's last rank needs a soulshard")
-	# the smith melts it for metal only; the enchantment burns off
-	var sp: Dictionary = f.scrap_preview(inv.get_at(loc))
-	check(sp.items.size() == 1 and sp.items[0].item.ends_with("_bar") and sp.items[0].count == 1, "scrap gives just its base bar (%s)" % [sp.items])
-	check(f.scrap_text(inv.get_at(loc)).begins_with("You get back"), "the preview reads as a list")
-	# disenchant: 2 dust for an enhanced item, plus 75% of the 3 + 4 put in (5)
-	var p: Dictionary = f.disenchant_preview(inv.get_at(loc))
+	# scrap: 2 dust for an enhanced item, plus 75% of the 3 + 4 put in (5); no metal
+	var p: Dictionary = f.scrap_preview(inv.get_at(loc))
 	var dust := 0
 	for x in p.items:
 		if x.item == "faint_dust":
 			dust += x.count
-	check(dust == 7, "disenchanting gives 7 faint dust back (%d)" % dust)
-	check(f.disenchant_preview({"id": "worn_longsword"}).is_empty(), "plain gear has no magic to draw")
+	check(dust == 7, "scrapping gives 7 faint dust back (%d)" % dust)
+	check(not p.items.any(func(x): return x.item.ends_with("_bar")), "scrapping gives no metal")
+	check(f.scrap_text(inv.get_at(loc)).begins_with("You get back"), "the preview reads as a list")
+	check(f.scrap_preview({"id": "worn_longsword"}).is_empty(), "plain gear has nothing to give")
 	var before: int = inv.count("faint_dust")
-	check(f.disenchant(loc), "disenchanted")
+	check(f.scrap(loc), "scrapped")
 	check(inv.count("watchmans_edge") == 0 and inv.count("faint_dust") == before + 7, "the item is gone and the dust is in the bags")
-	check(f.disenchant_preview({"id": "bloodletter"}).items.any(func(x): return x.item == "soulshard"), "a legendary gives a soulshard")
+	check(f.scrap_preview({"id": "bloodletter"}).items.any(func(x): return x.item == "soulshard"), "a legendary gives a soulshard")
 	# the enchanter offers the work, the smith no longer does, and she stands clear of walls
 	var dlg = game.dialogue
 	var sab: Array = game.npcs.all.filter(func(n): return n.id == "sabeth")
@@ -151,10 +149,10 @@ func _temper_and_scrap() -> void:
 		check(not game.collision.wall_between(n.position.x, n.position.z, n.position.x + 0.01, n.position.z + 0.01), "Sabeth is not inside a wall")
 		dlg.npc = n
 		dlg.view = {"kind": "menu"}
-		check(dlg.page.options.any(func(o): return o.id == "ench:enchant") and dlg.page.options.any(func(o): return o.id == "ench:disenchant"), "Sabeth enchants and disenchants")
+		check(dlg.page.options.any(func(o): return o.id == "ench:enchant") and dlg.page.options.any(func(o): return o.id == "ench:scrap"), "Sabeth enchants and scraps")
 	dlg.npc = game.npcs.all.filter(func(n): return n.id == "mara")[0]
 	dlg.view = {"kind": "menu"}
-	check(not dlg.page.options.any(func(o): return str(o.id).begins_with("ench") or o.id == "smith:temper"), "Mara no longer tempers")
+	check(not dlg.page.options.any(func(o): return str(o.id).begins_with("ench") or o.id == "smith:temper" or o.id == "smith:scrap"), "Mara no longer tempers or scraps")
 	dlg.npc = null
 
 

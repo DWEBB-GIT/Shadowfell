@@ -47,7 +47,7 @@ func _init(g) -> void:
 	ev.on("levelUp", func(_e): pillar(game.player.position))
 	# an enchanter's work: a violet light rises off you
 	ev.on("itemEnchanted", func(_e): pillar(game.player.position, Color("c8a0ff")))
-	ev.on("itemDisenchanted", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
+	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
 	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
 	# the Grave Slam lands where the telegraph was painted
 	ev.on("graveSlam", func(e):
