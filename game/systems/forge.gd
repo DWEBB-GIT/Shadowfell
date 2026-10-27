@@ -1,15 +1,18 @@
 class_name Forge
 extends RefCounted
-## Forge and jeweller services (data/forge.json, data/gems.json), offered by
-## any npc with `forge: true` (a smith) or `jeweller: true`, so every town's
-## smith does the same work. The rule that holds it together: an upgrade
+## Forge, enchanter and jeweller services (data/forge.json,
+## data/enchanting.json, data/gems.json), offered by any npc with
+## `forge: true` (a smith), `enchanter: true` or `jeweller: true`, so every
+## town's smith (or enchanter) does the same work. The rule that holds it together: an upgrade
 ## makes a loved item last a few more levels, never forever, and what you
 ## put into it comes back when you scrap it.
 ##
-## - Temper: +1 item level a rank, up to a cap by rarity; each rank costs
-##   more bars and whetstones (of the item's level band) and coins.
-## - Scrap: destroy an item for its base metal, `refund` of every tempering
-##   material put in, and its gems; the preview shows it all first.
+## - Enchant (an enchanter): +1 item level a rank, up to a cap by rarity;
+##   each rank costs more dust (of the item's level band) and coins. In code
+##   and saves a rank is still called `temper`.
+## - Disenchant (an enchanter): break magic gear into dust, `refund` of
+##   every enchanting material put in, and its gems; preview first.
+## - Scrap (a smith): destroy an item for its base metal and its gems.
 ## - Reforge: swap one stat for another, from options shown up front.
 ## - Sockets: a forge punches one (skyiron); a jeweller makes gems from
 ##   shards, sets them, and takes them out free.
@@ -58,24 +61,29 @@ static func _band(list: Array, level: float) -> String:
 	return list[list.size() - 1].item if not list.is_empty() else ""
 
 
-# ------------------------------------------------------------ tempering
+# ------------------------------------------------------------ enchanting
+## Enchanting rules (data/enchanting.json).
+static func enchant_rules() -> Dictionary:
+	return DB.enchanting
+
+
 func temper_cap(stack: Dictionary) -> int:
-	return int(rules().get("temper", {}).get("caps", {}).get(Items.view(stack).get("rarity", "common"), 0))
+	return int(enchant_rules().get("enchant", {}).get("caps", {}).get(Items.view(stack).get("rarity", "common"), 0))
 
 
 ## What one rank costs at a level: { items: [{ item, count }], coins }
 static func rank_cost(base_level: float, rank: int, cap: int, rarity: String) -> Dictionary:
-	var t: Dictionary = rules().get("temper", {})
+	var t: Dictionary = enchant_rules().get("enchant", {})
 	var ranks: Array = t.get("ranks", [])
 	if rank < 1 or rank > ranks.size():
 		return {}
 	var rk: Dictionary = ranks[rank - 1]
 	var level := base_level + rank - 1 # each rank before this one counts as a level
 	var items := []
-	if rk.get("bars", 0) > 0:
-		items.append({"item": _band(t.get("bars", []), level), "count": int(rk.bars)})
-	if rk.get("whetstones", 0) > 0:
-		items.append({"item": _band(t.get("whetstones", []), level), "count": int(rk.whetstones)})
+	var bands: Dictionary = t.get("bands", {})
+	for mat in bands:
+		if rk.get(mat, 0) > 0:
+			items.append({"item": _band(bands[mat], level), "count": int(rk[mat])})
 	var last: Dictionary = t.get("lastRank", {})
 	if rank == cap and last.get("rarities", []).has(rarity):
 		items.append({"item": last.item, "count": int(last.get("count", 1))})
@@ -105,7 +113,7 @@ func affordable(cost: Dictionary) -> bool:
 	return true
 
 
-## "2 Bronze bar (1/2), 1 Whetstone (3/1), 26c"
+## "3 Faint dust (5), 26c"
 func cost_text(cost: Dictionary) -> String:
 	var parts := []
 	for x in cost.get("items", []):
@@ -115,6 +123,7 @@ func cost_text(cost: Dictionary) -> String:
 	return ", ".join(parts)
 
 
+## Enchant an item one rank (+1 item level). Saves keep the rank as `temper`.
 func temper(loc: String) -> bool:
 	var inv = game.inventory
 	var st = inv.get_at(loc)
@@ -122,7 +131,7 @@ func temper(loc: String) -> bool:
 		return false
 	var cost := temper_cost(st)
 	if cost.is_empty():
-		_say("That can be tempered no further")
+		_say("That can be enchanted no further")
 		return false
 	if not affordable(cost):
 		_say("You don't have what that needs")
@@ -133,14 +142,58 @@ func temper(loc: String) -> bool:
 	var r := _rolls_of(st)
 	r.temper = cost.rank
 	_changed(loc)
-	game.events.emit("anvilStrike", {"x": game.player.position.x, "z": game.player.position.z})
-	game.events.emit("log", {"text": "Tempered: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
-	game.events.emit("itemTempered", {"loc": loc, "rank": cost.rank})
+	game.events.emit("itemEnchanted", {"loc": loc, "rank": cost.rank})
+	game.events.emit("log", {"text": "Enchanted: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
+	return true
+
+
+## What disenchanting gives: { items: [{ item, count }], gems: [ids] }, or {}
+## when the item holds no magic (plain gear).
+func disenchant_preview(stack: Dictionary) -> Dictionary:
+	var d := Items.get_def(stack.id)
+	var v := Items.view(stack)
+	var de: Dictionary = enchant_rules().get("disenchant", {})
+	var n := int(de.get("dust", {}).get(v.get("rarity", "common"), 0))
+	if n <= 0 or not d.has("itemLevel"):
+		return {}
+	var level: float = d.itemLevel
+	var got := {}
+	var dust := _band(enchant_rules().get("enchant", {}).get("bands", {}).get("dust", []), level)
+	got[dust] = n
+	var extra: Dictionary = de.get("extra", {})
+	if extra.get("rarities", []).has(v.rarity):
+		got[extra.item] = got.get(extra.item, 0) + int(extra.get("count", 1))
+	# a share of every enchanting material put in comes back
+	var put := {}
+	var cap := temper_cap(stack)
+	for rank in range(1, Items.temper_of(stack) + 1):
+		for x in rank_cost(level, rank, cap, v.rarity).get("items", []):
+			put[x.item] = put.get(x.item, 0) + x.count
+	for item in put:
+		var back := int(floor(put[item] * de.get("refund", 0.75)))
+		if back > 0:
+			got[item] = got.get(item, 0) + back
+	return _preview(got, stack)
+
+
+func disenchant(loc: String) -> bool:
+	var st = game.inventory.get_at(loc)
+	if st == null or not gear_locations().has(loc):
+		return false
+	var p := disenchant_preview(st)
+	if p.is_empty():
+		_say("There's no magic in that to draw out")
+		return false
+	var name_was: String = Items.view(st).name
+	_break(loc, p)
+	game.events.emit("log", {"text": "Disenchanted: %s. %s" % [name_was, _list_text(p)], "kind": "loot"})
+	game.events.emit("itemDisenchanted", {"id": st.id})
 	return true
 
 
 # ------------------------------------------------------------ scrapping
-## What scrapping gives: { items: [{ item, count }], gems: [ids] }
+## What scrapping gives: { items: [{ item, count }], gems: [ids] }. A smith
+## gets the metal back, never the magic (an enchanter disenchants instead).
 func scrap_preview(stack: Dictionary) -> Dictionary:
 	var d := Items.get_def(stack.id)
 	var v := Items.view(stack)
@@ -150,35 +203,24 @@ func scrap_preview(stack: Dictionary) -> Dictionary:
 	if not sc.get("noMetal", []).has(d.get("armourType", "")):
 		var n := int(sc.get("baseBars", {}).get(v.rarity, 0))
 		if n > 0:
-			var bar := _band(rules().get("temper", {}).get("bars", []), level)
-			got[bar] = got.get(bar, 0) + n
-	# a share of every tempering material put in comes back
-	var put := {}
-	var cap := temper_cap(stack)
-	for rank in range(1, Items.temper_of(stack) + 1):
-		for x in rank_cost(level, rank, cap, v.rarity).get("items", []):
-			put[x.item] = put.get(x.item, 0) + x.count
-	for item in put:
-		var back := int(floor(put[item] * sc.get("refund", 0.75)))
-		if back > 0:
-			got[item] = got.get(item, 0) + back
+			got[_band(sc.get("bars", []), level)] = n
+	return _preview(got, stack)
+
+
+func _preview(got: Dictionary, stack: Dictionary) -> Dictionary:
 	var items := []
 	for item in got:
 		items.append({"item": item, "count": got[item]})
 	return {"items": items, "gems": Items.gems_of(stack).filter(func(g): return g != null)}
 
 
-func scrap(loc: String) -> bool:
+## Destroy the item at loc and hand over what the preview promised; what
+## will not fit lies at your feet.
+func _break(loc: String, p: Dictionary) -> void:
 	var inv = game.inventory
-	var st = inv.get_at(loc)
-	if st == null or not gear_locations().has(loc):
-		return false
-	var p := scrap_preview(st)
-	var name_was: String = Items.view(st).name
 	inv.take(loc)
 	if loc.begins_with("e:"):
 		inv._equipment_changed()
-	# what will not fit lies at your feet
 	for x in p.items:
 		if not inv.add_item(x.item, x.count, true):
 			game.loot.drop_at({"id": x.item, "count": x.count}, game.player.position)
@@ -186,6 +228,15 @@ func scrap(loc: String) -> bool:
 		if not inv.add_item(g, 1, true):
 			game.loot.drop_at({"id": g, "count": 1}, game.player.position)
 	inv._changed()
+
+
+func scrap(loc: String) -> bool:
+	var st = game.inventory.get_at(loc)
+	if st == null or not gear_locations().has(loc):
+		return false
+	var p := scrap_preview(st)
+	var name_was: String = Items.view(st).name
+	_break(loc, p)
 	game.events.emit("anvilStrike", {"x": game.player.position.x, "z": game.player.position.z})
 	game.events.emit("log", {"text": "Scrapped: %s. %s" % [name_was, _list_text(p)], "kind": "loot"})
 	game.events.emit("itemScrapped", {"id": st.id})
@@ -203,6 +254,10 @@ func _list_text(p: Dictionary) -> String:
 
 func scrap_text(stack: Dictionary) -> String:
 	return _list_text(scrap_preview(stack))
+
+
+func disenchant_text(stack: Dictionary) -> String:
+	return _list_text(disenchant_preview(stack))
 
 
 # ------------------------------------------------------------ reforging

@@ -220,6 +220,8 @@ func _bind() -> void:
 	ev.on("coins", func(_e): sfx("gold"))
 	ev.on("levelUp", func(_e): sfx("level_up"))
 	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
+	ev.on("itemEnchanted", func(_e): sfx("shrine", 0.6))
+	ev.on("itemDisenchanted", func(_e): sfx("shrine", 0.4))
 	ev.on("draught", func(_e): sfx("potion"))
 	ev.on("itemEquipped", func(e):
 		var kind := str(Items.get_def(str(e.id)).get("kind", ""))

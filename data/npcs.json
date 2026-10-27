@@ -1,5 +1,5 @@
 {
-  "_about": "Townsfolk. `level` shows on their portrait and tooltip. An npc may keep a shop, be a smith (`forge`: tempers, scraps, reforges and punches sockets; see forge.json), a jeweller (`jeweller`: makes and sets gems; see gems.json), keep an inn (`innkeeper`: you can make it your home), train skills (skills.json names its trainer) and has a dialogue (dialogue.json); quests name their giver. `mapIcon` puts their trade on the minimap: vendor, blacksmith, fishing, cooking, innkeeper or trainer (a class trainer). Where they stand is in world.json (npcSpawns); a spawn with `goneWhen` (a condition, such as a story flag) is absent while it holds. `tint` tells apart townsfolk who share a model.",
+  "_about": "Townsfolk. `level` shows on their portrait and tooltip. An npc may keep a shop, be a smith (`forge`: scraps, reforges and punches sockets; see forge.json), an enchanter (`enchanter`: enchants gear a rank at a time and disenchants it into dust; see enchanting.json), a jeweller (`jeweller`: makes and sets gems; see gems.json), keep an inn (`innkeeper`: you can make it your home), train skills (skills.json names its trainer) and has a dialogue (dialogue.json); quests name their giver. `mapIcon` puts their trade on the minimap: vendor, blacksmith, fishing, cooking, innkeeper or trainer (a class trainer). Where they stand is in world.json (npcSpawns); a spawn with `goneWhen` (a condition, such as a story flag) is absent while it holds. `tint` tells apart townsfolk who share a model.",
   "npcs": [
     {
       "id": "mara",
@@ -131,6 +131,18 @@
       "tint": "#b08ac0",
       "jeweller": true,
       "dialogue": "ysolde"
+    },
+    {
+      "id": "sabeth",
+      "mapIcon": "vendor",
+      "name": "Sabeth Gall",
+      "title": "Enchanter",
+      "level": 11,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#7a6ac8",
+      "enchanter": true,
+      "dialogue": "sabeth"
     },
     {
       "id": "wenna",

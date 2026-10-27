@@ -134,6 +134,11 @@
           "item": "grave_iron",
           "min": 1,
           "max": 2
+        },
+        {
+          "item": "faint_dust",
+          "min": 0,
+          "max": 2
         }
       ],
       "drops": {
@@ -259,6 +264,11 @@
           "item": "boar_tusk",
           "min": 1,
           "max": 2
+        },
+        {
+          "item": "soulshard",
+          "min": 0,
+          "max": 1
         }
       ],
       "drops": {
@@ -374,6 +384,13 @@
     },
     {
       "id": "blackhedge_captain",
+      "always": [
+        {
+          "item": "soulshard",
+          "min": 0,
+          "max": 1
+        }
+      ],
       "drops": {
         "rolls": 2,
         "chance": 1,
@@ -423,6 +440,11 @@
           "item": "cracked_bone",
           "min": 0,
           "max": 2
+        },
+        {
+          "item": "soulshard",
+          "min": 0,
+          "max": 1
         }
       ],
       "drops": {
