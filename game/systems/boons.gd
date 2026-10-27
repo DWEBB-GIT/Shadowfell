@@ -5,12 +5,14 @@ extends RefCounted
 ## Inspired by reading a lore document for the first time, or by paying the
 ## bard at the Ford Inn for a tale (once a day). The clock runs only while
 ## you play, and a new Inspired starts it again rather than stacking.
+## Elixirs (Alchemy) live here too: one at a time, a stat raised for a while.
 
 var game
 var inspired := 0.0 ## seconds of Inspired left
 var read := {} ## lore documents already read
 var tale_day := "" ## the day (YYYY-MM-DD) of the last tale
 var tales_heard := 0
+var elixir = null ## { item, stat, amount, left, total }: the elixir working on you
 
 
 func _init(g) -> void:
@@ -23,6 +25,7 @@ func reset() -> void:
 	read = {}
 	tale_day = ""
 	tales_heard = 0
+	elixir = null
 
 
 static func rule() -> Dictionary:
@@ -41,6 +44,28 @@ var aura:
 			return null
 		var r := rule()
 		return {"id": "inspired", "icon": "battleCry", "name": r.get("name", "Inspired"), "left": inspired, "total": r.get("seconds", 1800), "text": r.get("desc", "")}
+
+
+## the buff row's entry for the elixir
+var elixir_aura:
+	get:
+		if elixir == null:
+			return null
+		var def := Items.get_def(elixir.item)
+		return {"id": "elixir", "item": elixir.item, "name": def.get("name", "Elixir"), "left": elixir.left, "total": elixir.total, "text": "+%d %s" % [elixir.amount, String(elixir.stat).capitalize()]}
+
+
+## Drink an elixir (its item's `use.elixir`): one works at a time, so a new
+## one replaces the old. The Long Brew perk (Alchemy) makes it last longer.
+func drink_elixir(item: String) -> void:
+	var e: Dictionary = Items.get_def(item).use.elixir
+	var secs: float = float(e.seconds) * (1.0 + game.skills.perk("alchemy", "elixirTime"))
+	var had: bool = elixir != null
+	elixir = {"item": item, "stat": e.stat, "amount": int(e.amount), "left": secs, "total": secs}
+	game.events.emit("log", {"text": "You drink %s%s: +%d %s for %d minutes." % [Items.get_def(item).name.to_lower(), " (the old elixir fades)" if had else "", e.amount, String(e.stat).capitalize(), U.jround(secs / 60.0)], "kind": "heal"})
+	game.recompute_max_health()
+	game.events.emit("statsChanged")
+	game.events.emit("boonsChanged", {})
 
 
 func inspire(why: String) -> void:
@@ -95,6 +120,14 @@ func hear_tale() -> String:
 
 
 func update(dt: float) -> void:
+	if elixir != null:
+		elixir.left -= dt
+		if elixir.left <= 0:
+			game.events.emit("log", {"text": "%s wears off." % Items.get_def(elixir.item).get("name", "Your elixir"), "kind": "muted"})
+			elixir = null
+			game.recompute_max_health()
+			game.events.emit("statsChanged")
+			game.events.emit("boonsChanged", {})
 	if inspired > 0:
 		inspired = maxf(0, inspired - dt)
 		if inspired == 0:
@@ -103,7 +136,10 @@ func update(dt: float) -> void:
 
 
 func serialize() -> Dictionary:
-	return {"inspired": U.jround(inspired), "read": read.keys(), "taleDay": tale_day, "tales": tales_heard}
+	var out := {"inspired": U.jround(inspired), "read": read.keys(), "taleDay": tale_day, "tales": tales_heard}
+	if elixir != null:
+		out.elixir = {"item": elixir.item, "left": U.jround(elixir.left)}
+	return out
 
 
 func apply(data) -> void:
@@ -119,3 +155,9 @@ func apply(data) -> void:
 	if typeof(data.get("taleDay")) == TYPE_STRING:
 		tale_day = data.taleDay
 	tales_heard = int(data.get("tales", 0))
+	var ex = data.get("elixir")
+	if typeof(ex) == TYPE_DICTIONARY and typeof(ex.get("item")) == TYPE_STRING and Items.get_def(ex.item).get("use", {}).has("elixir"):
+		var e: Dictionary = Items.get_def(ex.item).use.elixir
+		var left := clampf(float(ex.get("left", 0)), 0, float(e.seconds) * 2)
+		if left > 0:
+			elixir = {"item": ex.item, "stat": e.stat, "amount": int(e.amount), "left": left, "total": maxf(left, float(e.seconds))}

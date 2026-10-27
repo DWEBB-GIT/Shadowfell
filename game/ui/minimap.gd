@@ -349,6 +349,10 @@ func markers() -> Array:
 	if game.skills.has("mining"):
 		for v in game.mining.veins():
 			out.append({"x": v.x, "z": v.z, "kind": "vein", "label": v.name})
+	# a herbalist sees the herbs they can pick (WoW's Find Herbs)
+	for v in game.gathering.live():
+		if game.skills.has(v.skill):
+			out.append({"x": v.x, "z": v.z, "kind": "herb", "label": v.name})
 	for e in game.enemies.list:
 		if Targeting.in_combat_with_player(e):
 			out.append({"x": e.position.x, "z": e.position.z, "kind": "foe", "label": e.cfg.name})
@@ -480,6 +484,14 @@ func _draw_map() -> void:
 			g.line_to(s.x + 3, s.y)
 			g.line_to(s.x, s.y + 3)
 			g.line_to(s.x - 3, s.y)
+			g.fill()
+			g.stroke()
+		elif m.kind == "herb" and inside:
+			g.fill_style = "#9fe07a"
+			g.stroke_style = "#000"
+			g.line_width = 1
+			g.begin_path()
+			g.arc(s.x, s.y, 2.5, 0, TAU)
 			g.fill()
 			g.stroke()
 		elif m.kind == "foe" and inside:

@@ -252,6 +252,7 @@ func serialize() -> Dictionary:
 		"bar": game.action_bar.serialize(),
 		"quests": game.quests.serialize(),
 		"skills": game.skills.serialize(),
+		"skillLadder": game.skills.serialize_ladder(),
 		"spells": game.skills.serialize_spells(),
 		"reputation": game.reputation.serialize(),
 		"renown": game.reputation.serialize_renown(),
@@ -318,6 +319,7 @@ func apply(data: Dictionary) -> void:
 		ws.forget_places()
 	game.quests.apply(data.get("quests"), ws.flags)
 	game.skills.apply(data.get("skills"))
+	game.skills.apply_ladder(data.get("skillLadder"))
 	game.skills.apply_spells(data.get("spells"))
 	game.cooking.apply(data.get("cooking"))
 	game.reputation.apply(data.get("reputation"), data.get("renown"))

@@ -765,18 +765,29 @@ func use_draught(loc = null) -> bool:
 	if where == null:
 		events.emit("log", {"text": "You have no healing draughts left.", "kind": "muted", "throttle": "no-draught"})
 		return false
-	if player.health >= player.max_health:
+	var id: String = get_at(where).id
+	var use: Dictionary = Items.get_def(id).get("use", {})
+	var elixir := use.has("elixir")
+	if not elixir and player.health >= player.max_health:
 		events.emit("log", {"text": "You are not wounded.", "kind": "muted", "throttle": "not-wounded"})
 		return false
 	if player.cooldowns.draught > 0:
 		return false
-	take(where, 1)
+	# The Last Drop (Alchemy perk): now and then the bottle is not used up
+	var kept: bool = game.random.call() < game.skills.perk("alchemy", "keepChance")
+	if not kept:
+		take(where, 1)
 	player.cooldowns.draught = DB.CONFIG.draught.cooldown
-	var healed: float = player.heal(Items.get_def("healing_draught").use.heal)
-	events.emit("damageNumber", {"target": player, "amount": U.jround(healed), "kind": "heal"})
 	player.rig.play("drink", 0.6, 0.5)
 	events.emit("draught")
-	events.emit("log", {"text": "You drink a healing draught (+%s). %d left." % [U.n(healed), draughts], "kind": "heal"})
+	if elixir:
+		game.boons.drink_elixir(id)
+		return true
+	# Potent Draughts (Alchemy perk): draughts heal more
+	var healed: float = player.heal(float(use.get("heal", 0)) * (1.0 + game.skills.perk("alchemy", "healBoost")))
+	events.emit("damageNumber", {"target": player, "amount": U.jround(healed), "kind": "heal"})
+	var name: String = Items.get_def(id).name.to_lower()
+	events.emit("log", {"text": "You drink %s %s (+%s).%s %d left." % [U.article(name), name, U.n(healed), " The bottle is still half full." if kept else "", count(id)], "kind": "heal"})
 	return true
 
 

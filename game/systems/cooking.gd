@@ -150,7 +150,7 @@ func blocked(r: Dictionary) -> String:
 	if can_make(r) < 1:
 		return "You are missing ingredients."
 	if near_station(r.get("station", "fire")) == "":
-		return "Requires %s." % ("a cooking fire" if r.get("station", "fire") == "fire" else "a " + r.station)
+		return "Requires %s." % ("a cooking fire" if r.get("station", "fire") == "fire" else craft_of(r.skill).get("station", "a " + r.station))
 	if player.dead or player.casting != null or player.lunge != null:
 		return "You can't do that now."
 	if player.moving:
@@ -188,9 +188,17 @@ func _finish(r: Dictionary) -> void:
 	var inventory = game.inventory
 	for x in r.inputs:
 		inventory.remove_count(x.item, x.count)
-	inventory.add_item(r.output.item, r.output.count, true)
+	var made: int = r.output.count
+	# Careful Measure (Alchemy perk) and the like: now and then, two
+	if game.random.call() < game.skills.perk(r.skill, "doubleBrew"):
+		made *= 2
+	inventory.add_item(r.output.item, made, true)
 	var name: String = Items.get_def(r.output.item).name
-	game.events.emit("log", {"text": "You %s %s%s." % [craft_of(r.skill).get("verb", "make"), "%d " % r.output.count if r.output.count > 1 else "", name], "kind": "loot"})
+	game.events.emit("log", {"text": "You %s %s%s." % [craft_of(r.skill).get("verb", "make"), "%d " % made if made > 1 else "", name], "kind": "loot"})
+	# a skill on the ladder learns by the recipe's colour; the others by chance
+	if game.skills.laddered(r.skill):
+		game.skills.gain(r.skill, colour(r))
+		return
 	var c: float = SKILL_UP_CHANCE.get(colour(r), 0.0)
 	if c > 0 and game.random.call() < c:
 		game.skills.raise(r.skill)

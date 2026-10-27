@@ -44,7 +44,7 @@ static func condition_holds(g, when) -> bool:
 func _init(g) -> void:
 	game = g
 	reset()
-	for ev in ["inventoryChanged", "examined", "levelUp"]:
+	for ev in ["inventoryChanged", "examined", "levelUp", "skillsChanged"]:
 		game.events.on(ev, func(_e): refresh())
 	game.events.on("enemyDefeated", func(e):
 		count_kill(e.enemy.type)
@@ -95,6 +95,10 @@ func status(id: String) -> String:
 	for r in q.get("requires", []):
 		if not done.has(r):
 			return "locked"
+	# a profession's rank quest waits for the skill (`skillReq`)
+	var sr = q.get("skillReq")
+	if sr != null and game.skills.rank(sr.skill) < int(sr.level):
+		return "locked"
 	return "available"
 
 

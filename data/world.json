@@ -318,6 +318,24 @@
       "name": "The Ogre's Deadfall",
       "position": [-575, -49],
       "radius": 6
+    },
+    {
+      "id": "blackpool",
+      "name": "The Blackpool",
+      "position": [
+        -663.1,
+        -343.6
+      ],
+      "radius": 9
+    },
+    {
+      "id": "blackwood_herbs",
+      "name": "Bloodroot in the Blackwood",
+      "position": [
+        -650,
+        -340
+      ],
+      "radius": 40
     }
   ],
   "npcSpawns": [
@@ -416,6 +434,14 @@
     {
       "npc": "aveline",
       "position": [-631.5, 457.5],
+      "facing": 270
+    },
+    {
+      "npc": "briony",
+      "position": [
+        -596.4,
+        411.5
+      ],
       "facing": 270
     }
   ],
@@ -1233,9 +1259,21 @@
       "position": [-930, 130],
       "radius": 120,
       "fishTable": "mere_fish",
+      "fishLevel": 1,
       "rx": 120,
       "rz": 80,
       "carved": true
+    },
+    {
+      "id": "blackpool",
+      "name": "The Blackpool",
+      "position": [
+        -663.1,
+        -343.6
+      ],
+      "radius": 7,
+      "fishTable": "blackpool_fish",
+      "fishLevel": 8
     }
   ],
   "obscured": [
@@ -1346,6 +1384,17 @@
       "kind": "forge",
       "position": [-558.6, 445.4],
       "radius": 4.5
+    },
+    {
+      "id": "briony_bench",
+      "name": "Briony's alchemy bench",
+      "kind": "alchemy",
+      "model": "crate",
+      "position": [
+        -604.6,
+        417.8
+      ],
+      "radius": 2.6
     }
   ],
   "pads": [

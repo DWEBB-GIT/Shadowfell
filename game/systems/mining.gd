@@ -185,6 +185,8 @@ func start(o: Dictionary) -> bool:
 	if game.fishing:
 		game.fishing.stop(true)
 	game.loot.stop_gathering()
+	if game.gathering:
+		game.gathering.stop()
 	_swing(o)
 	return true
 

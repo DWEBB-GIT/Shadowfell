@@ -115,6 +115,48 @@
       "requires": [{ "infamy": 40 }],
       "desc": "No law will have you. Thatch Corrow keeps a rope with your name on it.",
       "mocks": ["Outlaw. Keep walking.", "We don't want your coin, Outlaw. Or your kind."]
+    },
+    {
+      "id": "herbalist",
+      "name": "Herbalist",
+      "renown": 20,
+      "mock": 0.2,
+      "requires": [
+        {
+          "skill": "herbalism",
+          "rank": 10
+        }
+      ],
+      "desc": "You know ditchbell from deadly nightshade. Mostly.",
+      "mocks": [
+        "Oi, Herbalist! Got anything for a sore head? Not you, I mean."
+      ]
+    },
+    {
+      "id": "apothecary",
+      "name": "Apothecary",
+      "renown": 30,
+      "mock": 0.15,
+      "requires": [
+        {
+          "skill": "alchemy",
+          "rank": 10
+        }
+      ],
+      "desc": "Your draughts heal more often than they poison. Brackenford has noticed."
+    },
+    {
+      "id": "master_herbalist",
+      "name": "Master Herbalist",
+      "renown": 120,
+      "mock": 0.05,
+      "requires": [
+        {
+          "skill": "herbalism",
+          "rank": 40
+        }
+      ],
+      "desc": "Briony asks your opinion now. Briony never asks anyone's opinion."
     }
   ]
 }

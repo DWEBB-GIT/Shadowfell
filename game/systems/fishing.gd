@@ -9,6 +9,12 @@ extends RefCounted
 ## land a fish from that water's loot table. Skill comes only from a real
 ## attempt: landing something or a strike on a real bite that slips the hook.
 ##
+## Fishing is on the profession ladder (Skills): every water has a
+## `fishLevel` you need to fish it, a catch teaches you by how easy that
+## water now is for you, and rare fish with a `reqSkill` in the water's table
+## only bite for anglers that good. Perks: Steady Hands, Keen Eye, Double
+## Haul, Deep Lure.
+##
 ## Phases: 'cast' (the bob flies) -> 'wait' -> 'bite' (strike now) -> done.
 
 var game
@@ -43,6 +49,8 @@ func cast(aim) -> bool:
 	if player.casting != null or player.pending != null:
 		return false
 	stop(true)
+	if game.gathering:
+		game.gathering.stop()
 	var range_: float = DB.abilities.fish.range
 	var p: Vector3 = player.position
 	var spot = null
@@ -59,6 +67,9 @@ func cast(aim) -> bool:
 	var water = Terrain.water_at(spot.x, spot.y, 0.3) if spot != null else null
 	if water == null:
 		return _say("Face open water to fish.", "fish-water")
+	var need := int(water.get("fishLevel", 1))
+	if game.skills.rank("fishing") < need:
+		return _say("%s needs Fishing %d. Fish easier water until you are better." % [water.get("name", "This water"), need], "fish-level")
 	player.face_towards(spot.x, spot.y)
 	player.hold_rod(true)
 	player.rig.play("castLine", 0.7, 0.45)
@@ -94,7 +105,7 @@ var skill: int:
 ## percent chance that a cast gets a bite
 func bite_chance_for(sk: float) -> float:
 	var cfg: Dictionary = DB.CONFIG.fishing
-	return minf(cfg.biteCap, cfg.biteBase + sk * cfg.bitePerSkill)
+	return minf(cfg.biteCap, cfg.biteBase + sk * cfg.bitePerSkill + game.skills.perk("fishing", "biteChance"))
 
 
 ## The catch chance in percent for a timely strike.
@@ -102,7 +113,7 @@ var chance: float:
 	get:
 		var cfg: Dictionary = DB.CONFIG.fishing
 		var sk: float = state.skill if state != null else skill
-		return minf(100, cfg.baseChance + sk * cfg.chancePerRank)
+		return minf(100, cfg.baseChance + sk * cfg.chancePerRank + game.skills.perk("fishing", "landChance"))
 
 
 ## the best bait in your bags
@@ -136,10 +147,13 @@ func strike() -> bool:
 		return true
 	if game.random.call() * 100 >= chance:
 		events.emit("log", {"text": "The fish slips the hook.", "kind": "muted"})
-		game.skills.raise("fishing") # a real bite still teaches you something
+		game.skills.gain("fishing", _colour(s)) # a real bite still teaches you something
 		_reel(s, false)
 		return true
-	var caught := Items.roll_loot(DB.loot_tables.get(s.water.get("fishTable", ""), {}), game.random)
+	var caught := Items.roll_loot(_table(s.water), game.random)
+	# Double Haul (perk): now and then two at once
+	if not caught.is_empty() and game.random.call() < game.skills.perk("fishing", "doubleCatch"):
+		caught[0].count += 1
 	for c in caught:
 		if inventory.room_for(c.id) < c.count:
 			events.emit("log", {"text": "Your bags are full. You let it go.", "kind": "muted"})
@@ -148,9 +162,33 @@ func strike() -> bool:
 		var name: String = Items.get_def(c.id).name
 		events.emit("log", {"text": "You catch %s %s." % [U.article(name), name], "kind": "loot", "rarity": c.rarity})
 	events.emit("fishCaught", {"items": caught})
-	game.skills.raise("fishing")
+	game.skills.gain("fishing", _colour(s))
 	_reel(s, not caught.is_empty())
 	return true
+
+
+## how easy the water is for you now (Skills.colour_for)
+func _colour(s: Dictionary) -> String:
+	return game.skills.colour_for("fishing", int(s.water.get("fishLevel", 1)))
+
+
+## The water's fish table as this angler sees it: fish with a `reqSkill`
+## above your Fishing never bite, and Deep Lure makes rare fish likelier.
+func _table(water: Dictionary) -> Dictionary:
+	var t: Dictionary = DB.loot_tables.get(water.get("fishTable", ""), {}).duplicate(true)
+	var drops = t.get("drops")
+	if drops == null:
+		return t
+	var rank: int = game.skills.rank("fishing")
+	for tier in drops.get("items", {}).keys():
+		drops.items[tier] = drops.items[tier].filter(func(e): return rank >= int(e.get("reqSkill", 0)))
+		if drops.items[tier].is_empty():
+			drops.items.erase(tier)
+			drops.get("rarity", {}).erase(tier)
+	var lure: float = game.skills.perk("fishing", "rareWeight")
+	if lure > 0 and drops.get("rarity", {}).has("rare"):
+		drops.rarity.rare *= lure
+	return t
 
 
 ## Strike: the rod snaps up and the bob is plucked out of the water and

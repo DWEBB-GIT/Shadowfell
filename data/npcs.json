@@ -196,6 +196,17 @@
       "rig": "warden",
       "tint": "#c8b070",
       "dialogue": "aveline"
+    },
+    {
+      "id": "briony",
+      "name": "Briony Marsh",
+      "title": "Herbwife",
+      "level": 7,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#9aa878",
+      "shop": "briony_herbs",
+      "dialogue": "briony"
     }
   ]
 }

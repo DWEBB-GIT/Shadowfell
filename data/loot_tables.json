@@ -1,5 +1,5 @@
 {
-  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops. Like WoW, an enemy's own table holds only what is its own (a ghoul's bones, a boss's blade); the gear any mob of its level might carry comes from `worldDrops`: level bands, each a table of its own with `minLevel` and `maxLevel`. Every enemy rolls the band its level falls in as well as its own table, unless it is marked `worldDrops: false` (beasts drop no gear). `questDrops` (an enemy's own table only): [{ item, quest, chance }], an item that drops only while that quest is taken and still needs it (a collect objective), whatever else the table rolls.",
+  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops. Like WoW, an enemy's own table holds only what is its own (a ghoul's bones, a boss's blade); the gear any mob of its level might carry comes from `worldDrops`: level bands, each a table of its own with `minLevel` and `maxLevel`. Every enemy rolls the band its level falls in as well as its own table, unless it is marked `worldDrops: false` (beasts drop no gear). `questDrops` (an enemy's own table only): [{ item, quest, chance }], an item that drops only while that quest is taken and still needs it (a collect objective), whatever else the table rolls. A fish table's entry may carry `reqSkill`: it only bites for anglers with that much Fishing.",
   "lootTables": [
     {
       "id": "ghoul",
@@ -215,7 +215,8 @@
             },
             {
               "item": "ghostfin",
-              "weight": 1
+              "weight": 1,
+              "reqSkill": 5
             }
           ]
         }
@@ -460,6 +461,47 @@
           "rare": [
             {
               "item": "old_watch_helm",
+              "weight": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "blackpool_fish",
+      "drops": {
+        "rolls": 1,
+        "chance": 1,
+        "rarity": {
+          "junk": 10,
+          "common": 80,
+          "rare": 10
+        },
+        "items": {
+          "junk": [
+            {
+              "item": "old_boot",
+              "weight": 1
+            }
+          ],
+          "common": [
+            {
+              "item": "blackpool_tench",
+              "weight": 3
+            },
+            {
+              "item": "bramble_carp",
+              "weight": 1
+            }
+          ],
+          "rare": [
+            {
+              "item": "mirror_pike",
+              "weight": 2,
+              "reqSkill": 15
+            },
+            {
+              "item": "barrow_eel",
               "weight": 1
             }
           ]

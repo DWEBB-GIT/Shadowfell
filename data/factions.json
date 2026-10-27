@@ -39,10 +39,11 @@
     }
   ],
   "renown": {
-    "_about": "Renown: how known you are, across every faction (Fable style). Earned per quest done, per level gained, for the first kill of each elite type, and from faction reputation: every `perReputation` points gained with any faction add 1 renown. `tiers` name it, lowest first, each from `min`. Titles (titles.json) unlock from renown.",
+    "_about": "Renown: how known you are, across every faction (Fable style). Earned per quest done, per level gained, for the first kill of each elite type, for each profession rank trained (`perProfessionRank`), and from faction reputation: every `perReputation` points gained with any faction add 1 renown. `tiers` name it, lowest first, each from `min`. Titles (titles.json) unlock from renown.",
     "perQuest": 5,
     "perLevel": 5,
     "firstEliteKill": 15,
+    "perProfessionRank": 10,
     "perReputation": 50,
     "tiers": [
       { "id": "nobody", "name": "Nobody", "min": 0, "desc": "No one knows your name. Most don't look up when you pass." },

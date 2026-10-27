@@ -1241,8 +1241,11 @@ func _cooldown(a) -> Array:
 	var cds: Dictionary = game.player.cooldowns
 	if a == "strike":
 		return [cds.get("attack", 0.0), game.stats.attack_cooldown, false]
-	if a == "item:healing_draught":
-		return [cds.get("draught", 0.0), DB.CONFIG.draught.cooldown, false]
+	# draughts and elixirs share the draught cooldown
+	if a is String and a.begins_with("item:"):
+		var use: Dictionary = Items.get_def(a.substr(5)).get("use", {})
+		if use.has("heal") or use.has("elixir"):
+			return [cds.get("draught", 0.0), DB.CONFIG.draught.cooldown, false]
 	if DB.spells.has(a):
 		var t: Dictionary = DB.spells[a].tuning
 		return [cds.get(a, 0.0), t.get("cooldown", 0.0), not t.get("offGlobalCooldown", false)]
@@ -1313,6 +1316,9 @@ func _refresh_spells() -> void:
 	elif game.mining.bar != null:
 		c = game.mining.bar
 		tex = icons.profession("mining")
+	elif game.gathering.bar != null:
+		c = game.gathering.bar
+		tex = icons.profession("herbalism")
 	_show_cast(cast, c, tex)
 	# the weapon swing timer: fills until the next blow lands, while auto
 	# attack is on (one per hand when dual wielding; the second is Auto Shot's
@@ -1348,7 +1354,7 @@ func _refresh_spells() -> void:
 	var fed = game.cooking.well_fed_aura
 	if fed != null:
 		list.append(fed)
-	for extra in [game.boons.aura, game.law.aura, game.afterlife.wound_aura]:
+	for extra in [game.boons.aura, game.boons.elixir_aura, game.law.aura, game.afterlife.wound_aura]:
 		if extra != null:
 			list.append(extra)
 	_auras(buffs, list)

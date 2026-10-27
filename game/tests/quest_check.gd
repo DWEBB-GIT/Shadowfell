@@ -18,6 +18,9 @@ func _process(_dt: float) -> bool:
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		var q = game.quests
+		# profession quests wait for their skill (`skillReq`)
+		for s in DB.skills:
+			game.skills.ranks[s] = 30
 		for pass_i in 6:
 			for id in DB.quests:
 				if q.status(id) == "available":
