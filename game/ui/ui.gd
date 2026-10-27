@@ -173,12 +173,16 @@ static func capped_frame(sides = 6) -> CappedFrame:
 ## a bar's empty track: the kit's dark stone strip
 ## a smoky dark band behind text on the world (the log, the objectives):
 ## solid on the `solid` side ("left" or "right"), fading out to the other
+## ("middle": solid across the centre, fading out to both ends)
 static func shade(solid := "left", alpha := 0.62, margin := Vector4(10, 6, 10, 6)) -> StyleBoxTexture:
 	var g := Gradient.new()
 	var dark := Color(0.03, 0.025, 0.02, alpha)
 	g.set_color(0, dark if solid == "left" else Color(dark, 0))
 	g.set_color(1, Color(dark, 0) if solid == "left" else dark)
 	g.add_point(0.7 if solid == "left" else 0.3, dark)
+	if solid == "middle": # fades out to both ends
+		g.offsets = PackedFloat32Array([0, 0.3, 0.7, 1])
+		g.colors = PackedColorArray([Color(dark, 0), dark, dark, Color(dark, 0)])
 	var t := GradientTexture2D.new()
 	t.gradient = g
 	t.width = 64

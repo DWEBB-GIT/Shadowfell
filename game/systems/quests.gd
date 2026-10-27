@@ -244,8 +244,6 @@ func complete(id: String) -> bool:
 	# a dark choice is remembered (data/infamy.json)
 	if r.get("infamy"):
 		game.law.add_infamy(r.infamy, "for what you did")
-	if game.hud:
-		game.hud.toast("Quest complete: %s" % q.name)
 	events.emit("questComplete", {"id": id})
 	_changed()
 	return true
