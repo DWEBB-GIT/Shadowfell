@@ -38,7 +38,7 @@
       "id": "mara_forge",
       "name": "Mara's forge",
       "vendorType": "smith",
-      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "arming_sword", "rusty_dirk", "hunting_bow", "rough_arrow", "travellers_satchel", "torch"],
+      "stock": ["healing_draught", "iron_gloves", "hob_boots", "mail_chausses", "iron_shield", "arming_sword", "rusty_dirk", "bone_athame", "hunting_bow", "rough_arrow", "travellers_satchel", "torch"],
       "faction": "road_wardens"
     },
     {

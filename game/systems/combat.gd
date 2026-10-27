@@ -168,7 +168,7 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 		events.emit("playerMiss", {})
 		return null
 	var off := hand == "off"
-	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.15 if off else 0.3}, {"swing": true, "hand": hand, "show": show})
+	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show})
 	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand})
 	events.emit("log", {"text": "%s the %s for %d.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, _crit_text(hit)], "kind": "hit"})
 	if target.dead:
@@ -202,7 +202,7 @@ func update_arrows(dt: float) -> void:
 			continue
 		# the arrow adds its own damage: ammoDps for each second of bow speed
 		var bonus: float = (Items.get_def(a.ammo).get("ammoDps", 0) if a.ammo else 0.0) * game.stats.hand_speed("ranged")
-		var hit := _player_hit(e, 1, {"stagger": 0.12, "knockFrom": game.player.position, "knockback": 0.1}, {"swing": true, "hand": "ranged", "bonus": bonus})
+		var hit := _player_hit(e, 1, {"stagger": 0.12}, {"swing": true, "hand": "ranged", "bonus": bonus})
 		game.events.emit("enemyHit", {"enemy": e, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": "ranged"})
 		game.events.emit("log", {"text": "Your arrow hits the %s for %d.%s" % [e.cfg.name, hit.amount, _crit_text(hit)], "kind": "hit"})
 		if e.dead:

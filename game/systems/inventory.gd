@@ -796,6 +796,10 @@ func apply(data: Dictionary) -> void:
 	sockets = []
 	for s in data.sockets:
 		sockets.append({"id": s.id, "slots": s.slots.map(func(x): return clone(x))} if s else null)
+	# extra backpack slots kept from an older, bigger backpack go once emptied
+	var back: Array = sockets[0].slots
+	while back.size() > Items.BACKPACK_SLOTS and back.back() == null:
+		back.pop_back()
 	while sockets.size() <= Items.TOOL_SOCKET:
 		sockets.append(null)
 	equipment = {}

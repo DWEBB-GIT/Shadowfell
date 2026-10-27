@@ -245,7 +245,7 @@
       ],
       "later": ["hexOfWithering", "purge"],
       "startingGear": {
-        "mainHand": "rusty_dirk",
+        "mainHand": "ritual_knife",
         "chest": "frayed_robe"
       }
     },
