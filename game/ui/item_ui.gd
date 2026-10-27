@@ -512,9 +512,8 @@ func _render_character(inv) -> void:
 	w.panel.visible = open.character
 	if not open.character:
 		return
-	var ttl = game.titles
 	var who: String = game.character.name if game.character else "Warden"
-	w.title.text = who + (", %s" % ttl.name if ttl.name != "" else "")
+	w.title.text = game.titles.full_name(who)
 	for id in w.tabs:
 		var b: Button = w.tabs[id]
 		b.add_theme_color_override("font_color", UI.GOLD if id == char_tab else UI.TEXT_DIM)

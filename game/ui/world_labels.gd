@@ -28,7 +28,7 @@ func _names() -> Array:
 	var player = game.player
 	if settings.get_value("playerName") and game.character and not player.dead:
 		# your name in the law's colour: clean, Amber (seen), red (Wanted), Outlaw
-		out.append({"text": game.character.name, "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15, 0)})
+		out.append({"text": game.titles.full_name(game.character.name), "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15, 0)})
 	if not settings.get_value("names"):
 		return out
 	for n in game.npcs.list:
