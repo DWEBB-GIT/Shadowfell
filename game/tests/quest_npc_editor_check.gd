@@ -143,7 +143,7 @@ func _initialize() -> void:
 	npcs.select("osric_dunn")
 	_ok(s.trained_by("osric_dunn").size() == 1, "the trainer lists the class spell they teach")
 	_ok(Checks.run(s).is_empty(), "the new skill, tool and trained spell pass the checks: %s" % "\n".join(Checks.run(s)))
-	warrior.trained.append({"ability": "brace", "trainer": "osric_dunn", "level": 3, "cost": 15})
+	warrior.trained.append({"ability": "heavyStrike", "trainer": "osric_dunn", "level": 3, "cost": 15})
 	_ok(Array(Checks.run(s)).any(func(p): return p.contains("starting bar")), "a trained spell on the starting bar is caught")
 	warrior.trained.pop_back()
 	# a trainer can teach any spell, gated by a quest; a starting-bar spell

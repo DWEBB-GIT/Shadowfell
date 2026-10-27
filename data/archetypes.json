@@ -1,5 +1,5 @@
 {
-  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and wield, their resources, their always-on trait, their spellbook (`abilities`: the base kit and the swap pool), the six spells they start with on the bar (`bar`, slots 1 2 3 4 Q E) and their starting gear. Resources: `mana` (from Intellect) and `bars`, one refilling-bar system with different numbers per class (Resolve, Energy, Focus, Corruption, combo points). See the comment at the top of src/systems/resources.js for what each bar field does.",
+  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and wield, their resources, their always-on trait, their spellbook (`abilities`: the base kit and the swap pool), the spells they start with on the bar (`bar`, slots 1 2 3 4 Q E: only the basic ability, Dan 2026-10-27), the spells their early trainer in Brackenford teaches (`trained`: ability, trainer npc, level, cost, optional quest gate), the spells left for later trainers in the big cities (`later`: locked until a trainer for them is placed) and their starting gear. Resources: `mana` (from Intellect) and `bars`, one refilling-bar system with different numbers per class (Resolve, Energy, Focus, Corruption, combo points). See the comment at the top of src/systems/resources.js for what each bar field does.",
   "archetypes": [
     {
       "id": "warden",
@@ -46,7 +46,13 @@
       },
       "defensive": "brace",
       "abilities": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace", "shieldBreak", "rend"],
-      "bar": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace"],
+      "bar": ["heavyStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "crushingBlow", "trainer": "brask", "level": 2, "cost": 10},
+        {"ability": "brace", "trainer": "brask", "level": 4, "cost": 25},
+        {"ability": "cleave", "trainer": "brask", "level": 6, "cost": 50}
+      ],
+      "later": ["lunge", "battleCry", "shieldBreak", "rend"],
       "startingGear": {
         "mainHand": "worn_longsword",
         "offHand": "kite_shield",
@@ -105,7 +111,13 @@
       },
       "defensive": "guile",
       "abilities": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
-      "bar": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
+      "bar": ["quickStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "doubleCut", "trainer": "nell", "level": 2, "cost": 10},
+        {"ability": "guile", "trainer": "nell", "level": 4, "cost": 25},
+        {"ability": "poisonedBlade", "trainer": "nell", "level": 6, "cost": 50}
+      ],
+      "later": ["sleep", "shadow"],
       "startingGear": {
         "mainHand": "rusty_dirk",
         "offHand": "rusty_dirk",
@@ -157,7 +169,13 @@
       },
       "defensive": "disengage",
       "abilities": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage", "venomArrow"],
-      "bar": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage"],
+      "bar": ["quickShot", null, null, null, null, null],
+      "trained": [
+        {"ability": "flamingArrow", "trainer": "odo", "level": 2, "cost": 10},
+        {"ability": "disengage", "trainer": "odo", "level": 4, "cost": 25},
+        {"ability": "tarTrap", "trainer": "odo", "level": 6, "cost": 50}
+      ],
+      "later": ["tripleShot", "longShot", "venomArrow"],
       "startingGear": {
         "mainHand": "rusty_dirk",
         "ranged": "hunting_bow",
@@ -219,7 +237,13 @@
       },
       "defensive": "siphonLife",
       "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
-      "bar": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
+      "bar": ["blightBolt", null, null, null, null, null],
+      "trained": [
+        {"ability": "rot", "trainer": "grue", "level": 2, "cost": 10},
+        {"ability": "siphonLife", "trainer": "grue", "level": 4, "cost": 25},
+        {"ability": "graveBloom", "trainer": "grue", "level": 6, "cost": 50}
+      ],
+      "later": ["hexOfWithering", "purge"],
       "startingGear": {
         "mainHand": "rusty_dirk",
         "chest": "frayed_robe"
@@ -274,7 +298,13 @@
         "rebuke",
         "hallowedBolt"
       ],
-      "bar": ["holyStrike", "lightsHammer", "divineStorm", "hallowedGround", "bringToKneel", "lightShield"],
+      "bar": ["holyStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "lightsHammer", "trainer": "aveline", "level": 2, "cost": 10},
+        {"ability": "lightShield", "trainer": "aveline", "level": 4, "cost": 25},
+        {"ability": "divineStorm", "trainer": "aveline", "level": 6, "cost": 50}
+      ],
+      "later": ["hallowedGround", "bringToKneel", "smite", "rebuke", "hallowedBolt"],
       "startingGear": {
         "mainHand": "worn_longsword",
         "offHand": "kite_shield",

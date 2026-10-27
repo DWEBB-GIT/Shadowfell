@@ -141,6 +141,61 @@
       "rig": "warden",
       "tint": "#c08a5a",
       "dialogue": "wenna"
+    },
+    {
+      "id": "brask",
+      "mapIcon": "trainer",
+      "name": "Brask",
+      "title": "Sergeant of the Wardens",
+      "level": 14,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#6a7a8a",
+      "dialogue": "brask"
+    },
+    {
+      "id": "nell",
+      "mapIcon": "trainer",
+      "name": "Nell Tallow",
+      "title": "Fence",
+      "level": 12,
+      "model": "mara",
+      "rig": "warden",
+      "tint": "#4a4a5a",
+      "dialogue": "nell"
+    },
+    {
+      "id": "odo",
+      "mapIcon": "trainer",
+      "name": "Odo Fell",
+      "title": "Huntsman",
+      "level": 13,
+      "model": "tam",
+      "rig": "warden",
+      "tint": "#5a6a3a",
+      "dialogue": "odo"
+    },
+    {
+      "id": "grue",
+      "mapIcon": "trainer",
+      "name": "Mother Grue",
+      "title": "Hedge Witch",
+      "level": 15,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#5a4a6a",
+      "dialogue": "grue"
+    },
+    {
+      "id": "aveline",
+      "mapIcon": "trainer",
+      "name": "Dame Aveline",
+      "title": "Knight of the Old Road",
+      "level": 15,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#c8b070",
+      "dialogue": "aveline"
     }
   ]
 }

@@ -326,8 +326,13 @@ export function validateGameData(raw, opts = {}) {
       ref(`${w} trained ${t.ability}`, 'trainer npc', npcs, t.trainer);
       if (t.quest !== undefined) ref(`${w} trained ${t.ability}`, 'gate quest', quests, t.quest);
       if (!(a.abilities || []).includes(t.ability)) errors.push(`${w}: trained ${t.ability} must be in its abilities`);
-      if ((a.bar || []).includes(t.ability) || t.ability === a.defensive) errors.push(`${w}: trained ${t.ability} cannot be on its starting bar or its defensive`);
+      if ((a.bar || []).includes(t.ability)) errors.push(`${w}: trained ${t.ability} cannot be on its starting bar`);
       if (!(isInt(t.level) && t.level >= 1) || !(isInt(t.cost) && t.cost >= 0)) errors.push(`${w}: trained ${t.ability} needs a level and a cost in whole numbers`);
+    }
+    if (a.later !== undefined && !Array.isArray(a.later)) errors.push(`${w}: later must be a list`);
+    for (const id of Array.isArray(a.later) ? a.later : []) {
+      if (!(a.abilities || []).includes(id)) errors.push(`${w}: later ${id} must be in its abilities`);
+      if ((a.bar || []).includes(id) || (a.trained || []).some((t) => t.ability === id)) errors.push(`${w}: later ${id} cannot also be on its bar or taught by a trainer`);
     }
     if (!Array.isArray(a.bar) || a.bar.length !== 6) errors.push(`${w}: bar must name the 6 spells it starts with`);
     else for (const id of a.bar) if (id !== null && !(a.abilities || []).includes(id)) errors.push(`${w}: bar names ${id}, which is not in its abilities`);

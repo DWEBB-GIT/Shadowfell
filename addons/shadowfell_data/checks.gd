@@ -497,11 +497,16 @@ static func _classes(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("its spellbook names unknown ability %s" % id)
 			elif s.ability(id).has("skill"):
 				bad.call("%s is a skill's tool, not a class spell" % id)
+		for id in c.get("later", []):
+			if not c.get("abilities", []).has(id):
+				bad.call("%s is left for a later trainer but is not in its spellbook" % id)
+			if c.get("bar", []).has(id) or c.get("trained", []).any(func(t): return t.get("ability") == id):
+				bad.call("%s is left for a later trainer, so it cannot be on its bar or taught now" % id)
 		for t in c.get("trained", []):
 			var id = t.get("ability")
 			if not c.get("abilities", []).has(id):
 				bad.call("a trainer teaches %s, which is not in its spellbook" % id)
-			if c.get("bar", []).has(id) or c.get("defensive") == id:
+			if c.get("bar", []).has(id):
 				bad.call("%s is on its starting bar, so a trainer cannot teach it" % id)
 			if s.npc(t.get("trainer")).is_empty():
 				bad.call("%s's trainer %s is not an npc" % [id, t.get("trainer")])
