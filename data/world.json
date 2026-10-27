@@ -397,7 +397,7 @@
   "enemySpawns": [
     {
       "id": "ghoul_cart",
-      "enemy": "ghoul",
+      "enemy": "hedge_fox",
       "position": [-392.2, 424]
     },
     {
