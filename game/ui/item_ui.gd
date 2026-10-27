@@ -1043,7 +1043,8 @@ func _ladder_lines(body: Node, d: Dictionary) -> void:
 		var text := "At the %s's limit." % sk.rank_name(id)
 		if not nxt.is_empty():
 			var why: String = sk.rank_blocked(id)
-			text += " %s trains %s%s." % [DB.npcs.get(nxt.trainer, {}).get("name", "A trainer"), nxt.name, " (%s)" % why.to_lower().replace("requires ", "needs ") if why != "" else ""]
+			# no trainer's name: more than one will teach each rank in time (Dan)
+			text += " A trainer can raise you to %s%s." % [nxt.name, " (%s)" % why.to_lower().replace("requires ", "needs ") if why != "" else ""]
 		UI.wrapped(UI.label(body, text, 11, Color("e0b060")))
 	var chosen := []
 	for p in d.get("perks", []):

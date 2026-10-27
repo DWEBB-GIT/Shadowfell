@@ -292,7 +292,7 @@ func _tell_capped(id: String) -> void:
 	var s: Dictionary = DB.skills[id]
 	var text := "Your %s has reached the %s's limit (%d)." % [s.name, rank_name(id), cap(id)]
 	if not nxt.is_empty():
-		text += " %s can train you as %s." % [DB.npcs.get(nxt.trainer, {}).get("name", "A trainer"), nxt.name]
+		text += " Find a trainer to become %s %s." % [U.article(nxt.name), nxt.name]
 	game.events.emit("log", {"text": text, "kind": "level", "throttle": "cap-" + id})
 
 
