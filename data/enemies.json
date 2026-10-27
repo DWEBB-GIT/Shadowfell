@@ -313,6 +313,26 @@
       "worldDrops": false
     },
     {
+      "id": "grave_scavenger",
+      "name": "Grave Scavenger",
+      "attitude": "aggressive",
+      "model": "mara",
+      "type": "normal",
+      "level": 1,
+      "crit": 5,
+      "windup": 0.45,
+      "detection": 9,
+      "meleeRange": 1.25,
+      "speed": 3,
+      "radius": 0.45,
+      "xp": 0,
+      "coins": 0,
+      "elite": false,
+      "worldDrops": false,
+      "tint": "#4a4438",
+      "meleeAnim": "cleave"
+    },
+    {
       "id": "blackhedge_cutthroat",
       "name": "Blackhedge Cutthroat",
       "attitude": "aggressive",

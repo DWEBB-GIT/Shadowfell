@@ -273,3 +273,4 @@ func on_enemy_defeated(enemy) -> void:
 		loot.drop_unique(enemy)
 	loot.drop_from_enemy(enemy)
 	game.afterlife.on_enemy_defeated(enemy)
+	game.grave.on_enemy_defeated(enemy)

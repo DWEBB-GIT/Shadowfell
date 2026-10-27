@@ -110,12 +110,13 @@ var resting: String:
 		return "camp" if c != null and U.hyp(player.position.x - c.x, player.position.z - c.z) <= DB.CONFIG.camp.restRadius else ""
 
 
-func update(_dt: float, time: float) -> void:
+func update(dt: float, time: float) -> void:
 	if light:
 		light.light_energy = (2.0 + sin(time * 9) * 0.25 + sin(time * 23) * 0.15) * Tex.OMNI_SCALE
 	# rested experience builds while you sit by the fire
 	var prog = game.progression
 	var where := resting
+	game.afterlife.rest_tick(dt, where)
 	if ring:
 		ring.material_override.albedo_color.a = 0.6 + sin(time * 3) * 0.1 if where == "camp" else 0.3
 	# rested experience builds slowly while you rest: a share of a level a
@@ -124,7 +125,7 @@ func update(_dt: float, time: float) -> void:
 		var cap: float = prog.xp_to_next * DB.CONFIG.camp.restedCap
 		if prog.rested < cap:
 			var was: float = prog.rested
-			prog.rested = minf(cap, prog.rested + prog.xp_to_next * _dt / DB.CONFIG.camp.restedFullSeconds[where])
+			prog.rested = minf(cap, prog.rested + prog.xp_to_next * dt / DB.CONFIG.camp.restedFullSeconds[where])
 			if was == 0:
 				var text := "You rest at the inn. You feel rested." if where == "inn" else "You rest by the fire. You feel rested."
 				game.events.emit("log", {"text": text, "kind": "heal", "throttle": "rested"})

@@ -3,8 +3,10 @@ extends RefCounted
 ## Death, WoW style (src/systems/afterlife.js). When the player falls, their
 ## body stays where it fell and their spirit rises at the last place they
 ## rested: their camp, an inn, or the last shrine. From there the ghost can
-## either run back to the body and rise there for free, or return to life at
-## once where it stands, a few coins lighter.
+## either run back to the body and rise there, or return to life at once
+## where it stands. What they carried waits in a grave by the body (grave.gd).
+## Either way they come back Wounded: less health until they rest at an inn
+## or pay a healer (Dan, 2026-10-27).
 ##
 ## The enemy that killed the player is remembered (`world_state.nemesis`): it
 ## carries a skull until it falls. It gives no extra damage or XP (Dan,
@@ -14,6 +16,8 @@ var game
 var ghost := false
 var corpse = null ## { x, z, mesh }
 var coin_loss := 0
+var wounds := 0 ## each revival adds one, up to death.maxWounds
+var wound_rest := 0.0 ## seconds rested at an inn towards healing them
 
 
 func _init(g) -> void:
@@ -52,6 +56,7 @@ func inn_point() -> Dictionary:
 func on_death(killer, loss: int) -> void:
 	var ws = game.world_state
 	coin_loss = loss
+	game.grave.on_death(game.player.position)
 	# dying wears your gear, as in WoW
 	game.inventory.wear(DB.CONFIG.durability.deathLoss)
 	game.events.emit("log", {"text": "Your equipment is damaged (−%s%% durability)." % U.n(DB.CONFIG.durability.deathLoss), "kind": "muted"})
@@ -89,21 +94,62 @@ func revive_at_corpse() -> bool:
 		return false
 	var c: Dictionary = corpse
 	_end()
+	_wound()
 	game.player.revive(c.x, c.z, DB.CONFIG.death.corpseHealth)
-	game.events.emit("log", {"text": "You return to your body. Your wounds are still with you.", "kind": "heal"})
+	game.events.emit("log", {"text": "You return to your body, wounded. Rest at an inn or find a healer.", "kind": "heal"})
 	return true
 
 
-## Return to life where the spirit stands (at the rest point), coins lost.
+## Return to life where the spirit stands (at the rest point), wounded.
 func revive_here() -> bool:
 	if not ghost:
 		return false
-	var lost: int = game.inventory.lose_coins(coin_loss)
 	var at: Vector3 = game.player.position
 	_end()
+	_wound()
 	game.player.revive(at.x, at.z)
-	game.events.emit("log", {"text": "You return to life %s.%s" % [rest_point().label, " %s gone." % U.money(lost) if lost else ""], "kind": "lore"})
+	game.events.emit("log", {"text": "You return to life %s, wounded. Rest at an inn or find a healer." % rest_point().label, "kind": "lore"})
 	return true
+
+
+# --------------------------------------------------------------- wounds
+func _wound() -> void:
+	wounds = mini(int(DB.CONFIG.death.maxWounds), wounds + 1)
+	wound_rest = 0.0
+	game.recompute_max_health()
+
+
+## the share of maximum health your wounds take away
+var wound_factor: float:
+	get:
+		return maxf(0.1, 1 - wounds * DB.CONFIG.death.woundHealth / 100.0)
+
+
+func heal_wounds(how: String) -> void:
+	if wounds <= 0:
+		return
+	wounds = 0
+	wound_rest = 0.0
+	game.recompute_max_health()
+	game.events.emit("log", {"text": how, "kind": "heal"})
+	game.hud.toast("Your wounds are healed")
+
+
+## resting under an inn's roof mends you (camp.gd calls this while you rest)
+func rest_tick(dt: float, where: String) -> void:
+	if wounds <= 0 or where != "inn":
+		wound_rest = 0.0
+		return
+	wound_rest += dt
+	if wound_rest >= DB.CONFIG.death.woundRestSeconds:
+		heal_wounds("A night's rest under a roof, and your wounds have closed.")
+
+
+var wound_aura:
+	get:
+		if wounds <= 0:
+			return null
+		return {"id": "wounded", "name": "Wounded" + (" ×%d" % wounds if wounds > 1 else ""), "text": "%d%% less maximum health. Rest at an inn or pay a healer to mend it." % roundi(100 - wound_factor * 100)}
 
 
 var near_corpse: bool:
@@ -126,7 +172,7 @@ func interactions() -> Array:
 	if corpse != null:
 		out.append({"key": "corpse", "x": corpse.x, "z": corpse.z, "bias": -1.0, "reach": DB.CONFIG.death.corpseReach, "prompt": "Return to your body", "big": true, "run": func(): revive_at_corpse()})
 	var r := rest_point()
-	out.append({"key": "revive-here", "x": r.x, "z": r.z, "bias": 0.0, "reach": DB.CONFIG.death.restReach, "prompt": "Return to life here (lose %s)" % U.money(coin_loss) if coin_loss else "Return to life here", "run": func(): revive_here()})
+	out.append({"key": "revive-here", "x": r.x, "z": r.z, "bias": 0.0, "reach": DB.CONFIG.death.restReach, "prompt": "Return to life here", "run": func(): revive_here()})
 	return out
 
 
@@ -144,6 +190,8 @@ func reset() -> void:
 	if ghost or corpse != null:
 		_end()
 	coin_loss = 0
+	wounds = 0
+	wound_rest = 0.0
 
 
 func _place_corpse(x: float, z: float, facing: float) -> void:
