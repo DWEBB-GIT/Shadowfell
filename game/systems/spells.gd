@@ -246,6 +246,34 @@ var fortify: float:
 
 
 ## what a spell going off does for your key passive: Zeal stacks
+## The spell's own cast pose (data/spell_fx.json `anim`), else the kind's
+## `type`. `keep_timing`: a blow that lands on its own clock (a sweep, a
+## burst, a charge) takes only the pose, so blow and pose stay together.
+func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep_timing := false) -> void:
+	var a = DB.spell_fx.get(spell.id, {}).get("anim")
+	if a == null:
+		game.player.rig.play(type, duration, impact)
+		return
+	if not keep_timing:
+		var d = a.get("duration", duration)
+		duration = spell.tuning.get(d, duration) if typeof(d) == TYPE_STRING else d
+		impact = a.get("impact", impact)
+	game.player.rig.play(a.type, duration, impact)
+
+
+## The spell's own effects (data/spell_fx.json): `cast` on you as it goes,
+## `impact` where it lands.
+func _show(spell: Dictionary, phase: String, at: Vector3, facing: float, follow = null) -> void:
+	if DB.spell_fx.has(spell.id):
+		game.events.emit("spellFx", {"id": spell.id, "phase": phase, "position": at, "facing": facing, "follow": follow, "tuning": spell.tuning})
+
+
+## facing from you to an enemy
+func _facing_to(enemy) -> float:
+	var p: Vector3 = game.player.position
+	return atan2(enemy.position.x - p.x, enemy.position.z - p.z)
+
+
 func _cast_effects(spell: Dictionary) -> void:
 	if not game.builds:
 		return
@@ -358,7 +386,8 @@ func try_cast(id: String) -> bool:
 		player.casting = {"id": id, "spell": spell, "t": 0.0, "total": stats.hasted(t.castTime), "target": target, "pushbacks": 0, "channel": channel, "next": t.tickInterval if channel else 0.0}
 		if channel:
 			player.cooldowns[id] = t.cooldown
-		player.rig.play("shoot" if spell.get("ranged") else "brace", player.casting.total, 0.9)
+		_anim(spell, "shoot" if spell.get("ranged") else "brace", player.casting.total, 0.9, true)
+		_show(spell, "cast", player.position, player.facing, player)
 		events.emit("castStart", {"id": id})
 		return true
 	if spell.kind == "cleave" or spell.kind == "burst":
@@ -373,7 +402,8 @@ func try_cast(id: String) -> bool:
 		# a second spin (Cleave with two weapons) follows the first
 		for k in range(1, int(t.get("spins", 1))):
 			blows.append({"id": spell.id, "t": windup + 0.3 * k, "spell": spell})
-		player.rig.play("slam" if spell.kind == "burst" else "strike", anim, windup / anim)
+		_anim(spell, "slam" if spell.kind == "burst" else "strike", anim, windup / anim, true)
+		_show(spell, "cast", player.position, player.facing, player)
 		player.cooldowns[id] = t.cooldown
 		_cast_effects(spell)
 		return true
@@ -429,7 +459,8 @@ func _charge(spell: Dictionary, target, id: String) -> bool:
 	player.cooldowns.attack = maxf(player.cooldowns.attack, t.duration + 0.2)
 	player.cooldowns.attackOff = maxf(player.cooldowns.attackOff, t.duration + 0.2)
 	player.lunge = {"t": 0.0, "dir": {"x": dir.x, "z": dir.y}, "id": spell.id, "speed": t.distance / t.duration, "duration": t.duration}
-	player.rig.play("strike", t.duration + 0.25, 0.7)
+	_anim(spell, "strike", t.duration + 0.25, 0.7, true)
+	_show(spell, "cast", player.position, player.facing, player)
 	game.events.emit("playerLunge", {})
 	return true
 
@@ -452,7 +483,8 @@ func _leap(spell: Dictionary, id: String) -> bool:
 	if not t.get("offGlobalCooldown"):
 		player.cooldowns.gcd = game.stats.global_cooldown
 	player.lunge = {"t": 0.0, "dir": {"x": dir.x, "z": dir.y}, "id": spell.id, "speed": t.distance / t.duration, "duration": t.duration}
-	player.rig.play("brace", t.duration + 0.2, 0.5)
+	_anim(spell, "brace", t.duration + 0.2, 0.5, true)
+	_show(spell, "cast", player.position, player.facing, player)
 	game.events.emit("playerLunge", {})
 	game.events.emit("log", {"text": "%s!" % spell.name, "kind": "muted"})
 	return true
@@ -464,6 +496,7 @@ func _go(spell: Dictionary, target) -> void:
 	var events: Events = game.events
 	var t: Dictionary = spell.tuning
 	_cast_effects(spell)
+	_show(spell, "cast", player.position, player.facing, player)
 	if spell.get("ranged"):
 		_shoot(spell, target)
 		return
@@ -473,7 +506,8 @@ func _go(spell: Dictionary, target) -> void:
 			bolts.append({"enemy": target, "id": spell.id, "t": d / t.projectileSpeed})
 			events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": target.position, "speed": t.projectileSpeed, "follow": target, "life": d / t.projectileSpeed})
 		"instant":
-			player.rig.play("strike", 0.4, 0.4)
+			_anim(spell, "strike", 0.4, 0.4)
+			_show(spell, "impact", target.position, _facing_to(target))
 			# a weapon strike (`damageMultiplier`, e.g. Sinister Strike) rolls the weapon
 			if t.has("damageMultiplier"):
 				var hit := _damage(spell, target, _weapon_base(t), "Your %s hits the {name} for {n}." % spell.name, t.damageMultiplier * _bonus_vs(spell, target), {"stagger": 0.25, "knockFrom": player.position, "knockback": 0.3})
@@ -483,14 +517,16 @@ func _go(spell: Dictionary, target) -> void:
 			var hit := _damage(spell, target, _spell_base(t), "Your %s hits the {name} for {n}." % spell.name)
 			_landed(spell, target, hit)
 		"dot":
-			player.rig.play("strike", 0.45, 0.4)
+			_anim(spell, "strike", 0.45, 0.4)
+			_show(spell, "impact", target.position, _facing_to(target))
 			_apply_dot(spell, target)
 		"control":
-			player.rig.play("brace", 0.45, 0.4)
+			_anim(spell, "brace", 0.45, 0.4)
+			_show(spell, "impact", target.position, _facing_to(target))
 			events.emit("spellFlash", {"position": target.position, "school": spell.get("school")})
 			_landed(spell, target, null)
 		"aoe":
-			player.rig.play("slam", 0.5, 0.5)
+			_anim(spell, "slam", 0.5, 0.5)
 			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
 			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": t.get("slow", 0), "damage": t.get("damageMax", 0) > 0})
 			events.emit("zone", {"id": spell.id, "x": at.x, "z": at.z, "radius": t.radius, "duration": t.duration, "school": spell.get("school")})
@@ -498,10 +534,11 @@ func _go(spell: Dictionary, target) -> void:
 		"guard":
 			player.braced = t.window
 			player.guard_rule = {"blocks": t.get("blocks", 1), "reduction": t.get("reduction", 0), "miss": t.get("miss", false), "name": spell.name}
-			player.rig.play("brace", 0.5, 0.4)
-			events.emit("playerBrace", {"window": t.window})
+			_anim(spell, "brace", 0.5, 0.4)
+			events.emit("playerBrace", {"id": spell.id, "window": t.window})
 		"interrupt":
-			player.rig.play("brace", 0.35, 0.4)
+			_anim(spell, "brace", 0.35, 0.4)
+			_show(spell, "impact", target.position, _facing_to(target))
 			var broke = target.interrupt(t.lockout)
 			events.emit("spellFlash", {"position": target.position, "school": spell.get("school")})
 			_damage(spell, target, _spell_base(t), "")
@@ -518,14 +555,14 @@ func _go(spell: Dictionary, target) -> void:
 		"portal":
 			game.camp.portal(spell.id, spell.portal, t.cooldown)
 		"buff":
-			player.rig.play("brace", 0.6, 0.4)
+			_anim(spell, "brace", 0.6, 0.4)
 			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "damageBonus": t.damageBonus, "reduction": t.get("reduction", 0)}
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "%s: your damage is raised by %s%% for %s seconds." % [spell.name, U.n(t.damageBonus), U.n(t.duration)], "kind": "hit"})
 		"stealth":
 			_enter_shadow(spell)
 		"trap":
-			player.rig.play("slam", 0.45, 0.5)
+			_anim(spell, "slam", 0.45, 0.5)
 			var key := "%s-%.3f" % [spell.id, game.time]
 			var arm: float = t.armTime
 			for e in (game.builds.effects("trap") if game.builds else []):
@@ -554,7 +591,7 @@ func _go(spell: Dictionary, target) -> void:
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "You purge %d Corruption and heal %d." % [U.jround(points), U.jround(healed)], "kind": "hit"})
 		"shield":
-			player.rig.play("brace", 0.5, 0.4)
+			_anim(spell, "brace", 0.5, 0.4)
 			var absorb := U.jround(player.max_health * t.absorbPercent / 100.0)
 			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "absorb": absorb}
 			events.emit("buff", {"id": spell.id})
@@ -735,7 +772,8 @@ func resolve(id: String, spell = null) -> Array:
 		in_cone.append([d, e])
 	in_cone.sort_custom(func(a, b): return a[0] < b[0])
 	var hits := in_cone.slice(0, int(t.maxTargets)).map(func(p): return p[1])
-	events.emit("cleave", {"position": player.position, "facing": player.facing, "range": t.range, "degrees": t.coneDegrees})
+	events.emit("cleave", {"id": spell.id, "position": player.position, "facing": player.facing, "range": t.range, "degrees": t.coneDegrees})
+	_show(spell, "impact", player.position, player.facing)
 	if hits.is_empty():
 		events.emit("log", {"text": "%s cuts only air." % spell.name, "kind": "muted"})
 		return []
@@ -762,6 +800,7 @@ func _burst(spell: Dictionary) -> Array:
 	if t.get("healPerHit") and not hits.is_empty():
 		_heal_number(player.heal(player.max_health * t.healPerHit * hits.size() / 100.0))
 	events.emit("burst", {"id": spell.id, "position": player.position, "radius": t.radius, "hits": hits, "school": spell.get("school")})
+	_show(spell, "impact", player.position, player.facing)
 	# striking engages: auto attack the target, or the first foe left standing
 	var tg = game.targeting
 	var alive := hits.filter(func(e): return e.alive)
@@ -792,6 +831,7 @@ func _charge_hit(spell: Dictionary) -> Array:
 	player.face_towards(best.position.x, best.position.z)
 	targeting.engage(best)
 	var hit := _damage(spell, best, Stats.weapon_roll(game.random, game.stats), "", t.damageMultiplier, {"stagger": 0.3, "knockFrom": player.position, "knockback": 0.4})
+	_show(spell, "impact", best.position, player.facing)
 	game.events.emit("log", {"text": "You %s into the %s for %d.%s" % [spell.name.to_lower(), best.cfg.name, hit.amount, " A critical blow!" if hit.crit else ""], "kind": "hit"})
 	_landed(spell, best, hit)
 	return [best]

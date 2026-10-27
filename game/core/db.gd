@@ -77,6 +77,8 @@ static var armour_types := {}
 static var suffixes := {}
 static var archetypes := {}
 static var abilities := {}
+## how each spell looks: its cast animation and effects (data/spell_fx.json)
+static var spell_fx := {}
 static var enemies := {} ## raw records
 static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
@@ -140,6 +142,7 @@ static func setup(data) -> void:
 	suffixes = data.table("suffixes")
 	archetypes = data.table("archetypes")
 	abilities = data.table("abilities")
+	spell_fx = f.get("spell_fx", {}).get("spells", {})
 	enemies = resolve_enemies(data.table("enemies"))
 	loot_tables = data.table("lootTables")
 	world_drops = data.table("worldDrops").values()

@@ -147,6 +147,38 @@ func _apply_off_action(dt: float) -> void:
 		off_action = null
 
 
+## three keys of a blow: from rest to `a` (the windup) by `up`, on to `b`
+## (the blow) by `impact`, then back to rest
+static func _key3(k: float, up: float, impact: float, a: float, b: float) -> float:
+	if k < up:
+		return a * ease_(k / up)
+	if k < impact:
+		return lerpf(a, b, ease_((k - up) / (impact - up)))
+	return b * (1 - ease_((k - impact) / (1 - impact)))
+
+
+## Each spell's own cast pose (data/spell_fx.json `anim`): [part, axis,
+## windup, blow] keys, and how far into the windup the raise peaks.
+## Axis 0 raises an arm forward when negative; 1 twists (positive turns
+## left); 2 swings an arm out (negative for the right arm, positive for the left).
+const BLOWS := {
+	# Heavy Strike: high on the right, cut down across to the left
+	"diagonal": {"up": 0.7, "keys": [["Arm_R", 0, -2.5, -0.6], ["Arm_R", 2, -0.7, 0.5], ["Torso", 1, -0.45, 0.4], ["Torso", 0, 0.0, 0.15], ["Arm_L", 0, -0.4, -0.2]]},
+	# Crushing Blow: both hands high over the head, a little hop, then down hard
+	"overhead": {"up": 0.75, "hop": 0.16, "keys": [["Arm_R", 0, -3.0, -0.9], ["Arm_L", 0, -2.8, -0.9], ["Torso", 0, -0.3, 0.5], ["Head", 0, -0.25, 0.2], ["Leg_L", 0, -0.2, -0.55], ["Leg_R", 0, 0.1, 0.35]]},
+	# Cleave: the blade held out, the whole body turns right then sweeps left
+	"sweep": {"up": 0.65, "keys": [["Arm_R", 0, -1.6, -1.4], ["Arm_R", 2, -0.5, 0.2], ["Torso", 1, -0.8, 0.85], ["Torso", 0, 0.05, 0.15], ["Arm_L", 0, -0.5, -0.3]]},
+	# Lunge: lean into the charge, the blade drives forward on arrival
+	"thrust": {"up": 0.4, "keys": [["Torso", 0, 0.35, 0.3], ["Arm_R", 0, -1.0, -1.7], ["Arm_L", 0, 0.3, 0.2], ["Head", 0, -0.2, -0.1]]},
+	# Battle Cry: a crouch, then chest out, arms flung wide, head back
+	"roar": {"up": 0.6, "keys": [["Torso", 0, 0.3, -0.3], ["Head", 0, 0.25, -0.5], ["Arm_R", 0, -0.5, -2.4], ["Arm_R", 2, -0.6, -0.7], ["Arm_L", 0, -0.5, -2.4], ["Arm_L", 2, 0.6, 0.7], ["Leg_L", 0, -0.2, 0.0], ["Leg_R", 0, 0.2, 0.0]]},
+	# Shield Break: the shield raised high, then driven into the ground
+	"shieldSlam": {"up": 0.7, "hop": 0.12, "keys": [["Arm_L", 0, -2.6, -0.5], ["Arm_L", 2, 0.3, 0.1], ["Arm_R", 0, -1.2, -0.3], ["Torso", 0, -0.25, 0.55], ["Leg_L", 0, -0.4, -0.7], ["Leg_R", 0, 0.1, 0.3]]},
+	# Rend: a low backhand that rips up and out to the right
+	"rip": {"up": 0.6, "keys": [["Arm_R", 0, -0.2, -2.4], ["Arm_R", 2, 0.5, -0.6], ["Torso", 1, 0.45, -0.4], ["Torso", 0, 0.2, -0.1]]},
+}
+
+
 func _apply_action(dt: float) -> void:
 	var a: Dictionary = action
 	a.t += dt
@@ -154,7 +186,24 @@ func _apply_action(dt: float) -> void:
 	var impact: float = a.impact
 	var raise := ease_(k / impact) if k < impact else 1 - ease_((k - impact) / (1 - impact))
 	var swing := 0.0 if k < impact else ease_(minf(1, (k - impact) / 0.35))
+	if BLOWS.has(a.type):
+		var b: Dictionary = BLOWS[a.type]
+		var up: float = impact * b.up
+		for key in b.keys:
+			_rot(key[0], key[1], _key3(k, up, impact, key[2], key[3]))
+		if b.has("hop"):
+			model.position.y = b.hop * sin(PI * minf(1, k / impact))
 	match a.type:
+		"guard":
+			# Brace: up fast behind the shield, low and wide, held while it lasts
+			var g := minf(1, a.t / 0.15) * (1 - ease_(maxf(0, (k - 0.85) / 0.15)))
+			_rot("Arm_L", 0, -1.6 * g)
+			_rot("Arm_L", 1, 0.6 * g)
+			_rot("Arm_R", 0, -0.9 * g)
+			_rot("Torso", 0, 0.2 * g)
+			_rot("Leg_L", 0, -0.35 * g)
+			_rot("Leg_R", 0, 0.3 * g)
+			model.position.y = -0.07 * g
 		"strike":
 			# an overhand cut: up and back through most of the windup, then down hard
 			var up := impact * 0.65
@@ -221,7 +270,7 @@ func _apply_action(dt: float) -> void:
 			_rot("Torso", 0, -0.3 * raise + 0.5 * swing * (1 - k))
 	if k >= 1:
 		action = null
-		if a.type == "dodge":
+		if a.type == "dodge" or a.type == "guard" or BLOWS.get(a.type, {}).has("hop"):
 			model.position.y = 0
 		if a.type == "bite":
 			model.position.z = 0

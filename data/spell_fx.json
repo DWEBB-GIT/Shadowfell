@@ -1,0 +1,73 @@
+{
+  "_about": "How each spell looks: its own cast animation (`anim`, a pose in game/entities/rig.gd) and its own effects, played when the spell goes (`cast`, at you) and where it lands (`impact`, at the target, or at you for a sweep or burst). Linked to data/abilities.json by spell id; a spell missing here keeps its kind's generic animation and effect. Each effect part has `fx`: `mesh` (a shape from assets/models/fx, built by assets/blender/build_fx.py), `ring` (flat shockwave), `sparks`, `dust`, `flash` or `shake`. Mesh parts take `mesh`, `colour` (default: the spell's school), `glow` (brightness), `life` (seconds, or a tuning key such as `window`), `delay`, `size` [start, end] (scale over the life), `scale` [x, y, z], `height` and `forward` (metres from the anchor along the facing; negative is back toward you at a target), `rot` [x, y, z] degrees, `faceCamera` (an upright shape turns to face the fixed camera, so it never shows side on; `angle` then tilts it on screen, and it mirrors when you face screen left), `spin` (degrees the shape turns about its own axis over its life, which sells a swing), `follow` (stays on you) and `whileBraced` (shown only while a guard is up). `anim` takes `type`, `duration` (seconds, or a tuning key) and `impact` (0..1, when the blow lands); sweeps, bursts and charges keep their own timing so the blow and the pose stay together. The full list of planned looks for every spell is docs/spell-effects.md.",
+  "spells": {
+    "heavyStrike": {
+      "anim": {"type": "diagonal", "duration": 0.42, "impact": 0.42},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ffe2b0", "glow": 0.85, "delay": 0.1, "life": 0.22, "height": 1.55, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": -35, "size": [0.7, 0.9], "spin": 70},
+        {"fx": "sparks", "n": 6, "delay": 0.1}
+      ]
+    },
+    "crushingBlow": {
+      "anim": {"type": "overhead", "duration": 0.6, "impact": 0.36},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ffd9a0", "glow": 1.0, "delay": 0.14, "life": 0.24, "height": 0.9, "forward": -0.9, "faceCamera": true, "rot": [90, 0, 0], "angle": 90, "size": [0.85, 1.0], "spin": 80},
+        {"fx": "mesh", "mesh": "fx_crack", "colour": "#ff8a3a", "glow": 0.9, "delay": 0.2, "life": 1.1, "height": 0.06, "forward": -0.2, "size": [1.1, 1.5]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffc890", "glow": 0.9, "delay": 0.2, "life": 0.4, "height": 0.02, "forward": -0.2, "size": [0.4, 1.7], "scale": [1, 0.8, 1]},
+        {"fx": "dust", "n": 12, "spread": 0.8, "delay": 0.2},
+        {"fx": "shake", "delay": 0.2}
+      ]
+    },
+    "cleave": {
+      "anim": {"type": "sweep"},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ffd8a0", "glow": 0.85, "life": 0.26, "height": 1.0, "size": [2.2, 2.7], "spin": 110},
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ff9a50", "glow": 0.5, "life": 0.34, "height": 0.95, "size": [2.0, 2.5], "spin": 80},
+        {"fx": "dust", "n": 6, "spread": 1.2, "forward": 1.4}
+      ]
+    },
+    "lunge": {
+      "anim": {"type": "thrust"},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_streak", "colour": "#ffd9a0", "glow": 0.45, "follow": true, "life": "duration", "height": 0.9, "scale": [0.55, 0.6, 2.4]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd9a0", "glow": 0.9, "life": 0.3, "height": 0.4, "forward": -0.3, "size": [0.3, 0.8], "faceCamera": true, "rot": [90, 0, 0], "scale": [1, 0.5, 1]},
+        {"fx": "sparks", "n": 10},
+        {"fx": "dust", "n": 6, "spread": 0.4}
+      ]
+    },
+    "battleCry": {
+      "anim": {"type": "roar", "duration": 0.85, "impact": 0.4},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_aura", "colour": "#ff6a2a", "glow": 1.2, "follow": true, "delay": 0.3, "life": 1.1, "size": [0.55, 0.85], "scale": [1, 1.7, 1]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ff8a40", "glow": 1.0, "delay": 0.32, "life": 0.55, "height": 0.04, "size": [0.3, 3.2]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffb070", "glow": 0.6, "delay": 0.34, "life": 0.45, "height": 1.25, "size": [0.3, 2.2], "scale": [1, 0.5, 1]},
+        {"fx": "shake", "delay": 0.32}
+      ]
+    },
+    "brace": {
+      "anim": {"type": "guard", "duration": "window", "impact": 0.1},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_ward", "colour": "#9cc4ff", "glow": 0.75, "follow": true, "whileBraced": true, "life": "window", "height": 0.1, "forward": 0.25, "size": [0.6, 0.8], "scale": [1, 1.15, 1]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#9cc4ff", "glow": 0.7, "life": 0.35, "height": 0.03, "size": [0.3, 1.2], "scale": [1, 0.6, 1]}
+      ]
+    },
+    "shieldBreak": {
+      "anim": {"type": "shieldSlam"},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffe6a0", "glow": 0.8, "life": 0.45, "height": 0.02, "size": [0.4, 2.9]},
+        {"fx": "mesh", "mesh": "fx_crack", "colour": "#ffb060", "glow": 0.8, "life": 1.0, "height": 0.06, "forward": 0.7, "size": [0.9, 1.3]},
+        {"fx": "ring", "radius": 2.8, "colour": "#ffd9a0"},
+        {"fx": "shake"}
+      ]
+    },
+    "rend": {
+      "anim": {"type": "rip", "duration": 0.45, "impact": 0.4},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_claws", "colour": "#e02818", "glow": 1.3, "delay": 0.1, "life": 0.4, "height": 0.6, "forward": -0.2, "faceCamera": true, "size": [0.7, 0.95]},
+        {"fx": "sparks", "n": 8, "colour": "#d03020", "delay": 0.1}
+      ]
+    }
+  }
+}

@@ -31,7 +31,11 @@ func _init(g) -> void:
 	dust_mat = StandardMaterial3D.new()
 	dust_mat.albedo_color = Color("6a5c48")
 	var ev: Events = game.events
-	ev.on("burst", func(e): shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
+	# a spell with its own look (data/spell_fx.json) skips the generic one
+	ev.on("spellFx", func(e): spell_fx(e))
+	ev.on("burst", func(e):
+		if not _has_look(e.get("id", ""), "impact"):
+			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
 	ev.on("enemyHit", func(e): sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8))
 	# the weight of a landed blow: the camera kicks (nothing ever pauses)
 	ev.on("hitImpact", func(e):
@@ -53,7 +57,9 @@ func _init(g) -> void:
 		var p: Vector3 = game.player.position
 		if U.hyp(p.x - e.x, p.z - e.z) < 25:
 			sparks(Vector3(e.x, Terrain.height_at(e.x, e.z) - 0.3, e.z), 5))
-	ev.on("playerBrace", func(e): brace_glow(e.get("window", DB.brace.window)))
+	ev.on("playerBrace", func(e):
+		if not _has_look(e.get("id", ""), "cast"):
+			brace_glow(e.get("window", DB.brace.window)))
 	ev.on("projectile", func(e): projectile(e))
 	# a channel that drains (Siphon Life) draws a beam from the target to you
 	ev.on("castStart", func(e):
@@ -72,10 +78,14 @@ func _init(g) -> void:
 			it.life = maxf(1e-3, minf(it.life, it.age))
 		traps.erase(e.key))
 	ev.on("cleave", func(e):
+		if _has_look(e.get("id", ""), "impact"):
+			return
 		var r: float = e.range * 0.5
 		var p: Vector3 = e.position
 		shockwave(Vector3(p.x + sin(e.facing) * r, p.y, p.z + cos(e.facing) * r), e.range * 0.7, Color("ffc890")))
-	ev.on("buff", func(_e): pillar(game.player.position, Color("ff9a5a")))
+	ev.on("buff", func(e):
+		if not _has_look(e.get("id", ""), "cast"):
+			pillar(game.player.position, Color("ff9a5a")))
 	ev.on("splash", func(e): splash(e.x, e.y, e.z, e.get("small", false)))
 	ev.on("campPitched", func(e): dust(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), 10, 0.6))
 	ev.on("itemDropped", func(e): dust(Vector3(e.item.x, game.player.position.y, e.item.z), 4, 0.2))
@@ -93,6 +103,8 @@ func prewarm(pos: Vector3) -> void:
 	flash(under, Color.WHITE)
 	pillar(under)
 	zone(under.x, under.z, 1, 0.1)
+	for name in _look_meshes():
+		_shape({"mesh": name, "life": 0.1}, under, 0.0, null, Color.WHITE, {})
 	var tm := ShaderMaterial.new()
 	tm.shader = Telegraphs.SHADER
 	tm.render_priority = 2
@@ -123,9 +135,9 @@ func shockwave(pos: Vector3, radius: float, colour := Color("ffd9a0")) -> void:
 	dust(pos, 14, radius * 0.7)
 
 
-func sparks(pos: Vector3, n: int) -> void:
+func sparks(pos: Vector3, n: int, colour := Color("ffc890")) -> void:
 	for i in n:
-		var s := Tex.sprite(Tex.fx_material(Tex.glint(), Color("ffc890"), true, true))
+		var s := Tex.sprite(Tex.fx_material(Tex.glint(), colour, true, true))
 		s.scale = Vector3.ONE * 0.25
 		s.position = Vector3(pos.x, pos.y + 1.1, pos.z)
 		var v := Vector3((randf() - 0.5) * 4, 1.5 + randf() * 2.5, (randf() - 0.5) * 4)
@@ -315,6 +327,132 @@ func pillar(pos: Vector3, colour := Color("ffe2a8")) -> void:
 	_add(col, 1.4, func(it, k, _dt):
 		it.obj.material_override.albedo_color.a = sin(k * PI) * 0.25
 		it.obj.position = game.player.position + Vector3(0, 2 + k, 0))
+
+
+# ------------------------------------------------------------ spell looks
+## the effect shapes in assets/models/fx (assets/blender/build_fx.py), by name
+static var _fx_meshes := {}
+
+
+static func fx_mesh(name: String) -> Mesh:
+	if not _fx_meshes.has(name):
+		var mesh: Mesh = null
+		var path := "res://assets/models/fx/%s.glb" % name
+		if ResourceLoader.exists(path):
+			var n: Node = load(path).instantiate()
+			var found := n.find_children("*", "MeshInstance3D", true, false)
+			if not found.is_empty():
+				mesh = Assets._srgb_mesh(found[0].mesh)
+			n.free()
+		_fx_meshes[name] = mesh
+	return _fx_meshes[name]
+
+
+static func _has_look(id: String, phase: String) -> bool:
+	return not DB.spell_fx.get(id, {}).get(phase, []).is_empty()
+
+
+static func _look_meshes() -> Array:
+	var names := {}
+	for id in DB.spell_fx:
+		for phase in ["cast", "impact"]:
+			for p in DB.spell_fx[id].get(phase, []):
+				if p.has("mesh"):
+					names[p.mesh] = true
+	return names.keys()
+
+
+## A spell's own look: every part of its `cast` or `impact` list
+## (data/spell_fx.json), each after its own delay.
+## `e`: { id, phase, position, facing, follow (the player or null), tuning }
+func spell_fx(e: Dictionary) -> void:
+	var spell: Dictionary = DB.abilities.get(e.id, {})
+	var school: Color = SCHOOL_COLOURS.get(spell.get("school"), SCHOOL_COLOURS.physical)
+	for p in DB.spell_fx.get(e.id, {}).get(e.phase, []):
+		var go := _spell_part.bind(p, e, school)
+		if p.get("delay", 0) > 0:
+			_add(Node3D.new(), p.delay, func(_it, k, _dt):
+				if k >= 1:
+					go.call())
+		else:
+			go.call()
+
+
+func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
+	var colour := Color(p.colour) if p.has("colour") else school
+	var follow = e.get("follow") if p.get("follow") else null
+	var f: float = e.facing
+	var at: Vector3 = (follow.position if follow else e.position) + Vector3(sin(f), 0, cos(f)) * p.get("forward", 0.0)
+	match p.fx:
+		"mesh":
+			_shape(p, e.position, f, follow, colour, e.get("tuning", {}))
+		"ring":
+			shockwave(at, p.get("radius", 2.0), colour)
+		"sparks":
+			sparks(at, int(p.get("n", 6)), colour if p.has("colour") else Color("ffc890"))
+		"dust":
+			dust(at, int(p.get("n", 6)), p.get("spread", 0.6))
+		"flash":
+			flash(at, colour)
+		"shake":
+			game.shake_camera(DB.CONFIG.impact.critShake if p.get("heavy") else DB.CONFIG.impact.shake)
+
+
+## One effect shape: placed by `height`, `forward` and `rot` around its
+## anchor, turned by `spin` about its own axis, grown from `size[0]` to
+## `size[1]`, flaring in fast and fading out. Additive, so its greyscale
+## vertex colours are its brightness and the tint is the colour.
+func _shape(p: Dictionary, pos: Vector3, facing: float, follow, colour: Color, tuning: Dictionary) -> void:
+	var mesh := fx_mesh(p.mesh)
+	if mesh == null:
+		return
+	var life = p.get("life", 0.3)
+	if typeof(life) == TYPE_STRING:
+		life = tuning.get(life, 0.3)
+	var holder := Node3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := Tex.fx_material(null, Color(colour, 0))
+	mat.vertex_color_use_as_albedo = true
+	mi.material_override = mat
+	holder.add_child(mi)
+	var rot: Array = p.get("rot", [0, 0, 0])
+	var size: Array = p.get("size", [1, 1])
+	var sc: Array = p.get("scale", [1, 1, 1])
+	var glow: float = p.get("glow", 1.0)
+	var spin: float = deg_to_rad(p.get("spin", 0))
+	var height: float = p.get("height", 0.0)
+	var forward: float = p.get("forward", 0.0)
+	var braced: bool = p.get("whileBraced", false)
+	# a long effect fades in and out over a fixed time, a short one over its life
+	var edge: float = minf(0.25, 0.3 / maxf(0.01, life))
+	var face_cam: bool = p.get("faceCamera", false)
+	var angle: float = deg_to_rad(p.get("angle", 0))
+	var tilt := Basis.from_euler(Vector3(deg_to_rad(rot[0]), deg_to_rad(rot[1]), deg_to_rad(rot[2])))
+	_add(holder, life, func(_it, k, _dt):
+		var o: Vector3 = follow.position if follow else pos
+		var fa: float = follow.facing if follow else facing
+		holder.position = o + Vector3(sin(fa) * forward, height, cos(fa) * forward)
+		if face_cam:
+			# an upright shape seen side on is a line, so it turns to face
+			# the fixed camera (as a slash sprite would), stepped a little
+			# toward it to draw over the target, and mirrored so the swing
+			# runs the way you face across the screen
+			var cam := holder.get_viewport().get_camera_3d()
+			var cb: Basis = cam.global_basis.orthonormalized() if cam else Basis.IDENTITY
+			var flip := -1.0 if Vector3(sin(fa), 0, cos(fa)).dot(cb.x) < 0 else 1.0
+			holder.basis = cb * Basis(Vector3.BACK, angle * flip) * Basis.from_scale(Vector3(flip, 1, 1)) * tilt
+			holder.position += cb.z * 0.6
+		else:
+			holder.rotation = Vector3(deg_to_rad(rot[0]), fa + deg_to_rad(rot[1]), deg_to_rad(rot[2]))
+		var s: float = lerpf(size[0], size[1], 1 - pow(1 - k, 3))
+		mi.scale = Vector3(sc[0], sc[1], sc[2]) * s
+		mi.rotation.y = spin * (k - 0.5)
+		var fade := minf(1, k / (edge * 0.35)) * (1 - smoothstep(1 - edge, 1, k))
+		if braced and not game.player.is_braced:
+			fade = 0.0
+		mat.albedo_color.a = glow * fade)
 
 
 func update(dt: float) -> void:
