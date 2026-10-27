@@ -68,7 +68,7 @@ func _frame() -> Dictionary:
 	n.add_theme_stylebox_override("normal", hud._indent(false))
 	n.clip_text = true
 	n.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	var hp: Dictionary = hud._unit_bar(col, Color("5cb048"), Color("2a6a20"), 13, false, 9)
+	var hp: Dictionary = hud._unit_bar(col, Color("5cb048"), Color("2a6a20"), 16, false, 10)
 	var mp: Dictionary = hud._unit_bar(col, Color("5a8ad8"), Color("24407e"), 7, false, 1)
 	mp.text.visible = false
 	return {"root": f, "img": pic.img, "badge": pic.badge, "name": n, "hp": hp, "mp": mp, "model": null}

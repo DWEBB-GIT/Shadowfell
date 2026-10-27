@@ -1208,7 +1208,7 @@ func _layout_bags(vp: Vector2) -> void:
 	if not bags.visible:
 		return
 	var right := vp.x - 12
-	var bottom: float = hud.dock.position.y - 8 # stacked up from the bag tray
+	var bottom: float = hud.purse.position.y - 8 # stacked up from the bag tray and its purse
 	var top_limit := 28.0
 	var y := bottom
 	var col_w := 0.0

@@ -93,6 +93,7 @@ var slots: Array = [] ## ISlot per bar slot
 var dock: PanelContainer ## money and the bag sockets, bottom right
 var micro_buttons := {} ## key action -> [orb Button, tip]
 var coins: RichTextLabel
+var purse: PanelContainer ## the money plaque on top of the bag tray
 var _coins_shown := -1
 var cast: Dictionary
 var swing: Dictionary
@@ -218,6 +219,7 @@ func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -
 	var l := UI.label(track, "", text_size, Color("f0e4c8"), 4)
 	l.add_theme_font_override("font", UI.bold)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	return {"root": track, "fill": fill, "text": l}
@@ -250,6 +252,7 @@ func _cast_bar(parent: Control, hi: Color, lo: Color, width: float, height := 14
 	var t := UI.label(b.root, "", 10, Color("f0e4c8"), 4)
 	t.add_theme_font_override("font", UI.bold)
 	t.set_anchors_preset(Control.PRESET_FULL_RECT)
+	t.grow_vertical = Control.GROW_DIRECTION_BOTH
 	t.offset_right = -6
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -301,6 +304,7 @@ func _build() -> void:
 	log_shade = Panel.new()
 	log_shade.add_theme_stylebox_override("panel", UI.shade("left", 0.55))
 	log_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	log_shade.modulate.a = 0 # shown while the pointer is over the log
 	root.add_child(log_shade)
 	log_box = UI.vbox(root, 1)
 	log_box.custom_minimum_size = Vector2(420, 0)
@@ -508,6 +512,8 @@ func _unit_bar(parent: Control, hi: Color, lo: Color, height: int, mirror: bool,
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
 	l.offset_left = 0.0 if mirror else BAR_UNDER
 	l.offset_right = -BAR_UNDER if mirror else 0.0
+	# text taller than a slim bar spills out evenly, not all below it
+	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	return {"root": bar, "fill": bar, "text": l}
@@ -657,13 +663,16 @@ func _build_dock() -> void:
 	dock.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := UI.hbox(dock, 6)
 	row.alignment = BoxContainer.ALIGNMENT_END
-	coins = UI.rich(row, 15)
-	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
-	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(_divider())
 	_sockets_box = UI.hbox(row, 2)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# your money on a small plaque sitting on the tray's top edge, over the
+	# backpack, as the purse of the bags under it
+	purse = UI.panel(root, 0)
+	purse.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 2, 10, 3)))
+	purse.mouse_filter = Control.MOUSE_FILTER_PASS
+	coins = UI.rich(purse, 13)
+	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 
 ## the menus as round buttons down the minimap's left rim, RuneScape style,
@@ -854,7 +863,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, minimap, quests.tracker, log_tabs, party]:
+	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, party]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -1072,7 +1081,7 @@ func _next_banner() -> void:
 func show_level_up(e: Dictionary) -> void:
 	var lines := []
 	for g in e.get("gains", []):
-		lines.append("%s  %s → %s" % [g.label, str(g.from), str(g.to)])
+		lines.append("%s +%s" % [g.label, str(g.diff)])
 	show_banner("LEVEL %d" % e.level, "You have reached", "   ".join(lines))
 
 
@@ -1171,6 +1180,7 @@ func refresh_stats() -> void:
 		_coins_shown = c
 		coins.text = ""
 		UI.set_rich(coins, UI.money(c))
+		purse.size = Vector2.ZERO
 	var inv = game.inventory
 	for s in slots:
 		var a = game.action_bar.slots[int(s.loc.substr(2))]
@@ -1428,6 +1438,8 @@ func layout() -> void:
 	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
 	dock.size = dock.get_combined_minimum_size()
 	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
+	purse.size = purse.get_combined_minimum_size()
+	purse.position = Vector2(dock.position.x + dock.size.x - 8 - purse.size.x, dock.position.y - purse.size.y + 3)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
@@ -1477,7 +1489,7 @@ func layout() -> void:
 	quests.layout()
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
-	mute.position = Vector2(vp.x - m - mute.size.x, dock.position.y - 6 - mute.size.y)
+	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)
 	for win in [death, document]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
@@ -1494,6 +1506,14 @@ func update(dt := 0.0) -> void:
 	error_label.modulate.a = minf(1, error_left / 0.6)
 	vignette_t = maxf(0, vignette_t - dt)
 	hurt.modulate.a = vignette_t / 0.45
+	# the smoky bands behind the log and the objectives show only while the
+	# pointer is over them
+	var at := root.get_global_mouse_position()
+	var over_log := log_box.get_global_rect().merge(log_tabs.get_global_rect()).grow(EDGE).has_point(at)
+	log_shade.modulate.a = move_toward(log_shade.modulate.a, 1.0 if over_log else 0.0, dt * 5)
+	var tr: Control = quests.tracker
+	var over_tracker := tr.is_visible_in_tree() and tr.get_global_rect().has_point(at)
+	tr.self_modulate.a = move_toward(tr.self_modulate.a, 1.0 if over_tracker else 0.0, dt * 5)
 	var now := Time.get_ticks_msec()
 	for l in log_box.get_children():
 		l.modulate.a = 0.45 if now - int(l.get_meta("born", now)) > 9000 else 1.0
