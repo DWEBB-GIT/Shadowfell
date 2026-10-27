@@ -53,7 +53,7 @@ func add_xp(amount: int, kill := false) -> int:
 		last_gains = {"level": level, "gains": gains}
 		events.emit("levelUp", {"level": level, "gains": gains})
 		var parts := []
-		for g in gains:
+		for g in gains.filter(func(g): return g.id in Stats.ATTRS):
 			parts.append("%s +%s" % [g.label, U.n(g.diff)])
 		events.emit("log", {"text": "You feel steadier. Level %d: %s." % [level, ", ".join(parts)], "kind": "level"})
 	if level >= cap:

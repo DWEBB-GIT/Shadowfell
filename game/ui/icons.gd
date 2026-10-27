@@ -3,7 +3,7 @@ extends Node
 ## Every picture the HUD shows (src/ui/icons.js, src/ui/portraits.js):
 ##  - item icons, rendered from the same Blender models used in the world, so
 ##    an item always looks like what you dropped;
-##  - the painted spell glyphs (Glyphs);
+##  - Dan's spell icons (assets/icons/spells), else the painted glyphs (Glyphs);
 ##  - target-frame portraits, head and shoulders, made the first time a model
 ##    is targeted.
 ## Each is drawn once by its own small viewport and then kept as a texture.
@@ -13,6 +13,7 @@ const GLYPH_SIZE := 64
 const PORTRAIT_SIZE := 96
 
 const SPRITES := "res://assets/icons/%s.png"
+const SPELLS := "res://assets/icons/spells/%s.png"
 
 var items := {} ## model -> Texture2D
 var _sprites := {} ## sprite -> Texture2D, or null if the file is missing
@@ -25,6 +26,11 @@ func _init() -> void:
 	_item_icons()
 	for id in Glyphs.ids():
 		abilities[id] = _glyph(id)
+	# Dan's painted icons (assets/icons/spells/<ability id>.png) win over the glyphs
+	for id in DB.abilities:
+		var path := SPELLS % id
+		if ResourceLoader.exists(path):
+			abilities[id] = load(path)
 
 
 # ------------------------------------------------------------------ items

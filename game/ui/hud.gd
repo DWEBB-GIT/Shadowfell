@@ -1081,7 +1081,9 @@ func _next_banner() -> void:
 func show_level_up(e: Dictionary) -> void:
 	var lines := []
 	for g in e.get("gains", []):
-		lines.append("%s +%s" % [g.label, str(g.diff)])
+		# the attributes only: health, armour and the rest follow from them
+		if g.get("id") in Stats.ATTRS:
+			lines.append("%s +%s" % [g.label, U.n(g.diff)])
 	show_banner("LEVEL %d" % e.level, "You have reached", "   ".join(lines))
 
 
@@ -1304,12 +1306,11 @@ func _refresh_spells() -> void:
 	elif game.fishing.bar != null:
 		c = game.fishing.bar.duplicate()
 		c.name = "Fishing"
-		tex = icons.abilities.get("fishing")
+		tex = icons.abilities.get("fish")
 	elif game.loot.gather_bar != null:
 		c = game.loot.gather_bar
 	elif game.mining.bar != null:
 		c = game.mining.bar
-		tex = icons.abilities.get("mining")
 	_show_cast(cast, c, tex)
 	# the weapon swing timer: fills until the next blow lands, while auto
 	# attack is on (one per hand when dual wielding; the second is Auto Shot's

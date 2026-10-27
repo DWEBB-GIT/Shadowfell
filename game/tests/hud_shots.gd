@@ -69,7 +69,7 @@ func _process(_delta: float) -> bool:
 			game.hud.log_line(t[0], t[1])
 		game.inventory.add_coins(4321, "")
 		root.warp_mouse(Vector2(120, 780)) # over the log, to show its band
-		game.hud.show_level_up({"level": 5, "gains": [{"label": "Strength", "from": 12, "to": 14, "diff": 2}, {"label": "Stamina", "from": 11, "to": 12, "diff": 1}, {"label": "Health", "from": 120, "to": 138, "diff": 18}]})
+		game.hud.show_level_up({"level": 5, "gains": [{"id": "strength", "label": "Strength", "from": 12, "to": 14, "diff": 2}, {"id": "stamina", "label": "Stamina", "from": 11, "to": 12, "diff": 1}, {"id": "maxHealth", "label": "Health", "from": 120, "to": 138, "diff": 18}]})
 	if frames == 88 and OS.get_environment("DEMO") != "":
 		var id = DB.spells.keys()[0]
 		for k in DB.spells:
