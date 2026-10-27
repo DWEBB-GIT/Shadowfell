@@ -18,6 +18,9 @@ static var fairy_rings: Array
 static var water: Array
 static var obscured: Array
 static var buildings: Array
+static var houses: Array ## kit-built houses you cannot enter (see Town)
+static var town_walls: Array
+static var gates: Array
 static var stations: Array
 static var signposts: Array
 static var pads: Array
@@ -55,6 +58,9 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	water = w.get("water", [])
 	obscured = w.get("obscured", [])
 	buildings = w.get("buildings", [])
+	houses = w.get("houses", [])
+	town_walls = w.get("townWalls", [])
+	gates = w.get("gates", [])
 	stations = w.get("stations", [])
 	signposts = w.get("signposts", [])
 	pads = w.get("pads", [])

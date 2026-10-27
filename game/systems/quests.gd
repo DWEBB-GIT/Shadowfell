@@ -21,7 +21,7 @@ var kills := {} ## questId -> { objectiveId: kills since it was taken }
 var _last := {} ## questId -> progress text, to announce changes
 
 
-## Conditions in dialogue data: { quest, status } | { flag } | { examined }.
+## Conditions in dialogue and gate data: { quest, status } | { flag } | { examined } | { level } (at least).
 static func condition_holds(g, when) -> bool:
 	if when == null or (typeof(when) == TYPE_DICTIONARY and when.is_empty()):
 		return true
@@ -35,6 +35,8 @@ static func condition_holds(g, when) -> bool:
 	if when.get("flag") and not g.world_state.flags.has(when.flag):
 		return false
 	if when.get("examined") and not g.world_state.examined.has(when.examined):
+		return false
+	if when.get("level") and g.progression.level < when.level:
 		return false
 	return true
 

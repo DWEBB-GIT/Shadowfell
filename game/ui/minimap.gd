@@ -243,6 +243,25 @@ func _paint_world(g: Canvas2D, w: float, h: float) -> void:
 			g.rotate(-deg_to_rad(p.get("rotation", 0)))
 			g.fill_rect(-sz * PX, -sz * 0.6 * PX, sz * 2 * PX, sz * 1.2 * PX)
 			g.restore()
+	# houses (roof colour) and palisades
+	for hs in Layout.houses:
+		g.fill_style = "#" + Town.ROOF.get(hs.get("roof", "thatch"), Town.ROOF.thatch).to_html(false)
+		g.save()
+		g.translate(X.call(hs.position[0]), Z.call(hs.position[1]))
+		g.rotate(-deg_to_rad(hs.get("rotation", 0)))
+		g.fill_rect(-hs.size[0] / 2.0 * PX, -hs.size[1] / 2.0 * PX, hs.size[0] * PX, hs.size[1] * PX)
+		g.restore()
+	g.stroke_style = "#5a4630"
+	g.line_width = 1.6 * PX
+	for tw in Layout.town_walls:
+		for line in tw.lines:
+			g.begin_path()
+			for i in line.size():
+				if i:
+					g.line_to(X.call(line[i][0]), Z.call(line[i][1]))
+				else:
+					g.move_to(X.call(line[i][0]), Z.call(line[i][1]))
+			g.stroke()
 	# ponds, and the places too dark to see into
 	for wt in Layout.water:
 		if wt.get("carved"):

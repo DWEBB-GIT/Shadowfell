@@ -1,5 +1,5 @@
 {
-  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. Positions are world positions (see world_map.json; Act 1 sits at its act1Offset). `regions`: Brackenford (`town`: [x, z, radius]), then Act 1's regions and the world's zones, each {id, name, levels}; which one you are in comes from the map, not the record. `roads` are drawn streets only (the world's roads come from world_map.json). A pond with `carved` is a lake baked into the ground, with `rx`/`rz` for an oval. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver: a number, or a range {min, max} rolled when opened) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item.",
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. Positions are world positions (see world_map.json; Act 1 sits at its act1Offset). `regions`: Brackenford (`town`: [x, z, radius]), then Act 1's regions and the world's zones, each {id, name, levels}; which one you are in comes from the map, not the record. `roads` are drawn streets only (the world's roads come from world_map.json). A pond with `carved` is a lake baked into the ground, with `rx`/`rz` for an oval. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver: a number, or a range {min, max} rolled when opened) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item. `gates`: a gateway on a `line` that blocks until any of its `opensWhen` conditions holds (`shut`: never opens); `ring` is the stage of the opening it closes. `townWalls`: palisades along `lines`. `houses`: kit-built buildings you cannot enter (`roof`: thatch, slate or tile; `walls`: plaster, timber or stone).",
   "bounds": {
     "minX": -2560.0,
     "maxX": 2560.0,
@@ -126,7 +126,21 @@
         [-626, 433],
         [-626, 447],
         [-622, 459],
-        [-620, 465]
+        [-616, 468],
+        [-610, 476]
+      ]
+    },
+    {
+      "id": "market_lane",
+      "name": "Market Lane",
+      "kind": "lane",
+      "halfWidth": 2.0,
+      "points": [
+        [-549, 452],
+        [-565, 450],
+        [-585, 446],
+        [-600, 442],
+        [-614, 441]
       ]
     }
   ],
@@ -459,7 +473,7 @@
     {
       "id": "dummy_forge",
       "enemy": "training_dummy",
-      "position": [-553.8, 447.6]
+      "position": [-566, 457]
     },
     {
       "id": "boar_east_1",
@@ -842,7 +856,7 @@
     {
       "id": "purse_wall",
       "model": "coin_purse",
-      "position": [-562.5, 449.8],
+      "position": [-583, 472],
       "prompt": "Take the coin purse",
       "reward": {
         "coins": 5
@@ -1385,6 +1399,222 @@
           "to": "brackenford"
         }
       ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "brackenford_east_gate",
+      "name": "Brackenford's east gate",
+      "kind": "town_gate",
+      "line": [
+        [-551, 446],
+        [-551, 458]
+      ],
+      "ring": 0,
+      "note": "Always open: the Hollow Lane's only way on."
+    },
+    {
+      "id": "brackenford_north_gate",
+      "name": "Brackenford's north gate",
+      "kind": "town_gate",
+      "line": [
+        [-626, 404],
+        [-614, 404]
+      ],
+      "ring": 1,
+      "opensWhen": [
+        {
+          "quest": "missing_delivery",
+          "status": "done"
+        },
+        {
+          "level": 3
+        }
+      ],
+      "keepsOut": ["hedgecote", "bracken_mill", "gibbet_knoll"],
+      "closedText": "The north gate is barred. The gate warden won't let a stranger wander off with the smith's business unsettled: take the cart's manifest to Mara Venn.",
+      "openText": "The gate wardens unbar Brackenford's gates. Bracken Vale is open to you."
+    },
+    {
+      "id": "brackenford_south_gate",
+      "name": "Brackenford's south gate",
+      "kind": "town_gate",
+      "line": [
+        [-616, 474],
+        [-604, 474]
+      ],
+      "ring": 1,
+      "opensWhen": [
+        {
+          "quest": "missing_delivery",
+          "status": "done"
+        },
+        {
+          "level": 3
+        }
+      ],
+      "closedText": "The south gate to the ford is barred. Settle the smith's business first: take the cart's manifest to Mara Venn."
+    },
+    {
+      "id": "the_neck_barricade",
+      "name": "The wardens' barricade",
+      "kind": "barricade",
+      "line": [
+        [-574.7, 151.2],
+        [-551.9, 158.8]
+      ],
+      "ring": 2,
+      "opensWhen": [
+        {
+          "level": 5
+        }
+      ],
+      "keepsOut": ["crossways", "staithe", "deadfall", "beacon_bridge"],
+      "closedText": "A wardens' barricade blocks the Neck. \"The Blackwood eats green lads. Come back when you've a few scars.\" (Opens at level 5.)",
+      "openText": "The wardens drag their barricade off the Neck. The world beyond the vale is open to you."
+    },
+    {
+      "id": "felled_oak",
+      "name": "The felled oak",
+      "kind": "felled_oak",
+      "line": [
+        [-344.6, 406.3],
+        [-339.4, 429.7]
+      ],
+      "shut": true,
+      "closedText": "The oak the ambushers felled across the lane. It would take a team of oxen to shift it."
+    }
+  ],
+  "townWalls": [
+    {
+      "id": "brackenford_palisade",
+      "name": "Brackenford's palisade",
+      "kind": "palisade",
+      "lines": [
+        [
+          [-614, 404],
+          [-590, 402],
+          [-568, 408],
+          [-555, 420],
+          [-551, 434],
+          [-551, 446]
+        ],
+        [
+          [-551, 458],
+          [-556, 468],
+          [-575, 476],
+          [-604, 474]
+        ],
+        [
+          [-616, 474],
+          [-640, 472],
+          [-658, 462],
+          [-666, 440],
+          [-660, 418],
+          [-645, 406],
+          [-626, 404]
+        ]
+      ]
+    }
+  ],
+  "houses": [
+    {
+      "id": "reeves_hall",
+      "name": "Reeve's hall",
+      "position": [-641, 423],
+      "size": [10, 7],
+      "roof": "slate",
+      "walls": "stone",
+      "door": "e",
+      "storeys": 2,
+      "chimney": true
+    },
+    {
+      "id": "west_cottage",
+      "name": "Cottage",
+      "position": [-643, 447],
+      "size": [7, 5],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "e",
+      "chimney": true
+    },
+    {
+      "id": "tannery",
+      "name": "Agna's tannery",
+      "position": [-598, 453],
+      "size": [8, 5],
+      "roof": "thatch",
+      "walls": "timber",
+      "door": "n"
+    },
+    {
+      "id": "smithy",
+      "name": "Mara's smithy",
+      "position": [-566, 428],
+      "size": [8, 6],
+      "roof": "tile",
+      "walls": "stone",
+      "door": "s",
+      "chimney": true
+    },
+    {
+      "id": "north_cottage",
+      "name": "Cottage",
+      "position": [-578, 416],
+      "size": [7, 5],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "s",
+      "chimney": true
+    },
+    {
+      "id": "lane_house",
+      "name": "House",
+      "position": [-570, 466],
+      "size": [7, 5],
+      "roof": "tile",
+      "walls": "plaster",
+      "door": "n",
+      "storeys": 2
+    },
+    {
+      "id": "south_cottage",
+      "name": "Cottage",
+      "position": [-588, 466],
+      "size": [6, 5],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "n"
+    },
+    {
+      "id": "chapel",
+      "name": "The ford chapel",
+      "position": [-640, 461],
+      "size": [7, 11],
+      "roof": "slate",
+      "walls": "stone",
+      "door": "e",
+      "tower": true
+    },
+    {
+      "id": "granary",
+      "name": "Town granary",
+      "position": [-604, 411],
+      "size": [8, 5],
+      "roof": "thatch",
+      "walls": "timber",
+      "door": "s"
+    },
+    {
+      "id": "west_house",
+      "name": "House",
+      "position": [-656, 435],
+      "size": [6, 5],
+      "roof": "tile",
+      "walls": "plaster",
+      "door": "e",
+      "chimney": true
     }
   ]
 }
