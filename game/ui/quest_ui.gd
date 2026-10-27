@@ -48,7 +48,7 @@ func _init(g, h) -> void:
 	marks_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
-	tracker.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(10, 6, 10, 8)))
+	tracker.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 6, 10, 8)))
 	tracker.custom_minimum_size = Vector2(260, 0)
 	tracker_box = UI.vbox(tracker, 3)
 	tracker.visible = false

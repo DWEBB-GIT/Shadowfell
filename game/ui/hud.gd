@@ -179,7 +179,7 @@ static func gradient(hi: Color, lo: Color) -> GradientTexture2D:
 func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -> Dictionary:
 	var track := Panel.new()
 	track.custom_minimum_size = Vector2(0, height)
-	track.add_theme_stylebox_override("panel", UI.box(Color("0b0908"), UI.BORDER_DIM, 0))
+	track.add_theme_stylebox_override("panel", UI.bar_track())
 	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(track)
 	var fill := TextureRect.new()
@@ -235,7 +235,7 @@ func _build() -> void:
 
 	# the prompt: a key badge and what it does (#prompt)
 	prompt = UI.panel(root, 0)
-	prompt.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(14, 5, 14, 5)))
+	prompt.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 5, 14, 5)))
 	var ph := UI.hbox(prompt, 8)
 	prompt_key = UI.label(ph, "", 12, UI.GOLD)
 	prompt_key.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), UI.BORDER, 0, 1, Vector4(5, 0, 5, 1)))
@@ -259,12 +259,12 @@ func _build() -> void:
 	zone_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	zone_banner.modulate.a = 0
 	toast_label = UI.label(root, "", 18, UI.GOLD)
-	toast_label.add_theme_stylebox_override("normal", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(18, 6, 18, 6)))
+	toast_label.add_theme_stylebox_override("normal", UI.frame(Vector4(18, 6, 18, 6)))
 	toast_label.modulate.a = 0
 	error_label = UI.label(root, "", 20, Color("ff3a2a"), 4)
 	error_label.modulate.a = 0
 	levelup = UI.panel(root, 0)
-	levelup.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(16, 10, 16, 12)))
+	levelup.add_theme_stylebox_override("panel", UI.frame(Vector4(16, 10, 16, 12)))
 	levelup.custom_minimum_size = Vector2(280, 0)
 	var lv := UI.vbox(levelup, 6)
 	levelup_title = UI.label(lv, "", 20, UI.GOLD)
@@ -349,7 +349,7 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 ## the game's name, the region and the build stamp (#title-area)
 func _build_title_area() -> void:
 	title_area = UI.panel(root, 0)
-	title_area.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(14, 6, 14, 7)))
+	title_area.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 6, 14, 7)))
 	title_area.position = Vector2(12, 12)
 	var v := UI.vbox(title_area, 0)
 	var t := UI.label(v, "SHADOWFALL", 20, UI.GOLD)
@@ -370,7 +370,7 @@ func _build_label() -> String:
 ## the character frame (#char-panel)
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
-	char_panel.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(10, 8, 10, 8)))
+	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
 	char_panel.position = Vector2(12, 74)
 	char_panel.custom_minimum_size = Vector2(240, 0)
 	var cv := UI.vbox(char_panel, 3)
@@ -388,7 +388,7 @@ func _build_char_panel() -> void:
 ## the target frame, centred at the top, with a round portrait (#target-frame)
 func _build_target() -> void:
 	target = UI.panel(root, 0)
-	target.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(6, 6, 10, 8)))
+	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
 	target.custom_minimum_size = Vector2(310, 0)
 	var row := UI.hbox(target, 10)
 	var holder := Control.new()
@@ -440,15 +440,17 @@ func _build_bottom() -> void:
 	bottom = UI.vbox(root, 4)
 	xp = _bar(bottom, Color("b89c55"), Color("6b5a2c"), 12, 10)
 	action_bar = UI.panel(bottom, 0)
-	action_bar.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(6, 5, 6, 4)))
+	action_bar.add_theme_stylebox_override("panel", UI.capped_frame(Vector4(4, 3, 4, 2)))
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := UI.hbox(action_bar, 5)
 	var i := 0
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
-			var sep := ColorRect.new()
-			sep.color = UI.BORDER_DIM
-			sep.custom_minimum_size = Vector2(1, 0)
+			var sep := TextureRect.new()
+			sep.texture = UI.kit("divider")
+			sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sep.custom_minimum_size = Vector2(8, 0)
 			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var m := MarginContainer.new()
 			m.add_theme_constant_override("margin_left", 3)
@@ -471,7 +473,7 @@ func _build_dock() -> void:
 	dock = UI.hbox(root, 6)
 	dock.alignment = BoxContainer.ALIGNMENT_END
 	var micro := UI.panel(dock, 0)
-	micro.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(5, 4, 5, 4)))
+	micro.add_theme_stylebox_override("panel", UI.frame(Vector4(5, 4, 5, 4)))
 	micro.mouse_filter = Control.MOUSE_FILTER_PASS
 	micro.size_flags_vertical = Control.SIZE_SHRINK_END
 	var mr := UI.hbox(micro, 4)
@@ -479,9 +481,6 @@ func _build_dock() -> void:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(32, 42)
 		b.focus_mode = Control.FOCUS_NONE
-		b.add_theme_stylebox_override("normal", UI.box(Color("1a1510"), UI.BORDER_DIM, 0))
-		b.add_theme_stylebox_override("hover", UI.box(Color("1a1510"), UI.GOLD, 0))
-		b.add_theme_stylebox_override("pressed", UI.box(Color("2a2219"), UI.GOLD, 0))
 		var which: String = m[0]
 		b.pressed.connect(func(): toggle_panel(which))
 		mr.add_child(b)
@@ -497,13 +496,13 @@ func _build_dock() -> void:
 		micro_keys[m[3]] = [key, m[4]]
 		micro_buttons[m[3]] = [b, m[2]]
 	var bag_dock := UI.panel(dock, 0)
-	bag_dock.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(6, 5, 6, 4)))
+	bag_dock.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 5, 6, 4)))
 	bag_dock.mouse_filter = Control.MOUSE_FILTER_PASS
 	bag_dock.size_flags_vertical = Control.SIZE_SHRINK_END
 	_sockets_box = UI.hbox(bag_dock, 4)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	var cp := UI.panel(dock, 0)
-	cp.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(10, 0, 10, 0)))
+	cp.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 0, 10, 0)))
 	cp.custom_minimum_size = Vector2(0, 52)
 	cp.size_flags_vertical = Control.SIZE_SHRINK_END
 	coins = UI.rich(cp, 16)
@@ -1216,8 +1215,8 @@ func _update_target() -> void:
 	var elite: bool = shown != null and shown.cfg.get("elite", false)
 	var ring: StyleBoxFlat = target_ring.get_theme_stylebox("panel")
 	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("8a6a3a")
-	var frame: StyleBoxFlat = target.get_theme_stylebox("panel")
-	frame.border_color = Color("a0603a") if elite else UI.BORDER
+	var frame: StyleBoxTexture = target.get_theme_stylebox("panel")
+	frame.modulate_color = Color("ffb08a") if elite else Color.WHITE
 	if friend != null:
 		target_name.text = friend.name
 		target_name.add_theme_color_override("font_color", Color("a8e08c"))

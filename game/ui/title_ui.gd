@@ -90,9 +90,9 @@ func _view(id: String) -> Control:
 ## a button the keyboard and pad can move to
 func _nav(parent: Node, text: String, cb: Callable, size := 15) -> Button:
 	var b := UI.button(parent, text, cb, size)
-	b.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), UI.BORDER, 0, 1, Vector4(18, 7, 18, 7)))
-	b.add_theme_stylebox_override("disabled", UI.box(Color("1d1812"), UI.BORDER_DIM, 0, 1, Vector4(18, 7, 18, 7)))
-	b.add_theme_stylebox_override("hover", UI.box(Color("2a2219"), UI.GOLD, 0, 1, Vector4(18, 7, 18, 7)))
+	b.add_theme_stylebox_override("normal", UI.frame(Vector4(18, 7, 18, 7), "button", 6))
+	b.add_theme_stylebox_override("disabled", UI.frame(Vector4(18, 7, 18, 7), "button_disabled", 6))
+	b.add_theme_stylebox_override("hover", UI.frame(Vector4(18, 7, 18, 7), "button_hover", 7))
 	b.set_meta("nav", true)
 	b.mouse_entered.connect(func():
 		if not b.disabled:
@@ -193,7 +193,7 @@ func _controls_table(parent: Node) -> Control:
 
 func _side(v: Control, title: String) -> VBoxContainer:
 	var p := UI.panel(v, 0)
-	p.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(16, 14, 16, 14)))
+	p.add_theme_stylebox_override("panel", UI.frame(Vector4(16, 14, 16, 14)))
 	p.custom_minimum_size = Vector2(300, 0)
 	p.set_meta("side", true)
 	var col := UI.vbox(p, 6)
@@ -245,7 +245,7 @@ func _build_create() -> void:
 	UI.label(side, "CLASS", 12, UI.TEXT_DIM)
 	create.list = UI.vbox(side, 6)
 	var detail := UI.panel(v, 0)
-	detail.add_theme_stylebox_override("panel", UI.box(UI.PANEL, UI.BORDER, 0, 1, Vector4(16, 12, 16, 12)))
+	detail.add_theme_stylebox_override("panel", UI.frame(Vector4(16, 12, 16, 12)))
 	detail.custom_minimum_size = Vector2(320, 0)
 	detail.set_meta("detail", true)
 	create.detail = UI.rich(detail, 14, 288)

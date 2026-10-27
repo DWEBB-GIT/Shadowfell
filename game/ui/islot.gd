@@ -7,8 +7,7 @@ extends Control
 ## It draws itself; the window that owns it decides what it holds and
 ## handles its clicks (`on_input`, `on_hover`).
 
-const ITEM_BG := [Color("3a2f22"), Color("15110c")]
-const BAR_BG := [Color("2a2219"), Color("0e0b08")]
+const FRAME := 0.1 ## the kit frame's width, as a share of the slot
 const EMPTY_BORDER := Color("5e4a2c")
 const KIND_BORDER := {"weapon": Color("8a7450"), "armor": Color("62788c"), "bag": Color("8a6838")}
 
@@ -41,10 +40,6 @@ var on_input := Callable()
 var on_hover := Callable()
 
 
-static var _bg: GradientTexture2D
-static var _bar_bg: GradientTexture2D
-
-
 func _init(location := "", px := 42) -> void:
 	loc = location
 	custom_minimum_size = Vector2(px, px)
@@ -67,32 +62,6 @@ func _gui_input(e: InputEvent) -> void:
 	if on_input.is_valid() and e is InputEventMouseButton:
 		on_input.call(self, e)
 		accept_event()
-
-
-static func _item_bg() -> Texture2D:
-	if _bg == null:
-		_bg = _radial(ITEM_BG)
-	return _bg
-
-
-static func _bar_bg_tex() -> Texture2D:
-	if _bar_bg == null:
-		_bar_bg = _radial(BAR_BG)
-	return _bar_bg
-
-
-static func _radial(stops: Array) -> GradientTexture2D:
-	var g := Gradient.new()
-	g.set_color(0, stops[0])
-	g.set_color(1, stops[1])
-	var t := GradientTexture2D.new()
-	t.gradient = g
-	t.width = 32
-	t.height = 32
-	t.fill = GradientTexture2D.FILL_RADIAL
-	t.fill_from = Vector2(0.5, 0.35)
-	t.fill_to = Vector2(1.15, 0.35)
-	return t
 
 
 ## Set what an item slot shows from a stack (or null for an empty slot).
@@ -128,15 +97,14 @@ func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var a := (0.35 if carried else 1.0) * dim
 	modulate.a = a
-	draw_texture_rect(_bar_bg_tex() if bar else _item_bg(), r, false)
-	# a faint lit top edge and a shaded bottom, so the slot reads as a recess
-	draw_line(Vector2(1, 1.5), Vector2(size.x - 1, 1.5), Color(1, 0.88, 0.62, 0.10), 1)
-	draw_line(Vector2(1, size.y - 1.5), Vector2(size.x - 1, size.y - 1.5), Color(0, 0, 0, 0.35), 1)
+	# the UI kit's slot frame: bronze on the spell bar, iron in bags
+	draw_texture_rect(UI.kit("slot_bar" if bar else "slot_item"), r, false)
+	var well := r.grow(-FRAME * size.x)
 	var tint := icon_tint
 	if worn == "broken":
 		tint = Color(0.62, 0.32, 0.26)
 	if icon:
-		draw_texture_rect(icon, r.grow(-2 if bar else -1), false, tint)
+		draw_texture_rect(icon, well, false, tint)
 	elif painter.is_valid():
 		painter.call(self)
 	elif letter != "":
@@ -144,35 +112,38 @@ func _draw() -> void:
 	elif placeholder != "":
 		_placeholder(r)
 	if overlay.a > 0:
-		draw_rect(r, overlay)
-	# cooldown sweeps: the darker one for the slot's own cooldown
+		draw_rect(well, overlay)
+	# cooldown sweeps inside the frame, a cold blue-black as on the kit; the
+	# darker one for the slot's own cooldown
 	if cooldown > 0:
-		_sweep(r, cooldown, Color(0, 0, 0, 0.72))
+		_sweep(well, cooldown, Color(4 / 255.0, 8 / 255.0, 18 / 255.0, 0.74))
 	if gcd > 0:
-		_sweep(r, gcd, Color(20 / 255.0, 16 / 255.0, 10 / 255.0, 0.62))
-	var edge := border
-	if hovered and not bar:
-		edge = UI.GOLD
+		_sweep(well, gcd, Color(10 / 255.0, 14 / 255.0, 24 / 255.0, 0.6))
+	# an item's kind or rarity as a thin line inside the frame
+	if border != EMPTY_BORDER:
+		draw_rect(well.grow(0.5), border, false, 1)
 	if lit:
-		edge = UI.GOLD
-		draw_rect(r.grow(-3), Color(240 / 255.0, 200 / 255.0, 120 / 255.0, 0.18), false, 4)
+		draw_rect(well, Color(240 / 255.0, 200 / 255.0, 120 / 255.0, 0.14))
 	if worn != "":
-		draw_rect(r.grow(-2), Color(230 / 255.0, 170 / 255.0, 40 / 255.0, 0.75) if worn == "worn" else Color(220 / 255.0, 50 / 255.0, 40 / 255.0, 0.9), false, 2)
+		draw_rect(well.grow(-1), Color(230 / 255.0, 170 / 255.0, 40 / 255.0, 0.75) if worn == "worn" else Color(220 / 255.0, 50 / 255.0, 40 / 255.0, 0.9), false, 2)
 	if inner.a > 0:
-		draw_rect(r.grow(-2), inner, false, 2)
-	draw_rect(r.grow(-0.5), edge, false, 1)
+		draw_rect(well.grow(-1), inner, false, 2)
+	# the kit's gold highlight frame: lit, or under the mouse
+	if lit or hovered:
+		draw_texture_rect(UI.kit("slot_glow"), r, false, Color(1, 1, 1, 1.0 if lit else 0.7))
 	if glow.a > 0:
 		for i in 4:
 			draw_rect(r.grow(1.5 + i * 1.5), Color(glow, glow.a * (1.0 - i / 4.0)), false, 1.5)
 	if key != "":
 		var f := UI.font
 		var ks := 10 if bar else 9
-		draw_string_outline(f, Vector2(3, 1 + f.get_ascent(ks)), key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, 3, Color.BLACK)
-		draw_string(f, Vector2(3, 1 + f.get_ascent(ks)), key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, UI.GOLD)
+		var kp := Vector2(well.position.x + 1, well.position.y + f.get_ascent(ks))
+		draw_string_outline(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, 3, Color.BLACK)
+		draw_string(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, UI.GOLD)
 	if count != "":
 		var f := UI.bold if count_centre else UI.font
 		var w := f.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size).x
-		var p := Vector2((size.x - w) / 2 if count_centre else size.x - w - 3, size.y - 2 - f.get_descent(count_size))
+		var p := Vector2((size.x - w) / 2 if count_centre else well.end.x - w - 1, well.end.y - f.get_descent(count_size))
 		draw_string_outline(f, p, count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size, 3, Color.BLACK)
 		draw_string(f, p, count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size, count_colour)
 	if focused:
