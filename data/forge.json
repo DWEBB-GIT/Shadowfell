@@ -1,38 +1,5 @@
 {
-  "_about": "Forge services (Godot build: game/systems/forge.gd), at any npc with `forge: true` (a smith in any major town). `temper`: each rank counts as +1 item level, and the item's stats are worked out again by the item budget (docs/stats-and-damage.md). `caps` by rarity: how many ranks an item can take. `ranks` (one entry a rank, in order): bars and whetstones of the item's level band (`bars`, `whetstones`: the first band whose `upToLevel` is at least the item's level before the rank) and coins, plus `coinsPerItemLevel` x level coins on top. An epic or legendary item's last rank (its cap) also needs `lastRank`. `scrap` destroys an item for `baseBars` bars of its band (by rarity; cloth and leather give none), `refund` of every tempering material put in, and its gems back; the window shows what you get first. `reforge` swaps one of an item's stats for another, from `options` choices shown up front, for coins (one reforge an item; doing it again replaces it). `sockets`: a socket takes `share` of the item's stat budget, which a gem of its quality fills back (gems.json); a forge can punch one more (`punch`) into enhanced gear or better, to `max` sockets.",
-  "temper": {
-    "caps": { "junk": 0, "common": 0, "enhanced": 2, "rare": 4, "epic": 6, "legendary": 7, "quest": 0 },
-    "ranks": [
-      { "bars": 2, "whetstones": 1, "coins": 8 },
-      { "bars": 3, "whetstones": 1, "coins": 14 },
-      { "bars": 4, "whetstones": 2, "coins": 22 },
-      { "bars": 5, "whetstones": 2, "coins": 34 },
-      { "bars": 6, "whetstones": 3, "coins": 50 },
-      { "bars": 8, "whetstones": 3, "coins": 75 },
-      { "bars": 10, "whetstones": 4, "coins": 110 }
-    ],
-    "coinsPerItemLevel": 1,
-    "lastRank": { "item": "skyiron", "count": 1, "rarities": ["epic", "legendary"] },
-    "bars": [
-      { "upToLevel": 5, "item": "copper_bar" },
-      { "upToLevel": 10, "item": "bronze_bar" },
-      { "upToLevel": 16, "item": "iron_bar" },
-      { "upToLevel": 22, "item": "silver_bar" },
-      { "upToLevel": 30, "item": "gold_bar" },
-      { "upToLevel": 38, "item": "mithril_bar" },
-      { "upToLevel": 46, "item": "cobalt_bar" },
-      { "upToLevel": 99, "item": "iridium_bar" }
-    ],
-    "whetstones": [
-      { "upToLevel": 8, "item": "whetstone" },
-      { "upToLevel": 99, "item": "heavy_whetstone" }
-    ]
-  },
-  "scrap": {
-    "refund": 0.75,
-    "baseBars": { "junk": 0, "common": 1, "enhanced": 1, "rare": 2, "epic": 3, "legendary": 4, "quest": 0 },
-    "noMetal": ["cloth", "leather"]
-  },
+  "_about": "Forge services (Godot build: game/systems/forge.gd), at any npc with `forge: true` (a smith in any major town). Raising gear's item level and scrapping gear are enchanters' work (enchanting.json). `reforge` swaps one of an item's stats for another, from `options` choices shown up front, for coins (one reforge an item; doing it again replaces it). `sockets`: a socket takes `share` of the item's stat budget, which a gem of its quality fills back (gems.json); a forge can punch one more (`punch`) into enhanced gear or better, to `max` sockets.",
   "reforge": { "stats": ["strength", "agility", "intellect", "stamina", "haste"], "options": 3, "coins": 10, "coinsPerItemLevel": 1 },
   "sockets": { "share": 0.25, "max": 2, "minRarity": "enhanced", "punch": { "item": "skyiron", "count": 1, "coins": 50 } }
 }

@@ -1334,7 +1334,7 @@
       "price": 100,
       "model": "grave_iron",
       "icon": "grave_iron",
-      "description": "Metal from a fallen star, still faintly warm. Smiths need it for the last temper on the finest gear, and to punch a socket."
+      "description": "Metal from a fallen star, still faintly warm. Smiths need it to punch a socket."
     },
     {
       "id": "copper_bar",
@@ -1425,6 +1425,61 @@
       "description": "A bar of iridium, the hardest metal a forge can work."
     },
     {
+      "id": "faint_dust",
+      "name": "Faint dust",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Grey motes that glitter when no one looks straight at them. An enchanter spends it on gear up to level 10."
+    },
+    {
+      "id": "glimmering_dust",
+      "name": "Glimmering dust",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "It drifts up out of the pouch if you leave it open. An enchanter spends it on gear up to level 22."
+    },
+    {
+      "id": "radiant_dust",
+      "name": "Radiant dust",
+      "kind": "material",
+      "rarity": "enhanced",
+      "stack": 20,
+      "price": 12,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Bright enough to read by. An enchanter spends it on gear up to level 38."
+    },
+    {
+      "id": "eldritch_dust",
+      "name": "Eldritch dust",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 25,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Black, and it shines anyway. An enchanter spends it on the highest gear."
+    },
+    {
+      "id": "soulshard",
+      "name": "Soulshard",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 100,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Enchanters need one for the last enhancement on the finest gear."
+    },
+    {
       "id": "whetstone",
       "name": "Whetstone",
       "kind": "material",
@@ -1433,7 +1488,7 @@
       "price": 3,
       "model": "rock0",
       "icon": "rock0",
-      "description": "Ground from rough stone. A smith uses it to temper gear up to level 8."
+      "description": "Ground from rough stone. Smiths and soldiers buy them."
     },
     {
       "id": "heavy_whetstone",
@@ -1444,7 +1499,7 @@
       "price": 6,
       "model": "rock0",
       "icon": "rock0",
-      "description": "Ground from granite. A smith uses it to temper gear above level 8."
+      "description": "Ground from granite. Smiths and soldiers buy them."
     },
     {
       "id": "garnet_shard",

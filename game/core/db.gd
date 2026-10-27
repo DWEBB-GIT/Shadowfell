@@ -115,6 +115,7 @@ static var mining: Dictionary = {} ## data/mining.json (Mining)
 static var nodes: Dictionary = {} ## data/nodes.json (Gathering): herb patches and the like
 static var skill_ladder: Dictionary = {} ## skills.json `ladder` (Skills): trainer ranks, skill experience, perks
 static var forge: Dictionary = {} ## data/forge.json (Forge)
+static var enchanting: Dictionary = {} ## data/enchanting.json (Forge: enchant, scrap)
 static var gems: Dictionary = {} ## data/gems.json (Gems)
 static var infamy: Dictionary = {} ## data/infamy.json (Law)
 static var boons: Dictionary = {} ## data/boons.json (Boons)
@@ -138,6 +139,7 @@ static var spells := {}
 static func setup(data) -> void:
 	var f: Dictionary = data.files
 	forge = f.get("forge", {})
+	enchanting = f.get("enchanting", {})
 	gems = f.get("gems", {})
 	Scaling.socket_share = forge.get("sockets", {}).get("share", 0.0)
 	items.clear()

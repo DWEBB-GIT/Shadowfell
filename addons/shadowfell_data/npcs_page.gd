@@ -171,7 +171,8 @@ func _build() -> void:
 	UI.row(g, "Tint", tint, "Colours their model, to tell apart townsfolk who share one.")
 	UI.row(g, "Map icon", UI.choice(MAP_ICONS, n.get("mapIcon"), func(v): _put("mapIcon", v)), "Puts their trade on the minimap.")
 	UI.row(g, "Innkeeper", UI.check(n.get("innkeeper", false), "Keeps an inn (you can make it your home)", func(on): _put("innkeeper", on)))
-	UI.row(g, "Smith", UI.check(n.get("forge", false), "Tempers, reforges, punches sockets, scraps gear and lets you smelt", func(on): _put("forge", true if on else null)))
+	UI.row(g, "Smith", UI.check(n.get("forge", false), "Reforges, punches sockets and lets you smelt", func(on): _put("forge", true if on else null)))
+	UI.row(g, "Enchanter", UI.check(n.get("enchanter", false), "Enchants gear (+1 item level a rank) and scraps it into dust and gems", func(on): _put("enchanter", true if on else null)))
 	UI.row(g, "Jeweller", UI.check(n.get("jeweller", false), "Makes gems from shards, sets and removes gems", func(on): _put("jeweller", true if on else null)))
 	UI.row(g, "Notice board", UI.check(n.get("board", false), "A notice board, not a person (no greeting by title)", func(on): _put("board", on)))
 

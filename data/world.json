@@ -407,6 +407,11 @@
       "facing": 150
     },
     {
+      "npc": "sabeth",
+      "position": [-623.5, 448.5],
+      "facing": 120
+    },
+    {
       "npc": "wenna",
       "position": [-611.8, 434.6],
       "facing": 120
