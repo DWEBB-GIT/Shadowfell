@@ -68,6 +68,7 @@ var target_img: TextureRect
 var target_badge: Label
 var target_name: Label
 var target_label: Label
+var target_kind: Label ## combat type: ⚔ melee, ➶ ranged, ✦ magic
 var target_hp: Dictionary
 var target_mp: Dictionary
 var target_stagger: Dictionary
@@ -116,6 +117,7 @@ var vignette: TextureRect
 var hurt: TextureRect
 var vignette_t := 0.0
 var bars_layer: Control
+var player_auras: HBoxContainer ## your buffs over your head, above your name
 var numbers: DamageNumbers
 
 
@@ -208,6 +210,7 @@ func _build() -> void:
 	bars_layer = Control.new()
 	bars_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bars_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_auras = UI.hbox(bars_layer, 2)
 	root.add_child(bars_layer)
 	labels = WorldLabels.new(game)
 	root.add_child(labels)
@@ -426,7 +429,13 @@ func _build_target() -> void:
 	target_badge.position = Vector2(-4, 42)
 	var tv := UI.vbox(row, 2)
 	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	target_name = UI.label(tv, "", 14, Color("e8c8a0"))
+	var nr := UI.hbox(tv, 6)
+	target_name = UI.label(nr, "", 14, Color("e8c8a0"))
+	target_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	target_kind = UI.label(nr, "", 13, UI.GOLD, 3)
+	target_kind.mouse_filter = Control.MOUSE_FILTER_STOP
+	target_kind.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
+	target_kind.mouse_exited.connect(func(): items.cursor_tip_off())
 	target_label = UI.label(tv, "", 11, UI.TEXT_DIM)
 	target_hp = _bar(tv, Color("c0503a"), Color("8e2a20"), 16)
 	target_mp = _bar(tv, Color("5a82c8"), Color("2c4a8a"), 11, 9)
@@ -982,6 +991,7 @@ func _refresh_slots() -> void:
 		# whichever finishes later is what the player is waiting on
 		var show_gcd: bool = cd[2] and gcd > cd[0]
 		s.cooldown = 0.0 if show_gcd else own
+		s.cd_left = 0.0 if show_gcd or a == "strike" else cd[0]
 		s.gcd = gcd / game.stats.global_cooldown if show_gcd else 0.0
 		var ab = DB.abilities.get(a) if a else null
 		var tint := Color.WHITE
@@ -999,7 +1009,7 @@ func _refresh_slots() -> void:
 		s.glow = Color(140 / 255.0, 190 / 255.0, 1, 0.55) if a == "brace" and player.is_braced else Color(0, 0, 0, 0)
 		s.border = Color("9cc4ff") if a == "brace" and player.is_braced else Color("2a2218") if cd[0] > 0 or show_gcd else UI.BORDER_DIM
 		# redraw only when something shown changed (sweeps move in 1/90 turns)
-		var sig := [snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
+		var sig := [ceili(s.cd_left), snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
 		if s.get_meta("sig", []) != sig:
 			s.set_meta("sig", sig)
 			s.queue_redraw()
@@ -1067,19 +1077,22 @@ func _refresh_spells() -> void:
 		if extra != null:
 			list.append(extra)
 	_auras(buffs, list)
+	_player_plate(list)
 	_auras(target_auras, game.spells.dots_on(shown_target) if shown_target != null else [], true)
 
 
 ## buffs and debuffs (.aura): an icon with its time left under it
-func _auras(box_: HBoxContainer, list: Array, debuff := false) -> void:
+func _auras(box_: HBoxContainer, list: Array, debuff := false, px := 24) -> void:
 	box_.visible = not list.is_empty()
+	box_.set_meta("list", list) # the hover tip reads the live entry
 	var key := ",".join(list.map(func(a): return str(a.id)))
 	if box_.get_meta("key", "") != key:
 		box_.set_meta("key", key)
 		UI.clear(box_)
-		for a in list:
+		for idx in list.size():
+			var a: Dictionary = list[idx]
 			var p := Panel.new()
-			p.custom_minimum_size = Vector2(24, 24)
+			p.custom_minimum_size = Vector2(px, px)
 			p.add_theme_stylebox_override("panel", UI.box(Color("0b0908"), Color("8a3a2a") if debuff else UI.BORDER_DIM, 0))
 			box_.add_child(p)
 			var img := TextureRect.new()
@@ -1092,13 +1105,14 @@ func _auras(box_: HBoxContainer, list: Array, debuff := false) -> void:
 			img.offset_bottom = -1
 			img.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			p.add_child(img)
-			var t := UI.label(p, "", 10, Color("f0e0c0"), 3)
+			var t := UI.label(p, "", 10 if px >= 24 else 9, Color("f0e0c0"), 3)
 			t.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 			t.offset_top = -12
 			t.offset_bottom = 2
 			t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			var nm: String = a.get("name", DB.abilities.get(a.id, {}).get("name", str(a.id)))
-			items.tip_on(p, a.get("text", ""), nm)
+			items.tip_at_cursor(p, func():
+				var now: Array = box_.get_meta("list", [])
+				return aura_tip(now[idx], debuff) if idx < now.size() else "")
 	# (an aura that lasts until something ends it, such as Shadow, shows no time)
 	var i := 0
 	for c in box_.get_children():
@@ -1107,6 +1121,33 @@ func _auras(box_: HBoxContainer, list: Array, debuff := false) -> void:
 		var left = list[i].get("left", INF)
 		c.get_child(1).text = "" if left == null or is_inf(left) else ("%dm" % ceili(left / 60.0) if left > 60 else str(ceili(left)))
 		i += 1
+
+
+## your buffs on your own nameplate, over the name label
+func _player_plate(list: Array) -> void:
+	var cam: Camera3D = game.camera
+	var at: Vector3 = game.player.position + Vector3(0, 2.6, 0)
+	var on: bool = not list.is_empty() and not game.player.dead and not cam.is_position_behind(at)
+	player_auras.visible = on
+	if not on:
+		return
+	_auras(player_auras, list, false, 18)
+	player_auras.size = player_auras.get_combined_minimum_size()
+	player_auras.position = (cam.unproject_position(at) - Vector2(player_auras.size.x / 2, player_auras.size.y)).round()
+
+
+## a buff or debuff's tooltip: name, what it does, time left
+func aura_tip(a: Dictionary, debuff: bool) -> String:
+	var ab: Dictionary = DB.abilities.get(a.id, {})
+	var nm: String = a.get("name", ab.get("name", str(a.id)))
+	var text: String = a.get("text", ab.get("desc", ""))
+	var out := "[color=%s][b]%s[/b][/color]" % ["#ff8a6a" if debuff else "#a8e08c", UI.esc(nm)]
+	if text != "":
+		out += "\n" + UI.esc(text)
+	var left = a.get("left", INF)
+	if left != null and not is_inf(left):
+		out += "\n[color=#9a8f78][font_size=12]%s remaining[/font_size][/color]" % ("%dm" % ceili(left / 60.0) if left > 60 else "%ds" % ceili(left))
+	return out
 
 
 func layout() -> void:
@@ -1222,6 +1263,7 @@ func _update_target() -> void:
 		target_name.add_theme_color_override("font_color", Color("a8e08c"))
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
+		target_kind.text = ""
 		target_label.add_theme_color_override("font_color", UI.TEXT_DIM)
 		target_hp.root.visible = false
 		target_mp.root.visible = false
@@ -1231,6 +1273,10 @@ func _update_target() -> void:
 	target_name.text = cfg.name
 	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("f0d050") if shown.passive else Color("e8c8a0"))
 	target_badge.text = U.n(cfg.get("level", 1))
+	var kind := combat_kind(cfg)
+	target_kind.text = KIND_GLYPH[kind][0]
+	target_kind.add_theme_color_override("font_color", KIND_GLYPH[kind][1])
+	target_kind.set_meta("tip", "[b]%s[/b]\nLevel %s · %s" % [kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
 	var attacking: bool = t != null and tg.attacking
 	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
 	target_label.add_theme_color_override("font_color", Color("ff8a60") if attacking else UI.TEXT_DIM)
@@ -1248,6 +1294,23 @@ func _update_target() -> void:
 		var full: bool = shown.staggered > 0
 		set_fill(target_stagger, 1.0 if full else sb.value / sb.need)
 		target_stagger.text.text = "Staggered %d" % ceili(shown.staggered) if full else "Stagger"
+
+
+const KIND_GLYPH := {
+	"melee": ["⚔", Color("e0b070"), "fights up close"],
+	"ranged": ["➶", Color("a8d070"), "shoots from range"],
+	"magic": ["✦", Color("a890f0"), "casts spells"],
+}
+
+
+## melee, ranged or magic: an enemy's `combat` field, else read from its kit
+static func combat_kind(cfg: Dictionary) -> String:
+	if cfg.get("combat"):
+		return cfg.combat
+	var r = cfg.get("ranged")
+	if r is Dictionary:
+		return "magic" if r.get("school") or r.get("mana") else "ranged"
+	return "magic" if cfg.get("mana", 0) > 0 else "melee"
 
 
 ## enemy health bars (.ebar), shown when engaged, damaged or targeted
@@ -1293,6 +1356,7 @@ func _update_enemy_bars() -> void:
 			var tl = c.get("telegraph")
 			bar.cast_fill.anchor_right = minf(1, tl.t / tl.duration) if tl != null else 0.0
 			bar.cast_name.text = c.get("label", "")
+		_auras(bar.auras, game.spells.dots_on(e), true, 18)
 		bar.root.size = bar.root.get_combined_minimum_size()
 		bar.root.position = (s - Vector2(bar.root.size.x / 2, bar.root.size.y)).round()
 	for id in enemy_bars.keys():
@@ -1341,4 +1405,6 @@ func _enemy_bar(_e) -> Dictionary:
 	ct.add_child(cf)
 	var cn := UI.label(cast_box, "", 11, Color("f0c890"), 4)
 	cn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return {"root": v, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn}
+	var auras := UI.hbox(v, 2)
+	auras.alignment = BoxContainer.ALIGNMENT_CENTER
+	return {"root": v, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}

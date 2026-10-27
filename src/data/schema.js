@@ -324,6 +324,7 @@ export function validateGameData(raw, opts = {}) {
     for (const t of Array.isArray(a.trained) ? a.trained : []) {
       ref(`${w} trained`, 'ability', abilities, t.ability);
       ref(`${w} trained ${t.ability}`, 'trainer npc', npcs, t.trainer);
+      if (t.quest !== undefined) ref(`${w} trained ${t.ability}`, 'gate quest', quests, t.quest);
       if (!(a.abilities || []).includes(t.ability)) errors.push(`${w}: trained ${t.ability} must be in its abilities`);
       if ((a.bar || []).includes(t.ability) || t.ability === a.defensive) errors.push(`${w}: trained ${t.ability} cannot be on its starting bar or its defensive`);
       if (!(isInt(t.level) && t.level >= 1) || !(isInt(t.cost) && t.cost >= 0)) errors.push(`${w}: trained ${t.ability} needs a level and a cost in whole numbers`);

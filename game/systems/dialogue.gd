@@ -92,7 +92,9 @@ func train_rows(npc_id = null) -> Array:
 		var lvl := int(t.get("level", 1))
 		var cost := int(t.get("cost", 0))
 		var low: bool = game.progression.level < lvl
-		rows.append({"id": "spell:" + t.ability, "name": a.name, "kind": "%s spell" % game.stats.archetype.name, "ability": t.ability, "desc": a.get("desc", ""), "need": "Requires level %d" % lvl if low else "Level %d" % lvl, "cost": cost, "state": "known" if known else "locked" if low else "poor" if coins < cost else "learn"})
+		var gate: String = skills.quest_gate(t)
+		var need := "Requires level %d" % lvl if low else "Requires %s" % gate if gate != "" else "Level %d" % lvl
+		rows.append({"id": "spell:" + t.ability, "name": a.name, "kind": "%s spell" % game.stats.archetype.name, "ability": t.ability, "desc": a.get("desc", ""), "need": need, "cost": cost, "state": "known" if known else "locked" if low or gate != "" else "poor" if coins < cost else "learn"})
 	for r in DB.recipes.values():
 		if r.get("trainer") != npc_id:
 			continue

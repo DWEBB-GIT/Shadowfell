@@ -16,6 +16,7 @@ var game
 var accepted: Array = [] ## quest ids, in the order taken
 var done := {}
 var tracked := {}
+var focus := "" ## the quest being followed: the minimap and world map point the way to it
 var kills := {} ## questId -> { objectiveId: kills since it was taken }
 var _last := {} ## questId -> progress text, to announce changes
 
@@ -52,6 +53,7 @@ func reset() -> void:
 	accepted = []
 	done = {}
 	tracked = {}
+	focus = ""
 	kills = {}
 	_last = {}
 
@@ -118,7 +120,7 @@ func objectives(id: String) -> Array:
 			"talk":
 				have = need
 		have = mini(have, need)
-		out.append({"id": o.id, "type": o.type, "label": o.label, "have": have, "need": need, "done": have >= need, "location": o.get("location")})
+		out.append({"id": o.id, "type": o.type, "target": o.get("target", ""), "label": o.label, "have": have, "need": need, "done": have >= need, "location": o.get("location")})
 	return out
 
 
@@ -191,6 +193,8 @@ func abandon(id: String) -> bool:
 		return false # the story quest cannot be dropped
 	accepted.erase(id)
 	tracked.erase(id)
+	if focus == id:
+		focus = ""
 	_last.erase(id)
 	kills.erase(id)
 	game.events.emit("log", {"text": "Quest abandoned: %s." % DB.quests[id].name, "kind": "muted"})
@@ -217,6 +221,8 @@ func complete(id: String) -> bool:
 			inventory.remove_count(o.target, o.get("count", 1))
 	done[id] = true
 	tracked.erase(id)
+	if focus == id:
+		focus = ""
 	_last.erase(id)
 	kills.erase(id)
 	if q.get("setsFlag"):
@@ -253,8 +259,167 @@ func set_tracked(id: String, on: bool) -> bool:
 		tracked[id] = true
 	else:
 		tracked.erase(id)
+		if focus == id:
+			focus = ""
 	_changed()
 	return true
+
+
+## Follow a quest (or stop, with ""): the minimap points the way to its
+## next step whatever the distance. A followed quest is always tracked.
+func set_focus(id: String) -> void:
+	if id != "" and not active.has(id):
+		return
+	if id != "" and not tracked.has(id) and not set_tracked(id, true):
+		return
+	focus = id
+	_changed()
+
+
+# ------------------------------------------------- where and how hard
+## Where a quest sends you next: the turn-in npc once it is ready, else the
+## first unmet objective's place (its `location`, the nearest spawn of what
+## it wants killed, or whom it wants spoken to). { x, z, r, label } or {}.
+func goal(id: String) -> Dictionary:
+	if status(id) == "ready":
+		return npc_goal(DB.quests[id].turnIn)
+	for o in objectives(id):
+		if o.done:
+			continue
+		if o.location and DB.locations.has(o.location):
+			var l: Dictionary = DB.locations[o.location]
+			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}
+		if o.type == "talk":
+			return npc_goal(o.target)
+		if o.type == "kill":
+			var p: Vector3 = game.player.position if game.player else Vector3.ZERO
+			var best := {}
+			for e in Layout.enemies:
+				if e.type != o.target or game.world_state.defeated.has(e.id):
+					continue
+				var d := U.hyp(e.position[0] - p.x, e.position[1] - p.z)
+				if best.is_empty() or d < best.d:
+					best = {"x": e.position[0], "z": e.position[1], "r": 0, "label": DB.enemies[o.target].name, "d": d}
+			if not best.is_empty():
+				return best
+	return {}
+
+
+## Where a townsperson is: where they stand now, else where they spawn.
+func npc_goal(npc_id: String) -> Dictionary:
+	var n = game.npcs.by_id(npc_id) if game.npcs else null
+	if n != null:
+		return {"x": n.position.x, "z": n.position.z, "r": 0, "label": n.name, "npc": npc_id}
+	var at := Quests.npc_spot(npc_id)
+	if at == Vector2.INF:
+		return {}
+	return {"x": at.x, "z": at.y, "r": 0, "label": DB.npcs.get(npc_id, {}).get("name", npc_id), "npc": npc_id}
+
+
+static func npc_spot(npc_id: String) -> Vector2:
+	for sp in DB.world.get("npcSpawns", []):
+		if sp.npc == npc_id:
+			return Vector2(sp.position[0], sp.position[1])
+	return Vector2.INF
+
+
+## "Mara Venn, Brackenford": who takes a quest in, and where to find them
+## (the building they stand in, else the region).
+static func hand_in(id: String) -> String:
+	var npc_id: String = DB.quests[id].turnIn
+	var who: String = DB.npcs.get(npc_id, {}).get("name", npc_id)
+	var at := npc_spot(npc_id)
+	if at == Vector2.INF:
+		return who
+	for b in DB.world.get("buildings", []):
+		if absf(at.x - b.position[0]) <= b.size[0] / 2.0 and absf(at.y - b.position[1]) <= b.size[1] / 2.0:
+			return "%s, %s" % [who, b.name]
+	var place: String = DB.region_at(at.x, at.y).get("name", "")
+	return "%s, %s" % [who, place] if place != "" else who
+
+
+## The level range a quest suits: its `level` (a number or [min, max]) if
+## set, else the levels of what its objectives send you to fight (or of the
+## foes round the places they send you), else that of the quests it follows.
+static func levels(id: String, _seen := {}) -> Vector2i:
+	var q: Dictionary = DB.quests[id]
+	var l = q.get("level")
+	if l is Array and not l.is_empty():
+		return Vector2i(int(l[0]), int(l[l.size() - 1]))
+	if l is int or l is float:
+		return Vector2i(int(l), int(l))
+	var lo := 0
+	var hi := 0
+	for o in q.objectives:
+		var found := []
+		if o.type == "kill" and DB.enemies.has(o.get("target", "")):
+			found.append(_enemy_level(o.target))
+		elif o.get("location") and DB.locations.has(o.location):
+			var loc: Dictionary = DB.locations[o.location]
+			for e in Layout.enemies:
+				var def: Dictionary = DB.enemies.get(e.type, {})
+				# the hostile ones: not dummies, watchmen or livestock
+				if not def.is_empty() and not def.get("dummy") and not def.get("lawful") \
+						and U.hyp(e.position[0] - loc.position[0], e.position[1] - loc.position[1]) <= loc.get("radius", 0) + 15:
+					found.append(_enemy_level(e.type))
+		for v in found:
+			lo = v if lo == 0 else mini(lo, v)
+			hi = maxi(hi, v)
+	if hi > 0:
+		return Vector2i(lo, hi)
+	_seen[id] = true
+	for r in q.get("requires", []):
+		if DB.quests.has(r) and not _seen.has(r):
+			var v := levels(r, _seen)
+			lo = v.x if lo == 0 else mini(lo, v.x)
+			hi = maxi(hi, v.y)
+	return Vector2i(lo, hi) if hi > 0 else Vector2i(1, 1)
+
+
+## an enemy type's level (a level variant without one copies its `base`)
+static func _enemy_level(type: String) -> int:
+	var def: Dictionary = DB.enemies.get(type, {})
+	while not def.has("level") and def.get("base") and DB.enemies.has(def.base) and def.base != type:
+		type = def.base
+		def = DB.enemies[type]
+	return int(def.get("level", 1))
+
+
+## WoW's quest colours for a level against yours: grey (too easy to be worth
+## much), green, yellow (your level), orange, red (dangerous).
+static func level_colour(level: int, player_level: int) -> Color:
+	var d := level - player_level
+	if d >= 5:
+		return Color("ff4a3a")
+	if d >= 3:
+		return Color("ff9a40")
+	if d >= -2:
+		return Color("ffd23c")
+	if d > -int(DB.CONFIG.progression.greyGap):
+		return Color("5ec85e")
+	return Color("9a9a9a")
+
+
+## The zone a quest belongs to, for the quest log's groups: its `dungeon`
+## (a dungeon's name) or `zone` (a region id) if set, else the region of
+## the first place it sends you, else of whoever takes it in.
+## { name, dungeon: bool }
+static func zone(id: String) -> Dictionary:
+	var q: Dictionary = DB.quests[id]
+	if q.get("dungeon"):
+		return {"name": str(q.dungeon), "dungeon": true}
+	if q.get("zone"):
+		var r := DB.region_by_id(q.zone)
+		return {"name": r.get("name", str(q.zone)), "dungeon": false}
+	var at := Vector2.INF
+	for o in q.objectives:
+		if o.get("location") and DB.locations.has(o.location):
+			at = Vector2(DB.locations[o.location].position[0], DB.locations[o.location].position[1])
+			break
+	if at == Vector2.INF:
+		at = npc_spot(q.turnIn)
+	var place: String = DB.region_at(at.x, at.y).get("name", "") if at != Vector2.INF else ""
+	return {"name": place if place != "" else "Elsewhere", "dungeon": false}
 
 
 # ---------------------------------------------------- progress news
@@ -301,7 +466,7 @@ func _changed() -> void:
 
 # ------------------------------------------------------------- save
 func serialize() -> Dictionary:
-	return {"accepted": accepted.duplicate(), "done": done.keys(), "tracked": tracked.keys(), "kills": kills.duplicate(true)}
+	return {"accepted": accepted.duplicate(), "done": done.keys(), "tracked": tracked.keys(), "focus": focus, "kills": kills.duplicate(true)}
 
 
 ## Saves from before the quest log carry only the story flag.
@@ -317,6 +482,8 @@ func apply(data, flags: Dictionary) -> void:
 		for id in data.get("tracked", []):
 			if accepted.has(id):
 				tracked[id] = true
+		if tracked.has(str(data.get("focus", ""))):
+			focus = data.focus
 		# kill counts; a save from before them counts the bodies still down
 		var type_of := {}
 		for e in Layout.enemies:

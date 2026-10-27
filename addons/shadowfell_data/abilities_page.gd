@@ -11,7 +11,9 @@ const DataStore := preload("store.gd")
 const UI := preload("ui.gd")
 
 ## fields shown by the form; the rest are edited as JSON under Other fields
-const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "skill", "bar"]
+const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "skill", "bar", "everyone", "requires", "status", "applies", "spreadsOnDeath", "follow", "inShadow", "spreads", "spendsAll", "portal"]
+## what an aura (`applies`) can do to its target, besides its name and duration
+const AURA_EFFECTS := [["stun", "Stuns (1 = yes)"], ["sleep", "Puts to sleep (1 = yes; any hit wakes)"], ["slow", "Slows by %"], ["damageTaken", "Damage taken +%"], ["damageDealt", "Damage dealt +% (negative weakens)"]]
 
 ## open another record (a skill, an npc) on its own tab
 signal open_record(kind: String, id: String)
@@ -177,6 +179,7 @@ func _build() -> void:
 	_tuning(a)
 	_amounts(a, "cost", "Cost", "What it spends: mana, or a class bar (resolve, energy, focus...).")
 	_amounts(a, "gain", "Gain", "What it gives back: combo points, resolve...")
+	_effects(a)
 	_other(a)
 	_classes(a)
 	_skill(a)
@@ -195,6 +198,10 @@ func _set_kind(k: String) -> void:
 		a.target = "self"
 	if not (k in ["instant", "dot", "cast"]):
 		a.erase("ranged")
+	if k == "portal" and not a.has("portal"):
+		a.portal = "home"
+	elif k != "portal":
+		a.erase("portal")
 	if not a.has("tuning"):
 		a.tuning = {}
 	for key in DataStore.needed_tuning(a):
@@ -274,10 +281,68 @@ func _amounts(a: Dictionary, key: String, label: String, tip: String) -> void:
 			_changed(true)))
 
 
+## what it needs, the status and aura it puts on the target, and the
+## spells it leads to
+func _effects(a: Dictionary) -> void:
+	UI.heading(form, "Needs and effects")
+	var g := UI.grid(form)
+	UI.row(g, "Needs equipped", UI.choice([[null, "Nothing"], ["weapon", "A melee weapon in the main hand"], ["shield", "A shield in the off hand"]], a.get("requires"), func(v): _put("requires", v)), "A bow is set with From a bow instead.")
+	var statuses := [[null, "(none)"]] + s.statuses().map(func(x): return [x.id, x.get("name", x.id)])
+	UI.row(g, "Status", UI.choice(statuses, a.get("status"), func(v): _put("status", v)), "The status its damage over time counts as (builds.json statuses), for spells and powers that look for it.")
+	var spells := [[null, "(none)"]] + s.ability_choices(func(x): return x.id != a.id and not x.has("skill"))
+	UI.row(g, "Follow-up", UI.choice(spells, a.get("follow"), func(v): _put("follow", v)), "Another spell that goes off on the target when this one lands (Light's Hammer leaves Light's Burn).")
+	UI.row(g, "In Shadow", UI.choice(spells, a.get("inShadow"), func(v): _put("inShadow", v)), "The spell it turns into while the Rogue is in Shadow.")
+	UI.row(g, "Spreads", UI.choice(spells, a.get("spreads"), func(v): _put("spreads", v)), "A damage over time it spreads to enemies nearby (Grave Bloom spreads Rot).")
+	if a.get("kind") == "portal":
+		UI.row(g, "Takes you to", UI.choice([["home", "Your home inn"], ["camp", "Your camp"]], a.get("portal", "home"), func(v): _put("portal", v)))
+	UI.row(g, "Spends all", UI.choice([[null, "(no)"]] + s.resource_ids().map(func(x): return [x, x.capitalize()]), a.get("spendsAll"), func(v): _put("spendsAll", v)), "A finisher: it spends all of this and hits harder for each point.")
+
+	UI.note(form, "Aura it puts on the target:")
+	var has: bool = a.get("applies") is Dictionary
+	form.add_child(UI.check(has, "Applies an aura (a stun, a slow, a mark...)", func(on):
+		_put("applies", {"name": a.get("name", "Aura"), "duration": 5} if on else null, true)))
+	if not has:
+		return
+	var ap: Dictionary = a.applies
+	g = UI.grid(form)
+	UI.row(g, "Aura name", UI.line(str(ap.get("name", "")), func(t):
+		ap.name = t
+		_changed()))
+	UI.row(g, "Lasts", UI.spin(ap.get("duration", 0), 0, 600, 0.5, func(v):
+		ap.duration = v
+		_changed(), " s"))
+	UI.row(g, "Status", UI.choice(statuses, ap.get("status"), func(v):
+		if v == null:
+			ap.erase("status")
+		else:
+			ap.status = v
+		_changed()))
+	for e in AURA_EFFECTS:
+		var key: String = e[0]
+		UI.row(g, e[1], UI.spin(ap.get(key, 0), -100, 100, 1, func(v):
+			if v == 0:
+				ap.erase(key)
+			else:
+				ap[key] = v
+			_changed()))
+	UI.row(g, "Spreads on death", UI.check(a.get("spreadsOnDeath", false), "Jumps to the nearest enemy when the target dies", func(on): _put("spreadsOnDeath", true if on else null)))
+	var then := UI.line(JSON.stringify(ap.then) if ap.has("then") else "", func(txt):
+		var v = JSON.parse_string(txt) if txt.strip_edges() != "" else null
+		if txt.strip_edges() == "":
+			ap.erase("then")
+		elif v is Dictionary:
+			ap.then = v
+		else:
+			return
+		_changed())
+	then.placeholder_text = "{\"name\": \"Stunned\", \"duration\": 2, \"stun\": 1}"
+	UI.row(g, "Then", then, "Optional: a second aura when this one ends, as JSON (Bring to Kneel slows, then stuns).")
+
+
 ## the fields the form has no control for (applies, follow, loadouts...), as JSON
 func _other(a: Dictionary) -> void:
 	UI.heading(form, "Other fields")
-	UI.note(form, "Auras it applies, follow-ups, what it needs equipped and the like, as JSON (see the top of abilities.json). Left as it is unless the text reads as JSON.", Color(0.6, 0.6, 0.6))
+	UI.note(form, "Upgrades (enhanced and forks), weapon loadouts, stacks and bonus against a status, as JSON (see the top of abilities.json). Left as it is unless the text reads as JSON.", Color(0.6, 0.6, 0.6))
 	var other := {}
 	for k in a:
 		if not FORM_KEYS.has(k):
@@ -311,71 +376,60 @@ func _classes(a: Dictionary) -> void:
 	if a.has("skill"):
 		UI.note(form, "A skill's tool: it comes with the %s skill, not a class." % s.skill(a.skill).get("name", a.skill))
 		return
-	UI.note(form, "Tick a class to put it in that class's spellbook. Then either they know it from the start, or a trainer teaches it once they reach a level, for coins.", Color(0.6, 0.6, 0.6))
-	var npcs := [[null, "Knows it from the start"]] + s.npc_choices().map(func(c): return [c[0], "Taught by " + c[1]])
+	UI.row(UI.grid(form), "Every character", UI.check(a.get("everyone", false), "Known by every class from the start (like Return Home)", func(on): _put("everyone", true if on else null, true)))
+	if a.get("everyone", false):
+		return
+	UI.note(form, "Tick a class to put it in that class's spellbook. Then say how they get it: from the start (on the starting bar, in the spellbook, or as the defensive on Space), or from a trainer once they reach a level, for coins, optionally after a quest.", Color(0.6, 0.6, 0.6))
+	var npcs := s.npc_choices()
+	var quests := [[null, "no quest needed"]] + s.quest_choices().map(func(q): return [q[0], "after " + q[1]])
 	for c in s.archetypes:
 		var box := UI.hbox(form)
-		var book: Array = c.get("abilities", [])
-		var has: bool = book.has(a.id)
-		box.add_child(UI.check(has, c.get("name", c.id), func(on):
-			if on:
-				book.append(a.id)
-			else:
-				book.erase(a.id)
-				_untrain(c, a.id)
-			s.touch("archetypes")
+		var src := DataStore.spell_source(c, a.id)
+		box.add_child(UI.check(src != "", c.get("name", c.id), func(on):
+			s.set_spell_source(c, a.id, "book" if on else "")
 			_changed(true)))
-		if not has:
+		if src == "":
 			continue
-		var fixed: bool = c.get("bar", []).has(a.id) or c.get("defensive") == a.id
-		var entry := _trained(c, a.id)
-		var who := UI.choice(npcs, entry.get("trainer"), func(v):
-			if v == null:
-				_untrain(c, a.id)
-			elif entry.is_empty():
-				if not c.has("trained"):
-					c.trained = []
-				c.trained.append({"ability": a.id, "trainer": v, "level": 2, "cost": 10})
-			else:
-				entry.trainer = v
-			s.touch("archetypes")
+		var how := UI.choice(DataStore.SPELL_SOURCES, src, func(v):
+			s.set_spell_source(c, a.id, v)
 			_changed(true))
-		who.disabled = fixed
-		who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		box.add_child(who)
-		if fixed:
-			who.tooltip_text = "It is on the class's starting bar (or is its defensive), so they know it from the start."
-		if not entry.is_empty():
-			var lv := Label.new()
-			lv.text = "from level"
-			box.add_child(lv)
-			box.add_child(UI.spin(entry.get("level", 1), 1, 60, 1, func(v):
-				entry.level = v
-				s.touch("archetypes")))
-			var cl := Label.new()
-			cl.text = "for"
-			box.add_child(cl)
-			box.add_child(UI.spin(entry.get("cost", 0), 0, 100000, 1, func(v):
-				entry.cost = v
-				s.touch("archetypes"), " coins"))
-			box.add_child(UI.button("Open", func(): open_record.emit("npc", entry.trainer), "Open the trainer on the NPCs tab"))
-
-
-static func _trained(c: Dictionary, id) -> Dictionary:
-	for t in c.get("trained", []):
-		if t.get("ability") == id:
-			return t
-	return {}
-
-
-func _untrain(c: Dictionary, id) -> void:
-	var t := _trained(c, id)
-	if t.is_empty():
-		return
-	c.trained.erase(t)
-	if c.trained.is_empty():
-		c.erase("trained")
-	s.touch("archetypes")
+		how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		box.add_child(how)
+		if src == "defensive":
+			how.tooltip_text = "A class has one defensive; choosing it here replaces the old one."
+		if src != "trained":
+			continue
+		var entry := DataStore.trained_entry(c, a.id)
+		var tr := UI.hbox(form)
+		var pad := Control.new()
+		pad.custom_minimum_size.x = 24
+		tr.add_child(pad)
+		var who := UI.choice(npcs, entry.get("trainer"), func(v):
+			entry.trainer = v
+			s.touch("archetypes"))
+		who.tooltip_text = "The trainer"
+		tr.add_child(who)
+		var lv := Label.new()
+		lv.text = "from level"
+		tr.add_child(lv)
+		tr.add_child(UI.spin(entry.get("level", 1), 1, 60, 1, func(v):
+			entry.level = int(v)
+			s.touch("archetypes")))
+		var cl := Label.new()
+		cl.text = "for"
+		tr.add_child(cl)
+		tr.add_child(UI.spin(entry.get("cost", 0), 0, 100000, 1, func(v):
+			entry.cost = int(v)
+			s.touch("archetypes"), " coins"))
+		var gate := UI.choice(quests, entry.get("quest"), func(v):
+			if v == null:
+				entry.erase("quest")
+			else:
+				entry.quest = v
+			s.touch("archetypes"))
+		gate.tooltip_text = "Locked at the trainer until this quest is handed in"
+		tr.add_child(gate)
+		tr.add_child(UI.button("Open", func(): open_record.emit("npc", entry.trainer), "Open the trainer on the NPCs tab"))
 
 
 func _skill(a: Dictionary) -> void:

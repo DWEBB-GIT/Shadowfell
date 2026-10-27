@@ -125,6 +125,23 @@ func sell(loc: String) -> bool:
 	return true
 
 
+## Sell every junk-quality item in your bags at once (WoW's "Sell junk").
+func sell_junk() -> int:
+	if current == null or refuses():
+		return 0
+	var total := 0
+	for loc in game.inventory.bag_locations():
+		var stack = game.inventory.get_at(loc)
+		if stack == null or Items.view(stack).get("rarity", "common") != "junk":
+			continue
+		var before: int = game.inventory.coins
+		if sell(loc):
+			total += game.inventory.coins - before
+	if total == 0:
+		game.events.emit("log", {"text": "You have no junk to sell.", "kind": "muted", "throttle": "shop-refuse"})
+	return total
+
+
 func buy_back(index: int) -> bool:
 	var inventory = game.inventory
 	if current == null or index < 0 or index >= buyback.size():

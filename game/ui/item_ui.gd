@@ -33,6 +33,7 @@ var char_tab := "main"
 var slots := {} ## loc -> ISlot for everything on screen (the bar's are added by the HUD)
 var bar_slots := {} ## 'a:<n>' -> ISlot, made once by the HUD
 var tip_from = null ## 'ui' | 'world' | null
+var tip_cursor := false ## this tip follows the mouse (buffs, debuffs, combat type)
 var tip_key = null
 var tip_text := ""
 var preview: CharPreview
@@ -94,7 +95,7 @@ func _build() -> void:
 	character.titles = UI.vbox(character.body, 3)
 	var tabs := UI.hbox(character.body, 4)
 	character.tabs = {}
-	for t in [["main", "Character"], ["rep", "Reputation"], ["titles", "Titles"]]:
+	for t in [["main", "Equipment"], ["titles", "Titles"], ["rep", "Reputation"]]:
 		var id: String = t[0]
 		var b := UI.button(tabs, t[1], func():
 			char_tab = id
@@ -356,6 +357,7 @@ func slot_hover(s: ISlot, on: bool) -> void:
 		return
 	if on:
 		tip_from = "ui"
+		tip_cursor = false
 		_tooltip(s.loc)
 	elif tip_from == "ui":
 		_hide_tip()
@@ -383,10 +385,32 @@ func tip_on(c: Control, text: String, head := "") -> void:
 		if drag != null or text == "":
 			return
 		tip_from = "ui"
+		tip_cursor = false
 		_set_tip([(_name_line(head, "") if head != "" else "") + _esc(text)], [], 0))
 	c.mouse_exited.connect(func():
 		if tip_from == "ui":
 			_hide_tip())
+
+
+## a tooltip shown at the cursor rather than in the corner: buffs and debuffs
+## on frames and nameplates. `text` is a Callable so it reads live values.
+func tip_at_cursor(c: Control, text: Callable) -> void:
+	c.mouse_filter = Control.MOUSE_FILTER_STOP
+	c.mouse_entered.connect(func(): cursor_tip(text.call()))
+	c.mouse_exited.connect(cursor_tip_off)
+
+
+func cursor_tip(t: String) -> void:
+	if drag != null or t == "":
+		return
+	tip_from = "ui"
+	tip_cursor = true
+	_set_tip([t], [], 0)
+
+
+func cursor_tip_off() -> void:
+	if tip_from == "ui":
+		_hide_tip()
 
 
 # ------------------------------------------------------------------ render
@@ -512,9 +536,8 @@ func _render_character(inv) -> void:
 	w.panel.visible = open.character
 	if not open.character:
 		return
-	var ttl = game.titles
 	var who: String = game.character.name if game.character else "Warden"
-	w.title.text = who + (", %s" % ttl.name if ttl.name != "" else "")
+	w.title.text = game.titles.full_name(who)
 	for id in w.tabs:
 		var b: Button = w.tabs[id]
 		b.add_theme_color_override("font_color", UI.GOLD if id == char_tab else UI.TEXT_DIM)
@@ -584,22 +607,35 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Level", "%d %s" % [lvl, arch.name]],
 		["Trait", arch.trait.name, arch.trait.desc] if arch.get("trait") else null,
 		["Health", "%d / %d" % [ceili(p.health), p.max_health], "", "health"],
+	]
+	# the class's resources, as applicable: mana, then its own bar(s)
+	var res = game.resources
+	if res and res.max_mana > 0:
+		rows.append(["Mana", "%d / %d" % [floori(res.mana), roundi(res.max_mana)], "", "mana"])
+	if res:
+		for b in res.bars:
+			rows.append([b.name, "%d / %d" % [floori(res.amount(b.id)), roundi(b.get("max", 0))], b.get("desc", "")])
+	rows += [
 		"gap",
 		["Stamina", U.n(t.stamina), "+%s health per point" % U.n(conf.healthPerStamina), "stamina"],
 		["Strength", U.n(t.strength), "Adds to every swing and weapon ability" if st.power_stat == "strength" else "", "strength"],
 		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d%s" % [1.0 / st.agility_per_crit, lvl, "; adds to every swing and weapon ability" if st.power_stat == "agility" else ""], "agility"],
 		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
-		"gap",
-		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
-		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
-		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
+		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
 		"gap",
-		["Melee hit", "%s / %.1fs" % ["–".join(st.swing_range.map(func(x): return U.n(x))), st.attack_cooldown], "Your hit with %s: its own %s damage, speed %.1f, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), st.weapon_speed, U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+		["Damage", "–".join(st.swing_range.map(func(x): return U.n(x))), "Your hit with %s: its own %s damage, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+		["Attack speed", "%.2fs" % st.attack_cooldown, "Time between swings: weapon speed %.1f, shortened by haste" % st.weapon_speed],
 	]
 	if st.dual_wielding:
-		rows.append(["Off hand", "%s / %.1fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
-	rows.append(["Damage per second", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
+		rows.append(["Off hand", "%s / %.2fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
+	rows.append(["DPS", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
+	rows += [
+		"gap",
+		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
+		["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"],
+		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
+	]
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
 	var col := 0
 	for r in rows:
@@ -765,6 +801,9 @@ func _render_shop(inv) -> void:
 		var cost: int = inv.repair_all_cost
 		var rb := UI.button(foot, "Repair all  %s" % U.money(cost) if cost else "Nothing to repair", func(): game.inventory.repair_all())
 		rb.disabled = cost == 0
+	var junk := _junk_value(inv)
+	var jb := UI.button(foot, "Sell all junk  %s" % U.money(junk) if junk else "No junk", func(): game.merchant.sell_junk())
+	jb.disabled = junk == 0
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -774,6 +813,16 @@ func _render_shop(inv) -> void:
 	UI.set_rich(coins, UI.money(inv.coins))
 	var h := UI.hint(w.body)
 	h.text = "A: buy   Y on a bag item: sell   B: leave" if hud.pad_mode else "Click to buy. Right-click (or drag here) anything in your bags to sell it."
+
+
+## what the junk in your bags would fetch here
+func _junk_value(inv) -> int:
+	var total := 0
+	for loc in inv.bag_locations():
+		var stack = inv.get_at(loc)
+		if stack != null and Items.view(stack).get("rarity", "common") == "junk":
+			total += Items.sell_price(stack, DB.CONFIG.shop.sellFraction) * int(stack.get("count", 1))
+	return total
 
 
 ## Cooking: every recipe you know, coloured by how much it can still teach
@@ -1183,6 +1232,7 @@ func _l(text: String, colour := "", size := 0) -> String:
 func _hide_tip() -> void:
 	tooltip.visible = false
 	tip_from = null
+	tip_cursor = false
 	tip_key = null
 
 
@@ -1223,6 +1273,14 @@ func _place_tip() -> void:
 		return
 	var vp := get_viewport_rect().size
 	var s := UI.fit_steady(tooltip)
+	if tip_cursor:
+		var m := get_viewport().get_mouse_position() + Vector2(16, 18)
+		if m.x + s.x > vp.x - 8:
+			m.x -= s.x + 28
+		if m.y + s.y > vp.y - 8:
+			m.y -= s.y + 30
+		tooltip.position = Vector2(maxf(8, m.x), maxf(8, m.y))
+		return
 	var x := vp.x - s.x - 16
 	var bar_top: float = hud.bottom_top()
 	var y := minf(vp.y, bar_top) - s.y - 10
@@ -1444,6 +1502,7 @@ func world_tip(pick) -> void:
 			_hide_tip()
 		return
 	tip_from = "world"
+	tip_cursor = false
 	var text := ""
 	if pick.kind == "sign":
 		text = _name_line("Signpost", "")
@@ -1737,6 +1796,8 @@ func gamepad(pad, dt: float) -> void:
 
 ## each frame: the paper doll, the corner tooltip, cooking's live state
 func update(dt: float) -> void:
+	if tip_cursor and tooltip.visible:
+		_place_tip()
 	if open.character and char_tab == "main" and preview.is_inside_tree():
 		preview.render()
 	# cooking changes as you walk to a fire or your bags fill: redraw when it does

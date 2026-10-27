@@ -6,8 +6,9 @@ extends Control
 ## pause the game.
 ##
 ## Gamepad: in the dialogue window up and down pick a choice, A takes it and
-## B goes back. In the quest log up and down pick a quest, X tracks or
-## untracks it, Y abandons it (press twice), and B closes.
+## B goes back. In the quest log up and down pick a quest, A follows it
+## (the minimap shows the way), X tracks or untracks it, Y abandons it
+## (press twice), and B closes.
 
 const MARK := {"ready": "?", "available": "!", "active": "?"}
 ## each kind of choice has its own badge, so speech, buying and training read
@@ -34,6 +35,19 @@ var trainer: Dictionary
 var quest_log: Dictionary
 var tracker: PanelContainer
 var tracker_box: VBoxContainer
+var tracker_collapsed := false
+var _way: RichTextLabel ## the way to the followed quest, under it in the tracker
+var _way_text := ""
+var _way_t := 0.0
+var log_list_scroll: ScrollContainer
+var log_list: VBoxContainer
+var log_detail_scroll: ScrollContainer
+var log_detail: VBoxContainer
+var log_actions: HBoxContainer
+var log_hint: Label
+const LOG_W := 860.0
+const LOG_LIST_W := 280.0
+const LOG_H := 440.0
 var marks_layer: Control
 
 
@@ -57,8 +71,9 @@ func _init(g, h) -> void:
 	trainer = UI.window(self, "", 360, func(): game.dialogue.close())
 	_with_subtitle(trainer)
 	trainer.sub.text = "Trainer"
-	quest_log = UI.window(self, "Quest log", 600, func(): toggle_log(false))
+	quest_log = UI.window(self, "Quest log", LOG_W, func(): toggle_log(false))
 	_with_subtitle(quest_log)
+	_build_log()
 	for w in [dialogue, trainer, quest_log]:
 		w.panel.visible = false
 
@@ -97,7 +112,8 @@ func toggle_log(on = null) -> void:
 	confirm_abandon = null
 	var act: Array = game.quests.active
 	if log_open and (selected == null or not act.has(selected)):
-		selected = act[0] if not act.is_empty() else null
+		var order := _ordered()
+		selected = order[0] if not order.is_empty() else null
 	render_log()
 
 
@@ -119,8 +135,8 @@ func abandon() -> void:
 		render_log()
 		return
 	game.quests.abandon(id)
-	var act: Array = game.quests.active
-	selected = act[0] if not act.is_empty() else null
+	var order := _ordered()
+	selected = order[0] if not order.is_empty() else null
 	confirm_abandon = null
 	render_log()
 
@@ -299,6 +315,68 @@ func _render_trainer(page: Dictionary) -> void:
 
 
 # --------------------------------------------------------- quest log
+## The quests in hand in the order the log lists them: grouped by zone
+## (the easiest zone first, dungeons last), easiest first within a group.
+## [{ name, dungeon, ids }]
+func groups() -> Array:
+	var by := {}
+	for id in game.quests.active:
+		var z := Quests.zone(id)
+		var key := ("d:" if z.dungeon else "z:") + z.name
+		if not by.has(key):
+			by[key] = {"name": z.name, "dungeon": z.dungeon, "ids": []}
+		by[key].ids.append(id)
+	var out: Array = by.values()
+	for g in out:
+		g.ids.sort_custom(func(a, b): return Quests.levels(a).x < Quests.levels(b).x)
+		g.low = Quests.levels(g.ids[0]).x
+	out.sort_custom(func(a, b): return a.low < b.low if a.dungeon == b.dungeon else b.dungeon)
+	return out
+
+
+func _ordered() -> Array:
+	var out := []
+	for g in groups():
+		out.append_array(g.ids)
+	return out
+
+
+## "Lv 3" or "Lv 3–5"
+static func level_text(v: Vector2i) -> String:
+	return "Lv %d" % v.x if v.x == v.y else "Lv %d–%d" % [v.x, v.y]
+
+
+func _level_colour(v: Vector2i) -> Color:
+	return Quests.level_colour(v.y, game.progression.level)
+
+
+func _build_log() -> void:
+	var cols := UI.hbox(quest_log.body, 12)
+	log_list_scroll = ScrollContainer.new()
+	log_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	log_list_scroll.custom_minimum_size = Vector2(LOG_LIST_W + 14, LOG_H)
+	cols.add_child(log_list_scroll)
+	log_list = UI.vbox(log_list_scroll, 1)
+	log_list.custom_minimum_size = Vector2(LOG_LIST_W, 0)
+	var sep := ColorRect.new()
+	sep.color = UI.BORDER_DIM
+	sep.custom_minimum_size = Vector2(1, 0)
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cols.add_child(sep)
+	var right := UI.vbox(cols, 8)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	log_detail_scroll = ScrollContainer.new()
+	log_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	log_detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	log_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	log_detail_scroll.custom_minimum_size = Vector2(0, LOG_H - 40)
+	right.add_child(log_detail_scroll)
+	log_detail = UI.vbox(log_detail_scroll, 6)
+	log_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	log_actions = UI.hbox(right, 8)
+	log_hint = UI.hint(quest_log.body)
+
+
 func render_log() -> void:
 	var w := quest_log
 	w.panel.visible = log_open
@@ -307,98 +385,202 @@ func render_log() -> void:
 	var ql = game.quests
 	var act: Array = ql.active
 	w.sub.text = "%d in hand · %d done" % [act.size(), ql.done.size()]
-	UI.clear(w.body)
-	var cols := UI.hbox(w.body, 12)
-	cols.custom_minimum_size = Vector2(0, 240)
-	var list := UI.vbox(cols, 2)
-	list.custom_minimum_size = Vector2(202, 0)
+	var vp := get_viewport_rect().size
+	var win_w := minf(LOG_W, vp.x - 24)
+	var h := clampf(vp.y - 230, 200, LOG_H)
+	log_list_scroll.custom_minimum_size.y = h
+	log_detail_scroll.custom_minimum_size.y = h - 40
+	var detail_w := win_w - 24 - LOG_LIST_W - 14 - 25 - 16
+	# the list, by zone
+	UI.clear(log_list)
+	var chosen_button: Control = null
 	if act.is_empty():
-		var r := UI.rich(list, 12, 200)
-		UI.set_rich(r, "[color=#9a8f78]No quests in hand. Look for a [color=#ffd23c]![/color] over someone's head.[/color]")
-	for id in act:
-		var s: String = ql.status(id)
-		var b := Button.new()
-		b.focus_mode = Control.FOCUS_NONE
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.text = ("◆ " if ql.tracked.has(id) else "    ") + DB.quests[id].name + ("  (Complete)" if s == "ready" else "")
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.custom_minimum_size = Vector2(202, 0)
-		b.add_theme_font_size_override("font_size", 13)
-		var sel: bool = id == selected
-		b.add_theme_stylebox_override("normal", UI.box(Color(201 / 255.0, 164 / 255.0, 92 / 255.0, 0.16) if sel else Color(0, 0, 0, 0), UI.BORDER_DIM if sel else Color(0, 0, 0, 0), 0, 1, Vector4(6, 4, 6, 4)))
-		b.add_theme_stylebox_override("hover", UI.box(Color(201 / 255.0, 164 / 255.0, 92 / 255.0, 0.08), UI.BORDER_DIM if sel else Color(0, 0, 0, 0), 0, 1, Vector4(6, 4, 6, 4)))
-		b.add_theme_color_override("font_color", Color("ffd23c") if s == "ready" else UI.TEXT)
-		var qid: String = id
-		b.pressed.connect(func(): select(qid))
-		list.add_child(b)
-	var sep := ColorRect.new()
-	sep.color = UI.BORDER_DIM
-	sep.custom_minimum_size = Vector2(1, 0)
-	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cols.add_child(sep)
-	var detail := UI.vbox(cols, 4)
-	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.set_rich(UI.rich(log_list, 12, LOG_LIST_W), "[color=#9a8f78]No quests in hand. Look for a [color=#ffd23c]![/color] over someone's head.[/color]")
+	for g in groups():
+		var head := UI.label(log_list, ("DUNGEON · " if g.dungeon else "") + g.name.to_upper(), 11, Color("d98a5a") if g.dungeon else UI.GOLD)
+		head.add_theme_font_override("font", UI.bold)
+		if log_list.get_child_count() > 1:
+			head.custom_minimum_size.y = 26
+			head.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		for id in g.ids:
+			var b := _log_entry(id)
+			log_list.add_child(b)
+			if id == selected:
+				chosen_button = b
+	# the details
+	UI.clear(log_detail)
+	UI.clear(log_actions)
 	var id = selected
 	if id == null or not act.has(id):
+		var text := ""
 		if not ql.done.is_empty():
-			var text := _sub("Completed")
+			text = _sub("Completed")
 			for d in ql.done:
 				text += "[font_size=12][color=#9a8f78]%s[/color][/font_size]\n" % UI.esc(DB.quests[d].name)
-			UI.set_rich(UI.rich(detail, 13), text)
+		UI.set_rich(UI.rich(log_detail, 13, detail_w), text)
 	else:
-		var q: Dictionary = DB.quests[id]
-		var s: String = ql.status(id)
-		var turn_in: String = DB.npcs[q.turnIn].name
-		var text := "[font_size=15][color=#c9a45c]%s[/color][/font_size]\n%s\n" % [UI.esc(q.name), UI.esc(q.get("summary", ""))]
-		text += _sub("Objectives") + _objectives(ql.objectives(id))
-		text += "[font_size=12][color=#ffd23c]Return to %s.[/color][/font_size]\n" % UI.esc(turn_in) if s == "ready" else "[font_size=12][color=#9a8f78]Hand in to %s.[/color][/font_size]\n" % UI.esc(turn_in)
-		text += _rewards(q.get("reward", {}))
-		UI.set_rich(UI.rich(detail, 13), text)
-		var acts := UI.hbox(detail, 8)
-		var qid: String = id
-		UI.button(acts, "Untrack" if ql.tracked.has(id) else "Track", func(): game.quests.set_tracked(qid, not game.quests.tracked.has(qid)))
-		if not q.get("autoAccept"):
-			var ab := UI.button(acts, "Really abandon?" if confirm_abandon == id else "Abandon", abandon)
-			if confirm_abandon == id:
-				ab.add_theme_color_override("font_color", Color("ff9070"))
-				ab.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), Color("a05040"), 0, 1, Vector4(8, 2, 8, 2)))
-	UI.hint(w.body).text = "Up/down: choose   X: track (up to %d)   Y: abandon   B: close" % Quests.MAX_TRACKED if hud.pad_mode else "Tracked quests (up to %d) show under the map. L or Esc closes." % Quests.MAX_TRACKED
+		UI.set_rich(UI.rich(log_detail, 13, detail_w), _details(id))
+		_log_buttons(id)
+	log_hint.text = "Up/down: choose   A: show the way   X: track (up to %d)   Y: abandon   B: close" % Quests.MAX_TRACKED if hud.pad_mode else "Tracked quests (up to %d) show under the map; click one there to be shown the way. L or Esc closes." % Quests.MAX_TRACKED
 	layout()
+	if chosen_button != null:
+		log_list_scroll.ensure_control_visible.call_deferred(chosen_button)
+
+
+func _log_entry(id: String) -> Button:
+	var ql = game.quests
+	var s: String = ql.status(id)
+	var lv := Quests.levels(id)
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text = "%s[%s]  %s%s" % ["◆ " if ql.focus == id else ("• " if ql.tracked.has(id) else "   "), level_text(lv).substr(3), DB.quests[id].name, "  (Complete)" if s == "ready" else ""]
+	b.tooltip_text = "%s · %s" % [level_text(lv), "ready to hand in" if s == "ready" else "in progress"]
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.custom_minimum_size = Vector2(LOG_LIST_W, 0)
+	b.add_theme_font_size_override("font_size", 13)
+	var sel: bool = id == selected
+	b.add_theme_stylebox_override("normal", UI.box(Color(201 / 255.0, 164 / 255.0, 92 / 255.0, 0.16) if sel else Color(0, 0, 0, 0), UI.BORDER_DIM if sel else Color(0, 0, 0, 0), 0, 1, Vector4(6, 3, 6, 3)))
+	b.add_theme_stylebox_override("hover", UI.box(Color(201 / 255.0, 164 / 255.0, 92 / 255.0, 0.08), UI.BORDER_DIM if sel else Color(0, 0, 0, 0), 0, 1, Vector4(6, 3, 6, 3)))
+	b.add_theme_stylebox_override("pressed", b.get_theme_stylebox("hover"))
+	# coloured by how hard it is for you, as WoW does
+	var c := _level_colour(lv)
+	for k in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(k, c)
+	b.pressed.connect(func(): select(id))
+	return b
+
+
+## Title, level and zone, the story, what to do, where to hand it in, and
+## the rewards.
+func _details(id: String) -> String:
+	var ql = game.quests
+	var q: Dictionary = DB.quests[id]
+	var s: String = ql.status(id)
+	var lv := Quests.levels(id)
+	var z := Quests.zone(id)
+	var danger := lv.y - game.progression.level
+	var note := "  [color=#ff4a3a](dangerous at your level)[/color]" if danger >= 5 else ("  [color=#ff9a40](hard at your level)[/color]" if danger >= 3 else "")
+	var text := "[font_size=18][color=#e6b85e]%s[/color][/font_size]\n" % UI.esc(q.name)
+	text += "[font_size=12][color=%s]%s[/color]  [color=#9a8f78]·  %s%s[/color]%s[/font_size]\n\n" % [UI.hex(_level_colour(lv)), level_text(lv).replace("Lv", "Level"), "Dungeon: " if z.dungeon else "", UI.esc(z.name), note]
+	text += _sub("Description") + "[color=#d8ccb0]%s[/color]\n\n" % UI.esc(q.get("offer", q.get("summary", "")))
+	text += _sub("Summary")
+	if q.get("summary") and q.get("offer"):
+		text += "[font_size=12][color=#b0a386]%s[/color][/font_size]\n" % UI.esc(q.summary)
+	text += _objectives(ql.objectives(id))
+	var where := Quests.hand_in(id)
+	text += "[font_size=12][color=#ffd23c]Complete: return to %s.[/color][/font_size]\n\n" % UI.esc(where) if s == "ready" else "[font_size=12][color=#9a8f78]Hand in to %s.[/color][/font_size]\n\n" % UI.esc(where)
+	text += _rewards(q.get("reward", {}))
+	return text
+
+
+func _log_buttons(id: String) -> void:
+	var ql = game.quests
+	var q: Dictionary = DB.quests[id]
+	UI.button(log_actions, "Untrack" if ql.tracked.has(id) else "Track", func(): game.quests.set_tracked(id, not game.quests.tracked.has(id)), 13)
+	UI.button(log_actions, "Stop following" if ql.focus == id else "Show the way", func(): game.quests.set_focus("" if game.quests.focus == id else id), 13)
+	if not q.get("autoAccept"):
+		var ab := UI.button(log_actions, "Really abandon?" if confirm_abandon == id else "Abandon", abandon, 13)
+		if confirm_abandon == id:
+			ab.add_theme_color_override("font_color", Color("ff9070"))
+			ab.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), Color("a05040"), 0, 1, Vector4(8, 2, 8, 2)))
 
 
 # ---------------------------------------------------- tracked quests
+## The objectives under the minimap. The header folds it away; clicking a
+## quest follows it (the minimap points the way to its next step) and a
+## right click opens it in the quest log.
 func render_tracker() -> void:
 	var ql = game.quests
 	UI.clear(tracker_box)
+	_way = null
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
 	tracker.visible = not ids.is_empty()
-	var first := true
+	var head := UI.hbox(tracker_box, 6)
+	var title := UI.label(head, "QUESTS  (%d)" % ids.size(), 11, UI.GOLD)
+	title.add_theme_font_override("font", UI.bold)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var fold := UI.button(head, "+" if tracker_collapsed else "−", _fold_tracker, 13)
+	fold.tooltip_text = "Show the objectives" if tracker_collapsed else "Hide the objectives"
+	fold.custom_minimum_size = Vector2(20, 18)
+	title.mouse_filter = Control.MOUSE_FILTER_STOP
+	title.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	title.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			_fold_tracker())
+	if tracker_collapsed:
+		tracker.size = tracker.get_combined_minimum_size()
+		return
 	for id in ids:
-		if not first:
-			UI.rule(tracker_box)
-		first = false
+		UI.rule(tracker_box)
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
-		var text := "[font_size=13][color=#c9a45c]%s[/color][/font_size]%s\n" % [UI.esc(q.name), " [font_size=10][color=#ffd23c]COMPLETE[/color][/font_size]" if s == "ready" else ""]
+		var focused: bool = ql.focus == id
+		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#c9a45c", "◆ " if focused else "", UI.esc(q.name), " [font_size=10][color=#ffd23c]COMPLETE[/color][/font_size]" if s == "ready" else ""]
 		if s == "ready":
-			text += "[font_size=12][color=#ffd23c]    Return to %s[/color][/font_size]" % UI.esc(DB.npcs[q.turnIn].name)
+			text += "[font_size=12][color=#ffd23c]    Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
 			text += _objectives(ql.objectives(id))
 		var r := UI.rich(tracker_box, 13, 240)
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		r.tooltip_text = "Click: show the way · Right click: open in the quest log"
 		UI.set_rich(r, text)
-		# tracked quests open in the log when clicked, as in WoW
-		var qid: String = id
 		r.gui_input.connect(func(e):
-			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-				selected = qid
+			if not (e is InputEventMouseButton and e.pressed):
+				return
+			if e.button_index == MOUSE_BUTTON_LEFT:
+				game.quests.set_focus("" if game.quests.focus == id else id)
+			elif e.button_index == MOUSE_BUTTON_RIGHT:
+				selected = id
 				toggle_log(true))
+		if focused:
+			_way = UI.rich(tracker_box, 12, 240)
+			_way.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_way_text = ""
+			_update_way()
 	tracker.size = tracker.get_combined_minimum_size()
+
+
+func _fold_tracker() -> void:
+	tracker_collapsed = not tracker_collapsed
+	render_tracker()
+
+
+const COMPASS := ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
+
+
+## "→ Hallow Cut · 140 m north-east" under the followed quest
+func _update_way() -> void:
+	if _way == null or not is_instance_valid(_way) or game.player == null:
+		return
+	var at: Dictionary = game.quests.goal(game.quests.focus) if game.quests.focus != "" else {}
+	var text := ""
+	if at.is_empty():
+		text = "[color=#9a8f78]    No place to point to.[/color]"
+	else:
+		var p: Vector3 = game.player.position
+		var dx: float = at.x - p.x
+		var dz: float = at.z - p.z
+		var d := maxf(0, U.hyp(dx, dz) - at.r)
+		if d < 4:
+			text = "[color=#fff0a0]    ➜ %s · here[/color]" % UI.esc(at.label)
+		else:
+			# north is up the map, which is -z
+			var i := posmod(roundi(atan2(dx, -dz) / (TAU / 8)), 8)
+			text = "[color=#fff0a0]    ➜ %s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+	if text != _way_text:
+		_way_text = text
+		UI.set_rich(_way, "[font_size=12]%s[/font_size]" % text)
+		tracker.size = tracker.get_combined_minimum_size()
 
 
 # ------------------------------------------------- ! and ? over heads
 func update_marks() -> void:
+	_way_t += get_process_delta_time()
+	if _way_t >= 0.25:
+		_way_t = 0.0
+		_update_way()
 	var cam: Camera3D = game.camera
 	var vp := get_viewport_rect().size
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.6) * 0.5 + 0.5
@@ -434,10 +616,10 @@ func layout() -> void:
 			w.panel.position = Vector2(12, 136)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
-		p.custom_minimum_size.x = minf(600, vp.x - 24)
+		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)
 		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
-	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 204)
+	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 214)
 
 
 # --------------------------------------------------------- gamepad
@@ -461,11 +643,13 @@ func gamepad(pad, dt: float) -> bool:
 			dlg.back()
 		return true
 	if log_open:
-		var list: Array = game.quests.active
+		var list: Array = _ordered()
 		var dir: String = pad.nav_direction(dt)
 		if (dir == "up" or dir == "down") and not list.is_empty():
 			var i := list.find(selected)
 			select(list[(i + (list.size() - 1 if dir == "up" else 1)) % list.size()])
+		if pad.pressed(B.A) and selected != null:
+			game.quests.set_focus("" if game.quests.focus == selected else selected)
 		if pad.pressed(B.X) and selected != null:
 			game.quests.set_tracked(selected, not game.quests.tracked.has(selected))
 		if pad.pressed(B.Y):
