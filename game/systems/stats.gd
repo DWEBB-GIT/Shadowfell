@@ -80,7 +80,7 @@ var ranged_power: float:
 
 var spell_power: float:
 	get:
-		return totals.intellect * S().spellPowerPerIntellect
+		return totals.intellect * S().spellPowerPerIntellect + totals.get("spellPower", 0)
 
 var crit_chance: float:
 	get:

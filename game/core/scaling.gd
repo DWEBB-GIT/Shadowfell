@@ -22,7 +22,7 @@ const S := {
 	"armourFactors": {"cloth": 3, "leather": 6, "mail": 9, "plate": 12},
 	"shieldArmour": 20,
 	"shieldBlock": 10,
-	"weaponDps": 0.23,
+	"weaponDps": 0.4,
 	## each weapon type's share of weaponDps and its spread either side
 	## (Dan, 2026-10-23: at level 1 a dagger 1-2, a sword 1-4, a two-hander
 	## 3-5 at 2.9 s, a bow 2-5 at 2.5 s); a weapon with no type is a sword
@@ -32,6 +32,9 @@ const S := {
 		"twoHand": {"dps": 1.2, "spread": 0.25},
 		"bow": {"dps": 1.2, "spread": 0.43},
 	},
+	## a caster's weapon (`caster: true`) also gives spell power, this much
+	## a point of growth (Dan, 2026-10-27: caster weapons must matter too)
+	"casterSpellPower": 0.6,
 	"rarity": {
 		"junk": {"budget": 0.0, "main": 1.0},
 		"common": {"budget": 0.0, "main": 1.0},
@@ -46,8 +49,12 @@ const S := {
 	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0},
 	"budgetTolerance": 0.1,
 	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 13, "staminaPerLevel": 3},
-	"enemyHealthSeconds": 11.5,
-	"enemyHitShare": 50,
+	## an even-level enemy lasts this long against par damage, and each of its
+	## blows takes 1/enemyHitShare of par health (Dan, 2026-10-27: the world
+	## must feel dangerous; a lone even-level mob costs about 40% of your
+	## health, as in WoW Classic once past the first levels)
+	"enemyHealthSeconds": 14,
+	"enemyHitShare": 20,
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
 		"fodder": {"health": 0.5, "hit": 0.5, "interval": 1.35, "armour": "none"},
@@ -122,6 +129,8 @@ static func item_main(d: Dictionary) -> Dictionary:
 		var wt: Dictionary = S.weaponTypes.get(d.get("weaponType", "sword"), S.weaponTypes.sword)
 		var swing: float = S.weaponDps * n * main * d.speed * wt.dps
 		damage = [maxi(1, U.jround(swing * (1 - wt.spread))), maxi(1, U.jround(swing * (1 + wt.spread)))]
+		if d.get("caster", false):
+			stats["spellPower"] = U.jround(S.casterSpellPower * n * main)
 	return {"stats": stats, "damage": damage}
 
 

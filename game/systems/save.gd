@@ -77,6 +77,59 @@ static func migrate_save(data):
 	return out
 
 
+## Fit a save made before bags and stacks shrank (2026-10-27): an
+## oversized stack splits into free slots of its bag; a bag that is now
+## smaller packs its things to the front. Nothing is lost: what no longer
+## fits stays in extra backpack slots, which go once they are emptied.
+static func fit_bags(data):
+	if typeof(data) != TYPE_DICTIONARY or typeof(data.get("inventory")) != TYPE_DICTIONARY:
+		return data
+	var sk = data.inventory.get("sockets")
+	if typeof(sk) != TYPE_ARRAY or sk.is_empty() or typeof(sk[0]) != TYPE_DICTIONARY or typeof(sk[0].get("slots")) != TYPE_ARRAY:
+		return data
+	var overflow := []
+	for i in sk.size():
+		var s = sk[i]
+		if typeof(s) != TYPE_DICTIONARY or typeof(s.get("slots")) != TYPE_ARRAY:
+			continue
+		var def = DB.items.get(s.get("id", ""), {})
+		var size: int = Items.BACKPACK_SLOTS if i == 0 else int(def.get("bagSlots", s.slots.size()))
+		var stacks := []
+		for x in s.slots:
+			if typeof(x) != TYPE_DICTIONARY or not DB.items.has(x.get("id", "")) or not _is_int(x.get("count")):
+				if x != null:
+					stacks.append(x)
+				continue
+			var cap := int(DB.items[x.id].get("stack", 1))
+			var left := int(x.count)
+			while left > cap:
+				var part: Dictionary = x.duplicate()
+				part.count = cap
+				stacks.append(part)
+				left -= cap
+			var rest: Dictionary = x.duplicate()
+			rest.count = left
+			stacks.append(rest)
+		if stacks.size() <= s.slots.size() and s.slots.size() == size and stacks.size() == s.slots.filter(func(x): return x != null).size():
+			continue # unchanged
+		var slots := []
+		slots.resize(size)
+		for k in stacks.size():
+			if k < size:
+				slots[k] = stacks[k]
+			else:
+				overflow.append(stacks[k])
+		s.slots = slots
+	var back: Array = sk[0].slots
+	for x in overflow:
+		var free := back.find(null)
+		if free >= 0:
+			back[free] = x
+		else:
+			back.append(x)
+	return data
+
+
 static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 	check.call(_is_int(inv.get("coins")) and inv.coins >= 0, "coins")
 	var sk = inv.get("sockets")
@@ -86,7 +139,7 @@ static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 		for i in sk.size():
 			var s = sk[i]
 			if i == 0:
-				check.call(typeof(s) == TYPE_DICTIONARY and s.get("id") == "backpack" and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == Items.BACKPACK_SLOTS, "backpack")
+				check.call(typeof(s) == TYPE_DICTIONARY and s.get("id") == "backpack" and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() >= Items.BACKPACK_SLOTS, "backpack")
 			elif s != null:
 				var def = DB.items.get(s.get("id", "")) if typeof(s) == TYPE_DICTIONARY else null
 				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
@@ -236,7 +289,7 @@ func read(k = null) -> Dictionary:
 	var data = JSON.parse_string(text)
 	if data == null:
 		return {"status": "invalid", "errors": ["not valid JSON"], "raw": text}
-	data = migrate_save(data)
+	data = fit_bags(migrate_save(data))
 	var errors := validate_save(data)
 	if not errors.is_empty():
 		return {"status": "invalid", "errors": errors, "raw": text}

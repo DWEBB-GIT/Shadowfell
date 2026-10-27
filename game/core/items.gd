@@ -4,7 +4,7 @@ extends RefCounted
 ## and loot table rolls. A port of src/data/items.js; the field list of an
 ## item record is documented there.
 
-const BACKPACK_SLOTS := 16
+const BACKPACK_SLOTS := 8
 const BAG_SOCKETS := 4 ## socket 0 is the backpack and cannot be removed
 const TOOL_SOCKET := 4 ## one more socket after the bags, for the tool pack
 

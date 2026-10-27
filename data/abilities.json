@@ -16,7 +16,7 @@
         "coneDegrees": 180,
         "windup": 0.32,
         "swingAnimation": 0.8,
-        "abilityWeaponSeconds": 0.6,
+        "abilityWeaponSeconds": 2.4,
         "turnRate": 6,
         "catchUp": 0.25,
         "readyWindup": 0.12,

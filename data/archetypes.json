@@ -221,7 +221,7 @@
       "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
       "bar": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
       "startingGear": {
-        "mainHand": "rusty_dirk",
+        "mainHand": "ritual_knife",
         "chest": "frayed_robe"
       }
     },

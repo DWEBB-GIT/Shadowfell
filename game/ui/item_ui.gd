@@ -15,7 +15,7 @@ extends Control
 ##
 ## Every action is a request to the Inventory, which decides what is allowed.
 
-const STAT_LABEL := {"stamina": "Stamina", "strength": "Strength", "agility": "Agility", "intellect": "Intellect", "armour": "armour", "resistance": "resistance", "block": "% block chance", "haste": "% haste"}
+const STAT_LABEL := {"stamina": "Stamina", "strength": "Strength", "agility": "Agility", "intellect": "Intellect", "armour": "armour", "resistance": "resistance", "block": "% block chance", "haste": "% haste", "spellPower": "spell power"}
 const KIND_LABEL := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "bag": "Bag", "ammo": "Arrows", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key", "gem": "Gem"}
 const RECIPE_COLOUR := {"orange": Color("ff8040"), "yellow": Color("ffe040"), "green": Color("40c040"), "grey": Color("909090"), "red": Color("c03030")}
 const REP_COLOUR := {"hostile": Color("8a3a2a"), "neutral": Color("8a7a3a")}
@@ -635,6 +635,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		"gap",
 		["Damage", "–".join(st.swing_range.map(func(x): return U.n(x))), "Your hit with %s: its own %s damage, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
 		["Attack speed", "%.2fs" % st.attack_cooldown, "Time between swings: weapon speed %.1f, shortened by haste" % st.weapon_speed],
+		["Spell power", U.n(st.spell_power), "Added to your spells: from Intellect, and from a caster's weapon"],
 	]
 	if st.dual_wielding:
 		rows.append(["Off hand", "%s / %.2fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
