@@ -272,6 +272,17 @@ func try_cast(id: String) -> bool:
 		return false
 	var spell: Dictionary = tuned(id)
 	var t: Dictionary = spell.tuning
+	if spell.kind == "stealth" and hidden:
+		# casting Shadow again steps out of it
+		break_shadow()
+		shadow_grace = 0.0
+		game.events.emit("log", {"text": "You step out of Shadow.", "kind": "muted"})
+		return true
+	# Shadow is not a vanish: it cannot be entered mid-fight unless the
+	# spell says so ("inCombat": true in its tuning)
+	if spell.kind == "stealth" and (game.resources.in_combat or game.targeting.attacking) and not t.get("inCombat", false):
+		game.hud.error("You can't hide while in combat")
+		return false
 	var off_gcd: bool = t.get("offGlobalCooldown", false)
 	# WoW's spell queue: pressed in the last moments of the global cooldown
 	# (or its own), it goes off the instant it can, with no error.
@@ -293,8 +304,6 @@ func try_cast(id: String) -> bool:
 	var casts: bool = spell.kind == "cast" or spell.kind == "camp" or spell.kind == "portal" or spell.kind == "channel"
 	if casts and player.moving:
 		game.hud.error("You can't do that while moving")
-		return false
-	if spell.kind == "stealth" and hidden:
 		return false
 	var missing := missing_gear(game, spell)
 	if missing != "":

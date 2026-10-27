@@ -89,6 +89,12 @@ var name: String:
 		return DB.titles[chosen].name if chosen else ""
 
 
+## the player's name as others see it: "Name, Title" when a title is chosen
+func full_name(who: String) -> String:
+	var t: String = DB.titles[chosen].name if chosen and DB.titles.has(chosen) else ""
+	return who + (", " + t if t != "" else "")
+
+
 func choose(id) -> bool:
 	if id and not available(id):
 		return false
