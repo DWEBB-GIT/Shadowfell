@@ -94,7 +94,7 @@ func _build() -> void:
 	character.titles = UI.vbox(character.body, 3)
 	var tabs := UI.hbox(character.body, 4)
 	character.tabs = {}
-	for t in [["main", "Character"], ["rep", "Reputation"], ["titles", "Titles"]]:
+	for t in [["main", "Equipment"], ["titles", "Titles"], ["rep", "Reputation"]]:
 		var id: String = t[0]
 		var b := UI.button(tabs, t[1], func():
 			char_tab = id
@@ -584,22 +584,35 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Level", "%d %s" % [lvl, arch.name]],
 		["Trait", arch.trait.name, arch.trait.desc] if arch.get("trait") else null,
 		["Health", "%d / %d" % [ceili(p.health), p.max_health], "", "health"],
+	]
+	# the class's resources, as applicable: mana, then its own bar(s)
+	var res = game.resources
+	if res and res.max_mana > 0:
+		rows.append(["Mana", "%d / %d" % [floori(res.mana), roundi(res.max_mana)], "", "mana"])
+	if res:
+		for b in res.bars:
+			rows.append([b.name, "%d / %d" % [floori(res.amount(b.id)), roundi(b.get("max", 0))], b.get("desc", "")])
+	rows += [
 		"gap",
 		["Stamina", U.n(t.stamina), "+%s health per point" % U.n(conf.healthPerStamina), "stamina"],
 		["Strength", U.n(t.strength), "Adds to every swing and weapon ability" if st.power_stat == "strength" else "", "strength"],
 		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d%s" % [1.0 / st.agility_per_crit, lvl, "; adds to every swing and weapon ability" if st.power_stat == "agility" else ""], "agility"],
 		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
-		"gap",
-		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
-		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
-		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
+		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
 		"gap",
-		["Melee hit", "%s / %.1fs" % ["–".join(st.swing_range.map(func(x): return U.n(x))), st.attack_cooldown], "Your hit with %s: its own %s damage, speed %.1f, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), st.weapon_speed, U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+		["Damage", "–".join(st.swing_range.map(func(x): return U.n(x))), "Your hit with %s: its own %s damage, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+		["Attack speed", "%.2fs" % st.attack_cooldown, "Time between swings: weapon speed %.1f, shortened by haste" % st.weapon_speed],
 	]
 	if st.dual_wielding:
-		rows.append(["Off hand", "%s / %.1fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
-	rows.append(["Damage per second", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
+		rows.append(["Off hand", "%s / %.2fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
+	rows.append(["DPS", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
+	rows += [
+		"gap",
+		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
+		["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"],
+		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
+	]
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
 	var col := 0
 	for r in rows:
