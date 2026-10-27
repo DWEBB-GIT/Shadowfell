@@ -55,6 +55,8 @@ const EXTRAS := {
 	"bait": ["Bait (fishing skill bonus)", "float", ["consumable", "material"]],
 	"skinningKnife": ["Skinning knife", "bool", ["tool"]],
 	"skinningSkill": ["Skinning skill bonus", "float", ["tool"]],
+	"miningPick": ["Mining pick", "bool", ["tool"]],
+	"sockets": ["Sockets (gem slots)", "int", ["weapon", "armor", "shield", "jewellery"]],
 }
 
 ## Spells the generic spell engine runs (schema.js SPELL_KINDS): what each
@@ -77,6 +79,7 @@ const SPELL_KINDS := {
 	"purge": {"enemy": false, "tuning": ["healPerPoint", "extend"], "about": "Spends all of a bar (spendsAll) to heal."},
 	"channel": {"enemy": true, "tuning": ["castTime", "tickInterval", "damageMin", "damageMax", "healPercent"], "about": "Drains an enemy while you hold still."},
 	"shield": {"enemy": false, "tuning": ["duration", "absorbPercent"], "about": "A shield that soaks damage."},
+	"portal": {"enemy": false, "tuning": ["castTime", "cooldown"], "about": "A long cast that takes you to your camp or your home inn (Return Home). Not while fighting."},
 	"camp": {"enemy": false, "tuning": ["castTime"], "about": "Set Camp."},
 }
 const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire"]
@@ -117,7 +120,7 @@ signal changed
 func load_all() -> void:
 	files.clear()
 	dirty.clear()
-	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs", "shops", "dialogue", "factions", "text", "skills", "abilities", "archetypes", "recipes"]:
+	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs", "shops", "dialogue", "factions", "text", "skills", "abilities", "archetypes", "recipes", "builds"]:
 		files[f] = IO.load_file(_path(f))
 		if files[f] == null:
 			files[f] = {}
@@ -355,6 +358,89 @@ func ability_choices(filter := Callable()) -> Array:
 
 
 ## [{class, entry}] for every class spell a trainer teaches
+## How a class gets a spell: "defensive" (its Space slot), "bar" (on the
+## starting bar), "book" (in the spellbook from the start), "trained" (a
+## trainer teaches it, archetypes.json `trained`) or "" (not the class's).
+const SPELL_SOURCES := [["bar", "Knows it from the start, on the starting bar"], ["book", "Knows it from the start, in the spellbook"], ["defensive", "Knows it from the start, as the defensive (Space)"], ["trained", "A trainer teaches it"]]
+
+
+static func trained_entry(c: Dictionary, id) -> Dictionary:
+	for t in c.get("trained", []):
+		if t.get("ability") == id:
+			return t
+	return {}
+
+
+static func spell_source(c: Dictionary, id) -> String:
+	if not c.get("abilities", []).has(id):
+		return ""
+	if c.get("defensive") == id:
+		return "defensive"
+	if not trained_entry(c, id).is_empty():
+		return "trained"
+	return "bar" if c.get("bar", []).has(id) else "book"
+
+
+## Move a spell to another source for a class (see SPELL_SOURCES); a new
+## trainer entry starts at level 2 for 10 coins, taught by `trainer`.
+func set_spell_source(c: Dictionary, id: String, to: String, trainer = null) -> Dictionary:
+	var from := spell_source(c, id)
+	if from == to and to != "trained":
+		return trained_entry(c, id)
+	var t := trained_entry(c, id)
+	if not t.is_empty() and to != "trained":
+		c.trained.erase(t)
+		t = {}
+	if c.has("trained") and c.trained.is_empty():
+		c.erase("trained")
+	if to != "bar" and to != "defensive":
+		c.get("bar", []).erase(id)
+	if c.get("defensive") == id and to != "defensive":
+		c.erase("defensive")
+	match to:
+		"":
+			c.get("abilities", []).erase(id)
+		"bar", "defensive":
+			if not c.has("bar"):
+				c.bar = []
+			if not c.bar.has(id):
+				c.bar.append(id)
+			if to == "defensive":
+				c.defensive = id
+		"trained":
+			if t.is_empty():
+				if not c.has("trained"):
+					c.trained = []
+				t = {"ability": id, "trainer": trainer if trainer != null else (npcs[0].id if npcs.size() else ""), "level": 2, "cost": 10}
+				c.trained.append(t)
+			elif trainer != null:
+				t.trainer = trainer
+	if to != "":
+		if not c.has("abilities"):
+			c.abilities = []
+		if not c.abilities.has(id):
+			c.abilities.append(id)
+	touch("archetypes")
+	return t
+
+
+## class spells: abilities with a kind or in some class's spellbook, not skill tools
+func class_spells() -> Array:
+	return abilities.filter(func(a): return not a.has("skill") and not a.get("everyone", false) and (a.has("kind") or not classes_with(a.id).is_empty()))
+
+
+func statuses() -> Array:
+	return files.get("builds", {}).get("statuses", [])
+
+
+func powers() -> Array:
+	return files.get("builds", {}).get("powers", [])
+
+
+func quest_choices() -> Array:
+	return quests.map(func(q): return [q.id, q.get("name", q.id)])
+
+
 func trained_by(npc_id) -> Array:
 	var out := []
 	for a in archetypes:

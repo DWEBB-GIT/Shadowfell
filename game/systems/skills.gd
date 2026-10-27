@@ -85,7 +85,8 @@ func knows_ability(ability) -> bool:
 	return false
 
 
-## the class's trainer entry for a spell ({ability, trainer, level, cost}), or {}
+## the class's trainer entry for a spell ({ability, trainer, level, cost,
+## quest?}), or {}
 func trained_entry(ability) -> Dictionary:
 	for t in game.stats.archetype.get("trained", []):
 		if t.get("ability") == ability:
@@ -98,6 +99,15 @@ func needs_training(ability) -> bool:
 	return not all_spells and not trained_entry(ability).is_empty() and not spells.has(ability)
 
 
+## The name of the quest a trainer entry waits on (its `quest`, not yet
+## handed in), or "" when nothing holds it back.
+func quest_gate(t: Dictionary) -> String:
+	var q = t.get("quest")
+	if not q or game.quests.status(q) == "done":
+		return ""
+	return DB.quests.get(q, {}).get("name", q)
+
+
 ## Pay a class trainer and learn a spell; false (with a word why) if not.
 func learn_spell(ability: String) -> bool:
 	var t := trained_entry(ability)
@@ -107,6 +117,10 @@ func learn_spell(ability: String) -> bool:
 	var a: Dictionary = DB.abilities[ability]
 	if game.progression.level < int(t.get("level", 1)):
 		events.emit("log", {"text": "You must be level %d to learn %s." % [t.level, a.name], "kind": "muted", "throttle": "train-level"})
+		return false
+	var gate := quest_gate(t)
+	if gate != "":
+		events.emit("log", {"text": "You must first complete %s to learn %s." % [gate, a.name], "kind": "muted", "throttle": "train-quest"})
 		return false
 	var cost := int(t.get("cost", 0))
 	if game.inventory.coins < cost:

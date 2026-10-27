@@ -241,6 +241,10 @@ func _build_form() -> void:
 	if kind == "consumable" or d.has("use"):
 		_effects_section(d)
 	_extras_section(d)
+	if kind == "bag":
+		_holds_row(d)
+	if DataStore.GEAR.has(kind) or kind == "jewellery":
+		_power_row(d)
 	_art_section(d)
 	_loot_section(d)
 
@@ -325,14 +329,22 @@ func _show_numbers(d: Dictionary) -> void:
 func _effects_section(d: Dictionary) -> void:
 	UI.heading(form, "Effects")
 	var use: Dictionary = d.get("use", {})
-	var mode := "food" if use.has("food") else "heal" if use.has("heal") else "none"
+	var mode := "food" if use.has("food") else "drink" if use.has("drink") else "heal" if use.has("heal") else "none"
 	var g := UI.grid(form)
-	UI.row(g, "When used", UI.choice([["none", "Nothing"], ["heal", "Heals at once"], ["food", "Food: heals over time while sitting"]], mode, func(m):
+	UI.row(g, "When used", UI.choice([["none", "Nothing"], ["heal", "Heals at once"], ["food", "Food: heals over time while sitting"], ["drink", "Drink: restores mana over time while sitting"]], mode, func(m):
 		match m:
 			"none": d.erase("use")
 			"heal": d.use = {"heal": 40}
 			"food": d.use = {"food": {"heal": 60, "seconds": 15}}
+			"drink": d.use = {"drink": {"mana": 120, "seconds": 15}}
 		_changed(true)))
+	if mode == "drink":
+		UI.row(g, "Mana", UI.spin(use.drink.get("mana", 0), 1, 100000, 1, func(v):
+			d.use.drink.mana = v
+			_changed()), "Mana over the whole time.")
+		UI.row(g, "Over", UI.spin(use.drink.seconds, 1, 120, 1, func(v):
+			d.use.drink.seconds = v
+			_changed(), " s"))
 	if mode == "heal":
 		UI.row(g, "Heals", UI.spin(use.heal, 1, 100000, 1, func(v):
 			d.use.heal = v
@@ -344,6 +356,12 @@ func _effects_section(d: Dictionary) -> void:
 		UI.row(g, "Over", UI.spin(use.food.seconds, 1, 120, 1, func(v):
 			d.use.food.seconds = v
 			_changed(), " s"))
+		UI.row(g, "Well Fed", UI.check(use.food.get("wellFed", true), "Eating it long enough makes you Well Fed", func(on):
+			if on:
+				d.use.food.erase("wellFed")
+			else:
+				d.use.food.wellFed = false
+			_changed()))
 
 
 func _extras_section(d: Dictionary) -> void:
@@ -363,6 +381,26 @@ func _extras_section(d: Dictionary) -> void:
 			UI.row(g, e[0], UI.check(d.get(k, false), "", func(on): _put(k, true if on else null)))
 		else:
 			UI.row(g, e[0], UI.spin(d.get(k, 0), 0, 1000, 1 if e[1] == "int" else 0.1, func(v): _put(k, v if v > 0 else null)), "0 means it has none")
+
+
+## what a bag may hold: anything, only ammo (a quiver), or tools and torches
+func _holds_row(d: Dictionary) -> void:
+	var now := "any" if not d.has("holds") else "ammo" if str(d.holds) == "ammo" else "tools"
+	UI.row(UI.grid(form), "Holds", UI.choice([["any", "Anything"], ["ammo", "Only ammo (a quiver)"], ["tools", "Only tools and torches"]], now, func(v):
+		match v:
+			"any": d.erase("holds")
+			"ammo": d.holds = "ammo"
+			"tools": d.holds = ["tool", "torch"]
+		_changed()))
+
+
+## the legendary power it carries (builds.json powers)
+func _power_row(d: Dictionary) -> void:
+	var powers := [[null, "(none)"]] + s.powers().map(func(p): return [p.id, "%s: %s" % [p.get("name", p.id), p.get("text", "")]])
+	var o := UI.choice(powers, d.get("power"), func(v): _put("power", v))
+	o.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	o.clip_text = true
+	UI.row(UI.grid(form), "Legendary power", o, "A power that changes a spell (builds.json). The forge can move it to other gear.")
 
 
 # ------------------------------------------------------------------ art

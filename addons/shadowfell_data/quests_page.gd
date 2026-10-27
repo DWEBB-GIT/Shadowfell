@@ -11,7 +11,7 @@ const UI := preload("ui.gd")
 ## the order keys are written in, so an edited quest reads like the others
 const KEY_ORDER := ["id", "name", "giver", "turnIn", "autoAccept", "requires", "choice", "summary", "offer", "progress", "complete", "objectives", "reward", "setsFlag", "turnInLog"]
 const OBJECTIVE_ORDER := ["id", "type", "target", "count", "keep", "label", "location"]
-const REWARD_ORDER := ["coins", "xp", "items", "reputation"]
+const REWARD_ORDER := ["coins", "xp", "items", "reputation", "infamy"]
 const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"]]
 
 ## open another record (an npc) on its own tab
@@ -266,6 +266,12 @@ func _build() -> void:
 		else:
 			r.erase("xp")
 		_changed()))
+	UI.row(g, "Infamy", UI.spin(r.get("infamy", 0), 0, 1000, 1, func(v):
+		if v > 0:
+			r.infamy = int(v)
+		else:
+			r.erase("infamy")
+		_changed()), "For a dark choice: it is remembered (infamy.json).")
 	UI.note(form, "Items:")
 	UI.item_rows(form, s, r, "item", ["coins", "xp"], _changed)
 	UI.note(form, "Reputation:")

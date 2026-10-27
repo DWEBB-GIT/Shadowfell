@@ -171,6 +171,8 @@ func _build() -> void:
 	UI.row(g, "Tint", tint, "Colours their model, to tell apart townsfolk who share one.")
 	UI.row(g, "Map icon", UI.choice(MAP_ICONS, n.get("mapIcon"), func(v): _put("mapIcon", v)), "Puts their trade on the minimap.")
 	UI.row(g, "Innkeeper", UI.check(n.get("innkeeper", false), "Keeps an inn (you can make it your home)", func(on): _put("innkeeper", on)))
+	UI.row(g, "Smith", UI.check(n.get("forge", false), "Tempers, reforges, punches sockets, scraps gear and lets you smelt", func(on): _put("forge", true if on else null)))
+	UI.row(g, "Jeweller", UI.check(n.get("jeweller", false), "Makes gems from shards, sets and removes gems", func(on): _put("jeweller", true if on else null)))
 	UI.row(g, "Notice board", UI.check(n.get("board", false), "A notice board, not a person (no greeting by title)", func(on): _put("board", on)))
 
 	_greeting(n)
@@ -315,7 +317,8 @@ func _trains(n: Dictionary) -> void:
 			_build.call_deferred()))
 	bar.add_child(UI.button("New skill", func(): open_record.emit("new_skill", n.id), "Make a new skill they teach, on the Skills tab"))
 
-	UI.note(form, "Class spells (each class learns its own; the level it needs and the cost):")
+	UI.note(form, "Class spells (each class learns its own): the level it needs, the cost, and optionally a quest the player must hand in first:")
+	var quests := [[null, "no quest needed"]] + s.quest_choices().map(func(q): return [q[0], "after " + q[1]])
 	for e in s.trained_by(n.id):
 		var c: Dictionary = e["class"]
 		var t: Dictionary = e.entry
@@ -329,36 +332,47 @@ func _trains(n: Dictionary) -> void:
 		lv.text = "level"
 		row.add_child(lv)
 		row.add_child(UI.spin(t.get("level", 1), 1, 60, 1, func(v):
-			t.level = v
+			t.level = int(v)
 			s.touch("archetypes")))
 		row.add_child(UI.spin(t.get("cost", 0), 0, 100000, 1, func(v):
-			t.cost = v
+			t.cost = int(v)
 			s.touch("archetypes"), " coins"))
-		row.add_child(UI.button("✕", func():
-			c.trained.erase(t)
-			if c.trained.is_empty():
-				c.erase("trained")
-			s.touch("archetypes")
-			_build.call_deferred(), "They no longer teach it (the class knows it from the start)"))
-	# any class spell not on the class's starting bar and not taught elsewhere
-	var can := []
-	for c in s.archetypes:
-		for id in c.get("abilities", []):
-			if c.get("bar", []).has(id) or c.get("defensive") == id or c.get("trained", []).any(func(t): return t.get("ability") == id):
-				continue
-			can.append([[c.id, id], "%s: %s" % [c.get("name", c.id), s.ability_name(id)]])
-	var add := UI.hbox(form)
-	if can.size():
-		add.add_child(UI.choice([[null, "+ teach a class spell"]] + can, null, func(v):
+		var gate := UI.choice(quests, t.get("quest"), func(v):
 			if v == null:
-				return
-			var c := DataStore.find(s.archetypes, v[0])
-			if not c.has("trained"):
-				c.trained = []
-			c.trained.append({"ability": v[1], "trainer": n.id, "level": 2, "cost": 10})
-			s.touch("archetypes")
-			_build.call_deferred()))
+				t.erase("quest")
+			else:
+				t.quest = v
+			s.touch("archetypes"))
+		gate.tooltip_text = "The spell stays locked at the trainer until this quest is handed in."
+		gate.custom_minimum_size.x = 180
+		row.add_child(gate)
+		row.add_child(UI.button("✕", func():
+			s.set_spell_source(c, t.ability, "book")
+			_build.call_deferred(), "They no longer teach it (the class knows it from the start, in its spellbook)"))
+	# any class's spells, or any class spell at all for the chosen class
+	var add := UI.hbox(form)
+	var pick := {"class": s.archetypes[0].id if s.archetypes.size() else null}
+	var cls := UI.choice(s.archetypes.map(func(c): return [c.id, c.get("name", c.id)]), pick["class"], func(v):
+		pick["class"] = v)
+	cls.tooltip_text = "The class that learns it"
+	add.add_child(cls)
+	var spells := [[null, "+ teach a spell"]]
+	for a in s.class_spells():
+		spells.append([a.id, "%s (%s)" % [a.get("name", a.id), ", ".join(s.classes_with(a.id).map(func(c): return c.get("name", c.id))) if not s.classes_with(a.id).is_empty() else "no class yet"]])
+	add.add_child(UI.choice(spells, null, func(v):
+		if v == null or pick["class"] == null:
+			return
+		var c := DataStore.find(s.archetypes, pick["class"])
+		s.set_spell_source(c, v, "trained", n.id)
+		_build.call_deferred()))
+	add.add_child(UI.button("Teach all its spells", func():
+		var c := DataStore.find(s.archetypes, pick["class"])
+		for id in c.get("abilities", []).duplicate():
+			if DataStore.spell_source(c, id) == "book":
+				s.set_spell_source(c, id, "trained", n.id)
+		_build.call_deferred(), "Every spell in the chosen class's spellbook that is not on its starting bar and not taught by someone else: this npc teaches it (teach starting-bar spells one by one to take them off the bar)"))
 	add.add_child(UI.button("New spell", func(): open_record.emit("new_spell", n.id), "Make a new spell on the Abilities tab; tick a class and choose this trainer there"))
+	UI.note(form, "Teaching a spell from the starting bar takes it off the bar, so a new character must train it. A spell from outside the class's spellbook is added to it.", Color(0.6, 0.6, 0.6))
 	var recipes := s.recipes.filter(func(r): return r.get("trainer") == n.id)
 	if recipes.size():
 		UI.note(form, "Recipes: %s (recipes.json)." % ", ".join(recipes.map(func(r): return s.item(r.get("output", {}).get("item")).get("name", r.id))))

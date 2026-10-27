@@ -32,6 +32,11 @@ func _process(_dt: float) -> bool:
 		game.inventory.coins = 100
 		row = game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend")
 		_ok(row[0].state == "learn", "at its level it can be learned")
+		DB.archetypes.warden.trained[0].quest = "missing_delivery"
+		row = game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend")
+		_ok(row[0].state == "locked" and row[0].need.begins_with("Requires") and not sk.learn_spell("rend"), "a quest gate locks it until the quest is handed in: %s" % [row])
+		game.quests.done["missing_delivery"] = true
+		_ok(game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend")[0].state == "learn", "handing the quest in unlocks it")
 		_ok(sk.learn_spell("rend") and sk.knows_ability("rend") and game.inventory.coins == 85, "learning it costs its coins and teaches it")
 		var data: Dictionary = game.save.serialize()
 		_ok(data.spells == ["rend"], "the save keeps it")
