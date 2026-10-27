@@ -3,7 +3,7 @@ extends SceneTree
 ##   BEHIND=3.5 godot --path . --script res://game/tests/hud_shots.gd -- out_dir x z [class]
 ## (x z: a house's middle; BEHIND: metres past it, away from the camera)
 ## DEMO=1 also fills the party frames, the log tabs, a cast on you and your
-## target, and the level-up banner.
+## target, and the level-up banner. PROF=1 opens Professions.
 
 var frames := 0
 var game
@@ -70,6 +70,8 @@ func _process(_delta: float) -> bool:
 		game.inventory.add_coins(4321, "")
 		root.warp_mouse(Vector2(120, 780)) # over the log, to show its band
 		game.hud.show_level_up({"level": 5, "gains": [{"id": "strength", "label": "Strength", "from": 12, "to": 14, "diff": 2}, {"id": "stamina", "label": "Stamina", "from": 11, "to": 12, "diff": 1}, {"id": "maxHealth", "label": "Health", "from": 120, "to": 138, "diff": 18}]})
+	if frames == 60 and OS.get_environment("PROF") != "":
+		game.hud.show_window("skills")
 	if frames == 88 and OS.get_environment("DEMO") != "":
 		var id = DB.spells.keys()[0]
 		for k in DB.spells:

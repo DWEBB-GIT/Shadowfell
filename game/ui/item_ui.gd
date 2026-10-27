@@ -991,6 +991,15 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	row.add_theme_stylebox_override("panel", UI.box(Color("1a150f"), UI.BORDER_DIM, 0, 1, Vector4(8, 6, 8, 6)))
 	row.modulate.a = 1.0 if known else 0.55
 	var h := UI.hbox(row, 10)
+	# the icon, or an empty square of its size so the rows line up
+	var pic := TextureRect.new()
+	pic.texture = icons.profession(d.id)
+	pic.custom_minimum_size = Vector2(36, 36)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(pic)
 	var body := UI.vbox(h, 3)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var top := UI.hbox(body, 6)

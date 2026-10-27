@@ -1306,11 +1306,13 @@ func _refresh_spells() -> void:
 	elif game.fishing.bar != null:
 		c = game.fishing.bar.duplicate()
 		c.name = "Fishing"
-		tex = icons.abilities.get("fish")
+		tex = icons.profession("fishing")
 	elif game.loot.gather_bar != null:
 		c = game.loot.gather_bar
+		tex = icons.profession("skinning" if c.name.begins_with("Skinning") else "herbalism")
 	elif game.mining.bar != null:
 		c = game.mining.bar
+		tex = icons.profession("mining")
 	_show_cast(cast, c, tex)
 	# the weapon swing timer: fills until the next blow lands, while auto
 	# attack is on (one per hand when dual wielding; the second is Auto Shot's

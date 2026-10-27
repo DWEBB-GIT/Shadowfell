@@ -14,6 +14,7 @@ const PORTRAIT_SIZE := 96
 
 const SPRITES := "res://assets/icons/%s.png"
 const SPELLS := "res://assets/icons/spells/%s.png"
+const PROFESSIONS := "res://assets/icons/professions/%s.png"
 
 var items := {} ## model -> Texture2D
 var _sprites := {} ## sprite -> Texture2D, or null if the file is missing
@@ -140,6 +141,15 @@ func _glyph(id: String) -> Texture2D:
 ## the icon for an aura: its own, else its spell's, else the cooking pot
 func aura(a: Dictionary) -> Texture2D:
 	return abilities.get(a.get("icon", a.get("id", "")), abilities.get(a.get("id", ""), abilities.get("cook")))
+
+
+## a profession's icon (Dan's, assets/icons/professions/<skill id>.png),
+## Camping's tent spell, or null
+func profession(id: String) -> Texture2D:
+	var path := PROFESSIONS % id
+	if ResourceLoader.exists(path):
+		return load(path)
+	return abilities.get("setCamp") if id == "camping" else null
 
 
 ## an item's icon (its model's), or null for a lettered tile
