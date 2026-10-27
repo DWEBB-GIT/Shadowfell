@@ -82,7 +82,7 @@ func _init(g) -> void:
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 11)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
 	# the N badge and the zoom buttons
 	var north := UI.label(self, "N", 11, UI.GOLD)
 	north.add_theme_stylebox_override("normal", _round_box(8))

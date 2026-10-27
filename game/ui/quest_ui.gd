@@ -36,6 +36,7 @@ var quest_log: Dictionary
 var tracker: PanelContainer
 var tracker_box: VBoxContainer
 var tracker_collapsed := false
+const TRACKER_W := 236.0
 var _way: RichTextLabel ## the way to the followed quest, under it in the tracker
 var _way_text := ""
 var _way_t := 0.0
@@ -62,12 +63,11 @@ func _init(g, h) -> void:
 	marks_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
-	# no box behind it, as in WoW: outlined text straight on the world
-	var bare := StyleBoxEmpty.new()
-	bare.set_content_margin_all(4)
-	tracker.add_theme_stylebox_override("panel", bare)
-	tracker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tracker.custom_minimum_size = Vector2(260, 0)
+	# a smoky band behind the list, solid at the screen edge; it takes the
+	# clicks so pointing at the list never walks you
+	tracker.add_theme_stylebox_override("panel", UI.shade("right", 0.6, Vector4(14, 6, 8, 8)))
+	tracker.mouse_filter = Control.MOUSE_FILTER_STOP
+	tracker.custom_minimum_size = Vector2(TRACKER_W, 0)
 	tracker_box = UI.vbox(tracker, 6)
 	tracker.visible = false
 	dialogue = UI.window(self, "", 340, func(): game.dialogue.close())
@@ -158,6 +158,14 @@ func _objectives(objs: Array) -> String:
 	for o in objs:
 		out += "[color=%s]- %s[/color]\n" % ["#8cbf78" if o.done else UI.hex(UI.TEXT), UI.esc(Quests.line(o))]
 	return "[font_size=12]%s[/font_size]" % out
+
+
+## the tracker's steps: a tick when done, an empty box while open
+func _steps(objs: Array) -> String:
+	var out := []
+	for o in objs:
+		out.append("[color=#8cbf78]  ✓ %s[/color]" % UI.esc(Quests.line(o)) if o.done else "[color=#6e6250]  ▢[/color] [color=%s]%s[/color]" % [UI.hex(UI.TEXT), UI.esc(Quests.line(o))])
+	return "[font_size=12]%s[/font_size]" % "\n".join(out)
 
 
 func _sub(text: String) -> String:
@@ -501,10 +509,16 @@ func render_tracker() -> void:
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
 	tracker.visible = not ids.is_empty()
 	var head := UI.hbox(tracker_box, 6)
-	var title := UI.label(head, "QUESTS  (%d)" % ids.size(), 11, UI.GOLD, 4)
+	var title := UI.label(head, "%s  OBJECTIVES" % ("▸" if tracker_collapsed else "▾"), 12, UI.GOLD, 4)
 	title.add_theme_font_override("font", UI.bold)
-	var fold := UI.square_button(head, "+" if tracker_collapsed else "−", _fold_tracker, 20)
-	fold.tooltip_text = "Show the objectives" if tracker_collapsed else "Hide the objectives"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.tooltip_text = "Show the objectives" if tracker_collapsed else "Hide the objectives"
+	UI.label(head, str(ids.size()), 11, UI.TEXT_DIM, 4)
+	var rule := ColorRect.new()
+	rule.color = Color(UI.GOLD, 0.35)
+	rule.custom_minimum_size = Vector2(0, 1)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tracker_box.add_child(rule)
 	title.mouse_filter = Control.MOUSE_FILTER_STOP
 	title.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	title.gui_input.connect(func(e):
@@ -517,12 +531,12 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#c9a45c", "◆ " if focused else "", UI.esc(q.name), " [font_size=10][color=#ffd23c]COMPLETE[/color][/font_size]" if s == "ready" else ""]
+		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name), " [font_size=10][color=#8cbf78](Complete)[/color][/font_size]" if s == "ready" else ""]
 		if s == "ready":
-			text += "[font_size=12][color=#ffd23c]    Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
+			text += "[font_size=12][color=#ffd23c]  ➜ Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
-			text += _objectives(ql.objectives(id))
-		var r := UI.rich(tracker_box, 13, 240)
+			text += _steps(ql.objectives(id))
+		var r := UI.rich(tracker_box, 13, TRACKER_W - 22)
 		_outline(r)
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -537,7 +551,7 @@ func render_tracker() -> void:
 				selected = id
 				toggle_log(true))
 		if focused:
-			_way = UI.rich(tracker_box, 12, 240)
+			_way = UI.rich(tracker_box, 12, TRACKER_W - 22)
 			_outline(_way)
 			_way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_way_text = ""
@@ -628,7 +642,7 @@ func layout() -> void:
 		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)
 		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
-	tracker.position = Vector2(vp.x - 12 - tracker.size.x, roundf(hud.minimap.position.y + hud.minimap.coords.position.y + hud.minimap.coords.size.y + 8))
+	tracker.position = Vector2(vp.x - tracker.size.x, roundf(hud.minimap.position.y + hud.minimap.coords.position.y + hud.minimap.coords.size.y + 8))
 
 
 # --------------------------------------------------------- gamepad

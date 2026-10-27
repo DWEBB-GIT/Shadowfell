@@ -7,7 +7,8 @@ extends RefCounted
 ## ring of the opening (the lane and town, then Bracken Vale) until any of
 ## its `opensWhen` conditions holds (Quests.condition_holds), then opens for
 ## good; `shut` ones never open in this act. Everything is drawn with the
-## woodland's cutaway, so nothing here can hide the player.
+## woodland's cutaway, so nothing here can hide the player, except houses,
+## which fade as a whole (SeeThrough).
 
 const ROOF := {"thatch": Color("8c7748"), "slate": Color("4c5866"), "tile": Color("9a4a30")}
 const WALL := {"plaster": Color("d2c39c"), "timber": Color("9a7a52"), "stone": Color("8f897c")}
@@ -117,6 +118,7 @@ func _build_house(h: Dictionary) -> void:
 		m.gable(Vector3(sx * hl, top, -hs), Vector3(sx * hl, top, hs), Vector3(sx * hl, ridge, 0), wall, Vector3(sx, 0, 0))
 	if h.get("chimney"):
 		m.box(Vector3(hl - 1.1, (top + ridge + 1.2) / 2.0, hs * 0.35), Vector3(0.8, ridge + 1.2 - top, 0.8), STONE)
+	var form := {"hl": hl, "hs": hs, "top": top, "ridge": ridge, "slope": tan(pitch), "eave": eave}
 	if h.get("tower"):
 		var tw := minf(span, 3.4)
 		var th := top + 5.5
@@ -124,10 +126,11 @@ func _build_house(h: Dictionary) -> void:
 		m.box(Vector3(tx, th / 2.0 - 0.6, 0), Vector3(tw, th + 1.2, tw), wall)
 		m.box(Vector3(tx, th - 1.2, 0), Vector3(tw + 0.1, 0.6, tw + 0.1), STONE)
 		m.pyramid(Vector3(tx, th, 0), tw / 2.0 + 0.3, 3.2, roof)
+		form.tower = [tx, tw / 2.0 + 0.3, th + 3.2]
 	var mi := MeshInstance3D.new()
 	mi.name = h.id
 	mi.mesh = m.mesh()
-	mi.material_override = _mat
+	world.see_through.add_house(mi, form) # fades as a whole when it hides you
 	mi.position = Vector3(x, Terrain.height_at(x, z), z)
 	mi.rotation.y = turn + (PI / 2.0 if across else 0.0)
 	group.add_child(mi)
