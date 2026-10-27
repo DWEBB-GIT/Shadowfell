@@ -26,6 +26,11 @@ const MICRO := [
 	["quests", "!", "Quest Log", "quests", "→"],
 	["settings", "☰", "Settings", "settings", ""],
 ]
+const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
+const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
+const ORB_R := 14.0 ## the menu orbs round the minimap
+const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
+const ORB_STEP := 22.4
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
@@ -77,9 +82,7 @@ var action_bar: PanelContainer
 var xp: Dictionary
 var slots: Array = [] ## ISlot per bar slot
 var dock: PanelContainer ## money and the bag sockets, bottom right
-var menu: PanelContainer ## the menu buttons, under the minimap
-var micro_keys := {} ## key action -> [Label, pad label]
-var micro_buttons := {} ## key action -> [Button, tip]
+var micro_buttons := {} ## key action -> [orb Button, tip]
 var coins: RichTextLabel
 var _coins_shown := -1
 var cast: Dictionary
@@ -234,6 +237,7 @@ func _build() -> void:
 		b.root.size = Vector2(240, b.root.custom_minimum_size.y)
 	_build_bottom()
 	_build_dock()
+	_build_orbs()
 
 	# the prompt: a key badge and what it does (#prompt)
 	prompt = UI.panel(root, 0)
@@ -309,8 +313,6 @@ func _build() -> void:
 	quests = QuestUI.new(game, self)
 	root.add_child(quests)
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
-	for i in micro_buttons:
-		items.tip_on(micro_buttons[i][0], micro_buttons[i][1])
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
 	items.tip_on(coins, "Money")
@@ -353,7 +355,6 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
 	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
-	char_panel.position = Vector2(12, 12)
 	char_panel.custom_minimum_size = Vector2(240, 0)
 	var cv := UI.vbox(char_panel, 3)
 	var head := UI.hbox(cv, 8)
@@ -453,10 +454,8 @@ func _build_bottom() -> void:
 var _sockets_box: HBoxContainer
 
 
-## two single rows rather than a stack of odd-sized boxes: the menus sit
-## in a strip under the minimap, over the quest tracker and as wide as it
-## (#menu-strip), and money and the bag sockets share one tray bottom right,
-## level with the spell bar (#right-dock)
+## bottom right, one row level with the spell bar: money and the bag
+## sockets (#right-dock). The menus are orbs round the minimap (_build_orbs).
 func _build_dock() -> void:
 	dock = UI.panel(root, 0)
 	dock.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 4, 8, 4)))
@@ -471,29 +470,29 @@ func _build_dock() -> void:
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	menu = UI.panel(root, 0)
-	menu.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 4, 6, 4)))
-	menu.mouse_filter = Control.MOUSE_FILTER_PASS
-	var mr := UI.hbox(menu, 4)
+
+## the menus as round buttons down the minimap's left rim, RuneScape style,
+## from the top: character first. The key shows in each one's tip.
+func _build_orbs() -> void:
+	var i := 0
 	for m in MICRO:
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(38, 34)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.focus_mode = Control.FOCUS_NONE
+		var b := minimap.orb(ORB_TOP - ORB_STEP * i, ORB_R)
 		var which: String = m[0]
+		var action: String = m[3]
+		var pad_label: String = m[4]
+		var tip: String = m[2]
 		b.pressed.connect(func(): toggle_panel(which))
-		mr.add_child(b)
 		var glyph := UI.label(b, m[1], 15, UI.GOLD)
 		glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
-		glyph.offset_bottom = -8
 		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var key := UI.label(b, "", 9, UI.TEXT_DIM)
-		key.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		key.offset_top = -12
-		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		micro_keys[m[3]] = [key, m[4]]
-		micro_buttons[m[3]] = [b, m[2]]
+		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.mouse_entered.connect(func():
+			var k: String = pad_label if pad_mode else game.keys.label(action)
+			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
+		b.mouse_exited.connect(func(): items.cursor_tip_off())
+		micro_buttons[action] = [b, tip]
+		i += 1
 
 
 ## the kit's bronze divider, upright between two groups in a row
@@ -647,19 +646,17 @@ func apply_key_labels() -> void:
 		var b: Dictionary = ActionBar.BAR_SLOTS[i]
 		slots[i].key = b.pad if pad_mode else keys.label("bar%d" % i).replace("Shift-", "⇧").replace(" / ", "/")
 		slots[i].queue_redraw()
-	for id in micro_keys:
-		var k: String = keys.label(id)
-		micro_keys[id][0].text = micro_keys[id][1] if pad_mode else k
 
 
-## the top of the bottom bar, for tooltips that sit above it
+## the top of the bottom bar and the unit frames over it, for tooltips
+## that sit above them
 func bottom_top() -> float:
-	return bottom.position.y
+	return minf(bottom.position.y, char_panel.position.y)
 
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, menu, minimap, quests.tracker]:
+	for c in [char_panel, target, bottom, dock, minimap, quests.tracker]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -1152,13 +1149,7 @@ func layout() -> void:
 	var m := EDGE
 	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	target.position = Vector2(char_panel.position.x + char_panel.size.x + m, m)
 	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
-	# the menu strip under the minimap's place name and coordinates, as wide
-	# as the quest tracker under it, so the right column has one edge
-	menu.custom_minimum_size.x = quests.tracker.custom_minimum_size.x
-	menu.size = menu.get_combined_minimum_size()
-	menu.position = Vector2(vp.x - m - menu.size.x, roundf(minimap.position.y + minimap.coords.position.y + minimap.coords.size.y + 4))
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
 	# the tray stands as tall as the spell bar and level with it
@@ -1168,22 +1159,29 @@ func layout() -> void:
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
-	# the log fills the corner beside the bar; with no room there it sits above
-	var room := bottom.position.x - 2 * m
-	var w := clampf(room, 260, 420)
+	# your frame and your target's sit over the spell bar either side of the
+	# middle, as WoW addon layouts do, with the cast and swing bars between
+	# them; the tops line up and stay put as bars and auras come and go
+	var cx := roundf(bottom.position.x + bottom.size.x / 2)
+	var top := bottom.position.y - m - UNIT_H
+	char_panel.position = Vector2(cx - UNIT_GAP - char_panel.size.x, top)
+	target.position = Vector2(cx + UNIT_GAP, top)
+	# the log fills the corner beside them; with no room there it sits above
+	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m
+	var w := clampf(room, 220, 420)
 	if not is_equal_approx(log_box.custom_minimum_size.x, w):
 		log_box.custom_minimum_size.x = w
 		for l in log_box.get_children():
 			(l as Control).custom_minimum_size.x = w
 	log_box.size = log_box.get_combined_minimum_size()
-	var log_foot := vp.y - m if room >= 260 else bottom.position.y - m
+	var log_foot := vp.y - m if room >= 220 else bottom.position.y - m
 	log_box.position = Vector2(m, log_foot - log_box.size.y)
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
 		r.position = Vector2(roundf(bottom.position.x + (bottom.size.x - r.size.x) / 2), bottom.position.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
-	# just over the spell bar, under the cast, gather and skinning bars
-	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else bottom.position.y - 6 - prompt.size.y)
+	# just over the unit frames, clear of the cast, gather and skinning bars
+	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else top - 6 - prompt.size.y)
 	for l in [[toast_label, 0.22], [error_label, 0.18]]:
 		var c: Control = l[0]
 		c.size = c.get_combined_minimum_size()

@@ -1169,11 +1169,9 @@ func layout() -> void:
 		# not the render: a new label measures its height only once laid out)
 		if character.main.visible:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
-		# under the player frame, moved up as far as it must to stay on screen
-		var s := _fit(character.panel, Vector2(12, 136))
-		character.panel.position.y = maxf(12, minf(136, vp.y - 12 - s.y))
+		_fit(character.panel, Vector2(12, 12))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(494 if open.character else 12, 136))
+		_fit(shop.panel, Vector2(494 if open.character else 12, 12))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top

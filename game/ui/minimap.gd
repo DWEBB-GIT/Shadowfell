@@ -90,34 +90,47 @@ func _init(g) -> void:
 	north.size = Vector2(16, 14)
 	north.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	north.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# two round buttons sat on the rim, right side, clear of the place bar:
-	# drawn as true circles (a font glyph in a box made them pills)
+	# zoom: two small round buttons on the rim, right side, clear of the place
+	# bar (the HUD sets its menu orbs round the left side the same way)
 	for z in [[1, 22.0], [-1, 48.0]]:
-		var b := Button.new()
+		var b := orb(z[1], ZOOM_R)
 		var step: int = z[0]
-		b.focus_mode = Control.FOCUS_NONE
-		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
-		b.custom_minimum_size = Vector2(ZOOM_R * 2, ZOOM_R * 2)
-		b.size = b.custom_minimum_size
-		var a := deg_to_rad(z[1])
-		b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(ZOOM_R, ZOOM_R)
 		b.pressed.connect(func(): set_zoom(zoom + step))
 		b.draw.connect(func(): _draw_zoom(b, step))
-		add_child(b)
 		zoom_buttons.append(b)
 
 
 const ZOOM_R := 11.0
 
 
+## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
+## RuneScape style: drawn as a true circle, a bronze ring on dark stone
+func orb(angle: float, radius: float) -> Button:
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	b.custom_minimum_size = Vector2(radius * 2, radius * 2)
+	b.size = b.custom_minimum_size
+	var a := deg_to_rad(angle)
+	var r := SIZE / 2
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(radius, radius)
+	b.draw.connect(func(): _draw_orb(b, radius))
+	add_child(b)
+	return b
+
+
+func _draw_orb(b: Button, radius: float) -> void:
+	var c := Vector2(radius, radius)
+	var lit := b.is_hovered() or b.is_pressed()
+	b.draw_circle(c, radius, Color(0, 0, 0, 0.5), true, -1, true)
+	b.draw_circle(c, radius - 1.5, UI.PANEL_SOLID, true, -1, true)
+	b.draw_circle(c, radius - 1.5, UI.GOLD if lit else UI.BORDER, false, 1.5, true)
+
+
 func _draw_zoom(b: Button, step: int) -> void:
 	var c := Vector2(ZOOM_R, ZOOM_R)
-	var lit := b.is_hovered() or b.is_pressed()
-	b.draw_circle(c, ZOOM_R, Color(0, 0, 0, 0.5), true, -1, true)
-	b.draw_circle(c, ZOOM_R - 1.5, UI.PANEL_SOLID, true, -1, true)
-	b.draw_circle(c, ZOOM_R - 1.5, UI.GOLD if lit else UI.BORDER, false, 1.5, true)
-	var col := UI.GOLD if lit else Color("e2d3ae")
+	var col := UI.GOLD if b.is_hovered() or b.is_pressed() else Color("e2d3ae")
 	b.draw_line(c - Vector2(4.5, 0), c + Vector2(4.5, 0), col, 2.0, true)
 	if step > 0:
 		b.draw_line(c - Vector2(0, 4.5), c + Vector2(0, 4.5), col, 2.0, true)

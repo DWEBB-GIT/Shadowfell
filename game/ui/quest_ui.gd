@@ -612,13 +612,13 @@ func layout() -> void:
 	for w in [dialogue, trainer]:
 		if w.panel.visible:
 			UI.fit_steady(w.panel)
-			w.panel.position = Vector2(12, 136)
+			w.panel.position = Vector2(12, 12)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
 		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)
 		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
-	tracker.position = Vector2(vp.x - 12 - tracker.size.x, hud.menu.position.y + hud.menu.size.y + 8)
+	tracker.position = Vector2(vp.x - 12 - tracker.size.x, roundf(hud.minimap.position.y + hud.minimap.coords.position.y + hud.minimap.coords.size.y + 8))
 
 
 # --------------------------------------------------------- gamepad
