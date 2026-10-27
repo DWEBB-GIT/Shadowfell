@@ -48,7 +48,7 @@
       "abilities": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace", "shieldBreak", "rend"],
       "bar": ["heavyStrike", null, null, null, null, null],
       "trained": [
-        {"ability": "crushingBlow", "trainer": "brask", "level": 2, "cost": 10},
+        {"ability": "crushingBlow", "trainer": "brask", "level": 3, "cost": 10},
         {"ability": "brace", "trainer": "brask", "level": 4, "cost": 25},
         {"ability": "cleave", "trainer": "brask", "level": 6, "cost": 50}
       ],
@@ -113,7 +113,7 @@
       "abilities": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
       "bar": ["quickStrike", null, null, null, null, null],
       "trained": [
-        {"ability": "doubleCut", "trainer": "nell", "level": 2, "cost": 10},
+        {"ability": "doubleCut", "trainer": "nell", "level": 3, "cost": 10},
         {"ability": "guile", "trainer": "nell", "level": 4, "cost": 25},
         {"ability": "poisonedBlade", "trainer": "nell", "level": 6, "cost": 50}
       ],
@@ -171,7 +171,7 @@
       "abilities": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage", "venomArrow"],
       "bar": ["quickShot", null, null, null, null, null],
       "trained": [
-        {"ability": "flamingArrow", "trainer": "odo", "level": 2, "cost": 10},
+        {"ability": "flamingArrow", "trainer": "odo", "level": 3, "cost": 10},
         {"ability": "disengage", "trainer": "odo", "level": 4, "cost": 25},
         {"ability": "tarTrap", "trainer": "odo", "level": 6, "cost": 50}
       ],
@@ -239,7 +239,7 @@
       "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
       "bar": ["blightBolt", null, null, null, null, null],
       "trained": [
-        {"ability": "rot", "trainer": "grue", "level": 2, "cost": 10},
+        {"ability": "rot", "trainer": "grue", "level": 3, "cost": 10},
         {"ability": "siphonLife", "trainer": "grue", "level": 4, "cost": 25},
         {"ability": "graveBloom", "trainer": "grue", "level": 6, "cost": 50}
       ],
@@ -300,7 +300,7 @@
       ],
       "bar": ["holyStrike", null, null, null, null, null],
       "trained": [
-        {"ability": "lightsHammer", "trainer": "aveline", "level": 2, "cost": 10},
+        {"ability": "lightsHammer", "trainer": "aveline", "level": 3, "cost": 10},
         {"ability": "lightShield", "trainer": "aveline", "level": 4, "cost": 25},
         {"ability": "divineStorm", "trainer": "aveline", "level": 6, "cost": 50}
       ],
