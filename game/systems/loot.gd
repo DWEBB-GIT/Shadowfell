@@ -352,13 +352,13 @@ func collect(entry: Dictionary) -> bool:
 		entry.depleted = true
 		entry.group.scale = Vector3.ONE * 0.6
 		entry.glint.visible = false
-		events.emit("lootCollected", {"id": def.id})
+		events.emit("lootCollected", {"id": def.id, "item": r.get("item", ""), "node": true})
 		return true
 	else:
 		ws.mark_collected(def.id)
 	entry.group.queue_free()
 	active.erase(entry)
-	events.emit("lootCollected", {"id": def.id})
+	events.emit("lootCollected", {"id": def.id, "item": r.get("item", "")})
 	if def.get("opensDocument") and not def.has("ground"):
 		game.hud.open_document(def.opensDocument)
 		events.emit("objectiveChanged", {})

@@ -24,9 +24,14 @@ const SFX := {
 	"wolf": ["wolf_growl.mp3"],
 	"gold": ["gold.ogg"],
 	"pickup": ["pickup.ogg"],
+	"pickup_weapon": ["pickup_weapon.ogg"],
+	"pickup_potion": ["pickup_potion.mp3"],
+	"harvest": ["harvest.mp3"],
 	"equip": ["equip_1.ogg", "equip_2.ogg"],
+	"equip_weapon": ["equip_weapon.mp3"],
+	"equip_armour": ["equip_armour.ogg"],
 	"level_up": ["level_up.mp3"],
-	"quest_complete": ["quest_complete.wav"],
+	"quest_complete": ["quest_complete.mp3"],
 	"quest_log": ["quest_log.mp3"],
 	"panel": ["panel_open.mp3"],
 	"potion": ["potion_drink.mp3"],
@@ -44,6 +49,7 @@ const SFX := {
 }
 ## region id -> ambience loop (anywhere else keeps the forest)
 const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
+const MUSIC := "music_loop.ogg" ## Dan's background track, looped under everything
 const STEP_GAP := 0.42 ## seconds between footsteps at a walk
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
@@ -64,6 +70,7 @@ var _force_variant := -1
 var sfx_cache := {} ## file -> AudioStream
 var amb_loop: AudioStreamPlayer
 var amb_file := ""
+var music: AudioStreamPlayer
 var step_t := 0.0
 
 
@@ -117,7 +124,7 @@ func start() -> void:
 	if started:
 		return
 	started = true
-	for bus in ["Effects", "Ambience"]:
+	for bus in ["Effects", "Ambience", "Music"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			var i := AudioServer.bus_count - 1
@@ -137,6 +144,16 @@ func start() -> void:
 	amb_loop.bus = "Ambience"
 	amb_loop.volume_db = -8.0
 	add_child(amb_loop)
+	music = AudioStreamPlayer.new()
+	music.bus = "Music"
+	music.volume_db = -10.0
+	add_child(music)
+	var m = _stream(MUSIC)
+	if m != null:
+		m = m.duplicate()
+		m.loop = true
+		music.stream = m
+		music.play()
 	game.events.on("regionChanged", func(e): _ambience(str(e.region.get("id", ""))))
 	if game.get("region") != null:
 		_ambience(str(game.region.get("id", "")))
@@ -155,7 +172,7 @@ func _loop(s: AudioStreamWAV, bus: String) -> AudioStreamPlayer:
 ## the Settings sliders (percent); loudness follows the square, as ears do
 func apply_volumes() -> void:
 	var st = game.settings
-	for b in [["Master", "volMaster"], ["Effects", "volEffects"], ["Ambience", "volAmbience"]]:
+	for b in [["Master", "volMaster"], ["Effects", "volEffects"], ["Ambience", "volAmbience"], ["Music", "volMusic"]]:
 		var v: float = pow(float(st.get_value(b[1])) / 100.0, 2)
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b[0]), linear_to_db(maxf(v, 0.00001)))
 	if game.hud:
@@ -188,12 +205,28 @@ func _bind() -> void:
 		growl(g[0], g[1]))
 	ev.on("playerHurt", func(_e): thud(110, 0.25))
 	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
-	ev.on("lootCollected", func(_e): sfx("pickup"))
+	ev.on("lootCollected", func(e):
+		var def: Dictionary = Items.get_def(str(e.get("item", ""))) if e.get("item") else {}
+		if e.get("node"):
+			sfx("harvest", 0.8) # a gathering node, picked
+		elif def.get("kind") == "weapon":
+			sfx("pickup_weapon")
+		elif str(def.get("id", "")).ends_with("draught"):
+			sfx("pickup_potion")
+		else:
+			sfx("pickup"))
 	ev.on("coins", func(_e): sfx("gold"))
 	ev.on("levelUp", func(_e): sfx("level_up"))
 	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
 	ev.on("draught", func(_e): sfx("potion"))
-	ev.on("equipmentChanged", func(_e = null): sfx("equip", 0.7))
+	ev.on("itemEquipped", func(e):
+		var kind := str(Items.get_def(str(e.id)).get("kind", ""))
+		if kind == "weapon" or kind == "shield":
+			sfx("equip_weapon", 0.7)
+		elif kind == "armor":
+			sfx("equip_armour", 0.7)
+		else:
+			sfx("equip", 0.7))
 	ev.on("chestOpened", func(_e): sfx("chest"))
 	ev.on("itemBought", func(_e): sfx("buy"))
 	ev.on("itemSold", func(_e): sfx("gold"))
