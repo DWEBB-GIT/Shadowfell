@@ -184,10 +184,15 @@ func _draw() -> void:
 		if s.x < 0 or s.y < 0 or s.x > size.x or s.y > size.y:
 			continue
 		var c: Color = KIND_COLOUR.get(p.kind, Color("e8d8b0"))
-		draw_circle(s, 4.0, Color.BLACK)
-		draw_circle(s, 3.0, c)
+		# Dan's map pictogram (assets/icons/map/place_<kind>.png), else a dot
+		var art := Icons.art("map", "place_" + str(p.kind))
+		if art:
+			draw_texture_rect(art, Rect2(s - Vector2(12, 12), Vector2(24, 24)), false)
+		else:
+			draw_circle(s, 4.0, Color.BLACK)
+			draw_circle(s, 3.0, c)
 		if scale_px >= 0.45 or p.kind in ["town", "dock", "landmark"]:
-			_text(s + Vector2(0, -12), p.name, 11, c)
+			_text(s + Vector2(0, -18 if art else -12), p.name, 11, c)
 	for d in game.discovery.docks:
 		var s := _to_screen(d.at)
 		draw_rect(Rect2(s - Vector2(3, 3), Vector2(6, 6)), Color("9fd0ff"))

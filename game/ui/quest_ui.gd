@@ -262,7 +262,12 @@ func _option(parent: Node, o: Dictionary, focused: bool) -> void:
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.position = Vector2(6, 4)
 	badge.size = Vector2(22, 22)
+	var art := Icons.art("ui", "talk_" + str(o.icon)) if o.icon else null
 	badge.draw.connect(func():
+		# Dan's painted badge (assets/icons/ui/talk_<icon>.png), else the drawn disc
+		if art:
+			badge.draw_texture_rect(art, Rect2(Vector2.ZERO, badge.size), false)
+			return
 		badge.draw_circle(Vector2(11, 11), 11, Color.BLACK)
 		badge.draw_circle(Vector2(11, 11), 10, Color(ic[2]) if ic[2] != "#000000" else Color(0, 0, 0, 0.45))
 		var f := UI.bold

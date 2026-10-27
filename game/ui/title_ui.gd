@@ -120,8 +120,17 @@ func _build_main() -> void:
 	var col := UI.vbox(centre, 6)
 	col.custom_minimum_size = Vector2(640, 0)
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
-	crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var crest_art := Icons.art("ui", "crest")
+	if crest_art:
+		var crest := TextureRect.new()
+		crest.texture = crest_art
+		crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		crest.custom_minimum_size = Vector2(0, 72)
+		col.add_child(crest)
+	else:
+		var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
+		crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var h1 := UI.label(col, "S H A D O W F A L L", 46, UI.GOLD, 4)
 	h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.h1 = h1
@@ -469,6 +478,17 @@ func _render_create() -> void:
 		var id: String = c.id
 		var card := _card(create.list, [c.name, c.role if c.get("archetype") else "Coming later"], func(): pick_class(id), id == class_id, not c.get("archetype"))
 		card.set_meta("class", id)
+		# Dan's class crest on the card's right (the Warden's is the warrior's)
+		var crest := Icons.art("ui", "class_" + ("warrior" if id == "warden" else id))
+		if crest:
+			var img := TextureRect.new()
+			img.texture = crest
+			img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			img.size = Vector2(40, 40)
+			img.position = Vector2(card.custom_minimum_size.x - 50, (card.custom_minimum_size.y - 40) / 2)
+			card.add_child(img)
 		create.cards[id] = card
 	pick_class(class_id, false)
 	var roster = game.roster

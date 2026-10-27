@@ -20,6 +20,7 @@ var count_centre := false ## a quiver's arrows: centred along the bottom
 var count_size := 12
 var placeholder := ""
 var placeholder_size := 8
+var ghost: Texture2D ## Dan's ghosted outline for an empty slot, over the placeholder word
 var key := ""
 var border := EMPTY_BORDER
 var bar := false ## a spell-bar slot (darker, its own border)
@@ -113,6 +114,8 @@ func _draw() -> void:
 		painter.call(self)
 	elif letter != "":
 		_text(letter, r.get_center(), 18, UI.GOLD, true)
+	elif ghost:
+		draw_texture_rect(ghost, well, false)
 	elif placeholder != "":
 		_placeholder(r)
 	if overlay.a > 0:
