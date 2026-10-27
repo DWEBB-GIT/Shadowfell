@@ -5,6 +5,8 @@ extends RefCounted
 ## with use, as WoW's professions do: fishing goes up by one with each catch.
 ## A class's `trained` spells (archetypes.json) are learned from a trainer
 ## for coins once the character is high enough level, WoW's class trainers.
+## A class starts with only its basic spell; its `later` spells wait for
+## trainers in the big cities.
 
 var game
 var ranks := {} ## skill id -> rank (1 when learned)
@@ -94,9 +96,12 @@ func trained_entry(ability) -> Dictionary:
 	return {}
 
 
-## a class spell a trainer teaches that this character has not learned yet
+## a class spell a trainer teaches that this character has not learned yet,
+## or one left for a later trainer (archetypes.json `later`), not in the world yet
 func needs_training(ability) -> bool:
-	return not all_spells and not trained_entry(ability).is_empty() and not spells.has(ability)
+	if all_spells or spells.has(ability):
+		return false
+	return not trained_entry(ability).is_empty() or game.stats.archetype.get("later", []).has(ability)
 
 
 ## The name of the quest a trainer entry waits on (its `quest`, not yet

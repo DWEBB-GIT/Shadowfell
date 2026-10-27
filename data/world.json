@@ -392,6 +392,31 @@
       "npc": "wenna",
       "position": [-611.8, 434.6],
       "facing": 120
+    },
+    {
+      "npc": "brask",
+      "position": [-619.5, 412.5],
+      "facing": 180
+    },
+    {
+      "npc": "nell",
+      "position": [-650.5, 450.5],
+      "facing": 90
+    },
+    {
+      "npc": "odo",
+      "position": [-586.0, 452.5],
+      "facing": 250
+    },
+    {
+      "npc": "grue",
+      "position": [-648.5, 464.0],
+      "facing": 60
+    },
+    {
+      "npc": "aveline",
+      "position": [-631.5, 457.5],
+      "facing": 270
     }
   ],
   "enemySpawns": [

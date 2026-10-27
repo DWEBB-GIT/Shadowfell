@@ -897,6 +897,226 @@
           ]
         }
       ]
+    },
+    {
+      "id": "brask",
+      "greetings": [
+        {
+          "text": "You've the look of someone who's been knocked down lately. Good. Now learn to get up swinging."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "brask_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "brask_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "brask_who",
+          "text": "Brask. I keep the wardens, such as they are: six farmers with spears and me. Most mornings I'm at the north gate. If you carry a blade for a living, I'll teach you to use it better than you do now. Not for free. Steel costs, and so does my patience.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "brask_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "brask_teach",
+          "text": "I teach what a sword arm needs first: a blow that lands hard, how to set yourself against a hit, and a swing wide enough for more than one fool. The rest you'll learn from better men than me, in the cities, if you live that long.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nell",
+      "greetings": [
+        {
+          "text": "Keep your voice down. And your hands where I can see them."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "nell_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "nell_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nell_who",
+          "text": "Nell Tallow. Wenna's cousin, and the one the family doesn't talk about. I buy what people would rather not sell in the open, and I teach the quiet work to those who've the wrists for it.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "nell_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "nell_teach",
+          "text": "A little at a time. How to finish a man you've worn down, how not to be where his blade lands, and a dab of something nasty on your edge. Shadows and sleep-draughts come later, from people I'd not name to your face.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "odo",
+      "greetings": [
+        {
+          "text": "Mind where you step. Half this town walks like a cart with a wheel off."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "odo_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "odo_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "odo_who",
+          "text": "Odo Fell. I hunt the vale for the reeve, and for whoever pays. I came in for salt and stayed for the ale. While I'm here I'll teach a bow hand a thing or two.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "odo_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "odo_teach",
+          "text": "Fire on an arrow, a quick jump back when the brute gets close, and a pot of tar at your feet for whatever follows. The fancy shooting is for the lodge-masters in the cities.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grue",
+      "greetings": [
+        {
+          "text": "Sit if you like. The chair won't bite. I can't promise the same."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "grue_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "grue_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "grue_who",
+          "text": "Mother Grue. I lay out the dead for the chapel, and I listen to what's left in them. Folk come to me for warts and worse. Some come to learn. You've that look.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "grue_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "grue_teach",
+          "text": "Rot first: it does the work while you wait. Then how to drink a little of their life to mend your own, and a bed of grave-flowers for when they come in a crowd. The deeper hexes are kept by others, far from here.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aveline",
+      "greetings": [
+        {
+          "text": "The road was lit once, all the way to the sea. It will be again."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "aveline_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "aveline_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "aveline_who",
+          "text": "Aveline. Last of the knights who kept the old road. The order is gone and the chantry roof with it, so I keep my vigil here by the chapel, and teach any who would carry the light.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "aveline_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "aveline_teach",
+          "text": "A hammer of light for the one who runs, a shield of it for when the blows come thick, and a storm of it when they surround you. The order's deeper rites were kept in the great houses. Seek them there, when you are ready.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

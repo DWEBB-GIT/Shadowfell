@@ -6,6 +6,7 @@ extends SceneTree
 var game
 var frame := 0
 var failed := 0
+var real_trained: Array
 
 
 func _process(_dt: float) -> bool:
@@ -17,6 +18,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
+		real_trained = DB.archetypes.warden.trained.duplicate(true)
 		# Mara teaches Warriors Rend from level 3 for 15 silver (test data only)
 		DB.archetypes.warden.trained = [{"ability": "rend", "trainer": "mara", "level": 3, "cost": 15}]
 		var made: Dictionary = game.roster.create("Trainer Tester", "warden")
@@ -43,7 +45,13 @@ func _process(_dt: float) -> bool:
 		sk.reset()
 		sk.apply_spells(data.spells)
 		_ok(sk.knows_ability("rend"), "and a load gives it back")
-		DB.archetypes.warden.erase("trained")
+		# the real data: a Warrior starts with Heavy Strike alone, Brask
+		# teaches three early spells, the rest wait for later trainers
+		DB.archetypes.warden.trained = real_trained
+		sk.reset()
+		_ok(sk.knows_ability("heavyStrike") and not sk.knows_ability("crushingBlow"), "a new Warrior knows only Heavy Strike")
+		_ok(game.dialogue.train_rows("brask").filter(func(r): return r.id.begins_with("spell:")).size() == 3, "Brask teaches Warriors three spells")
+		_ok(not sk.knows_ability("lunge") and not sk.learn_spell("lunge"), "a later spell is locked and no trainer teaches it yet")
 		print("trainer spell check: %s" % ("all checks pass" if failed == 0 else "%d failed" % failed))
 		quit(1 if failed else 0)
 	return false
