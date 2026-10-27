@@ -113,7 +113,17 @@ var sanctioned := false
 var sanctioned_crime := false ## the assault on it has been reckoned (law.gd)
 var protected: bool:
 	get:
-		return game.law != null and game.law.protected(self)
+		return evading or (game.law != null and game.law.protected(self))
+
+## Walking home after a leash or a fight it won (WoW's evade): it cannot be
+## hurt or pulled on the way, and at its post it is whole again.
+var evading: bool:
+	get:
+		return state == "return"
+
+## seconds spent walking home: one stuck behind something is put back after this
+const RETURN_LIMIT := 15.0
+var returning := 0.0
 
 var is_elite: bool:
 	get:
@@ -203,6 +213,7 @@ func reset() -> void:
 	_reset_control()
 	engaged = 0.0
 	since_struck = INF
+	returning = 0.0
 	rig.action = null
 	_sync()
 
@@ -468,10 +479,9 @@ func update(dt: float, player) -> void:
 					state = "attack" if dist <= reach else "chase"
 					engaged = maxf(engaged, 2)
 			"return":
-				if dist < cfg.detection * 0.8 and from_home < DB.leash_distance * 0.6 and not hidden and not passive:
-					state = "chase"
-				elif from_home < 0.6:
-					state = "idle"
+				returning += dt
+				if from_home < 0.6 or returning >= RETURN_LIMIT:
+					reset()
 
 	attack_timer = maxf(0, attack_timer - dt)
 	special_timer = maxf(0, special_timer - dt)
@@ -520,23 +530,19 @@ func update(dt: float, player) -> void:
 				_start_cast("normal", player)
 		elif state == "attack":
 			facing = atan2(dx, dz)
-			if windup > 0:
-				windup -= dt
-				if windup <= 0:
-					windup = 0.0
-					game.combat.resolve_enemy_strike(self)
-			elif attack_timer <= 0:
-				# telegraph, then strike; the interval runs from the start of the swing
-				windup = cfg.windup
+			if attack_timer <= 0:
+				# as in WoW, the blow lands the moment its swing timer is ready
+				# (no wind-up to step out of); telegraphed attacks are the
+				# `telegraph` and `special` casts above
 				attack_timer = cfg.attackInterval
-				rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), cfg.windup + 0.3, cfg.windup / (cfg.windup + 0.3))
+				rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
 				game.events.emit("enemyWindup", {"enemy": self})
+				game.combat.resolve_enemy_strike(self)
 	if casting != null:
 		pass # nothing else moves while committed to a telegraphed attack
 	elif state == "return" and stagger <= 0:
 		_steer_towards(home.x, home.z, move_speed * 0.8, dt, 0.3)
 		speed01 = 0.8
-		health = minf(max_health, health + dt * 6)
 	elif state == "idle" and game.law != null and is_same(game.law.summoned, self) and not player.dead:
 		# a watchman sent to have a word: walks up to you and speaks
 		_steer_towards(player.position.x, player.position.z, move_speed * 0.8, dt, 1.6)

@@ -22,6 +22,7 @@ var portal_ready := {} ## portal ability id -> world time it can be cast again
 var nemesis = null ## the enemy spawn id that last killed you
 var time := 0.0 ## seconds of play in this world (respawn timers run on it)
 var respawn_at := {} ## enemy spawn id -> world time it comes back
+var grave = null ## your belongings where you fell (grave.gd)
 var discovered := {} ## POI ids (WorldMap.pois) the player has been to
 
 
@@ -48,6 +49,7 @@ func reset() -> void:
 	nemesis = null
 	time = 0.0
 	respawn_at = {}
+	grave = null
 
 
 func is_defeated(id: String) -> bool:
@@ -99,6 +101,7 @@ func serialize() -> Dictionary:
 		"time": U.jround(time),
 		"respawnAt": respawn_at.duplicate(),
 		"discovered": discovered.keys(),
+		"grave": grave.duplicate(true) if grave != null else null,
 	}
 
 
@@ -142,6 +145,16 @@ func apply(data: Dictionary) -> void:
 	nemesis = data.get("nemesis") if typeof(data.get("nemesis")) == TYPE_STRING else null
 	time = float(data.get("time", 0.0))
 	discovered = _set_of(data.get("discovered"))
+	var gv = data.get("grave")
+	grave = null
+	if typeof(gv) == TYPE_DICTIONARY and ["grave", "stolen", "dropped"].has(gv.get("phase")) and typeof(gv.get("items")) == TYPE_ARRAY:
+		grave = gv.duplicate(true)
+		grave.items = grave.items.filter(func(s): return SaveManager._is_stack(s))
+		grave.coins = int(grave.get("coins", 0))
+		grave.until = float(grave.get("until", 0))
+		grave.x = float(grave.x)
+		grave.z = float(grave.z)
+		grave.scavengers = grave.get("scavengers", []).filter(func(s): return typeof(s) == TYPE_STRING)
 	respawn_at = {}
 	var ra = data.get("respawnAt", {})
 	if typeof(ra) == TYPE_DICTIONARY:

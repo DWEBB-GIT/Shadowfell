@@ -956,21 +956,13 @@ func _render_skills() -> void:
 		return
 	UI.clear(w.inner)
 	var sk = game.skills
-	var learned := []
-	var not_yet := []
-	for d in DB.skills.values():
-		(learned if sk.has(d.id) else not_yet).append(d)
-	w.sub.text = "%d of %d learned" % [learned.size(), DB.skills.size()]
+	# only what you have learned: the rest are yours to discover (Dan, 2026-10-27)
+	var learned := DB.skills.values().filter(func(d): return sk.has(d.id))
+	w.sub.text = "%d learned" % learned.size() if not learned.is_empty() else ""
 	if learned.is_empty():
-		UI.wrapped(UI.label(w.inner, "You have no professions yet. Trainers in town teach them.", 13, UI.TEXT_DIM))
-	else:
-		_section(w.inner, "LEARNED")
+		UI.wrapped(UI.label(w.inner, "You have no professions yet. Folk who practise a craft may teach you theirs.", 13, UI.TEXT_DIM))
 	for d in learned:
 		_prof_row(w.inner, d)
-	if not not_yet.is_empty():
-		_section(w.inner, "NOT YET LEARNED")
-		for d in not_yet:
-			_prof_row(w.inner, d)
 	w.foot.text = "Professions are learned from trainers and rise as you use them. Drag an ability onto your bar."
 
 
@@ -988,12 +980,19 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	var mx: int = sk.cap(d.id) if known else int(d.get("maxRank", 60))
 	var bonus: int = sk.tool_bonus(d.id) if known and ranked else 0
 	var level := ("%d%s / %d" % [sk.rank(d.id), "+%d" % bonus if bonus else "", mx] if ranked else "Learned") if known else "Not learned"
-	var trainer = DB.npcs.get(d.get("trainer", ""))
-	var who: String = trainer.name if trainer else "A trainer"
 	var row := UI.panel(parent, 0, Color("1a150f"), UI.BORDER_DIM)
 	row.add_theme_stylebox_override("panel", UI.box(Color("1a150f"), UI.BORDER_DIM, 0, 1, Vector4(8, 6, 8, 6)))
 	row.modulate.a = 1.0 if known else 0.55
 	var h := UI.hbox(row, 10)
+	# the icon, or an empty square of its size so the rows line up
+	var pic := TextureRect.new()
+	pic.texture = icons.profession(d.id)
+	pic.custom_minimum_size = Vector2(36, 36)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(pic)
 	var body := UI.vbox(h, 3)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var top := UI.hbox(body, 6)
@@ -1011,9 +1010,7 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	else:
 		UI.label(top, level, 15 if known else 12, Color("f0d070") if known else UI.TEXT_DIM)
 	_skill_bar(body, float(sk.rank(d.id)) / mx if known else 0.0, 90, float(bonus) / mx)
-	if not known:
-		UI.label(body, "%s teaches it" % who, 11, UI.TEXT_DIM)
-	elif ladder:
+	if known and ladder:
 		_ladder_lines(body, d)
 	var abil := UI.hbox(h, 4)
 	if known:
@@ -1026,7 +1023,7 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 			UI.button(abil, "Smelting", func(): show_window("smelting"))
 		elif d.id != "cooking" and d.has("craft"):
 			UI.button(abil, d.craft.get("window", "Craft"), func(): show_window("craft:" + d.id))
-	tip_on(row, d.get("desc", "") + ("" if known else " %s teaches it for %s." % [who, U.money(d.get("cost", 0))]), d.name)
+	tip_on(row, d.get("desc", ""), d.name)
 
 
 ## A laddered profession's extra lines: skill experience to the next level,
@@ -1249,7 +1246,7 @@ func _layout_bags(vp: Vector2) -> void:
 	if not bags.visible:
 		return
 	var right := vp.x - 12
-	var bottom: float = hud.dock.position.y - 8 # stacked up from the bag tray
+	var bottom: float = hud.purse.position.y - 8 # stacked up from the bag tray and its purse
 	var top_limit := 28.0
 	var y := bottom
 	var col_w := 0.0

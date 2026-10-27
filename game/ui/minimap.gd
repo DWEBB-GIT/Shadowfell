@@ -82,14 +82,17 @@ func _init(g) -> void:
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 11)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
 	# the N badge and the zoom buttons
-	var north := UI.label(self, "N", 11, UI.GOLD)
-	north.add_theme_stylebox_override("normal", _round_box(8))
-	north.position = Vector2(SIZE / 2 - 8, -7)
-	north.size = Vector2(16, 14)
-	north.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	north.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# a small orb at the top of the rim, styled like the menu orbs round it
+	var north := orb(270.0, 10.0)
+	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var n := UI.label(north, "N", 12, UI.GOLD)
+	n.add_theme_font_override("font", UI.bold)
+	n.set_anchors_preset(Control.PRESET_FULL_RECT)
+	n.grow_vertical = Control.GROW_DIRECTION_BOTH
+	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	n.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# zoom: two small round buttons on the rim, right side, clear of the place
 	# bar (the HUD sets its menu orbs round the left side the same way)
 	for z in [[1, 22.0], [-1, 48.0]]:

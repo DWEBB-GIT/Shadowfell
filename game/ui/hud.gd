@@ -15,6 +15,11 @@ const LOG_COLOURS := {
 	"say": Color("f0e2a0"), "xp": Color("c9b77a"), "level": Color("c9b77a"), "heal": Color("a8c08a"),
 	"lore": Color("b9b2a0"), "kill": Color("e0c8a0"), "muted": UI.TEXT_DIM,
 }
+const LOG_TABS := ["general", "combat", "loot"]
+const COMBAT_KINDS := ["hit", "hurt", "heal", "kill", "dealt", "strike", "taken", "shot", "nemesis"]
+const LOOT_KINDS := ["loot", "item", "skin", "scrap", "gem", "reforge"]
+const LOG_LINES := 7 ## lines on screen
+const LOG_KEEP := 80 ## lines kept for switching tabs
 const SLOT := 48
 const EDGE := 12.0 ## the gap between the HUD and the screen edge
 ## the menus in the right dock: [window, glyph, tip, key action, pad label]
@@ -44,7 +49,8 @@ var log_throttle := {}
 var enemy_bars := {}
 var recent_foe = null
 var recent_foe_time := 0.0
-var level_up_time := 0.0
+var banner_time := 0.0
+var banner_len := 0.0
 var signpost = null
 var shown_target = null
 var portrait_of = null
@@ -59,7 +65,7 @@ var title: TitleScreen
 var loading: LoadingScreen
 
 var root: Control
-var char_panel: PanelContainer
+var char_panel: Control
 var char_name: Label
 var char_level: Label
 var char_img: TextureRect
@@ -69,7 +75,7 @@ var mp: Dictionary
 var gauge: Dictionary
 var pips: HBoxContainer
 var buffs: HBoxContainer
-var target: PanelContainer
+var target: Control
 var target_ring: Panel
 var target_img: TextureRect
 var target_badge: Label
@@ -87,11 +93,13 @@ var slots: Array = [] ## ISlot per bar slot
 var dock: PanelContainer ## money and the bag sockets, bottom right
 var micro_buttons := {} ## key action -> [orb Button, tip]
 var coins: RichTextLabel
+var purse: PanelContainer ## the money plaque on top of the bag tray
 var _coins_shown := -1
 var cast: Dictionary
 var swing: Dictionary
 var swing_off: Dictionary
 var log_box: VBoxContainer
+var log_shade: Panel
 var prompt: PanelContainer
 var prompt_key: Label
 var prompt_text: Label
@@ -106,9 +114,17 @@ var zone_left := 0.0
 var world_map: WorldMapUI
 var error_label: Label
 var error_left := 0.0
-var levelup: PanelContainer
-var levelup_title: Label
-var levelup_list: Label
+var banner: VBoxContainer ## level up and quest complete, big in the middle
+var banner_title: Label
+var banner_band: Panel
+var banner_sub: Label
+var banner_list: Label
+var banner_queue: Array = []
+var target_cast: Dictionary ## what your target is casting, under its frame
+var log_tabs: HBoxContainer
+var log_tab := "general"
+var log_entries: Array = [] ## [text, kind, rarity, born], newest last
+var party: PartyFrames
 var backdrop: ColorRect
 var death: PanelContainer
 var death_text: Label
@@ -157,6 +173,7 @@ func _init(g) -> void:
 		if e.announce and e.name != "" and zone_left < 2.0:
 			show_zone(e.name, game.region.get("name", "") if game.region is Dictionary else "", 2.6))
 	ev.on("levelUp", show_level_up)
+	ev.on("questComplete", _quest_done)
 	ev.on("barChanged", func(_e): render_bar())
 	ev.on("enemyHit", _fought)
 	ev.on("playerHurt", _fought)
@@ -202,12 +219,67 @@ func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -
 	var l := UI.label(track, "", text_size, Color("f0e4c8"), 4)
 	l.add_theme_font_override("font", UI.bold)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	return {"root": track, "fill": fill, "text": l}
 
 
+## a slim cast bar: the spell's icon in a small bronze frame, then a bar
+## with the spell's name on the left and the time left on the right
+func _cast_bar(parent: Control, hi: Color, lo: Color, width: float, height := 14, mirror := false) -> Dictionary:
+	var row := UI.hbox(parent, 3)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pic := Panel.new()
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pic.custom_minimum_size = Vector2(height + 6, height + 6)
+	pic.add_theme_stylebox_override("panel", UI.box(Color("120e0a"), Color("b08a4a"), 0, 1))
+	var icon := TextureRect.new()
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+	icon.offset_left = 1
+	icon.offset_top = 1
+	icon.offset_right = -1
+	icon.offset_bottom = -1
+	pic.add_child(icon)
+	var b := _bar(row, hi, lo, height, 10)
+	b.root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.root.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	b.text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.text.offset_left = 6
+	var t := UI.label(b.root, "", 10, Color("f0e4c8"), 4)
+	t.add_theme_font_override("font", UI.bold)
+	t.set_anchors_preset(Control.PRESET_FULL_RECT)
+	t.grow_vertical = Control.GROW_DIRECTION_BOTH
+	t.offset_right = -6
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(pic)
+	if not mirror: # the icon on the portrait's side, left on yours
+		row.move_child(pic, 0)
+	row.custom_minimum_size.x = width
+	row.size = Vector2(width, height + 6)
+	return {"root": row, "fill": b.fill, "text": b.text, "time": t, "icon": icon, "pic": pic}
+
+
+## shows a cast (or a craft, a meal, a gather) on a cast bar
+func _show_cast(b: Dictionary, c, tex: Texture2D) -> void:
+	b.root.visible = c != null
+	if c == null:
+		return
+	set_fill(b, c.t / c.total if c.total > 0 else 0.0)
+	b.text.text = c.name
+	b.time.text = "%.1f" % maxf(0, c.total - c.t)
+	b.icon.texture = tex
+	b.pic.visible = tex != null
+
+
 static func set_fill(b: Dictionary, k: float) -> void:
+	if b.fill is UnitBar:
+		b.fill.k = k
+		return
 	b.fill.anchor_right = clampf(k, 0, 1)
 	b.fill.offset_right = 0
 
@@ -228,15 +300,34 @@ func _build() -> void:
 	minimap = Minimap.new(game)
 	root.add_child(minimap)
 
-	# the log, bottom left (#log)
+	# the log, bottom left (#log), on a smoky band that fades to the right
+	log_shade = Panel.new()
+	log_shade.add_theme_stylebox_override("panel", UI.shade("left", 0.55))
+	log_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	log_shade.modulate.a = 0 # shown while the pointer is over the log
+	root.add_child(log_shade)
 	log_box = UI.vbox(root, 1)
 	log_box.custom_minimum_size = Vector2(420, 0)
+	log_tabs = UI.hbox(root, 2)
+	for t in LOG_TABS:
+		var b := UI.button(log_tabs, t.capitalize(), func(): set_log_tab(t), 11)
+		b.toggle_mode = true
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(64, 20)
+		b.add_theme_color_override("font_color", UI.TEXT_DIM)
+		b.add_theme_color_override("font_pressed_color", UI.GOLD)
+		b.add_theme_color_override("font_hover_pressed_color", UI.GOLD)
+		b.add_theme_stylebox_override("pressed", UI.frame(Vector4(8, 2, 8, 2), "button_pressed"))
+		b.set_meta("tab", t)
+	_mark_log_tab()
+	party = PartyFrames.new(self)
+	root.add_child(party)
 
 	# the cast and swing bars over the spell bar
-	cast = _bar(root, Color("e8c060"), Color("a87a28"), 16)
+	cast = _cast_bar(root, Color("e8c060"), Color("a87a28"), 240)
 	swing = _bar(root, Color("c8c4b8"), Color("7c776a"), 12, 10)
 	swing_off = _bar(root, Color("a9b4c0"), Color("5d6874"), 11, 9)
-	for b in [cast, swing, swing_off]:
+	for b in [swing, swing_off]:
 		b.root.size = Vector2(240, b.root.custom_minimum_size.y)
 	_build_bottom()
 	_build_dock()
@@ -272,15 +363,26 @@ func _build() -> void:
 	toast_label.modulate.a = 0
 	error_label = UI.label(root, "", 20, Color("ff3a2a"), 4)
 	error_label.modulate.a = 0
-	levelup = UI.panel(root, 0)
-	levelup.add_theme_stylebox_override("panel", UI.frame(Vector4(16, 10, 16, 12)))
-	levelup.custom_minimum_size = Vector2(280, 0)
-	var lv := UI.vbox(levelup, 6)
-	levelup_title = UI.label(lv, "", 20, UI.GOLD)
-	levelup_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	levelup_list = UI.label(lv, "", 14)
-	levelup_list.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	levelup.visible = false
+	# level up and quest complete: big in the middle, on a smoky band
+	banner_band = Panel.new()
+	banner_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner_band.add_theme_stylebox_override("panel", UI.shade("middle", 0.6))
+	root.add_child(banner_band)
+	banner = VBoxContainer.new()
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner.add_theme_constant_override("separation", 2)
+	root.add_child(banner)
+	banner_sub = _outlined(banner, 14, Color("d8c8a0"), 6)
+	banner_title = _outlined(banner, 40, UI.GOLD, 10)
+	banner_title.add_theme_font_override("font", _spaced(40, 6))
+	var rule := ColorRect.new()
+	rule.color = Color("b08a4a", 0.8)
+	rule.custom_minimum_size = Vector2(0, 1)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner.add_child(rule)
+	banner_list = _outlined(banner, 14, UI.TEXT, 6)
+	banner.modulate.a = 0
+	banner.visible = false
 
 	# the signpost card
 	sign_card = UI.panel(root, 10)
@@ -354,26 +456,25 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 
 
 ## the game's name, the region and the build stamp (#title-area)
-## the character frame (#char-panel): your portrait in its ring, like the
-## target's, beside your bars
+## the character frame (#char-panel): your round portrait with the bars
+## running out of it, the level on a badge under it and combo points under
+## the energy bar (as in the ARPG/MMO kits Dan pointed at)
 func _build_char_panel() -> void:
-	char_panel = UI.panel(root, 0)
-	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
-	char_panel.custom_minimum_size = Vector2(UNIT_W, 0)
-	var row := UI.hbox(char_panel, 8)
-	var pic := _portrait(row)
-	char_img = pic.img
-	char_badge = pic.badge
-	var cv := UI.vbox(row, 3)
-	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	char_name = UI.label(cv, "", 14, UI.GOLD)
+	var f := _unit_frame(root, false)
+	char_panel = f.root
+	char_img = f.img
+	char_badge = f.badge
+	var cv: VBoxContainer = f.col
+	char_name = UI.label(cv, "", 14, UI.GOLD, 4)
+	char_name.add_theme_stylebox_override("normal", _indent(false))
 	char_name.clip_text = true
+	char_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the badge
-	hp = _bar(cv, Color("c0503a"), Color("8e2a20"), 16)
-	mp = _bar(cv, Color("5a82c8"), Color("2c4a8a"), 13, 10)
-	gauge = _bar(cv, Color("e0a84a"), Color("9a5a1c"), 13, 10)
-	pips = UI.hbox(cv, 4)
-	buffs = UI.hbox(cv, 4)
+	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 18, false)
+	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
+	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
+	pips = UI.hbox(_indented(cv, false), 3)
+	buffs = UI.hbox(_indented(cv, false), 4)
 	game.events.on("equipmentChanged", func(_e): _player_portrait.call_deferred())
 
 
@@ -383,26 +484,81 @@ func _player_portrait() -> void:
 		char_img.texture = icons.player_portrait(game.player.model)
 
 
-## a round portrait with a level badge on its rim (#target-frame .portrait)
-func _portrait(row: Control) -> Dictionary:
+const PORTRAIT := 64.0 ## the round portrait on the unit frames
+const BAR_UNDER := 14.0 ## how far the bars run in under the portrait's rim
+
+## a unit frame with no box: a column of bars that starts under the round
+## portrait's rim (on the right when `mirror`), the portrait drawn over it
+func _unit_frame(parent: Control, mirror: bool) -> Dictionary:
+	var f := Control.new()
+	f.mouse_filter = Control.MOUSE_FILTER_STOP # clicks here never walk you
+	f.custom_minimum_size = Vector2(UNIT_W, PORTRAIT + 14)
+	parent.add_child(f)
+	var col := UI.vbox(f, 3)
+	var w := UNIT_W - PORTRAIT + BAR_UNDER
+	col.custom_minimum_size.x = w
+	col.position = Vector2(0.0 if mirror else UNIT_W - w, 2)
+	var pic := _portrait(f, PORTRAIT)
+	pic.root.position = Vector2(UNIT_W - PORTRAIT if mirror else 0.0, 4)
+	return {"root": f, "col": col, "img": pic.img, "badge": pic.badge, "ring": pic.ring}
+
+
+## a bar on a unit frame, its text kept clear of the portrait
+func _unit_bar(parent: Control, hi: Color, lo: Color, height: int, mirror: bool, text_size := 11) -> Dictionary:
+	var bar := UnitBar.new(hi, lo, height, mirror)
+	parent.add_child(bar)
+	var l := UI.label(bar, "", text_size, Color("f0e4c8"), 4)
+	l.add_theme_font_override("font", UI.bold)
+	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.offset_left = 0.0 if mirror else BAR_UNDER
+	l.offset_right = -BAR_UNDER if mirror else 0.0
+	# text taller than a slim bar spills out evenly, not all below it
+	l.grow_vertical = Control.GROW_DIRECTION_BOTH
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return {"root": bar, "fill": bar, "text": l}
+
+
+## room for the portrait's rim before a frame's text
+func _indent(mirror: bool) -> StyleBoxEmpty:
+	var s := StyleBoxEmpty.new()
+	if mirror:
+		s.content_margin_right = BAR_UNDER + 4
+	else:
+		s.content_margin_left = BAR_UNDER + 4
+	return s
+
+
+func _indented(parent: Control, mirror: bool) -> Control:
+	var m := MarginContainer.new()
+	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	m.add_theme_constant_override("margin_right" if mirror else "margin_left", int(BAR_UNDER) + 4)
+	parent.add_child(m)
+	return m
+
+
+## a round portrait in a bronze ring with the level on a badge under it
+func _portrait(parent: Control, d: float) -> Dictionary:
 	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(58, 58)
+	holder.custom_minimum_size = Vector2(d, d)
+	holder.size = Vector2(d, d)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(holder)
+	parent.add_child(holder)
 	var ring_panel := Panel.new()
 	ring_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring_panel.size = Vector2(58, 58)
-	var ring := UI.box(Color("1a1510"), Color("8a6a3a"), 0, 2)
-	ring.set_corner_radius_all(29)
+	ring_panel.size = Vector2(d, d)
+	var ring := UI.box(Color("1a1510"), Color("b08a4a"), 0, 3)
+	ring.set_corner_radius_all(int(d / 2))
+	ring.shadow_color = Color(0, 0, 0, 0.6)
+	ring.shadow_size = 4
 	ring_panel.add_theme_stylebox_override("panel", ring)
 	holder.add_child(ring_panel)
 	var img := TextureRect.new()
 	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	img.position = Vector2(2, 2)
-	img.size = Vector2(54, 54)
+	img.position = Vector2(3, 3)
+	img.size = Vector2(d - 6, d - 6)
 	var sh := Shader.new()
 	sh.code = CIRCLE
 	var mat := ShaderMaterial.new()
@@ -410,44 +566,50 @@ func _portrait(row: Control) -> Dictionary:
 	img.material = mat
 	holder.add_child(img)
 	var badge_label := UI.label(holder, "", 12, Color("f0d890"))
-	var badge := UI.box(Color("120e0a"), Color("b08a4a"), 0, 1, Vector4(3, 0, 3, 0))
-	badge.set_corner_radius_all(10)
+	var badge := UI.box(Color("120e0a"), Color("b08a4a"), 0, 1, Vector4(4, 0, 4, 0))
+	badge.set_corner_radius_all(9)
 	badge_label.add_theme_stylebox_override("normal", badge)
 	badge_label.add_theme_font_override("font", UI.bold)
 	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge_label.custom_minimum_size = Vector2(20, 20)
-	badge_label.position = Vector2(-4, 42)
-	return {"ring": ring_panel, "img": img, "badge": badge_label}
+	badge_label.custom_minimum_size = Vector2(26, 18)
+	badge_label.size = Vector2(26, 18)
+	badge_label.position = Vector2(d / 2 - 13, d - 9)
+	return {"root": holder, "ring": ring_panel, "img": img, "badge": badge_label}
 
 
-## the target frame, the player's mirror, with a round portrait (#target-frame)
+## the target frame, the player's mirror: portrait on the right (#target-frame)
 func _build_target() -> void:
-	target = UI.panel(root, 0)
-	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
-	target.custom_minimum_size = Vector2(UNIT_W, 0)
-	var row := UI.hbox(target, 8)
-	var pic := _portrait(row)
-	target_ring = pic.ring
-	target_img = pic.img
-	target_badge = pic.badge
+	var f := _unit_frame(root, true)
+	target = f.root
+	target_ring = f.ring
+	target_img = f.img
+	target_badge = f.badge
 	# the combat type (melee, ranged, magic) shows when you point at the portrait
 	target_img.mouse_filter = Control.MOUSE_FILTER_STOP
 	target_img.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
 	target_img.mouse_exited.connect(func(): items.cursor_tip_off())
-	var tv := UI.vbox(row, 2)
-	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var tv: VBoxContainer = f.col
 	var nr := UI.hbox(tv, 6)
-	target_name = UI.label(nr, "", 14, Color("e8c8a0"))
+	target_label = UI.label(nr, "", 11, UI.TEXT_DIM, 4)
+	target_name = UI.label(nr, "", 14, Color("e8c8a0"), 4)
 	target_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	target_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	target_name.add_theme_stylebox_override("normal", _indent(true))
 	target_name.clip_text = true
+	target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# not shown (its crossed swords read as a close button); holds the tip
 	target_kind = UI.label(null, "", 13, UI.GOLD, 3)
-	target_label = UI.label(tv, "", 11, UI.TEXT_DIM)
-	target_hp = _bar(tv, Color("c0503a"), Color("8e2a20"), 16)
-	target_mp = _bar(tv, Color("5a82c8"), Color("2c4a8a"), 11, 9)
-	target_stagger = _bar(tv, Color("e8d080"), Color("a08030"), 11, 9)
-	target_auras = UI.hbox(tv, 4)
+	target_hp = _unit_bar(tv, Color("d8553c"), Color("8a2218"), 18, true)
+	target_mp = _unit_bar(tv, Color("5a8ad8"), Color("24407e"), 12, true, 9)
+	target_stagger = _unit_bar(tv, Color("e8d080"), Color("a08030"), 12, true, 9)
+	# what it is casting, the bar draining towards the portrait as it winds up
+	var tc := _indented(tv, true)
+	target_cast = _cast_bar(tc, Color("e89a50"), Color("a04e20"), 0, 12, true)
+	target_cast.root.visible = false
+	var ta := _indented(tv, true)
+	target_auras = UI.hbox(ta, 4)
+	target_auras.alignment = BoxContainer.ALIGNMENT_END
 	target.visible = false
 
 
@@ -463,6 +625,18 @@ func _build_bottom() -> void:
 	bottom.add_child(xm)
 	# purple like the +XP popups, so the pale text reads against it
 	xp = _bar(xm, Color("8a62c4"), Color("43286e"), 16, 12)
+	# a notch every tenth of the level, so progress reads at a glance
+	var ticks := Control.new()
+	ticks.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ticks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ticks.draw.connect(func():
+		for i in range(1, 10):
+			var x := roundf(ticks.size.x * i / 10.0)
+			ticks.draw_line(Vector2(x, 2), Vector2(x, ticks.size.y - 2), Color(0, 0, 0, 0.7), 1.0)
+			ticks.draw_line(Vector2(x + 1, 2), Vector2(x + 1, ticks.size.y - 2), Color(1, 0.92, 0.75, 0.22), 1.0))
+	ticks.resized.connect(ticks.queue_redraw)
+	xp.root.add_child(ticks)
+	xp.root.move_child(ticks, 1)
 	action_bar = UI.panel(bottom, 0)
 	action_bar.add_theme_stylebox_override("panel", bar_frame)
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -489,13 +663,16 @@ func _build_dock() -> void:
 	dock.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := UI.hbox(dock, 6)
 	row.alignment = BoxContainer.ALIGNMENT_END
-	coins = UI.rich(row, 15)
-	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
-	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(_divider())
 	_sockets_box = UI.hbox(row, 2)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	# your money on a small plaque sitting on the tray's top edge, over the
+	# backpack, as the purse of the bags under it
+	purse = UI.panel(root, 0)
+	purse.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 2, 10, 3)))
+	purse.mouse_filter = Control.MOUSE_FILTER_PASS
+	coins = UI.rich(purse, 13)
+	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 
 ## the menus as round buttons down the minimap's left rim, RuneScape style,
@@ -594,7 +771,9 @@ func hide_title() -> void:
 	death.visible = false
 	document.visible = false
 	backdrop.visible = false
-	levelup.visible = false
+	banner.visible = false
+	banner_band.visible = false
+	banner_queue.clear()
 	sign_card.visible = false
 	target.visible = false
 	prompt.visible = false
@@ -621,7 +800,7 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, levelup, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		for c in [death, document, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -684,7 +863,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, minimap, quests.tracker]:
+	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, party]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -776,11 +955,11 @@ static func html_to_bbcode(h: String) -> String:
 	return re.sub(s, "", true).strip_edges()
 
 
-func show_death(coins_lost: int, destination: String) -> void:
+func show_death(_coins_lost: int, destination: String) -> void:
 	close_modal(true)
 	modal = "death"
 	var where := "by your camp" if destination == "camp" else "at the last shrine you rested at" if destination == "shrine" else "at the road's end"
-	death_text.text = "Your spirit will rise %s. Walk back to your body to live again with nothing lost, or return to life where you rise%s." % [where, ", %s lighter" % U.money(coins_lost) if coins_lost > 0 else ""]
+	death_text.text = "Your spirit will rise %s. What you carried lies in a grave by your body: reach it within %d minutes, before scavengers do. Walk back to your body, or return to life where you rise; either way you come back wounded." % [where, roundi(DB.CONFIG.death.graveSeconds / 60.0)]
 	backdrop.visible = true
 	death.visible = true
 
@@ -826,29 +1005,100 @@ func log_line(text: String, kind := "", throttle = null, rarity = null) -> void:
 		if now - log_throttle.get(throttle, -1000000) < 1500:
 			return
 		log_throttle[throttle] = now
-	var colour: Color = Items.rarity_colour(rarity) if rarity else LOG_COLOURS.get(kind, UI.TEXT)
-	var l := UI.label(log_box, text, 13, colour, 4)
+	log_entries.append([text, kind, rarity, now])
+	if log_entries.size() > LOG_KEEP:
+		log_entries.pop_front()
+	if log_shows(log_tab, kind, rarity):
+		_log_label(log_entries[-1])
+		while log_box.get_child_count() > LOG_LINES:
+			var c := log_box.get_child(0)
+			log_box.remove_child(c)
+			c.queue_free()
+
+
+## which tab a line belongs on: General has everything
+static func log_shows(tab: String, kind: String, rarity) -> bool:
+	match tab:
+		"combat":
+			return kind in COMBAT_KINDS
+		"loot":
+			return kind in LOOT_KINDS or rarity != null
+	return true
+
+
+func _log_label(entry: Array) -> void:
+	var colour: Color = Items.rarity_colour(entry[2]) if entry[2] else LOG_COLOURS.get(entry[1], UI.TEXT)
+	var l := UI.label(log_box, entry[0], 13, colour, 4)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size = Vector2(log_box.custom_minimum_size.x, 0)
-	l.set_meta("born", now)
-	if kind == "lore":
+	l.set_meta("born", entry[3])
+	if entry[1] == "lore":
 		l.add_theme_font_override("font", UI.italic)
-	while log_box.get_child_count() > 7:
-		var c := log_box.get_child(0)
-		log_box.remove_child(c)
-		c.queue_free()
 
 
-## Level-up card: each stat that rose, old value to new.
+func set_log_tab(tab: String) -> void:
+	log_tab = tab
+	_mark_log_tab()
+	UI.clear(log_box)
+	var shown := log_entries.filter(func(e): return log_shows(tab, e[1], e[2]))
+	for e in shown.slice(maxi(0, shown.size() - LOG_LINES)):
+		_log_label(e)
+
+
+func _mark_log_tab() -> void:
+	for b in log_tabs.get_children():
+		(b as Button).set_pressed_no_signal(b.get_meta("tab") == log_tab)
+
+
+## Level up and quest complete: a title across the middle of the screen, a
+## line over it and a list under it. One at a time, the next waits its turn.
+func show_banner(title_text: String, over: String, list := "", colour := UI.GOLD) -> void:
+	banner_queue.append([title_text, over, list, colour])
+	if banner_time <= 0:
+		_next_banner()
+
+
+func _next_banner() -> void:
+	if banner_queue.is_empty():
+		banner.visible = false
+		banner_band.visible = false
+		return
+	var b: Array = banner_queue.pop_front()
+	banner_title.text = b[0]
+	banner_title.add_theme_color_override("font_color", b[3])
+	banner_sub.text = b[1]
+	banner_sub.visible = b[1] != ""
+	banner_list.text = b[2]
+	banner_list.visible = b[2] != ""
+	banner_time = 5.0 if b[2] != "" else 3.5
+	banner_len = banner_time
+	banner.visible = true
+	banner_band.visible = true
+	banner.size = Vector2.ZERO
+
+
+## Level-up banner: each stat that rose, old value to new.
 func show_level_up(e: Dictionary) -> void:
-	levelup_title.text = "Level %d" % e.level
 	var lines := []
 	for g in e.get("gains", []):
-		lines.append("%s   %s → %s  (+%s)" % [g.label, str(g.from), str(g.to), str(g.diff)])
-	levelup_list.text = "\n".join(lines)
-	level_up_time = 6.0
-	levelup.visible = true
-	levelup.modulate.a = 1
+		# the attributes only: health, armour and the rest follow from them
+		if g.get("id") in Stats.ATTRS:
+			lines.append("%s +%s" % [g.label, U.n(g.diff)])
+	show_banner("LEVEL %d" % e.level, "You have reached", "   ".join(lines))
+
+
+func _quest_done(e: Dictionary) -> void:
+	var q = DB.quests.get(e.get("id", ""))
+	show_banner("QUEST COMPLETE", q.name if q else "", "", Color("e8d090"))
+
+
+## a centred label with a dark outline, for text straight over the world
+func _outlined(parent: Control, px: int, colour: Color, outline: int) -> Label:
+	var l := UI.label(parent, "", px, colour)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	l.add_theme_constant_override("outline_size", outline)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
 
 
 ## A signpost read (E, or a click on it): where its arms point, on screen
@@ -932,6 +1182,7 @@ func refresh_stats() -> void:
 		_coins_shown = c
 		coins.text = ""
 		UI.set_rich(coins, UI.money(c))
+		purse.size = Vector2.ZERO
 	var inv = game.inventory
 	for s in slots:
 		var a = game.action_bar.slots[int(s.loc.substr(2))]
@@ -959,7 +1210,7 @@ func _refresh_resources() -> void:
 		set_fill(gauge, v / g.max)
 		if g.get("colour") and gauge.root.get_meta("colour", "") != g.colour:
 			gauge.root.set_meta("colour", g.colour)
-			gauge.fill.texture = gradient(Color(g.colour), Color(g.colour).darkened(0.45))
+			gauge.fill.tint(Color(g.colour), Color(g.colour).darkened(0.45))
 		var o := " · %s!" % g.overload.name if g.get("overload") and v >= g.max else ""
 		gauge.text.text = "%d %s%s" % [floori(v), g.name, o]
 	var p = r.points_cfg
@@ -969,7 +1220,7 @@ func _refresh_resources() -> void:
 			UI.clear(pips)
 			for i in int(p.max):
 				var pip := Panel.new()
-				pip.custom_minimum_size = Vector2(12, 12)
+				pip.custom_minimum_size = Vector2(11, 11)
 				pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				pips.add_child(pip)
 		var n := floori(r.amount(p.id))
@@ -978,7 +1229,8 @@ func _refresh_resources() -> void:
 			var on := i < n
 			if not c.has_meta("on") or c.get_meta("on") != on:
 				c.set_meta("on", on)
-				var st := UI.box(Color("e07038") if on else Color("1a1410"), Color.BLACK, 0)
+				# combo points: lit embers under the energy bar
+				var st := UI.box(Color("e8602c") if on else Color("1a1410"), Color("d8a050") if on else Color("5a4630"), 0, 1)
 				st.set_corner_radius_all(6)
 				c.add_theme_stylebox_override("panel", st)
 			i += 1
@@ -1043,26 +1295,31 @@ func _refresh_spells() -> void:
 	var k = game.cooking.crafting
 	var e = player.eating
 	var c = null
+	var tex: Texture2D = null
 	if player.casting != null:
 		c = {"t": player.casting.t, "total": player.casting.total, "name": DB.spells[player.casting.id].name}
+		tex = icons.abilities.get(player.casting.id)
 	elif k != null:
 		var rc: Dictionary = DB.recipes[k.id]
 		c = {"t": k.t, "total": k.total, "name": "%s %s%s" % [Cooking.craft_of(rc.skill).get("window", "Making"), Items.get_def(rc.output.item).name, " (%d)" % k.left if k.left > 1 else ""]}
+		tex = icons.item(rc.output.item)
 	elif e != null:
 		c = {"t": e.total - e.left, "total": e.total, "name": "Eating %s" % Items.get_def(e.id).name}
+		tex = icons.item(e.id)
 	elif game.fishing.bar != null:
 		c = game.fishing.bar.duplicate()
 		c.name = "Fishing"
+		tex = icons.profession("fishing")
 	elif game.loot.gather_bar != null:
 		c = game.loot.gather_bar
+		tex = icons.profession("skinning" if c.name.begins_with("Skinning") else "herbalism")
 	elif game.mining.bar != null:
 		c = game.mining.bar
+		tex = icons.profession("mining")
 	elif game.gathering.bar != null:
 		c = game.gathering.bar
-	cast.root.visible = c != null
-	if c != null:
-		set_fill(cast, c.t / c.total)
-		cast.text.text = "%s  %.1f" % [c.name, maxf(0, c.total - c.t)]
+		tex = icons.profession("herbalism")
+	_show_cast(cast, c, tex)
 	# the weapon swing timer: fills until the next blow lands, while auto
 	# attack is on (one per hand when dual wielding; the second is Auto Shot's
 	# when the target is beyond reach and a bow is on your back)
@@ -1097,7 +1354,7 @@ func _refresh_spells() -> void:
 	var fed = game.cooking.well_fed_aura
 	if fed != null:
 		list.append(fed)
-	for extra in [game.boons.aura, game.boons.elixir_aura, game.law.aura]:
+	for extra in [game.boons.aura, game.boons.elixir_aura, game.law.aura, game.afterlife.wound_aura]:
 		if extra != null:
 			list.append(extra)
 	_auras(buffs, list)
@@ -1190,6 +1447,8 @@ func layout() -> void:
 	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
 	dock.size = dock.get_combined_minimum_size()
 	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
+	purse.size = purse.get_combined_minimum_size()
+	purse.position = Vector2(dock.position.x + dock.size.x - 8 - purse.size.x, dock.position.y - purse.size.y + 3)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
@@ -1208,8 +1467,15 @@ func layout() -> void:
 		for l in log_box.get_children():
 			(l as Control).custom_minimum_size.x = w
 	log_box.size = log_box.get_combined_minimum_size()
+	# the tabs (General, Combat, Loot) at the foot, the lines rising over them
+	log_tabs.size = log_tabs.get_combined_minimum_size()
 	var log_foot := vp.y - m if room >= 220 else bottom.position.y - m
-	log_box.position = Vector2(m, log_foot - log_box.size.y)
+	log_tabs.position = Vector2(m, log_foot - log_tabs.size.y)
+	log_box.position = Vector2(m, log_tabs.position.y - 4 - log_box.size.y)
+	log_shade.visible = log_box.get_child_count() > 0 and log_box.is_visible_in_tree()
+	log_shade.position = log_box.position - Vector2(m, 6)
+	log_shade.size = log_box.size + Vector2(m + 60, 12)
+	party.layout(Vector2(m, roundf(vp.y * 0.3)))
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
 		r.position = Vector2(roundf(bottom.position.x + (bottom.size.x - r.size.x) / 2), bottom.position.y - b[1] - r.size.y)
@@ -1222,14 +1488,17 @@ func layout() -> void:
 		c.position = Vector2(roundf((vp.x - c.size.x) / 2), roundf(vp.y * l[1]))
 	quick_bind_banner.size = quick_bind_banner.get_combined_minimum_size()
 	quick_bind_banner.position = Vector2(roundf((vp.x - quick_bind_banner.size.x) / 2), roundf(vp.y * 0.18))
-	levelup.size = levelup.get_combined_minimum_size()
-	levelup.position = Vector2(roundf((vp.x - levelup.size.x) / 2), roundf(vp.y * 0.16))
+	banner.size = banner.get_combined_minimum_size()
+	banner.position = Vector2(roundf((vp.x - banner.size.x) / 2), roundf(vp.y * 0.2))
+	var bw := maxf(banner.size.x + 240, 520)
+	banner_band.position = Vector2(roundf((vp.x - bw) / 2), banner.position.y - 10)
+	banner_band.size = Vector2(bw, banner.size.y + 20)
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
-	mute.position = Vector2(vp.x - m - mute.size.x, dock.position.y - 6 - mute.size.y)
+	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)
 	for win in [death, document]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
@@ -1246,14 +1515,25 @@ func update(dt := 0.0) -> void:
 	error_label.modulate.a = minf(1, error_left / 0.6)
 	vignette_t = maxf(0, vignette_t - dt)
 	hurt.modulate.a = vignette_t / 0.45
+	# the smoky bands behind the log and the objectives show only while the
+	# pointer is over them
+	var at := root.get_global_mouse_position()
+	var over_log := log_box.get_global_rect().merge(log_tabs.get_global_rect()).grow(EDGE).has_point(at)
+	log_shade.modulate.a = move_toward(log_shade.modulate.a, 1.0 if over_log else 0.0, dt * 5)
+	var tr: Control = quests.tracker
+	var over_tracker := tr.is_visible_in_tree() and tr.get_global_rect().has_point(at)
+	tr.self_modulate.a = move_toward(tr.self_modulate.a, 1.0 if over_tracker else 0.0, dt * 5)
 	var now := Time.get_ticks_msec()
 	for l in log_box.get_children():
 		l.modulate.a = 0.45 if now - int(l.get_meta("born", now)) > 9000 else 1.0
-	if level_up_time > 0:
-		level_up_time -= dt
-		levelup.modulate.a = clampf(level_up_time, 0, 1)
-		if level_up_time <= 0:
-			levelup.visible = false
+	if banner_time > 0:
+		banner_time -= dt
+		# rises in over a quarter second, fades over the last
+		var a := clampf(banner_time, 0, 1) * clampf((banner_len - banner_time) * 4, 0, 1)
+		banner.modulate.a = a
+		banner_band.modulate.a = a
+		if banner_time <= 0:
+			_next_banner()
 	recent_foe_time = maxf(0, recent_foe_time - dt)
 	_update_signpost()
 	refresh_stats()
@@ -1276,6 +1556,7 @@ func update(dt := 0.0) -> void:
 
 	_update_target()
 	_update_enemy_bars()
+	party.update()
 	labels.update(dt)
 	quests.update_marks()
 	items.update(dt)
@@ -1301,9 +1582,7 @@ func _update_target() -> void:
 		return
 	var elite: bool = shown != null and shown.cfg.get("elite", false)
 	var ring: StyleBoxFlat = target_ring.get_theme_stylebox("panel")
-	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("8a6a3a")
-	var frame: StyleBoxTexture = target.get_theme_stylebox("panel")
-	frame.modulate_color = Color("ffb08a") if elite else Color.WHITE
+	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
 	if friend != null:
 		target_name.text = friend.name
 		target_name.add_theme_color_override("font_color", Color("a8e08c"))
@@ -1314,6 +1593,7 @@ func _update_target() -> void:
 		target_hp.root.visible = false
 		target_mp.root.visible = false
 		target_stagger.root.visible = false
+		target_cast.root.visible = false
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
@@ -1340,6 +1620,11 @@ func _update_target() -> void:
 		var full: bool = shown.staggered > 0
 		set_fill(target_stagger, 1.0 if full else sb.value / sb.need)
 		target_stagger.text.text = "Staggered %d" % ceili(shown.staggered) if full else "Stagger"
+	var wind = shown.casting
+	var tl = wind.get("telegraph") if wind != null else null
+	_show_cast(target_cast, {"t": tl.t, "total": tl.duration, "name": wind.get("label", "")} if tl != null else null, null)
+	if tl != null:
+		target_cast.fill.modulate = Color.WHITE if wind.get("interruptible", true) else Color(0.75, 0.75, 0.8)
 
 
 const KIND_GLYPH := {

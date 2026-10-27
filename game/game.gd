@@ -52,6 +52,7 @@ var spells: Spells
 var builds: Builds
 var resources: Resources
 var afterlife: Afterlife
+var grave: Grave
 var skills: Skills
 var settings: Settings
 var keys: Keybinds
@@ -130,6 +131,7 @@ func _ready() -> void:
 	builds = Builds.new(self)
 	resources = Resources.new(self)
 	afterlife = Afterlife.new(self)
+	grave = Grave.new(self)
 	skills = Skills.new(self)
 	settings = Settings.new(self)
 	keys = Keybinds.new(self)
@@ -404,6 +406,7 @@ func start_game(resume: bool) -> void:
 	recompute_max_health()
 	camp.show()
 	enemies.spawn_all()
+	grave.spawn()
 	loot.spawn_all()
 	chests.spawn_all()
 	mining.spawn_all()
@@ -419,8 +422,7 @@ func start_game(resume: bool) -> void:
 
 # ----------------------------------------------------------- game events
 func on_player_death(killer = null) -> void:
-	var coins: int = inventory.coins
-	var loss := mini(DB.CONFIG.death.coinLossCap, int(floor(coins * DB.CONFIG.death.coinLossFraction)))
+	var loss := 0 # your coins go to your grave instead (grave.gd)
 	pending_death = {"loss": loss, "timer": DB.CONFIG.death.screenDelay}
 	afterlife.on_death(killer, loss)
 	events.emit("playerDied", {})
@@ -439,7 +441,7 @@ func release_spirit() -> bool:
 	return true
 
 
-## Release and return to life at once at the rest point, coins lost.
+## Release and return to life at once at the rest point, wounded.
 func respawn() -> void:
 	if release_spirit():
 		afterlife.revive_here()
@@ -681,10 +683,9 @@ func _click_move(keys_move: Dictionary):
 
 ## Maximum health comes from level plus worn gear (the helm).
 func recompute_max_health() -> void:
-	var before: int = player.max_health
+	# current health stays as it is (60/100 becomes 60/150): changing gear
+	# never heals; only a lower maximum can cut it
 	player.max_health = stats.max_health
-	if player.max_health > before and not player.dead:
-		player.health += player.max_health - before
 	player.health = minf(player.health, player.max_health)
 	events.emit("statsChanged", {})
 
@@ -920,6 +921,7 @@ func step(dt: float) -> void:
 		water_and_dark.update(dt, time)
 		discovery.update(dt)
 		enemies.update(dt)
+		grave.update(dt)
 		npcs.update(dt)
 		merchant.update()
 		dialogue.update()

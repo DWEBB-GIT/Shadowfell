@@ -213,6 +213,9 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:remove", "text": "Take gems out (free)", "icon": "shop", "group": "service"})
+	if DB.CONFIG.death.healers.has(npc.id) and game.afterlife.wounds > 0:
+		var cost := _heal_price()
+		pg.options.append({"id": "heal", "text": "Have your wounds tended (%s)" % U.money(cost), "icon": "accept", "group": "service", "disabled": game.inventory.coins < cost})
 	if Boons.bard().get("npc") == npc.id:
 		var price := int(Boons.bard().get("price", 5))
 		if game.boons.tale_ready:
@@ -310,6 +313,10 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 	pg.options.append(back)
 
 
+func _heal_price() -> int:
+	return int(DB.CONFIG.death.healPrice) * game.afterlife.wounds
+
+
 ## A service choice; true if it was one (and was acted on).
 func _service_choose(id: String, v: Dictionary) -> bool:
 	var fg = game.forge
@@ -354,6 +361,12 @@ func _service_choose(id: String, v: Dictionary) -> bool:
 		return true
 	if id.begins_with("unset:"):
 		fg.remove_gems(id.substr(6))
+		return true
+	if id == "heal":
+		var cost := _heal_price()
+		if game.inventory.coins >= cost:
+			game.inventory.lose_coins(cost)
+			game.afterlife.heal_wounds("%s cleans and binds your wounds." % DB.npcs[npc.id].name)
 		return true
 	if id == "tale":
 		var tale: String = game.boons.hear_tale()

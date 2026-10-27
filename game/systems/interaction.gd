@@ -25,6 +25,7 @@ func _candidates() -> Array:
 		list.append({"key": "skin:" + s.id, "x": s.x, "z": s.z, "bias": -0.3, "prompt": "Skin the %s%s" % [s.name, " (%s)" % why if why != "" else ""], "run": func(): loot.start_skin(s)})
 	list.append_array(game.npcs.interactions())
 	list.append_array(game.chests.interactions())
+	list.append_array(game.grave.interactions())
 	for sh in Layout.shrines:
 		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "run": func(): game.rest_at_shrine(sh)})
 	# a hearth prompts Cooking, a forge Smelting, an alchemy bench Alchemy
@@ -71,7 +72,7 @@ func click_points() -> Array:
 		return game.afterlife.interactions()
 	if game.player.dead:
 		return []
-	return _candidates().filter(func(c): return c.key.begins_with("shrine") or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+	return _candidates().filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:"))
 
 
 func examine(id: String) -> void:

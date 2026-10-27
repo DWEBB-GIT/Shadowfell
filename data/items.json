@@ -176,7 +176,7 @@
       "price": 6,
       "model": "draught",
       "icon": "draught",
-      "description": "A small bottle of something bitter and red. Restores 42 health."
+      "description": "A small bottle of something bitter and red. Restores 42 health. The body takes two minutes to bear another."
     },
     {
       "id": "grave_iron",
