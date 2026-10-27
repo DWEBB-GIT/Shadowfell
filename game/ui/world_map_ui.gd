@@ -191,6 +191,22 @@ func _draw() -> void:
 	for d in game.discovery.docks:
 		var s := _to_screen(d.at)
 		draw_rect(Rect2(s - Vector2(3, 3), Vector2(6, 6)), Color("9fd0ff"))
+	# where tracked quests lead (the followed one brightest)
+	var ql = game.quests
+	for id in ql.active:
+		if not ql.tracked.has(id):
+			continue
+		var at: Dictionary = ql.goal(id)
+		if at.is_empty():
+			continue
+		var gs := _to_screen(Vector2(at.x, at.z))
+		var gc := Color("fff0a0") if id == ql.focus else Color("d8b058")
+		var k := 7.0 if id == ql.focus else 5.0
+		var diamond := PackedVector2Array([gs + Vector2(0, -k), gs + Vector2(k, 0), gs + Vector2(0, k), gs + Vector2(-k, 0)])
+		draw_colored_polygon(diamond, Color.BLACK)
+		draw_colored_polygon(PackedVector2Array(Array(diamond).map(func(v): return gs + (v - gs) * 0.7)), gc)
+		if id == ql.focus:
+			_text(gs + Vector2(0, -14), DB.quests[id].name, 11, gc)
 	# you
 	var me: Vector3 = game.player.position
 	var s := _to_screen(Vector2(me.x, me.z))
