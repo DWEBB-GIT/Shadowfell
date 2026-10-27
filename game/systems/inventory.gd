@@ -524,6 +524,8 @@ func move(from: String, to: String) -> Dictionary:
 		_put(from, b)
 	if pf.type == "equip" or pt.type == "equip":
 		_equipment_changed()
+	if pt.type == "equip":
+		game.events.emit("itemEquipped", {"id": a.id})
 	_changed()
 	return {"ok": true}
 

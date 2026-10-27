@@ -16,6 +16,7 @@ const SETTINGS := [
 	{"id": "volMaster", "label": "Master volume", "group": "Sound", "default": 70, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "group": "Sound", "default": 100, "min": 0, "max": 100},
 	{"id": "volAmbience", "label": "Ambience (forest, town, birds, bells)", "group": "Sound", "default": 100, "min": 0, "max": 100},
+	{"id": "volMusic", "label": "Music", "group": "Sound", "default": 60, "min": 0, "max": 100},
 ]
 
 var game
