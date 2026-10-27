@@ -322,7 +322,7 @@ func groups() -> Array:
 	var by := {}
 	for id in game.quests.active:
 		var z := Quests.zone(id)
-		var key: String = ("d:" if z.dungeon else "z:") + z.name
+		var key: String = ("d:" if z.dungeon else "z:") + str(z.name)
 		if not by.has(key):
 			by[key] = {"name": z.name, "dungeon": z.dungeon, "ids": []}
 		by[key].ids.append(id)
@@ -410,8 +410,8 @@ func render_log() -> void:
 	# the details
 	UI.clear(log_detail)
 	UI.clear(log_actions)
-	var id = selected
-	if id == null or not act.has(id):
+	var sel_id = selected
+	if sel_id == null or not act.has(sel_id):
 		var text := ""
 		if not ql.done.is_empty():
 			text = _sub("Completed")
@@ -419,8 +419,8 @@ func render_log() -> void:
 				text += "[font_size=12][color=#9a8f78]%s[/color][/font_size]\n" % UI.esc(DB.quests[d].name)
 		UI.set_rich(UI.rich(log_detail, 13, detail_w), text)
 	else:
-		UI.set_rich(UI.rich(log_detail, 13, detail_w), _details(id))
-		_log_buttons(id)
+		UI.set_rich(UI.rich(log_detail, 13, detail_w), _details(sel_id))
+		_log_buttons(sel_id)
 	log_hint.text = "Up/down: choose   A: show the way   X: track (up to %d)   Y: abandon   B: close" % Quests.MAX_TRACKED if hud.pad_mode else "Tracked quests (up to %d) show under the map; click one there to be shown the way. L or Esc closes." % Quests.MAX_TRACKED
 	layout()
 	if chosen_button != null:
@@ -459,7 +459,7 @@ func _details(id: String) -> String:
 	var s: String = ql.status(id)
 	var lv := Quests.levels(id)
 	var z := Quests.zone(id)
-	var danger: int = lv.y - game.progression.level
+	var danger: int = lv.y - int(game.progression.level)
 	var note := "  [color=#ff4a3a](dangerous at your level)[/color]" if danger >= 5 else ("  [color=#ff9a40](hard at your level)[/color]" if danger >= 3 else "")
 	var text := "[font_size=18][color=#e6b85e]%s[/color][/font_size]\n" % UI.esc(q.name)
 	text += "[font_size=12][color=%s]%s[/color]  [color=#9a8f78]·  %s%s[/color]%s[/font_size]\n\n" % [UI.hex(_level_colour(lv)), level_text(lv).replace("Lv", "Level"), "Dungeon: " if z.dungeon else "", UI.esc(z.name), note]
