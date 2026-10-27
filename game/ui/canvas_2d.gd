@@ -75,6 +75,10 @@ func rotate(a: float) -> void:
 	_xf = _xf.rotated_local(a)
 
 
+func scale(x: float, y: float) -> void:
+	_xf = _xf.scaled_local(Vector2(x, y))
+
+
 func set_line_dash(d: Array) -> void:
 	_dash = d.duplicate()
 

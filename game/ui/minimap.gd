@@ -266,10 +266,19 @@ func markers() -> Array:
 			if o.done or not o.get("location") or areas.has(o.location):
 				continue
 			var l: Dictionary = DB.locations[o.location]
-			if _far(l.position[0], l.position[1], l.radius):
+			# tracked quests show however far off they are
+			if not quests.tracked.has(id) and _far(l.position[0], l.position[1], l.radius):
 				continue
 			areas[o.location] = {"x": l.position[0], "z": l.position[1], "r": l.radius, "kind": "area", "label": l.name, "tracked": quests.tracked.has(id)}
 	out.append_array(areas.values())
+	# the next step of each tracked quest, at any distance; the followed one
+	# brightest
+	for id in quests.active:
+		if not quests.tracked.has(id):
+			continue
+		var at: Dictionary = quests.goal(id)
+		if not at.is_empty():
+			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
 	for n in game.npcs.list:
 		var status: String = quests.marker_for(n.id)
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
@@ -416,10 +425,18 @@ func _draw_map() -> void:
 			g.arc(s.x, s.y, 3, 0, TAU)
 			g.fill()
 			g.stroke()
-	# the areas that are off the map get a pointer on the rim
-	for m in all:
-		if m.kind == "area" and m.tracked:
-			_rim(g, to_map.call(m.x, m.z), R, "#f0c850", "", m.r * scale)
+	# where tracked quests lead: a diamond on the map, a pointer on the rim
+	# when off it (the followed quest's last, so it sits on top)
+	for pass_focus in [false, true]:
+		for m in all:
+			if m.kind != "goal" or m.focus != pass_focus:
+				continue
+			var s: Vector2 = to_map.call(m.x, m.z)
+			var colour := "#fff0a0" if m.focus else "#d8b058"
+			if s.distance_to(Vector2(R, R)) > R - 4 - m.r * scale:
+				_rim(g, s, R, colour, "", m.r * scale, 1.5 if m.focus else 1.0)
+			elif not m.npc:
+				_glyph(g, s.x, s.y, "◆", colour, 13 if m.focus else 10)
 	# quest marks last, so they sit on top; out of range ones on the rim
 	for m in all:
 		if m.kind != "ready" and m.kind != "available" and m.kind != "active":
@@ -561,7 +578,7 @@ func _glyph(g: Canvas2D, x: float, y: float, glyph: String, colour: String, px: 
 
 
 ## A marker beyond the edge: a small arrow on the rim pointing at it.
-func _rim(g: Canvas2D, s: Vector2, R: float, colour: String, glyph: String, reach := 0.0) -> void:
+func _rim(g: Canvas2D, s: Vector2, R: float, colour: String, glyph: String, reach := 0.0, big := 1.0) -> void:
 	var dx := s.x - R
 	var dy := s.y - R
 	var d := Vector2(dx, dy).length()
@@ -577,6 +594,7 @@ func _rim(g: Canvas2D, s: Vector2, R: float, colour: String, glyph: String, reac
 	g.save()
 	g.translate(x, y)
 	g.rotate(a)
+	g.scale(big, big)
 	g.begin_path()
 	g.move_to(5, 0)
 	g.line_to(-3, -4)
