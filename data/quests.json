@@ -65,20 +65,20 @@
     },
     {
       "id": "the_hound_den",
-      "name": "The Hound Den",
+      "name": "The Wolf Den",
       "giver": "mara",
       "turnIn": "mara",
       "requires": ["missing_delivery"],
-      "summary": "The carters turned north into the Blackwood, past a den of barrow hounds beside the track. Thin the pack and search the den for any sign of them.",
-      "offer": "The carters turned north into the Blackwood. They'd not have got far. There's a den of barrow hounds by the track, past the shrine at the forest edge. Thin the pack, and tell me if you see any sign of my carters.",
-      "progress": "The hounds hunt in threes. Don't let them get round you.",
+      "summary": "The carters turned north into the Blackwood, past a den of barrow wolves beside the track. Thin the pack and search the den for any sign of them.",
+      "offer": "The carters turned north into the Blackwood. They'd not have got far. There's a den of barrow wolves by the track, past the shrine at the forest edge. Thin the pack, and tell me if you see any sign of my carters.",
+      "progress": "The wolves hunt in threes. Don't let them get round you.",
       "complete": "No carters, then. Only bones and a purse. I'd hoped otherwise. The track's safer for it, at least. Take these. You'll want them deeper in.",
       "objectives": [
         {
           "id": "search",
           "type": "examine",
           "target": "hound_den",
-          "label": "Search the hound den",
+          "label": "Search the wolf den",
           "location": "hound_den"
         },
         {
@@ -86,7 +86,7 @@
           "type": "kill",
           "target": "hound",
           "count": 3,
-          "label": "Barrow Hounds slain",
+          "label": "Barrow Wolves slain",
           "location": "hound_den"
         }
       ],
@@ -104,7 +104,7 @@
       "turnIn": "mara",
       "requires": ["bells_at_hallow_cut", "the_hound_den"],
       "summary": "Someone is calling the dead up out of the Blackwood. Hunters speak of a seer among the standing stones in the far glade, and of archers camped on the way. Go deep and end it.",
-      "offer": "Bells under the Cut, a brute in a watchman's gear, hounds fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
+      "offer": "Bells under the Cut, a brute in a watchman's gear, wolves fat on carters. Someone is calling the dead up out of the Blackwood. The hunters talk of a seer among the standing stones in the far glade, and archers camped on the way. Go deep, Warden. End it.",
       "progress": "The glade is at the end of the track. You'll know the stones.",
       "complete": "It's quieter. I felt it at the anvil before you came up the track. Here, the best shield I've made this year. Keep it between you and whatever comes next.",
       "objectives": [
@@ -164,8 +164,8 @@
       "name": "Meat for Winter",
       "giver": "town_board",
       "turnIn": "hester",
-      "summary": "The town is short of meat for the winter stores. Bring four cuts of hound meat to Hester at the Ford Inn.",
-      "offer": "The cellar's half empty and the frost is coming. Meat wanted, any honest kind. The barrow hounds in the woods are lean, but they'll salt. Bring it to the Ford Inn. H. Vale.",
+      "summary": "The town is short of meat for the winter stores. Bring four cuts of wolf meat to Hester at the Ford Inn.",
+      "offer": "The cellar's half empty and the frost is coming. Meat wanted, any honest kind. The barrow wolves in the woods are lean, but they'll salt. Bring it to the Ford Inn. H. Vale.",
       "progress": "The salt barrel's still waiting.",
       "complete": "That'll keep a family through a bad week. Thank you. Truly.",
       "objectives": [
@@ -174,7 +174,7 @@
           "type": "collect",
           "target": "hound_meat",
           "count": 4,
-          "label": "Hound meat"
+          "label": "Wolf meat"
         }
       ],
       "reward": { "coins": 18, "xp": 90 }
@@ -184,8 +184,8 @@
       "name": "Pelts for the Boat",
       "giver": "town_board",
       "turnIn": "tam",
-      "summary": "Old Tam wants hound pelts to stuff the seams of his boat. Bring him two. Hounds have to be skinned for their pelts: Agna Holt, the tanner in Brackenford, teaches Skinning.",
-      "offer": "Boat leaks. Need two pelts to caulk her, hound will do. Bring them to the mere. Tam.",
+      "summary": "Old Tam wants wolf pelts to stuff the seams of his boat. Bring him two. Wolves have to be skinned for their pelts: Agna Holt, the tanner in Brackenford, teaches Skinning.",
+      "offer": "Boat leaks. Need two pelts to caulk her, wolf will do. Bring them to the mere. Tam.",
       "progress": "Still leaking, she is.",
       "complete": "Good thick hides. She'll float another year. Take this, and mind the edge.",
       "objectives": [
@@ -194,7 +194,7 @@
           "type": "collect",
           "target": "hound_pelt",
           "count": 2,
-          "label": "Hound pelt"
+          "label": "Wolf pelt"
         }
       ],
       "reward": { "coins": 10, "xp": 70 }
@@ -228,8 +228,8 @@
       "name": "Bounty: Old Greyjaw",
       "giver": "town_board",
       "turnIn": "mara",
-      "summary": "A huge grey hound, Old Greyjaw, roams the Blackwood and has killed two trappers. Put it down and claim the bounty from Mara Venn at her forge.",
-      "offer": "BOUNTY. A grey hound the size of a pony roams the Blackwood. It has taken two trappers and a mule. Whoever kills OLD GREYJAW will be paid at the forge. Do not go alone. (You will go alone.)",
+      "summary": "A huge grey wolf, Old Greyjaw, roams the Blackwood and has killed two trappers. Put it down and claim the bounty from Mara Venn at her forge.",
+      "offer": "BOUNTY. A grey wolf the size of a pony roams the Blackwood. It has taken two trappers and a mule. Whoever kills OLD GREYJAW will be paid at the forge. Do not go alone. (You will go alone.)",
       "progress": "Greyjaw's still out there. You'd hear the howling stop.",
       "complete": "That's Greyjaw's blood on you? Then the trappers can go back in. The bounty's yours, and well earned.",
       "objectives": [

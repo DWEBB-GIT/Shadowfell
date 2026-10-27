@@ -320,7 +320,7 @@
     },
     {
       "id": "hound_pelt",
-      "name": "Barrow hound pelt",
+      "name": "Barrow wolf pelt",
       "kind": "material",
       "rarity": "common",
       "stack": 10,
@@ -353,14 +353,14 @@
     },
     {
       "id": "hound_meat",
-      "name": "Raw hound flank",
+      "name": "Raw wolf flank",
       "kind": "material",
       "rarity": "common",
       "stack": 20,
       "price": 3,
       "model": "hound_meat",
       "icon": "hound_meat",
-      "description": "Dark, lean meat from a barrow hound. A cook with a strong stomach would want it."
+      "description": "Dark, lean meat from a barrow wolf. A cook with a strong stomach would want it."
     },
     {
       "id": "old_watch_helm",
@@ -681,7 +681,7 @@
       "price": 1,
       "model": "hound_meat",
       "icon": "hound_meat",
-      "description": "Strips of hound meat for the hook. +5 Fishing skill for one cast; one is used each time you cast."
+      "description": "Strips of wolf meat for the hook. +5 Fishing skill for one cast; one is used each time you cast."
     },
     {
       "id": "gloomwater_perch",
@@ -787,7 +787,7 @@
     },
     {
       "id": "hound_steak",
-      "name": "Hound steak",
+      "name": "Wolf steak",
       "kind": "consumable",
       "rarity": "common",
       "use": {
@@ -817,7 +817,7 @@
       "price": 12,
       "model": "stew",
       "icon": "stew",
-      "description": "Hound and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+      "description": "Wolf and perch, and whatever else was to hand. Restores 120 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "smoked_eel",
@@ -886,7 +886,7 @@
       "price": 90,
       "model": "bone_knife",
       "icon": "bone_knife",
-      "description": "The old hound's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling.",
+      "description": "The old wolf's longest tooth, bound to a grip. The Blackwood went quiet the night it stopped howling.",
       "sockets": 1
     },
     {

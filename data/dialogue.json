@@ -91,7 +91,7 @@
         },
         {
           "id": "mara_blackwood",
-          "text": "Black pines, older than the road. The track runs through to a glade where the old stones stand. Hunters went in for the hounds' pelts. Fewer come out each year.",
+          "text": "Black pines, older than the road. The track runs through to a glade where the old stones stand. Hunters went in for the wolves' pelts. Fewer come out each year.",
           "replies": [
             {
               "text": "Who set the stones?",
@@ -158,7 +158,7 @@
         },
         {
           "id": "tam_dark",
-          "text": "West of the hound den in the Blackwood there's a hollow where the light won't go. Folk say the old watch hid their pay chest in it. Take a torch. Your shield won't help you see.",
+          "text": "West of the wolf den in the Blackwood there's a hollow where the light won't go. Folk say the old watch hid their pay chest in it. Take a torch. Your shield won't help you see.",
           "replies": [
             {
               "text": "Back."
@@ -235,7 +235,7 @@
         },
         {
           "id": "hester_cook",
-          "text": "Anyone can burn a fish. Cooking's knowing when to stop. Learn from me and you'll eat better than the dead do. Bring me perch and dace to start; once you've the knack I'll show you what to do with hound.",
+          "text": "Anyone can burn a fish. Cooking's knowing when to stop. Learn from me and you'll eat better than the dead do. Bring me perch and dace to start; once you've the knack I'll show you what to do with wolf.",
           "replies": [
             {
               "text": "Back."
@@ -346,7 +346,7 @@
         },
         {
           "id": "agna_skin",
-          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. The older and meaner the beast, the more skill its hide takes: a young boar, anyone can manage; a barrow hound wants a bit of practice; the ridge wolves, more again. I sell knives. I teach the rest, for a few coins.",
+          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. The older and meaner the beast, the more skill its hide takes: a young boar, anyone can manage; a barrow wolf wants a bit of practice; the ridge wolves, more again. I sell knives. I teach the rest, for a few coins.",
           "replies": [
             {
               "text": "Thank you."
@@ -355,7 +355,7 @@
         },
         {
           "id": "agna_where",
-          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow hounds in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet. One day I'll tell you about the things I'd really like to skin. Scales, mostly.",
+          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow wolves in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet. One day I'll tell you about the things I'd really like to skin. Scales, mostly.",
           "replies": [
             {
               "text": "I'll keep an eye out."

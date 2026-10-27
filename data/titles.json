@@ -79,7 +79,7 @@
       "mock": 0.15,
       "requires": [{ "slain": "greyjaw" }],
       "desc": "You killed the old wolf of the mere. Some are glad. Some liked him better than you.",
-      "mocks": ["Bane of Greyjaw. Poor old dog."]
+      "mocks": ["Bane of Greyjaw. Poor old wolf."]
     },
     {
       "id": "hero",

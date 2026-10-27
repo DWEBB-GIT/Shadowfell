@@ -139,7 +139,7 @@ func needs_item(id: String, item: String) -> bool:
 	return false
 
 
-## "Barrow Hounds slain: 2/3", or the bare label for one-off objectives
+## "Barrow Wolves slain: 2/3", or the bare label for one-off objectives
 static func line(o: Dictionary) -> String:
 	return "%s: %d/%d" % [o.label, o.have, o.need] if o.need > 1 or o.type == "kill" else o.label
 
