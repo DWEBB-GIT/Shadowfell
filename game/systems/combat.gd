@@ -161,8 +161,10 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 	var events: Events = game.events
 	if player.dead:
 		return null
+	# a swing hits the target you chose and only that (Dan, 2026-10-27);
+	# with nothing chosen it falls on whoever stands in front of you
 	var target = _selected_in_reach(DB.attack.range)
-	if target == null:
+	if target == null and game.targeting.selected == null:
 		target = select_strike_target(aim)
 	if target == null:
 		events.emit("playerMiss", {})

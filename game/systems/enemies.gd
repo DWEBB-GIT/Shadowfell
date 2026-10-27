@@ -53,6 +53,14 @@ func reset_survivors() -> void:
 		e.reset()
 
 
+## after the player dies: only the enemies that were fighting them go back
+## to their posts, whole again (as in WoW); the rest of the world stays as it is
+func reset_engaged() -> void:
+	for e in list:
+		if e.state != "idle":
+			e.reset()
+
+
 func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)

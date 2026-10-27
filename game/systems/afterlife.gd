@@ -7,8 +7,8 @@ extends RefCounted
 ## once where it stands, a few coins lighter.
 ##
 ## The enemy that killed the player is remembered (`world_state.nemesis`): it
-## carries a skull, the player deals extra damage to it, and killing it pays
-## a revenge bonus.
+## carries a skull until it falls. It gives no extra damage or XP (Dan,
+## 2026-10-27: dying must never pay), so `revengeBonus` and `revengeXp` are 0.
 
 var game
 var ghost := false
@@ -74,7 +74,7 @@ func release() -> bool:
 	game.telegraphs.clear()
 	game.hud.clear_numbers()
 	game.targeting.clear()
-	game.enemies.reset_survivors()
+	game.enemies.reset_engaged()
 	ghost = true
 	player.become_ghost(dest.x, dest.z)
 	game.set_ghost_look(true)

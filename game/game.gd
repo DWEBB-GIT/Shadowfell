@@ -672,10 +672,9 @@ func _click_move(keys_move: Dictionary):
 
 ## Maximum health comes from level plus worn gear (the helm).
 func recompute_max_health() -> void:
-	var before: int = player.max_health
+	# current health stays as it is (60/100 becomes 60/150): changing gear
+	# never heals; only a lower maximum can cut it
 	player.max_health = stats.max_health
-	if player.max_health > before and not player.dead:
-		player.health += player.max_health - before
 	player.health = minf(player.health, player.max_health)
 	events.emit("statsChanged", {})
 

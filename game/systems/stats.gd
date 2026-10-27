@@ -92,7 +92,9 @@ var agility_per_crit: float:
 
 var spell_scale: float:
 	get:
-		return Scaling.spell_scale(game.progression.level)
+		# spells do not grow with level on their own (Dan, 2026-10-27): a
+		# stronger version is a new rank learned from a trainer
+		return 1.0
 
 var armour: float:
 	get:
