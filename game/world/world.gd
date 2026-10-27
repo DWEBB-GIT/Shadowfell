@@ -15,6 +15,7 @@ var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
+var see_through: SeeThrough ## fades houses that hide you, shows your silhouette
 
 
 func _init(g) -> void:
@@ -44,6 +45,7 @@ func build() -> World:
 			var ez: float = z - off[0] * sin(r) + off[1] * cos(r)
 			examine_points.append({"id": p.examine, "x": ex, "z": ez})
 	_build_buildings()
+	see_through = SeeThrough.new(game)
 	town = Town.new(game, self, group).build()
 	_build_signposts()
 	_add_lights()
@@ -485,6 +487,7 @@ func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
 	town.update(dt)
+	see_through.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3
 		var z: float = m.z + MIST_REPEAT * roundf((focus.z - m.z) / MIST_REPEAT) + cos(time * 0.04 + m.seed) * 2
