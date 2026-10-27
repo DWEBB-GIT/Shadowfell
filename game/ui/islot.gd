@@ -45,6 +45,9 @@ func _init(location := "", px := 42) -> void:
 	loc = location
 	custom_minimum_size = Vector2(px, px)
 	size = custom_minimum_size
+	# never stretched by a row or column: a slot is always square
+	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	mouse_entered.connect(func():

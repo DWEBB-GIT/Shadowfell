@@ -19,6 +19,7 @@ const UP := Color("8fdf6a")
 const DOWN := Color("e06a5a")
 const GREEN := Color("8cbf78")
 const WARN := Color("d8a070")
+const MIN_TEXT := 12 ## no text smaller than this, so every line stays readable
 const QUEST_GOLD := Color("ffd23c")
 
 static var font: Font
@@ -75,12 +76,20 @@ static func theme() -> Theme:
 	t.default_font = font
 	t.default_font_size = 15
 	t.set_color("font_color", "Label", TEXT)
+	# WoW-style crisp text: a dark drop shadow under every label and button
+	for k in ["Label", "Button"]:
+		t.set_color("font_shadow_color", k, Color(0, 0, 0, 0.85))
+		t.set_constant("shadow_offset_x", k, 1)
+		t.set_constant("shadow_offset_y", k, 1)
+	t.set_color("font_shadow_color", "RichTextLabel", Color(0, 0, 0, 0.8))
+	t.set_constant("shadow_offset_x", "RichTextLabel", 1)
+	t.set_constant("shadow_offset_y", "RichTextLabel", 1)
 	t.set_font("bold_font", "RichTextLabel", bold)
 	t.set_font("italics_font", "RichTextLabel", italic)
 	t.set_color("default_color", "RichTextLabel", TEXT)
-	t.set_font_size("normal_font_size", "RichTextLabel", 13)
-	t.set_font_size("bold_font_size", "RichTextLabel", 13)
-	t.set_font_size("italics_font_size", "RichTextLabel", 13)
+	t.set_font_size("normal_font_size", "RichTextLabel", 14)
+	t.set_font_size("bold_font_size", "RichTextLabel", 14)
+	t.set_font_size("italics_font_size", "RichTextLabel", 14)
 	# .btn: a small bronze frame (the UI kit); a gold frame on hover
 	t.set_stylebox("normal", "Button", frame(Vector4(6, 1, 6, 1), "button", 6))
 	t.set_stylebox("hover", "Button", frame(Vector4(6, 1, 6, 1), "button_hover", 7))
@@ -92,7 +101,7 @@ static func theme() -> Theme:
 	t.set_color("font_pressed_color", "Button", Color("f2e6c6"))
 	t.set_color("font_focus_color", "Button", TEXT)
 	t.set_color("font_disabled_color", "Button", Color(TEXT, 0.4))
-	t.set_font_size("font_size", "Button", 12)
+	t.set_font_size("font_size", "Button", 13)
 	t.set_stylebox("normal", "LineEdit", box(Color(16 / 255.0, 13 / 255.0, 10 / 255.0, 0.92), BORDER, 0, 1, Vector4(10, 7, 10, 7)))
 	t.set_stylebox("focus", "LineEdit", box(Color(0, 0, 0, 0), GOLD, 0, 1))
 	t.set_color("font_color", "LineEdit", Color("f2e6c6"))
@@ -100,7 +109,7 @@ static func theme() -> Theme:
 	t.set_stylebox("slider", "HSlider", box(Color("0b0908"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
 	t.set_stylebox("grabber_area", "HSlider", box(Color("6b5a2c"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
 	t.set_stylebox("grabber_area_highlight", "HSlider", box(Color("a48a45"), BORDER_DIM, 0, 1, Vector4(0, 3, 0, 3)))
-	t.set_stylebox("panel", "TooltipPanel", box(Color(10 / 255.0, 9 / 255.0, 14 / 255.0, 0.96), Color("5a5a70"), 6))
+	t.set_stylebox("panel", "TooltipPanel", box(Color(10 / 255.0, 9 / 255.0, 14 / 255.0, 0.96), Color("5a5a70"), 10))
 	return t
 
 
@@ -185,7 +194,7 @@ static func panel(parent: Node, pad := 6, bg := PANEL, border := BORDER) -> Pane
 static func label(parent: Node, text := "", size := 15, colour := TEXT, outline := 0) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", maxi(size, MIN_TEXT))
 	l.add_theme_color_override("font_color", colour)
 	if outline > 0:
 		l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
@@ -232,11 +241,24 @@ static func rule(parent: Node, colour := BORDER_DIM) -> ColorRect:
 	return r
 
 
+## a small square button (×, −, +): the kit frame with no padding
+static func square_button(parent: Node, text: String, cb := Callable(), px := 22) -> Button:
+	var b := button(parent, text, cb, 14)
+	for st in [["normal", "button"], ["hover", "button_hover"], ["pressed", "button_pressed"], ["disabled", "button_disabled"]]:
+		b.add_theme_stylebox_override(st[0], frame(0, st[1], 6))
+		var f: StyleBoxTexture = b.get_theme_stylebox(st[0])
+		f.set_content_margin_all(0)
+	b.custom_minimum_size = Vector2(px, px)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return b
+
+
 static func button(parent: Node, text: String, cb := Callable(), size := 12) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", maxi(size, MIN_TEXT))
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if cb.is_valid():
 		b.pressed.connect(cb)
@@ -253,6 +275,7 @@ static func rich(parent: Node, size := 13, width := 0.0) -> RichTextLabel:
 	r.scroll_active = false
 	r.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	size = maxi(size, MIN_TEXT)
 	r.add_theme_font_size_override("normal_font_size", size)
 	r.add_theme_font_size_override("bold_font_size", size)
 	r.add_theme_font_size_override("italics_font_size", size)
@@ -383,7 +406,7 @@ static func coin(kind: String) -> Texture2D:
 ## close button, a rule, then the body.
 static func window(parent: Node, title: String, width := 0.0, on_close := Callable()) -> Dictionary:
 	var p := panel(parent, 0, WINDOW, BORDER)
-	p.add_theme_stylebox_override("panel", frame(Vector4(12, 10, 12, 12), "window", 20))
+	p.add_theme_stylebox_override("panel", frame(Vector4(18, 14, 18, 16), "window", 20))
 	if width > 0:
 		p.custom_minimum_size = Vector2(width, 0)
 	var v := vbox(p, 6)
@@ -392,7 +415,7 @@ static func window(parent: Node, title: String, width := 0.0, on_close := Callab
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var close: Button = null
 	if on_close.is_valid():
-		close = button(head, "×", on_close, 14)
+		close = square_button(head, "×", on_close)
 	rule(v)
 	var body := vbox(v, 6)
 	return {"panel": p, "body": body, "head": head, "title": t, "close": close}

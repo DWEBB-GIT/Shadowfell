@@ -37,6 +37,7 @@ const SFX := {
 	"potion": ["potion_drink.mp3"],
 	"chest": ["chest_open_1.wav", "chest_open_2.wav"],
 	"buy": ["buy.ogg"],
+	"click": ["ui_click.wav"],
 	"mine": ["mine_1.wav", "mine_2.wav", "mine_3.wav", "mine_4.wav", "mine_5.wav"],
 	"skin": ["skin.mp3"],
 	"shrine": ["shrine.wav"],
@@ -58,6 +59,7 @@ var started := false
 var cache := {} ## recipe key -> AudioStreamWAV
 var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
+var click_player: AudioStreamPlayer
 var rumble: AudioStreamPlayer
 var rumble_level := 0.0
 var next_crow := 6.0
@@ -263,6 +265,18 @@ func sfx(id: String, level := 1.0) -> void:
 	p.bus = "Effects"
 	p.volume_db = linear_to_db(level)
 	p.play()
+
+
+## Every button's click (game.gd hooks each one as it enters the tree). It
+## has its own player, so the title screen clicks before the buses start.
+func click() -> void:
+	if click_player == null:
+		click_player = AudioStreamPlayer.new()
+		click_player.stream = _stream(SFX.click[0])
+		click_player.volume_db = linear_to_db(0.55)
+		add_child(click_player)
+	click_player.bus = "Effects" if started else "Master"
+	click_player.play()
 
 
 func _stream(file: String) -> AudioStream:

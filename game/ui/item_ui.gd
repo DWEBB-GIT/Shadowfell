@@ -97,9 +97,10 @@ func _build() -> void:
 	character.tabs = {}
 	for t in [["main", "Equipment"], ["titles", "Titles"], ["rep", "Reputation"]]:
 		var id: String = t[0]
+		# a tab only swaps which page shows: nothing is rebuilt, so no flash
 		var b := UI.button(tabs, t[1], func():
 			char_tab = id
-			render())
+			_show_char_tab())
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character.tabs[id] = b
 	preview = CharPreview.new(game)
@@ -452,16 +453,12 @@ func _render_sockets(inv) -> void:
 	# the tool pack's own slot comes first, left of the bags (empty until earned)
 	for i in range(Items.TOOL_SOCKET, 0, -1):
 		var s = inv.sockets[i] if i < inv.sockets.size() else null
-		var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1} if s else null, 36, "⚒" if i == Items.TOOL_SOCKET else "")
+		var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1} if s else null, 40, "⚒" if i == Items.TOOL_SOCKET else "")
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
 			slot.dim = 1.0 if s else 0.6
 			if not s:
 				tip_on(slot, "Tool pack slot: earned from Mara Venn's first errand")
-			var sep := Control.new()
-			sep.custom_minimum_size = Vector2(6, 0)
-			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			sockets.add_child(sep)
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
 		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
@@ -473,7 +470,7 @@ func _render_sockets(inv) -> void:
 		slot.lit = open_bags.has(i)
 	# the free space in all bags shows on the backpack, as in WoW
 	var free: int = inv.free_slots()
-	var bp := _slot(sockets, "s:0", null, 42)
+	var bp := _slot(sockets, "s:0", null, 40)
 	bp.border = UI.BORDER
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
@@ -503,7 +500,7 @@ func _render_bags(inv) -> void:
 		var s = inv.sockets[i]
 		if not s or not open_bags.has(i):
 			continue
-		var frame := UI.panel(bags, 8, UI.WINDOW)
+		var frame := UI.panel(bags, 14, UI.WINDOW)
 		var v := UI.vbox(frame, 6)
 		var head := UI.hbox(v, 8)
 		var t := UI.label(head, "Backpack" if i == 0 else Items.get_def(s.id).name, 14, UI.GOLD)
@@ -514,7 +511,7 @@ func _render_bags(inv) -> void:
 				used += 1
 		UI.label(head, "%d/%d" % [used, s.slots.size()], 13, UI.TEXT_DIM)
 		var bag: int = i
-		UI.button(head, "×", func(): toggle_bag(bag), 14)
+		UI.square_button(head, "×", func(): toggle_bag(bag))
 		UI.rule(v)
 		var grid := GridContainer.new()
 		grid.columns = 4
@@ -538,6 +535,21 @@ func _render_character(inv) -> void:
 		return
 	var who: String = game.character.name if game.character else "Warden"
 	w.title.text = game.titles.full_name(who)
+	_show_char_tab()
+	UI.clear(w.rep)
+	UI.clear(w.titles)
+	# the paper doll lives across renders; only the slots and numbers change
+	if preview.get_parent():
+		preview.get_parent().remove_child(preview)
+	UI.clear(w.main)
+	# every page is built, the hidden ones too, so switching tabs is instant
+	_render_paper_doll(inv, w.main)
+	_render_rep(w.rep)
+	_render_titles(w.titles)
+
+
+func _show_char_tab() -> void:
+	var w := character
 	for id in w.tabs:
 		var b: Button = w.tabs[id]
 		b.add_theme_color_override("font_color", UI.GOLD if id == char_tab else UI.TEXT_DIM)
@@ -545,38 +557,35 @@ func _render_character(inv) -> void:
 	w.main.visible = char_tab == "main"
 	w.rep.visible = char_tab == "rep"
 	w.titles.visible = char_tab == "titles"
-	UI.clear(w.rep)
-	UI.clear(w.titles)
-	# the paper doll lives across renders; only the slots and numbers change
-	if preview.get_parent():
-		preview.get_parent().remove_child(preview)
-	UI.clear(w.main)
-	if char_tab == "main":
-		_render_paper_doll(inv, w.main)
-	elif char_tab == "rep":
-		_render_rep(w.rep)
-	else:
-		_render_titles(w.titles)
+
+
+const SLOT_PX := 52 ## the paper doll's gear slots
 
 
 func _equip_col(parent: Node, inv, where: String) -> void:
 	for s in DB.EQUIP_SLOTS:
 		if s.col == where:
-			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), 42, s.label)
+			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), SLOT_PX, s.label)
 			sl.placeholder_size = 9
 
 
 func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var body := UI.hbox(main, 10)
-	var left := UI.vbox(body, 4)
+	var left := UI.vbox(body, 6)
 	_equip_col(left, inv, "left")
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
 	fig.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fig.custom_minimum_size = Vector2(0, 7 * 42 + 6 * 4) # as tall as a column of slots
+	fig.custom_minimum_size = Vector2(0, 5 * SLOT_PX + 4 * 6) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
-	var right := UI.vbox(body, 4)
+	# rings and trinkets sit on the figure, in a row along its feet
+	var jewels := UI.hbox(fig, 4)
+	jewels.alignment = BoxContainer.ALIGNMENT_CENTER
+	jewels.size_flags_vertical = Control.SIZE_SHRINK_END
+	jewels.add_theme_constant_override("separation", 4)
+	_equip_col(jewels, inv, "fig")
+	var right := UI.vbox(body, 6)
 	_equip_col(right, inv, "right")
 	var bottom := UI.hbox(main, 6)
 	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -584,7 +593,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	# the ammo slot, beside the ranged slot: which arrows Auto Shot uses
 	# and how many of them you carry
 	var ammo = inv.get_at(Inventory.AMMO_LOC)
-	var a := _slot(bottom, Inventory.AMMO_LOC, ammo, 42, "Ammo")
+	var a := _slot(bottom, Inventory.AMMO_LOC, ammo, SLOT_PX, "Ammo")
 	a.placeholder_size = 9
 	a.count = str(ammo.count) if ammo else ""
 	a.count_size = 13

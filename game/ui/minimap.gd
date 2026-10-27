@@ -90,23 +90,27 @@ func _init(g) -> void:
 	north.size = Vector2(16, 14)
 	north.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	north.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	for z in [["+", -18, 1], ["−", 4, -1]]:
-		var b := UI.button(self, z[0], Callable(), 14)
+	# two round buttons on the rim, bottom right, clear of each other
+	for z in [["+", -46, 1], ["−", -20, -1]]:
+		var b := UI.button(self, z[0], Callable(), 15)
 		var step: int = z[2]
 		b.pressed.connect(func(): set_zoom(zoom + step))
-		b.add_theme_stylebox_override("normal", _round_box(10))
-		b.add_theme_stylebox_override("hover", _round_box(10, UI.GOLD))
-		b.add_theme_stylebox_override("pressed", _round_box(10, UI.GOLD))
+		b.add_theme_stylebox_override("normal", _round_box(11))
+		b.add_theme_stylebox_override("hover", _round_box(11, UI.GOLD))
+		b.add_theme_stylebox_override("pressed", _round_box(11, UI.GOLD))
 		b.add_theme_font_override("font", UI.bold)
-		b.size = Vector2(20, 20)
-		b.custom_minimum_size = Vector2(20, 20)
-		b.position = Vector2(SIZE - 16, SIZE - 20 + z[1])
+		b.custom_minimum_size = Vector2(22, 22)
+		b.size = Vector2(22, 22)
+		b.position = Vector2(SIZE - 26, SIZE + z[1])
 		zoom_buttons.append(b)
 
 
 func _round_box(r: int, border := UI.BORDER) -> StyleBoxFlat:
 	var s := UI.box(UI.PANEL_SOLID, border, 0)
 	s.set_corner_radius_all(r)
+	s.corner_detail = 12
+	s.anti_aliasing = true
+	s.set_content_margin_all(0)
 	return s
 
 

@@ -154,6 +154,8 @@ func _ready() -> void:
 	sparkles = Sparkles.new(self)
 	interaction = Interaction.new(self)
 	action_bar = ActionBar.new(self)
+	# every button in every menu clicks
+	get_tree().node_added.connect(_hook_click)
 	hud = Hud.new(self)
 	add_child(hud)
 	audio = AudioSystem.new(self)
@@ -350,6 +352,17 @@ func log_out() -> void:
 	save.autosave_enabled = false
 	to_select = true
 	get_tree().reload_current_scene()
+
+
+func _hook_click(n: Node) -> void:
+	var b := n as BaseButton
+	if b and not b.pressed.is_connected(_ui_click):
+		b.pressed.connect(_ui_click)
+
+
+func _ui_click() -> void:
+	if audio:
+		audio.click()
 
 
 func start_game(resume: bool) -> void:

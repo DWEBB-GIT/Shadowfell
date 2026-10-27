@@ -194,7 +194,8 @@ func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -
 	fill.offset_bottom = -1
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
-	var l := UI.label(track, "", text_size, Color("f0e4c8"), 3)
+	var l := UI.label(track, "", text_size, Color("f0e4c8"), 4)
+	l.add_theme_font_override("font", UI.bold)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -374,7 +375,7 @@ func _build_label() -> String:
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
 	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
-	char_panel.position = Vector2(12, 74)
+	char_panel.position = Vector2(12, 86)
 	char_panel.custom_minimum_size = Vector2(240, 0)
 	var cv := UI.vbox(char_panel, 3)
 	var head := UI.hbox(cv, 8)
@@ -447,7 +448,7 @@ func _build_target() -> void:
 ## experience over the spell bar, bottom centre (#bottom-bar)
 func _build_bottom() -> void:
 	bottom = UI.vbox(root, 4)
-	xp = _bar(bottom, Color("b89c55"), Color("6b5a2c"), 12, 10)
+	xp = _bar(bottom, Color("b89c55"), Color("6b5a2c"), 18, 13)
 	action_bar = UI.panel(bottom, 0)
 	action_bar.add_theme_stylebox_override("panel", UI.capped_frame(Vector4(4, 3, 4, 2)))
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -488,7 +489,7 @@ func _build_dock() -> void:
 	var mr := UI.hbox(micro, 4)
 	for m in MICRO:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(32, 42)
+		b.custom_minimum_size = Vector2(30, 40)
 		b.focus_mode = Control.FOCUS_NONE
 		var which: String = m[0]
 		b.pressed.connect(func(): toggle_panel(which))

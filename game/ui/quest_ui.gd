@@ -62,7 +62,7 @@ func _init(g, h) -> void:
 	marks_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
-	tracker.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 6, 10, 8)))
+	tracker.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 8, 14, 10)))
 	tracker.custom_minimum_size = Vector2(260, 0)
 	tracker_box = UI.vbox(tracker, 3)
 	tracker.visible = false
@@ -500,9 +500,8 @@ func render_tracker() -> void:
 	var title := UI.label(head, "QUESTS  (%d)" % ids.size(), 11, UI.GOLD)
 	title.add_theme_font_override("font", UI.bold)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var fold := UI.button(head, "+" if tracker_collapsed else "−", _fold_tracker, 13)
+	var fold := UI.square_button(head, "+" if tracker_collapsed else "−", _fold_tracker, 20)
 	fold.tooltip_text = "Show the objectives" if tracker_collapsed else "Hide the objectives"
-	fold.custom_minimum_size = Vector2(20, 18)
 	title.mouse_filter = Control.MOUSE_FILTER_STOP
 	title.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	title.gui_input.connect(func(e):
