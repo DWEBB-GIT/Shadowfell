@@ -160,8 +160,29 @@ func item(id) -> Texture2D:
 func portrait(model_id: String) -> Texture2D:
 	if _portraits.has(model_id):
 		return _portraits[model_id]
-	var model := Assets.instance(model_id)
-	var tex := _snapshot(model, PORTRAIT_SIZE, Color.WHITE, 2.4, Color("ffe0c0"), 3.2, Vector3(1.5, 2, 3), func(cam: Camera3D, box: AABB):
+	var tex := _head_shot(Assets.instance(model_id))
+	_portraits[model_id] = tex
+	return tex
+
+
+var _player_shot: SubViewport ## the player's own portrait, made again as their gear changes
+
+
+## The player frame's portrait: the player's own model as it looks now,
+## gear and all (a copy, so the picture holds still)
+func player_portrait(model: Node3D) -> Texture2D:
+	if _player_shot:
+		_player_shot.queue_free()
+	var copy := model.duplicate() as Node3D
+	copy.visible = true
+	copy.transform = Transform3D()
+	var tex := _head_shot(copy)
+	_player_shot = copy.get_parent() as SubViewport
+	return tex
+
+
+func _head_shot(model: Node3D) -> Texture2D:
+	return _snapshot(model, PORTRAIT_SIZE, Color.WHITE, 2.4, Color("ffe0c0"), 3.2, Vector3(1.5, 2, 3), func(cam: Camera3D, box: AABB):
 		# frame the head: the Head part if the model has one, else its top
 		var head := model.find_child("Head", true, false) as Node3D
 		var at: Vector3
@@ -176,5 +197,3 @@ func portrait(model_id: String) -> Texture2D:
 			span = maxf(box.size.x, maxf(box.size.z, 0.6)) * 0.8
 		var dist := span / tan(deg_to_rad(cam.fov) / 2)
 		cam.transform = Transform3D(Basis(), Vector3(at.x + dist * 0.3, at.y + span * 0.05, at.z + dist)).looking_at(Vector3(at.x, at.y - span * 0.2, at.z), Vector3.UP))
-	_portraits[model_id] = tex
-	return tex

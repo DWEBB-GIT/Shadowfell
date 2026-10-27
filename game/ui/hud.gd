@@ -27,6 +27,7 @@ const MICRO := [
 	["settings", "☰", "Settings", "settings", ""],
 ]
 const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
+const UNIT_W := 236.0 ## the width of your frame and your target's
 const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
 const ORB_R := 14.0 ## the menu orbs round the minimap
 const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
@@ -61,6 +62,8 @@ var root: Control
 var char_panel: PanelContainer
 var char_name: Label
 var char_level: Label
+var char_img: TextureRect
+var char_badge: Label
 var hp: Dictionary
 var mp: Dictionary
 var gauge: Dictionary
@@ -351,71 +354,95 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 
 
 ## the game's name, the region and the build stamp (#title-area)
-## the character frame (#char-panel)
+## the character frame (#char-panel): your portrait in its ring, like the
+## target's, beside your bars
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
-	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
-	char_panel.custom_minimum_size = Vector2(240, 0)
-	var cv := UI.vbox(char_panel, 3)
-	var head := UI.hbox(cv, 8)
-	char_name = UI.label(head, "", 15, UI.GOLD)
-	char_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	char_level = UI.label(head, "", 13, UI.TEXT_DIM)
+	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
+	char_panel.custom_minimum_size = Vector2(UNIT_W, 0)
+	var row := UI.hbox(char_panel, 8)
+	var pic := _portrait(row)
+	char_img = pic.img
+	char_badge = pic.badge
+	var cv := UI.vbox(row, 3)
+	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	char_name = UI.label(cv, "", 14, UI.GOLD)
+	char_name.clip_text = true
+	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the badge
 	hp = _bar(cv, Color("c0503a"), Color("8e2a20"), 16)
 	mp = _bar(cv, Color("5a82c8"), Color("2c4a8a"), 13, 10)
 	gauge = _bar(cv, Color("e0a84a"), Color("9a5a1c"), 13, 10)
 	pips = UI.hbox(cv, 4)
 	buffs = UI.hbox(cv, 4)
+	game.events.on("equipmentChanged", func(_e): _player_portrait.call_deferred())
 
 
-## the target frame, beside the player's, with a round portrait (#target-frame)
-func _build_target() -> void:
-	target = UI.panel(root, 0)
-	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
-	target.custom_minimum_size = Vector2(310, 0)
-	var row := UI.hbox(target, 10)
+## your portrait, taken again when you enter the world or change gear
+func _player_portrait() -> void:
+	if game.player != null and game.player.model != null:
+		char_img.texture = icons.player_portrait(game.player.model)
+
+
+## a round portrait with a level badge on its rim (#target-frame .portrait)
+func _portrait(row: Control) -> Dictionary:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(58, 58)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(holder)
-	target_ring = Panel.new()
-	target_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	target_ring.size = Vector2(58, 58)
+	var ring_panel := Panel.new()
+	ring_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring_panel.size = Vector2(58, 58)
 	var ring := UI.box(Color("1a1510"), Color("8a6a3a"), 0, 2)
 	ring.set_corner_radius_all(29)
-	target_ring.add_theme_stylebox_override("panel", ring)
-	holder.add_child(target_ring)
-	target_img = TextureRect.new()
-	target_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	target_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	target_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	target_img.position = Vector2(2, 2)
-	target_img.size = Vector2(54, 54)
+	ring_panel.add_theme_stylebox_override("panel", ring)
+	holder.add_child(ring_panel)
+	var img := TextureRect.new()
+	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	img.position = Vector2(2, 2)
+	img.size = Vector2(54, 54)
 	var sh := Shader.new()
 	sh.code = CIRCLE
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
-	target_img.material = mat
-	holder.add_child(target_img)
-	target_badge = UI.label(holder, "", 12, Color("f0d890"))
+	img.material = mat
+	holder.add_child(img)
+	var badge_label := UI.label(holder, "", 12, Color("f0d890"))
 	var badge := UI.box(Color("120e0a"), Color("b08a4a"), 0, 1, Vector4(3, 0, 3, 0))
 	badge.set_corner_radius_all(10)
-	target_badge.add_theme_stylebox_override("normal", badge)
-	target_badge.add_theme_font_override("font", UI.bold)
-	target_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	target_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	target_badge.custom_minimum_size = Vector2(20, 20)
-	target_badge.position = Vector2(-4, 42)
+	badge_label.add_theme_stylebox_override("normal", badge)
+	badge_label.add_theme_font_override("font", UI.bold)
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.custom_minimum_size = Vector2(20, 20)
+	badge_label.position = Vector2(-4, 42)
+	return {"ring": ring_panel, "img": img, "badge": badge_label}
+
+
+## the target frame, the player's mirror, with a round portrait (#target-frame)
+func _build_target() -> void:
+	target = UI.panel(root, 0)
+	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
+	target.custom_minimum_size = Vector2(UNIT_W, 0)
+	var row := UI.hbox(target, 8)
+	var pic := _portrait(row)
+	target_ring = pic.ring
+	target_img = pic.img
+	target_badge = pic.badge
+	# the combat type (melee, ranged, magic) shows when you point at the portrait
+	target_img.mouse_filter = Control.MOUSE_FILTER_STOP
+	target_img.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
+	target_img.mouse_exited.connect(func(): items.cursor_tip_off())
 	var tv := UI.vbox(row, 2)
 	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var nr := UI.hbox(tv, 6)
 	target_name = UI.label(nr, "", 14, Color("e8c8a0"))
 	target_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	target_kind = UI.label(nr, "", 13, UI.GOLD, 3)
-	target_kind.mouse_filter = Control.MOUSE_FILTER_STOP
-	target_kind.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
-	target_kind.mouse_exited.connect(func(): items.cursor_tip_off())
+	target_name.clip_text = true
+	# not shown (its crossed swords read as a close button); holds the tip
+	target_kind = UI.label(null, "", 13, UI.GOLD, 3)
 	target_label = UI.label(tv, "", 11, UI.TEXT_DIM)
 	target_hp = _bar(tv, Color("c0503a"), Color("8e2a20"), 16)
 	target_mp = _bar(tv, Color("5a82c8"), Color("2c4a8a"), 11, 9)
@@ -426,7 +453,7 @@ func _build_target() -> void:
 
 ## experience on top of the spell bar, bottom centre (#bottom-bar)
 func _build_bottom() -> void:
-	bottom = UI.vbox(root, 0)
+	bottom = UI.vbox(root, 6) # the XP bar stands clear of the bar and its end caps
 	var bar_frame := UI.capped_frame(Vector4(4, 3, 4, 2))
 	# the experience bar spans the frame itself, not the end caps beside it
 	var xm := MarginContainer.new()
@@ -439,7 +466,7 @@ func _build_bottom() -> void:
 	action_bar = UI.panel(bottom, 0)
 	action_bar.add_theme_stylebox_override("panel", bar_frame)
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	var row := UI.hbox(action_bar, 5)
+	var row := UI.hbox(action_bar, 2)
 	var i := 0
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
@@ -466,7 +493,7 @@ func _build_dock() -> void:
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(_divider())
-	_sockets_box = UI.hbox(row, 4)
+	_sockets_box = UI.hbox(row, 2)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
@@ -610,6 +637,7 @@ func set_muted(m: bool) -> void:
 
 func set_character(c: Dictionary) -> void:
 	char_name.text = c.name
+	_player_portrait.call_deferred()
 
 
 # ------------------------------------------------------------ spell bar
@@ -888,6 +916,7 @@ func refresh_stats() -> void:
 	var player = game.player
 	var prog = game.progression
 	char_level.text = "Level %d" % prog.level
+	char_badge.text = str(prog.level)
 	set_fill(hp, player.health / player.max_health)
 	hp.text.text = "%d / %d" % [maxi(0, ceili(player.health)), player.max_health]
 	_refresh_resources()
