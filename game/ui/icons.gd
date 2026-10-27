@@ -15,11 +15,13 @@ const PORTRAIT_SIZE := 96
 const SPRITES := "res://assets/icons/%s.png"
 const SPELLS := "res://assets/icons/spells/%s.png"
 const PROFESSIONS := "res://assets/icons/professions/%s.png"
+const ART := "res://assets/icons/%s/%s.png"
 
 var items := {} ## model -> Texture2D
 var _sprites := {} ## sprite -> Texture2D, or null if the file is missing
 var abilities := {} ## ability id -> Texture2D
 var _portraits := {} ## model -> Texture2D
+static var _art := {} ## "group/id" -> Texture2D, or null if the file is missing
 
 
 func _init() -> void:
@@ -32,6 +34,16 @@ func _init() -> void:
 		var path := SPELLS % id
 		if ResourceLoader.exists(path):
 			abilities[id] = load(path)
+
+
+## one of Dan's painted UI icons (assets/icons/<group>/<id>.png: ui, map,
+## cursors, auras, slots), or null so the caller keeps its drawn glyph
+static func art(group: String, id: String) -> Texture2D:
+	var key := group + "/" + id
+	if not _art.has(key):
+		var path := ART % [group, id]
+		_art[key] = load(path) if ResourceLoader.exists(path) else null
+	return _art[key]
 
 
 # ------------------------------------------------------------------ items
@@ -138,11 +150,19 @@ func _glyph(id: String) -> Texture2D:
 	return vp.get_texture()
 
 
-## the icon for an aura: its item's (an elixir), its own, else its spell's,
-## else the cooking pot
+## the icon for an aura: its item's (an elixir), Dan's painted one
+## (assets/icons/auras: its id, or its status tag on an enemy), its own, else
+## its spell's, else the cooking pot
 func aura(a: Dictionary) -> Texture2D:
 	if a.get("item") and item(a.item) != null:
 		return item(a.item)
+	var own := art("auras", str(a.get("id", "")))
+	if own:
+		return own
+	if a.get("status", "") != "":
+		var st := art("auras", "status_" + a.status)
+		if st:
+			return st
 	return abilities.get(a.get("icon", a.get("id", "")), abilities.get(a.get("id", ""), abilities.get("cook")))
 
 

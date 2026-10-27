@@ -22,14 +22,15 @@ const LOG_LINES := 7 ## lines on screen
 const LOG_KEEP := 80 ## lines kept for switching tabs
 const SLOT := 48
 const EDGE := 12.0 ## the gap between the HUD and the screen edge
-## the menus in the right dock: [window, glyph, tip, key action, pad label]
+## the menus in the right dock: [window, glyph, tip, key action, pad label,
+## Dan's icon (assets/icons/ui), drawn over the glyph when it exists]
 const MICRO := [
-	["character", "⚔", "Character", "character", "View"],
-	["spellbook", "✦", "Spells", "spellbook", "↑"],
-	["skills", "⚒", "Professions", "skills", ""],
-	["talents", "❀", "Talents", "talents", ""],
-	["quests", "!", "Quest Log", "quests", "→"],
-	["settings", "☰", "Settings", "settings", ""],
+	["character", "⚔", "Character", "character", "View", "menu_character"],
+	["spellbook", "✦", "Spells", "spellbook", "↑", "menu_spellbook"],
+	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
+	["talents", "❀", "Talents", "talents", "", "menu_talents"],
+	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
+	["settings", "☰", "Settings", "settings", "", "menu_settings"],
 ]
 const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
 const UNIT_W := 236.0 ## the width of your frame and your target's
@@ -686,7 +687,12 @@ func _build_orbs() -> void:
 		var pad_label: String = m[4]
 		var tip: String = m[2]
 		b.pressed.connect(func(): toggle_panel(which))
-		var glyph := UI.label(b, m[1], 15, UI.GOLD)
+		var art := Icons.art("ui", m[5])
+		if art:
+			b.draw.connect(func():
+				var lit := b.is_hovered() or b.is_pressed()
+				b.draw_texture_rect(art, Rect2(Vector2(3, 3), b.size - Vector2(6, 6)), false, Color(1.25, 1.2, 1.1) if lit else Color.WHITE))
+		var glyph := UI.label(b, "" if art else m[1], 15, UI.GOLD)
 		glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1602,7 +1608,8 @@ func _update_target() -> void:
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
 	target_kind.add_theme_color_override("font_color", KIND_GLYPH[kind][1])
-	target_kind.set_meta("tip", "[b]%s[/b]\nLevel %s · %s" % [kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
+	var kind_art := Icons.art("ui", "foe_" + kind)
+	target_kind.set_meta("tip", "%s[b]%s[/b]\nLevel %s · %s" % ["[img=16]%s[/img] " % kind_art.resource_path if kind_art else "", kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
 	var attacking: bool = t != null and tg.attacking
 	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
 	target_label.add_theme_color_override("font_color", Color("ff8a60") if attacking else UI.TEXT_DIM)
@@ -1671,8 +1678,9 @@ func _update_enemy_bars() -> void:
 		var targeted: bool = e == t
 		var w := 96.0 if targeted else 130.0 if elite else 70.0
 		var h := 12.0 if targeted else 8.0 if elite else 6.0
-		bar.name.visible = elite or targeted or nemesis
-		bar.name.text = ("☠ " if nemesis else "") + e.cfg.name
+		bar.name_row.visible = elite or targeted or nemesis
+		bar.skull.visible = nemesis and bar.skull.texture != null
+		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
 		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("f0d050") if e.passive else Color("ffb08a") if targeted else Color("d8c7a0"))
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
@@ -1698,7 +1706,18 @@ func _update_enemy_bars() -> void:
 
 func _enemy_bar(_e) -> Dictionary:
 	var v := UI.vbox(bars_layer, 1)
-	var n := UI.label(v, "", 11, Color("d8c7a0"), 4)
+	# the name, with Dan's nemesis skull before it on the enemy that last killed you
+	var name_row := UI.hbox(v, 2)
+	name_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var skull := TextureRect.new()
+	skull.texture = Icons.art("ui", "nemesis")
+	skull.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	skull.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	skull.custom_minimum_size = Vector2(14, 14)
+	skull.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	skull.visible = false
+	name_row.add_child(skull)
+	var n := UI.label(name_row, "", 11, Color("d8c7a0"), 4)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var track := Panel.new()
 	track.add_theme_stylebox_override("panel", UI.box(Color("0b0908"), UI.BORDER_DIM, 0, 1))
@@ -1738,4 +1757,4 @@ func _enemy_bar(_e) -> Dictionary:
 	cn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var auras := UI.hbox(v, 2)
 	auras.alignment = BoxContainer.ALIGNMENT_CENTER
-	return {"root": v, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}
+	return {"root": v, "name_row": name_row, "skull": skull, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}

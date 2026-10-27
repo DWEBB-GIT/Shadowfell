@@ -459,6 +459,7 @@ func _render_sockets(inv) -> void:
 	for i in range(Items.TOOL_SOCKET, 0, -1):
 		var s = inv.sockets[i] if i < inv.sockets.size() else null
 		var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1} if s else null, 40, "⚒" if i == Items.TOOL_SOCKET else "")
+		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
 			slot.dim = 1.0 if s else 0.6
@@ -582,6 +583,8 @@ func _equip_col(parent: Node, inv, where: String) -> void:
 		if s.col == where:
 			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), SLOT_PX, s.label)
 			sl.placeholder_size = 9
+			# both rings and both trinkets share one outline
+			sl.ghost = Icons.art("slots", "slot_" + s.id.rstrip("12"))
 
 
 func _render_paper_doll(inv, main: VBoxContainer) -> void:

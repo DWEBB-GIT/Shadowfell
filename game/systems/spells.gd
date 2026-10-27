@@ -146,10 +146,10 @@ func dots_on(enemy) -> Array:
 	var out := []
 	for d in dots:
 		if d.enemy == enemy:
-			out.append({"id": d.id, "left": d.left, "total": tuned(d.id).tuning.duration})
+			out.append({"id": d.id, "left": d.left, "total": tuned(d.id).tuning.duration, "status": DB.spells[d.id].get("status", "")})
 	for a in auras:
 		if a.enemy == enemy:
-			out.append({"id": a.id.split(":")[0], "name": a.name, "left": a.left, "total": a.total})
+			out.append({"id": a.id.split(":")[0], "name": a.name, "left": a.left, "total": a.total, "status": a.get("status", "slowed" if a.get("slow", 0) > 0 else "")})
 	return out
 
 

@@ -87,7 +87,10 @@ func _init(g) -> void:
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, 10.0)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var n := UI.label(north, "N", 12, UI.GOLD)
+	var north_art := Icons.art("ui", "minimap_north")
+	if north_art:
+		north.draw.connect(func(): north.draw_texture_rect(north_art, Rect2(Vector2(2, 2), north.size - Vector2(4, 4)), false))
+	var n := UI.label(north, "" if north_art else "N", 12, UI.GOLD)
 	n.add_theme_font_override("font", UI.bold)
 	n.set_anchors_preset(Control.PRESET_FULL_RECT)
 	n.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -134,6 +137,10 @@ func _draw_orb(b: Button, radius: float) -> void:
 func _draw_zoom(b: Button, step: int) -> void:
 	var c := Vector2(ZOOM_R, ZOOM_R)
 	var col := UI.GOLD if b.is_hovered() or b.is_pressed() else Color("e2d3ae")
+	var art := Icons.art("ui", "minimap_zoom_in" if step > 0 else "minimap_zoom_out")
+	if art:
+		b.draw_texture_rect(art, Rect2(Vector2(2, 2), b.size - Vector2(4, 4)), false, Color(1.25, 1.2, 1.1) if b.is_hovered() or b.is_pressed() else Color.WHITE)
+		return
 	b.draw_line(c - Vector2(4.5, 0), c + Vector2(4.5, 0), col, 2.0, true)
 	if step > 0:
 		b.draw_line(c - Vector2(0, 4.5), c + Vector2(0, 4.5), col, 2.0, true)
@@ -460,6 +467,8 @@ func _draw_map() -> void:
 		var s: Vector2 = to_map.call(m.x, m.z)
 		var inside := s.distance_to(Vector2(R, R)) <= R - 4
 		if m.kind == "shrine" and inside:
+			if _art(g, "shrine", s.x, s.y, 14):
+				continue
 			g.fill_style = "#9fd0ff"
 			g.begin_path()
 			g.move_to(s.x, s.y - 4)
@@ -469,13 +478,16 @@ func _draw_map() -> void:
 			g.fill()
 		elif m.kind == "npc" and inside:
 			if m.icon:
-				_trade_icon(g, s.x, s.y, m.icon)
+				if not _art(g, "npc_" + m.icon, s.x, s.y, 15):
+					_trade_icon(g, s.x, s.y, m.icon)
 				continue
 			g.fill_style = "#e8d8a0"
 			g.begin_path()
 			g.arc(s.x, s.y, 2.6, 0, TAU)
 			g.fill()
 		elif m.kind == "vein" and inside:
+			if _art(g, "vein", s.x, s.y, 13):
+				continue
 			g.fill_style = "#f0d890"
 			g.stroke_style = "#000"
 			g.line_width = 1
@@ -512,7 +524,7 @@ func _draw_map() -> void:
 			var colour := "#fff0a0" if m.focus else "#d8b058"
 			if s.distance_to(Vector2(R, R)) > R - 4 - m.r * scale:
 				_rim(g, s, R, colour, "", m.r * scale, 1.5 if m.focus else 1.0)
-			elif not m.npc:
+			elif not m.npc and not _art(g, "quest_goal", s.x, s.y, 15 if m.focus else 12):
 				_glyph(g, s.x, s.y, "◆", colour, 13 if m.focus else 10)
 	# quest marks last, so they sit on top; out of range ones on the rim
 	for m in all:
@@ -522,7 +534,8 @@ func _draw_map() -> void:
 		var glyph := "!" if m.kind == "available" else "?"
 		var colour := "#a8a8a8" if m.kind == "active" else "#ffd23c"
 		if s.distance_to(Vector2(R, R)) <= R - 8:
-			_glyph(g, s.x, s.y, glyph, colour, 15)
+			if not _art(g, "quest_" + m.kind, s.x, s.y, 16):
+				_glyph(g, s.x, s.y, glyph, colour, 15)
 		else:
 			_rim(g, s, R, colour, glyph)
 	# your camp, your killer and your body: always shown, on the rim when far
@@ -530,22 +543,29 @@ func _draw_map() -> void:
 		var s: Vector2 = to_map.call(m.x, m.z)
 		var inside := s.distance_to(Vector2(R, R)) <= R - 8
 		if m.kind == "camp":
-			if inside:
+			if inside and not _art(g, "camp", s.x, s.y, 14):
 				_glyph(g, s.x, s.y, "▲", "#ff9a40", 11)
 		elif m.kind == "nemesis":
 			if inside:
-				_glyph(g, s.x, s.y, "☠", "#ff4a3a", 15)
+				if not _art(g, "nemesis", s.x, s.y, 16):
+					_glyph(g, s.x, s.y, "☠", "#ff4a3a", 15)
 			else:
 				_rim(g, s, R, "#ff4a3a", "☠")
 		elif m.kind == "corpse":
 			if inside:
-				_glyph(g, s.x, s.y, "✝", "#cfe6ff", 15)
+				if not _art(g, "corpse", s.x, s.y, 16):
+					_glyph(g, s.x, s.y, "✝", "#cfe6ff", 15)
 			else:
 				_rim(g, s, R, "#cfe6ff", "")
 	# the Warden, at the centre, pointing the way they face
 	g.save()
 	g.translate(R, R)
 	g.rotate(PI - game.player.facing)
+	var arrow := Icons.art("map", "player")
+	if arrow:
+		g.draw_image(arrow, -8, -8, 16, 16)
+		g.restore()
+		return
 	g.begin_path()
 	g.move_to(0, -7)
 	g.line_to(5, 6)
@@ -643,6 +663,16 @@ func _trade_icon(g: Canvas2D, x: float, y: float, icon: String) -> void:
 				g.line_to(3.6 * sgn, 1.4)
 				g.stroke()
 	g.restore()
+
+
+## Dan's painted marker (assets/icons/map/<id>.png) centred on x, y; false
+## when there is none, so the caller draws its own
+func _art(g: Canvas2D, id: String, x: float, y: float, px: float) -> bool:
+	var tex := Icons.art("map", id)
+	if tex == null:
+		return false
+	g.draw_image(tex, x - px / 2, y - px / 2, px, px)
+	return true
 
 
 func _glyph(g: Canvas2D, x: float, y: float, glyph: String, colour: String, px: int) -> void:

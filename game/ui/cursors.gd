@@ -44,9 +44,38 @@ static func _defs() -> Dictionary:
 	}
 
 
+## Dan's painted cursors (assets/icons/cursors, 32 px, tip at the top left):
+## the hotspot of each; the "Far" ones are greyed from the same picture
+const ART_HOTSPOT := {"pointer": Vector2(3, 3), "attack": Vector2(3, 3), "talk": Vector2(3, 3),
+	"loot": Vector2(3, 3), "mine": Vector2(4, 3), "fish": Vector2(4, 5)}
+
+
+static func _art(id: String) -> Array:
+	var base := id.trim_suffix("Far")
+	var tex := Icons.art("cursors", base) if ART_HOTSPOT.has(base) else null
+	if tex == null:
+		return []
+	var img := tex.get_image()
+	if img == null:
+		return []
+	img.decompress()
+	if base != id:
+		img.convert(Image.FORMAT_RGBA8)
+		for y in img.get_height():
+			for x in img.get_width():
+				var c := img.get_pixel(x, y)
+				var v := c.get_luminance() * 0.8 + 0.08
+				img.set_pixel(x, y, Color(v, v, v, c.a))
+	return [ImageTexture.create_from_image(img), ART_HOTSPOT[base]]
+
+
 ## the texture and hotspot for a cursor ("" for none)
 static func get_cursor(id: String) -> Array:
 	if not _cache.has(id):
+		var art := _art(id)
+		if not art.is_empty():
+			_cache[id] = art
+			return art
 		var d = _defs().get(id)
 		if d == null:
 			return []
@@ -60,7 +89,7 @@ static func get_cursor(id: String) -> Array:
 
 ## Show a cursor by name, or the plain arrow for "".
 static func show(id: String) -> void:
-	var c := get_cursor(id) if id != "" else []
+	var c := get_cursor(id if id != "" else "pointer")
 	if c.is_empty():
 		Input.set_custom_mouse_cursor(null, Input.CURSOR_ARROW)
 	else:

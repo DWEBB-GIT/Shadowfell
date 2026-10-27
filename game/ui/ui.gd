@@ -370,6 +370,8 @@ static func set_rich(r: RichTextLabel, s: String) -> void:
 		var px := 11
 		if tok == "gold" or tok == "silver":
 			tex = coin(tok)
+			if Icons.art("ui", "coin_" + tok):
+				px = 14
 		elif icons:
 			var parts := tok.split(":")
 			px = int(parts[2]) if parts.size() > 2 else 26
@@ -404,6 +406,11 @@ static var _coins := {}
 static func coin(kind: String) -> Texture2D:
 	if _coins.has(kind):
 		return _coins[kind]
+	# Dan's painted coin (assets/icons/ui/coin_<kind>.png), else a shaded disc
+	var art := Icons.art("ui", "coin_" + kind)
+	if art:
+		_coins[kind] = art
+		return art
 	var stops := [Color("fff6c0"), Color("f2c030"), Color("8a5c0c")] if kind == "gold" else [Color("ffffff"), Color("cdd6e0"), Color("68707a")]
 	var s := 22
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
