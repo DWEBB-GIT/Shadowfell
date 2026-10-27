@@ -76,7 +76,8 @@ var bottom: VBoxContainer
 var action_bar: PanelContainer
 var xp: Dictionary
 var slots: Array = [] ## ISlot per bar slot
-var dock: VBoxContainer
+var dock: PanelContainer ## money and the bag sockets, bottom right
+var menu: PanelContainer ## the menu buttons, under the minimap
 var micro_keys := {} ## key action -> [Label, pad label]
 var micro_buttons := {} ## key action -> [Button, tip]
 var coins: RichTextLabel
@@ -441,18 +442,7 @@ func _build_bottom() -> void:
 	var i := 0
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
-			var sep := TextureRect.new()
-			sep.texture = UI.kit("divider")
-			sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			sep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sep.custom_minimum_size = Vector2(8, 0)
-			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var m := MarginContainer.new()
-			m.add_theme_constant_override("margin_left", 3)
-			m.add_theme_constant_override("margin_right", 3)
-			m.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			m.add_child(sep)
-			row.add_child(m)
+			row.add_child(_divider())
 		var s := ISlot.new("a:%d" % i, SLOT)
 		s.bar = true
 		row.add_child(s)
@@ -463,35 +453,37 @@ func _build_bottom() -> void:
 var _sockets_box: HBoxContainer
 
 
-## bottom right, stacked and right-aligned: money, the bag sockets, and
-## the menus along the bottom edge (#right-dock)
+## two single rows rather than a stack of odd-sized boxes: the menus sit
+## in a strip under the minimap, over the quest tracker and as wide as it
+## (#menu-strip), and money and the bag sockets share one tray bottom right,
+## level with the spell bar (#right-dock)
 func _build_dock() -> void:
-	dock = UI.vbox(root, 4)
-	var cp := UI.panel(dock, 0)
-	cp.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 2, 10, 2)))
-	cp.size_flags_horizontal = Control.SIZE_SHRINK_END
-	coins = UI.rich(cp, 15)
+	dock = UI.panel(root, 0)
+	dock.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 4, 8, 4)))
+	dock.mouse_filter = Control.MOUSE_FILTER_PASS
+	var row := UI.hbox(dock, 6)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	coins = UI.rich(row, 15)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var bag_dock := UI.panel(dock, 0)
-	bag_dock.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 5, 6, 4)))
-	bag_dock.mouse_filter = Control.MOUSE_FILTER_PASS
-	bag_dock.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_sockets_box = UI.hbox(bag_dock, 4)
+	row.add_child(_divider())
+	_sockets_box = UI.hbox(row, 4)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
-	var micro := UI.panel(dock, 0)
-	micro.add_theme_stylebox_override("panel", UI.frame(Vector4(5, 4, 5, 4)))
-	micro.mouse_filter = Control.MOUSE_FILTER_PASS
-	micro.size_flags_horizontal = Control.SIZE_SHRINK_END
-	var mr := UI.hbox(micro, 4)
+	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	menu = UI.panel(root, 0)
+	menu.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 4, 6, 4)))
+	menu.mouse_filter = Control.MOUSE_FILTER_PASS
+	var mr := UI.hbox(menu, 4)
 	for m in MICRO:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(30, 40)
+		b.custom_minimum_size = Vector2(38, 34)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.focus_mode = Control.FOCUS_NONE
 		var which: String = m[0]
 		b.pressed.connect(func(): toggle_panel(which))
 		mr.add_child(b)
-		var glyph := UI.label(b, m[1], 16, UI.GOLD)
+		var glyph := UI.label(b, m[1], 15, UI.GOLD)
 		glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		glyph.offset_bottom = -8
 		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -502,6 +494,22 @@ func _build_dock() -> void:
 		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		micro_keys[m[3]] = [key, m[4]]
 		micro_buttons[m[3]] = [b, m[2]]
+
+
+## the kit's bronze divider, upright between two groups in a row
+func _divider() -> Control:
+	var sep := TextureRect.new()
+	sep.texture = UI.kit("divider")
+	sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sep.custom_minimum_size = Vector2(8, 0)
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 3)
+	m.add_theme_constant_override("margin_right", 3)
+	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	m.add_child(sep)
+	return m
 
 
 func _build_modals() -> void:
@@ -651,7 +659,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, minimap, quests.tracker]:
+	for c in [char_panel, target, bottom, dock, menu, minimap, quests.tracker]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -1146,10 +1154,17 @@ func layout() -> void:
 	target.size = target.get_combined_minimum_size()
 	target.position = Vector2(char_panel.position.x + char_panel.size.x + m, m)
 	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
-	dock.size = dock.get_combined_minimum_size()
-	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
+	# the menu strip under the minimap's place name and coordinates, as wide
+	# as the quest tracker under it, so the right column has one edge
+	menu.custom_minimum_size.x = quests.tracker.custom_minimum_size.x
+	menu.size = menu.get_combined_minimum_size()
+	menu.position = Vector2(vp.x - m - menu.size.x, roundf(minimap.position.y + minimap.coords.position.y + minimap.coords.size.y + 4))
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
+	# the tray stands as tall as the spell bar and level with it
+	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
+	dock.size = dock.get_combined_minimum_size()
+	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)

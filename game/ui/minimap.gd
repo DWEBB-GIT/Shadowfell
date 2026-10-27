@@ -90,19 +90,37 @@ func _init(g) -> void:
 	north.size = Vector2(16, 14)
 	north.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	north.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# two round buttons on the rim, bottom right, clear of each other
-	for z in [["+", -46, 1], ["−", -20, -1]]:
-		var b := UI.button(self, z[0], Callable(), 15)
-		var step: int = z[2]
+	# two round buttons sat on the rim, right side, clear of the place bar:
+	# drawn as true circles (a font glyph in a box made them pills)
+	for z in [[1, 22.0], [-1, 48.0]]:
+		var b := Button.new()
+		var step: int = z[0]
+		b.focus_mode = Control.FOCUS_NONE
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		b.custom_minimum_size = Vector2(ZOOM_R * 2, ZOOM_R * 2)
+		b.size = b.custom_minimum_size
+		var a := deg_to_rad(z[1])
+		b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(ZOOM_R, ZOOM_R)
 		b.pressed.connect(func(): set_zoom(zoom + step))
-		b.add_theme_stylebox_override("normal", _round_box(11))
-		b.add_theme_stylebox_override("hover", _round_box(11, UI.GOLD))
-		b.add_theme_stylebox_override("pressed", _round_box(11, UI.GOLD))
-		b.add_theme_font_override("font", UI.bold)
-		b.custom_minimum_size = Vector2(22, 22)
-		b.size = Vector2(22, 22)
-		b.position = Vector2(SIZE - 26, SIZE + z[1])
+		b.draw.connect(func(): _draw_zoom(b, step))
+		add_child(b)
 		zoom_buttons.append(b)
+
+
+const ZOOM_R := 11.0
+
+
+func _draw_zoom(b: Button, step: int) -> void:
+	var c := Vector2(ZOOM_R, ZOOM_R)
+	var lit := b.is_hovered() or b.is_pressed()
+	b.draw_circle(c, ZOOM_R, Color(0, 0, 0, 0.5), true, -1, true)
+	b.draw_circle(c, ZOOM_R - 1.5, UI.PANEL_SOLID, true, -1, true)
+	b.draw_circle(c, ZOOM_R - 1.5, UI.GOLD if lit else UI.BORDER, false, 1.5, true)
+	var col := UI.GOLD if lit else Color("e2d3ae")
+	b.draw_line(c - Vector2(4.5, 0), c + Vector2(4.5, 0), col, 2.0, true)
+	if step > 0:
+		b.draw_line(c - Vector2(0, 4.5), c + Vector2(0, 4.5), col, 2.0, true)
 
 
 func _round_box(r: int, border := UI.BORDER) -> StyleBoxFlat:

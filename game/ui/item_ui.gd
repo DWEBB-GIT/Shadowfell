@@ -90,9 +90,13 @@ func _build() -> void:
 	bags.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bags)
 	character = UI.window(self, "Warden", 470, func(): close("character"))
-	character.main = UI.vbox(character.body, 6)
-	character.rep = UI.vbox(character.body, 3)
-	character.titles = UI.vbox(character.body, 3)
+	# the tabs share one page area, sized by the equipment page, so the
+	# window never changes size or moves as you switch: the longer pages scroll
+	character.pages = MarginContainer.new()
+	character.body.add_child(character.pages)
+	character.main = UI.vbox(character.pages, 6)
+	character.rep = _char_page(character.pages)
+	character.titles = _char_page(character.pages)
 	var tabs := UI.hbox(character.body, 4)
 	character.tabs = {}
 	for t in [["main", "Equipment"], ["titles", "Titles"], ["rep", "Reputation"]]:
@@ -535,7 +539,6 @@ func _render_character(inv) -> void:
 		return
 	var who: String = game.character.name if game.character else "Warden"
 	w.title.text = game.titles.full_name(who)
-	_show_char_tab()
 	UI.clear(w.rep)
 	UI.clear(w.titles)
 	# the paper doll lives across renders; only the slots and numbers change
@@ -546,6 +549,17 @@ func _render_character(inv) -> void:
 	_render_paper_doll(inv, w.main)
 	_render_rep(w.rep)
 	_render_titles(w.titles)
+	_show_char_tab()
+
+
+## a tab page that scrolls inside the shared page area
+func _char_page(pages: Control) -> VBoxContainer:
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pages.add_child(sc)
+	var v := UI.vbox(sc, 3)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return v
 
 
 func _show_char_tab() -> void:
@@ -555,8 +569,8 @@ func _show_char_tab() -> void:
 		b.add_theme_color_override("font_color", UI.GOLD if id == char_tab else UI.TEXT_DIM)
 		b.add_theme_stylebox_override("normal", UI.box(Color(20 / 255.0, 16 / 255.0, 12 / 255.0, 0.8), UI.GOLD if id == char_tab else Color(201 / 255.0, 162 / 255.0, 83 / 255.0, 0.3), 0, 1, Vector4(4, 4, 4, 4)))
 	w.main.visible = char_tab == "main"
-	w.rep.visible = char_tab == "rep"
-	w.titles.visible = char_tab == "titles"
+	w.rep.get_parent().visible = char_tab == "rep"
+	w.titles.get_parent().visible = char_tab == "titles"
 
 
 const SLOT_PX := 52 ## the paper doll's gear slots
@@ -714,7 +728,6 @@ func _rep_row(parent: Node, name_: String, k: float, colour: Color, text: String
 ## reputation, WoW style: renown first (how known you are anywhere, Fable
 ## style), then a bar per faction with its standing
 func _render_rep(box_: VBoxContainer) -> void:
-	box_.custom_minimum_size = Vector2(0, 200)
 	var rep = game.reputation
 	var tier: Dictionary = rep.renown_tier
 	var tk: float = minf(1, float(tier.into) / tier.span) if tier.get("span") else 1.0
@@ -732,7 +745,6 @@ func _render_rep(box_: VBoxContainer) -> void:
 
 ## titles, Fable style: what you may be called (renown unlocks them)
 func _render_titles(box_: VBoxContainer) -> void:
-	box_.custom_minimum_size = Vector2(0, 200)
 	var rep = game.reputation
 	var ttl = game.titles
 	UI.label(box_, "Titles", 12, UI.GOLD)
@@ -1153,6 +1165,10 @@ func _spell_card(parent: Node, id: String) -> void:
 func layout() -> void:
 	var vp := get_viewport_rect().size
 	if character.panel.visible:
+		# the equipment page sets the size of every tab's page (layout(),
+		# not the render: a new label measures its height only once laid out)
+		if character.main.visible:
+			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
 		# under the player frame, moved up as far as it must to stay on screen
 		var s := _fit(character.panel, Vector2(12, 136))
 		character.panel.position.y = maxf(12, minf(136, vp.y - 12 - s.y))
@@ -1193,7 +1209,7 @@ func _layout_bags(vp: Vector2) -> void:
 	if not bags.visible:
 		return
 	var right := vp.x - 12
-	var bottom := vp.y - 112
+	var bottom: float = hud.dock.position.y - 8 # stacked up from the bag tray
 	var top_limit := 28.0
 	var y := bottom
 	var col_w := 0.0
