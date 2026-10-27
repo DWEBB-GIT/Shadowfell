@@ -3,7 +3,7 @@ extends Node
 ## Every picture the HUD shows (src/ui/icons.js, src/ui/portraits.js):
 ##  - item icons, rendered from the same Blender models used in the world, so
 ##    an item always looks like what you dropped;
-##  - the painted spell glyphs (Glyphs);
+##  - Dan's spell icons (assets/icons/spells), else the painted glyphs (Glyphs);
 ##  - target-frame portraits, head and shoulders, made the first time a model
 ##    is targeted.
 ## Each is drawn once by its own small viewport and then kept as a texture.
@@ -13,6 +13,8 @@ const GLYPH_SIZE := 64
 const PORTRAIT_SIZE := 96
 
 const SPRITES := "res://assets/icons/%s.png"
+const SPELLS := "res://assets/icons/spells/%s.png"
+const PROFESSIONS := "res://assets/icons/professions/%s.png"
 
 var items := {} ## model -> Texture2D
 var _sprites := {} ## sprite -> Texture2D, or null if the file is missing
@@ -25,6 +27,11 @@ func _init() -> void:
 	_item_icons()
 	for id in Glyphs.ids():
 		abilities[id] = _glyph(id)
+	# Dan's painted icons (assets/icons/spells/<ability id>.png) win over the glyphs
+	for id in DB.abilities:
+		var path := SPELLS % id
+		if ResourceLoader.exists(path):
+			abilities[id] = load(path)
 
 
 # ------------------------------------------------------------------ items
@@ -134,6 +141,15 @@ func _glyph(id: String) -> Texture2D:
 ## the icon for an aura: its own, else its spell's, else the cooking pot
 func aura(a: Dictionary) -> Texture2D:
 	return abilities.get(a.get("icon", a.get("id", "")), abilities.get(a.get("id", ""), abilities.get("cook")))
+
+
+## a profession's icon (Dan's, assets/icons/professions/<skill id>.png),
+## Camping's tent spell, or null
+func profession(id: String) -> Texture2D:
+	var path := PROFESSIONS % id
+	if ResourceLoader.exists(path):
+		return load(path)
+	return abilities.get("setCamp") if id == "camping" else null
 
 
 ## an item's icon (its model's), or null for a lettered tile

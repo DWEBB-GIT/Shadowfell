@@ -63,10 +63,11 @@ func _init(g, h) -> void:
 	marks_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
-	# a smoky band behind the list, solid at the screen edge; it takes the
-	# clicks so pointing at the list never walks you
+	# a smoky band behind the list, solid at the screen edge (shown on
+	# hover by the HUD); it takes the clicks so pointing at the list never walks you
 	tracker.add_theme_stylebox_override("panel", UI.shade("right", 0.6, Vector4(14, 6, 8, 8)))
 	tracker.mouse_filter = Control.MOUSE_FILTER_STOP
+	tracker.self_modulate.a = 0 # the band shows while the pointer is over it
 	tracker.custom_minimum_size = Vector2(TRACKER_W, 0)
 	tracker_box = UI.vbox(tracker, 6)
 	tracker.visible = false

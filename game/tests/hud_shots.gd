@@ -2,6 +2,8 @@ extends SceneTree
 ## Pictures of the unit frames, objectives, log and a house fading:
 ##   BEHIND=3.5 godot --path . --script res://game/tests/hud_shots.gd -- out_dir x z [class]
 ## (x z: a house's middle; BEHIND: metres past it, away from the camera)
+## DEMO=1 also fills the party frames, the log tabs, a cast on you and your
+## target, and the level-up banner. PROF=1 opens Professions.
 
 var frames := 0
 var game
@@ -38,7 +40,10 @@ func _process(_delta: float) -> bool:
 		for e in game.enemies.list:
 			if e.alive and (best == null or e.position.distance_to(game.player.position) < best.position.distance_to(game.player.position)):
 				best = e
-		if best and best.position.distance_to(game.player.position) < 60:
+		if best and OS.get_environment("DEMO") != "": # stand near it to see its cast
+			game.player.place_at(best.position.x + 6, best.position.z + 6)
+			game._snap_camera()
+		if best and (best.position.distance_to(game.player.position) < 60 or OS.get_environment("DEMO") != ""):
 			game.targeting.select(best)
 		else:
 			var npc = null
@@ -50,6 +55,33 @@ func _process(_delta: float) -> bool:
 	if frames == 85:
 		game.resources.since_hit = 0.0 # points fade a while after your last hit
 		game.resources.add("combo", 3)
+	if frames == 60 and OS.get_environment("DEMO") != "":
+		var models := []
+		for n in DB.npcs.values():
+			if n.get("model") and models.size() < 2:
+				models.append(n.model)
+		game.hud.party.members = [
+			{"name": "Brother Aldric", "level": 4, "health": 62, "max_health": 80, "mana": 40, "max_mana": 90, "model": models[0]},
+			{"name": "Wren", "level": 5, "health": 18, "max_health": 96, "mana": 0, "max_mana": 0, "model": models[1]},
+			{"name": "Hollis Vane", "level": 3, "health": 0, "max_health": 70, "mana": 10, "max_mana": 60},
+		]
+		for t in [["Bandit Cutthroat hits you for 6.", "hurt"], ["Your Lunge hits Bandit Cutthroat for 14.", "hit"], ["You loot Wolf Pelt.", "loot"]]:
+			game.hud.log_line(t[0], t[1])
+		game.inventory.add_coins(4321, "")
+		root.warp_mouse(Vector2(120, 780)) # over the log, to show its band
+		game.hud.show_level_up({"level": 5, "gains": [{"id": "strength", "label": "Strength", "from": 12, "to": 14, "diff": 2}, {"id": "stamina", "label": "Stamina", "from": 11, "to": 12, "diff": 1}, {"id": "maxHealth", "label": "Health", "from": 120, "to": 138, "diff": 18}]})
+	if frames == 60 and OS.get_environment("PROF") != "":
+		game.skills.ranks = {"fishing": 12, "lockpicking": 4, "mining": 7}
+		game.hud.show_window("skills")
+	if frames == 88 and OS.get_environment("DEMO") != "":
+		var id = DB.spells.keys()[0]
+		for k in DB.spells:
+			if DB.spells[k].get("kind") == "cast":
+				id = k
+				break
+		game.player.casting = {"id": id, "spell": DB.spells[id], "t": 0.9, "total": 1.8, "target": null, "pushbacks": 0, "channel": false, "next": 0.0}
+		if game.hud.shown_target != null:
+			game.hud.shown_target.casting = {"kind": "demo", "label": "Crushing Blow", "telegraph": {"t": 1.1, "duration": 2.0}, "interruptible": true}
 	if frames == 90:
 		root.get_texture().get_image().save_png(args[0] + "/shot.png")
 		quit()
