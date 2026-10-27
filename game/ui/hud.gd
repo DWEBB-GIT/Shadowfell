@@ -989,8 +989,11 @@ func _cooldown(a) -> Array:
 	var cds: Dictionary = game.player.cooldowns
 	if a == "strike":
 		return [cds.get("attack", 0.0), game.stats.attack_cooldown, false]
-	if a == "item:healing_draught":
-		return [cds.get("draught", 0.0), DB.CONFIG.draught.cooldown, false]
+	# draughts and elixirs share the draught cooldown
+	if a is String and a.begins_with("item:"):
+		var use: Dictionary = Items.get_def(a.substr(5)).get("use", {})
+		if use.has("heal") or use.has("elixir"):
+			return [cds.get("draught", 0.0), DB.CONFIG.draught.cooldown, false]
 	if DB.spells.has(a):
 		var t: Dictionary = DB.spells[a].tuning
 		return [cds.get(a, 0.0), t.get("cooldown", 0.0), not t.get("offGlobalCooldown", false)]
@@ -1054,6 +1057,8 @@ func _refresh_spells() -> void:
 		c = game.loot.gather_bar
 	elif game.mining.bar != null:
 		c = game.mining.bar
+	elif game.gathering.bar != null:
+		c = game.gathering.bar
 	cast.root.visible = c != null
 	if c != null:
 		set_fill(cast, c.t / c.total)
@@ -1092,7 +1097,7 @@ func _refresh_spells() -> void:
 	var fed = game.cooking.well_fed_aura
 	if fed != null:
 		list.append(fed)
-	for extra in [game.boons.aura, game.law.aura]:
+	for extra in [game.boons.aura, game.boons.elixir_aura, game.law.aura]:
 		if extra != null:
 			list.append(extra)
 	_auras(buffs, list)

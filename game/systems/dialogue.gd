@@ -83,6 +83,14 @@ func train_rows(npc_id = null) -> Array:
 		var known: bool = skills.has(s.id)
 		var teaches: Array = s.get("teaches", [])
 		rows.append({"id": "train:" + s.id, "name": s.name, "kind": "Skill", "ability": teaches[0] if not teaches.is_empty() else null, "desc": s.get("desc", ""), "need": "" if known else "Teaches a new skill", "cost": s.cost, "state": "known" if known else "poor" if coins < s.cost else "learn"})
+	# the next profession rank, from whoever teaches it (the ladder)
+	for s in DB.skills.values():
+		var nxt: Dictionary = skills.next_rank(s.id)
+		if nxt.is_empty() or nxt.get("trainer") != npc_id:
+			continue
+		var why: String = skills.rank_blocked(s.id)
+		var cost := int(nxt.get("cost", 0))
+		rows.append({"id": "rank:" + s.id, "name": "%s %s" % [nxt.name, s.name], "kind": "Profession rank", "desc": "Raises your %s limit from %d to %d." % [s.name, skills.cap(s.id), int(nxt.cap)], "need": why if why != "" else "%s %d" % [s.name, int(nxt.get("level", 0))], "cost": cost, "state": "locked" if why != "" else "poor" if coins < cost else "learn"})
 	# class spells this trainer teaches the character's class
 	for t in game.stats.archetype.get("trained", []):
 		if t.get("trainer") != npc_id or not DB.abilities.has(t.get("ability")):
@@ -460,6 +468,9 @@ func choose(id: String) -> bool:
 		return true
 	elif id.begins_with("train:"):
 		if not game.skills.learn(id.substr(6)):
+			return false
+	elif id.begins_with("rank:"):
+		if not game.skills.train_rank(id.substr(5)):
 			return false
 	elif id.begins_with("recipe:"):
 		if not game.cooking.learn_recipe(id.substr(7)):

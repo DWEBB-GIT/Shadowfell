@@ -1,12 +1,15 @@
 {
-  "_about": "Skills the Warden can learn from a trainer for coins. `craft`: a skill with recipes (recipes.json) names its crafting window, the verb in the log, its button and where you must stand. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you).",
+  "_about": "Skills the Warden can learn from a trainer for coins. `craft`: a skill with recipes (recipes.json) names its crafting window, the verb in the log, its button and where you must stand. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (fishing rises with each catch, cooking with each dish that is not yet easy for you). `train` (a skill on the profession ladder): the trainer ranks past Novice, each { rank, trainer, cost, level (skill level needed), quest? (must be done) }. A laddered skill runs from 1 to 60 and its trainer rank caps it (`ladder.ranks`); it rises by skill experience, earned by the colour of the task (`ladder.actionXp`), and each level-up pays `ladder.charXpShare` of a character level's experience. `perks`: at each listed skill level you choose one of two; `effect` keys are read by the profession's system.",
   "skills": [
     {
       "id": "camping",
       "name": "Camping",
       "trainer": "tam",
       "cost": 10,
-      "teaches": ["setCamp", "returnToCamp"],
+      "teaches": [
+        "setCamp",
+        "returnToCamp"
+      ],
       "desc": "Pitch a camp anywhere quiet. Your spirit rises there if you fall, resting by it builds rested experience, and Return to Camp brings you back to it."
     },
     {
@@ -14,9 +17,63 @@
       "name": "Fishing",
       "trainer": "tam",
       "cost": 5,
-      "teaches": ["fish"],
-      "maxRank": 50,
-      "desc": "Cast a line into still water and strike when the bob dips. Rises with every catch."
+      "teaches": [
+        "fish"
+      ],
+      "desc": "Cast a line into still water and strike when the bob dips. Every water has a level: you need that much Fishing to fish it, and it teaches you less once it is easy. Better rods need more skill to use.",
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "tam",
+          "cost": 40,
+          "level": 8,
+          "quest": "tam_blackpool"
+        }
+      ],
+      "perks": [
+        {
+          "level": 10,
+          "choices": [
+            {
+              "id": "steady_hands",
+              "name": "Steady Hands",
+              "desc": "+10% chance to land a fish when you strike.",
+              "effect": {
+                "landChance": 10
+              }
+            },
+            {
+              "id": "keen_eye",
+              "name": "Keen Eye",
+              "desc": "+10% chance that something bites.",
+              "effect": {
+                "biteChance": 10
+              }
+            }
+          ]
+        },
+        {
+          "level": 20,
+          "choices": [
+            {
+              "id": "double_haul",
+              "name": "Double Haul",
+              "desc": "15% chance to land two fish at once.",
+              "effect": {
+                "doubleCatch": 0.15
+              }
+            },
+            {
+              "id": "deep_lure",
+              "name": "Deep Lure",
+              "desc": "Rare fish bite twice as often.",
+              "effect": {
+                "rareWeight": 2
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "lockpicking",
@@ -32,10 +89,147 @@
       "name": "Cooking",
       "trainer": "hester",
       "cost": 10,
-      "teaches": ["cook"],
+      "teaches": [
+        "cook"
+      ],
       "maxRank": 50,
       "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook.",
-      "craft": { "window": "Cooking", "verb": "cook", "button": "Cook", "station": "a fire: your camp or a hearth" }
+      "craft": {
+        "window": "Cooking",
+        "verb": "cook",
+        "button": "Cook",
+        "station": "a fire: your camp or a hearth",
+        "kind": "fire"
+      }
+    },
+    {
+      "id": "herbalism",
+      "name": "Herbalism",
+      "trainer": "briony",
+      "cost": 10,
+      "teaches": [],
+      "desc": "Pick the herbs that grow wild across the land. Each herb has a level: you need that much Herbalism to pick it, and the best grow in dangerous places. Herbs move: a picked patch is gone, and another springs up nearby. A knife or sickle in your bags makes you quicker.",
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "briony",
+          "cost": 40,
+          "level": 8,
+          "quest": "briony_bloodroot"
+        }
+      ],
+      "perks": [
+        {
+          "level": 10,
+          "choices": [
+            {
+              "id": "green_thumb",
+              "name": "Green Thumb",
+              "desc": "25% chance to pick an extra herb.",
+              "effect": {
+                "extraHerb": 0.25
+              }
+            },
+            {
+              "id": "quick_hands",
+              "name": "Quick Hands",
+              "desc": "Pick herbs 40% faster.",
+              "effect": {
+                "speed": 0.4
+              }
+            }
+          ]
+        },
+        {
+          "level": 20,
+          "choices": [
+            {
+              "id": "rootcutter",
+              "name": "Rootcutter",
+              "desc": "Twice the chance of a herb's rare find (seeds, roots, the odd lost trinket).",
+              "effect": {
+                "bonusChance": 2
+              }
+            },
+            {
+              "id": "healers_touch",
+              "name": "Healer's Touch",
+              "desc": "Picking a herb heals you for 4% of your health.",
+              "effect": {
+                "healPercent": 4
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "alchemy",
+      "name": "Alchemy",
+      "trainer": "briony",
+      "cost": 15,
+      "teaches": [],
+      "desc": "Brew herbs into draughts and elixirs at an alchemy bench. Draughts heal at once; an elixir raises a stat for a while (one elixir at a time). Briony teaches more recipes as you improve.",
+      "craft": {
+        "window": "Alchemy",
+        "verb": "brew",
+        "button": "Brew",
+        "station": "an alchemy bench",
+        "kind": "alchemy"
+      },
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "briony",
+          "cost": 50,
+          "level": 8,
+          "quest": "briony_fever"
+        }
+      ],
+      "perks": [
+        {
+          "level": 10,
+          "choices": [
+            {
+              "id": "long_brew",
+              "name": "Long Brew",
+              "desc": "Your elixirs last 50% longer.",
+              "effect": {
+                "elixirTime": 0.5
+              }
+            },
+            {
+              "id": "careful_measure",
+              "name": "Careful Measure",
+              "desc": "15% chance to brew two from one set of herbs.",
+              "effect": {
+                "doubleBrew": 0.15
+              }
+            }
+          ]
+        },
+        {
+          "level": 20,
+          "choices": [
+            {
+              "id": "potent_draughts",
+              "name": "Potent Draughts",
+              "desc": "Healing draughts heal 20% more.",
+              "effect": {
+                "healBoost": 0.2
+              }
+            },
+            {
+              "id": "last_drop",
+              "name": "The Last Drop",
+              "desc": "10% chance a draught or elixir is not used up when you drink it.",
+              "effect": {
+                "keepChance": 0.1
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "skinning",
@@ -54,7 +248,62 @@
       "teaches": [],
       "maxRank": 50,
       "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick), and smelt ore into bars at a forge. Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Harder rock needs a higher rank (5 ranks an ore level); the skill rises with every swing that is not yet easy for you, and as you smelt.",
-      "craft": { "window": "Smelting", "verb": "smelt", "button": "Smelt", "station": "a forge" }
+      "craft": {
+        "window": "Smelting",
+        "verb": "smelt",
+        "button": "Smelt",
+        "station": "a forge",
+        "kind": "forge"
+      }
     }
-  ]
+  ],
+  "ladder": {
+    "_about": "The profession ladder (game/systems/skills.gd). Ranks cap the skill; a level needs xpBase + xpPerLevel x level skill experience. A task's colour comes from how far your skill is over the level it needs: under bands[0] orange, under bands[1] yellow, under bands[2] green, past that grey (nothing to learn). Each skill level-up gives charXpShare of a character level's experience at that level.",
+    "ranks": [
+      {
+        "id": "novice",
+        "name": "Novice",
+        "cap": 10
+      },
+      {
+        "id": "apprentice",
+        "name": "Apprentice",
+        "cap": 20
+      },
+      {
+        "id": "journeyman",
+        "name": "Journeyman",
+        "cap": 30
+      },
+      {
+        "id": "expert",
+        "name": "Expert",
+        "cap": 40
+      },
+      {
+        "id": "artisan",
+        "name": "Artisan",
+        "cap": 50
+      },
+      {
+        "id": "grandmaster",
+        "name": "Grandmaster",
+        "cap": 60
+      }
+    ],
+    "xpBase": 30,
+    "xpPerLevel": 10,
+    "actionXp": {
+      "orange": 15,
+      "yellow": 10,
+      "green": 5,
+      "grey": 0
+    },
+    "bands": [
+      3,
+      6,
+      10
+    ],
+    "charXpShare": 0.15
+  }
 }

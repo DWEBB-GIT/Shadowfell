@@ -131,8 +131,11 @@ func _glyph(id: String) -> Texture2D:
 	return vp.get_texture()
 
 
-## the icon for an aura: its own, else its spell's, else the cooking pot
+## the icon for an aura: its item's (an elixir), its own, else its spell's,
+## else the cooking pot
 func aura(a: Dictionary) -> Texture2D:
+	if a.get("item") and item(a.item) != null:
+		return item(a.item)
 	return abilities.get(a.get("icon", a.get("id", "")), abilities.get(a.get("id", ""), abilities.get("cook")))
 
 

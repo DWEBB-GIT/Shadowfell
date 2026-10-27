@@ -698,11 +698,12 @@
       "kind": "tool",
       "rarity": "enhanced",
       "fishingSkill": 10,
+      "reqSkill": 5,
       "stack": 1,
       "price": 60,
       "model": "fishing_rod",
       "icon": "fishing_rod",
-      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is in your bags, so fish bite more often and are landed more often."
+      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is in your bags, so fish bite more often and are landed more often. Needs Fishing 5 to use well."
     },
     {
       "id": "cut_bait",
@@ -1554,6 +1555,195 @@
       "model": "manifest",
       "icon": "manifest",
       "description": "Good paper, folded small, sealed in black wax. Right-click to read it."
+    },
+    {
+      "id": "ditchbell",
+      "name": "Ditchbell",
+      "kind": "material",
+      "rarity": "common",
+      "herb": true,
+      "stack": 10,
+      "price": 2,
+      "model": "pine",
+      "icon": "pine",
+      "description": "A drooping blue flower from the ditches and hedge-bottoms. Bitter. Every draught in the vale starts with a handful."
+    },
+    {
+      "id": "woundwort",
+      "name": "Hedge woundwort",
+      "kind": "material",
+      "rarity": "common",
+      "herb": true,
+      "stack": 10,
+      "price": 3,
+      "model": "pine",
+      "icon": "pine",
+      "description": "Furry leaves that smell of wet dog. Farmers bind cuts with it. Grows round the vale and the mere."
+    },
+    {
+      "id": "bloodroot",
+      "name": "Bloodroot",
+      "kind": "material",
+      "rarity": "common",
+      "herb": true,
+      "stack": 10,
+      "price": 6,
+      "model": "pine",
+      "icon": "pine",
+      "description": "A pale root that bleeds red when cut. It grows in the dark of the Blackwood, which is where it ought to stay."
+    },
+    {
+      "id": "gravemoss",
+      "name": "Gravemoss",
+      "kind": "material",
+      "rarity": "common",
+      "herb": true,
+      "stack": 10,
+      "price": 9,
+      "model": "pine",
+      "icon": "pine",
+      "description": "Grey-green moss from the old barrows. It grows thickest on the stones nobody should be standing near."
+    },
+    {
+      "id": "starflower",
+      "name": "Starflower",
+      "kind": "material",
+      "rarity": "rare",
+      "herb": true,
+      "stack": 10,
+      "price": 30,
+      "model": "pine",
+      "icon": "pine",
+      "description": "A tiny white flower that opens only where nothing else is growing. Briony would give a great deal to know what it's for."
+    },
+    {
+      "id": "strong_healing_draught",
+      "name": "Strong healing draught",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "heal": 90
+      },
+      "stack": 5,
+      "price": 16,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Thick and dark, with bloodroot in it. Restores 90 health."
+    },
+    {
+      "id": "fortifying_tonic",
+      "name": "Fortifying tonic",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "elixir": {
+          "stat": "stamina",
+          "amount": 3,
+          "seconds": 900
+        }
+      },
+      "stack": 5,
+      "price": 10,
+      "model": "draught",
+      "icon": "draught",
+      "description": "A sour green tonic. +3 Stamina for 15 minutes. Only one elixir works on you at a time."
+    },
+    {
+      "id": "elixir_of_the_boar",
+      "name": "Elixir of the boar",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "elixir": {
+          "stat": "strength",
+          "amount": 3,
+          "seconds": 900
+        }
+      },
+      "stack": 5,
+      "price": 20,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Bloodroot and ground tusk. Tastes of iron and anger. +3 Strength for 15 minutes. Only one elixir works on you at a time."
+    },
+    {
+      "id": "gravemoss_tincture",
+      "name": "Gravemoss tincture",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "elixir": {
+          "stat": "intellect",
+          "amount": 3,
+          "seconds": 900
+        }
+      },
+      "stack": 5,
+      "price": 24,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Cold on the tongue, and your thoughts go very clear and very quiet. +3 Intellect for 15 minutes. Only one elixir works on you at a time."
+    },
+    {
+      "id": "blackpool_tench",
+      "name": "Blackpool tench",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 7,
+      "model": "perch",
+      "icon": "perch",
+      "description": "A fat green-gold fish from the pool in the Blackwood. Slimy, slow, and worth a fair bit to anyone brave enough to sell it."
+    },
+    {
+      "id": "mirror_pike",
+      "name": "Mirror pike",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 10,
+      "price": 40,
+      "model": "eel",
+      "icon": "eel",
+      "description": "A long pike with scales like a polished shield. Only a skilled angler can hold one on the line."
+    },
+    {
+      "id": "ash_fishing_rod",
+      "rod": true,
+      "name": "Ash fishing rod",
+      "kind": "tool",
+      "rarity": "enhanced",
+      "fishingSkill": 15,
+      "reqSkill": 12,
+      "stack": 1,
+      "price": 150,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Seasoned ash and a braided line. +15 Fishing skill while it is in your bags. Needs Fishing 12 to use well."
+    },
+    {
+      "id": "herb_knife",
+      "name": "Herb knife",
+      "kind": "tool",
+      "rarity": "common",
+      "herbalismSkill": 5,
+      "stack": 1,
+      "price": 8,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A small hooked knife for cutting stems clean. +5 Herbalism while it is in your bags: you pick faster."
+    },
+    {
+      "id": "brass_sickle",
+      "name": "Brass sickle",
+      "kind": "tool",
+      "rarity": "enhanced",
+      "herbalismSkill": 15,
+      "reqSkill": 10,
+      "stack": 1,
+      "price": 90,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A herbwife's sickle, bright and keen. +15 Herbalism while it is in your bags: you pick much faster. Needs Herbalism 10 to use well."
     }
   ]
 }

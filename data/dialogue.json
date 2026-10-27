@@ -1117,6 +1117,71 @@
           ]
         }
       ]
+    },
+    {
+      "id": "briony",
+      "greetings": [
+        {
+          "text": "Mind your boots. That's not a weed, that's tomorrow's draught."
+        },
+        {
+          "text": "Back from the Blackwood with all your fingers? Good. Let's see what you've brought.",
+          "when": {
+            "quest": "briony_bloodroot",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "briony_who"
+        },
+        {
+          "id": "herbs",
+          "prompt": "How does herb-picking work?",
+          "node": "briony_herbs"
+        },
+        {
+          "id": "brew",
+          "prompt": "What can you brew?",
+          "node": "briony_brew"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "briony_who",
+          "text": "Briony Marsh. Herbwife, they call me, when they're being polite. When the fever came through the mill last winter they called me a great deal of things, most of them 'please'. I pick, I dry, I brew. I teach, if you've the patience.",
+          "replies": [
+            {
+              "text": "Teach me to pick herbs.",
+              "node": "briony_herbs"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "briony_herbs",
+          "text": "Everything that grows has its own temper. Ditchbell anyone can pull. Woundwort wants a bit of practice. Bloodroot grows in the Blackwood, among things that bite, and gravemoss only on the barrows, which is a place I'd not send my worst enemy. Patches come and go: pick one bare and another springs up somewhere near. A good knife makes you quicker. I sell those too.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "briony_brew",
+          "text": "Draughts that close a wound, tonics that put iron in your legs. Ditchbell and a little water makes a healing draught; the rest I'll teach you as your hands learn. Only one elixir at a time, mind. Two fight each other, and you lose.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -263,9 +263,10 @@ func toggle(which: String) -> void:
 
 
 func show_window(which: String) -> void:
-	# one crafting window, for whichever skill's recipes (Cooking, Smelting)
-	if which == "cooking" or which == "smelting":
-		craft_skill = "mining" if which == "smelting" else "cooking"
+	# one crafting window, for whichever skill's recipes (Cooking, Smelting,
+	# Alchemy: "craft:<skill>")
+	if which == "cooking" or which == "smelting" or which.begins_with("craft:"):
+		craft_skill = "mining" if which == "smelting" else which.substr(6) if which.begins_with("craft:") else "cooking"
 		which = "cooking"
 		_cook_last = ""
 	if which == "bags":
@@ -982,9 +983,11 @@ func _section(parent: Node, text: String) -> void:
 func _prof_row(parent: Node, d: Dictionary) -> void:
 	var sk = game.skills
 	var known: bool = sk.has(d.id)
-	var mx: int = d.get("maxRank", 1)
-	var bonus: int = sk.tool_bonus(d.id) if known and d.get("maxRank") else 0
-	var level := ("%d%s / %d" % [sk.rank(d.id), "+%d" % bonus if bonus else "", mx] if d.get("maxRank") else "Learned") if known else "Not learned"
+	var ladder: bool = sk.laddered(d.id)
+	var ranked: bool = ladder or d.get("maxRank")
+	var mx: int = sk.cap(d.id) if known else int(d.get("maxRank", 60))
+	var bonus: int = sk.tool_bonus(d.id) if known and ranked else 0
+	var level := ("%d%s / %d" % [sk.rank(d.id), "+%d" % bonus if bonus else "", mx] if ranked else "Learned") if known else "Not learned"
 	var trainer = DB.npcs.get(d.get("trainer", ""))
 	var who: String = trainer.name if trainer else "A trainer"
 	var row := UI.panel(parent, 0, Color("1a150f"), UI.BORDER_DIM)
@@ -994,7 +997,7 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	var body := UI.vbox(h, 3)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var top := UI.hbox(body, 6)
-	UI.label(top, d.name, 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(top, "%s %s" % [sk.rank_name(d.id), d.name] if known and ladder else d.name, 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if bonus:
 		var rl := RichTextLabel.new()
 		rl.bbcode_enabled = true
@@ -1010,6 +1013,8 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 	_skill_bar(body, float(sk.rank(d.id)) / mx if known else 0.0, 90, float(bonus) / mx)
 	if not known:
 		UI.label(body, "%s teaches it" % who, 11, UI.TEXT_DIM)
+	elif ladder:
+		_ladder_lines(body, d)
 	var abil := UI.hbox(h, 4)
 	if known:
 		for a in d.get("teaches", []):
@@ -1019,7 +1024,42 @@ func _prof_row(parent: Node, d: Dictionary) -> void:
 			UI.button(abil, "Cookbook", func(): show_window("cooking"))
 		if d.id == "mining":
 			UI.button(abil, "Smelting", func(): show_window("smelting"))
+		elif d.id != "cooking" and d.has("craft"):
+			UI.button(abil, d.craft.get("window", "Craft"), func(): show_window("craft:" + d.id))
 	tip_on(row, d.get("desc", "") + ("" if known else " %s teaches it for %s." % [who, U.money(d.get("cost", 0))]), d.name)
+
+
+## A laddered profession's extra lines: skill experience to the next level,
+## who trains the next rank once the limit is reached, perks chosen and the
+## perk choices waiting (a button each).
+func _ladder_lines(body: Node, d: Dictionary) -> void:
+	var sk = game.skills
+	var id: String = d.id
+	var lvl: int = sk.rank(id)
+	if lvl < sk.cap(id):
+		UI.label(body, "%d / %d skill experience to level %d" % [int(sk.xp.get(id, 0)), Skills.xp_needed(lvl), lvl + 1], 11, UI.TEXT_DIM)
+	else:
+		var nxt: Dictionary = sk.next_rank(id)
+		var text := "At the %s's limit." % sk.rank_name(id)
+		if not nxt.is_empty():
+			var why: String = sk.rank_blocked(id)
+			text += " %s trains %s%s." % [DB.npcs.get(nxt.trainer, {}).get("name", "A trainer"), nxt.name, " (%s)" % why.to_lower().replace("requires ", "needs ") if why != "" else ""]
+		UI.wrapped(UI.label(body, text, 11, Color("e0b060")))
+	var chosen := []
+	for p in d.get("perks", []):
+		var c: Dictionary = sk.chosen_perk(id, int(p.level))
+		if not c.is_empty():
+			chosen.append(c.name)
+	if not chosen.is_empty():
+		UI.wrapped(UI.label(body, "Perks: " + ", ".join(chosen), 11, Color("9fd38a")))
+	for p in sk.perk_choices(id):
+		UI.label(body, "Choose a perk (level %d):" % int(p.level), 11, UI.GOLD)
+		var row := UI.hbox(body, 4)
+		for c in p.choices:
+			var b = UI.button(row, c.name, func():
+				sk.choose_perk(id, int(p.level), c.id)
+				_after_change("skills"))
+			tip_on(b, c.desc, c.name)
 
 
 ## spellbook: every ability, ready to drag onto the bar. A card each, two

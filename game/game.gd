@@ -70,6 +70,7 @@ var loot: Loot
 var chests: Chests
 var discovery: Discovery ## POI markers, discovering places, boats
 var mining: Mining
+var gathering: Gathering
 var forge: Forge
 var law: Law
 var boons: Boons
@@ -148,6 +149,7 @@ func _ready() -> void:
 	chests = Chests.new(self)
 	discovery = Discovery.new(self).build()
 	mining = Mining.new(self)
+	gathering = Gathering.new(self)
 	forge = Forge.new(self)
 	law = Law.new(self)
 	boons = Boons.new(self)
@@ -405,6 +407,7 @@ func start_game(resume: bool) -> void:
 	loot.spawn_all()
 	chests.spawn_all()
 	mining.spawn_all()
+	gathering.spawn_all()
 	hud.hide_title()
 	started = true
 	_snap_camera()
@@ -493,6 +496,10 @@ func _pick_under_cursor():
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["vein", v, d])
+	for v in gathering.live():
+		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z))
+		if d < DB.CONFIG.loot.clickRadius:
+			cands.append(["herb", v, d])
 	for c in interaction.click_points():
 		var d := _screen_dist(Vector3(c.x, Terrain.height_at(c.x, c.z) + 0.6, c.z))
 		if d < DB.CONFIG.loot.clickRadius:
@@ -589,6 +596,8 @@ func _click(button: String) -> bool:
 			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), walk)
 		"vein":
 			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, walk)
+		"herb":
+			_reach_or(o.x, o.z, Gathering.tuning().get("reach", 2.2), func(): gathering.start(o.n), closer, walk)
 		"point":
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
@@ -905,6 +914,7 @@ func step(dt: float) -> void:
 		fishing.update(dt)
 		cooking.update(dt)
 		mining.update(dt, time)
+		gathering.update(dt, time)
 		law.update(dt)
 		boons.update(dt)
 		water_and_dark.update(dt, time)

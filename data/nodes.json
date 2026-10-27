@@ -1,0 +1,20 @@
+{
+  "_about": "Gathering nodes for skills that pick things off the land (game/systems/gathering.gd): Herbalism now, Woodcutting and the like later. `nodeKinds`: what grows, with the `skill` and skill `level` it needs, what one gather `yields` (item, min, max) and a rare `bonus` (item, chance). `nodeGroups`: spots on the map, only `live` of them grown at once; a picked node goes bare and after `respawn` seconds (min, max) a random bare spot in the same group grows one of the group's `kinds` (by weight), so players learn the good ground rather than one plant. The world decides what is live (the same for every player in a shared world); each screen only draws what is near it.",
+  "tuning": { "reach": 2.2, "gatherTime": 1.8, "model": "pine", "scale": 0.16 },
+  "nodeKinds": [
+    { "id": "ditchbell", "name": "Ditchbell", "skill": "herbalism", "level": 1, "tint": "#7f9fe0", "yields": { "item": "ditchbell", "min": 1, "max": 2 }, "bonus": { "item": "starflower", "chance": 0.02 } },
+    { "id": "woundwort", "name": "Hedge woundwort", "skill": "herbalism", "level": 5, "tint": "#b4c08a", "yields": { "item": "woundwort", "min": 1, "max": 2 }, "bonus": { "item": "starflower", "chance": 0.03 } },
+    { "id": "bloodroot", "name": "Bloodroot", "skill": "herbalism", "level": 10, "tint": "#c0605a", "yields": { "item": "bloodroot", "min": 1, "max": 2 }, "bonus": { "item": "starflower", "chance": 0.04 } },
+    { "id": "gravemoss", "name": "Gravemoss", "skill": "herbalism", "level": 15, "tint": "#8fa79a", "yields": { "item": "gravemoss", "min": 1, "max": 2 }, "bonus": { "item": "starflower", "chance": 0.06 } }
+  ],
+  "nodeGroups": [
+    { "id": "vale_hedges", "name": "the vale hedges", "live": 4, "respawn": [45, 90], "kinds": [{ "kind": "ditchbell", "weight": 3 }, { "kind": "woundwort", "weight": 1 }],
+      "spots": [[-745.9, 401.0], [-660.2, 351.2], [-683.8, 330.4], [-674.6, 387.9], [-675.8, 351.9], [-664.8, 389.2], [-753.9, 370.8], [-758.7, 378.5], [-732.7, 350.3], [-730.0, 401.8]] },
+    { "id": "mere_banks", "name": "the banks of the Stillwater", "live": 3, "respawn": [60, 120], "kinds": [{ "kind": "woundwort", "weight": 2 }, { "kind": "ditchbell", "weight": 1 }],
+      "spots": [[-807.3, 64.9], [-1044.8, 58.5], [-1073.2, 150.7], [-897.8, 273.0], [-839.7, 232.9], [-798.6, 94.2], [-988.4, 263.3], [-833.7, 226.6]] },
+    { "id": "blackwood_floor", "name": "the Blackwood", "live": 3, "respawn": [90, 150], "kinds": [{ "kind": "bloodroot", "weight": 1 }],
+      "spots": [[-663.7, -384.8], [-633.2, -381.2], [-640.0, -292.1], [-690.6, -319.0], [-654.8, -380.4], [-609.4, -341.2], [-712.2, -319.0]] },
+    { "id": "barrow_hollow", "name": "the Barrow Hollow", "live": 2, "respawn": [120, 180], "kinds": [{ "kind": "gravemoss", "weight": 1 }],
+      "spots": [[-974.4, -265.0], [-975.0, -236.1], [-958.4, -255.8], [-957.7, -221.6], [-983.7, -220.5], [-997.8, -243.6]] }
+  ]
+}

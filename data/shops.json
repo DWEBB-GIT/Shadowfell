@@ -31,6 +31,16 @@
       "name": "Tanner",
       "sells": ["tool", "material"],
       "description": "Knives, hides and leather. Buys anything with fur on."
+    },
+    {
+      "id": "herbalist",
+      "name": "Herbalist",
+      "sells": [
+        "tool",
+        "material",
+        "consumable"
+      ],
+      "description": "Herbs, knives, draughts. Buys anything that grows."
     }
   ],
   "shops": [
@@ -45,7 +55,7 @@
       "id": "tam_outfitters",
       "name": "Tam's tackle",
       "vendorType": "outfitter",
-      "stock": ["fishing_rod", "yew_fishing_rod", "cut_bait", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
+      "stock": ["fishing_rod", "yew_fishing_rod", "ash_fishing_rod", "cut_bait", "rough_arrow", "barbed_arrow", "leather_quiver", "torch", "healing_draught", "lockpicks"],
       "faction": "mere_folk"
     },
     {
@@ -66,6 +76,16 @@
       "vendorType": "outfitter",
       "stock": [
         "mining_pick"
+      ]
+    },
+    {
+      "id": "briony_herbs",
+      "name": "Briony's herb-shed",
+      "vendorType": "herbalist",
+      "stock": [
+        "herb_knife",
+        "brass_sickle",
+        "healing_draught"
       ]
     }
   ]

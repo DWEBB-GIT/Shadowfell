@@ -105,6 +105,8 @@ static var text: Dictionary = {}
 static var ability_file: Dictionary = {}
 static var builds: Dictionary = {} ## data/builds.json (Builds)
 static var mining: Dictionary = {} ## data/mining.json (Mining)
+static var nodes: Dictionary = {} ## data/nodes.json (Gathering): herb patches and the like
+static var skill_ladder: Dictionary = {} ## skills.json `ladder` (Skills): trainer ranks, skill experience, perks
 static var forge: Dictionary = {} ## data/forge.json (Forge)
 static var gems: Dictionary = {} ## data/gems.json (Gems)
 static var infamy: Dictionary = {} ## data/infamy.json (Law)
@@ -167,6 +169,8 @@ static func setup(data) -> void:
 	ability_file = f.abilities
 	builds = f.get("builds", {})
 	mining = f.get("mining", {})
+	nodes = f.get("nodes", {})
+	skill_ladder = f.skills.get("ladder", {})
 	infamy = f.get("infamy", {})
 	boons = f.get("boons", {})
 	leash_distance = f.enemies.get("leashDistance", 18)

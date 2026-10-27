@@ -1,5 +1,5 @@
 {
-  "_about": "Recipes for crafting skills (cooking). `rank`: the skill rank needed to make it. `skillUp`: the ranks at which it turns yellow, green and grey: below yellow (orange) every craft raises the skill, yellow most of the time, green now and then, grey never (WoW). `inputs` are used up, `output` is made. `station`: what must be close by (`fire`: a camp or a hearth; `forge`: a forge, for smelting). `trainer` and `cost`: who teaches it, for how many coins; a recipe without a trainer comes with the skill.",
+  "_about": "Recipes for crafting skills (cooking). `rank`: the skill rank needed to make it. `skillUp`: the ranks at which it turns yellow, green and grey: below yellow (orange) every craft raises the skill, yellow most of the time, green now and then, grey never (WoW). `inputs` are used up, `output` is made. `station`: what must be close by (`fire`: a camp or a hearth; `forge`: a forge, for smelting; `alchemy`: an alchemy bench). `trainer` and `cost`: who teaches it, for how many coins; a recipe without a trainer comes with the skill.",
   "recipes": [
     {
       "id": "grilled_perch",
@@ -289,6 +289,135 @@
         "count": 1
       },
       "station": "forge"
+    },
+    {
+      "id": "brew_healing_draught",
+      "skill": "alchemy",
+      "rank": 1,
+      "skillUp": [
+        4,
+        7,
+        11
+      ],
+      "inputs": [
+        {
+          "item": "ditchbell",
+          "count": 2
+        }
+      ],
+      "output": {
+        "item": "healing_draught",
+        "count": 1
+      },
+      "station": "alchemy"
+    },
+    {
+      "id": "brew_fortifying_tonic",
+      "skill": "alchemy",
+      "rank": 4,
+      "skillUp": [
+        7,
+        10,
+        14
+      ],
+      "inputs": [
+        {
+          "item": "ditchbell",
+          "count": 1
+        },
+        {
+          "item": "woundwort",
+          "count": 2
+        }
+      ],
+      "output": {
+        "item": "fortifying_tonic",
+        "count": 1
+      },
+      "station": "alchemy",
+      "trainer": "briony",
+      "cost": 5
+    },
+    {
+      "id": "brew_strong_draught",
+      "skill": "alchemy",
+      "rank": 10,
+      "skillUp": [
+        13,
+        16,
+        20
+      ],
+      "inputs": [
+        {
+          "item": "bloodroot",
+          "count": 2
+        },
+        {
+          "item": "woundwort",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "strong_healing_draught",
+        "count": 1
+      },
+      "station": "alchemy",
+      "trainer": "briony",
+      "cost": 20
+    },
+    {
+      "id": "brew_boar_elixir",
+      "skill": "alchemy",
+      "rank": 12,
+      "skillUp": [
+        15,
+        18,
+        22
+      ],
+      "inputs": [
+        {
+          "item": "bloodroot",
+          "count": 1
+        },
+        {
+          "item": "boar_tusk",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "elixir_of_the_boar",
+        "count": 1
+      },
+      "station": "alchemy",
+      "trainer": "briony",
+      "cost": 25
+    },
+    {
+      "id": "brew_gravemoss",
+      "skill": "alchemy",
+      "rank": 16,
+      "skillUp": [
+        19,
+        22,
+        26
+      ],
+      "inputs": [
+        {
+          "item": "gravemoss",
+          "count": 2
+        },
+        {
+          "item": "ditchbell",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "gravemoss_tincture",
+        "count": 1
+      },
+      "station": "alchemy",
+      "trainer": "briony",
+      "cost": 40
     }
   ]
 }

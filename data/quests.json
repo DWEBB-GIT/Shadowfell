@@ -1003,6 +1003,90 @@
           "road_wardens": 150
         }
       }
+    },
+    {
+      "id": "tam_blackpool",
+      "name": "The Blackpool Tench",
+      "giver": "tam",
+      "turnIn": "tam",
+      "skillReq": {
+        "skill": "fishing",
+        "level": 6
+      },
+      "summary": "Old Tam wants three tench from the Blackpool, deep in the Blackwood, to know the water there is still alive. Bring them and he'll teach you the Apprentice's craft.",
+      "offer": "You've got the wrist for it now. Time you fished somewhere that fights back. There's a pool in the Blackwood, black as a boot. My brother fished it every spring till the wood went bad. Bring me three tench out of it. If they're fat, the water's still good. If they're thin, or they taste of iron like he used to say... well. Then I'll want to know that too.",
+      "progress": "Three tench from the Blackpool. Mind the trees. They watch.",
+      "complete": "Fat as butter. Good. Good. And the iron? No? Hm. Sit down, then. Let's talk about how a real angler holds a rod.",
+      "objectives": [
+        {
+          "id": "bring",
+          "type": "collect",
+          "target": "blackpool_tench",
+          "count": 3,
+          "label": "Blackpool tench",
+          "location": "blackpool"
+        }
+      ],
+      "reward": {
+        "coins": 25,
+        "xp": 150
+      }
+    },
+    {
+      "id": "briony_bloodroot",
+      "name": "Root and Blood",
+      "giver": "briony",
+      "turnIn": "briony",
+      "skillReq": {
+        "skill": "herbalism",
+        "level": 6
+      },
+      "summary": "Briony wants five bloodroot from the Blackwood floor before she'll teach you the Apprentice's craft.",
+      "offer": "Ditchbell's a child's herb. If you want to learn, you go where the good roots are, and the good roots are where nobody sane goes. Bloodroot. Five of them, from the Blackwood. Cut them clean, don't pull. And if something follows you home, don't bring it in here.",
+      "progress": "Five bloodroot. Cut, not pulled.",
+      "complete": "Clean cuts, every one. You've the hands for it. Sit, and I'll show you what an Apprentice knows.",
+      "objectives": [
+        {
+          "id": "bring",
+          "type": "collect",
+          "target": "bloodroot",
+          "count": 5,
+          "label": "Bloodroot",
+          "location": "blackwood_herbs"
+        }
+      ],
+      "reward": {
+        "coins": 20,
+        "xp": 150
+      }
+    },
+    {
+      "id": "briony_fever",
+      "name": "The Mill Fever",
+      "giver": "briony",
+      "turnIn": "briony",
+      "skillReq": {
+        "skill": "alchemy",
+        "level": 6
+      },
+      "summary": "The fever is back at the Brackenford mill. Briony needs three fortifying tonics, brewed by your own hand, before she'll teach you the Apprentice's craft.",
+      "offer": "It's back. The mill fever. Same as last winter: the shakes, then the sleep. I can't brew fast enough on my own. Three fortifying tonics, your own work, and we'll see if you're ready for more. And ask yourself, while you brew, why only the mill. They draw their water from the stream off the Blackwood. I've been asking myself for a year.",
+      "progress": "Three fortifying tonics. Your own brewing.",
+      "complete": "Good colour. Good smell. These'll hold the fever off a week. You've earned the Apprentice's craft. And keep your eyes open in the Blackwood. Something in that water isn't right.",
+      "objectives": [
+        {
+          "id": "bring",
+          "type": "collect",
+          "target": "fortifying_tonic",
+          "count": 3,
+          "label": "Fortifying tonics",
+          "location": "brackenford"
+        }
+      ],
+      "reward": {
+        "coins": 30,
+        "xp": 150
+      }
     }
   ]
 }

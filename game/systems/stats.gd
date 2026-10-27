@@ -49,6 +49,10 @@ var totals: Dictionary:
 			t[k] = t.get(k, 0)
 		if game.cooking:
 			t.stamina += game.cooking.well_fed_stamina
+		if game.boons:
+			var ex = game.boons.elixir
+			if ex != null and t.has(ex.stat):
+				t[ex.stat] += ex.amount
 		return t
 
 

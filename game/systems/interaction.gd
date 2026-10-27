@@ -27,14 +27,18 @@ func _candidates() -> Array:
 	list.append_array(game.chests.interactions())
 	for sh in Layout.shrines:
 		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "run": func(): game.rest_at_shrine(sh)})
-	# a hearth prompts Cooking and a forge prompts Smelting; without the
+	# a hearth prompts Cooking, a forge Smelting, an alchemy bench Alchemy
+	# (the skill whose `craft.kind` is the station's kind); without the
 	# skill the prompt still shows and says where to learn it
 	for st in Layout.stations:
-		var sk: String = {"fire": "cooking", "forge": "mining"}.get(st.kind, "")
+		var sk := ""
+		for s in DB.skills.values():
+			if s.get("craft", {}).get("kind") == st.kind:
+				sk = s.id
 		if sk == "":
 			continue
-		var verb: String = "Cook" if sk == "cooking" else "Smelt"
-		var win: String = "cooking" if sk == "cooking" else "smelting"
+		var verb: String = DB.skills[sk].craft.get("button", "Use")
+		var win: String = "smelting" if sk == "mining" else "craft:" + sk
 		var known: bool = game.skills.has(sk)
 		var skill_name: String = DB.skills.get(sk, {}).get("name", sk.capitalize())
 		list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
@@ -46,6 +50,7 @@ func _candidates() -> Array:
 					game.hud.error("You need to learn %s from a trainer first." % skill_name)})
 	# a glinting ore vein, for a miner
 	list.append_array(game.mining.interactions())
+	list.append_array(game.gathering.interactions())
 	list.append_array(game.discovery.interactions())
 	for sp in Layout.signposts:
 		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
