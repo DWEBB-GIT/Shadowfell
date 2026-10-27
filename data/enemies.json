@@ -59,7 +59,7 @@
     },
     {
       "id": "hound",
-      "name": "Barrow Hound",
+      "name": "Barrow Wolf",
       "attitude": "aggressive",
       "model": "hound",
       "type": "pack_beast",

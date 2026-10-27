@@ -29,6 +29,13 @@ ground between, joined by a few set routes; Act 1 is enclosed and confined):
 - Act 1 (inside world.act1Box): the detailed layout. Pockets and road
   corridors are walkable, everything else is zone-themed high ground; named
   ranges are mountains; the River Bracken and the Mere block except at fords.
+  The opening (Dan, 2026-10-27: start small, then the world opens): a
+  `sealed` region (Bracken Vale) is walled all round but for its `ways`;
+  `confined` areas (the Hollow Lane, the Neck) are open only along their
+  roads and pockets; `flats` level a town; high ground stands on a sharp
+  edge, and is kept low just south of open ground so the camera (looking
+  north) always sees over it. Each ring of the opening is checked: with the
+  data/world.json gates out of it shut, it prints what the Last Cart reaches.
 """
 import base64
 import json
@@ -322,6 +329,11 @@ def bake_act1(M, g, height, block, surf, box):
         d = sub.circle_dist(hl["at"][0] + off[0], hl["at"][1] + off[1])
         base += hl["h"] * np.exp(-((d / (hl["r"] * 0.6)) ** 2))
 
+    # confined ground (the Hollow Lane, the Neck): nothing is open there but
+    # its roads, pockets and the spots right round its POIs
+    conf = np.zeros(shape)
+    if A.get("confined"):
+        conf = smoothstep(-8, 8, sub.sdist(sub.polys([c["poly"] for c in A["confined"]], off)))
     # pockets, roads and POIs always stay open
     walk = np.zeros(shape)
     for p in A["pockets"]:
@@ -334,14 +346,16 @@ def bake_act1(M, g, height, block, surf, box):
             sd = (1 - np.sqrt(dx * dx + dz * dz)) * min(rx, rz)
         else:
             sd = p["r"] - sub.circle_dist(p["at"][0] + off[0], p["at"][1] + off[1])
-        walk = np.maximum(walk, smoothstep(-6, 6, sd))
+        walk = np.maximum(walk, smoothstep(-6, 6, sd) * (1 - conf) + smoothstep(-2, 2, sd) * conf)
     pocket_walk = walk
     walk = np.zeros(shape)  # roads, routes and POIs: these also cut through borders and scarps
     road_d = np.full(shape, 1e6)
     for r in A["roads"]:
-        hw = A["corridor"].get(r["kind"], 10)
+        hw = r.get("corridor", A["corridor"].get(r["kind"], 10))
+        hw = hw * (1 - conf) + min(hw, 8) * conf  # a narrow way through confined ground
         d = sub.dist_to(sub.lines([r["line"]], off))
-        walk = np.maximum(walk, 1 - smoothstep(hw - 6, hw + 6, d))
+        ramp = 6 - 4 * conf  # confined ways end at a sharp bank
+        walk = np.maximum(walk, 1 - smoothstep(hw - ramp, hw + ramp, d))
         if r["kind"] != "intro":
             road_d = np.minimum(road_d, d)
     for r in W["routes"]:  # the world's routes leave Act 1 by these
@@ -351,7 +365,7 @@ def bake_act1(M, g, height, block, surf, box):
         walk = np.maximum(walk, 1 - smoothstep(6, 18, d))
         road_d = np.minimum(road_d, d)
     poi_d = sub.dist_to(sub.lines([[[p["at"][0] + off[0], p["at"][1] + off[1]]] for p in A["pois"]]))
-    walk = np.maximum(walk, 1 - smoothstep(10, 22, poi_d))
+    walk = np.maximum(walk, (1 - smoothstep(10, 22, poi_d)) * (1 - conf) + (1 - smoothstep(3, 8, poi_d)) * conf)
     gaps = walk
     walk = np.maximum(walk, pocket_walk)
     # everything else is open by default (Dan: confined between areas, open
@@ -375,13 +389,29 @@ def bake_act1(M, g, height, block, surf, box):
     for k, r in enumerate(regions):
         spread[rid == k] = ACT1_SPREAD.get(r["id"], 0)
     spread = ndi.gaussian_filter(spread, 10)
-    reach_w = 8 + 50 * smoothstep(-0.3, 0.35, fbm(shape, 35, 131)) + spread
+    reach_w = (8 + 50 * smoothstep(-0.3, 0.35, fbm(shape, 35, 131)) + spread) * (1 - conf) - 10 * conf
     d_open = sub.dist_to(walk > 0.5)
     b_valley = smoothstep(reach_w - 8, reach_w + 8, d_open + wob * 6)
     out_n = fbm(shape, 14, 121, octaves=3)
     b_out = smoothstep(0.3, 0.36, out_n) * smoothstep(12, 30, d_open)
     blk = np.maximum(np.maximum.reduce([b_border, b_wall, b_edge]) * (1 - gaps), np.maximum(b_valley, b_out) * (1 - walk))
-    h = base + blk * rise_h * (0.75 + fbm(shape, 12, 91) * 0.35)
+    # a `sealed` region (the starter vale) is walled all round its border,
+    # pockets and POIs included; only its `ways` (roads, each gated in
+    # data/world.json) go through
+    for k, r in enumerate(regions):
+        if not r.get("sealed"):
+            continue
+        inside = rid == k
+        d = np.where(inside, sub.dist_to(~inside), sub.dist_to(inside))
+        ways = np.zeros(shape)
+        for rd in A["roads"]:
+            if rd["id"] in r.get("ways", []):
+                ways = np.maximum(ways, 1 - smoothstep(5, 11, sub.dist_to(sub.lines([rd["line"]], off))))
+        blk = np.maximum(blk, (1 - smoothstep(10, 16, d + wob * 3)) * (1 - ways))
+    # high ground stands on a clear edge (Dan: walkable and blocked ground
+    # must read at a glance from the iso camera), not a long soft slope
+    cliff = smoothstep(0.38, 0.62, blk)
+    h = base + cliff * rise_h * (0.8 + fbm(shape, 12, 91) * 0.25)
     # named ranges
     for m in A["mountains"]:
         d = sub.dist_to(sub.lines([m["line"]], off))
@@ -414,6 +444,23 @@ def bake_act1(M, g, height, block, surf, box):
         if wt["kind"] == "river":
             ford = 1 - smoothstep(3, 6, road_d)
             blk = np.maximum(blk, (1 - smoothstep(half - 2, half, d)) * (1 - ford))
+    # flats: level ground for a town (Brackenford's terrace), open inside
+    for fl in A.get("flats", []):
+        inside = sub.polys([fl["poly"]], off)
+        k = smoothstep(-6, 2, sub.sdist(inside))
+        level = float(np.median(h[inside])) + fl.get("raise", 0)
+        h = h * (1 - k) + level * k
+        blk = blk * (1 - k)
+    # the camera looks north from the south, so high ground just south of open
+    # ground is kept low (a bank you can see over) and only rises further
+    # back; cliffs behind the player can stand tall
+    open_ = blk < 0.5
+    dn = np.full(shape, 1e6)
+    run = np.full(nx, 1e6)
+    for j in range(nz):
+        run = np.where(open_[j], 0.0, run + CELL)
+        dn[j] = run
+    h = np.where(open_, h, np.minimum(h, base + 1.5 + 0.6 * dn))
     # blend into the world at the box edge (60 m)
     a = smoothstep(0, 60, edge)
     wh = height[j0: j0 + nz, i0: i0 + nx]
@@ -485,6 +532,33 @@ def apply_sculpt(g, height, block, surf):
         block[sl] = np.where(wk >= 0, 1 - wk / 255.0, block[sl])
         surf[sl] = np.where(sf >= 0, sf, surf[sl]).astype(np.uint8)
     print("sculpt: %d edited tiles" % len(S["tiles"]))
+
+
+def rings(M, g, walk, start):
+    """The opening widens in rings (Dan: start small, then the world opens):
+    with the gates out of a ring shut (data/world.json `gates`), list what can
+    be reached from the Last Cart, and warn if a place a gate `keepsOut` can be."""
+    with open(os.path.join(ROOT, "data", "world.json")) as f:
+        wj = json.load(f)
+    gates = wj.get("gates", [])
+    walls = [l for tw in wj.get("townWalls", []) for l in tw["lines"]]
+    off = M["world"]["act1Offset"]
+    pois = {p["id"]: (p["name"], [p["at"][0] + off[0], p["at"][1] + off[1]]) for p in M["act1"]["pois"]}
+    def spot(r, at):
+        i, j = int(round((at[0] - g.x0) / CELL)), int(round((at[1] - g.z0) / CELL))
+        return r[max(0, j - 3): j + 4, max(0, i - 3): i + 4].any()
+    top = max([gt.get("ring", 0) for gt in gates] + [0])
+    for ring in range(1, top + 1):
+        shut = [gt for gt in gates if gt.get("shut") or (gt.get("opensWhen") and gt.get("ring", 0) >= ring)]
+        w = walk & ~g.lines([gt["line"] for gt in shut] + walls)  # 1 px lines seal a 4-connected flood
+        r = reachable(w, g, start)
+        names = [n for n, at in pois.values() if spot(r, at)]
+        print("ring %d (%d gates shut): %.1f ha on foot; %s" % (ring, len(shut), r.sum() * CELL * CELL / 1e4, ", ".join(names)))
+        for gt in gates:
+            if gt.get("ring", 0) == ring and gt.get("opensWhen"):
+                for pid in gt.get("keepsOut", []):
+                    if spot(r, pois[pid][1]):
+                        print("  ! %s is reachable with %s shut" % (pois[pid][0], gt["name"]))
 
 
 def reachable(walk, g, start):
@@ -562,6 +636,7 @@ def main():
         if not win.any():
             missing.append(name)
     print("tiles %d x %d, %d with land, %.2f MB" % (tx, tz, len(blobs), (head_len + pos) / 1e6))
+    rings(M, g, walk > 0.5, start)
     print("walkable %.0f%% of land, %d places not reachable on foot from the Last Cart:" % (100 * (walk > 0.5).sum() / max(1, (height > 0.25).sum()), len(missing)))
     for m in missing:
         print("  -", m)

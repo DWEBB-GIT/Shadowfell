@@ -14,6 +14,7 @@ var examine_points: Array = []
 var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
+var town: Town ## houses, palisades and the gates of the opening
 
 
 func _init(g) -> void:
@@ -43,6 +44,7 @@ func build() -> World:
 			var ez: float = z - off[0] * sin(r) + off[1] * cos(r)
 			examine_points.append({"id": p.examine, "x": ex, "z": ez})
 	_build_buildings()
+	town = Town.new(game, self, group).build()
 	_build_signposts()
 	_add_lights()
 	_add_mist()
@@ -172,9 +174,10 @@ var indoor_blend: float:
 ## Not on a building (with room to walk round it), a levelled pad, or a
 ## prop that has a box collider (the cottages).
 static func _clear_of_town(x: float, z: float) -> bool:
-	for b in Layout.buildings:
-		if absf(x - b.position[0]) < b.size[0] / 2.0 + 3 and absf(z - b.position[1]) < b.size[1] / 2.0 + 3:
-			return false
+	for list in [Layout.buildings, Layout.houses]:
+		for b in list:
+			if absf(x - b.position[0]) < b.size[0] / 2.0 + 3 and absf(z - b.position[1]) < b.size[1] / 2.0 + 3:
+				return false
 	for p in Layout.pads:
 		if U.hyp(x - p[0], z - p[1]) < p[2] + 2:
 			return false
@@ -481,6 +484,7 @@ static func sun_shaft(k: Vector2i, trees: Array) -> Node3D:
 func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
+	town.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3
 		var z: float = m.z + MIST_REPEAT * roundf((focus.z - m.z) / MIST_REPEAT) + cos(time * 0.04 + m.seed) * 2

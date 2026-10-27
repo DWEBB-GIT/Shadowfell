@@ -16,7 +16,7 @@ const BUDGET_MS := 5.0 ## chunk building per frame, once playing
 
 ## ground colours by surface (sRGB), [open ground, high ground]
 const GROUND := {
-	Terrain.SEA: ["3a4a44", "3a4a44"], Terrain.MEADOW: ["3b4a2c", "34422a"],
+	Terrain.SEA: ["3a4a44", "3a4a44"], Terrain.MEADOW: ["44552e", "34422a"],
 	Terrain.MARSH: ["3a4630", "2f3a2a"], Terrain.DOWNS: ["5d6640", "4e5638"],
 	Terrain.BLACKWOOD: ["1f2419", "1a2016"], Terrain.ROCK: ["5a5650", "4e4a46"],
 	Terrain.MOOR: ["4a4038", "3e3630"], Terrain.SAND: ["9a8c64", "807458"],
@@ -28,7 +28,7 @@ const GROUND := {
 ## trees per 4 m square by surface: [on open ground, on high ground], and
 ## the models they are drawn from
 const WOODS := {
-	Terrain.MEADOW: [0.012, 0.45, ["pine"]], Terrain.MARSH: [0.01, 0.16, ["dead_tree", "pine"]],
+	Terrain.MEADOW: [0.012, 0.6, ["pine"]], Terrain.MARSH: [0.01, 0.16, ["dead_tree", "pine"]],
 	Terrain.DOWNS: [0.006, 0.12, ["pine"]], Terrain.BLACKWOOD: [0.06, 0.8, ["black_pine", "black_pine", "dead_tree"]],
 	Terrain.ROCK: [0.002, 0.03, ["dead_tree"]], Terrain.MOOR: [0.004, 0.05, ["dead_tree"]],
 	Terrain.FARMLAND: [0.01, 0.3, ["pine"]], Terrain.FOREST: [0.07, 0.75, ["pine", "pine", "black_pine"]],
@@ -175,14 +175,15 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 				sea = true
 			var g := Terrain.grid(roundi((x - o.x) / Terrain.cell()), roundi((z - o.y) / Terrain.cell()))
 			var pal: Array = GROUND.get(g[2], GROUND[Terrain.MEADOW])
-			var c := Color(pal[0]).lerp(Color(pal[1]), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
+			# open ground a shade lighter, high ground darker: where you can walk
+			# reads at a glance from the iso camera (Dan's readability rule)
+			var c := Color(pal[0]).lightened(0.07).lerp(Color(pal[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
 			c = c.lerp(c.darkened(0.25), rand.randf() * 0.6)
 			if rand.randf() < 0.1:
 				c = c.lerp(Color("5a4a36"), 0.35)
 			# steep high ground shows its rock, the tops their snow
 			var slope := absf(Terrain.base_height(x + 2, z) - Terrain.base_height(x - 2, z)) + absf(Terrain.base_height(x, z + 2) - Terrain.base_height(x, z - 2))
-			if g[1] < 0.5:
-				c = c.lerp(rock_col, clampf((slope - 3.0) / 6.0, 0.0, 0.85))
+			c = c.lerp(rock_col, clampf((slope - 2.5) / 4.0, 0.0, 0.9))
 			if h > 75 and g[2] != Terrain.DESERT and g[2] != Terrain.ASH:
 				c = c.lerp(snow_col, clampf((h - 75) / 20.0, 0.0, 1.0))
 			var road := Terrain.road_edge(x, z)
@@ -274,8 +275,18 @@ static func index_clearings() -> void:
 		add.call(p[0], p[1], p[2] + 2.0)
 	for p in Layout.props:
 		add.call(p.position[0], p.position[1], 3.0 if p.get("collider") else 1.5)
-	for b in Layout.buildings:
+	for b in Layout.buildings + Layout.houses:
 		add.call(b.position[0], b.position[1], maxf(b.size[0], b.size[1]) * 0.75 + 2.0)
+	for tw in Layout.town_walls:
+		for line in tw.lines:
+			for i in line.size() - 1:
+				var a := Vector2(line[i][0], line[i][1])
+				var b := Vector2(line[i + 1][0], line[i + 1][1])
+				for k in ceili(a.distance_to(b) / 4.0) + 1:
+					var p := a.lerp(b, minf(1.0, k * 4.0 / a.distance_to(b)))
+					add.call(p.x, p.y, 3.5)
+	for gt in Layout.gates:
+		add.call((gt.line[0][0] + gt.line[1][0]) / 2.0, (gt.line[0][1] + gt.line[1][1]) / 2.0, 8.0)
 	for list in [Layout.stations, Layout.npcs, Layout.shrines, Layout.signposts, DB.world.get("chests", []), DB.world.get("placedLoot", [])]:
 		for s in list:
 			add.call(s.position[0], s.position[1], 2.5)
@@ -403,6 +414,11 @@ func _model(model: String):
 		src.free()
 	_models[model] = out
 	return out
+
+
+## another material that dissolves between the camera and the player (Town)
+func add_cutaway(m: ShaderMaterial) -> void:
+	_cutaways.append(m)
 
 
 func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:

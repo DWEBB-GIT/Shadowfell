@@ -554,30 +554,6 @@
       "collider": 0.4
     },
     {
-      "model": "cottage",
-      "position": [-640, 423],
-      "rotation": 0,
-      "collider": {
-        "box": [6, 5]
-      }
-    },
-    {
-      "model": "cottage",
-      "position": [-641, 443],
-      "rotation": 0,
-      "collider": {
-        "box": [6, 5]
-      }
-    },
-    {
-      "model": "cottage",
-      "position": [-598, 449],
-      "rotation": 0,
-      "collider": {
-        "box": [6, 5]
-      }
-    },
-    {
       "model": "well",
       "position": [-621, 440],
       "rotation": 0,
@@ -954,7 +930,7 @@
     [-209, -304.5, 8.5],
     [-206, 2, 10],
     [-732.5, 225, 4.5],
-    [-561.5, 449, 4],
+    [-583, 470, 4],
     [-559.6, 443.4, 5.5],
     [-584.4, -50, 4.5],
     [-735, -195.5, 6.5],
