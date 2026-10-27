@@ -322,7 +322,7 @@ func groups() -> Array:
 	var by := {}
 	for id in game.quests.active:
 		var z := Quests.zone(id)
-		var key := ("d:" if z.dungeon else "z:") + z.name
+		var key: String = ("d:" if z.dungeon else "z:") + z.name
 		if not by.has(key):
 			by[key] = {"name": z.name, "dungeon": z.dungeon, "ids": []}
 		by[key].ids.append(id)
@@ -459,7 +459,7 @@ func _details(id: String) -> String:
 	var s: String = ql.status(id)
 	var lv := Quests.levels(id)
 	var z := Quests.zone(id)
-	var danger := lv.y - game.progression.level
+	var danger: int = lv.y - game.progression.level
 	var note := "  [color=#ff4a3a](dangerous at your level)[/color]" if danger >= 5 else ("  [color=#ff9a40](hard at your level)[/color]" if danger >= 3 else "")
 	var text := "[font_size=18][color=#e6b85e]%s[/color][/font_size]\n" % UI.esc(q.name)
 	text += "[font_size=12][color=%s]%s[/color]  [color=#9a8f78]·  %s%s[/color]%s[/font_size]\n\n" % [UI.hex(_level_colour(lv)), level_text(lv).replace("Lv", "Level"), "Dungeon: " if z.dungeon else "", UI.esc(z.name), note]

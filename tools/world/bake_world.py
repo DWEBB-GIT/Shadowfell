@@ -10,6 +10,8 @@ offset and length of its blob (0, 0 = open sea). A blob unpacks to 33 x 33
 int16 heights (in 5 cm steps above -50 m, stored as differences along x then
 along z), 33 x 33 walk bytes (255 = open ground, below 128 = blocked) and
 33 x 33 info bytes (low 4 bits surface, high 4 bits zone index).
+Hand edits made with the World editor's sculpt brushes (data/terrain/sculpt.json)
+are put back on top, so re-baking keeps them.
 Also writes data/terrain/water.json (sea level, river ribbons, lakes) and a
 preview picture to tools/world/preview.png (not kept in git).
 
@@ -28,6 +30,7 @@ ground between, joined by a few set routes; Act 1 is enclosed and confined):
   corridors are walkable, everything else is zone-themed high ground; named
   ranges are mountains; the River Bracken and the Mere block except at fords.
 """
+import base64
 import json
 import os
 import struct
@@ -58,6 +61,10 @@ ACT1_REGION = {  # region -> (base height, high ground rise, surface)
     "bracken_vale": (4, 16, "meadow"), "stillwater": (2.5, 7, "marsh"),
     "sallow_downs": (20, 14, "downs"), "blackwood": (16, 15, "blackwood"),
     "hallow_cut": (44, 22, "rock"), "barrow_fields": (34, 14, "moor"),
+}
+ACT1_SPREAD = {  # region -> metres its valleys reach beyond the usual (open country +, close country -)
+    "bracken_vale": 8, "stillwater": 6, "sallow_downs": 10,
+    "blackwood": -2, "hallow_cut": -6, "barrow_fields": 4,
 }
 ROUTE_HALF = {"road": 9, "track": 7, "tunnel": 5}
 
@@ -195,12 +202,13 @@ def bake_world(M, g):
 
     # routes and the clearings round settlements and landmarks stay open
     route_open = np.zeros(shape)
+    widen = 6 + fbm(shape, 20, 37) * 10  # passes swell and narrow, not one width all the way
     for r in W["routes"]:
         if r["kind"] == "boat":
             continue
         hw = ROUTE_HALF.get(r["kind"], 7)
         d = g.dist_to(g.lines([r["line"]]))
-        route_open = np.maximum(route_open, 1 - smoothstep(hw, hw + 14, d))
+        route_open = np.maximum(route_open, 1 - smoothstep(hw, hw + 14, d - widen))
     spots = [s["at"] for s in W["settlements"]] + [l["at"] for l in W["landmarks"]]
     # every settlement has a track to the nearest route
     pts = np.array([p for r in W["routes"] if r["kind"] != "boat" for p in densify(r["line"], 16)])
@@ -223,6 +231,7 @@ def bake_world(M, g):
         other = land & (zid != k)
         d = g.dist_to(other)
         border = np.where(inside, d, border)
+    border = border + fbm(shape, 40, 33) * 40  # borders wander instead of running dead straight
     b_border = 1 - smoothstep(14, 34, border)
     rise = b_border * (26 + fbm(shape, 40, 31) * 6)
 
@@ -304,13 +313,16 @@ def bake_act1(M, g, height, block, surf, box):
         rise_h[rid == k] = h
         s[rid == k] = SURF[sf]
     base = ndi.gaussian_filter(base, 10)
+    ei = np.minimum(np.arange(nx), np.arange(nx)[::-1]) * CELL
+    ej = np.minimum(np.arange(nz), np.arange(nz)[::-1]) * CELL
+    edge = np.minimum(ei[None, :], ej[:, None])
     rise_h = ndi.gaussian_filter(rise_h, 6)
     base += fbm(shape, 40, 71) * 1.6 + fbm(shape, 10, 81) * 0.5
     for hl in A["hills"]:
         d = sub.circle_dist(hl["at"][0] + off[0], hl["at"][1] + off[1])
         base += hl["h"] * np.exp(-((d / (hl["r"] * 0.6)) ** 2))
 
-    # walkable pockets and road corridors
+    # pockets, roads and POIs always stay open
     walk = np.zeros(shape)
     for p in A["pockets"]:
         if "poly" in p:
@@ -323,6 +335,8 @@ def bake_act1(M, g, height, block, surf, box):
         else:
             sd = p["r"] - sub.circle_dist(p["at"][0] + off[0], p["at"][1] + off[1])
         walk = np.maximum(walk, smoothstep(-6, 6, sd))
+    pocket_walk = walk
+    walk = np.zeros(shape)  # roads, routes and POIs: these also cut through borders and scarps
     road_d = np.full(shape, 1e6)
     for r in A["roads"]:
         hw = A["corridor"].get(r["kind"], 10)
@@ -336,10 +350,37 @@ def bake_act1(M, g, height, block, surf, box):
         d = sub.dist_to(sub.lines([r["line"]]))
         walk = np.maximum(walk, 1 - smoothstep(6, 18, d))
         road_d = np.minimum(road_d, d)
-    # POIs always stand on reachable ground
     poi_d = sub.dist_to(sub.lines([[[p["at"][0] + off[0], p["at"][1] + off[1]]] for p in A["pois"]]))
     walk = np.maximum(walk, 1 - smoothstep(10, 22, poi_d))
-    blk = 1 - walk
+    gaps = walk
+    walk = np.maximum(walk, pocket_walk)
+    # everything else is open by default (Dan: confined between areas, open
+    # within them): high ground rises only where regions meet, along the
+    # scarps and carrs, round the box edge and in scattered outcrops
+    wob = fbm(shape, 20, 111)
+    border = np.full(shape, 1e6)
+    for k in range(len(regions)):
+        inside = rid == k
+        border = np.where(inside, sub.dist_to(~inside), border)
+    b_border = 1 - smoothstep(10, 22, border + wob * 8)
+    b_wall = np.zeros(shape)
+    if A["walls"]:
+        d_wall = sub.dist_to(sub.lines([w["line"] for w in A["walls"]], off))
+        b_wall = 1 - smoothstep(8, 16, d_wall + wob * 4)
+    b_edge = 1 - smoothstep(20, 40, edge + wob * 8)
+    # valleys follow the roads, pockets and POIs but swell and narrow (8 to
+    # 60 m beyond their edges, more in open regions); a few outcrops break up the
+    # widest ground
+    spread = np.zeros(shape)
+    for k, r in enumerate(regions):
+        spread[rid == k] = ACT1_SPREAD.get(r["id"], 0)
+    spread = ndi.gaussian_filter(spread, 10)
+    reach_w = 8 + 50 * smoothstep(-0.3, 0.35, fbm(shape, 35, 131)) + spread
+    d_open = sub.dist_to(walk > 0.5)
+    b_valley = smoothstep(reach_w - 8, reach_w + 8, d_open + wob * 6)
+    out_n = fbm(shape, 14, 121, octaves=3)
+    b_out = smoothstep(0.3, 0.36, out_n) * smoothstep(12, 30, d_open)
+    blk = np.maximum(np.maximum.reduce([b_border, b_wall, b_edge]) * (1 - gaps), np.maximum(b_valley, b_out) * (1 - walk))
     h = base + blk * rise_h * (0.75 + fbm(shape, 12, 91) * 0.35)
     # named ranges
     for m in A["mountains"]:
@@ -374,9 +415,6 @@ def bake_act1(M, g, height, block, surf, box):
             ford = 1 - smoothstep(3, 6, road_d)
             blk = np.maximum(blk, (1 - smoothstep(half - 2, half, d)) * (1 - ford))
     # blend into the world at the box edge (60 m)
-    ei = np.minimum(np.arange(nx), np.arange(nx)[::-1]) * CELL
-    ej = np.minimum(np.arange(nz), np.arange(nz)[::-1]) * CELL
-    edge = np.minimum(ei[None, :], ej[:, None])
     a = smoothstep(0, 60, edge)
     wh = height[j0: j0 + nz, i0: i0 + nx]
     wb = block[j0: j0 + nz, i0: i0 + nx]
@@ -421,6 +459,34 @@ def river_levels(water, height, g, M):
     return water
 
 
+def apply_sculpt(g, height, block, surf):
+    """hand edits from the World editor's brushes, on top of everything baked
+    (data/terrain/sculpt.json: per 128 m tile, 32 x 32 samples of height change
+    in 5 cm steps, walk override -1 none / 0..255, surface override -1 none)"""
+    path = os.path.join(ROOT, "data", "terrain", "sculpt.json")
+    if not os.path.exists(path):
+        return
+    with open(path) as f:
+        S = json.load(f)
+    if (S["x0"], S["z0"], S["cell"]) != (g.x0, g.z0, CELL):
+        print("sculpt.json was made for another grid: left out")
+        return
+    for key, t in S["tiles"].items():
+        i, j = (int(v) for v in key.split(","))
+        a0, c0 = j * TILE, i * TILE
+        if a0 >= g.nz or c0 >= g.nx:
+            continue
+        def layer(name):
+            raw = zlib.decompress(base64.b64decode(t[name]))
+            return np.frombuffer(raw, "<i2").reshape(TILE, TILE)[: g.nz - a0, : g.nx - c0]
+        dh, wk, sf = layer("h"), layer("w"), layer("s")
+        sl = (slice(a0, a0 + dh.shape[0]), slice(c0, c0 + dh.shape[1]))
+        height[sl] += dh * 0.05
+        block[sl] = np.where(wk >= 0, 1 - wk / 255.0, block[sl])
+        surf[sl] = np.where(sf >= 0, sf, surf[sl]).astype(np.uint8)
+    print("sculpt: %d edited tiles" % len(S["tiles"]))
+
+
 def reachable(walk, g, start):
     lab, _ = ndi.label(walk)
     i, j = int((start[0] - g.x0) / CELL), int((start[1] - g.z0) / CELL)
@@ -436,6 +502,7 @@ def main():
     water = bake_act1(M, g, height, block, surf, box)
     water = river_levels(water, height, g, M)
     water["sea"] = 0.0
+    apply_sculpt(g, height, block, surf)
     walk = np.clip(1 - block, 0, 1)
     walk_b = (walk * 255).round().astype(np.uint8)
     hq = np.clip((height + 50) * 20, 0, 65535).round().astype(np.int32)  # 5 cm steps
