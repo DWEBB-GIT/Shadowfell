@@ -143,8 +143,8 @@ func show_brush(at: Vector3, radius: float, color := Color(1, 0.85, 0.3)) -> voi
 		im.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
 		for i in 49:
 			var t := TAU * i / 48.0
-			var x := at.x + cos(t) * r
-			var z := at.z + sin(t) * r
+			var x: float = at.x + cos(t) * r
+			var z: float = at.z + sin(t) * r
 			im.surface_set_color(color if r == radius else color.darkened(0.3))
 			im.surface_add_vertex(Vector3(x, Terrain.height_at(x, z) + 0.3, z))
 		im.surface_end()
