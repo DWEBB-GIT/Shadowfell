@@ -246,6 +246,119 @@ static func gloom(x: float, z: float) -> float:
 	return k
 
 
+# ------------------------------------------------------------------ editing
+## For the World editor's sculpt brushes: grid sample (a, b) as
+## [height, walk 0..255, info], and setting one (every tile that shares it
+## along an edge gets the change; open sea grows a tile).
+static func sample(a: int, b: int) -> Array:
+	return _sample(a, b)
+
+
+static func set_sample(a: int, b: int, h: float, walk: int, info: int) -> Array:
+	var touched := []
+	for i: int in ([a / _tile - 1, a / _tile] if a % _tile == 0 else [floori(float(a) / _tile)]):
+		for j: int in ([b / _tile - 1, b / _tile] if b % _tile == 0 else [floori(float(b) / _tile)]):
+			if i < 0 or j < 0 or i >= _tx or j >= _tz:
+				continue
+			var t = _tile_at(i, j)
+			if t == null:
+				t = _new_tile()
+				_tiles[j * 65536 + i] = t
+			var k: int = (b - j * _tile) * N + (a - i * _tile)
+			var hs: PackedFloat32Array = t[0]
+			var ws: PackedByteArray = t[1]
+			var fs: PackedByteArray = t[2]
+			hs[k] = h
+			ws[k] = clampi(walk, 0, 255)
+			fs[k] = info
+			t[0] = hs
+			t[1] = ws
+			t[2] = fs
+			touched.append(Vector2i(i, j))
+	return touched
+
+
+static func _new_tile() -> Array:
+	var h := PackedFloat32Array()
+	h.resize(N * N)
+	h.fill(_sea_floor)
+	var w := PackedByteArray()
+	w.resize(N * N)
+	var f := PackedByteArray()
+	f.resize(N * N)
+	return [h, w, f]
+
+
+## Write world.bin again with these tiles (Vector2i) packed from what is
+## unpacked now; every other tile is copied as it was.
+static func save_tiles(edited: Dictionary, path := PATH) -> Error:
+	var head := _file.slice(0, 36)
+	var blobs := PackedByteArray()
+	var index := PackedByteArray()
+	index.resize(_tx * _tz * 8)
+	var head_len := 36 + index.size()
+	for j in _tz:
+		for i in _tx:
+			var k := j * _tx + i
+			var blob := PackedByteArray()
+			if edited.has(Vector2i(i, j)) and _tiles.get(j * 65536 + i) != null:
+				blob = _pack(_tiles[j * 65536 + i])
+			elif (_index[k] & 0xffffffff) > 0:
+				blob = _file.slice(_index[k] >> 32, (_index[k] >> 32) + (_index[k] & 0xffffffff))
+			if blob.size():
+				index.encode_u32(k * 8, head_len + blobs.size())
+				index.encode_u32(k * 8 + 4, blob.size())
+				blobs.append_array(blob)
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return FileAccess.get_open_error()
+	var out := head + index + blobs
+	f.store_buffer(out)
+	f.close()
+	if path == PATH:
+		_file = out
+		for k in _tx * _tz:
+			_index[k] = (_file.decode_u32(36 + k * 8) << 32) | _file.decode_u32(40 + k * 8)
+	return OK
+
+
+## One tile packed as bake_world.py packs it: heights in 5 cm steps as
+## differences along x then along z, then walk and info bytes, zlib.
+static func _pack(t: Array) -> PackedByteArray:
+	var raw := PackedByteArray()
+	raw.resize(N * N * 4)
+	var q := PackedInt32Array()
+	q.resize(N * N)
+	for k in N * N:
+		q[k] = clampi(roundi((t[0][k] + 50.0) * 20.0), 0, 65535)
+	for b in N:
+		for a in N:
+			var dx: int = q[b * N + a] - (q[b * N + a - 1] if a > 0 else 0)
+			var up: int = (q[(b - 1) * N + a] - (q[(b - 1) * N + a - 1] if a > 0 else 0)) if b > 0 else 0
+			raw.encode_s16((b * N + a) * 2, dx - up)
+	for k in N * N:
+		raw[N * N * 2 + k] = t[1][k]
+		raw[N * N * 3 + k] = t[2][k]
+	return raw.compress(FileAccess.COMPRESSION_DEFLATE)
+
+
+## Tile (i, j) as stored in world.bin, unpacked bytes (empty for open sea).
+static func stored_tile(i: int, j: int) -> PackedByteArray:
+	var e: int = _index[j * _tx + i]
+	if (e & 0xffffffff) == 0:
+		return PackedByteArray()
+	return _file.slice(e >> 32, (e >> 32) + (e & 0xffffffff)).decompress(N * N * 4, FileAccess.COMPRESSION_DEFLATE)
+
+
+## Forget every unpacked tile and read world.bin again (drops unsaved edits).
+static func reload_tiles() -> void:
+	_tiles.clear()
+	_file = PackedByteArray()
+	_pad_level.clear()
+	_water_level.clear()
+	_load_tiles()
+
+
 # ------------------------------------------------------------------ roads
 static func _dist_to_segment(px: float, pz: float, ax: float, az: float, bx: float, bz: float) -> float:
 	var dx := bx - ax

@@ -30,7 +30,7 @@ window/size/viewport_height=720
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/shadowfell_data/plugin.cfg")
+enabled=PackedStringArray("res://addons/shadowfell_data/plugin.cfg", "res://addons/shadowfell_world/plugin.cfg")
 
 [input]
 

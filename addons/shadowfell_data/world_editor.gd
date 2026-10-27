@@ -8,6 +8,10 @@ extends Node3D
 ## scene file itself stays empty; the data files are the world.
 ##
 ## Height is not saved: everything stands on the ground, as in the game.
+##
+## Select this root node and pick a brush on the 3D view's toolbar to sculpt
+## the ground (the World tools plugin, addons/shadowfell_world); Ctrl+S then
+## also saves the sculpted ground.
 
 const IO := preload("json_io.gd")
 
@@ -28,6 +32,11 @@ const GROUPS := [
 
 var _files := {}
 var _owned: Array[Node] = []
+var _ground: Node3D
+var _chunks := {} ## Vector2i -> the ground chunk drawn there
+var _ground_mat: Material
+var _brush: MeshInstance3D
+var sculpt: RefCounted ## addons/shadowfell_world/sculpt.gd, made by the World tools plugin
 
 
 func _ready() -> void:
@@ -55,8 +64,14 @@ func rebuild() -> void:
 			var p := Vector2(r.position[0], r.position[1])
 			lo = lo.min(p)
 			hi = hi.max(p)
-	var terrain := Land.build_area(lo.x - 40, lo.y - 40, hi.x + 40, hi.y + 40)
-	add_child(terrain) # not owned: it cannot be picked or saved
+	_ground = Node3D.new()
+	_ground.name = "Terrain"
+	add_child(_ground) # not owned: it cannot be picked or saved
+	_chunks.clear()
+	_ground_mat = Land.ground_material()
+	for i in range(floori((lo.x - 40) / Land.CHUNK), floori((hi.x + 40) / Land.CHUNK) + 1):
+		for j in range(floori((lo.y - 40) / Land.CHUNK), floori((hi.y + 40) / Land.CHUNK) + 1):
+			_draw_chunk(Vector2i(i, j))
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, 35, 0)
 	add_child(sun)
@@ -69,6 +84,70 @@ func rebuild() -> void:
 		for i in list.size():
 			holder.add_child(_marker(g, list[i], i))
 			_own(holder.get_child(-1))
+
+
+func _draw_chunk(k: Vector2i) -> void:
+	if _chunks.has(k) and is_instance_valid(_chunks[k]):
+		_chunks[k].free()
+	var g := Land.chunk_ground(k, _ground_mat)
+	_ground.add_child(g)
+	_chunks[k] = g
+
+
+## Draw the ground within `radius` of a point too (sculpting far from
+## anything placed).
+func ensure_ground(at: Vector3, radius := 160.0) -> void:
+	if _ground == null:
+		return
+	for i in range(floori((at.x - radius) / Land.CHUNK), floori((at.x + radius) / Land.CHUNK) + 1):
+		for j in range(floori((at.z - radius) / Land.CHUNK), floori((at.z + radius) / Land.CHUNK) + 1):
+			if not _chunks.has(Vector2i(i, j)):
+				_draw_chunk(Vector2i(i, j))
+
+
+## Draw these chunks again (after a brush stroke), and stand what is placed
+## on them back on the ground.
+func redraw(chunks: Dictionary) -> void:
+	if _ground == null:
+		return
+	for k in chunks:
+		if _chunks.has(k):
+			_draw_chunk(k)
+	for g in GROUPS:
+		var holder := get_node_or_null(NodePath(g.name))
+		if holder == null:
+			continue
+		for n in holder.get_children():
+			if n is Node3D and chunks.has(Vector2i(floori(n.position.x / Land.CHUNK), floori(n.position.z / Land.CHUNK))):
+				n.position.y = Terrain.height_at(n.position.x, n.position.z)
+
+
+## The brush's ring on the ground, or hidden with `radius` 0.
+func show_brush(at: Vector3, radius: float, color := Color(1, 0.85, 0.3)) -> void:
+	if _brush == null or not is_instance_valid(_brush):
+		_brush = MeshInstance3D.new()
+		_brush.name = "Brush"
+		_brush.mesh = ImmediateMesh.new()
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.no_depth_test = true
+		m.vertex_color_use_as_albedo = true
+		_brush.material_override = m
+		add_child(_brush) # not owned
+	_brush.visible = radius > 0
+	if radius <= 0:
+		return
+	var im: ImmediateMesh = _brush.mesh
+	im.clear_surfaces()
+	for r in [radius, radius * 0.5]:
+		im.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+		for i in 49:
+			var t := TAU * i / 48.0
+			var x: float = at.x + cos(t) * r
+			var z: float = at.z + sin(t) * r
+			im.surface_set_color(color if r == radius else color.darkened(0.3))
+			im.surface_add_vertex(Vector3(x, Terrain.height_at(x, z) + 0.3, z))
+		im.surface_end()
 
 
 func _own(n: Node) -> void:
@@ -157,6 +236,12 @@ func save_world() -> PackedStringArray:
 			out.append(_record(g, n, ids))
 		_files[g.file][g.list] = out
 	var saved := PackedStringArray()
+	if sculpt and sculpt.dirty:
+		var err: Error = sculpt.save()
+		if err != OK:
+			push_error("World editor: cannot save the sculpted ground (%s)" % error_string(err))
+		else:
+			saved.append("sculpt.json, world.bin")
 	for f in _files:
 		var path: String = WORLD if f == "world" else SCENERY
 		if IO.to_text(_files[f], false, true) == FileAccess.get_file_as_string(path):
