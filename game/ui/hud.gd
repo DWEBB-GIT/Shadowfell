@@ -3,11 +3,11 @@ extends CanvasLayer
 ## The HUD (src/ui/hud.js): it reads game state and forwards requests
 ## (respawn, close). It never decides gameplay outcomes itself.
 ##
-## Built in code from the browser's layout (index.html, style.css): the
-## title and region top left with the character frame under it, the target
-## frame centred at the top, the minimap and tracked quests top right, the
-## log bottom left, the experience and spell bars bottom centre with the cast
-## and swing bars above, and the menus, bag sockets and money bottom right.
+## Built in code, laid out like a modern MMO (see layout()): the character
+## frame top left with the target frame beside it, the minimap and tracked
+## quests top right, the log bottom left, the spell bar bottom centre with
+## the experience bar on it and the cast and swing bars above, and money,
+## bag sockets and menus stacked bottom right.
 ## The windows live in ItemUI and QuestUI; the title screen in TitleScreen.
 
 const LOG_COLOURS := {
@@ -16,6 +16,7 @@ const LOG_COLOURS := {
 	"lore": Color("b9b2a0"), "kill": Color("e0c8a0"), "muted": UI.TEXT_DIM,
 }
 const SLOT := 48
+const EDGE := 12.0 ## the gap between the HUD and the screen edge
 ## the menus in the right dock: [window, glyph, tip, key action, pad label]
 const MICRO := [
 	["character", "⚔", "Character", "character", "View"],
@@ -52,8 +53,6 @@ var title: TitleScreen
 var loading: LoadingScreen
 
 var root: Control
-var title_area: PanelContainer
-var region_label: Label
 var char_panel: PanelContainer
 var char_name: Label
 var char_level: Label
@@ -77,7 +76,7 @@ var bottom: VBoxContainer
 var action_bar: PanelContainer
 var xp: Dictionary
 var slots: Array = [] ## ISlot per bar slot
-var dock: HBoxContainer
+var dock: VBoxContainer
 var micro_keys := {} ## key action -> [Label, pad label]
 var micro_buttons := {} ## key action -> [Button, tip]
 var coins: RichTextLabel
@@ -142,7 +141,6 @@ func _init(g) -> void:
 	ev.on("objectiveChanged", func(_e): refresh_objective())
 	ev.on("questsChanged", func(_e): refresh_objective())
 	ev.on("regionChanged", func(e):
-		region_label.text = e.region.name.to_upper()
 		if e.announce:
 			var lv := str(e.region.get("levels", ""))
 			show_zone(e.region.name, ("Levels " + lv) if lv != "" and lv[0].is_valid_int() else lv)
@@ -218,7 +216,6 @@ func _build() -> void:
 	numbers = DamageNumbers.new(game)
 	root.add_child(numbers)
 
-	_build_title_area()
 	_build_char_panel()
 	_build_target()
 	minimap = Minimap.new(game)
@@ -351,31 +348,11 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 
 
 ## the game's name, the region and the build stamp (#title-area)
-func _build_title_area() -> void:
-	title_area = UI.panel(root, 0)
-	title_area.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 6, 14, 7)))
-	title_area.position = Vector2(12, 12)
-	var v := UI.vbox(title_area, 0)
-	var t := UI.label(v, "SHADOWFALL", 20, UI.GOLD)
-	t.add_theme_font_override("font", _spaced(20, 6))
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	region_label = UI.label(v, "", 12, UI.TEXT_DIM)
-	region_label.add_theme_font_override("font", _spaced(12, 2))
-	region_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var b := UI.label(v, _build_label(), 10, UI.TEXT_DIM)
-	b.modulate.a = 0.75
-	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-
-func _build_label() -> String:
-	return "Godot build"
-
-
 ## the character frame (#char-panel)
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
 	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
-	char_panel.position = Vector2(12, 86)
+	char_panel.position = Vector2(12, 12)
 	char_panel.custom_minimum_size = Vector2(240, 0)
 	var cv := UI.vbox(char_panel, 3)
 	var head := UI.hbox(cv, 8)
@@ -389,7 +366,7 @@ func _build_char_panel() -> void:
 	buffs = UI.hbox(cv, 4)
 
 
-## the target frame, centred at the top, with a round portrait (#target-frame)
+## the target frame, beside the player's, with a round portrait (#target-frame)
 func _build_target() -> void:
 	target = UI.panel(root, 0)
 	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
@@ -445,12 +422,20 @@ func _build_target() -> void:
 	target.visible = false
 
 
-## experience over the spell bar, bottom centre (#bottom-bar)
+## experience on top of the spell bar, bottom centre (#bottom-bar)
 func _build_bottom() -> void:
-	bottom = UI.vbox(root, 4)
-	xp = _bar(bottom, Color("b89c55"), Color("6b5a2c"), 18, 13)
+	bottom = UI.vbox(root, 0)
+	var bar_frame := UI.capped_frame(Vector4(4, 3, 4, 2))
+	# the experience bar spans the frame itself, not the end caps beside it
+	var xm := MarginContainer.new()
+	xm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xm.add_theme_constant_override("margin_left", int(bar_frame.cap_room) + 4)
+	xm.add_theme_constant_override("margin_right", int(bar_frame.cap_room) + 4)
+	bottom.add_child(xm)
+	# purple like the +XP popups, so the pale text reads against it
+	xp = _bar(xm, Color("8a62c4"), Color("43286e"), 16, 12)
 	action_bar = UI.panel(bottom, 0)
-	action_bar.add_theme_stylebox_override("panel", UI.capped_frame(Vector4(4, 3, 4, 2)))
+	action_bar.add_theme_stylebox_override("panel", bar_frame)
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
 	var row := UI.hbox(action_bar, 5)
 	var i := 0
@@ -478,14 +463,26 @@ func _build_bottom() -> void:
 var _sockets_box: HBoxContainer
 
 
-## bottom right, in one row: the menus, the bag sockets, money (#right-dock)
+## bottom right, stacked and right-aligned: money, the bag sockets, and
+## the menus along the bottom edge (#right-dock)
 func _build_dock() -> void:
-	dock = UI.hbox(root, 6)
-	dock.alignment = BoxContainer.ALIGNMENT_END
+	dock = UI.vbox(root, 4)
+	var cp := UI.panel(dock, 0)
+	cp.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 2, 10, 2)))
+	cp.size_flags_horizontal = Control.SIZE_SHRINK_END
+	coins = UI.rich(cp, 15)
+	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
+	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var bag_dock := UI.panel(dock, 0)
+	bag_dock.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 5, 6, 4)))
+	bag_dock.mouse_filter = Control.MOUSE_FILTER_PASS
+	bag_dock.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_sockets_box = UI.hbox(bag_dock, 4)
+	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
 	var micro := UI.panel(dock, 0)
 	micro.add_theme_stylebox_override("panel", UI.frame(Vector4(5, 4, 5, 4)))
 	micro.mouse_filter = Control.MOUSE_FILTER_PASS
-	micro.size_flags_vertical = Control.SIZE_SHRINK_END
+	micro.size_flags_horizontal = Control.SIZE_SHRINK_END
 	var mr := UI.hbox(micro, 4)
 	for m in MICRO:
 		var b := Button.new()
@@ -505,19 +502,6 @@ func _build_dock() -> void:
 		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		micro_keys[m[3]] = [key, m[4]]
 		micro_buttons[m[3]] = [b, m[2]]
-	var bag_dock := UI.panel(dock, 0)
-	bag_dock.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 5, 6, 4)))
-	bag_dock.mouse_filter = Control.MOUSE_FILTER_PASS
-	bag_dock.size_flags_vertical = Control.SIZE_SHRINK_END
-	_sockets_box = UI.hbox(bag_dock, 4)
-	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
-	var cp := UI.panel(dock, 0)
-	cp.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 0, 10, 0)))
-	cp.custom_minimum_size = Vector2(0, 52)
-	cp.size_flags_vertical = Control.SIZE_SHRINK_END
-	coins = UI.rich(cp, 16)
-	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
-	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 
 func _build_modals() -> void:
@@ -667,7 +651,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, title_area, target, bottom, dock, minimap, quests.tracker]:
+	for c in [char_panel, target, bottom, dock, minimap, quests.tracker]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -812,7 +796,7 @@ func log_line(text: String, kind := "", throttle = null, rarity = null) -> void:
 	var colour: Color = Items.rarity_colour(rarity) if rarity else LOG_COLOURS.get(kind, UI.TEXT)
 	var l := UI.label(log_box, text, 13, colour, 4)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
-	l.custom_minimum_size = Vector2(420, 0)
+	l.custom_minimum_size = Vector2(log_box.custom_minimum_size.x, 0)
 	l.set_meta("born", now)
 	if kind == "lore":
 		l.add_theme_font_override("font", UI.italic)
@@ -908,7 +892,7 @@ func refresh_stats() -> void:
 		xp.text.text = "Level %d  ·  maximum level" % prog.level
 	else:
 		set_fill(xp, k)
-		xp.text.text = "Level %d  ·  %d / %d experience (%d%%)%s" % [prog.level, prog.xp, prog.xp_to_next, floori(k * 100), "  ·  %d%% rested" % prog.rested_percent if prog.rested >= 1 else ""]
+		xp.text.text = "Level %d   %d / %d XP  (%d%%)%s" % [prog.level, prog.xp, prog.xp_to_next, floori(k * 100), "   %d%% rested" % prog.rested_percent if prog.rested >= 1 else ""]
 	var c: int = game.inventory.coins
 	if c != _coins_shown:
 		_coins_shown = c
@@ -1151,23 +1135,37 @@ func aura_tip(a: Dictionary, debuff: bool) -> String:
 	return out
 
 
+## The standard MMO layout, every piece anchored to a screen edge with the
+## same margin: unit frames top left, minimap and quests top right, the
+## log bottom left, the spell bar bottom centre with the experience bar on
+## it and the cast bars above, money, bags and menus bottom right.
 func layout() -> void:
 	var vp := root.get_viewport_rect().size
-	bottom.size = bottom.get_combined_minimum_size()
-	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - bottom.size.y - 8)
-	dock.size = dock.get_combined_minimum_size()
-	dock.position = Vector2(vp.x - 12 - dock.size.x, vp.y - 8 - dock.size.y)
-	# on a narrow screen the bar moves left rather than under the dock
-	if bottom.position.x + bottom.size.x > dock.position.x - 8:
-		bottom.position.x = maxf(12, dock.position.x - 8 - bottom.size.x)
-	minimap.position = Vector2(vp.x - 12 - Minimap.SIZE, 12)
+	var m := EDGE
+	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	target.position = Vector2(roundf((vp.x - target.size.x) / 2), 12)
+	target.position = Vector2(char_panel.position.x + char_panel.size.x + m, m)
+	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
+	dock.size = dock.get_combined_minimum_size()
+	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
+	bottom.size = bottom.get_combined_minimum_size()
+	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
+	# on a narrow screen the bar moves left rather than under the dock
+	if bottom.position.x + bottom.size.x > dock.position.x - m:
+		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
+	# the log fills the corner beside the bar; with no room there it sits above
+	var room := bottom.position.x - 2 * m
+	var w := clampf(room, 260, 420)
+	if not is_equal_approx(log_box.custom_minimum_size.x, w):
+		log_box.custom_minimum_size.x = w
+		for l in log_box.get_children():
+			(l as Control).custom_minimum_size.x = w
 	log_box.size = log_box.get_combined_minimum_size()
-	log_box.position = Vector2(12, vp.y - 120 - log_box.size.y)
-	for b in [[cast, 132], [swing, 112], [swing_off, 98]]:
+	var log_foot := vp.y - m if room >= 260 else bottom.position.y - m
+	log_box.position = Vector2(m, log_foot - log_box.size.y)
+	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
-		r.position = Vector2(roundf((vp.x - r.size.x) / 2), vp.y - b[1] - r.size.y)
+		r.position = Vector2(roundf(bottom.position.x + (bottom.size.x - r.size.x) / 2), bottom.position.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
 	# just over the spell bar, under the cast, gather and skinning bars
 	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else bottom.position.y - 6 - prompt.size.y)
@@ -1184,7 +1182,7 @@ func layout() -> void:
 	quests.layout()
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
-	mute.position = Vector2(vp.x - 12 - mute.size.x, vp.y - 110 - mute.size.y)
+	mute.position = Vector2(vp.x - m - mute.size.x, dock.position.y - 6 - mute.size.y)
 	for m in [death, document]:
 		m.size = m.get_combined_minimum_size()
 		m.position = ((vp - m.size) / 2).round()
