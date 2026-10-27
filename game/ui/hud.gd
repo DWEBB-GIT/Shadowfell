@@ -26,6 +26,12 @@ const MICRO := [
 	["quests", "!", "Quest Log", "quests", "→"],
 	["settings", "☰", "Settings", "settings", ""],
 ]
+const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
+const UNIT_W := 236.0 ## the width of your frame and your target's
+const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
+const ORB_R := 14.0 ## the menu orbs round the minimap
+const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
+const ORB_STEP := 22.4
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
@@ -56,6 +62,8 @@ var root: Control
 var char_panel: PanelContainer
 var char_name: Label
 var char_level: Label
+var char_img: TextureRect
+var char_badge: Label
 var hp: Dictionary
 var mp: Dictionary
 var gauge: Dictionary
@@ -76,9 +84,8 @@ var bottom: VBoxContainer
 var action_bar: PanelContainer
 var xp: Dictionary
 var slots: Array = [] ## ISlot per bar slot
-var dock: VBoxContainer
-var micro_keys := {} ## key action -> [Label, pad label]
-var micro_buttons := {} ## key action -> [Button, tip]
+var dock: PanelContainer ## money and the bag sockets, bottom right
+var micro_buttons := {} ## key action -> [orb Button, tip]
 var coins: RichTextLabel
 var _coins_shown := -1
 var cast: Dictionary
@@ -233,6 +240,7 @@ func _build() -> void:
 		b.root.size = Vector2(240, b.root.custom_minimum_size.y)
 	_build_bottom()
 	_build_dock()
+	_build_orbs()
 
 	# the prompt: a key badge and what it does (#prompt)
 	prompt = UI.panel(root, 0)
@@ -308,8 +316,6 @@ func _build() -> void:
 	quests = QuestUI.new(game, self)
 	root.add_child(quests)
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
-	for i in micro_buttons:
-		items.tip_on(micro_buttons[i][0], micro_buttons[i][1])
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
 	items.tip_on(coins, "Money")
@@ -348,72 +354,95 @@ static func _spaced(size: int, spacing: int) -> FontVariation:
 
 
 ## the game's name, the region and the build stamp (#title-area)
-## the character frame (#char-panel)
+## the character frame (#char-panel): your portrait in its ring, like the
+## target's, beside your bars
 func _build_char_panel() -> void:
 	char_panel = UI.panel(root, 0)
-	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 8, 10, 8)))
-	char_panel.position = Vector2(12, 12)
-	char_panel.custom_minimum_size = Vector2(240, 0)
-	var cv := UI.vbox(char_panel, 3)
-	var head := UI.hbox(cv, 8)
-	char_name = UI.label(head, "", 15, UI.GOLD)
-	char_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	char_level = UI.label(head, "", 13, UI.TEXT_DIM)
+	char_panel.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
+	char_panel.custom_minimum_size = Vector2(UNIT_W, 0)
+	var row := UI.hbox(char_panel, 8)
+	var pic := _portrait(row)
+	char_img = pic.img
+	char_badge = pic.badge
+	var cv := UI.vbox(row, 3)
+	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	char_name = UI.label(cv, "", 14, UI.GOLD)
+	char_name.clip_text = true
+	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the badge
 	hp = _bar(cv, Color("c0503a"), Color("8e2a20"), 16)
 	mp = _bar(cv, Color("5a82c8"), Color("2c4a8a"), 13, 10)
 	gauge = _bar(cv, Color("e0a84a"), Color("9a5a1c"), 13, 10)
 	pips = UI.hbox(cv, 4)
 	buffs = UI.hbox(cv, 4)
+	game.events.on("equipmentChanged", func(_e): _player_portrait.call_deferred())
 
 
-## the target frame, beside the player's, with a round portrait (#target-frame)
-func _build_target() -> void:
-	target = UI.panel(root, 0)
-	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
-	target.custom_minimum_size = Vector2(310, 0)
-	var row := UI.hbox(target, 10)
+## your portrait, taken again when you enter the world or change gear
+func _player_portrait() -> void:
+	if game.player != null and game.player.model != null:
+		char_img.texture = icons.player_portrait(game.player.model)
+
+
+## a round portrait with a level badge on its rim (#target-frame .portrait)
+func _portrait(row: Control) -> Dictionary:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(58, 58)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(holder)
-	target_ring = Panel.new()
-	target_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	target_ring.size = Vector2(58, 58)
+	var ring_panel := Panel.new()
+	ring_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring_panel.size = Vector2(58, 58)
 	var ring := UI.box(Color("1a1510"), Color("8a6a3a"), 0, 2)
 	ring.set_corner_radius_all(29)
-	target_ring.add_theme_stylebox_override("panel", ring)
-	holder.add_child(target_ring)
-	target_img = TextureRect.new()
-	target_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	target_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	target_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	target_img.position = Vector2(2, 2)
-	target_img.size = Vector2(54, 54)
+	ring_panel.add_theme_stylebox_override("panel", ring)
+	holder.add_child(ring_panel)
+	var img := TextureRect.new()
+	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	img.position = Vector2(2, 2)
+	img.size = Vector2(54, 54)
 	var sh := Shader.new()
 	sh.code = CIRCLE
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
-	target_img.material = mat
-	holder.add_child(target_img)
-	target_badge = UI.label(holder, "", 12, Color("f0d890"))
+	img.material = mat
+	holder.add_child(img)
+	var badge_label := UI.label(holder, "", 12, Color("f0d890"))
 	var badge := UI.box(Color("120e0a"), Color("b08a4a"), 0, 1, Vector4(3, 0, 3, 0))
 	badge.set_corner_radius_all(10)
-	target_badge.add_theme_stylebox_override("normal", badge)
-	target_badge.add_theme_font_override("font", UI.bold)
-	target_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	target_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	target_badge.custom_minimum_size = Vector2(20, 20)
-	target_badge.position = Vector2(-4, 42)
+	badge_label.add_theme_stylebox_override("normal", badge)
+	badge_label.add_theme_font_override("font", UI.bold)
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.custom_minimum_size = Vector2(20, 20)
+	badge_label.position = Vector2(-4, 42)
+	return {"ring": ring_panel, "img": img, "badge": badge_label}
+
+
+## the target frame, the player's mirror, with a round portrait (#target-frame)
+func _build_target() -> void:
+	target = UI.panel(root, 0)
+	target.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 6, 10, 8)))
+	target.custom_minimum_size = Vector2(UNIT_W, 0)
+	var row := UI.hbox(target, 8)
+	var pic := _portrait(row)
+	target_ring = pic.ring
+	target_img = pic.img
+	target_badge = pic.badge
+	# the combat type (melee, ranged, magic) shows when you point at the portrait
+	target_img.mouse_filter = Control.MOUSE_FILTER_STOP
+	target_img.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
+	target_img.mouse_exited.connect(func(): items.cursor_tip_off())
 	var tv := UI.vbox(row, 2)
 	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var nr := UI.hbox(tv, 6)
 	target_name = UI.label(nr, "", 14, Color("e8c8a0"))
 	target_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	target_kind = UI.label(nr, "", 13, UI.GOLD, 3)
-	target_kind.mouse_filter = Control.MOUSE_FILTER_STOP
-	target_kind.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
-	target_kind.mouse_exited.connect(func(): items.cursor_tip_off())
+	target_name.clip_text = true
+	# not shown (its crossed swords read as a close button); holds the tip
+	target_kind = UI.label(null, "", 13, UI.GOLD, 3)
 	target_label = UI.label(tv, "", 11, UI.TEXT_DIM)
 	target_hp = _bar(tv, Color("c0503a"), Color("8e2a20"), 16)
 	target_mp = _bar(tv, Color("5a82c8"), Color("2c4a8a"), 11, 9)
@@ -424,7 +453,7 @@ func _build_target() -> void:
 
 ## experience on top of the spell bar, bottom centre (#bottom-bar)
 func _build_bottom() -> void:
-	bottom = UI.vbox(root, 0)
+	bottom = UI.vbox(root, 6) # the XP bar stands clear of the bar and its end caps
 	var bar_frame := UI.capped_frame(Vector4(4, 3, 4, 2))
 	# the experience bar spans the frame itself, not the end caps beside it
 	var xm := MarginContainer.new()
@@ -437,22 +466,11 @@ func _build_bottom() -> void:
 	action_bar = UI.panel(bottom, 0)
 	action_bar.add_theme_stylebox_override("panel", bar_frame)
 	action_bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	var row := UI.hbox(action_bar, 5)
+	var row := UI.hbox(action_bar, 2)
 	var i := 0
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
-			var sep := TextureRect.new()
-			sep.texture = UI.kit("divider")
-			sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			sep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sep.custom_minimum_size = Vector2(8, 0)
-			sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var m := MarginContainer.new()
-			m.add_theme_constant_override("margin_left", 3)
-			m.add_theme_constant_override("margin_right", 3)
-			m.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			m.add_child(sep)
-			row.add_child(m)
+			row.add_child(_divider())
 		var s := ISlot.new("a:%d" % i, SLOT)
 		s.bar = true
 		row.add_child(s)
@@ -463,45 +481,61 @@ func _build_bottom() -> void:
 var _sockets_box: HBoxContainer
 
 
-## bottom right, stacked and right-aligned: money, the bag sockets, and
-## the menus along the bottom edge (#right-dock)
+## bottom right, one row level with the spell bar: money and the bag
+## sockets (#right-dock). The menus are orbs round the minimap (_build_orbs).
 func _build_dock() -> void:
-	dock = UI.vbox(root, 4)
-	var cp := UI.panel(dock, 0)
-	cp.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 2, 10, 2)))
-	cp.size_flags_horizontal = Control.SIZE_SHRINK_END
-	coins = UI.rich(cp, 15)
+	dock = UI.panel(root, 0)
+	dock.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 4, 8, 4)))
+	dock.mouse_filter = Control.MOUSE_FILTER_PASS
+	var row := UI.hbox(dock, 6)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	coins = UI.rich(row, 15)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
 	coins.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var bag_dock := UI.panel(dock, 0)
-	bag_dock.add_theme_stylebox_override("panel", UI.frame(Vector4(6, 5, 6, 4)))
-	bag_dock.mouse_filter = Control.MOUSE_FILTER_PASS
-	bag_dock.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_sockets_box = UI.hbox(bag_dock, 4)
+	row.add_child(_divider())
+	_sockets_box = UI.hbox(row, 2)
 	_sockets_box.alignment = BoxContainer.ALIGNMENT_END
-	var micro := UI.panel(dock, 0)
-	micro.add_theme_stylebox_override("panel", UI.frame(Vector4(5, 4, 5, 4)))
-	micro.mouse_filter = Control.MOUSE_FILTER_PASS
-	micro.size_flags_horizontal = Control.SIZE_SHRINK_END
-	var mr := UI.hbox(micro, 4)
+	_sockets_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+
+## the menus as round buttons down the minimap's left rim, RuneScape style,
+## from the top: character first. The key shows in each one's tip.
+func _build_orbs() -> void:
+	var i := 0
 	for m in MICRO:
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(30, 40)
-		b.focus_mode = Control.FOCUS_NONE
+		var b := minimap.orb(ORB_TOP - ORB_STEP * i, ORB_R)
 		var which: String = m[0]
+		var action: String = m[3]
+		var pad_label: String = m[4]
+		var tip: String = m[2]
 		b.pressed.connect(func(): toggle_panel(which))
-		mr.add_child(b)
-		var glyph := UI.label(b, m[1], 16, UI.GOLD)
+		var glyph := UI.label(b, m[1], 15, UI.GOLD)
 		glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
-		glyph.offset_bottom = -8
 		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		var key := UI.label(b, "", 9, UI.TEXT_DIM)
-		key.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		key.offset_top = -12
-		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		micro_keys[m[3]] = [key, m[4]]
-		micro_buttons[m[3]] = [b, m[2]]
+		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.mouse_entered.connect(func():
+			var k: String = pad_label if pad_mode else game.keys.label(action)
+			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
+		b.mouse_exited.connect(func(): items.cursor_tip_off())
+		micro_buttons[action] = [b, tip]
+		i += 1
+
+
+## the kit's bronze divider, upright between two groups in a row
+func _divider() -> Control:
+	var sep := TextureRect.new()
+	sep.texture = UI.kit("divider")
+	sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sep.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sep.custom_minimum_size = Vector2(8, 0)
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 3)
+	m.add_theme_constant_override("margin_right", 3)
+	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	m.add_child(sep)
+	return m
 
 
 func _build_modals() -> void:
@@ -603,6 +637,7 @@ func set_muted(m: bool) -> void:
 
 func set_character(c: Dictionary) -> void:
 	char_name.text = c.name
+	_player_portrait.call_deferred()
 
 
 # ------------------------------------------------------------ spell bar
@@ -639,14 +674,12 @@ func apply_key_labels() -> void:
 		var b: Dictionary = ActionBar.BAR_SLOTS[i]
 		slots[i].key = b.pad if pad_mode else keys.label("bar%d" % i).replace("Shift-", "⇧").replace(" / ", "/")
 		slots[i].queue_redraw()
-	for id in micro_keys:
-		var k: String = keys.label(id)
-		micro_keys[id][0].text = micro_keys[id][1] if pad_mode else k
 
 
-## the top of the bottom bar, for tooltips that sit above it
+## the top of the bottom bar and the unit frames over it, for tooltips
+## that sit above them
 func bottom_top() -> float:
-	return bottom.position.y
+	return minf(bottom.position.y, char_panel.position.y)
 
 
 ## is a screen point over the fixed HUD (not a window)?
@@ -883,6 +916,7 @@ func refresh_stats() -> void:
 	var player = game.player
 	var prog = game.progression
 	char_level.text = "Level %d" % prog.level
+	char_badge.text = str(prog.level)
 	set_fill(hp, player.health / player.max_health)
 	hp.text.text = "%d / %d" % [maxi(0, ceili(player.health)), player.max_health]
 	_refresh_resources()
@@ -1144,31 +1178,39 @@ func layout() -> void:
 	var m := EDGE
 	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	target.position = Vector2(char_panel.position.x + char_panel.size.x + m, m)
 	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
-	dock.size = dock.get_combined_minimum_size()
-	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
+	# the tray stands as tall as the spell bar and level with it
+	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
+	dock.size = dock.get_combined_minimum_size()
+	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
-	# the log fills the corner beside the bar; with no room there it sits above
-	var room := bottom.position.x - 2 * m
-	var w := clampf(room, 260, 420)
+	# your frame and your target's sit over the spell bar either side of the
+	# middle, as WoW addon layouts do, with the cast and swing bars between
+	# them; the tops line up and stay put as bars and auras come and go
+	var cx := roundf(bottom.position.x + bottom.size.x / 2)
+	var top := bottom.position.y - m - UNIT_H
+	char_panel.position = Vector2(cx - UNIT_GAP - char_panel.size.x, top)
+	target.position = Vector2(cx + UNIT_GAP, top)
+	# the log fills the corner beside them; with no room there it sits above
+	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m
+	var w := clampf(room, 220, 420)
 	if not is_equal_approx(log_box.custom_minimum_size.x, w):
 		log_box.custom_minimum_size.x = w
 		for l in log_box.get_children():
 			(l as Control).custom_minimum_size.x = w
 	log_box.size = log_box.get_combined_minimum_size()
-	var log_foot := vp.y - m if room >= 260 else bottom.position.y - m
+	var log_foot := vp.y - m if room >= 220 else bottom.position.y - m
 	log_box.position = Vector2(m, log_foot - log_box.size.y)
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
 		r.position = Vector2(roundf(bottom.position.x + (bottom.size.x - r.size.x) / 2), bottom.position.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
-	# just over the spell bar, under the cast, gather and skinning bars
-	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else bottom.position.y - 6 - prompt.size.y)
+	# just over the unit frames, clear of the cast, gather and skinning bars
+	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else top - 6 - prompt.size.y)
 	for l in [[toast_label, 0.22], [error_label, 0.18]]:
 		var c: Control = l[0]
 		c.size = c.get_combined_minimum_size()

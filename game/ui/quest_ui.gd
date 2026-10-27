@@ -62,9 +62,13 @@ func _init(g, h) -> void:
 	marks_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
-	tracker.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 8, 14, 10)))
+	# no box behind it, as in WoW: outlined text straight on the world
+	var bare := StyleBoxEmpty.new()
+	bare.set_content_margin_all(4)
+	tracker.add_theme_stylebox_override("panel", bare)
+	tracker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tracker.custom_minimum_size = Vector2(260, 0)
-	tracker_box = UI.vbox(tracker, 3)
+	tracker_box = UI.vbox(tracker, 6)
 	tracker.visible = false
 	dialogue = UI.window(self, "", 340, func(): game.dialogue.close())
 	_with_subtitle(dialogue)
@@ -497,9 +501,8 @@ func render_tracker() -> void:
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
 	tracker.visible = not ids.is_empty()
 	var head := UI.hbox(tracker_box, 6)
-	var title := UI.label(head, "QUESTS  (%d)" % ids.size(), 11, UI.GOLD)
+	var title := UI.label(head, "QUESTS  (%d)" % ids.size(), 11, UI.GOLD, 4)
 	title.add_theme_font_override("font", UI.bold)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var fold := UI.square_button(head, "+" if tracker_collapsed else "−", _fold_tracker, 20)
 	fold.tooltip_text = "Show the objectives" if tracker_collapsed else "Hide the objectives"
 	title.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -511,7 +514,6 @@ func render_tracker() -> void:
 		tracker.size = tracker.get_combined_minimum_size()
 		return
 	for id in ids:
-		UI.rule(tracker_box)
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
@@ -521,6 +523,7 @@ func render_tracker() -> void:
 		else:
 			text += _objectives(ql.objectives(id))
 		var r := UI.rich(tracker_box, 13, 240)
+		_outline(r)
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		r.tooltip_text = "Click: show the way · Right click: open in the quest log"
@@ -535,10 +538,17 @@ func render_tracker() -> void:
 				toggle_log(true))
 		if focused:
 			_way = UI.rich(tracker_box, 12, 240)
+			_outline(_way)
 			_way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_way_text = ""
 			_update_way()
 	tracker.size = tracker.get_combined_minimum_size()
+
+
+## dark edges round the tracker's text, so it reads over any ground
+func _outline(r: RichTextLabel) -> void:
+	r.add_theme_constant_override("outline_size", 4)
+	r.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 
 
 func _fold_tracker() -> void:
@@ -612,13 +622,13 @@ func layout() -> void:
 	for w in [dialogue, trainer]:
 		if w.panel.visible:
 			UI.fit_steady(w.panel)
-			w.panel.position = Vector2(12, 136)
+			w.panel.position = Vector2(12, 12)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
 		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)
 		UI.fit_steady(p)
 		p.position = Vector2(roundf((vp.x - p.size.x) / 2), 80)
-	tracker.position = Vector2(vp.x - 12 - tracker.size.x, 214)
+	tracker.position = Vector2(vp.x - 12 - tracker.size.x, roundf(hud.minimap.position.y + hud.minimap.coords.position.y + hud.minimap.coords.size.y + 8))
 
 
 # --------------------------------------------------------- gamepad
