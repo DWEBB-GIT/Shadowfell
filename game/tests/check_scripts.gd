@@ -5,7 +5,7 @@ extends SceneTree
 
 func _initialize() -> void:
 	var bad := 0
-	for path in _scripts("res://game"):
+	for path in _scripts("res://game") + _scripts("res://addons"):
 		var s = load(path)
 		if s == null or (s is GDScript and not s.can_instantiate() and not path.ends_with("check_scripts.gd")):
 			print("FAILED: ", path)

@@ -866,7 +866,7 @@ func _render_cooking() -> void:
 	var craft := Cooking.craft_of(sk)
 	w.title.text = craft.get("window", "Cooking")
 	var rank: int = ck.rank(sk)
-	var mx: int = DB.skills[sk].maxRank
+	var mx: int = game.skills.cap(sk)
 	UI.label(w.body, "%s %d / %d" % [DB.skills[sk].name, rank, mx], 13, Color("f0d070"))
 	_skill_bar(w.body, float(rank) / mx, 0)
 	var list: Array = ck.known(sk)
