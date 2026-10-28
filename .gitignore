@@ -13,3 +13,6 @@ __pycache__/
 build/
 data/build.json
 tools/world/preview.png
+
+# the battle mage download is ~50 MB: kept out of git (see assets/blender/imported/CREDITS.md)
+assets/blender/imported/human-battle-mage-male/

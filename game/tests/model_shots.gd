@@ -7,7 +7,7 @@ extends SceneTree
 ## (fractions of each clip). Also shows the imported weapons beside the
 ## code-built ones they stand in for.
 
-const MODELS := [["rat", 3.0], ["chicken", 2.5], ["base_male", 0.75]]
+const MODELS := [["rat", 3.0], ["chicken", 2.5], ["base_male", 0.75], ["battle_mage", 0.75]]
 const CLIPS := ["Idle", "Walk", "Run", "Attack", "Cast", "Sit", "Death"]
 const SHOT_TIMES := [0.0, 0.25, 0.5, 0.75]
 

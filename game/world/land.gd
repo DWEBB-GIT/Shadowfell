@@ -9,6 +9,9 @@ extends RefCounted
 ## chunk_trees() wherever anything moves, drawn or not).
 
 const CUTAWAY := preload("res://game/render/cutaway.gdshader")
+const GRASS := preload("res://game/render/grass.gdshader")
+const GRASS_NEAR := 34.0 ## grass is full size within this of the camera's focus
+const GRASS_FAR := 46.0 ## and has sunk away by here (game/render/grass.gdshader)
 const CHUNK := 64.0
 const RADIUS := 112.0 ## metres around the camera's focus that are drawn
 const KEEP := 176.0 ## chunks further than this are freed
@@ -47,7 +50,8 @@ var focus := Vector3.ZERO
 var built := 0 ## chunks built so far (for the perf tools)
 var _ground_mat: StandardMaterial3D
 var _sea_mat: StandardMaterial3D
-var _grass_mat: StandardMaterial3D
+var _grass_mat: ShaderMaterial
+var _cover := {} ## Vector2i -> the chunk's grass (shown only when some of it is in reach)
 var _blade: ArrayMesh
 var _models := {} ## model -> [mesh, cutaway material]
 var _cutaways: Array = []
@@ -66,11 +70,11 @@ func _init(g, parent: Node3D) -> void:
 	_sea_mat.emission = Color.hex(0x0a1618ff)
 	_sea_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_sea_mat.roughness = 0.4
-	_grass_mat = StandardMaterial3D.new()
-	_grass_mat.albedo_color = Color("4a5a32")
-	_grass_mat.vertex_color_use_as_albedo = true
-	_grass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_grass_mat.roughness = 1.0
+	_grass_mat = ShaderMaterial.new()
+	_grass_mat.shader = GRASS
+	_grass_mat.set_shader_parameter("albedo", Color("4a5a32"))
+	_grass_mat.set_shader_parameter("uNear", GRASS_NEAR)
+	_grass_mat.set_shader_parameter("uFar", GRASS_FAR)
 	_blade = _grass_blade()
 	index_clearings()
 	_build_rivers_and_lakes()
@@ -110,9 +114,14 @@ func update(at: Vector3, all := false) -> void:
 		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > BUDGET_MS:
 			break
 	for k in chunks.keys():
-		if _chunk_distance(k, at) > KEEP:
+		var d := _chunk_distance(k, at)
+		if d > KEEP:
 			chunks[k].queue_free()
 			chunks.erase(k)
+			_cover.erase(k)
+		elif _cover.has(k):
+			_cover[k].visible = d < GRASS_FAR + 4.0
+	_grass_mat.set_shader_parameter("uFocus", at)
 
 
 static func _chunk_distance(k: Vector2i, at: Vector3) -> float:
@@ -498,8 +507,8 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 	mmi.material_override = _grass_mat
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.name = "GroundCover"
-	mmi.visibility_range_end = 52.0
-	mmi.visibility_range_end_margin = 4.0
+	mmi.visible = _chunk_distance(k, focus) < GRASS_FAR + 4.0
+	_cover[k] = mmi
 	n.add_child(mmi)
 
 
