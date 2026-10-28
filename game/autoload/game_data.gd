@@ -21,6 +21,10 @@ func _init() -> void:
 	load_all()
 
 
+func _ready() -> void:
+	Cursors.setup(get_tree())
+
+
 func load_all() -> void:
 	files.clear()
 	tables.clear()
