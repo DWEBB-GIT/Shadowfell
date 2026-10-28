@@ -498,7 +498,7 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 	mmi.material_override = _grass_mat
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.name = "GroundCover"
-	mmi.visibility_range_end = 36.0
+	mmi.visibility_range_end = 52.0
 	mmi.visibility_range_end_margin = 4.0
 	n.add_child(mmi)
 
