@@ -111,7 +111,7 @@ var prompt: PanelContainer
 var prompt_key: Label
 var prompt_text: Label
 var _prompt_shown := ""
-var _prompt_big := false ## a prompt that matters most (back to your body) sits large mid-screen
+var _prompt_big := false ## a prompt that matters most (back to your body) sits mid-screen, in gold
 var toast_label: Label
 var toast_left := 0.0
 var zone_banner: VBoxContainer ## a zone's name across the top of the screen as you enter it
@@ -496,21 +496,18 @@ func _build_char_panel() -> void:
 	var f := _unit_frame(root, false)
 	char_panel = f.root
 	char_img = f.img
-	char_badge = f.badge
-	# your level is the number you want to watch go up: bigger than a foe's
-	char_badge.add_theme_font_size_override("font_size", 20)
-	char_badge.custom_minimum_size = Vector2(36, 26)
-	char_badge.size = Vector2(36, 26)
-	char_badge.position = Vector2(PORTRAIT / 2 - 18, PORTRAIT - 13)
-	char_badge.add_theme_color_override("font_color", Color("ffe08a"))
-	char_badge.add_theme_color_override("font_outline_color", Color("000000"))
-	char_badge.add_theme_constant_override("outline_size", 4)
+	f.badge.visible = false
 	var cv: VBoxContainer = f.col
-	char_name = UI.label(cv, "", 14, UI.GOLD, 4)
-	char_name.add_theme_stylebox_override("normal", _indent(false))
+	# the name and level share one dark bar, the level at its far end
+	var nb := _name_bar(cv, false)
+	char_name = UI.label(nb, "", 14, UI.GOLD, 4)
+	char_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	char_name.clip_text = true
 	char_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the badge
+	# your level is the number you want to watch go up: bright gold
+	char_badge = UI.label(nb, "", 14, Color("ffe08a"), 4)
+	char_badge.add_theme_font_override("font", UI.bold)
+	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the name bar
 	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 18, false)
 	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
 	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
@@ -560,14 +557,17 @@ func _unit_bar(parent: Control, hi: Color, lo: Color, height: int, mirror: bool,
 	return {"root": bar, "fill": bar, "text": l}
 
 
-## room for the portrait's rim before a frame's text
-func _indent(mirror: bool) -> StyleBoxEmpty:
-	var s := StyleBoxEmpty.new()
-	if mirror:
-		s.content_margin_right = BAR_UNDER + 4
-	else:
-		s.content_margin_left = BAR_UNDER + 4
-	return s
+## a unit frame's name bar: a dark strip clear of the portrait's rim
+## holding a row (the name and the level)
+func _name_bar(parent: Control, mirror: bool) -> HBoxContainer:
+	var m := _indented(parent, mirror)
+	var bar := PanelContainer.new()
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg := UI.box(Color(0.05, 0.04, 0.03, 0.78), Color("5e4a2e"), 0, 1, Vector4(6, 0, 6, 0))
+	bg.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("panel", bg)
+	m.add_child(bar)
+	return UI.hbox(bar, 6)
 
 
 func _indented(parent: Control, mirror: bool) -> Control:
@@ -625,18 +625,20 @@ func _build_target() -> void:
 	target = f.root
 	target_ring = f.ring
 	target_img = f.img
-	target_badge = f.badge
+	f.badge.visible = false
 	# the combat type (melee, ranged, magic) shows when you point at the portrait
 	target_img.mouse_filter = Control.MOUSE_FILTER_STOP
 	target_img.mouse_entered.connect(func(): items.cursor_tip(target_kind.get_meta("tip", "")))
 	target_img.mouse_exited.connect(func(): items.cursor_tip_off())
 	var tv: VBoxContainer = f.col
-	var nr := UI.hbox(tv, 6)
+	# the player's name bar mirrored: level first, the name at the far end
+	var nr := _name_bar(tv, true)
+	target_badge = UI.label(nr, "", 14, Color("f0d890"), 4)
+	target_badge.add_theme_font_override("font", UI.bold)
 	target_label = UI.label(nr, "", 11, UI.TEXT_DIM, 4)
 	target_name = UI.label(nr, "", 14, Color("e8c8a0"), 4)
 	target_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	target_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	target_name.add_theme_stylebox_override("normal", _indent(true))
 	target_name.clip_text = true
 	target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# not shown (its crossed swords read as a close button); holds the tip
@@ -665,7 +667,11 @@ func _build_bottom() -> void:
 	xm.add_theme_constant_override("margin_right", int(bar_frame.cap_room) + 4)
 	bottom.add_child(xm)
 	# purple like the +XP popups, so the pale text reads against it
-	xp = _bar(xm, Color("8a62c4"), Color("43286e"), 16, 12)
+	xp = _bar(xm, Color("8a62c4"), Color("43286e"), 16, 11)
+	# a line box keeps room for descenders, so the capitals sat low: lift
+	# the text to the bar's middle (Dan, 2026-10-28)
+	xp.text.offset_top = -2
+	xp.text.offset_bottom = -2
 	# a notch every tenth of the level, so progress reads at a glance
 	var ticks := Control.new()
 	ticks.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1578,7 +1584,7 @@ func layout() -> void:
 		r.position = Vector2(roundf(bottom.position.x + (bottom.size.x - r.size.x) / 2), bottom.position.y - b[1] - r.size.y)
 	prompt.size = prompt.get_combined_minimum_size()
 	# just over the unit frames, clear of the cast, gather and skinning bars
-	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.42 - prompt.size.y / 2) if _prompt_big else top - 6 - prompt.size.y)
+	prompt.position = Vector2(roundf((vp.x - prompt.size.x) / 2), roundf(vp.y * 0.62 - prompt.size.y / 2) if _prompt_big else top - 6 - prompt.size.y)
 	for l in [[toast_label, 0.22], [error_label, 0.18]]:
 		var c: Control = l[0]
 		c.size = c.get_combined_minimum_size()
@@ -1656,8 +1662,11 @@ func update(dt := 0.0) -> void:
 		_prompt_big = big
 		prompt_key.text = key
 		prompt_text.text = text
-		prompt_key.add_theme_font_size_override("font_size", 26 if big else 12)
-		prompt_text.add_theme_font_size_override("font_size", 30 if big else 14)
+		# the big one is only a touch larger, in gold, as WoW and Diablo
+		# keep theirs (Dan, 2026-10-28: it was far too big)
+		prompt_key.add_theme_font_size_override("font_size", 14 if big else 12)
+		prompt_text.add_theme_font_size_override("font_size", 16 if big else 14)
+		prompt_text.add_theme_color_override("font_color", UI.GOLD if big else UI.TEXT)
 		prompt.size = Vector2.ZERO
 	prompt.visible = text != ""
 

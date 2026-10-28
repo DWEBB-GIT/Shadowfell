@@ -65,8 +65,11 @@ func _init(location := "", px := 42) -> void:
 
 func _gui_input(e: InputEvent) -> void:
 	if on_input.is_valid() and e is InputEventMouseButton:
-		on_input.call(self, e)
+		# taken first: a click that buys or uses may rebuild the window and
+		# take this slot out of the tree, and an unaccepted click would fall
+		# through to the world and walk you (Dan, 2026-10-28)
 		accept_event()
+		on_input.call(self, e)
 
 
 ## Set what an item slot shows from a stack (or null for an empty slot).

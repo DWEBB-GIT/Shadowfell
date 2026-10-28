@@ -67,22 +67,21 @@ const CONFIG := {
 const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key", "bag", "ammo", "consumable", "material", "junk", "document", "gem"]
 const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste", "accuracy"]
 const DURABLE_KINDS := ["weapon", "armor", "shield", "jewellery"]
-## Character slots, laid out as in WoW: `col` is where the panel shows it.
+## Character slots, six down each side of the figure (Dan, 2026-10-28:
+## no trinkets): `col` is where the panel shows it.
 const EQUIP_SLOTS := [
 	{"id": "head", "label": "Head", "col": "left"},
-	{"id": "neck", "label": "Neck", "col": "left"},
 	{"id": "shoulders", "label": "Shoulder", "col": "left"},
 	{"id": "back", "label": "Back", "col": "left"},
 	{"id": "chest", "label": "Chest", "col": "left"},
-	{"id": "wrists", "label": "Wrists", "col": "right"},
-	{"id": "hands", "label": "Hands", "col": "right"},
+	{"id": "wrists", "label": "Wrists", "col": "left"},
+	{"id": "hands", "label": "Hands", "col": "left"},
 	{"id": "waist", "label": "Waist", "col": "right"},
 	{"id": "legs", "label": "Legs", "col": "right"},
 	{"id": "feet", "label": "Feet", "col": "right"},
-	{"id": "finger1", "label": "Finger", "fits": "finger", "col": "fig"},
-	{"id": "finger2", "label": "Finger", "fits": "finger", "col": "fig"},
-	{"id": "trinket1", "label": "Trinket", "fits": "trinket", "col": "fig"},
-	{"id": "trinket2", "label": "Trinket", "fits": "trinket", "col": "fig"},
+	{"id": "neck", "label": "Neck", "col": "right"},
+	{"id": "finger1", "label": "Finger", "fits": "finger", "col": "right"},
+	{"id": "finger2", "label": "Finger", "fits": "finger", "col": "right"},
 	{"id": "mainHand", "label": "Main hand", "col": "bottom", "also": ["oneHand"]},
 	{"id": "offHand", "label": "Off hand", "col": "bottom", "also": ["oneHand"]},
 	{"id": "ranged", "label": "Ranged", "col": "bottom"},

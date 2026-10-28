@@ -592,7 +592,7 @@ func _equip_col(parent: Node, inv, where: String, px := SLOT_PX) -> void:
 		if s.col == where:
 			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), px, s.label)
 			sl.placeholder_size = 9
-			# both rings and both trinkets share one outline
+			# both rings share one outline
 			sl.ghost = Icons.art("slots", "slot_" + s.id.rstrip("12"))
 
 
@@ -606,15 +606,9 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	_equip_col(left, inv, "left")
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
-	fig.custom_minimum_size = Vector2(FIG_W, 5 * SLOT_PX + 4 * 3) # as tall as a column of slots
+	fig.custom_minimum_size = Vector2(FIG_W, 6 * SLOT_PX + 5 * 3) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
-	# rings and trinkets sit on the figure, in a row along its feet
-	var jewels := UI.hbox(fig, 4)
-	jewels.alignment = BoxContainer.ALIGNMENT_CENTER
-	jewels.size_flags_vertical = Control.SIZE_SHRINK_END
-	jewels.add_theme_constant_override("separation", 4)
-	_equip_col(jewels, inv, "fig", 44)
 	var right := UI.vbox(body, 3)
 	_equip_col(right, inv, "right")
 	var bottom := UI.hbox(gear, 4)
@@ -1220,7 +1214,7 @@ func _spell_card(parent: Node, id: String) -> void:
 		facts.append("+%s %s" % [U.n(a.gain[k]), r.name_of(k)])
 	var cd: float = a.get("tuning", {}).get("cooldown", 0.0)
 	if cd > 0:
-		facts.append("%s sec cooldown" % U.n(cd))
+		facts.append("%s cooldown" % U.span(cd))
 	if not facts.is_empty():
 		UI.label(v, " · ".join(facts), 11, Color("8fb4f0"))
 	var key: String = game.keys.label("bar%d" % at) if at >= 0 else ""
@@ -1537,7 +1531,7 @@ func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 	var worn := []
 	var worn_at := [] ## where each is worn, for its full tooltip
 	if def.get("slot") and not loc.begins_with("e:") and not loc.begins_with("s:"):
-		var pairs := {"oneHand": ["mainHand", "offHand"], "mainHand": ["mainHand", "offHand"] if def.get("damage") else ["mainHand"], "finger": ["finger1", "finger2"], "trinket": ["trinket1", "trinket2"]}
+		var pairs := {"oneHand": ["mainHand", "offHand"], "mainHand": ["mainHand", "offHand"] if def.get("damage") else ["mainHand"], "finger": ["finger1", "finger2"]}
 		for s in pairs.get(def.slot, [def.slot]):
 			var st = game.inventory.get_at("e:" + s)
 			var w = Items.view(st) if st != null else null
