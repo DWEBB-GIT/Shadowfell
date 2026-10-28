@@ -244,7 +244,8 @@ var draughts: int:
 func free_slots() -> int:
 	var n := 0
 	for loc in bag_locations():
-		if get_at(loc) == null:
+		# quivers and the tool pack hold only arrows or tools, so they don't count
+		if get_at(loc) == null and _bag_holds(parse_loc(loc).socket) == null:
 			n += 1
 	return n
 
@@ -493,6 +494,13 @@ func move(from: String, to: String) -> Dictionary:
 		return {"ok": false, "reason": ""}
 	var pf := parse_loc(from)
 	var pt := parse_loc(to)
+	# a bag moves between bag sockets with its contents
+	if pf.type == "socket" and pt.type == "socket" and accepts(to, a) and (b == null or accepts(from, b)):
+		var t = sockets[pt.socket]
+		sockets[pt.socket] = sockets[pf.socket]
+		sockets[pf.socket] = t
+		_changed()
+		return {"ok": true}
 	if pf.type == "socket" and not _bag_empty(pf.socket):
 		return _refuse("Empty that bag before moving it.")
 	if pt.type == "socket" and b and not _bag_empty(pt.socket):
