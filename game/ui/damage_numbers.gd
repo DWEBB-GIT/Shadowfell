@@ -58,17 +58,22 @@ func add(e: Dictionary) -> void:
 	var ratio := 1.0
 	if kind == "miss":
 		text = "Miss"
+	elif e.get("text"):
+		# a word rather than a number: Blocked, Parried
+		text = e.text
+		cls = "block"
 	elif kind == "heal" or kind == "xp":
 		if amount <= 0:
 			return
 		text = "+%s%s" % [U.n(amount), " XP" if kind == "xp" else ""]
 	elif blocked and amount == 0:
-		text = "Block"
+		text = "Blocked"
 		cls = "block"
 	else:
 		text = "%s%s%s" % ["-" if kind == "taken" else "", U.n(amount), "!" if crit else ""]
 		if blocked:
-			text += " (%s blocked)" % U.n(blocked)
+			# a shield took some of it: say so over the number (the log has how much)
+			add({"target": target, "kind": kind, "text": "Blocked", "lift": 0.4})
 		var ref: float = usual_hit(e.get("hand", "main")) if kind == "dealt" else float(e.get("usual", 0))
 		ratio = amount / ref if ref > 0 else 1.0
 	var pulse: bool = crit and ratio >= t.pulseAt
@@ -85,7 +90,7 @@ func add(e: Dictionary) -> void:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(l)
 	var cfg = target.get("cfg")
-	var high := 2.6 if cfg and cfg.get("elite") else 1.8
+	var high: float = (2.6 if cfg and cfg.get("elite") else 1.8) + e.get("lift", 0.0)
 	# spread numbers a little so quick hits do not stack exactly
 	var dx := (items.size() % 3) * 18 - 18
 	var life: float = t.critLife if crit else t.life

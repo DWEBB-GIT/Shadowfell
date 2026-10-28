@@ -542,8 +542,18 @@ func render_tracker() -> void:
 			text += "[font_size=12][color=#ffd23c]  ➜ Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
 			text += _steps(ql.objectives(id))
-		var r := UI.rich(tracker_box, 13, TRACKER_W - 22)
+		var row := UI.hbox(tracker_box, 2)
+		var r := UI.rich(row, 13, TRACKER_W - 40)
+		r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_outline(r)
+		# the cross takes the quest off the list (it stays in the quest log)
+		var off := UI.button(row, "✕", func(): game.quests.set_tracked(id, false), 11)
+		off.flat = true
+		off.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		off.custom_minimum_size = Vector2(18, 18)
+		off.add_theme_color_override("font_color", UI.TEXT_DIM)
+		off.add_theme_color_override("font_hover_color", UI.GOLD)
+		off.tooltip_text = "Stop tracking this quest"
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		r.tooltip_text = "Click: show the way · Right click: open in the quest log"
