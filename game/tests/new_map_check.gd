@@ -2,8 +2,9 @@ extends SceneTree
 ## Dan's new map (data/terrain/new_map, 2026-10-28):
 ##   godot --headless --path . --script res://game/tests/new_map_check.gd
 ## With shadowfell/world/map = "new" the ground comes from the new map, with
-## nothing from the old world on it; the start stands on open ground; the
-## brushes work on it and their layer is the new map's own. Writes nothing to
+## nothing from the old world on it (only the enemies in its own
+## spawns.json); the start stands on open ground; the brushes work on it and
+## their layer is the new map's own. Writes nothing to
 ## the project. Exits 1 on failure.
 
 const Sculpt := preload("res://addons/shadowfell_world/sculpt.gd")
@@ -23,7 +24,9 @@ func _initialize() -> void:
 	check(Terrain.is_new_map(), "the setting picks the new map")
 	check(Terrain.dir == "res://data/terrain/new_map/", "its folder")
 	check(Sculpt.path() == "res://data/terrain/new_map/sculpt.json", "the brushes' layer is the new map's")
-	check(Layout.npcs.is_empty() and Layout.enemies.is_empty() and Layout.props.is_empty() and Layout.houses.is_empty(), "nothing from the old world is placed")
+	check(Layout.npcs.is_empty() and Layout.props.is_empty() and Layout.houses.is_empty(), "nothing from the old world is placed")
+	var placed = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "spawns.json"))
+	check(Layout.enemies.size() == placed.enemySpawns.size(), "only the enemies in its spawns.json")
 	check(WorldMap.pois.is_empty() and Terrain.roads().is_empty(), "no old roads or places")
 	var st: Array = Layout.player_start.position
 	var p := Vector2(st[0], st[1])

@@ -26,12 +26,12 @@ static func ease_(t: float) -> float:
 
 
 ## Imported models (assets/blender/import_models.py) bring their own skeleton
-## and clips (Idle, Walk, Run, Attack, Cast, Sit, Death) instead of parts to
+## and clips (Idle, Walk, Run, Attack, Cast, Sit, Hit, Death) instead of parts to
 ## swing: `anim` plays them from the same calls (play, hit, die, update).
 var anim: AnimationPlayer
 var clip := ""
 ## how fast each imported model's Walk clip plays at full speed
-const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0}
+const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "skeleton": 1.3}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
@@ -108,6 +108,9 @@ func play_off(duration: float, impact := 0.4) -> void:
 
 func hit() -> void:
 	flinch = 1.0
+	# an imported model with a Hit clip flinches with it (never mid-swing)
+	if anim and anim.has_animation("Hit") and action == null and death < 0:
+		_clip("Hit", 1.0, true)
 
 
 ## Hit-stop: hold the whole body still for `t` seconds as a blow lands, so it
@@ -169,6 +172,8 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		off_action.t += dt
 		if off_action.t >= off_action.duration:
 			off_action = null
+	if clip == "Hit" and action == null and anim.is_playing():
+		return # the flinch plays out
 	if action != null:
 		var fresh: bool = action.t == 0.0
 		action.t += dt
