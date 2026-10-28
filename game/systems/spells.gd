@@ -954,17 +954,12 @@ func _execute_scale(spell: Dictionary, enemy) -> float:
 	return s
 
 
-## Empowered Light: a swing that landed echoes with holy damage
-func echo(enemy, hit) -> void:
+## Empowered Light: the holy damage a landed swing adds to itself
+func echo_amount(hit) -> int:
 	var pct: float = trait_.get("echoPercent", 0) if trait_.get("id") == "empoweredLight" else 0.0
-	if not pct or not enemy.alive or hit == null or not (hit.amount > 0):
-		return
-	var n := maxi(1, U.jround(hit.amount * pct / 100.0))
-	enemy.hurt(n, {"stagger": 0.0, "quiet": true})
-	game.events.emit("damageNumber", {"target": enemy, "amount": n, "crit": false, "kind": "dealt", "hand": "off"})
-	game.events.emit("spellFlash", {"position": enemy.position, "school": "holy"})
-	if enemy.dead:
-		game.combat.on_enemy_defeated(enemy)
+	if not pct or hit == null or not (hit.amount > 0):
+		return 0
+	return maxi(1, U.jround(hit.amount * pct / 100.0))
 
 
 # ------------------------------------------------------------- Shadow

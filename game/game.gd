@@ -657,7 +657,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
 		return null
-	if keys_move.x or keys_move.z or player.dead:
+	if keys_move.x or keys_move.z or (player.dead and not player.ghost):
 		move_to = null
 		return null
 	var p := player.position
@@ -830,11 +830,23 @@ func _handle_input(dt: float):
 		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
 		_cursor_for(hover)
 		var clicked := input.consume_click()
-		if input.consume_right_click() or clicked:
+		var right := input.consume_right_click()
+		if right or clicked:
+			# click to move works for a spirit too: the walk button walks
+			# there, or up to your body and then acts
+			var walk: bool = settings.get_value("clickToMove") and ((clicked and mouse_aim) or (right and not mouse_aim))
+			move_to = null
 			if hover != null:
-				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), false)
+				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), walk)
+			elif walk and input.mouse.onCanvas:
+				var at = _aim_point()
+				if at != null:
+					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left" if mouse_aim else "right"}
+					fx.move_marker(at.x, at.z)
 		var gm := input.move_axis()
-		return {"move": {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}, "aim": null, "actions": {}}
+		var gkeys: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}
+		var gcm = _click_move(gkeys, dt)
+		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}}
 	if player.dead:
 		return null
 	if keys.pressed("sheathe"):

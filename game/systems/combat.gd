@@ -41,7 +41,14 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	var hit := Stats.compute_hit(r, stats.stat_block, Stats.enemy_block(enemy.cfg), {"base": base, "mult": mult * m.mult * (sp.damage_scale if sp else 1.0) * game.afterlife.damage_scale_against(enemy), "critBonus": m.critBonus, "forceCrit": m.forceCrit, "canBlock": hand != "ranged"})
 	if sp:
 		sp.after_hit(hit)
+		# Empowered Light: its holy echo joins the swing's own number, so one
+		# blow shows one number (Dan, 2026-10-28)
+		if o.get("echo"):
+			hit["holy"] = sp.echo_amount(hit)
+			hit.amount += hit.holy
 	var visuals := func():
+		if hit.get("holy"):
+			events.emit("spellFlash", {"position": enemy.position, "school": "holy"})
 		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main"})
 		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or swing})
 	if show > 0:
@@ -192,15 +199,13 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 		events.emit("playerMiss", {})
 		return null
 	var off := hand == "off"
-	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show})
+	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show, "echo": true})
 	if hit.get("miss"):
 		return target
 	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand})
-	events.emit("log", {"text": "%s the %s for %d.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, _crit_text(hit)], "kind": "hit"})
+	events.emit("log", {"text": "%s the %s for %d%s.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, " (%d holy)" % hit.holy if hit.get("holy") else "", _crit_text(hit)], "kind": "hit"})
 	if target.dead:
 		on_enemy_defeated(target)
-	elif game.spells:
-		game.spells.echo(target, hit) # Empowered Light
 	return target
 
 

@@ -363,7 +363,12 @@ func markers() -> Array:
 	for n in game.npcs.list:
 		var status: String = quests.marker_for(n.id)
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
-		out.append({"x": n.position.x, "z": n.position.z, "kind": quest if quest != "" else "npc", "icon": n.def.get("mapIcon"), "label": n.name})
+		# a trade (the inn's tankard) shows even while its keeper has a quest:
+		# the quest mark then sits just above it
+		if quest == "" or n.def.get("mapIcon"):
+			out.append({"x": n.position.x, "z": n.position.z, "kind": "npc", "icon": n.def.get("mapIcon"), "label": n.name})
+		if quest != "":
+			out.append({"x": n.position.x, "z": n.position.z, "kind": quest, "icon": n.def.get("mapIcon"), "label": n.name})
 	# a miner sees where the live veins glint (WoW's Find Minerals)
 	if game.skills.has("mining"):
 		for v in game.mining.veins():
@@ -552,6 +557,8 @@ func _draw_map() -> void:
 		var glyph := "!" if m.kind == "available" else "?"
 		var colour := "#a8a8a8" if m.kind == "active" else "#ffd23c"
 		if s.distance_to(Vector2(R, R)) <= R - 8:
+			if m.get("icon"):
+				s.y -= 11
 			if not _art(g, "quest_" + m.kind, s.x, s.y, 16):
 				_glyph(g, s.x, s.y, glyph, colour, 15)
 		else:

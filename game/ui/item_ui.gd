@@ -583,7 +583,7 @@ func _show_char_tab() -> void:
 
 const SLOT_PX := 52 ## the paper doll's gear slots
 const FIG_W := 190 ## the figure's box, about 3/5 of its old width
-const STATS_W := 200 ## the scrolling numbers beside the paper doll
+const STATS_W := 180 ## the scrolling numbers beside the paper doll
 var _stats_scroll := 0
 
 
@@ -592,7 +592,7 @@ func _equip_col(parent: Node, inv, where: String, px := SLOT_PX) -> void:
 		if s.col == where:
 			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), px, s.label)
 			sl.placeholder_size = 9
-			# both rings and both trinkets share one outline
+			# both rings share one outline
 			sl.ghost = Icons.art("slots", "slot_" + s.id.rstrip("12"))
 
 
@@ -606,15 +606,9 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	_equip_col(left, inv, "left")
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
-	fig.custom_minimum_size = Vector2(FIG_W, 5 * SLOT_PX + 4 * 3) # as tall as a column of slots
+	fig.custom_minimum_size = Vector2(FIG_W, 6 * SLOT_PX + 5 * 3) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
-	# rings and trinkets sit on the figure, in a row along its feet
-	var jewels := UI.hbox(fig, 4)
-	jewels.alignment = BoxContainer.ALIGNMENT_CENTER
-	jewels.size_flags_vertical = Control.SIZE_SHRINK_END
-	jewels.add_theme_constant_override("separation", 4)
-	_equip_col(jewels, inv, "fig", 44)
 	var right := UI.vbox(body, 3)
 	_equip_col(right, inv, "right")
 	var bottom := UI.hbox(gear, 4)
@@ -704,13 +698,16 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 			head.add_theme_font_override("font", UI.bold)
 			UI.rule(grid, Color(UI.GOLD, 0.35))
 			continue
-		var cell := HBoxContainer.new()
+		# a long value (what you can wear) goes under its name, so it never
+		# widens the column (Dan, 2026-10-28: keep the numbers compact)
+		var cell: BoxContainer = VBoxContainer.new() if r[1].length() > 16 else HBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var l := UI.label(cell, r[0], 13, UI.TEXT_DIM)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var value := UI.rich(cell, 13)
-		value.autowrap_mode = TextServer.AUTOWRAP_OFF
+		value.autowrap_mode = TextServer.AUTOWRAP_OFF if cell is HBoxContainer else TextServer.AUTOWRAP_WORD_SMART
 		# one total per stat: level, class and gear are already in it (Dan, 2026-10-23)
 		UI.set_rich(value, "[right][color=#efe2c0]%s[/color][/right]" % UI.esc(r[1]))
 		var v := UI.vbox(null, 1)
@@ -720,8 +717,6 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		grid.add_child(v)
 		if r.size() > 2 and r[2] != "":
 			tip_on(v, r[2])
-	var hint := UI.hint(main)
-	hint.text = "A: pick up / place   X: equip or use   Y: drop   B: back" if hud.pad_mode else "Drag items between your bags and here. Right-click to equip. Drag out of a window to drop."
 
 
 ## a reputation bar with its standing written over it
@@ -1220,7 +1215,7 @@ func _spell_card(parent: Node, id: String) -> void:
 		facts.append("+%s %s" % [U.n(a.gain[k]), r.name_of(k)])
 	var cd: float = a.get("tuning", {}).get("cooldown", 0.0)
 	if cd > 0:
-		facts.append("%s sec cooldown" % U.n(cd))
+		facts.append("%s cooldown" % U.span(cd))
 	if not facts.is_empty():
 		UI.label(v, " · ".join(facts), 11, Color("8fb4f0"))
 	var key: String = game.keys.label("bar%d" % at) if at >= 0 else ""
@@ -1537,7 +1532,7 @@ func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 	var worn := []
 	var worn_at := [] ## where each is worn, for its full tooltip
 	if def.get("slot") and not loc.begins_with("e:") and not loc.begins_with("s:"):
-		var pairs := {"oneHand": ["mainHand", "offHand"], "mainHand": ["mainHand", "offHand"] if def.get("damage") else ["mainHand"], "finger": ["finger1", "finger2"], "trinket": ["trinket1", "trinket2"]}
+		var pairs := {"oneHand": ["mainHand", "offHand"], "mainHand": ["mainHand", "offHand"] if def.get("damage") else ["mainHand"], "finger": ["finger1", "finger2"]}
 		for s in pairs.get(def.slot, [def.slot]):
 			var st = game.inventory.get_at("e:" + s)
 			var w = Items.view(st) if st != null else null

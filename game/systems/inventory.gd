@@ -824,6 +824,20 @@ func apply(data: Dictionary) -> void:
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = clone(data.equipment.get(s.id))
+	# a slot the panel no longer has (the trinkets, 2026-10-28): what was
+	# worn there goes back in the bags, or an extra backpack slot if full
+	for k in data.equipment:
+		var worn = data.equipment[k]
+		if worn and not equipment.has(k):
+			var loc = null
+			for l in bag_locations():
+				if get_at(l) == null and _bag_holds(parse_loc(l).socket) == null:
+					loc = l
+					break
+			if loc:
+				_put(loc, clone(worn))
+			else:
+				back.append(clone(worn))
 	ammo_choice = data.get("ammo") if DB.items.has(data.get("ammo", "")) else null
 	if not data.get("granted", []).has("kite_shield"):
 		if not equipment.offHand:
