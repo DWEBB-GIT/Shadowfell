@@ -1,5 +1,5 @@
 {
-  "_about": "`attitude`: \"aggressive\" enemies attack anyone who comes within `detection`; \"passive\" ones (yellow names, like the wild boar) mind their own business until struck. An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank). `base`: a level variant (WoW's one creature entry per zone) names the enemy it copies and states only what differs. `maxLevel`: each spawn rolls its level from `level` to `maxLevel`. `worldDrops: false`: it drops nothing from the level's world-drop band (beasts).",
+  "_about": "`attitude`: \"aggressive\" enemies attack anyone who comes within `detection`; \"passive\" ones (yellow names, like the wild boar) mind their own business until struck. An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank). `base`: a level variant (WoW's one creature entry per zone) names the enemy it copies and states only what differs. `maxLevel`: each spawn rolls its level from `level` to `maxLevel`. `worldDrops: false`: it drops nothing from the level's world-drop band (beasts). An `imported` block swaps in an imported, textured model and the fields that go with it (e.g. { \"model\": \"rat\", \"scale\": 1.5 }) while CONFIG.models.imported is on (game/core/db.gd); the entry's own fields are the code-built version to switch back to.",
   "leashDistance": 18,
   "enemies": [
     {
@@ -477,6 +477,29 @@
       "worldDrops": false
     },
     {
+      "id": "farm_hen",
+      "name": "Hen",
+      "attitude": "passive",
+      "lawful": "livestock",
+      "model": "chicken",
+      "type": "fodder",
+      "level": 1,
+      "crit": 0,
+      "windup": 0.4,
+      "detection": 3,
+      "meleeRange": 0.7,
+      "speed": 2.2,
+      "radius": 0.25,
+      "xp": 0,
+      "coins": 0,
+      "elite": false,
+      "roam": 4,
+      "barHeight": 0.7,
+      "meleeAnim": "bite",
+      "respawn": 240,
+      "worldDrops": false
+    },
+    {
       "id": "reeves_hound",
       "name": "Thatch Corrow, the Reeve's Hound",
       "attitude": "aggressive",
@@ -521,7 +544,8 @@
       "barHeight": 0.8,
       "meleeAnim": "bite",
       "respawn": 20,
-      "worldDrops": false
+      "worldDrops": false,
+      "imported": { "model": "rat", "scale": 1.5, "tint": null, "barHeight": 0.6 }
     },
     {
       "id": "hedge_fox",

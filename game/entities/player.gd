@@ -112,9 +112,12 @@ func show_equipment(equipment: Dictionary) -> void:
 		if weapon_part and weapon_part != default_weapon_mesh:
 			_free(weapon_part)
 		var id = equipment.mainHand.id if equipment.get("mainHand") else null
-		default_weapon_mesh.visible = id == "worn_longsword"
+		# the worn longsword is built into the warden model, unless an
+		# imported model stands in for it (DB.with_imported)
+		var built_in: bool = id == "worn_longsword" and Items.get_def(id).get("model") == "worn_sword"
+		default_weapon_mesh.visible = built_in
 		weapon_part = default_weapon_mesh
-		if id and id != "worn_longsword":
+		if id and not built_in:
 			var blade := Assets.instance(Items.get_def(id).get("model", id))
 			blade.transform = default_weapon_mesh.transform
 			arm.add_child(blade)

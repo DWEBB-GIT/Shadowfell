@@ -9,6 +9,10 @@ extends RefCounted
 ## Engine tuning: the numbers that shape how the game plays and looks.
 ## Content lives in /data. Kept as in src/config.js.
 const CONFIG := {
+	# true: entries with an `imported` block (enemies.json, items.json) use the
+	# imported, textured models in it (assets/blender/import_models.py);
+	# false: every entry keeps its own code-built model, as before
+	"models": {"imported": true},
 	"player": {"archetype": "warden", "speed": 5.6, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
@@ -148,7 +152,7 @@ static func setup(data) -> void:
 	gems = f.get("gems", {})
 	Scaling.socket_share = forge.get("sockets", {}).get("share", 0.0)
 	items.clear()
-	raw_items = data.table("items")
+	raw_items = with_imported(data.table("items"))
 	for id in raw_items:
 		items[id] = Scaling.scaled_item(raw_items[id])
 	# every gem type in every quality is an item (gems.json)
@@ -159,7 +163,7 @@ static func setup(data) -> void:
 	archetypes = data.table("archetypes")
 	abilities = data.table("abilities")
 	spell_fx = f.get("spell_fx", {}).get("spells", {})
-	enemies = resolve_enemies(data.table("enemies"))
+	enemies = with_imported(resolve_enemies(data.table("enemies")))
 	loot_tables = data.table("lootTables")
 	world_drops = data.table("worldDrops").values()
 	rarities = data.table("rarities")
@@ -266,6 +270,22 @@ static func examine_text(id: String) -> String:
 ## A level variant (as WoW has one creature entry per zone: a level 2 ghoul by
 ## the road, a level 12 one in the barrows) names its `base` enemy and states
 ## only what differs. Everything else comes from the base, bar a unique drop.
+## An entry's `imported` block swaps in an imported model (and the fields that
+## go with it, like `scale`) while CONFIG.models.imported is on. The entry's
+## own fields are the code-built version to switch back to.
+static func with_imported(table: Dictionary) -> Dictionary:
+	if not CONFIG.models.imported:
+		return table
+	var out := {}
+	for id in table:
+		var e: Dictionary = table[id]
+		if e.get("imported") is Dictionary:
+			e = e.duplicate(true)
+			e.merge(e.imported, true)
+		out[id] = e
+	return out
+
+
 static func resolve_enemies(raw: Dictionary) -> Dictionary:
 	var out := {}
 	for id in raw:

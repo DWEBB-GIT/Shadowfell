@@ -84,6 +84,7 @@
       "stack": 1,
       "price": 12,
       "model": "worn_sword",
+      "imported": { "model": "stylized_sword" },
       "icon": "worn_sword",
       "description": "Your own blade. Nicked, honest and in need of a whetstone."
     },
@@ -565,6 +566,7 @@
       "stack": 1,
       "price": 14,
       "model": "dirk",
+      "imported": { "model": "stylized_dagger" },
       "icon": "dirk",
       "description": "A long knife with more rust than edge. Quick in the off hand."
     },

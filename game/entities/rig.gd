@@ -24,9 +24,27 @@ static func ease_(t: float) -> float:
 	return t * t * (3 - 2 * t)
 
 
+## Imported models (assets/blender/import_models.py) bring their own skeleton
+## and clips (Idle, Walk, Attack, Death) instead of parts to swing: `anim`
+## plays them from the same calls (play, hit, die, update).
+var anim: AnimationPlayer
+var clip := ""
+## how fast each imported model's Walk clip plays at full speed
+const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0}
+
+
 func _init(m: Node3D, s := "warden") -> void:
 	model = m
 	style = s
+	anim = m.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if anim and not anim.has_animation("Idle"):
+		anim = null
+	if anim:
+		for n in ["Idle", "Walk"]:
+			if anim.has_animation(n):
+				anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+		_clip("Idle", 1.0)
+		anim.seek(randf() * anim.get_animation("Idle").length, true)
 	for name in PART_NAMES:
 		var obj := m.find_child(name, true, false) as Node3D
 		if obj:
@@ -57,6 +75,7 @@ func die() -> void:
 
 func revive() -> void:
 	death = -1.0
+	clip = ""
 	model.rotation.x = 0
 	model.rotation.z = 0
 	model.position.y = 0
@@ -73,8 +92,44 @@ func _rot(name: String, axis: int, add: float) -> void:
 		parts[name].rotation[axis] += add
 
 
+func _clip(name: String, speed: float, restart := false) -> void:
+	if not anim.has_animation(name):
+		name = "Idle"
+	if name != clip or restart:
+		anim.play(name, 0.0 if restart else 0.15)
+		if restart:
+			anim.seek(0, true)
+		clip = name
+	anim.speed_scale = speed
+
+
+func _update_anim(dt: float, speed01: float) -> void:
+	move += (speed01 - move) * minf(1, dt * 10)
+	if death >= 0:
+		death += dt
+		_clip("Death", 1.0)
+		# the body sinks into the ground after a while, as the built models do
+		model.position.y = -minf(1.2, (death - 2.5) * 0.4) if death > 2.5 else 0.0
+		return
+	if action != null:
+		var fresh: bool = action.t == 0.0
+		action.t += dt
+		var length := anim.get_animation("Attack").length if anim.has_animation("Attack") else 1.0
+		_clip("Attack", length / maxf(0.05, action.duration), fresh)
+		if action.t >= action.duration:
+			action = null
+		return
+	if move > 0.12:
+		_clip("Walk", maxf(0.3, move) * WALK_RATE.get(style, 1.0))
+	else:
+		_clip("Idle", 1.0)
+
+
 func update(dt: float, speed01: float) -> void:
 	time += dt
+	if anim:
+		_update_anim(dt, speed01)
+		return
 	move += (speed01 - move) * minf(1, dt * 10)
 	var stride := 6.0 if style == "brute" else 7.0 if style == "ghoul" else 13.0 if style == "hound" else 9.0
 	phase += dt * stride * maxf(0.2, move)
