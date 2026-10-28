@@ -47,15 +47,19 @@ const CONFIG := {
 		# hit-stop on a landed melee blow: both bodies hold still this long,
 		# more for slower (heavier) weapons, more again on a crit
 		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
-	"fog": {"color": Color("3a4244"), "near": 14.0, "far": 40.0},
-	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 9.0, "fogFar": 32.0, "light": 0.68},
+	"fog": {"color": Color("3a4244"), "near": 24.0, "far": 50.0},
+	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 14.0, "fogFar": 38.0, "light": 0.68},
 	"camera": {
 		"offset": Vector3(0, 11, 10), "lookAhead": 0.5, "zoomMin": 0.6, "zoomMax": 1.35, "zoomStep": 0.08,
-		"indoorZoom": 0.22, "fov": 45.0,
+		"indoorZoom": 0.22, "fov": 35.0,
 		# the camera's angle follows the zoom (Settings: Classic camera keeps
 		# `offset`'s one angle): pitch in degrees above the ground at zoomMin,
 		# at zoom 1 and at zoomMax; distance is `offset`'s length times this
-		"tilt": {"pitchNear": 40.0, "pitchMid": 52.0, "pitchFar": 60.0, "distance": 1.05, "zoomMax": 1.6}, "followSharpness": 8.0, "renderScale": 0.62,
+		"tilt": {"pitchNear": 46.0, "pitchMid": 56.0, "pitchFar": 62.0, "distance": 1.5, "zoomMax": 1.6}, "followSharpness": 8.0, "renderScale": 0.62,
+		# framed like Diablo 4 and Lost Ark: locked on the Warden, high, well
+		# back and narrow, so the ground reads flat and far all round; the view
+		# is centred `frame` metres north of them, just clear of the action bar
+		"frame": 0.5,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
 	"targeting": {"range": 26.0, "dropRange": 34.0, "clickRadius": 46.0, "softArc": 60.0, "softAimRadius": 2.5, "screenMargin": 0.03},

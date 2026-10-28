@@ -19,7 +19,7 @@ var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
-var zoom := 1.0 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
+var zoom := 1.15 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
 ## the mouse aims and WASD moves. Left click attacks, talks and loots; hold it
@@ -232,7 +232,7 @@ func _init_renderer() -> void:
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 40.0
+	sun.directional_shadow_max_distance = 55.0
 	sun.shadow_opacity = 0.92
 	sun.shadow_blur = 1.5
 	add_child(sun)
@@ -1077,7 +1077,7 @@ func _place_camera(dt := 0.0) -> void:
 	zoom = minf(zoom, _zoom_max())
 	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
-	var t := camera_target
+	var t := camera_target + Vector3(0, 0, -DB.CONFIG.camera.frame * z)
 	var sx := 0.0
 	var sy := 0.0
 	if shake > 0.001:
