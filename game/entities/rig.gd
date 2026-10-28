@@ -31,7 +31,7 @@ static func ease_(t: float) -> float:
 var anim: AnimationPlayer
 var clip := ""
 ## how fast each imported model's Walk clip plays at full speed
-const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0}
+const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 1.0}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
