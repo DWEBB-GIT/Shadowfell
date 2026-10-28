@@ -31,6 +31,8 @@ var _since_draw := 0.0
 var kind_pick: OptionButton
 var what_pick: OptionButton
 var place_button: Button
+var map_pick: OptionButton
+const MAPS := ["act1", "new"]
 
 
 func _enter_tree() -> void:
@@ -42,6 +44,23 @@ func _enter_tree() -> void:
 	open.tooltip_text = "Opens world_editor.tscn in the 3D view with everything from world.json on the real ground"
 	open.pressed.connect(_open_world)
 	bar.add_child(open)
+	# which map: the Act 1 world, or Dan's new map (its ground only, for now)
+	if not ProjectSettings.has_setting(Terrain.MAP_SETTING):
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
+	ProjectSettings.set_initial_value(Terrain.MAP_SETTING, "act1")
+	ProjectSettings.add_property_info({"name": Terrain.MAP_SETTING, "type": TYPE_STRING, "hint": PROPERTY_HINT_ENUM, "hint_string": ",".join(MAPS)})
+	var mrow := HBoxContainer.new()
+	var ml := Label.new()
+	ml.text = "Map"
+	mrow.add_child(ml)
+	map_pick = OptionButton.new()
+	map_pick.add_item("Act 1 world")
+	map_pick.add_item("New map (2026-10-28)")
+	map_pick.select(MAPS.find(Terrain.chosen_map()))
+	map_pick.tooltip_text = "Which map the World editor opens and the game plays on (Project Settings > shadowfell/world/map). The new map has only its ground so far."
+	map_pick.item_selected.connect(_on_map)
+	mrow.add_child(map_pick)
+	bar.add_child(mrow)
 	var help := Label.new()
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size.x = 200
@@ -95,6 +114,24 @@ func _exit_tree() -> void:
 	if bar:
 		remove_control_from_docks(bar)
 		bar.queue_free()
+
+
+func _on_map(i: int) -> void:
+	if sculpt and sculpt.dirty:
+		push_warning("World: save (Ctrl+S) or undo the sculpting first; the map was not changed")
+		map_pick.select(MAPS.find(Terrain.chosen_map()))
+		return
+	ProjectSettings.set_setting(Terrain.MAP_SETTING, MAPS[i])
+	ProjectSettings.save()
+	Terrain.use_map(MAPS[i])
+	DB.ready = false
+	sculpt = null # the brushes' layer belongs to the map
+	var root := EditorInterface.get_edited_scene_root()
+	if root and root.get_script() == WorldEditor:
+		root.rebuild()
+		sculpt = Sculpt.new()
+		root.sculpt = sculpt
+	print("World: now on the %s map" % ("new" if MAPS[i] == "new" else "Act 1"))
 
 
 func _open_world() -> void:

@@ -215,11 +215,43 @@ static func setup(data) -> void:
 		if abilities[id].has("kind"):
 			spells[id] = abilities[id]
 	world_map = f.get("world_map", {})
-	water = JSON.parse_string(FileAccess.get_file_as_string("res://data/terrain/water.json")) if FileAccess.file_exists("res://data/terrain/water.json") else {}
+	Terrain.use_map(Terrain.chosen_map())
+	if Terrain.is_new_map():
+		# Dan's new map has only its ground so far: nothing from the old world
+		# is put on it (he marks the towns and places things later)
+		world_map = {}
+		world = new_map_world(world)
+		scenery = new_map_scenery(scenery)
+	var wpath := Terrain.dir + "water.json"
+	water = JSON.parse_string(FileAccess.get_file_as_string(wpath)) if FileAccess.file_exists(wpath) else {}
 	Terrain.setup(world)
 	Layout.setup(world, scenery)
 	WorldMap.setup()
 	ready = true
+
+
+## The world as the new map has it: the old world's records with nothing
+## placed (no NPCs, enemies, loot, buildings or roads), starting where
+## data/terrain/new_map/map.json says.
+static func new_map_world(w: Dictionary) -> Dictionary:
+	var out := w.duplicate()
+	for k in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "signposts", "gates", "townWalls",
+			"houses", "stations", "buildings", "pads", "water", "obscured", "dangerZones", "roads"]:
+		out[k] = []
+	# one region for the lot until Dan marks the zones on the map
+	out.regions = [{"id": "new_map", "name": "Unmarked land", "levels": "1"}]
+	var m = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "map.json"))
+	if m is Dictionary:
+		out.playerStart = {"position": m.start, "facing": 180}
+		out.bounds = {"minX": m.x0, "maxX": m.x0 + m.sizeX, "minZ": m.z0, "maxZ": m.z0 + m.sizeZ}
+	return out
+
+
+static func new_map_scenery(s: Dictionary) -> Dictionary:
+	var out := s.duplicate()
+	for k in ["props", "clearings", "lights", "witchlights", "motes", "fairyRings"]:
+		out[k] = []
+	return out
 
 
 ## Make sure the database is loaded (for tools and tests that run without the game).

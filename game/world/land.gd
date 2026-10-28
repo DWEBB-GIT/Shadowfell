@@ -174,16 +174,25 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 			if h < 0.3:
 				sea = true
 			var g := Terrain.grid(roundi((x - o.x) / Terrain.cell()), roundi((z - o.y) / Terrain.cell()))
-			var pal: Array = GROUND.get(g[2], GROUND[Terrain.MEADOW])
-			# open ground a shade lighter, high ground darker: where you can walk
-			# reads at a glance from the iso camera (Dan's readability rule)
-			var c := Color(pal[0]).lightened(0.07).lerp(Color(pal[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
-			c = c.lerp(c.darkened(0.25), rand.randf() * 0.6)
-			if rand.randf() < 0.1:
-				c = c.lerp(Color("5a4a36"), 0.35)
-			# steep high ground shows its rock, the tops their snow
 			var slope := absf(Terrain.base_height(x + 2, z) - Terrain.base_height(x - 2, z)) + absf(Terrain.base_height(x, z + 2) - Terrain.base_height(x, z - 2))
-			c = c.lerp(rock_col, clampf((slope - 2.5) / 4.0, 0.0, 0.9))
+			var painted = Terrain.ground_colour(x, z)
+			var c: Color
+			if painted != null:
+				# the new map: Dan's painted ground, darker where it cannot be walked
+				# and on steep sides, so open ground still reads at a glance
+				c = (painted as Color).lerp((painted as Color).darkened(0.18), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
+				c = c.lerp(c.darkened(0.1), rand.randf() * 0.5)
+				c = c.darkened(clampf((slope - 2.5) / 12.0, 0.0, 0.2))
+			else:
+				var pal: Array = GROUND.get(g[2], GROUND[Terrain.MEADOW])
+				# open ground a shade lighter, high ground darker: where you can walk
+				# reads at a glance from the iso camera (Dan's readability rule)
+				c = Color(pal[0]).lightened(0.07).lerp(Color(pal[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
+				c = c.lerp(c.darkened(0.25), rand.randf() * 0.6)
+				if rand.randf() < 0.1:
+					c = c.lerp(Color("5a4a36"), 0.35)
+				# steep high ground shows its rock, the tops their snow
+				c = c.lerp(rock_col, clampf((slope - 2.5) / 4.0, 0.0, 0.9))
 			if h > 75 and g[2] != Terrain.DESERT and g[2] != Terrain.ASH:
 				c = c.lerp(snow_col, clampf((h - 75) / 20.0, 0.0, 1.0))
 			var road := Terrain.road_edge(x, z)
@@ -304,6 +313,8 @@ static func is_clear(x: float, z: float) -> bool:
 ## Every tree in a chunk as {model, x, z, s (scale), r (turn), solid}: the
 ## same list every time for the same chunk. Trees on open ground are solid.
 static func chunk_trees(k: Vector2i) -> Array:
+	if Terrain.is_new_map():
+		return [] # Dan places the new map's trees himself
 	var rand := RandomNumberGenerator.new()
 	rand.seed = hash(Vector3i(k.x, k.y, 7))
 	var out := []
@@ -349,6 +360,8 @@ static func grove(x: float, z: float) -> float:
 
 ## Big rocks on bare high ground (never solid: the high ground blocks anyway).
 static func chunk_rocks(k: Vector2i) -> Array:
+	if Terrain.is_new_map():
+		return []
 	var rand := RandomNumberGenerator.new()
 	rand.seed = hash(Vector3i(k.x, k.y, 11))
 	var out := []

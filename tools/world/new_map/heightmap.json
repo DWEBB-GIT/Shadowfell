@@ -1,0 +1,8 @@
+{
+  "_about": "heightmap.png: black = min, white = max, in metres above the sea (0). metresPerPixel: the map's scale.",
+  "min": -19.0,
+  "max": 53.0,
+  "metresPerPixel": 2.0,
+  "width": 1024,
+  "height": 1536
+}
