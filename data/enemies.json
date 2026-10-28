@@ -545,7 +545,12 @@
       "meleeAnim": "bite",
       "respawn": 20,
       "worldDrops": false,
-      "imported": { "model": "rat", "scale": 1.5, "tint": null, "barHeight": 0.6 }
+      "imported": {
+        "model": "rat",
+        "scale": 1.5,
+        "tint": null,
+        "barHeight": 0.6
+      }
     },
     {
       "id": "hedge_fox",
