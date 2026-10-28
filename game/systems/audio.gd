@@ -60,6 +60,7 @@ var cache := {} ## recipe key -> AudioStreamWAV
 var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
 var click_player: AudioStreamPlayer
+var last_sfx_frame := -1 ## frame a specific sound last played
 var rumble: AudioStreamPlayer
 var rumble_level := 0.0
 var next_crow := 6.0
@@ -267,11 +268,20 @@ func sfx(id: String, level := 1.0) -> void:
 	p.bus = "Effects"
 	p.volume_db = linear_to_db(level)
 	p.play()
+	if not id.begins_with("step_"):
+		last_sfx_frame = Engine.get_process_frames()
 
 
 ## Every button's click (game.gd hooks each one as it enters the tree). It
 ## has its own player, so the title screen clicks before the buses start.
+## Deferred, and skipped when the button's own handler played a sound.
 func click() -> void:
+	_click.call_deferred(Engine.get_process_frames())
+
+
+func _click(frame: int) -> void:
+	if last_sfx_frame == frame:
+		return
 	if click_player == null:
 		click_player = AudioStreamPlayer.new()
 		click_player.stream = _stream(SFX.click[0])
@@ -336,6 +346,7 @@ func _play(key: String, make: Callable, level := 1.0, bus := "Effects") -> void:
 	p.bus = bus
 	p.volume_db = linear_to_db(level)
 	p.play()
+	last_sfx_frame = Engine.get_process_frames()
 
 
 func _variant() -> int:
