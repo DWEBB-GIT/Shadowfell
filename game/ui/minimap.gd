@@ -14,6 +14,9 @@ extends Control
 const SIZE := 168.0 ## pixels across
 const PX := 3.0 ## picture pixels per metre
 const ZOOMS := [2.2, 3.2, 4.6] ## screen pixels per metre
+## The new map's minimap shows Dan's painting (2 m a pixel) itself, so it
+## stands further back: zoomed in as close as the old map it is a blur.
+const PAINTING_ZOOMS := [0.35, 0.6, 1.0]
 const PROP_STYLE := {
 	"watch_post": ["rect", "#8a6a44", 4.5],
 	"forge": ["rect", "#8a6a44", 3],
@@ -445,17 +448,23 @@ func _draw_map() -> void:
 		map.draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2, Color.BLACK)
 		return
 	var p: Vector3 = game.player.position
-	if picture == null or Vector2(p.x, p.z).distance_to(_painted_at) > REPAINT:
+	var art := Terrain.map_picture()
+	if art == null and (picture == null or Vector2(p.x, p.z).distance_to(_painted_at) > REPAINT):
 		_paint(Vector2(p.x, p.z))
 	var g := Canvas2D.new(map)
-	var scale: float = ZOOMS[zoom]
+	var scale: float = (ZOOMS if art == null else PAINTING_ZOOMS)[zoom]
 	var R := SIZE / 2
-	g.fill_style = "#000"
+	g.fill_style = "#000" if art == null else "#0a3c6e"
 	g.fill_rect(0, 0, SIZE, SIZE)
-	# the painted world around the Warden
-	var k := scale / PX
-	var ps := picture.get_size()
-	g.draw_image(picture, R - (p.x - origin.x) * scale, R - (p.z - origin.y) * scale, ps.x * k, ps.y * k)
+	if art:
+		# the new map: Dan's painting, drawn straight in at this zoom
+		var r := Terrain.map_rect()
+		g.draw_image(art, R + (r.position.x - p.x) * scale, R + (r.position.y - p.z) * scale, r.size.x * scale, r.size.y * scale)
+	else:
+		# the painted world around the Warden
+		var k := scale / PX
+		var ps := picture.get_size()
+		g.draw_image(picture, R - (p.x - origin.x) * scale, R - (p.z - origin.y) * scale, ps.x * k, ps.y * k)
 	var to_map := func(x: float, z: float) -> Vector2: return Vector2(R + (x - p.x) * scale, R + (z - p.z) * scale)
 	var all := markers()
 	# objective areas first, under everything else
@@ -569,6 +578,12 @@ func _draw_map() -> void:
 	# the Warden, at the centre, pointing the way they face
 	g.save()
 	g.translate(R, R)
+	if art:
+		# a dark disc under the arrow: it is lost on a busy painting otherwise
+		g.begin_path()
+		g.arc(0, 0, 10, 0, TAU)
+		g.fill_style = "rgba(0, 0, 0, 0.55)"
+		g.fill()
 	g.rotate(PI - game.player.facing)
 	var arrow := Icons.art("map", "player")
 	if arrow:

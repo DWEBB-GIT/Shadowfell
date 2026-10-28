@@ -79,6 +79,12 @@ func open() -> void:
 	queue_redraw()
 
 
+## Redrawn while open: you walk on with it up, and the ring round you pulses.
+func _process(_dt: float) -> void:
+	if visible:
+		queue_redraw()
+
+
 func layout() -> void:
 	var vp := get_viewport_rect().size
 	size = (vp * Vector2(0.84, 0.86)).round()
@@ -155,6 +161,12 @@ func _draw() -> void:
 	var f: float = game.player.facing
 	var dir := Vector2(sin(f), cos(f))
 	var side := Vector2(-dir.y, dir.x)
+	# a pulsing ring and a dark disc, so you stand out on Dan's busy painting
+	var beat := fmod(Time.get_ticks_msec() / 1200.0, 1.0)
+	draw_arc(s, 12 + beat * 18, 0, TAU, 32, Color(1, 0.88, 0.5, 1 - beat), 2.0, true)
+	draw_circle(s, 12, Color(0, 0, 0, 0.55))
+	dir *= 1.4
+	side *= 1.4
 	draw_colored_polygon(PackedVector2Array([s + dir * 10, s - dir * 6 + side * 6, s - dir * 3, s - dir * 6 - side * 6]), Color("ffe080"))
 	# frame and help
 	draw_rect(Rect2(Vector2.ZERO, size), UI.BORDER, false, 2.0)
