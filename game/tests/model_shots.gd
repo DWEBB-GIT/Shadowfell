@@ -8,7 +8,7 @@ extends SceneTree
 ## code-built ones they stand in for.
 
 const MODELS := [["rat", 3.0], ["chicken", 2.5], ["base_male", 0.75]]
-const CLIPS := ["Idle", "Walk", "Attack", "Death"]
+const CLIPS := ["Idle", "Walk", "Run", "Attack", "Cast", "Sit", "Death"]
 const SHOT_TIMES := [0.0, 0.25, 0.5, 0.75]
 
 var out_dir := "."
@@ -34,17 +34,19 @@ func _initialize() -> void:
 	root.add_child(sun)
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 7.5
+	cam.size = 9.0
 	root.add_child(cam)
 	cam.look_at_from_position(Vector3(1.6, 6, 7), Vector3(1.6, 0.2, 0.4))
 	for r in MODELS.size():
 		for c in CLIPS.size():
 			var m := Assets.instance(MODELS[r][0])
 			m.scale *= MODELS[r][1]
-			m.position = Vector3(c * 1.5 - 0.6, 0, r * 1.7 - 1.7)
+			m.position = Vector3(c * 1.15 - 1.8, 0, r * 1.7 - 1.7)
 			m.rotation.y = 0.7
 			root.add_child(m)
 			var ap := m.find_child("AnimationPlayer", true, false) as AnimationPlayer
+			if ap and not ap.has_animation(CLIPS[c]):
+				m.visible = false
 			if ap and ap.has_animation(CLIPS[c]):
 				ap.play(CLIPS[c])
 				ap.speed_scale = 0
@@ -54,7 +56,7 @@ func _initialize() -> void:
 	for i in pairs.size():
 		for j in 2:
 			var w := Assets.instance(pairs[i][j])
-			w.position = Vector3(4.4 + i * 1.0 + j * 0.45, 0.1, 0.6)
+			w.position = Vector3(6.0 + i * 1.0 + j * 0.45, 0.1, 0.6)
 			w.scale *= 1.6
 			root.add_child(w)
 

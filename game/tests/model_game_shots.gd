@@ -30,7 +30,11 @@ func _initialize() -> void:
 
 func _enter() -> void:
 	var r = game.roster.create("Shot" + archetype, archetype)
-	game.enter_world(r.character.id)
+	var id = r.character.id if r.ok else null
+	for c in game.roster.list:
+		if id == null and c.name == "Shot" + archetype:
+			id = c.id
+	game.enter_world(id)
 	game.zoom = 0.45
 	game.set_process(false)
 	game.player.place_at(SPOT.x, SPOT.z, PI * 0.75)
@@ -56,8 +60,14 @@ func _process(_delta: float) -> bool:
 	if stage == 0 and t > 1.5:
 		_shot(archetype)
 		rats[0].hurt(9999)
+		# swing at the next rat, brought in reach
+		rats[1].position = game.player.position + Vector3(sin(game.player.facing), 0, cos(game.player.facing)) * 1.2
+		game.targeting.engage(rats[1])
 		stage = 1
-	elif stage == 1 and t > 2.2:
+	elif stage == 1 and game.player.rig.action != null and game.player.rig.action.t > 0.2:
+		_shot(archetype + "_swing")
+		stage = 2
+	elif stage == 2 and t > 2.2:
 		_shot(archetype + "_rat_dying")
 		quit()
 	return false
