@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Status: 'done' | 'ready' | 'active' | 'available' | 'locked'.
 
-const MAX_TRACKED := 4
+const MAX_TRACKED := 10
 
 var game
 var accepted: Array = [] ## quest ids, in the order taken

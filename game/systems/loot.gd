@@ -52,6 +52,10 @@ func start_gather(entry: Dictionary) -> bool:
 		return false
 	if player.casting != null or player.dead:
 		return false
+	var item = entry.def.get("reward", {}).get("item")
+	if item and game.inventory.room_for(item) <= 0:
+		game.hud.error("Bags are full.")
+		return false
 	if game.fishing:
 		game.fishing.stop(true)
 	var total: float = DB.CONFIG.loot.gatherTime
@@ -203,6 +207,7 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 		model.rotation = Vector3(-PI / 2 + 0.12, 0, 0.4) # lying face up
 		model.position.y = 0.05
 	group.add_child(model)
+	var beam: MeshInstance3D = null
 	var glint := Tex.sprite(Tex.fx_material(Tex.glint(), Color(1, 1, 1, 0.6), true, true))
 	glint.scale = Vector3.ONE * 0.7
 	glint.position.y = 0.35
@@ -210,18 +215,60 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	var item = def.get("reward", {}).get("item")
 	if item and DB.items.has(item):
 		var rarity: String = Items.view({"id": item, "rolls": def.ground.get("rolls") if def.has("ground") else null}).rarity
-		if not ["junk", "common", "quest"].has(rarity):
-			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 		if ["rare", "epic", "legendary"].has(rarity):
 			glint.scale = Vector3.ONE * 1.1
+		if not ["junk", "common", "quest"].has(rarity):
+			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
+			beam = _beam(group, Items.rarity_colour(rarity), ["junk", "common", "quest", "enhanced", "rare"].find(rarity))
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
 	group.position = Vector3(x, base_y, z)
 	group.rotation.y = fmod(x * 13.7 + z * 7.1, TAU)
 	game.scene.add_child(group)
-	var entry := {"def": def, "x": x, "z": z, "group": group, "glint": glint, "base_y": base_y, "seed": randf() * 6, "depleted": false}
+	var entry := {"def": def, "x": x, "z": z, "group": group, "glint": glint, "beam": beam, "base_y": base_y, "seed": randf() * 6, "depleted": false}
 	active.append(entry)
 	return entry
+
+
+## Green and better gear on the ground: a column of its colour rising off
+## it and motes drifting up it, as Diablo marks a good drop. `tier` (-1 for
+## epic and up) makes it taller and brighter.
+func _beam(group: Node3D, colour: Color, tier: int) -> MeshInstance3D:
+	var big := tier < 0 or tier > 3
+	var beam := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(0.5 if not big else 0.7, 2.6 if tier == 3 else (3.4 if tier == 4 else 4.4))
+	beam.mesh = q
+	var m := Tex.fx_material(Tex.beam(), Color(colour, 0.85))
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+	beam.material_override = m
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	beam.position.y = q.size.y / 2
+	group.add_child(beam)
+	var motes := CPUParticles3D.new()
+	var dot := QuadMesh.new()
+	dot.size = Vector2(0.09, 0.09)
+	motes.mesh = dot
+	var dm := Tex.fx_material(Tex.glint(), Color(colour.lightened(0.3), 0.9))
+	dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	motes.material_override = dm
+	motes.amount = 10 if big else 6
+	motes.lifetime = 1.8
+	motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	motes.emission_sphere_radius = 0.18
+	motes.direction = Vector3.UP
+	motes.spread = 8
+	motes.gravity = Vector3.ZERO
+	motes.initial_velocity_min = 0.6
+	motes.initial_velocity_max = 1.1
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 1))
+	fade.set_color(1, Color(1, 1, 1, 0))
+	motes.color_ramp = fade
+	motes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	motes.position.y = 0.1
+	group.add_child(motes)
+	return beam
 
 
 # ------------------------------------------------------------ corpses
@@ -347,10 +394,12 @@ func collect(entry: Dictionary) -> bool:
 	if def.has("ground"):
 		ws.ground.erase(def.ground)
 	elif def.get("respawn"):
-		# a gathering node stays in sight, spent, and grows back
+		# a gathering node stays in sight, spent, and grows back; a quest's
+		# (the deadfall logs) keeps its size and only loses its sparkle
 		regrow.append({"entry": entry, "at": game.time + def.respawn})
 		entry.depleted = true
-		entry.group.scale = Vector3.ONE * 0.6
+		if not def.get("quest"):
+			entry.group.scale = Vector3.ONE * 0.6
 		entry.glint.visible = false
 		events.emit("lootCollected", {"id": def.id, "item": r.get("item", ""), "node": true})
 		return true
@@ -373,6 +422,7 @@ func update(dt: float, time: float) -> void:
 		regrow.remove_at(i)
 		r.entry.depleted = false
 		r.entry.group.scale = Vector3.ONE
+		r.entry.glint.visible = true # a quest node's follows its quest below
 	var g = gathering
 	if g != null:
 		var p = game.player
@@ -392,6 +442,8 @@ func update(dt: float, time: float) -> void:
 			l.glint.visible = available(l)
 		l.glint.material_override.albedo_color.a = 0.45 + sin(time * 2.2 + l.seed) * 0.2
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
+		if l.get("beam"):
+			l.beam.material_override.albedo_color.a = 0.75 + sin(time * 1.8 + l.seed) * 0.15
 
 
 # ------------------------------------------------------------ skinning
