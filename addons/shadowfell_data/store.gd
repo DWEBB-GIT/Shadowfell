@@ -15,7 +15,7 @@ const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key"
 const KIND_NAMES := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key", "bag": "Bag", "ammo": "Ammo", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document"}
 const GEAR := ["weapon", "armor", "shield"]
 const EQUIPPABLE := ["weapon", "armor", "shield", "jewellery", "torch"]
-const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste"]
+const STAT_KEYS := DB.STAT_KEYS ## the game's own list, so the two cannot drift
 ## what an item's `slot` may say, with the name the editor shows
 const SLOTS := {
 	"oneHand": "One-hand (either hand)", "mainHand": "Main hand only", "offHand": "Off hand", "ranged": "Ranged",
