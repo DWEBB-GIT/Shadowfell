@@ -36,6 +36,7 @@ func _init(data_dir := "res://data") -> void:
 	save_button = UI.button("Save", save, "Write the changed data files (Ctrl+S here)")
 	bar.add_child(save_button)
 	bar.add_child(UI.button("Revert", revert, "Throw away unsaved changes and read the files again"))
+	bar.add_child(UI.button("World editor (sculpt and place)", _open_world, "Open the world in the 3D view to place npcs, enemies and props and sculpt the ground (brushes in the World dock, top right)"))
 	status = Label.new()
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(status)
@@ -151,3 +152,8 @@ func _refresh_lists() -> void:
 			p.refresh_tree()
 		elif p.has_method("refresh_list"):
 			p.refresh_list()
+
+
+func _open_world() -> void:
+	EditorInterface.open_scene_from_path("res://addons/shadowfell_data/world_editor.tscn")
+	EditorInterface.set_main_screen_editor("3D")

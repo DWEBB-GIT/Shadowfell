@@ -70,9 +70,13 @@ Nothing is written until **Save**; **Revert** throws changes away. The checks al
 
 The World editor (`world_editor.tscn`) keeps its own copy of `world.json` while it is open: after placing an npc from the NPCs tab, open (or reopen) the World editor scene to move them.
 
+### Placing things
+
+The **World** dock (top right, beside the Scene tree; Game Data also has a *World editor* button) opens the world in the 3D view. Under **Place**, pick a kind (NPC, Enemy, Item, Chest, Prop, Shrine, Signpost) and which one, press **Place: click the ground**, then each left click puts one there (Esc stops). Click anything placed to move or turn it with the gizmo; Ctrl+D copies, Delete removes, Ctrl+Z undoes; its other fields (a chest's items, a signpost's points) are in the Inspector under the node's `record` metadata. Ctrl+S writes `world.json` and `scenery.json`.
+
 ### Sculpting the ground
 
-The World editor also sculpts the ground (the *Shadowfell World tools* plugin, `addons/shadowfell_world`). Open `world_editor.tscn`, select its root node, and pick a brush from **Sculpt** on the 3D view's toolbar, then paint with the left mouse button:
+The World editor also sculpts the ground (the *Shadowfell World tools* plugin, `addons/shadowfell_world`). Use the **World** dock (top right, beside the Scene tree): **Open the world** opens `world_editor.tscn` in the 3D view; pick a brush there, then paint with the left mouse button:
 
 - **Raise / Lower**, **Smooth**, **Flatten** (to the height where the stroke began).
 - **Walkable / Blocked**: where players and monsters can go (the ground darkens where it is blocked).
