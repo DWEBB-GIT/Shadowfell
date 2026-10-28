@@ -235,8 +235,8 @@ static func setup(data) -> void:
 
 
 ## The world as the new map has it: the old world's records with nothing
-## placed (no NPCs, enemies, loot, buildings or roads), starting where
-## data/terrain/new_map/map.json says.
+## placed (no NPCs, loot, buildings or roads; only the enemies in its
+## spawns.json), starting where data/terrain/new_map/map.json says.
 static func new_map_world(w: Dictionary) -> Dictionary:
 	var out := w.duplicate()
 	for k in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "signposts", "gates", "townWalls",
@@ -248,6 +248,10 @@ static func new_map_world(w: Dictionary) -> Dictionary:
 	if m is Dictionary:
 		out.playerStart = {"position": m.start, "facing": 180}
 		out.bounds = {"minX": m.x0, "maxX": m.x0 + m.sizeX, "minZ": m.z0, "maxZ": m.z0 + m.sizeZ}
+	# the few things placed on it by hand so far (spawns.json)
+	var placed = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "spawns.json")) if FileAccess.file_exists(Terrain.dir + "spawns.json") else null
+	if placed is Dictionary:
+		out.enemySpawns = placed.get("enemySpawns", [])
 	return out
 
 

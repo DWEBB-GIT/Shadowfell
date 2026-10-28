@@ -10,6 +10,9 @@ assets/models/:
                          Attack and Death clips keyed here
   stylized_dagger.glb    a held weapon: grip at the origin, blade up +Y
   stylized_sword.glb
+  skeleton.glb           the risen dead (undead enemies): the model's own
+                         skeleton, with Idle, Walk, Attack, Hit and Death
+                         clips keyed here
   base_male.glb          the base male body on a new Mixamo-named skeleton
                          (automatic weights), with Idle and Walk test clips
 
@@ -25,11 +28,12 @@ Conventions (game/core/assets.gd and game/entities/rig.gd rely on these):
     instead of swapping in its shared vertex-colour material. Only the base
     colour map is kept, shrunk, for the retro look (no normal or roughness
     maps, which the flat-shaded world does not use).
-  * Clip names: Idle, Walk (loops), Attack, Death (plays once and holds).
+  * Clip names: Idle, Walk (loops), Attack, Hit, Death (plays once and holds).
 """
 import json
 import math
 import os
+import re
 
 import bpy
 from mathutils import Matrix, Quaternion, Vector
@@ -45,8 +49,8 @@ def reset_scene():
     bpy.context.scene.render.fps = FPS
 
 
-def import_glb(name):
-    bpy.ops.import_scene.gltf(filepath=os.path.join(SRC, name))
+def import_glb(name, guess_bind=True):
+    bpy.ops.import_scene.gltf(filepath=os.path.join(SRC, name), guess_original_bind_pose=guess_bind)
 
 
 def flatten():
@@ -433,6 +437,126 @@ def rat():
     export("rat.glb")
 
 
+def skeleton():
+    """The risen dead: a T-posed humanoid (Reallusion CC bone names) stood
+    facing -Y, 1.8 m tall, its arms keyed down for every clip."""
+    reset_scene()
+    # the file's skin binds a different pose than its bones' rest: take the
+    # bones as they stand so the two agree
+    import_glb("stylized_skeleton.glb", guess_bind=False)
+    objs = flatten()
+    arm = next(o for o in objs if o.type == "ARMATURE")
+    for b in arm.data.bones:
+        b.name = re.sub(r"_\d+$", "", b.name)
+    bone = lambda n: arm.matrix_world @ arm.data.bones["CC_Base_" + n].head_local
+    left = bone("L_Upperarm") - bone("R_Upperarm")
+    yaw = math.atan2(left.y, left.x)  # turn its left onto +X, so it faces -Y
+    lo, hi = bounds(objs)
+    centre = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
+    transform_all(objs, Matrix.Rotation(-yaw, 4, "Z") @ Matrix.Translation(-centre))
+    lo, hi = bounds(objs)
+    transform_all(objs, Matrix.Scale(1.8 / (hi.z - lo.z), 4))
+    for o in objs:
+        o.name = "skeleton" if o.type == "MESH" else "Skeleton"
+    retexture(objs, "skeleton", 512)
+    p = Poser(arm)
+
+    def arms(l_down, r_down, l_fwd=0.0, r_fwd=0.0, l_elbow=0.3, r_elbow=0.3):
+        """Arms from the T-pose: lowered by `down`, swung forward by `fwd`,
+        elbows bent forward by `elbow` (radians)."""
+        return {
+            "CC_Base_L_Upperarm": [("y", l_down), ("x", -l_fwd)],
+            "CC_Base_R_Upperarm": [("y", -r_down), ("x", -r_fwd)],
+            "CC_Base_L_Forearm": [("z", -l_elbow)],
+            "CC_Base_R_Forearm": [("z", r_elbow)],
+        }
+
+    def legs(l_fwd, r_fwd, l_knee, r_knee):
+        return {
+            "CC_Base_L_Thigh": [("x", -l_fwd)],
+            "CC_Base_R_Thigh": [("x", -r_fwd)],
+            "CC_Base_L_Calf": [("x", l_knee)],
+            "CC_Base_R_Calf": [("x", r_knee)],
+        }
+
+    def idle(t):
+        # a hunched sway, the head lolling, the jaw working
+        pose = arms(1.15 + sin(t) * 0.04, 1.2 + sin(t, 1, 0.3) * 0.04, 0.25, 0.2, 0.45, 0.4)
+        pose.update(legs(0.08, -0.04, 0.12, 0.1))
+        pose.update({
+            "CC_Base_Waist": [("x", 0.12 + sin(t) * 0.03), ("y", sin(t, 1, 0.2) * 0.05)],
+            "CC_Base_Spine02": [("x", 0.1)],
+            "CC_Base_Head": [("x", -0.15), ("y", sin(t, 1, 0.5) * 0.15), ("z", sin(t, 1, 0.1) * 0.12)],
+            "CC_Base_JawRoot": [("x", 0.08 + max(0.0, sin(t, 2)) * 0.12)],
+            "CC_Base_Hip": [("loc", Vector((0, 0, -0.02)))],
+        })
+        return pose
+
+    def walk(t):
+        # a stiff, dragging shamble: legs barely lift, arms reach ahead
+        a = sin(t)
+        pose = arms(1.0, 1.05, 0.6 - a * 0.2, 0.55 + a * 0.2, 0.35, 0.35)
+        pose.update(legs(a * 0.38, -a * 0.38, 0.12 + max(0.0, -a) * 0.4, 0.12 + max(0.0, a) * 0.4))
+        pose.update({
+            "CC_Base_Hip": [("loc", Vector((0, 0, -0.03 + abs(sin(t, 1, 0.25)) * 0.03))), ("z", a * 0.1)],
+            "CC_Base_Waist": [("x", 0.2), ("z", -a * 0.12), ("y", sin(t, 1, 0.25) * 0.06)],
+            "CC_Base_Head": [("x", -0.15), ("y", -sin(t, 1, 0.25) * 0.08)],
+        })
+        return pose
+
+    def attack(t):
+        # the right arm rises behind the head (0..0.45), whips down across
+        # the body at 0.5 (the blow), and holds a moment before recovering
+        up = math.sin(min(1.0, t / 0.45) * math.pi / 2) if t < 0.45 else max(0.0, 1 - (t - 0.45) / 0.1)
+        strike = 0.0 if t < 0.45 else min(1.0, (t - 0.45) / 0.08) * (1 - max(0.0, t - 0.7) / 0.3)
+        pose = arms(1.1, 1.15 - 1.2 * up + 0.2 * strike, 0.3 + 0.3 * up, 0.2 + 1.9 * up + 0.7 * strike,
+                    0.5, 0.4 + 0.9 * up - 0.3 * strike)
+        pose.update(legs(0.25 * strike, -0.15 * strike, 0.15 + 0.25 * strike, 0.15))
+        pose.update({
+            "CC_Base_Waist": [("x", 0.1 - 0.2 * up + 0.45 * strike), ("z", 0.25 * up - 0.35 * strike)],
+            "CC_Base_Head": [("x", -0.15 - 0.1 * up + 0.2 * strike)],
+            "CC_Base_JawRoot": [("x", 0.35 * up)],
+            "CC_Base_Hip": [("loc", Vector((0, -0.08 * strike, -0.05 * strike)))],
+        })
+        return pose
+
+    def hit(t):
+        # knocked back at the start, and back to its stance by the end
+        k = math.sin(min(1.0, t / 0.2) * math.pi / 2) * (1 - max(0.0, t - 0.2) / 0.8)
+        pose = idle(0.0)
+        pose.update(arms(1.15 - 0.35 * k, 1.2 - 0.4 * k, 0.25 - 0.3 * k, 0.2 - 0.3 * k, 0.45, 0.4))
+        pose.update({
+            "CC_Base_Waist": [("x", 0.12 - 0.4 * k), ("z", 0.15 * k)],
+            "CC_Base_Spine02": [("x", 0.1 - 0.25 * k)],
+            "CC_Base_Head": [("x", -0.15 - 0.4 * k), ("z", -0.2 * k)],
+            "CC_Base_JawRoot": [("x", 0.3 * k)],
+            "CC_Base_Hip": [("loc", Vector((0, 0.08 * k, -0.02)))],
+        })
+        return pose
+
+    def death(t):
+        # knees give, then it topples backwards and the arms fall loose
+        knees = min(1.0, t / 0.3)
+        k = max(0.0, min(1.0, (t - 0.15) / 0.45))
+        k = k * k * (3 - 2 * k)
+        pose = arms(1.15 - 0.9 * k, 1.2 - 1.0 * k, 0.25, 0.2, 0.45 - 0.3 * k, 0.4 - 0.3 * k)
+        pose.update(legs(0.5 * knees - 0.2 * k, 0.3 * knees - 0.1 * k, 0.9 * knees - 0.6 * k, 0.7 * knees - 0.5 * k))
+        pose.update({
+            "CC_Base_Hip": [("x", -1.45 * k), ("loc", Vector((0, 0.35 * k, -0.25 * knees - 0.6 * k)))],
+            "CC_Base_Waist": [("x", 0.3 * knees - 0.3 * k)],
+            "CC_Base_Head": [("x", -0.3 * k), ("y", 0.5 * k)],
+            "CC_Base_JawRoot": [("x", 0.3 * k)],
+        })
+        return pose
+
+    p.clip("Idle", 60, True, idle)
+    p.clip("Walk", 28, True, walk)
+    p.clip("Attack", 24, False, attack)
+    p.clip("Hit", 10, False, hit, step=1)
+    p.clip("Death", 30, False, death)
+    export("skeleton.glb")
+
+
 WING_FOLD = 0.6
 
 
@@ -772,6 +896,7 @@ if __name__ == "__main__":
         "sword": lambda: weapon("stylized_sword.glb", "stylized_sword.glb", 1.04, 0.15, True),
         "rat": rat,
         "chicken": chicken,
+        "skeleton": skeleton,
         "male": base_male,
         "mage": battle_mage,
     }

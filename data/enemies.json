@@ -22,6 +22,9 @@
       "respawn": 45,
       "reputation": {
         "road_wardens": 10
+      },
+      "imported": {
+        "model": "skeleton"
       }
     },
     {

@@ -1,0 +1,9 @@
+{
+  "_about": "Enemies placed on the new map by hand (the bake does not touch this file), in world.json's enemySpawns shape. For now a few risen dead by the start, to test hits on.",
+  "enemySpawns": [
+    {"id": "nm_skeleton_1", "enemy": "ghoul", "position": [275, -165]},
+    {"id": "nm_skeleton_2", "enemy": "ghoul", "position": [259, -167]},
+    {"id": "nm_skeleton_3", "enemy": "ghoul", "position": [281, -150]},
+    {"id": "nm_skeleton_4", "enemy": "ghoul", "position": [253, -147]}
+  ]
+}
