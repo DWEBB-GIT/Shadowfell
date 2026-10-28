@@ -4,6 +4,7 @@ extends Control
 ## (src/ui/damageNumbers.js).
 ##   dealt  parchment white      taken  dull red "-n"
 ##   crit   amber, "!"           block  grey "Block"     heal  green "+n"
+##   miss   grey "Miss", your blow that missed
 ##   xp     purple "+n XP", over a fallen enemy
 ## Each number is sized against your usual white hit: bigger than usual
 ## reads bigger. Crits stay longer, and a crit of twice your usual hit or
@@ -12,7 +13,7 @@ extends Control
 const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
-	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "heal": Color("8cbf78"),
+	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("8cbf78"),
 	"xp": Color("b77cff"),
 }
 
@@ -55,24 +56,31 @@ func add(e: Dictionary) -> void:
 	var text: String
 	var cls := kind
 	var ratio := 1.0
-	if kind == "heal" or kind == "xp":
+	if kind == "miss":
+		text = "Miss"
+	elif e.get("text"):
+		# a word rather than a number: Blocked, Parried
+		text = e.text
+		cls = "block"
+	elif kind == "heal" or kind == "xp":
 		if amount <= 0:
 			return
 		text = "+%s%s" % [U.n(amount), " XP" if kind == "xp" else ""]
 	elif blocked and amount == 0:
-		text = "Block"
+		text = "Blocked"
 		cls = "block"
 	else:
 		text = "%s%s%s" % ["-" if kind == "taken" else "", U.n(amount), "!" if crit else ""]
 		if blocked:
-			text += " (%s blocked)" % U.n(blocked)
+			# a shield took some of it: say so over the number (the log has how much)
+			add({"target": target, "kind": kind, "text": "Blocked", "lift": 0.4})
 		var ref: float = usual_hit(e.get("hand", "main")) if kind == "dealt" else float(e.get("usual", 0))
 		ratio = amount / ref if ref > 0 else 1.0
 	var pulse: bool = crit and ratio >= t.pulseAt
 	var colour: Color = COLOURS.get(cls, COLOURS.dealt)
 	if crit:
 		colour = COLOURS.takenCrit if kind == "taken" else COLOURS.big if pulse else COLOURS.crit
-	var scale_ := 0.8 if cls == "block" else number_scale(ratio, 1)
+	var scale_ := 0.8 if cls == "block" or cls == "miss" else number_scale(ratio, 1)
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", roundi(t.font * scale_))
@@ -82,7 +90,7 @@ func add(e: Dictionary) -> void:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(l)
 	var cfg = target.get("cfg")
-	var high := 2.6 if cfg and cfg.get("elite") else 1.8
+	var high: float = (2.6 if cfg and cfg.get("elite") else 1.8) + e.get("lift", 0.0)
 	# spread numbers a little so quick hits do not stack exactly
 	var dx := (items.size() % 3) * 18 - 18
 	var life: float = t.critLife if crit else t.life

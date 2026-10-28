@@ -62,6 +62,14 @@
       "stats": [
         "haste"
       ]
+    },
+    {
+      "id": "precision",
+      "name": "of Precision",
+      "stats": [
+        "accuracy",
+        "agility"
+      ]
     }
   ],
   "items": [
@@ -310,7 +318,8 @@
       "itemLevel": 4,
       "speed": 2.8,
       "statSplit": {
-        "strength": 1
+        "strength": 2,
+        "accuracy": 1
       },
       "stack": 1,
       "price": 75,
@@ -1334,7 +1343,7 @@
       "price": 100,
       "model": "grave_iron",
       "icon": "grave_iron",
-      "description": "Metal from a fallen star, still faintly warm. Smiths need it for the last temper on the finest gear, and to punch a socket."
+      "description": "Metal from a fallen star, still faintly warm. Smiths need it to punch a socket."
     },
     {
       "id": "copper_bar",
@@ -1425,6 +1434,61 @@
       "description": "A bar of iridium, the hardest metal a forge can work."
     },
     {
+      "id": "faint_dust",
+      "name": "Faint dust",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 3,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Grey motes that glitter when no one looks straight at them. An enchanter spends it on gear up to level 10."
+    },
+    {
+      "id": "glimmering_dust",
+      "name": "Glimmering dust",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 6,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "It drifts up out of the pouch if you leave it open. An enchanter spends it on gear up to level 22."
+    },
+    {
+      "id": "radiant_dust",
+      "name": "Radiant dust",
+      "kind": "material",
+      "rarity": "enhanced",
+      "stack": 20,
+      "price": 12,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Bright enough to read by. An enchanter spends it on gear up to level 38."
+    },
+    {
+      "id": "eldritch_dust",
+      "name": "Eldritch dust",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 25,
+      "model": "rock1",
+      "icon": "rock1",
+      "description": "Black, and it shines anyway. An enchanter spends it on the highest gear."
+    },
+    {
+      "id": "soulshard",
+      "name": "Soulshard",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 100,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Enchanters need one for the last enhancement on the finest gear."
+    },
+    {
       "id": "whetstone",
       "name": "Whetstone",
       "kind": "material",
@@ -1433,7 +1497,7 @@
       "price": 3,
       "model": "rock0",
       "icon": "rock0",
-      "description": "Ground from rough stone. A smith uses it to temper gear up to level 8."
+      "description": "Ground from rough stone. Smiths and soldiers buy them."
     },
     {
       "id": "heavy_whetstone",
@@ -1444,7 +1508,7 @@
       "price": 6,
       "model": "rock0",
       "icon": "rock0",
-      "description": "Ground from granite. A smith uses it to temper gear above level 8."
+      "description": "Ground from granite. Smiths and soldiers buy them."
     },
     {
       "id": "garnet_shard",
@@ -1683,6 +1747,24 @@
       "model": "draught",
       "icon": "draught",
       "description": "Cold on the tongue, and your thoughts go very clear and very quiet. +3 Intellect for 15 minutes. Only one elixir works on you at a time."
+    },
+    {
+      "id": "hawkeye_tincture",
+      "name": "Hawkeye tincture",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "elixir": {
+          "stat": "accuracy",
+          "amount": 3,
+          "seconds": 900
+        }
+      },
+      "stack": 5,
+      "price": 22,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Eyebright steeped in vinegar. It stings going down, and the world goes sharp at the edges. +3% accuracy for 15 minutes. Only one elixir works on you at a time."
     },
     {
       "id": "blackpool_tench",

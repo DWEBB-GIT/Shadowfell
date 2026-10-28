@@ -45,6 +45,9 @@ func _init(g) -> void:
 		game.shake_camera(DB.CONFIG.impact.critShake if e.get("heavy") else DB.CONFIG.impact.shake * 0.6)
 		game.hud.flash_damage())
 	ev.on("levelUp", func(_e): pillar(game.player.position))
+	# an enchanter's work: a violet light rises off you
+	ev.on("itemEnchanted", func(_e): pillar(game.player.position, Color("c8a0ff")))
+	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
 	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
 	# the Grave Slam lands where the telegraph was painted
 	ev.on("graveSlam", func(e):

@@ -76,7 +76,7 @@
       "id": "briony_herbs",
       "name": "Briony's herb-shed",
       "vendorType": "herbalist",
-      "stock": ["herb_knife", "brass_sickle", "healing_draught"]
+      "stock": ["herb_knife", "brass_sickle", "healing_draught", "hawkeye_tincture"]
     }
   ]
 }

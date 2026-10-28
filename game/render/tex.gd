@@ -26,6 +26,20 @@ static func glint() -> Texture2D:
 	return _cache.glint
 
 
+## a soft column of light, bright at its foot and fading up and to its
+## sides (the Diablo loot beam)
+static func beam() -> Texture2D:
+	if not _cache.has("beam"):
+		var img := Image.create(16, 64, false, Image.FORMAT_RGBA8)
+		for y in 64:
+			var up := 1.0 - y / 63.0 # 1 at the top row, 0 at the foot
+			for x in 16:
+				var a := pow(1.0 - up, 0.9) * pow(sin(PI * (x + 0.5) / 16.0), 1.5)
+				img.set_pixel(x, y, Color(1, 1, 1, a))
+		_cache.beam = ImageTexture.create_from_image(img)
+	return _cache.beam
+
+
 static func ring() -> Texture2D:
 	if not _cache.has("ring"):
 		_cache.ring = _radial([[0.0, Color(1, 1, 1, 0)], [0.56, Color(1, 1, 1, 0)], [0.868, Color8(255, 240, 210, 230)], [1.0, Color8(255, 240, 210, 0)]], 64)

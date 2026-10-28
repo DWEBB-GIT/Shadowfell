@@ -252,6 +252,12 @@ func face_towards(x: float, z: float) -> void:
 		aim_hold = AIM_HOLD
 
 
+const JUMP_SPEED := 5.0
+const JUMP_GRAVITY := 18.0
+var jump_v := 0.0
+var jump_h := 0.0
+
+
 func update(dt: float, controls) -> void:
 	for k in cooldowns:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
@@ -384,7 +390,16 @@ func update(dt: float, controls) -> void:
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
 	position = game.collision.resolve(position, radius)
-	position.y = Terrain.height_at(position.x, position.z)
+	# Jump is cosmetic: a hop with no effect on combat or collision
+	if controls and controls.get("jump") and jump_h == 0 and not sitting:
+		jump_v = JUMP_SPEED
+	if jump_v != 0 or jump_h > 0:
+		jump_v -= JUMP_GRAVITY * dt
+		jump_h += jump_v * dt
+		if jump_h <= 0:
+			jump_h = 0
+			jump_v = 0
+	position.y = Terrain.height_at(position.x, position.z) + jump_h
 	moving = speed01 > 0
 	rig.update(dt, speed01 * DB.CONFIG.player.runGait)
 	_sync()

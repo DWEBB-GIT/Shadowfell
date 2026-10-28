@@ -244,7 +244,7 @@
         },
         {
           "id": "hester_rest",
-          "text": "Under this roof you're safe to rest. Sit a while and you'll wake sharper for it. Say the word and I'll keep a bed for you: if the road kills you, you'll wake up here.",
+          "text": "Under this roof you're safe to rest. Sit by the fire a while and you'll go out sharper for it. Or take a bed for the night, five silver, and you'll wake mended, wounds and all. Say the word and I'll keep a bed for you always: if the road kills you, you'll wake up here.",
           "replies": [
             {
               "text": "Back."
@@ -819,7 +819,7 @@
         },
         {
           "id": "orrin_smelt",
-          "text": "Take it to a forge. Mara's, up at the watch post, is the only one this side of the Blackwood. Copper smelts on its own; copper and tin together make bronze, two bars for the pair. Grind your rough stone into whetstones while you're there: a smith wants both bars and whetstones to temper your gear.",
+          "text": "Take it to a forge. Mara's, up at the watch post, is the only one this side of the Blackwood. Copper smelts on its own; copper and tin together make bronze, two bars for the pair. Grind your rough stone into whetstones while you're there; smiths and soldiers buy them.",
           "replies": [
             {
               "text": "Thank you."
@@ -864,6 +864,50 @@
         {
           "id": "ysolde_gems",
           "text": "Five shards of a kind make a chipped stone. Three chipped make a flawed one, three flawed a clear, and so on up. A stone sits in a socket: some gear comes with one, and a smith can punch one more with skyiron. A socket costs the piece a little of its strength, and a stone of the piece's own quality gives it back. A better stone, and you're ahead. I take them out free, whenever you like. I never break a stone.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sabeth",
+      "greetings": [
+        {
+          "text": "Mind the candles. Not for the fire. They're listening."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "sabeth_who"
+        },
+        {
+          "id": "enchanting",
+          "prompt": "How does enchanting work?",
+          "node": "sabeth_enchanting"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "sabeth_who",
+          "text": "Sabeth Gall. I wake what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
+          "replies": [
+            {
+              "text": "How does enchanting work?",
+              "node": "sabeth_enchanting"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "sabeth_enchanting",
+          "text": "Anything with a little magic in it, green or better, can take more. Each rank is worth a level, no more, and a finer piece holds more ranks. I pay for it in dust: bring me gear you've no use for and I'll scrap it, and what's left is dust and its stones, and the seers in the Blackwood carry it too. The very last rank on the finest gear wants a soulshard, and those only come from great beasts and the things that lead men. Plain gear I can't touch.",
           "replies": [
             {
               "text": "Thank you."

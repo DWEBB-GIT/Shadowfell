@@ -59,6 +59,7 @@ var keys: Keybinds
 var reputation: Reputation
 var titles: Titles
 var camp: Camp
+var inn: Inn
 var fishing: Fishing
 var cooking: Cooking
 var telegraphs: Telegraphs
@@ -139,6 +140,7 @@ func _ready() -> void:
 	reputation = Reputation.new(self)
 	titles = Titles.new(self)
 	camp = Camp.new(self)
+	inn = Inn.new(self)
 	fishing = Fishing.new(self)
 	cooking = Cooking.new(self)
 	telegraphs = Telegraphs.new(self)
@@ -613,9 +615,10 @@ func _click(button: String) -> bool:
 			else:
 				targeting.select(o)
 		"npc":
-			# either button selects a townsperson and talks to them, if close enough
+			# left click only selects a townsperson; right click talks to them
 			targeting.select_friendly(o)
-			_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
+			if button == "right":
+				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
 	return true
 
 
@@ -805,7 +808,7 @@ func _handle_input(dt: float):
 	var pad_on := not pad_menu
 	# a spirit only walks
 	if player.ghost:
-		# a click on your body or the rest point acts, as Space does
+		# a click on your body or the rest point acts, as Interact does
 		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
 		_cursor_for(hover)
 		var clicked := input.consume_click()
@@ -892,6 +895,7 @@ func _handle_input(dt: float):
 		"rawAim": aim_now,
 		"faceAim": face_aim,
 		"tank": tank,
+		"jump": keys.pressed("jump") or (pad_on and pad.pressed(B.LS)),
 		"actions": actions,
 	}
 

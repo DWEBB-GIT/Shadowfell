@@ -18,6 +18,10 @@ var basic_damage: int:
 		return game.stats.ability_average(1)
 
 
+## the word over you when a guard (Brace) takes a whole blow
+const GUARD_WORD := {"block": "Blocked", "parry": "Parried", "miss": "Missed"}
+
+
 ## A weapon hit from the player on `enemy`: roll, crit, armour; applies it.
 ## o.swing: an auto attack, which rolls the weapon's own per-swing damage;
 ## abilities roll the normalised range. o.show: delay the hit's visuals
@@ -32,11 +36,13 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	var base: float = (Stats.swing_roll(r, stats, hand) if swing else Stats.weapon_roll(r, stats)) + o.get("bonus", 0.0)
 	var sp = game.spells
 	var m: Dictionary = sp.hit_mods(enemy) if sp else {"mult": 1.0, "critBonus": 0.0, "forceCrit": false}
-	var hit := Stats.compute_hit(r, stats.stat_block, Stats.enemy_block(enemy.cfg), {"base": base, "mult": mult * m.mult * (sp.damage_scale if sp else 1.0) * game.afterlife.damage_scale_against(enemy), "critBonus": m.critBonus, "forceCrit": m.forceCrit})
+	if Stats.rolls_miss(r, stats.stat_block, Stats.enemy_block(enemy.cfg), m.get("accuracy", 0.0)):
+		return missed(enemy, "Your arrow misses" if hand == "ranged" else "Your off hand misses" if hand == "off" else "You miss", show)
+	var hit := Stats.compute_hit(r, stats.stat_block, Stats.enemy_block(enemy.cfg), {"base": base, "mult": mult * m.mult * (sp.damage_scale if sp else 1.0) * game.afterlife.damage_scale_against(enemy), "critBonus": m.critBonus, "forceCrit": m.forceCrit, "canBlock": hand != "ranged"})
 	if sp:
 		sp.after_hit(hit)
 	var visuals := func():
-		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main"})
+		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main"})
 		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or swing})
 	if show > 0:
 		enemy.hurt(hit.amount, {"stagger": 0.0, "quiet": true})
@@ -48,6 +54,21 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 		enemy.hurt(hit.amount, hurt_opts)
 		visuals.call()
 	return hit
+
+
+## A blow of yours that missed: a grey "Miss", a log line ("{what} the
+## {name}."), and the enemy still notices. Returns a hit of 0 marked `miss`.
+func missed(enemy, what: String, show := 0.0) -> Dictionary:
+	var events: Events = game.events
+	enemy.hurt(0, {"stagger": 0.0, "quiet": true})
+	var visuals := func(): events.emit("damageNumber", {"target": enemy, "amount": 0, "kind": "miss"})
+	if show > 0:
+		shown_later.append({"t": show, "fn": visuals})
+	else:
+		visuals.call()
+	events.emit("enemyMissed", {"enemy": enemy})
+	events.emit("log", {"text": "%s the %s." % [what, enemy.cfg.name], "kind": "muted"})
+	return {"amount": 0, "crit": false, "blocked": 0, "miss": true}
 
 
 func update_shown(dt: float) -> void:
@@ -104,6 +125,7 @@ func resolve_telegraph(enemy, shape, damage: float, label, opts = null) -> bool:
 	var guard: String = player.consume_brace()
 	if guard != "":
 		events.emit("braceBlock", {"enemy": enemy, "heavy": true})
+		events.emit("damageNumber", {"target": player, "kind": "taken", "text": GUARD_WORD[guard]})
 		var what: String = label if label else enemy.cfg.name + "'s blow"
 		var text := "The %s misses you." % what if guard == "miss" else "You parry the %s." % what if guard == "parry" else "You brace and turn aside the %s." % what
 		events.emit("log", {"text": text, "kind": "hit"})
@@ -171,6 +193,8 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 		return null
 	var off := hand == "off"
 	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show})
+	if hit.get("miss"):
+		return target
 	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand})
 	events.emit("log", {"text": "%s the %s for %d.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, _crit_text(hit)], "kind": "hit"})
 	if target.dead:
@@ -205,6 +229,8 @@ func update_arrows(dt: float) -> void:
 		# the arrow adds its own damage: ammoDps for each second of bow speed
 		var bonus: float = (Items.get_def(a.ammo).get("ammoDps", 0) if a.ammo else 0.0) * game.stats.hand_speed("ranged")
 		var hit := _player_hit(e, 1, {"stagger": 0.12}, {"swing": true, "hand": "ranged", "bonus": bonus})
+		if hit.get("miss"):
+			continue
 		game.events.emit("enemyHit", {"enemy": e, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": "ranged"})
 		game.events.emit("log", {"text": "Your arrow hits the %s for %d.%s" % [e.cfg.name, hit.amount, _crit_text(hit)], "kind": "hit"})
 		if e.dead:
@@ -224,6 +250,7 @@ func resolve_enemy_strike(enemy) -> bool:
 	var guard: String = player.consume_brace()
 	if guard != "":
 		events.emit("braceBlock", {"enemy": enemy})
+		events.emit("damageNumber", {"target": player, "kind": "taken", "text": GUARD_WORD[guard]})
 		var who: String = enemy.cfg.name
 		var text := "The %s's blow misses you." % who if guard == "miss" else "You parry the %s's blow." % who if guard == "parry" else "Your shield takes the %s's blow." % who
 		events.emit("log", {"text": text, "kind": "hit"})

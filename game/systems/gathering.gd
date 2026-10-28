@@ -154,6 +154,9 @@ func start(n: Dictionary) -> bool:
 	if why != "":
 		game.hud.error("That %s %s." % [v.name.to_lower(), why])
 		return false
+	if game.inventory.room_for(kind_def(n.kind).yields.item) <= 0:
+		game.hud.error("Bags are full.")
+		return false
 	if game.fishing:
 		game.fishing.stop(true)
 	game.mining.stop()

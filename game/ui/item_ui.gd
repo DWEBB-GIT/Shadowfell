@@ -15,7 +15,7 @@ extends Control
 ##
 ## Every action is a request to the Inventory, which decides what is allowed.
 
-const STAT_LABEL := {"stamina": "Stamina", "strength": "Strength", "agility": "Agility", "intellect": "Intellect", "armour": "armour", "resistance": "resistance", "block": "% block chance", "haste": "% haste", "spellPower": "spell power"}
+const STAT_LABEL := {"stamina": "Stamina", "strength": "Strength", "agility": "Agility", "intellect": "Intellect", "armour": "armour", "resistance": "resistance", "block": "% block chance", "haste": "% haste", "accuracy": "% accuracy", "spellPower": "spell power"}
 const KIND_LABEL := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "bag": "Bag", "ammo": "Arrows", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key", "gem": "Gem"}
 const RECIPE_COLOUR := {"orange": Color("ff8040"), "yellow": Color("ffe040"), "green": Color("40c040"), "grey": Color("909090"), "red": Color("c03030")}
 const REP_COLOUR := {"hostile": Color("8a3a2a"), "neutral": Color("8a7a3a")}
@@ -662,6 +662,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		"gap",
 		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
 		["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"],
+		["Miss", "%s%%" % U.fixed(Stats.miss_chance(lvl, lvl, st.accuracy), 1), "Chance to miss a foe of your own level: %s%% less for each level below you, %s%% more for each level above. Accuracy from gear (%s%%) takes it down." % [U.n(conf.missPerLevelBelow), U.n(conf.missPerLevelAbove), U.n(st.accuracy)]],
 		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 	]
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
@@ -1454,7 +1455,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
 	var cap: int = game.forge.temper_cap(stack) if Items.ROLLED_KINDS.has(def.kind) else 0
 	if cap > 0:
-		lines.append(_l("Tempered %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
+		lines.append(_l("Enchanted %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	var power := Builds.power_def(Items.power_of(stack))

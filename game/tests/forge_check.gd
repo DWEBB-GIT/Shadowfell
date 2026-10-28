@@ -94,11 +94,11 @@ func _bag_loc(id: String) -> String:
 	return ""
 
 
-## the 8-slot backpack (PR #70) fills with the mining haul: empty it so
-## each step has room for what it adds
+## The starter bags are small: empty them before a section that needs room.
 func _clear_bags() -> void:
 	for loc in game.inventory.bag_locations():
-		game.inventory.take(loc)
+		if game.inventory.get_at(loc) != null:
+			game.inventory.take(loc)
 
 
 func _temper_and_scrap() -> void:
@@ -108,44 +108,57 @@ func _temper_and_scrap() -> void:
 	inv.add_item("watchmans_edge")
 	var loc := _bag_loc("watchmans_edge")
 	var st: Dictionary = inv.get_at(loc)
-	check(f.temper_cap(st) == 2, "an enhanced item tempers twice")
+	check(f.temper_cap(st) == 2, "an enhanced item enchants twice")
 	var base: Dictionary = Items.view(st)
 	var c1: Dictionary = f.temper_cost(st)
-	check(c1.items.size() == 2 and c1.items[0].item == "copper_bar", "rank 1 asks copper bars and a whetstone")
-	check(not f.temper(loc), "no tempering without the bars")
-	inv.add_item("copper_bar", 10, true)
-	inv.add_item("bronze_bar", 10, true)
-	inv.add_item("whetstone", 4, true)
-	check(f.temper(loc), "tempered once")
-	check(f.temper(loc), "tempered twice")
+	check(c1.items.size() == 1 and c1.items[0].item == "faint_dust", "rank 1 asks faint dust, no bars or whetstones")
+	check(not f.temper(loc), "no enchanting without the dust")
+	inv.add_item("faint_dust", 20, true)
+	check(f.temper(loc), "enchanted once")
+	check(f.temper(loc), "enchanted twice")
 	check(not f.temper(loc), "and no further (capped)")
 	var v: Dictionary = Items.view(inv.get_at(loc))
 	check(v.itemLevel == base.itemLevel + 2, "item level +2 (%s)" % v.itemLevel)
 	check(v.name.ends_with("+2"), "the name shows +2 (%s)" % v.name)
 	var sum := func(s): return s.values().reduce(func(a, b): return a + b, 0.0)
 	check(v.damage[1] > base.damage[1] and sum.call(v.stats) >= sum.call(base.stats), "its damage rose (%s -> %s)" % [base.damage, v.damage])
-	check(Items.valid_rolls(st.id, inv.get_at(loc).get("rolls")), "tempered rolls are valid")
-	# epic and legendary: the last rank needs skyiron
+	check(Items.valid_rolls(st.id, inv.get_at(loc).get("rolls")), "enchanted rolls are valid")
+	# epic and legendary: the last rank needs a soulshard
 	var last: Dictionary = Forge.rank_cost(5, 7, 7, "legendary")
-	check(last.items.any(func(x): return x.item == "skyiron"), "a legendary's last rank needs skyiron")
-	# scrap: the preview, then 75% of what went in
+	check(last.items.any(func(x): return x.item == "soulshard"), "a legendary's last rank needs a soulshard")
+	# scrap: 2 dust for an enhanced item, plus 75% of the 3 + 4 put in (5); no metal
 	var p: Dictionary = f.scrap_preview(inv.get_at(loc))
-	var bars := 0
+	var dust := 0
 	for x in p.items:
-		if x.item.ends_with("_bar"):
-			bars += x.count
-	# put in: 2 + 3 bars; 75% back is 3, plus 1 base bar
-	check(bars == 4, "scrap gives 4 bars back (%d)" % bars)
+		if x.item == "faint_dust":
+			dust += x.count
+	check(dust == 7, "scrapping gives 7 faint dust back (%d)" % dust)
+	check(not p.items.any(func(x): return x.item.ends_with("_bar")), "scrapping gives no metal")
 	check(f.scrap_text(inv.get_at(loc)).begins_with("You get back"), "the preview reads as a list")
-	var before: int = inv.count("copper_bar") + inv.count("bronze_bar")
+	check(f.scrap_preview({"id": "worn_longsword"}).is_empty(), "plain gear has nothing to give")
+	var before: int = inv.count("faint_dust")
 	check(f.scrap(loc), "scrapped")
-	check(inv.count("watchmans_edge") == 0 and inv.count("copper_bar") + inv.count("bronze_bar") == before + 4, "the item is gone and the bars are back")
+	check(inv.count("watchmans_edge") == 0 and inv.count("faint_dust") == before + 7, "the item is gone and the dust is in the bags")
+	check(f.scrap_preview({"id": "bloodletter"}).items.any(func(x): return x.item == "soulshard"), "a legendary gives a soulshard")
+	# the enchanter offers the work, the smith no longer does, and she stands clear of walls
+	var dlg = game.dialogue
+	var sab: Array = game.npcs.all.filter(func(n): return n.id == "sabeth")
+	check(not sab.is_empty(), "Sabeth stands in Brackenford")
+	if not sab.is_empty():
+		var n = sab[0]
+		check(not game.collision.wall_between(n.position.x, n.position.z, n.position.x + 0.01, n.position.z + 0.01), "Sabeth is not inside a wall")
+		dlg.npc = n
+		dlg.view = {"kind": "menu"}
+		check(dlg.page.options.any(func(o): return o.id == "ench:enchant") and dlg.page.options.any(func(o): return o.id == "ench:scrap"), "Sabeth enchants and scraps")
+	dlg.npc = game.npcs.all.filter(func(n): return n.id == "mara")[0]
+	dlg.view = {"kind": "menu"}
+	check(not dlg.page.options.any(func(o): return str(o.id).begins_with("ench") or o.id == "smith:temper" or o.id == "smith:scrap"), "Mara no longer tempers or scraps")
+	dlg.npc = null
 
 
 func _reforge() -> void:
 	var f = game.forge
 	var inv = game.inventory
-	_clear_bags()
 	inv.add_item("old_watch_helm")
 	var loc := _bag_loc("old_watch_helm")
 	var opts: Array = f.reforge_options(inv.get_at(loc))
@@ -165,7 +178,6 @@ func _gems() -> void:
 	var f = game.forge
 	var inv = game.inventory
 	_clear_bags()
-	inv.remove_count("garnet_shard", inv.count("garnet_shard")) # mining may have found one
 	inv.add_item("garnet_shard", 15)
 	check(f.combine("garnet_chipped"), "5 shards make a chipped garnet")
 	check(f.combine("garnet_chipped") and f.combine("garnet_chipped"), "and twice more")

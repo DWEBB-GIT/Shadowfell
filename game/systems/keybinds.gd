@@ -13,7 +13,7 @@ extends RefCounted
 const KEY := "shadowfall.keys.v2"
 const KEY_AIM := "shadowfall.keys.aim"
 ## mouse aim's defaults, where they differ from the classic ones
-const AIM_KEYS := {"bar0": ["Digit1", "MouseRight"], "bar4": ["KeyR"], "bar5": ["KeyF"]}
+const AIM_KEYS := {"bar0": ["Digit1", "MouseRight"], "bar4": ["KeyR"], "bar5": ["KeyF"], "interact": ["KeyG"]}
 ## mouse buttons: shown on the bar, but never taken by a key press
 const MOUSE := ["MouseRight"]
 const KEY_ACTIONS := [
@@ -27,7 +27,8 @@ const KEY_ACTIONS := [
 	{"id": "bar7", "label": "Utility 2", "group": "Utility bar", "keys": ["Shift+Digit2"]},
 	{"id": "bar8", "label": "Utility 3", "group": "Utility bar", "keys": ["Shift+Digit3"]},
 	{"id": "bar9", "label": "Utility 4", "group": "Utility bar", "keys": ["Shift+Digit4"]},
-	{"id": "interact", "label": "Interact", "group": "Actions", "keys": ["Space"]},
+	{"id": "interact", "label": "Interact", "group": "Actions", "keys": ["KeyF"]},
+	{"id": "jump", "label": "Jump", "group": "Actions", "keys": ["Space"]},
 	{"id": "cycleTarget", "label": "Next target", "group": "Actions", "keys": ["Tab"]},
 	{"id": "crime", "label": "Hold to attack townsfolk", "group": "Actions", "keys": ["AltLeft"]},
 	{"id": "sheathe", "label": "Sheathe / draw weapons", "group": "Actions", "keys": ["KeyZ"]},
@@ -98,6 +99,9 @@ func load_scheme(for_aim: bool) -> void:
 			var k = saved.get(a.id)
 			if typeof(k) == TYPE_ARRAY and k.all(func(x): return typeof(x) == TYPE_STRING):
 				map[a.id] = k
+		# saves from before Jump took Space: interact moves to its new default
+		if not saved.has("jump") and map.interact.has("Space"):
+			map.interact = _defaults(aim).interact
 
 
 func keys(id: String) -> Array:

@@ -21,12 +21,17 @@ const CONFIG := {
 		"healers": ["grue", "aveline"], "healPrice": 5,
 		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
 	"fishing": {"castTime": 0.6, "duration": 12.0, "biteMin": 2.0, "biteMax": 8.0, "biteWindow": 1.4, "biteBase": 85.0, "bitePerSkill": 0.5, "biteCap": 97.0, "noBiteAfter": 6.0, "reelTime": 0.45, "baseChance": 75.0, "chancePerRank": 0.6, "clickRadius": 60.0},
+	# a bed at an inn (an innkeeper npc; its `bedPrice` beats this price):
+	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
+	# of a level of rested experience, and the inn as your rest point
+	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
 	"progression": {"maxLevel": 100, "firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
 	"stats": {
 		"healthBase": 20.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
 		"powerPerMainStat": 0.3, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
 		"mitigationCap": 75.0, "blockCap": 50.0, "blockReduction": 30.0, "hasteCap": 30.0, "gcdFloor": 1.0,
+		"missBase": 5.0, "missPerLevelAbove": 5.0, "missPerLevelBelow": 2.5, "missCap": 60.0, "accuracyCap": 30.0,
 		"enemyVariance": 0.35, "fistDamage": [1, 2], "fistSpeed": 2.0, "offHandDamage": 0.5, "offHandResolve": 0.5,
 	},
 	"interaction": {"radius": 2.2},
@@ -52,7 +57,7 @@ const CONFIG := {
 }
 
 const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key", "bag", "ammo", "consumable", "material", "junk", "document", "gem"]
-const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste"]
+const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste", "accuracy"]
 const DURABLE_KINDS := ["weapon", "armor", "shield", "jewellery"]
 ## Character slots, laid out as in WoW: `col` is where the panel shows it.
 const EQUIP_SLOTS := [
@@ -115,6 +120,7 @@ static var mining: Dictionary = {} ## data/mining.json (Mining)
 static var nodes: Dictionary = {} ## data/nodes.json (Gathering): herb patches and the like
 static var skill_ladder: Dictionary = {} ## skills.json `ladder` (Skills): trainer ranks, skill experience, perks
 static var forge: Dictionary = {} ## data/forge.json (Forge)
+static var enchanting: Dictionary = {} ## data/enchanting.json (Forge: enchant, scrap)
 static var gems: Dictionary = {} ## data/gems.json (Gems)
 static var infamy: Dictionary = {} ## data/infamy.json (Law)
 static var boons: Dictionary = {} ## data/boons.json (Boons)
@@ -138,6 +144,7 @@ static var spells := {}
 static func setup(data) -> void:
 	var f: Dictionary = data.files
 	forge = f.get("forge", {})
+	enchanting = f.get("enchanting", {})
 	gems = f.get("gems", {})
 	Scaling.socket_share = forge.get("sockets", {}).get("share", 0.0)
 	items.clear()

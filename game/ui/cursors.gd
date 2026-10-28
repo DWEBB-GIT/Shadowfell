@@ -50,9 +50,14 @@ const ART_HOTSPOT := {"pointer": Vector2(3, 3), "attack": Vector2(3, 3), "talk":
 	"loot": Vector2(3, 3), "mine": Vector2(4, 3), "fish": Vector2(4, 5)}
 
 
+## Dan (2026-10-28): the pointing finger stands in for the talk bubble
+const ART_ALIAS := {"talk": "loot"}
+
+
 static func _art(id: String) -> Array:
 	var base := id.trim_suffix("Far")
-	var tex := Icons.art("cursors", base) if ART_HOTSPOT.has(base) else null
+	var src: String = ART_ALIAS.get(base, base)
+	var tex := Icons.art("cursors", src) if ART_HOTSPOT.has(src) else null
 	if tex == null:
 		return []
 	var img := tex.get_image()
@@ -66,7 +71,7 @@ static func _art(id: String) -> Array:
 				var c := img.get_pixel(x, y)
 				var v := c.get_luminance() * 0.8 + 0.08
 				img.set_pixel(x, y, Color(v, v, v, c.a))
-	return [ImageTexture.create_from_image(img), ART_HOTSPOT[base]]
+	return [ImageTexture.create_from_image(img), ART_HOTSPOT[src]]
 
 
 ## the texture and hotspot for a cursor ("" for none)
@@ -95,3 +100,18 @@ static func show(id: String) -> void:
 	else:
 		Input.set_custom_mouse_cursor(c[0], Input.CURSOR_ARROW, c[1])
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+
+
+## Every clickable button shows the pointing finger (Dan, 2026-10-28): the
+## painted hand is set as the pointing-hand shape, and each button that
+## enters the tree is switched to that shape.
+static func setup(tree: SceneTree) -> void:
+	var c := get_cursor("loot")
+	if not c.is_empty():
+		Input.set_custom_mouse_cursor(c[0], Input.CURSOR_POINTING_HAND, c[1])
+	tree.node_added.connect(_on_node_added)
+
+
+static func _on_node_added(n: Node) -> void:
+	if n is BaseButton and n.mouse_default_cursor_shape == Control.CURSOR_ARROW:
+		n.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND

@@ -1,0 +1,30 @@
+{
+  "_about": "Enchanting (Godot build: game/systems/forge.gd), at any npc with `enchanter: true` (an enchanter in any major town). `enchant`: each rank counts as +1 item level, and the item's stats are worked out again by the item budget (docs/stats-and-damage.md). `caps` by rarity: how many ranks an item can take. `ranks` (one entry a rank, in order): coins, plus a count of each material named in `bands` (the first band whose `upToLevel` is at least the item's level before the rank), plus `coinsPerItemLevel` x level coins on top. An epic or legendary item's last rank (its cap) also needs `lastRank`. `scrap` breaks enhanced gear or better into `dust` of its band (a count by rarity) and `extra` for the rarities listed, gives back `refund` of every enchanting material put into it, and its gems (never metal or leather); the window shows what you get first. An enchanter scraps gear; smiths no longer do. Dust also falls from casters, soulshards from great beasts and bosses (loot_tables.json).",
+  "enchant": {
+    "caps": { "junk": 0, "common": 0, "enhanced": 2, "rare": 4, "epic": 6, "legendary": 7, "quest": 0 },
+    "ranks": [
+      { "dust": 3, "coins": 8 },
+      { "dust": 4, "coins": 14 },
+      { "dust": 6, "coins": 22 },
+      { "dust": 7, "coins": 34 },
+      { "dust": 9, "coins": 50 },
+      { "dust": 11, "coins": 75 },
+      { "dust": 14, "coins": 110 }
+    ],
+    "coinsPerItemLevel": 1,
+    "lastRank": { "item": "soulshard", "count": 1, "rarities": ["epic", "legendary"] },
+    "bands": {
+      "dust": [
+        { "upToLevel": 10, "item": "faint_dust" },
+        { "upToLevel": 22, "item": "glimmering_dust" },
+        { "upToLevel": 38, "item": "radiant_dust" },
+        { "upToLevel": 99, "item": "eldritch_dust" }
+      ]
+    }
+  },
+  "scrap": {
+    "refund": 0.75,
+    "dust": { "junk": 0, "common": 0, "enhanced": 2, "rare": 3, "epic": 5, "legendary": 7, "quest": 0 },
+    "extra": { "item": "soulshard", "count": 1, "rarities": ["epic", "legendary"] }
+  }
+}
