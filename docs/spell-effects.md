@@ -6,11 +6,17 @@ built ones live in `data/spell_fx.json`.
 
 ## How it works
 
-- **Cast poses** are code, like every character animation in the game: the
-  Blender characters are split into parts (Torso, Head, Arm_L, Arm_R, Leg_L,
-  Leg_R, Weapon) and `game/entities/rig.gd` turns them. A spell's pose is a
-  row in `Rig.BLOWS`: for each part, where it is at the top of the windup and
-  where it is when the blow lands.
+- **Cast poses** are data: `poses` in `data/spell_fx.json` gives, for each body
+  part (Torso, Head, Arm_L, Arm_R, Leg_L, Leg_R), its turn at the top of the
+  windup and when the blow lands. The rigged player plays each pose as a
+  Blender clip of the same name, baked by `assets/blender/import_models.py`;
+  built models turn their parts in `game/entities/rig.gd`. Both use the same
+  timing, Diablo style: snap straight into the windup (no slow pull back after
+  a key press), a fast whip to the blow, a held follow-through, then rest.
+- **Weight without stagger or shake**: a landed melee blow holds both bodies
+  still for a moment (hit-stop: longer for slower weapons and on crits,
+  `CONFIG.impact.hitStop*`), the enemy pops white, and auto attacks draw a
+  faint slash across the target.
 - **Effect shapes** are built in Blender by `assets/blender/build_fx.py`
   (abstract shapes only: arcs, rings, cracks, tears, streaks, columns, a ward)
   and exported to `assets/models/fx/*.glb`. They carry no colour, only
@@ -24,12 +30,26 @@ built ones live in `data/spell_fx.json`.
   auras and wards that last as long as the spell.
 
 Shapes: `fx_arc` (swing crescent), `fx_wave` (shockwave wall), `fx_crack`
-(ground cracks), `fx_claws` (three tears), `fx_streak` (charge trail),
-`fx_aura` (rising flame column), `fx_ward` (faceted shield plate). Planned for
-later batches: `fx_bolt` (spell bolt head with tail), `fx_dome` (shield
-bubble), `fx_runes` (ground circle of runes), `fx_hammer` (falling hammer of
-light), `fx_spiral` (spinning storm ring), `fx_vines` (grasping roots),
-`fx_skull` (curse sigil), `fx_arrow_trail` (ribbon behind an arrow).
+(ground cracks), `fx_claws` (three tears), `fx_streak` (charge trail, also the
+ribbon behind an arrow), `fx_aura` (rising flame column), `fx_ward` (faceted
+shield plate), `fx_bolt` (spell bolt head with a wisp tail), `fx_dome` (shield
+bubble), `fx_runes` (ground circle of runes), `fx_hammer` (hammer of light),
+`fx_spiral` (spinning storm), `fx_vines` (grasping roots), `fx_sigil` (curse
+sigil), `fx_chains` (a chain of light), `fx_burst` (starburst: hits, puffs,
+flares), `fx_halo` (ring of beads: halos, sleep motes, stun stars),
+`fx_pillar` (column of light).
+
+When the parts play: `windup` while a cast is drawn out (Blight Bolt, Long
+Shot, Siphon Life), `cast` as the spell goes, `projectile` carried by its
+bolt or arrow, `impact` where it lands (the target, a ground spell's spot, a
+sprung trap). A cast-time spell can hold one pose through the cast
+(`windupAnim`) and play another as it goes (`anim`). Poses can `hop`, `sink`
+into a kneel, or `spin` the body round (Divine Storm).
+
+Built in batch 2: Rogue, Ranger, Occultist and Paladin, as planned below
+(Sorcerer and Priest have no spells yet). Shapes that seemed too much like
+props or creatures stayed abstract: the curse is a sigil, not a skull; the
+grave flowers are roots only.
 
 ## Warrior (built, batch 1)
 

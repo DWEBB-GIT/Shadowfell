@@ -249,8 +249,11 @@ var fortify: float:
 ## The spell's own cast pose (data/spell_fx.json `anim`), else the kind's
 ## `type`. `keep_timing`: a blow that lands on its own clock (a sweep, a
 ## burst, a charge) takes only the pose, so blow and pose stay together.
-func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep_timing := false) -> void:
-	var a = DB.spell_fx.get(spell.id, {}).get("anim")
+## `key` "windupAnim" takes the look's `windupAnim` pose (the held part of a cast)
+## when it has one.
+func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep_timing := false, key := "anim") -> void:
+	var look: Dictionary = DB.spell_fx.get(spell.id, {})
+	var a = look.get(key, look.get("anim"))
 	if a == null:
 		game.player.rig.play(type, duration, impact)
 		return
@@ -261,8 +264,8 @@ func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep
 	game.player.rig.play(a.type, duration, impact)
 
 
-## The spell's own effects (data/spell_fx.json): `cast` on you as it goes,
-## `impact` where it lands.
+## The spell's own effects (data/spell_fx.json): `windup` on you while a
+## cast is drawn out, `cast` on you as it goes, `impact` where it lands.
 func _show(spell: Dictionary, phase: String, at: Vector3, facing: float, follow = null) -> void:
 	if DB.spell_fx.has(spell.id):
 		game.events.emit("spellFx", {"id": spell.id, "phase": phase, "position": at, "facing": facing, "follow": follow, "tuning": spell.tuning})
@@ -386,8 +389,8 @@ func try_cast(id: String) -> bool:
 		player.casting = {"id": id, "spell": spell, "t": 0.0, "total": stats.hasted(t.castTime), "target": target, "pushbacks": 0, "channel": channel, "next": t.tickInterval if channel else 0.0}
 		if channel:
 			player.cooldowns[id] = t.cooldown
-		_anim(spell, "shoot" if spell.get("ranged") else "brace", player.casting.total, 0.9, true)
-		_show(spell, "cast", player.position, player.facing, player)
+		_anim(spell, "shoot" if spell.get("ranged") else "brace", player.casting.total, 0.9, true, "windupAnim")
+		_show(spell, "windup", player.position, player.facing, player)
 		events.emit("castStart", {"id": id})
 		return true
 	if spell.kind == "cleave" or spell.kind == "burst":
@@ -500,11 +503,17 @@ func _go(spell: Dictionary, target) -> void:
 	if spell.get("ranged"):
 		_shoot(spell, target)
 		return
+	# kinds with no pose of their own take a look's pose
+	if spell.kind in ["stealth", "purge"] and DB.spell_fx.get(spell.id, {}).has("anim"):
+		_anim(spell, "brace", 0.5, 0.4)
 	match spell.kind:
 		"cast":
 			var d := U.hyp(target.position.x - player.position.x, target.position.z - player.position.z)
 			bolts.append({"enemy": target, "id": spell.id, "t": d / t.projectileSpeed})
-			events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": target.position, "speed": t.projectileSpeed, "follow": target, "life": d / t.projectileSpeed})
+			events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": target.position, "speed": t.projectileSpeed, "follow": target, "life": d / t.projectileSpeed, "look": spell.id})
+			# the release: a look's own pose as the bolt leaves the hands
+			if DB.spell_fx.get(spell.id, {}).has("anim"):
+				_anim(spell, "cast", 0.4, 0.3)
 		"instant":
 			_anim(spell, "strike", 0.4, 0.4)
 			_show(spell, "impact", target.position, _facing_to(target))
@@ -530,6 +539,7 @@ func _go(spell: Dictionary, target) -> void:
 			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
 			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": t.get("slow", 0), "damage": t.get("damageMax", 0) > 0})
 			events.emit("zone", {"id": spell.id, "x": at.x, "z": at.z, "radius": t.radius, "duration": t.duration, "school": spell.get("school")})
+			_show(spell, "impact", Vector3(at.x, Terrain.height_at(at.x, at.z), at.z), player.facing)
 			events.emit("log", {"text": "%s takes root." % spell.name if spell.get("target") == "ground" else "You consecrate the ground: %s." % spell.name, "kind": "hit"})
 		"guard":
 			player.braced = t.window
@@ -707,7 +717,7 @@ func _shoot(spell: Dictionary, target) -> void:
 		inventory.remove_count(ammo, 1)
 	player.pending_shot = null
 	player.hold_bow(true)
-	player.rig.play("shoot", 0.45, 0.25)
+	_anim(spell, "shoot", 0.45, 0.25)
 	var from := Vector3(player.position.x + sin(player.facing) * 0.4, player.position.y + 1.35, player.position.z + cos(player.facing) * 0.4)
 	var speed: float = DB.auto_shot.arrowSpeed
 	var t: Dictionary = spell.tuning
@@ -720,7 +730,7 @@ func _shoot(spell: Dictionary, target) -> void:
 	for e in targets:
 		var life := U.hyp(e.position.x - from.x, e.position.z - from.z) / speed
 		bolts.append({"enemy": e, "id": spell.id, "t": life, "ammo": ammo, "spell": spell})
-		game.events.emit("projectile", {"kind": "arrow", "from": from, "to": e.position, "follow": e, "speed": speed, "life": life})
+		game.events.emit("projectile", {"kind": "arrow", "from": from, "to": e.position, "follow": e, "speed": speed, "life": life, "look": spell.id})
 	game.events.emit("playerShot", {})
 
 
@@ -733,6 +743,7 @@ func _bow_roll(ammo) -> float:
 ## a bow ability's arrow has arrived
 func _arrow_lands(spell: Dictionary, enemy, ammo) -> void:
 	game.events.emit("spellFlash", {"position": enemy.position, "school": spell.get("school")})
+	_show(spell, "impact", enemy.position, _facing_to(enemy))
 	if spell.kind == "dot":
 		_apply_dot(spell, enemy, ammo)
 		return
@@ -1090,6 +1101,7 @@ func update(dt: float) -> void:
 		if spell.get("ranged"):
 			_arrow_lands(spell, b.enemy, b.get("ammo"))
 		else:
+			_show(spell, "impact", b.enemy.position, _facing_to(b.enemy))
 			_landed(spell, b.enemy, _damage(spell, b.enemy, _spell_base(spell.tuning), "Your %s hits the {name} for {n}." % spell.name))
 
 	for id in buffs.keys():
@@ -1174,6 +1186,7 @@ func update(dt: float) -> void:
 			zones.append({"id": tr.id, "x": tr.x, "z": tr.z, "left": t.duration, "next": INF, "radius": t.radius, "slow": t.slow, "damage": false})
 			events.emit("zone", {"id": tr.id, "x": tr.x, "z": tr.z, "radius": t.radius, "duration": t.duration, "school": "tar"})
 			events.emit("log", {"text": "The %s springs your %s." % [prey.cfg.name, spell.name], "kind": "hit"})
+			_show(spell, "impact", Vector3(tr.x, Terrain.height_at(tr.x, tr.z), tr.z), game.player.facing)
 			for e in (game.builds.effects("trap") if game.builds else []):
 				if e.get("applies"):
 					apply_aura(tr.id + ":snare", prey, e.applies)

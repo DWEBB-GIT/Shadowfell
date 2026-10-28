@@ -16,6 +16,7 @@ var time := 0.0
 var action = null ## { type, t, duration, impact, auto }
 var off_action = null
 var flinch := 0.0
+var held := 0.0 ## hit-stop left (hold)
 var death := -1.0 ## -1 alive, otherwise seconds since death
 var pose = null ## a held pose ('fish', 'sit' to eat, 'rest' to sit) when no action plays
 
@@ -109,6 +110,12 @@ func hit() -> void:
 	flinch = 1.0
 
 
+## Hit-stop: hold the whole body still for `t` seconds as a blow lands, so it
+## reads as meeting something solid. Only the look pauses; the game runs on.
+func hold(t: float) -> void:
+	held = maxf(held, t)
+
+
 func die() -> void:
 	death = 0.0
 	action = null
@@ -165,7 +172,8 @@ func _pick_clip(dt: float, speed01: float) -> void:
 	if action != null:
 		var fresh: bool = action.t == 0.0
 		action.t += dt
-		var name: String = ACTION_CLIPS.get(action.type, "Attack")
+		# a spell's own pose is a clip of its name; else the kind's clip
+		var name: String = action.type if anim.has_animation(action.type) else ACTION_CLIPS.get(action.type, "Attack")
 		if name != "" and not anim.has_animation(name):
 			name = "Attack" # a creature without a Cast clip bites instead
 		if name == "" or not anim.has_animation(name):
@@ -188,6 +196,10 @@ func _pick_clip(dt: float, speed01: float) -> void:
 
 
 func update(dt: float, speed01: float) -> void:
+	# hit-stop: the body holds still for a moment as a blow connects
+	if held > 0:
+		held -= dt
+		return
 	time += dt
 	if anim:
 		_update_anim(dt, speed01)
@@ -264,36 +276,34 @@ func _apply_off_action(dt: float) -> void:
 		off_action = null
 
 
-## three keys of a blow: from rest to `a` (the windup) by `up`, on to `b`
-## (the blow) by `impact`, then back to rest
+## Each spell's own cast pose is data (data/spell_fx.json `poses`, read
+## into DB.spell_poses): [part, axis, windup, blow] keys, and how far into
+## the windup the strike starts. Axis 0 raises an arm forward when negative;
+## 1 twists (positive turns left); 2 swings an arm out (negative for the
+## right arm, positive for the left). Built models turn their parts here; the
+## rigged player plays a Blender clip of the same name, keyed the same way
+## (assets/blender/import_models.py).
+##
+## Three keys of a blow, Diablo style: snapped into the windup at once (no
+## slow pull back after a key press), held, whipped through to the blow by
+## `impact`, held a moment there (the follow-through), then back to rest.
 static func _key3(k: float, up: float, impact: float, a: float, b: float) -> float:
 	if k < up:
-		return a * ease_(k / up)
+		var x := minf(1, k / maxf(0.001, up * SNAP))
+		return a * (1 - (1 - x) * (1 - x))
 	if k < impact:
-		return lerpf(a, b, ease_((k - up) / (impact - up)))
-	return b * (1 - ease_((k - impact) / (1 - impact)))
+		var x := (k - up) / (impact - up)
+		return lerpf(a, b, x * x)
+	var after := impact + (1 - impact) * FOLLOW
+	if k < after:
+		return b
+	return b * (1 - ease_((k - after) / (1 - after)))
 
 
-## Each spell's own cast pose (data/spell_fx.json `anim`): [part, axis,
-## windup, blow] keys, and how far into the windup the raise peaks.
-## Axis 0 raises an arm forward when negative; 1 twists (positive turns
-## left); 2 swings an arm out (negative for the right arm, positive for the left).
-const BLOWS := {
-	# Heavy Strike: high on the right, cut down across to the left
-	"diagonal": {"up": 0.7, "keys": [["Arm_R", 0, -2.5, -0.6], ["Arm_R", 2, -0.7, 0.5], ["Torso", 1, -0.45, 0.4], ["Torso", 0, 0.0, 0.15], ["Arm_L", 0, -0.4, -0.2]]},
-	# Crushing Blow: both hands high over the head, a little hop, then down hard
-	"overhead": {"up": 0.75, "hop": 0.16, "keys": [["Arm_R", 0, -3.0, -0.9], ["Arm_L", 0, -2.8, -0.9], ["Torso", 0, -0.3, 0.5], ["Head", 0, -0.25, 0.2], ["Leg_L", 0, -0.2, -0.55], ["Leg_R", 0, 0.1, 0.35]]},
-	# Cleave: the blade held out, the whole body turns right then sweeps left
-	"sweep": {"up": 0.65, "keys": [["Arm_R", 0, -1.6, -1.4], ["Arm_R", 2, -0.5, 0.2], ["Torso", 1, -0.8, 0.85], ["Torso", 0, 0.05, 0.15], ["Arm_L", 0, -0.5, -0.3]]},
-	# Lunge: lean into the charge, the blade drives forward on arrival
-	"thrust": {"up": 0.4, "keys": [["Torso", 0, 0.35, 0.3], ["Arm_R", 0, -1.0, -1.7], ["Arm_L", 0, 0.3, 0.2], ["Head", 0, -0.2, -0.1]]},
-	# Battle Cry: a crouch, then chest out, arms flung wide, head back
-	"roar": {"up": 0.6, "keys": [["Torso", 0, 0.3, -0.3], ["Head", 0, 0.25, -0.5], ["Arm_R", 0, -0.5, -2.4], ["Arm_R", 2, -0.6, -0.7], ["Arm_L", 0, -0.5, -2.4], ["Arm_L", 2, 0.6, 0.7], ["Leg_L", 0, -0.2, 0.0], ["Leg_R", 0, 0.2, 0.0]]},
-	# Shield Break: the shield raised high, then driven into the ground
-	"shieldSlam": {"up": 0.7, "hop": 0.12, "keys": [["Arm_L", 0, -2.6, -0.5], ["Arm_L", 2, 0.3, 0.1], ["Arm_R", 0, -1.2, -0.3], ["Torso", 0, -0.25, 0.55], ["Leg_L", 0, -0.4, -0.7], ["Leg_R", 0, 0.1, 0.3]]},
-	# Rend: a low backhand that rips up and out to the right
-	"rip": {"up": 0.6, "keys": [["Arm_R", 0, -0.2, -2.4], ["Arm_R", 2, 0.5, -0.6], ["Torso", 1, 0.45, -0.4], ["Torso", 0, 0.2, -0.1]]},
-}
+## the share of the windup spent snapping into it, and of the time after the
+## blow spent holding it (the follow-through)
+const SNAP := 0.3
+const FOLLOW := 0.3
 
 
 func _apply_action(dt: float) -> void:
@@ -303,13 +313,19 @@ func _apply_action(dt: float) -> void:
 	var impact: float = a.impact
 	var raise := ease_(k / impact) if k < impact else 1 - ease_((k - impact) / (1 - impact))
 	var swing := 0.0 if k < impact else ease_(minf(1, (k - impact) / 0.35))
-	if BLOWS.has(a.type):
-		var b: Dictionary = BLOWS[a.type]
+	if DB.spell_poses.has(a.type):
+		var b: Dictionary = DB.spell_poses[a.type]
 		var up: float = impact * b.up
 		for key in b.keys:
 			_rot(key[0], key[1], _key3(k, up, impact, key[2], key[3]))
 		if b.has("hop"):
 			model.position.y = b.hop * sin(PI * minf(1, k / impact))
+		if b.has("sink"):
+			# down into a kneel or a crouch by the blow, up again after
+			model.position.y = -b.sink * raise
+		if b.has("spin"):
+			# a full turn (or `spin` turns) through the windup to the blow
+			model.rotation.y = -TAU * b.spin * ease_(minf(1, k / impact))
 	match a.type:
 		"guard":
 			# Brace: up fast behind the shield, low and wide, held while it lasts
@@ -387,8 +403,11 @@ func _apply_action(dt: float) -> void:
 			_rot("Torso", 0, -0.3 * raise + 0.5 * swing * (1 - k))
 	if k >= 1:
 		action = null
-		if a.type == "dodge" or a.type == "guard" or BLOWS.get(a.type, {}).has("hop"):
+		var b: Dictionary = DB.spell_poses.get(a.type, {})
+		if a.type == "dodge" or a.type == "guard" or b.has("hop") or b.has("sink"):
 			model.position.y = 0
+		if b.has("spin"):
+			model.rotation.y = 0
 		if a.type == "bite":
 			model.position.z = 0
 

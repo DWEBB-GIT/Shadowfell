@@ -1,5 +1,45 @@
 {
-  "_about": "How each spell looks: its own cast animation (`anim`, a pose in game/entities/rig.gd) and its own effects, played when the spell goes (`cast`, at you) and where it lands (`impact`, at the target, or at you for a sweep or burst). Linked to data/abilities.json by spell id; a spell missing here keeps its kind's generic animation and effect. Each effect part has `fx`: `mesh` (a shape from assets/models/fx, built by assets/blender/build_fx.py), `ring` (flat shockwave), `sparks`, `dust`, `flash` or `shake`. Mesh parts take `mesh`, `colour` (default: the spell's school), `glow` (brightness), `life` (seconds, or a tuning key such as `window`), `delay`, `size` [start, end] (scale over the life), `scale` [x, y, z], `height` and `forward` (metres from the anchor along the facing; negative is back toward you at a target), `rot` [x, y, z] degrees, `faceCamera` (an upright shape turns to face the fixed camera, so it never shows side on; `angle` then tilts it on screen, and it mirrors when you face screen left), `spin` (degrees the shape turns about its own axis over its life, which sells a swing), `follow` (stays on you) and `whileBraced` (shown only while a guard is up). `anim` takes `type`, `duration` (seconds, or a tuning key) and `impact` (0..1, when the blow lands); sweeps, bursts and charges keep their own timing so the blow and the pose stay together. The full list of planned looks for every spell is docs/spell-effects.md.",
+  "_about": "How each spell looks: its own cast animation (`anim`, a pose in `poses`: for each body part and axis its turn at the top of the windup and at the blow, how far into the windup the strike starts (`up`), and an optional `hop`, `sink` or `spin`; played by game/entities/rig.gd on built models and as a Blender clip of the same name on the rigged player) and its own effects, played when the spell goes (`cast`, at you) and where it lands (`impact`, at the target, or at you for a sweep or burst). Linked to data/abilities.json by spell id; a spell missing here keeps its kind's generic animation and effect. Each effect part has `fx`: `mesh` (a shape from assets/models/fx, built by assets/blender/build_fx.py), `ring` (flat shockwave), `sparks`, `dust`, `flash` or `shake`. Mesh parts take `mesh`, `colour` (default: the spell's school), `glow` (brightness), `life` (seconds, or a tuning key such as `window`), `delay`, `size` [start, end] (scale over the life), `scale` [x, y, z], `height` and `forward` (metres from the anchor along the facing; negative is back toward you at a target), `rot` [x, y, z] degrees, `faceCamera` (an upright shape turns to face the fixed camera, so it never shows side on; `angle` then tilts it on screen, and it mirrors when you face screen left), `spin` (degrees the shape turns about its own axis over its life, which sells a swing), `follow` (stays on you) and `whileBraced` (shown only while a guard is up). Besides `cast` and `impact`, `windup` plays on you while a cast is drawn out (a cast-time spell or a channel; `life` \"castTime\" lasts it out) and `projectile` lists shapes carried by the spell's bolt or arrow (`mesh`, `colour`, `glow`, `scale`, `forward`). A mesh part's `fall` drops it from that many metres above onto its place (Light's Hammer). `windupAnim` is the pose held through a cast, `anim` the one played as it goes. `anim` takes `type`, `duration` (seconds, or a tuning key) and `impact` (0..1, when the blow lands); sweeps, bursts and charges keep their own timing so the blow and the pose stay together. The full list of planned looks for every spell is docs/spell-effects.md.",
+  "poses": {
+    "diagonal": {"about": "Heavy Strike: high on the right, cut down across to the left", "up": 0.7, "keys": [["Arm_R", 0, -2.5, -0.6], ["Arm_R", 2, -0.7, 0.5], ["Torso", 1, -0.45, 0.4], ["Torso", 0, 0.0, 0.15], ["Arm_L", 0, -0.4, -0.2]]},
+    "overhead": {"about": "Crushing Blow: both hands high over the head, a little hop, then down hard", "up": 0.75, "hop": 0.16, "keys": [["Arm_R", 0, -3.0, -0.9], ["Arm_L", 0, -2.8, -0.9], ["Torso", 0, -0.3, 0.5], ["Head", 0, -0.25, 0.2], ["Leg_L", 0, -0.2, -0.55], ["Leg_R", 0, 0.1, 0.35]]},
+    "sweep": {"about": "Cleave: the blade held out, the whole body turns right then sweeps left", "up": 0.65, "keys": [["Arm_R", 0, -1.6, -1.4], ["Arm_R", 2, -0.5, 0.2], ["Torso", 1, -0.8, 0.85], ["Torso", 0, 0.05, 0.15], ["Arm_L", 0, -0.5, -0.3]]},
+    "thrust": {"about": "Lunge: lean into the charge, the blade drives forward on arrival", "up": 0.4, "keys": [["Torso", 0, 0.35, 0.3], ["Arm_R", 0, -1.0, -1.7], ["Arm_L", 0, 0.3, 0.2], ["Head", 0, -0.2, -0.1]]},
+    "roar": {"about": "Battle Cry: a crouch, then chest out, arms flung wide, head back", "up": 0.6, "keys": [["Torso", 0, 0.3, -0.3], ["Head", 0, 0.25, -0.5], ["Arm_R", 0, -0.5, -2.4], ["Arm_R", 2, -0.6, -0.7], ["Arm_L", 0, -0.5, -2.4], ["Arm_L", 2, 0.6, 0.7], ["Leg_L", 0, -0.2, 0.0], ["Leg_R", 0, 0.2, 0.0]]},
+    "shieldSlam": {"about": "Shield Break: the shield raised high, then driven into the ground", "up": 0.7, "hop": 0.12, "keys": [["Arm_L", 0, -2.6, -0.5], ["Arm_L", 2, 0.3, 0.1], ["Arm_R", 0, -1.2, -0.3], ["Torso", 0, -0.25, 0.55], ["Leg_L", 0, -0.4, -0.7], ["Leg_R", 0, 0.1, 0.3]]},
+    "rip": {"about": "Rend: a low backhand that rips up and out to the right", "up": 0.6, "keys": [["Arm_R", 0, -0.2, -2.4], ["Arm_R", 2, 0.5, -0.6], ["Torso", 1, 0.45, -0.4], ["Torso", 0, 0.2, -0.1]]},
+    "jab": {"about": "Strike: a quick jab, the off hand following", "up": 0.5, "keys": [["Arm_R", 0, -0.6, -1.6], ["Torso", 1, 0.3, -0.25], ["Torso", 0, 0.1, 0.25], ["Arm_L", 0, -0.3, -0.9]]},
+    "pounce": {"about": "Ambush: out of Shadow, both blades high, a pounce, both down", "up": 0.7, "hop": 0.25, "keys": [["Arm_R", 0, -2.6, -0.7], ["Arm_L", 0, -2.6, -0.7], ["Torso", 0, -0.2, 0.6], ["Leg_L", 0, -0.5, -0.6], ["Leg_R", 0, 0.3, 0.4]]},
+    "scissor": {"about": "Double Cut: both blades crossed in front, then cut outward in an X", "up": 0.55, "keys": [["Arm_R", 0, -1.4, -1.2], ["Arm_R", 2, 0.5, -1.1], ["Arm_L", 0, -1.4, -1.2], ["Arm_L", 2, -0.5, 1.1], ["Torso", 0, 0.25, 0.1]]},
+    "upstab": {"about": "Poisoned Blade: a low stab that comes up with a flick of the wrist", "up": 0.55, "keys": [["Arm_R", 0, 0.3, -1.9], ["Arm_R", 1, 0.0, 0.4], ["Torso", 0, 0.35, -0.05], ["Torso", 1, -0.3, 0.2]]},
+    "blowDust": {"about": "Sleep: the open palm raised to the lips, then a breath blows the dust off it", "up": 0.6, "keys": [["Arm_L", 0, -2.0, -1.5], ["Arm_L", 2, -0.3, 0.0], ["Head", 0, 0.15, -0.15], ["Torso", 0, 0.1, -0.05]]},
+    "crouch": {"about": "Shadow: a low crouch, the cloak drawn round", "up": 0.4, "sink": 0.18, "keys": [["Torso", 0, 0.5, 0.45], ["Arm_L", 0, -1.2, -0.9], ["Arm_L", 2, -0.6, -0.5], ["Arm_R", 0, -0.6, -0.4], ["Leg_L", 0, -0.5, -0.5], ["Leg_R", 0, 0.4, 0.4], ["Head", 0, 0.25, 0.2]]},
+    "sidestep": {"about": "Guile: a light step back, blades crossed", "up": 0.4, "keys": [["Torso", 1, -0.4, -0.3], ["Torso", 0, -0.15, -0.1], ["Arm_R", 0, -1.2, -1.2], ["Arm_R", 2, 0.6, 0.6], ["Arm_L", 0, -1.2, -1.2], ["Arm_L", 2, -0.6, -0.6], ["Leg_R", 0, 0.4, 0.3]]},
+    "snapShot": {"about": "(Ranger: the bow in the left hand, drawn with the right) Quick Shot: a fast draw from the hip, loosed at once", "up": 0.35, "keys": [["Arm_L", 0, -1.2, -1.5], ["Arm_R", 0, -1.0, -1.3], ["Arm_R", 2, 0.4, 0.9], ["Torso", 1, 0.3, 0.35]]},
+    "twistDraw": {"about": "Venom Arrow: the arrowhead twisted on the string, then drawn and loosed", "up": 0.55, "keys": [["Arm_L", 0, -1.55, -1.55], ["Arm_R", 0, -1.5, -1.4], ["Arm_R", 1, 0.6, 0.0], ["Arm_R", 2, 0.3, 0.8], ["Torso", 1, 0.35, 0.35]]},
+    "kindle": {"about": "Flaming Arrow: the arrowhead lowered to a spark, then raised and loosed", "up": 0.5, "keys": [["Arm_L", 0, -0.6, -1.6], ["Arm_R", 0, -0.5, -1.4], ["Arm_R", 2, 0.2, 0.8], ["Torso", 0, 0.35, 0.0], ["Head", 0, 0.3, 0.0]]},
+    "kneelSet": {"about": "Tar Trap: kneel and press the trap into the ground", "up": 0.5, "sink": 0.3, "keys": [["Torso", 0, 0.6, 0.7], ["Arm_R", 0, -0.9, -0.5], ["Arm_L", 0, -0.5, -0.3], ["Leg_L", 0, -0.9, -0.9], ["Leg_R", 0, 0.6, 0.6], ["Head", 0, 0.3, 0.3]]},
+    "fanShot": {"about": "Triple Shot: a fanned draw, the bow swept across as three arrows go", "up": 0.45, "keys": [["Arm_L", 0, -1.55, -1.55], ["Arm_L", 1, 0.4, -0.4], ["Arm_R", 0, -1.4, -1.3], ["Arm_R", 2, 0.5, 0.9], ["Torso", 1, 0.6, 0.0]]},
+    "longDraw": {"about": "Long Shot: a long held draw, leaning back (held while the cast lasts) ...", "up": 0.35, "keys": [["Arm_L", 0, -1.7, -1.7], ["Arm_R", 0, -1.5, -1.5], ["Arm_R", 2, 0.9, 0.95], ["Torso", 0, -0.2, -0.22], ["Torso", 1, 0.4, 0.4], ["Head", 0, 0.15, 0.15]]},
+    "loose": {"about": "... then the loose: the drawing hand flies back", "up": 0.15, "keys": [["Arm_L", 0, -1.7, -1.6], ["Arm_R", 0, -1.5, -1.2], ["Arm_R", 2, 0.95, 1.4], ["Torso", 0, -0.2, -0.1], ["Torso", 1, 0.4, 0.4]]},
+    "backflip": {"about": "Disengage: a crouch, then a spring back, arching, arms thrown up", "up": 0.4, "hop": 0.35, "keys": [["Torso", 0, 0.4, -0.7], ["Head", 0, 0.2, -0.5], ["Arm_R", 0, -0.3, -2.6], ["Arm_L", 0, -0.3, -2.6], ["Leg_L", 0, -0.6, 0.6], ["Leg_R", 0, -0.6, 0.4]]},
+    "gather": {"about": "Blight Bolt: both hands cupped at the chest while the cast gathers ...", "up": 0.3, "keys": [["Arm_R", 0, -1.1, -1.1], ["Arm_R", 2, 0.5, 0.5], ["Arm_L", 0, -1.1, -1.1], ["Arm_L", 2, -0.5, -0.5], ["Torso", 0, 0.15, 0.15], ["Head", 0, 0.2, 0.2]]},
+    "push": {"about": "... then thrust out (Blight Bolt, Hallowed Bolt)", "up": 0.2, "keys": [["Arm_R", 0, -1.1, -1.6], ["Arm_R", 2, 0.5, 0.1], ["Arm_L", 0, -1.1, -1.6], ["Arm_L", 2, -0.5, -0.1], ["Torso", 0, 0.15, 0.3]]},
+    "clutch": {"about": "Rot: a clawed hand reaching out, closing toward the target", "up": 0.5, "keys": [["Arm_R", 0, -1.7, -1.3], ["Arm_R", 1, 0.0, 0.6], ["Torso", 0, -0.1, 0.25], ["Torso", 1, 0.2, -0.1]]},
+    "earthPress": {"about": "Grave Bloom: kneel and press a hand to the earth", "up": 0.5, "sink": 0.25, "keys": [["Torso", 0, 0.3, 0.8], ["Arm_R", 0, -0.9, -0.9], ["Leg_L", 0, -0.6, -0.8], ["Leg_R", 0, 0.4, 0.5], ["Head", 0, 0.2, 0.3]]},
+    "trace": {"about": "Hex of Withering: a finger traces a sigil in the air, high left to low right", "up": 0.45, "keys": [["Arm_R", 0, -2.0, -1.3], ["Arm_R", 2, -0.8, 0.4], ["Torso", 1, -0.3, 0.3], ["Head", 0, 0.1, 0.1]]},
+    "throwWide": {"about": "Purge: arms pulled in, then thrown wide, head back", "up": 0.55, "keys": [["Arm_R", 0, -1.2, -1.4], ["Arm_R", 2, 0.7, -1.3], ["Arm_L", 0, -1.2, -1.4], ["Arm_L", 2, -0.7, 1.3], ["Torso", 0, 0.3, -0.25], ["Head", 0, 0.2, -0.4]]},
+    "pull": {"about": "Siphon Life: one arm out, held, the fingers pulling", "up": 0.15, "keys": [["Arm_R", 0, -1.6, -1.6], ["Arm_R", 1, 0.3, 0.3], ["Arm_L", 0, -0.4, -0.4], ["Torso", 0, -0.1, -0.1], ["Torso", 1, 0.2, 0.2]]},
+    "heavyOverhead": {"about": "Holy Strike: a slow, heavy overhead", "up": 0.75, "keys": [["Arm_R", 0, -3.0, -0.8], ["Arm_L", 0, -2.4, -0.7], ["Torso", 0, -0.35, 0.45], ["Torso", 1, -0.2, 0.1], ["Leg_L", 0, -0.3, -0.5]]},
+    "gavel": {"about": "Light's Hammer: an arm raised to the sky, then brought down like a gavel", "up": 0.7, "keys": [["Arm_R", 0, -3.0, -1.0], ["Arm_L", 0, -0.6, -0.3], ["Torso", 0, -0.25, 0.3], ["Head", 0, -0.4, 0.2]]},
+    "spinStrike": {"about": "Divine Storm: a full turn with the blade held out", "up": 0.25, "spin": 1.0, "keys": [["Arm_R", 0, -1.6, -1.6], ["Arm_R", 2, -1.2, -1.4], ["Arm_L", 0, -0.5, -0.5], ["Arm_L", 2, 0.9, 0.9], ["Torso", 0, 0.1, 0.1]]},
+    "plantBlade": {"about": "Hallowed Ground: kneel, the blade planted in the ground", "up": 0.55, "sink": 0.3, "keys": [["Arm_R", 0, -2.4, -0.4], ["Arm_L", 0, -1.0, -0.4], ["Torso", 0, -0.1, 0.5], ["Leg_L", 0, -0.5, -0.9], ["Leg_R", 0, 0.3, 0.9]]},
+    "pressDown": {"about": "Bring to Kneel: an open hand raised, then pushed down", "up": 0.55, "keys": [["Arm_L", 0, -2.2, -0.9], ["Arm_L", 2, 0.3, 0.0], ["Torso", 0, -0.2, 0.35], ["Head", 0, -0.2, 0.25]]},
+    "liftShield": {"about": "Light Shield: the shield lifted to the sky", "up": 0.4, "keys": [["Arm_L", 0, -1.4, -2.9], ["Arm_L", 2, 0.1, 0.2], ["Arm_R", 0, -0.3, -0.4], ["Torso", 0, 0.2, -0.25], ["Head", 0, 0.1, -0.45]]},
+    "point": {"about": "Smite: a finger raised to the sky, then pointed at the target", "up": 0.5, "keys": [["Arm_R", 0, -2.8, -1.6], ["Torso", 1, -0.2, 0.15], ["Head", 0, -0.3, 0.1]]},
+    "shieldThrust": {"about": "Rebuke: the shield thrust forward", "up": 0.45, "keys": [["Arm_L", 0, -0.8, -1.6], ["Arm_L", 1, 0.4, 0.6], ["Torso", 0, -0.1, 0.35], ["Torso", 1, 0.3, -0.2], ["Leg_L", 0, -0.2, -0.6]]},
+    "raiseHands": {"about": "Hallowed Bolt: both hands raised while the light gathers (then `push`)", "up": 0.3, "keys": [["Arm_R", 0, -2.6, -2.6], ["Arm_L", 0, -2.6, -2.6], ["Head", 0, -0.3, -0.3], ["Torso", 0, -0.15, -0.15]]}
+  },
   "spells": {
     "heavyStrike": {
       "anim": {"type": "diagonal", "duration": 0.42, "impact": 0.42},
@@ -67,6 +107,307 @@
       "impact": [
         {"fx": "mesh", "mesh": "fx_claws", "colour": "#e02818", "glow": 1.3, "delay": 0.1, "life": 0.4, "height": 0.6, "forward": -0.2, "faceCamera": true, "size": [0.7, 0.95]},
         {"fx": "sparks", "n": 8, "colour": "#d03020", "delay": 0.1}
+      ]
+    },
+    "quickStrike": {
+      "anim": {"type": "jab", "duration": 0.32, "impact": 0.45},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#f0e8d8", "glow": 0.7, "delay": 0.08, "life": 0.16, "height": 1.2, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": -10, "size": [0.45, 0.6], "spin": 60},
+        {"fx": "sparks", "n": 5, "delay": 0.08}
+      ]
+    },
+    "ambush": {
+      "anim": {"type": "pounce", "duration": 0.5, "impact": 0.5},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#7a3ac8", "glow": 1.1, "delay": 0.2, "life": 0.45, "height": 1.0, "faceCamera": true, "size": [0.5, 1.3], "spin": 30},
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#e8dcff", "glow": 0.9, "delay": 0.22, "life": 0.2, "height": 1.2, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": 50, "size": [0.6, 0.8], "spin": 70},
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#e8dcff", "glow": 0.9, "delay": 0.25, "life": 0.2, "height": 1.2, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": -50, "size": [0.6, 0.8], "spin": -70},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffe680", "glow": 0.9, "delay": 0.3, "life": 1.2, "height": 2.0, "size": [0.3, 0.35], "spin": 360},
+        {"fx": "dust", "n": 8, "spread": 0.5, "delay": 0.2}
+      ]
+    },
+    "doubleCut": {
+      "anim": {"type": "scissor", "duration": 0.4, "impact": 0.45},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#f4ead8", "glow": 0.9, "delay": 0.1, "life": 0.2, "height": 1.2, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": 40, "size": [0.6, 0.8], "spin": 70},
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ffb070", "glow": 0.9, "delay": 0.12, "life": 0.2, "height": 1.2, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": -40, "size": [0.6, 0.8], "spin": -70},
+        {"fx": "sparks", "n": 8, "delay": 0.1}
+      ]
+    },
+    "poisonedBlade": {
+      "anim": {"type": "upstab", "duration": 0.38, "impact": 0.45},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#8ae04a", "glow": 1.0, "delay": 0.1, "life": 0.22, "height": 1.1, "forward": -0.2, "faceCamera": true, "rot": [90, 0, 0], "angle": 75, "size": [0.5, 0.7], "spin": 70},
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#5ac030", "glow": 0.7, "delay": 0.12, "life": 0.3, "height": 1.1, "faceCamera": true, "size": [0.2, 0.55]},
+        {"fx": "sparks", "n": 8, "colour": "#7ad040", "delay": 0.12}
+      ]
+    },
+    "sleep": {
+      "anim": {"type": "blowDust", "duration": 0.6, "impact": 0.6},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#b490ff", "glow": 0.6, "follow": true, "delay": 0.3, "life": 0.4, "height": 1.5, "forward": 0.6, "faceCamera": true, "size": [0.15, 0.5], "spin": 40}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#a080f0", "glow": 0.6, "delay": 0.35, "life": 0.5, "height": 1.3, "faceCamera": true, "size": [0.3, 0.8], "spin": 20},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#c0a0ff", "glow": 0.9, "delay": 0.45, "life": 4.0, "height": 2.1, "size": [0.32, 0.38], "spin": 540},
+        {"fx": "sparks", "n": 6, "colour": "#c0a0ff", "delay": 0.4}
+      ]
+    },
+    "shadow": {
+      "anim": {"type": "crouch", "duration": 0.5, "impact": 0.5},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#6a3aa8", "glow": 0.8, "delay": 0.15, "life": 0.5, "height": 0.6, "faceCamera": true, "size": [0.5, 1.2], "spin": 30},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#7a4ac0", "glow": 0.7, "delay": 0.15, "life": 0.45, "height": 0.02, "size": [0.3, 1.4], "scale": [1, 0.7, 1]},
+        {"fx": "dust", "n": 10, "spread": 0.5, "delay": 0.15}
+      ]
+    },
+    "guile": {
+      "anim": {"type": "sidestep", "duration": 0.45, "impact": 0.4},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_streak", "colour": "#d8d0f0", "glow": 0.35, "follow": true, "life": 0.4, "height": 1.0, "rot": [0, 90, 0], "scale": [0.3, 0.7, 0.8]},
+        {"fx": "mesh", "mesh": "fx_streak", "colour": "#d8d0f0", "glow": 0.35, "follow": true, "life": 0.4, "height": 1.0, "rot": [0, -90, 0], "scale": [0.3, 0.7, 0.8]},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#d8d0f0", "glow": 0.45, "follow": true, "whileBraced": true, "life": "window", "height": 0.05, "size": [0.7, 0.75], "spin": 900}
+      ]
+    },
+    "quickShot": {
+      "anim": {"type": "snapShot", "duration": 0.32, "impact": 0.35},
+      "projectile": [
+        {"mesh": "fx_streak", "colour": "#f0e8d0", "glow": 0.55, "scale": [0.14, 0.14, 1.3]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#f0e0c0", "glow": 0.7, "life": 0.2, "height": 1.0, "faceCamera": true, "size": [0.2, 0.45]},
+        {"fx": "sparks", "n": 4}
+      ]
+    },
+    "venomArrow": {
+      "anim": {"type": "twistDraw", "duration": 0.5, "impact": 0.5},
+      "projectile": [
+        {"mesh": "fx_streak", "colour": "#7ad040", "glow": 0.8, "scale": [0.16, 0.16, 1.5]},
+        {"mesh": "fx_bolt", "colour": "#7ad040", "glow": 0.6, "scale": [0.25, 0.25, 0.35], "forward": 0.3}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#6ac030", "glow": 0.9, "life": 0.35, "height": 1.0, "faceCamera": true, "size": [0.3, 0.7], "spin": 20},
+        {"fx": "sparks", "n": 8, "colour": "#7ad040"}
+      ]
+    },
+    "flamingArrow": {
+      "anim": {"type": "kindle", "duration": 0.55, "impact": 0.55},
+      "cast": [
+        {"fx": "sparks", "n": 5, "colour": "#ff9040", "delay": 0.1}
+      ],
+      "projectile": [
+        {"mesh": "fx_streak", "colour": "#ff8030", "glow": 1.0, "scale": [0.2, 0.2, 1.6]},
+        {"mesh": "fx_bolt", "colour": "#ffb050", "glow": 0.9, "scale": [0.3, 0.3, 0.4], "forward": 0.3}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#ff8030", "glow": 1.1, "life": 0.35, "height": 1.0, "faceCamera": true, "size": [0.35, 0.8], "spin": 30},
+        {"fx": "mesh", "mesh": "fx_aura", "colour": "#ff6020", "glow": 0.8, "delay": 0.1, "life": "duration", "height": 0.0, "size": [0.35, 0.4], "scale": [1, 1.6, 1]},
+        {"fx": "sparks", "n": 10, "colour": "#ffa040"}
+      ]
+    },
+    "tarTrap": {
+      "anim": {"type": "kneelSet", "duration": 0.6, "impact": 0.6},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_runes", "colour": "#b08850", "glow": 0.5, "delay": 0.3, "life": 0.9, "height": 0.05, "forward": 0.6, "size": [0.6, 0.75]},
+        {"fx": "dust", "n": 6, "spread": 0.3, "forward": 0.6, "delay": 0.3}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#806040", "glow": 0.8, "life": 0.4, "height": 0.5, "faceCamera": true, "size": [0.6, 1.3]},
+        {"fx": "mesh", "mesh": "fx_crack", "colour": "#705030", "glow": 0.3, "life": "duration", "height": 0.05, "size": [2.0, 2.4]},
+        {"fx": "dust", "n": 12, "spread": 1.5}
+      ]
+    },
+    "tripleShot": {
+      "anim": {"type": "fanShot", "duration": 0.45, "impact": 0.45},
+      "projectile": [
+        {"mesh": "fx_streak", "colour": "#f0e8d0", "glow": 0.6, "scale": [0.14, 0.14, 1.3]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#f0e0c0", "glow": 0.7, "life": 0.2, "height": 1.0, "faceCamera": true, "size": [0.2, 0.45]},
+        {"fx": "sparks", "n": 4}
+      ]
+    },
+    "longShot": {
+      "windupAnim": {"type": "longDraw"},
+      "anim": {"type": "loose", "duration": 0.45, "impact": 0.15},
+      "windup": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#fff0c0", "glow": 0.7, "follow": true, "delay": 0.4, "life": 2.6, "height": 1.4, "forward": 0.75, "faceCamera": true, "size": [0.05, 0.4], "spin": 180}
+      ],
+      "projectile": [
+        {"mesh": "fx_streak", "colour": "#fff0c0", "glow": 1.0, "scale": [0.22, 0.22, 3.0]},
+        {"mesh": "fx_bolt", "colour": "#fff4d0", "glow": 0.8, "scale": [0.25, 0.25, 0.4], "forward": 0.3}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#fff0c0", "glow": 1.0, "life": 0.3, "height": 1.0, "faceCamera": true, "size": [0.4, 0.9]},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffe6a0", "glow": 0.9, "life": 0.8, "height": 0.06, "size": [0.6, 1.0], "spin": 120},
+        {"fx": "sparks", "n": 8}
+      ]
+    },
+    "disengage": {
+      "anim": {"type": "backflip"},
+      "cast": [
+        {"fx": "dust", "n": 10, "spread": 0.5},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#d8c8a0", "glow": 0.5, "life": 0.3, "height": 0.02, "size": [0.3, 1.0], "scale": [1, 0.5, 1]},
+        {"fx": "mesh", "mesh": "fx_streak", "colour": "#e0d8c0", "glow": 0.3, "follow": true, "life": "duration", "height": 1.0, "rot": [0, 180, 0], "scale": [0.3, 0.4, 1.4]}
+      ]
+    },
+    "blightBolt": {
+      "windupAnim": {"type": "gather"},
+      "anim": {"type": "push", "duration": 0.4, "impact": 0.3},
+      "windup": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#6ac030", "glow": 0.7, "follow": true, "delay": 0.15, "life": "castTime", "height": 1.25, "forward": 0.45, "faceCamera": true, "size": [0.1, 0.35], "spin": 400},
+        {"fx": "mesh", "mesh": "fx_runes", "colour": "#5a9a30", "glow": 0.4, "follow": true, "life": "castTime", "height": 0.05, "size": [0.7, 0.8], "spin": 90}
+      ],
+      "projectile": [
+        {"mesh": "fx_bolt", "colour": "#7ad040", "glow": 1.0, "scale": [0.6, 0.6, 1.0]},
+        {"mesh": "fx_bolt", "colour": "#7a40c0", "glow": 0.7, "scale": [0.9, 0.9, 1.3]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#6ac030", "glow": 1.0, "life": 0.4, "height": 1.0, "faceCamera": true, "size": [0.4, 1.0], "spin": 40},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#5a9a30", "glow": 0.6, "life": 0.4, "height": 0.03, "size": [0.2, 1.0], "scale": [1, 0.5, 1]},
+        {"fx": "sparks", "n": 8, "colour": "#7ad040"}
+      ]
+    },
+    "rot": {
+      "anim": {"type": "clutch", "duration": 0.5, "impact": 0.5},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_sigil", "colour": "#7ad040", "glow": 0.9, "delay": 0.2, "life": 1.4, "height": 2.3, "faceCamera": true, "size": [0.3, 0.45], "spin": 20},
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#5a2a90", "glow": 0.7, "delay": 0.2, "life": 0.4, "height": 1.0, "faceCamera": true, "size": [0.3, 0.8]},
+        {"fx": "sparks", "n": 6, "colour": "#6a3a90", "delay": 0.3}
+      ]
+    },
+    "graveBloom": {
+      "anim": {"type": "earthPress", "duration": 0.6, "impact": 0.55},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_crack", "colour": "#5a9a30", "glow": 0.6, "delay": 0.3, "life": 0.6, "height": 0.05, "forward": 0.5, "size": [0.3, 0.6]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_runes", "colour": "#6ab030", "glow": 0.3, "delay": 0.3, "life": "duration", "height": 0.06, "size": [3.6, 4.0], "spin": 30},
+        {"fx": "mesh", "mesh": "fx_vines", "colour": "#7ad040", "glow": 0.6, "delay": 0.35, "life": "duration", "height": 0.0, "size": [0.8, 1.7], "scale": [1, 0.6, 1]},
+        {"fx": "mesh", "mesh": "fx_vines", "colour": "#7a40c0", "glow": 0.4, "delay": 0.45, "life": "duration", "height": 0.0, "rot": [0, 40, 0], "size": [0.6, 1.2], "scale": [1, 0.5, 1]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#5a9a30", "glow": 0.5, "delay": 0.3, "life": 0.5, "height": 0.03, "size": [0.5, 4.0], "scale": [1, 0.5, 1]},
+        {"fx": "dust", "n": 10, "spread": 2.5, "delay": 0.3}
+      ]
+    },
+    "hexOfWithering": {
+      "anim": {"type": "trace", "duration": 0.55, "impact": 0.5},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_sigil", "colour": "#9a50e0", "glow": 0.8, "follow": true, "delay": 0.05, "life": 0.45, "height": 1.5, "forward": 0.8, "faceCamera": true, "size": [0.15, 0.4], "spin": -60}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_sigil", "colour": "#9a50e0", "glow": 1.0, "delay": 0.3, "life": 1.6, "height": 1.2, "faceCamera": true, "size": [0.75, 0.6]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#8a40c0", "glow": 0.8, "delay": 0.35, "life": 1.6, "height": 1.3, "rot": [150, 0, 0], "size": [0.3, 1.4]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#8a40c0", "glow": 0.8, "delay": 0.4, "life": 1.6, "height": 1.3, "rot": [150, 120, 0], "size": [0.3, 1.4]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#8a40c0", "glow": 0.8, "delay": 0.45, "life": 1.6, "height": 1.3, "rot": [150, 240, 0], "size": [0.3, 1.4]}
+      ]
+    },
+    "purge": {
+      "anim": {"type": "throwWide", "duration": 0.6, "impact": 0.55},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#9a50e0", "glow": 0.8, "follow": true, "life": 0.35, "height": 0.6, "size": [2.2, 0.3], "scale": [1, 1.5, 1]},
+        {"fx": "mesh", "mesh": "fx_aura", "colour": "#7ad040", "glow": 0.6, "follow": true, "delay": 0.3, "life": 0.8, "size": [0.45, 0.6], "scale": [1, 1.6, 1]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#7ad040", "glow": 0.6, "delay": 0.32, "life": 0.45, "height": 0.03, "size": [0.3, 1.8], "scale": [1, 0.6, 1]},
+        {"fx": "sparks", "n": 10, "colour": "#7ad040", "delay": 0.32}
+      ]
+    },
+    "siphonLife": {
+      "windupAnim": {"type": "pull"},
+      "windup": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#e04040", "glow": 0.8, "follow": true, "life": "castTime", "height": 1.35, "forward": 0.9, "faceCamera": true, "size": [0.25, 0.35], "spin": 720},
+        {"fx": "mesh", "mesh": "fx_aura", "colour": "#a02030", "glow": 0.25, "follow": true, "life": "castTime", "size": [0.45, 0.5], "scale": [1, 0.9, 1]}
+      ]
+    },
+    "holyStrike": {
+      "anim": {"type": "heavyOverhead", "duration": 0.6, "impact": 0.55},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#ffe090", "glow": 1.0, "delay": 0.25, "life": 0.24, "height": 0.9, "forward": -0.9, "faceCamera": true, "rot": [90, 0, 0], "angle": 85, "size": [0.85, 1.0], "spin": 80},
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#ffd070", "glow": 0.6, "delay": 0.3, "life": 0.6, "size": [0.45, 0.6], "scale": [1, 4.0, 1]},
+        {"fx": "sparks", "n": 8, "colour": "#ffe090", "delay": 0.3}
+      ]
+    },
+    "lightsHammer": {
+      "anim": {"type": "gavel", "duration": 0.6, "impact": 0.5},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_hammer", "colour": "#ffe090", "glow": 1.1, "delay": 0.05, "life": 0.6, "height": 0.0, "fall": 5.0, "size": [1.4, 1.5]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd070", "glow": 1.0, "delay": 0.2, "life": 0.45, "height": 0.02, "size": [0.4, 2.4]},
+        {"fx": "mesh", "mesh": "fx_crack", "colour": "#ffc050", "glow": 0.8, "delay": 0.2, "life": 1.0, "height": 0.06, "size": [0.9, 1.3]},
+        {"fx": "sparks", "n": 10, "colour": "#ffe090", "delay": 0.2},
+        {"fx": "shake", "delay": 0.2}
+      ]
+    },
+    "divineStorm": {
+      "anim": {"type": "spinStrike"},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_spiral", "colour": "#ffd070", "glow": 0.45, "life": 0.5, "height": 0.4, "size": [2.0, 3.0], "spin": 540},
+        {"fx": "mesh", "mesh": "fx_arc", "colour": "#fff0c0", "glow": 0.5, "life": 0.3, "height": 1.0, "rot": [0, 180, 0], "size": [2.6, 3.2], "spin": 160},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd070", "glow": 0.8, "life": 0.45, "height": 0.03, "size": [0.4, 3.5]},
+        {"fx": "sparks", "n": 12, "colour": "#ffe090"}
+      ]
+    },
+    "hallowedGround": {
+      "anim": {"type": "plantBlade", "duration": 0.6, "impact": 0.55},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#ffe090", "glow": 0.6, "follow": true, "delay": 0.3, "life": 0.6, "size": [0.5, 0.65], "scale": [1, 3.0, 1]},
+        {"fx": "shake", "delay": 0.32}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_runes", "colour": "#ffd070", "glow": 0.45, "delay": 0.3, "life": "duration", "height": 0.06, "size": [3.7, 4.0], "spin": 40},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffe090", "glow": 0.6, "delay": 0.3, "life": 0.5, "height": 0.03, "size": [0.5, 4.0], "scale": [1, 0.5, 1]}
+      ]
+    },
+    "bringToKneel": {
+      "anim": {"type": "pressDown", "duration": 0.55, "impact": 0.5},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#ffd070", "glow": 1.0, "delay": 0.2, "life": 1.2, "height": 1.3, "rot": [145, 0, 0], "size": [0.3, 1.5]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#ffd070", "glow": 1.0, "delay": 0.22, "life": 1.2, "height": 1.3, "rot": [145, 90, 0], "size": [0.3, 1.5]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#ffd070", "glow": 1.0, "delay": 0.24, "life": 1.2, "height": 1.3, "rot": [145, 180, 0], "size": [0.3, 1.5]},
+        {"fx": "mesh", "mesh": "fx_chains", "colour": "#ffd070", "glow": 1.0, "delay": 0.26, "life": 1.2, "height": 1.3, "rot": [145, 270, 0], "size": [0.3, 1.5]},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffe680", "glow": 0.9, "delay": 0.5, "life": 1.5, "height": 2.0, "size": [0.3, 0.35], "spin": 360},
+        {"fx": "ring", "radius": 1.4, "colour": "#ffd070"}
+      ]
+    },
+    "lightShield": {
+      "anim": {"type": "liftShield", "duration": 0.55, "impact": 0.45},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_dome", "colour": "#ffd070", "glow": 0.35, "follow": true, "delay": 0.25, "life": "duration", "size": [0.9, 1.05], "scale": [1, 1.25, 1], "spin": 60},
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#fff0c0", "glow": 0.7, "follow": true, "delay": 0.2, "life": 0.5, "size": [0.35, 0.45], "scale": [1, 4.0, 1]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd070", "glow": 0.7, "delay": 0.25, "life": 0.4, "height": 0.03, "size": [0.3, 1.3], "scale": [1, 0.6, 1]}
+      ]
+    },
+    "smite": {
+      "anim": {"type": "point", "duration": 0.45, "impact": 0.5},
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#fff0b0", "glow": 0.9, "delay": 0.15, "life": 0.45, "size": [0.25, 0.45], "scale": [1, 8.0, 1]},
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#ffe090", "glow": 1.0, "delay": 0.18, "life": 0.3, "height": 1.0, "faceCamera": true, "size": [0.4, 0.9]},
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd070", "glow": 0.7, "delay": 0.18, "life": 0.35, "height": 0.03, "size": [0.2, 1.2], "scale": [1, 0.5, 1]}
+      ]
+    },
+    "rebuke": {
+      "anim": {"type": "shieldThrust", "duration": 0.4, "impact": 0.45},
+      "cast": [
+        {"fx": "mesh", "mesh": "fx_wave", "colour": "#ffd070", "glow": 0.9, "follow": true, "delay": 0.15, "life": 0.3, "height": 0.9, "forward": 0.6, "faceCamera": true, "rot": [90, 0, 0], "size": [0.3, 0.9], "scale": [1, 0.5, 1]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_sigil", "colour": "#ffe090", "glow": 1.0, "delay": 0.15, "life": 0.4, "height": 1.4, "faceCamera": true, "size": [0.5, 0.9], "spin": 90},
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#ffd070", "glow": 0.9, "delay": 0.17, "life": 0.3, "height": 1.4, "faceCamera": true, "size": [0.3, 0.9]},
+        {"fx": "sparks", "n": 8, "colour": "#ffe090", "delay": 0.17}
+      ]
+    },
+    "hallowedBolt": {
+      "windupAnim": {"type": "raiseHands"},
+      "anim": {"type": "push", "duration": 0.4, "impact": 0.3},
+      "windup": [
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffe090", "glow": 0.8, "follow": true, "delay": 0.1, "life": "castTime", "height": 2.3, "size": [0.2, 0.35], "spin": 360},
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#ffd070", "glow": 0.35, "follow": true, "life": "castTime", "size": [0.55, 0.6], "scale": [1, 2.6, 1]}
+      ],
+      "projectile": [
+        {"mesh": "fx_bolt", "colour": "#ffe090", "glow": 1.0, "scale": [0.6, 0.6, 1.0]},
+        {"mesh": "fx_halo", "colour": "#ffd070", "glow": 0.6, "scale": [0.3, 0.3, 0.3]}
+      ],
+      "impact": [
+        {"fx": "mesh", "mesh": "fx_burst", "colour": "#ffe090", "glow": 1.1, "life": 0.4, "height": 1.0, "faceCamera": true, "size": [0.4, 1.0], "spin": 40},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffd070", "glow": 0.9, "life": 0.5, "height": 0.06, "size": [0.4, 1.2], "spin": 120},
+        {"fx": "sparks", "n": 8, "colour": "#ffe090"}
       ]
     }
   }
