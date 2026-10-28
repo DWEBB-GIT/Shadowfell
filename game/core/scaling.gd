@@ -46,7 +46,7 @@ const S := {
 	},
 	"budgetPerLevel": 0.4,
 	"statCost": {"strength": 1.0, "agility": 1.0, "intellect": 1.0, "stamina": 1.0, "armour": 0.02, "resistance": 0.02},
-	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0},
+	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0, "accuracy": 1.0 / 15.0},
 	"budgetTolerance": 0.1,
 	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 13, "staminaPerLevel": 3},
 	## an even-level enemy lasts this long against par damage, and each of its

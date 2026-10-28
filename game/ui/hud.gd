@@ -177,6 +177,7 @@ func _init(g) -> void:
 	ev.on("questComplete", _quest_done)
 	ev.on("barChanged", func(_e): render_bar())
 	ev.on("enemyHit", _fought)
+	ev.on("enemyMissed", _fought)
 	ev.on("playerHurt", _fought)
 
 

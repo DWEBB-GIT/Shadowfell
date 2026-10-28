@@ -4,6 +4,7 @@ extends Control
 ## (src/ui/damageNumbers.js).
 ##   dealt  parchment white      taken  dull red "-n"
 ##   crit   amber, "!"           block  grey "Block"     heal  green "+n"
+##   miss   grey "Miss", your blow that missed
 ##   xp     purple "+n XP", over a fallen enemy
 ## Each number is sized against your usual white hit: bigger than usual
 ## reads bigger. Crits stay longer, and a crit of twice your usual hit or
@@ -12,7 +13,7 @@ extends Control
 const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
-	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "heal": Color("8cbf78"),
+	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("8cbf78"),
 	"xp": Color("b77cff"),
 }
 
@@ -55,7 +56,9 @@ func add(e: Dictionary) -> void:
 	var text: String
 	var cls := kind
 	var ratio := 1.0
-	if kind == "heal" or kind == "xp":
+	if kind == "miss":
+		text = "Miss"
+	elif kind == "heal" or kind == "xp":
 		if amount <= 0:
 			return
 		text = "+%s%s" % [U.n(amount), " XP" if kind == "xp" else ""]
@@ -72,7 +75,7 @@ func add(e: Dictionary) -> void:
 	var colour: Color = COLOURS.get(cls, COLOURS.dealt)
 	if crit:
 		colour = COLOURS.takenCrit if kind == "taken" else COLOURS.big if pulse else COLOURS.crit
-	var scale_ := 0.8 if cls == "block" else number_scale(ratio, 1)
+	var scale_ := 0.8 if cls == "block" or cls == "miss" else number_scale(ratio, 1)
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", roundi(t.font * scale_))

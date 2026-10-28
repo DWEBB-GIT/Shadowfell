@@ -53,6 +53,7 @@ func _init(g) -> void:
 		DB.npcs["watch"] = {"id": "watch", "name": "Watchman", "title": "The Watch", "level": 15, "model": "warden"}
 	var ev: Events = game.events
 	ev.on("enemyHit", func(e): _struck(e.enemy))
+	ev.on("enemyMissed", func(e): _struck(e.enemy))
 	ev.on("enemyDefeated", func(e): _killed(e.enemy))
 	ev.on("playerDied", func(_e): _player_fell())
 

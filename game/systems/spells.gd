@@ -631,7 +631,7 @@ func _bonus_vs(spell: Dictionary, enemy) -> float:
 ## what follows a spell's hit on its target: its aura, a follow-up effect,
 ## and the stacks it gives you
 func _landed(spell: Dictionary, enemy, hit) -> void:
-	if not enemy.alive and hit != null:
+	if not enemy.alive and hit != null or hit != null and hit.get("miss"):
 		return
 	if spell.get("applies"):
 		apply_aura(spell.id, enemy, spell.applies, spell.get("spreadsOnDeath", false))
@@ -848,8 +848,10 @@ func _spell_base(t: Dictionary) -> float:
 func hit_mods(enemy, weapon := true) -> Dictionary:
 	var player = game.player
 	var crit_bonus := 0.0
+	var accuracy := 0.0
 	for b in buffs.values():
 		crit_bonus += b.get("critBonus", 0) * b.get("stacks", 1)
+		accuracy += b.get("accuracy", 0) * b.get("stacks", 1)
 	var force_crit := false
 	if weapon and trait_.get("id") == "opportunist":
 		# from behind: you stand in the half of the ground the enemy faces away from
@@ -862,7 +864,7 @@ func hit_mods(enemy, weapon := true) -> Dictionary:
 		for e in game.builds.effects("statusDamage"):
 			if has_status(enemy, e.status):
 				mult *= 1 + e.percent / 100.0
-	return {"mult": mult, "critBonus": crit_bonus, "forceCrit": force_crit}
+	return {"mult": mult, "critBonus": crit_bonus, "forceCrit": force_crit, "accuracy": accuracy}
 
 
 ## after a hit of yours: a crit uses up the Righteous stacks
@@ -886,12 +888,19 @@ func after_hit(hit) -> void:
 ## the log line ({name} and {n} filled in), and the kill.
 ## `carry`: a dot passes itself, so its tick keeps the fraction of a point
 ## left over for the next tick (see Stats.compute_hit)
+## A direct hit can miss (Stats.miss_chance); a tick (dot, channel, ground
+## zone: `carry` or hurt_opts.periodic) never does.
 func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, hurt_opts := {"stagger": 0.12}, carry = null) -> Dictionary:
 	var t: Dictionary = spell.tuning
 	var weapon: bool = spell.get("ranged", false) or t.has("damageMultiplier") or (t.has("tickMultiplier") and not t.has("damageMin"))
 	var m := hit_mods(enemy, weapon)
 	mult *= _execute_scale(spell, enemy)
 	var school: String = spell.get("school", "physical")
+	if carry == null and not hurt_opts.get("periodic", false) and Stats.rolls_miss(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), m.accuracy):
+		var miss: Dictionary = game.combat.missed(enemy, "Your %s misses" % spell.name)
+		if spell.kind != "dot" and not game.targeting.attacking:
+			game.targeting.engage(enemy)
+		return miss
 	var o := {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit}
 	if carry != null:
 		o.carry = carry.get("carry", 0.0)
@@ -1020,7 +1029,7 @@ func update(dt: float) -> void:
 				c.next += game.stats.hasted(t.tickInterval)
 				if not c.target.alive:
 					break
-				var hit := _damage(spell, c.target, _spell_base(t), "", 1, {"stagger": 0.0})
+				var hit := _damage(spell, c.target, _spell_base(t), "", 1, {"stagger": 0.0, "periodic": true})
 				_heal_number(player.heal(hit.amount * t.healPercent / 100.0))
 			if c.t >= c.total:
 				player.casting = null
@@ -1182,7 +1191,7 @@ func update(dt: float) -> void:
 				if not e.alive or U.hyp(e.position.x - z.x, e.position.z - z.z) - e.radius * 0.5 > z.radius:
 					continue
 				if z.damage:
-					_damage(spell, e, _spell_base(t), "", 1, {"stagger": 0.0})
+					_damage(spell, e, _spell_base(t), "", 1, {"stagger": 0.0, "periodic": true})
 				if spread != null and e.alive:
 					_apply_dot(spread, e, null, dots.any(func(d): return d.enemy == e and d.id == spread.id))
 			# Hallowed Ground heals you while you stand in it
