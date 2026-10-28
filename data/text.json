@@ -66,7 +66,7 @@
         "name": "Warrior",
         "archetype": "warden",
         "role": "Weapon master",
-        "blurb": "A sworn guard of the old roads. Starts every fight slow and ends it standing. Takes up any melee weapon: one blade, two, or blade and shield. Trades blows to build Resolve, then spends it to heal.",
+        "blurb": "Steel, shield and stubbornness. The last one standing.",
         "traits": [
           "Strength",
           "Plate, mail, leather, cloth",
@@ -79,7 +79,7 @@
         "name": "Rogue",
         "archetype": "rogue",
         "role": "Shadow assassin",
-        "blurb": "Steps out of Shadow, guts one target with both blades, and is gone again before the body drops. Facing two? Put one to sleep and deal with it later.",
+        "blurb": "Strike from the shadows. Gone before they fall.",
         "traits": [
           "Agility",
           "Leather, cloth",
@@ -92,7 +92,7 @@
         "name": "Ranger",
         "archetype": "ranger",
         "role": "Trapper and archer",
-        "blurb": "A hunter of the wild fringes. Traps the path, sets the dead alight, and leaps clear when they close in. A hound joins the hunt at level 8.",
+        "blurb": "Bow, trap and hound. The wild is your weapon.",
         "traits": [
           "Agility",
           "Leather, cloth",
@@ -105,7 +105,7 @@
         "name": "Occultist",
         "archetype": "occultist",
         "role": "Curse-caster",
-        "blurb": "Reads the grave-iron script that wiser folk burn. Spreads rot across a crowd and drinks life from every tick of it. Foes die slowly. The Occultist simply outlasts them.",
+        "blurb": "Rot and ruin. Your foes die slowly. You don't.",
         "traits": [
           "Intellect",
           "Cloth",
@@ -118,7 +118,7 @@
         "name": "Paladin",
         "archetype": "paladin",
         "role": "Holy juggernaut",
-        "blurb": "Slow, heavy and hard to move. Every heavy blow builds Righteous stacks toward one earned crit. Plant your feet on consecrated ground and wounds close.",
+        "blurb": "Holy fury in heavy plate. Unmoving. Unbreakable.",
         "traits": [
           "Strength",
           "Plate, mail, leather, cloth",
