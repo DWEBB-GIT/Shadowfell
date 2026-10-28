@@ -172,6 +172,38 @@ func _build_main() -> void:
 	foot.position = Vector2(-300, -30)
 	foot.size = Vector2(600, 18)
 	main.foot = foot
+	_build_credits(v)
+
+
+## A small corner button that opens the credits list from data/credits.json.
+func _build_credits(v: Control) -> void:
+	var btn := UI.square_button(v, "©", func(): main.credits.visible = not main.credits.visible, 30)
+	btn.tooltip_text = "Credits"
+	btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	btn.position = Vector2(-46, -46)
+	var c = JSON.parse_string(FileAccess.get_file_as_string("res://data/credits.json"))
+	var w := UI.window(v, "Credits", 560, func(): main.credits.visible = false)
+	var p: PanelContainer = w.panel
+	p.set_anchors_preset(Control.PRESET_CENTER)
+	p.position = Vector2(-280, -230)
+	p.visible = false
+	main.credits = p
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 400)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	w.body.add_child(scroll)
+	var r := UI.rich(scroll, 13, 520)
+	r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var text := ""
+	if c is Dictionary:
+		text = "[color=#c9a45c]Created by[/color]\n%s\n" % UI.esc(c.get("creator", ""))
+		for sec in c.get("sections", []):
+			text += "\n[font_size=16][color=#efe2bf]%s[/color][/font_size]\n" % UI.esc(sec.title)
+			if sec.has("note"):
+				text += "[color=#9a8f78]%s[/color]\n" % UI.esc(sec.note)
+			for e in sec.entries:
+				text += "[color=#c9a45c]%s[/color]: %s by %s (%s)\n[color=#9a8f78]%s[/color]\n" % [UI.esc(e.what), UI.esc(e.title), UI.esc(e.author), UI.esc(e.licence), UI.esc(e.link)]
+	UI.set_rich(r, text)
 
 
 func _controls_table(parent: Node) -> Control:
