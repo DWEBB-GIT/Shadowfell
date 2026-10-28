@@ -717,8 +717,6 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		grid.add_child(v)
 		if r.size() > 2 and r[2] != "":
 			tip_on(v, r[2])
-	var hint := UI.hint(main)
-	hint.text = "A: pick up / place   X: equip or use   Y: drop   B: back" if hud.pad_mode else "Drag items between your bags and here. Right-click to equip. Drag out of a window to drop."
 
 
 ## a reputation bar with its standing written over it
