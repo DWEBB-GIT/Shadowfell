@@ -1548,7 +1548,7 @@ func update(dt := 0.0) -> void:
 
 	var c = game.interaction.current
 	var text: String = c.prompt if c != null and not modal else ""
-	var key: String = "A" if pad_mode else (game.keys.label("interact") if game.keys.label("interact") != "" else "Space")
+	var key: String = "A" if pad_mode else (game.keys.label("interact") if game.keys.label("interact") != "" else "F")
 	var big: bool = c != null and c.get("big", false)
 	if _prompt_shown != text + key or _prompt_big != big:
 		_prompt_shown = text + key
