@@ -64,9 +64,10 @@ func _init(g, h) -> void:
 	add_child(marks_layer)
 	tracker = UI.panel(self, 0)
 	# a smoky band behind the list, solid at the screen edge (shown on
-	# hover by the HUD); it takes the clicks so pointing at the list never walks you
+	# hover by the HUD). As in Diablo, only the words and buttons take a
+	# click: the empty band lets it through to the world (Dan, 2026-10-28)
 	tracker.add_theme_stylebox_override("panel", UI.shade("right", 0.6, Vector4(14, 6, 8, 8)))
-	tracker.mouse_filter = Control.MOUSE_FILTER_STOP
+	tracker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tracker.self_modulate.a = 0 # the band shows while the pointer is over it
 	tracker.custom_minimum_size = Vector2(TRACKER_W, 0)
 	tracker_box = UI.vbox(tracker, 6)

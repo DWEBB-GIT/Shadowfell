@@ -17,7 +17,7 @@ Dan's targets for the opening levels, built in the Godot game (`game/core/scalin
 | | Target | Built |
 |---|---|---|
 | Normal enemy health, level 1 / 2 | 30–40 / 50–55 | 35 / 44 (±10% per spawn point): `enemyHealthSeconds` 14 |
-| Normal enemy hit, level 1 | 4–6 (2026-10-27: the world must feel dangerous) | 5 ±35%, so 3–7: `enemyHitShare` 20, `enemyVariance` 0.35. A lone even-level mob costs about a third of your health; three at once can kill you |
+| Normal enemy hit, level 1 | 4–5 (2026-10-27: the world must feel dangerous; 2026-10-28: level 1 toned down 12%) | 4.4 ±35%, so 3–6: `enemyHitShare` 20 times `levelOneHit` 0.88, `enemyVariance` 0.35. Level 2 and up are not cut. A lone even-level mob costs under a third of your health; three at once can kill you |
 | Player health, level 1 | 50–100 by class: cloth lowest, then leather, then plate | Occultist (cloth) 50, Rogue 68 and Ranger 74 (leather), Warrior and Paladin (plate) 98: 20 + 6 a point of Stamina |
 | Dagger, level 1 | 1–2 | 1–2 at 1.6 s |
 | One-hand sword, level 1 | 1–4 | 1–4 at 2.2 s |

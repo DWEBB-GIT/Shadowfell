@@ -35,7 +35,7 @@ func sleep(npc_id: String) -> bool:
 func wake(npc_id: String) -> void:
 	var cfg: Dictionary = DB.CONFIG.inn
 	var name: String = DB.npcs.get(npc_id, {}).get("name", "The innkeeper")
-	game.afterlife.heal_wounds("A night in a proper bed, and your wounds have closed.")
+	game.afterlife.heal_wounds("A good rest in a proper bed, and your wounds have closed.")
 	game.player.health = game.player.max_health
 	game.resources.mana = game.resources.max_mana
 	var prog = game.progression
@@ -44,6 +44,6 @@ func wake(npc_id: String) -> void:
 	game.world_state.rest_point = "inn:" + npc_id
 	game.events.emit("innRest", {"npc": npc_id})
 	game.events.emit("statsChanged", {})
-	game.events.emit("log", {"text": "You sleep the night at %s's inn and wake whole and rested. If you fall, you will wake here." % name.split(" ")[0], "kind": "heal"})
+	game.events.emit("log", {"text": "Yawn. Much better. It feels like no time has passed at all... If you fall, you will wake at %s's inn." % name.split(" ")[0], "kind": "heal"})
 	if game.hud:
 		game.hud.toast("Rested at the inn")

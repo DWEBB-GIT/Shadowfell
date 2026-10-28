@@ -573,7 +573,8 @@ func _click(button: String) -> bool:
 		return fishing.strike()
 	var pick = _pick_under_cursor()
 	# With click to move (Settings) a click on the ground walks there, and a
-	# click on something out of reach walks up to it and then acts.
+	# click on a chest, loot or a vein out of reach walks up to it and then
+	# acts. Enemies and townsfolk never walk you in.
 	var walk: bool = settings.get_value("clickToMove")
 	move_to = null
 	# a left click on the ground lets go of the target; a right click does not.
@@ -606,11 +607,10 @@ func _click(button: String) -> bool:
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
 			if button == "right" or mouse_aim:
+				# targets and starts the attack, but never walks you in
+				# (Dan, 2026-10-28): you close the distance yourself
 				targeting.engage(o)
-				# walking in, the Warden follows the enemy until it is in reach
-				if not targeting.target_in_reach and walk and not targeting.target_in_shot:
-					move_to = {"follow": o, "reach": 0.0}
-				elif not targeting.target_in_reach and not targeting.target_in_shot:
+				if not targeting.target_in_reach and not targeting.target_in_shot:
 					hud.error("Out of range")
 			else:
 				targeting.select(o)
@@ -618,7 +618,7 @@ func _click(button: String) -> bool:
 			# left click only selects a townsperson; right click talks to them
 			targeting.select_friendly(o)
 			if button == "right":
-				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
+				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, false)
 	return true
 
 
@@ -644,9 +644,13 @@ func _right_click_aim() -> void:
 	_click("right")
 
 
+const STALL_TIME := 0.35 ## seconds a click-walk may make no headway before it stops
+const STALL_GAIN := 0.1 ## metres closer that count as headway
+
+
 ## Click to move: the way to walk this frame, or null. Arriving runs the
 ## action the walk was for; any movement key takes over and ends it.
-func _click_move(keys_move: Dictionary):
+func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
 		return null
@@ -654,13 +658,7 @@ func _click_move(keys_move: Dictionary):
 		move_to = null
 		return null
 	var p := player.position
-	if m.has("follow"):
-		if not m.follow.alive or targeting.current != m.follow or targeting.target_in_reach:
-			move_to = null
-			return null
-		m.x = m.follow.position.x
-		m.z = m.follow.position.z
-	elif m.has("hold"):
+	if m.has("hold"):
 		var held: bool = input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld
 		var at = _aim_point() if held and input.mouse.onCanvas else null
 		if at != null:
@@ -681,6 +679,17 @@ func _click_move(keys_move: Dictionary):
 		if m.has("then"):
 			m.then.call()
 		return null
+	# blocked (a wall, a fence): if the walk has got no closer for a moment,
+	# stop rather than run on into it (Dan, 2026-10-28)
+	if not m.has("hold"):
+		if d < m.get("best", INF) - STALL_GAIN:
+			m.best = d
+			m.stalled = 0.0
+		else:
+			m.stalled = m.get("stalled", 0.0) + dt
+			if m.stalled >= STALL_TIME:
+				move_to = null
+				return null
 	return {"x": dx / d, "z": dz / d}
 
 
@@ -826,7 +835,7 @@ func _handle_input(dt: float):
 
 	var km := input.move_axis()
 	var keys_move: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": km.x, "z": km.y}
-	var cm = _click_move(keys_move)
+	var cm = _click_move(keys_move, dt)
 	var move: Dictionary = cm if cm != null else keys_move
 	# keyboard turning: the keys turn and walk you, relative to your facing
 	var tank = null

@@ -89,7 +89,7 @@ func _build() -> void:
 	bags = Control.new()
 	bags.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bags)
-	character = UI.window(self, "Warden", 470, func(): close("character"))
+	character = UI.window(self, "Warden", 620, func(): close("character"))
 	# the tabs share one page area, sized by the equipment page, so the
 	# window never changes size or moves as you switch: the longer pages scroll
 	character.pages = MarginContainer.new()
@@ -576,25 +576,31 @@ func _show_char_tab() -> void:
 
 
 const SLOT_PX := 52 ## the paper doll's gear slots
+const FIG_W := 190 ## the figure's box, about 3/5 of its old width
+const STATS_W := 230 ## the scrolling numbers beside the paper doll
+var _stats_scroll := 0
 
 
-func _equip_col(parent: Node, inv, where: String) -> void:
+func _equip_col(parent: Node, inv, where: String, px := SLOT_PX) -> void:
 	for s in DB.EQUIP_SLOTS:
 		if s.col == where:
-			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), SLOT_PX, s.label)
+			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), px, s.label)
 			sl.placeholder_size = 9
 			# both rings and both trinkets share one outline
 			sl.ghost = Icons.art("slots", "slot_" + s.id.rstrip("12"))
 
 
 func _render_paper_doll(inv, main: VBoxContainer) -> void:
-	var body := UI.hbox(main, 10)
+	# the figure and gear on the left, the numbers in their own scroll on
+	# the right, so the window stays short enough for the screen (Dan, 2026-10-28)
+	var split := UI.hbox(main, 14)
+	var gear := UI.vbox(split, 6)
+	var body := UI.hbox(gear, 10)
 	var left := UI.vbox(body, 6)
 	_equip_col(left, inv, "left")
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
-	fig.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fig.custom_minimum_size = Vector2(0, 5 * SLOT_PX + 4 * 6) # as tall as a column of slots
+	fig.custom_minimum_size = Vector2(FIG_W, 5 * SLOT_PX + 4 * 6) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
 	# rings and trinkets sit on the figure, in a row along its feet
@@ -602,10 +608,10 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	jewels.alignment = BoxContainer.ALIGNMENT_CENTER
 	jewels.size_flags_vertical = Control.SIZE_SHRINK_END
 	jewels.add_theme_constant_override("separation", 4)
-	_equip_col(jewels, inv, "fig")
+	_equip_col(jewels, inv, "fig", 44)
 	var right := UI.vbox(body, 6)
 	_equip_col(right, inv, "right")
-	var bottom := UI.hbox(main, 6)
+	var bottom := UI.hbox(gear, 6)
 	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
 	_equip_col(bottom, inv, "bottom")
 	# the ammo slot, beside the ranged slot: which arrows Auto Shot uses
@@ -621,11 +627,23 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var prog = game.progression
 	var st = game.stats
 	var t: Dictionary = st.totals
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.custom_minimum_size = Vector2(STATS_W, 0)
+	sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.add_child(sc)
+	# rebuilt on every change, so keep the reader's place
+	sc.scroll_vertical = _stats_scroll
+	sc.get_v_scroll_bar().value_changed.connect(func(v): _stats_scroll = int(v))
 	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 16)
+	grid.columns = 1
 	grid.add_theme_constant_override("v_separation", 0)
-	main.add_child(grid)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pad := MarginContainer.new() # clear of the scroll bar
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pad.add_theme_constant_override("margin_right", 12)
+	sc.add_child(pad)
+	pad.add_child(grid)
 	var lvl: int = prog.level
 	var arch: Dictionary = st.archetype
 	var wears: Array = arch.get("armourTypes", []).map(func(k): return DB.armour_types[k].name)
@@ -666,17 +684,11 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 	]
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
-	var col := 0
 	for r in rows:
 		if r == null:
 			continue
 		if r is String:
-			# a gap spans the whole row
-			if col == 1:
-				UI.gap(grid, 0)
 			UI.gap(grid, 6)
-			UI.gap(grid, 6)
-			col = 0
 			continue
 		var cell := HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -694,7 +706,6 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		grid.add_child(v)
 		if r.size() > 2 and r[2] != "":
 			tip_on(v, r[2])
-		col = (col + 1) % 2
 	var hint := UI.hint(main)
 	hint.text = "A: pick up / place   X: equip or use   Y: drop   B: back" if hud.pad_mode else "Drag items between your bags and here. Right-click to equip. Drag out of a window to drop."
 
@@ -1214,7 +1225,7 @@ func layout() -> void:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
 		_fit(character.panel, Vector2(12, 12))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(494 if open.character else 12, 12))
+		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, 12))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
