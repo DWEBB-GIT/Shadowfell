@@ -74,6 +74,23 @@ func _run() -> void:
 	_ok(game.afterlife.wounds == 2, "a campfire does not mend wounds")
 	game.afterlife.rest_tick(DB.CONFIG.death.woundRestSeconds + 1, "inn")
 	_ok(game.afterlife.wounds == 0, "a rest at an inn does")
+	# a bed at the inn: pay, sleep, wake whole and rested, the inn your rest point
+	game.afterlife.wounds = 2
+	game.recompute_max_health()
+	game.player.health = 1
+	game.resources.mana = 0
+	game.progression.rested = 0
+	var coins_before: int = inv.coins
+	var price := Inn.bed_price("hester")
+	_ok(game.inn.sleep("hester") and inv.coins == coins_before - price, "a bed costs %d" % price)
+	game.inn.wake("hester")
+	_ok(game.afterlife.wounds == 0 and game.player.health == full, "you wake mended at full health")
+	_ok(game.resources.mana == game.resources.max_mana, "and full mana")
+	_ok(game.progression.rested > 0 and ws.rest_point == "inn:hester", "rested, with the inn as your rest point")
+	var broke: int = inv.coins
+	inv.lose_coins(broke)
+	_ok(not game.inn.sleep("hester"), "no coin, no bed")
+	inv.add_coins(broke)
 	# falling again before taking it back loses the old grave
 	inv.add_coins(5)
 	_die()
