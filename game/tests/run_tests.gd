@@ -28,12 +28,13 @@ func _initialize() -> void:
 	for id in DB.spell_fx:
 		var look: Dictionary = DB.spell_fx[id]
 		check(DB.abilities.has(id), "spell look %s names a known spell" % id)
-		if look.has("anim"):
-			check(Rig.BLOWS.has(look.anim.type) or look.anim.type in ["guard", "strike", "slam", "brace", "shoot", "cast", "cleave"], "spell look %s uses a known pose" % id)
-		for phase in ["cast", "impact"]:
+		for key in ["anim", "windupAnim"]:
+			if look.get(key) is Dictionary:
+				check(Rig.BLOWS.has(look[key].type) or look[key].type in ["guard", "strike", "slam", "brace", "shoot", "cast", "cleave"], "spell look %s uses a known pose" % id)
+		for phase in Fx.PHASES:
 			for part in look.get(phase, []):
-				check(part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake"], "spell look %s part %s is a known effect" % [id, part.fx])
-				if part.fx == "mesh":
+				check(phase == "projectile" or part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake"], "spell look %s part %s is a known effect" % [id, part.get("fx", "mesh")])
+				if part.get("fx", "mesh") == "mesh":
 					check(Fx.fx_mesh(part.mesh) != null, "spell look %s shape %s exists" % [id, part.mesh])
 	var start: Array = data.section("world", "playerStart").position
 	check(WorldMap.act1_box.has_point(Vector2(start[0], start[1])), "the player starts in Act 1")

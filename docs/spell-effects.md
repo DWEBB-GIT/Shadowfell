@@ -24,12 +24,26 @@ built ones live in `data/spell_fx.json`.
   auras and wards that last as long as the spell.
 
 Shapes: `fx_arc` (swing crescent), `fx_wave` (shockwave wall), `fx_crack`
-(ground cracks), `fx_claws` (three tears), `fx_streak` (charge trail),
-`fx_aura` (rising flame column), `fx_ward` (faceted shield plate). Planned for
-later batches: `fx_bolt` (spell bolt head with tail), `fx_dome` (shield
-bubble), `fx_runes` (ground circle of runes), `fx_hammer` (falling hammer of
-light), `fx_spiral` (spinning storm ring), `fx_vines` (grasping roots),
-`fx_skull` (curse sigil), `fx_arrow_trail` (ribbon behind an arrow).
+(ground cracks), `fx_claws` (three tears), `fx_streak` (charge trail, also the
+ribbon behind an arrow), `fx_aura` (rising flame column), `fx_ward` (faceted
+shield plate), `fx_bolt` (spell bolt head with a wisp tail), `fx_dome` (shield
+bubble), `fx_runes` (ground circle of runes), `fx_hammer` (hammer of light),
+`fx_spiral` (spinning storm), `fx_vines` (grasping roots), `fx_sigil` (curse
+sigil), `fx_chains` (a chain of light), `fx_burst` (starburst: hits, puffs,
+flares), `fx_halo` (ring of beads: halos, sleep motes, stun stars),
+`fx_pillar` (column of light).
+
+When the parts play: `windup` while a cast is drawn out (Blight Bolt, Long
+Shot, Siphon Life), `cast` as the spell goes, `projectile` carried by its
+bolt or arrow, `impact` where it lands (the target, a ground spell's spot, a
+sprung trap). A cast-time spell can hold one pose through the cast
+(`windupAnim`) and play another as it goes (`anim`). Poses can `hop`, `sink`
+into a kneel, or `spin` the body round (Divine Storm).
+
+Built in batch 2: Rogue, Ranger, Occultist and Paladin, as planned below
+(Sorcerer and Priest have no spells yet). Shapes that seemed too much like
+props or creatures stayed abstract: the curse is a sigil, not a skull; the
+grave flowers are roots only.
 
 ## Warrior (built, batch 1)
 

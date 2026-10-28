@@ -231,6 +231,76 @@ const BLOWS := {
 	"shieldSlam": {"up": 0.7, "hop": 0.12, "keys": [["Arm_L", 0, -2.6, -0.5], ["Arm_L", 2, 0.3, 0.1], ["Arm_R", 0, -1.2, -0.3], ["Torso", 0, -0.25, 0.55], ["Leg_L", 0, -0.4, -0.7], ["Leg_R", 0, 0.1, 0.3]]},
 	# Rend: a low backhand that rips up and out to the right
 	"rip": {"up": 0.6, "keys": [["Arm_R", 0, -0.2, -2.4], ["Arm_R", 2, 0.5, -0.6], ["Torso", 1, 0.45, -0.4], ["Torso", 0, 0.2, -0.1]]},
+
+	# Rogue
+	# Strike: a quick jab, the off hand following
+	"jab": {"up": 0.5, "keys": [["Arm_R", 0, -0.6, -1.6], ["Torso", 1, 0.3, -0.25], ["Torso", 0, 0.1, 0.25], ["Arm_L", 0, -0.3, -0.9]]},
+	# Ambush: out of Shadow, both blades high, a pounce, both down
+	"pounce": {"up": 0.7, "hop": 0.25, "keys": [["Arm_R", 0, -2.6, -0.7], ["Arm_L", 0, -2.6, -0.7], ["Torso", 0, -0.2, 0.6], ["Leg_L", 0, -0.5, -0.6], ["Leg_R", 0, 0.3, 0.4]]},
+	# Double Cut: both blades crossed in front, then cut outward in an X
+	"scissor": {"up": 0.55, "keys": [["Arm_R", 0, -1.4, -1.2], ["Arm_R", 2, 0.5, -1.1], ["Arm_L", 0, -1.4, -1.2], ["Arm_L", 2, -0.5, 1.1], ["Torso", 0, 0.25, 0.1]]},
+	# Poisoned Blade: a low stab that comes up with a flick of the wrist
+	"upstab": {"up": 0.55, "keys": [["Arm_R", 0, 0.3, -1.9], ["Arm_R", 1, 0.0, 0.4], ["Torso", 0, 0.35, -0.05], ["Torso", 1, -0.3, 0.2]]},
+	# Sleep: the open palm raised to the lips, then a breath blows the dust off it
+	"blowDust": {"up": 0.6, "keys": [["Arm_L", 0, -2.0, -1.5], ["Arm_L", 2, -0.3, 0.0], ["Head", 0, 0.15, -0.15], ["Torso", 0, 0.1, -0.05]]},
+	# Shadow: a low crouch, the cloak drawn round
+	"crouch": {"up": 0.4, "sink": 0.18, "keys": [["Torso", 0, 0.5, 0.45], ["Arm_L", 0, -1.2, -0.9], ["Arm_L", 2, -0.6, -0.5], ["Arm_R", 0, -0.6, -0.4], ["Leg_L", 0, -0.5, -0.5], ["Leg_R", 0, 0.4, 0.4], ["Head", 0, 0.25, 0.2]]},
+	# Guile: a light step back, blades crossed
+	"sidestep": {"up": 0.4, "keys": [["Torso", 1, -0.4, -0.3], ["Torso", 0, -0.15, -0.1], ["Arm_R", 0, -1.2, -1.2], ["Arm_R", 2, 0.6, 0.6], ["Arm_L", 0, -1.2, -1.2], ["Arm_L", 2, -0.6, -0.6], ["Leg_R", 0, 0.4, 0.3]]},
+
+	# Ranger (the bow in the left hand, drawn with the right)
+	# Quick Shot: a fast draw from the hip, loosed at once
+	"snapShot": {"up": 0.35, "keys": [["Arm_L", 0, -1.2, -1.5], ["Arm_R", 0, -1.0, -1.3], ["Arm_R", 2, 0.4, 0.9], ["Torso", 1, 0.3, 0.35]]},
+	# Venom Arrow: the arrowhead twisted on the string, then drawn and loosed
+	"twistDraw": {"up": 0.55, "keys": [["Arm_L", 0, -1.55, -1.55], ["Arm_R", 0, -1.5, -1.4], ["Arm_R", 1, 0.6, 0.0], ["Arm_R", 2, 0.3, 0.8], ["Torso", 1, 0.35, 0.35]]},
+	# Flaming Arrow: the arrowhead lowered to a spark, then raised and loosed
+	"kindle": {"up": 0.5, "keys": [["Arm_L", 0, -0.6, -1.6], ["Arm_R", 0, -0.5, -1.4], ["Arm_R", 2, 0.2, 0.8], ["Torso", 0, 0.35, 0.0], ["Head", 0, 0.3, 0.0]]},
+	# Tar Trap: kneel and press the trap into the ground
+	"kneelSet": {"up": 0.5, "sink": 0.3, "keys": [["Torso", 0, 0.6, 0.7], ["Arm_R", 0, -0.9, -0.5], ["Arm_L", 0, -0.5, -0.3], ["Leg_L", 0, -0.9, -0.9], ["Leg_R", 0, 0.6, 0.6], ["Head", 0, 0.3, 0.3]]},
+	# Triple Shot: a fanned draw, the bow swept across as three arrows go
+	"fanShot": {"up": 0.45, "keys": [["Arm_L", 0, -1.55, -1.55], ["Arm_L", 1, 0.4, -0.4], ["Arm_R", 0, -1.4, -1.3], ["Arm_R", 2, 0.5, 0.9], ["Torso", 1, 0.6, 0.0]]},
+	# Long Shot: a long held draw, leaning back (held while the cast lasts) ...
+	"longDraw": {"up": 0.35, "keys": [["Arm_L", 0, -1.7, -1.7], ["Arm_R", 0, -1.5, -1.5], ["Arm_R", 2, 0.9, 0.95], ["Torso", 0, -0.2, -0.22], ["Torso", 1, 0.4, 0.4], ["Head", 0, 0.15, 0.15]]},
+	# ... then the loose: the drawing hand flies back
+	"loose": {"up": 0.15, "keys": [["Arm_L", 0, -1.7, -1.6], ["Arm_R", 0, -1.5, -1.2], ["Arm_R", 2, 0.95, 1.4], ["Torso", 0, -0.2, -0.1], ["Torso", 1, 0.4, 0.4]]},
+	# Disengage: a crouch, then a spring back, arching, arms thrown up
+	"backflip": {"up": 0.4, "hop": 0.35, "keys": [["Torso", 0, 0.4, -0.7], ["Head", 0, 0.2, -0.5], ["Arm_R", 0, -0.3, -2.6], ["Arm_L", 0, -0.3, -2.6], ["Leg_L", 0, -0.6, 0.6], ["Leg_R", 0, -0.6, 0.4]]},
+
+	# Occultist
+	# Blight Bolt: both hands cupped at the chest while the cast gathers ...
+	"gather": {"up": 0.3, "keys": [["Arm_R", 0, -1.1, -1.1], ["Arm_R", 2, 0.5, 0.5], ["Arm_L", 0, -1.1, -1.1], ["Arm_L", 2, -0.5, -0.5], ["Torso", 0, 0.15, 0.15], ["Head", 0, 0.2, 0.2]]},
+	# ... then thrust out (Blight Bolt, Hallowed Bolt)
+	"push": {"up": 0.2, "keys": [["Arm_R", 0, -1.1, -1.6], ["Arm_R", 2, 0.5, 0.1], ["Arm_L", 0, -1.1, -1.6], ["Arm_L", 2, -0.5, -0.1], ["Torso", 0, 0.15, 0.3]]},
+	# Rot: a clawed hand reaching out, closing toward the target
+	"clutch": {"up": 0.5, "keys": [["Arm_R", 0, -1.7, -1.3], ["Arm_R", 1, 0.0, 0.6], ["Torso", 0, -0.1, 0.25], ["Torso", 1, 0.2, -0.1]]},
+	# Grave Bloom: kneel and press a hand to the earth
+	"earthPress": {"up": 0.5, "sink": 0.25, "keys": [["Torso", 0, 0.3, 0.8], ["Arm_R", 0, -0.9, -0.9], ["Leg_L", 0, -0.6, -0.8], ["Leg_R", 0, 0.4, 0.5], ["Head", 0, 0.2, 0.3]]},
+	# Hex of Withering: a finger traces a sigil in the air, high left to low right
+	"trace": {"up": 0.45, "keys": [["Arm_R", 0, -2.0, -1.3], ["Arm_R", 2, -0.8, 0.4], ["Torso", 1, -0.3, 0.3], ["Head", 0, 0.1, 0.1]]},
+	# Purge: arms pulled in, then thrown wide, head back
+	"throwWide": {"up": 0.55, "keys": [["Arm_R", 0, -1.2, -1.4], ["Arm_R", 2, 0.7, -1.3], ["Arm_L", 0, -1.2, -1.4], ["Arm_L", 2, -0.7, 1.3], ["Torso", 0, 0.3, -0.25], ["Head", 0, 0.2, -0.4]]},
+	# Siphon Life: one arm out, held, the fingers pulling
+	"pull": {"up": 0.15, "keys": [["Arm_R", 0, -1.6, -1.6], ["Arm_R", 1, 0.3, 0.3], ["Arm_L", 0, -0.4, -0.4], ["Torso", 0, -0.1, -0.1], ["Torso", 1, 0.2, 0.2]]},
+
+	# Paladin
+	# Holy Strike: a slow, heavy overhead
+	"heavyOverhead": {"up": 0.75, "keys": [["Arm_R", 0, -3.0, -0.8], ["Arm_L", 0, -2.4, -0.7], ["Torso", 0, -0.35, 0.45], ["Torso", 1, -0.2, 0.1], ["Leg_L", 0, -0.3, -0.5]]},
+	# Light's Hammer: an arm raised to the sky, then brought down like a gavel
+	"gavel": {"up": 0.7, "keys": [["Arm_R", 0, -3.0, -1.0], ["Arm_L", 0, -0.6, -0.3], ["Torso", 0, -0.25, 0.3], ["Head", 0, -0.4, 0.2]]},
+	# Divine Storm: a full turn with the blade held out
+	"spinStrike": {"up": 0.25, "spin": 1.0, "keys": [["Arm_R", 0, -1.6, -1.6], ["Arm_R", 2, -1.2, -1.4], ["Arm_L", 0, -0.5, -0.5], ["Arm_L", 2, 0.9, 0.9], ["Torso", 0, 0.1, 0.1]]},
+	# Hallowed Ground: kneel, the blade planted in the ground
+	"plantBlade": {"up": 0.55, "sink": 0.3, "keys": [["Arm_R", 0, -2.4, -0.4], ["Arm_L", 0, -1.0, -0.4], ["Torso", 0, -0.1, 0.5], ["Leg_L", 0, -0.5, -0.9], ["Leg_R", 0, 0.3, 0.9]]},
+	# Bring to Kneel: an open hand raised, then pushed down
+	"pressDown": {"up": 0.55, "keys": [["Arm_L", 0, -2.2, -0.9], ["Arm_L", 2, 0.3, 0.0], ["Torso", 0, -0.2, 0.35], ["Head", 0, -0.2, 0.25]]},
+	# Light Shield: the shield lifted to the sky
+	"liftShield": {"up": 0.4, "keys": [["Arm_L", 0, -1.4, -2.9], ["Arm_L", 2, 0.1, 0.2], ["Arm_R", 0, -0.3, -0.4], ["Torso", 0, 0.2, -0.25], ["Head", 0, 0.1, -0.45]]},
+	# Smite: a finger raised to the sky, then pointed at the target
+	"point": {"up": 0.5, "keys": [["Arm_R", 0, -2.8, -1.6], ["Torso", 1, -0.2, 0.15], ["Head", 0, -0.3, 0.1]]},
+	# Rebuke: the shield thrust forward
+	"shieldThrust": {"up": 0.45, "keys": [["Arm_L", 0, -0.8, -1.6], ["Arm_L", 1, 0.4, 0.6], ["Torso", 0, -0.1, 0.35], ["Torso", 1, 0.3, -0.2], ["Leg_L", 0, -0.2, -0.6]]},
+	# Hallowed Bolt: both hands raised while the light gathers (then `push`)
+	"raiseHands": {"up": 0.3, "keys": [["Arm_R", 0, -2.6, -2.6], ["Arm_L", 0, -2.6, -2.6], ["Head", 0, -0.3, -0.3], ["Torso", 0, -0.15, -0.15]]},
 }
 
 
@@ -248,6 +318,12 @@ func _apply_action(dt: float) -> void:
 			_rot(key[0], key[1], _key3(k, up, impact, key[2], key[3]))
 		if b.has("hop"):
 			model.position.y = b.hop * sin(PI * minf(1, k / impact))
+		if b.has("sink"):
+			# down into a kneel or a crouch by the blow, up again after
+			model.position.y = -b.sink * raise
+		if b.has("spin"):
+			# a full turn (or `spin` turns) through the windup to the blow
+			model.rotation.y = -TAU * b.spin * ease_(minf(1, k / impact))
 	match a.type:
 		"guard":
 			# Brace: up fast behind the shield, low and wide, held while it lasts
@@ -325,8 +401,11 @@ func _apply_action(dt: float) -> void:
 			_rot("Torso", 0, -0.3 * raise + 0.5 * swing * (1 - k))
 	if k >= 1:
 		action = null
-		if a.type == "dodge" or a.type == "guard" or BLOWS.get(a.type, {}).has("hop"):
+		var b: Dictionary = BLOWS.get(a.type, {})
+		if a.type == "dodge" or a.type == "guard" or b.has("hop") or b.has("sink"):
 			model.position.y = 0
+		if b.has("spin"):
+			model.rotation.y = 0
 		if a.type == "bite":
 			model.position.z = 0
 

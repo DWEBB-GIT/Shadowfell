@@ -166,7 +166,8 @@ func dust(pos: Vector3, n: int, spread := 0.6) -> void:
 
 ## An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
 ## With `follow` (an enemy), it homes in on it as it moves, and arrives
-## after `life` seconds.
+## after `life` seconds. `look` (a spell id) adds that spell's
+## `projectile` shapes (data/spell_fx.json), carried along its flight.
 func projectile(p: Dictionary) -> void:
 	var kind = p.get("kind")
 	var follow = p.get("follow")
@@ -187,6 +188,14 @@ func projectile(p: Dictionary) -> void:
 		mat.albedo_color = Color("d8c8a0")
 		mi.material_override = mat
 		obj = mi
+	var look: Array = DB.spell_fx.get(p.get("look", ""), {}).get("projectile", [])
+	if not look.is_empty():
+		var holder := Node3D.new()
+		holder.add_child(obj)
+		for part in look:
+			holder.add_child(_carried(part))
+		obj = holder
+	var aimed := not bolt or not look.is_empty()
 	var from: Vector3 = p.from
 	var to: Vector3 = p.to
 	var a := from
@@ -203,9 +212,25 @@ func projectile(p: Dictionary) -> void:
 		# a slight arc for arrows
 		if not bolt:
 			o.position.y += sin(k * PI) * minf(1.2, it.a.distance_to(it.b) * 0.04)
+		if aimed:
 			_look(o, it.b), {"a": a, "b": b, "follow": follow})
-	if not bolt:
+	if aimed:
 		_look(obj, b)
+
+
+## one shape carried by a projectile, its forward (+z) along the flight:
+## `mesh`, `colour`, `glow`, `scale`, `forward` (metres ahead of the head)
+func _carried(p: Dictionary) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = fx_mesh(p.mesh)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := Tex.fx_material(null, Color(Color(p.get("colour", "#ffffff")), p.get("glow", 1.0)))
+	mat.vertex_color_use_as_albedo = true
+	mi.material_override = mat
+	var sc: Array = p.get("scale", [1, 1, 1])
+	mi.scale = Vector3(sc[0], sc[1], sc[2])
+	mi.position.z = p.get("forward", 0.0)
+	return mi
 
 
 ## point a node's +z at a target (three.js lookAt for non-cameras)
@@ -351,6 +376,11 @@ static func fx_mesh(name: String) -> Mesh:
 	return _fx_meshes[name]
 
 
+## when a look's parts play: while a cast is drawn out, as it goes, flying
+## with its bolt or arrow, and where it lands
+const PHASES := ["windup", "cast", "projectile", "impact"]
+
+
 static func _has_look(id: String, phase: String) -> bool:
 	return not DB.spell_fx.get(id, {}).get(phase, []).is_empty()
 
@@ -358,7 +388,7 @@ static func _has_look(id: String, phase: String) -> bool:
 static func _look_meshes() -> Array:
 	var names := {}
 	for id in DB.spell_fx:
-		for phase in ["cast", "impact"]:
+		for phase in PHASES:
 			for p in DB.spell_fx[id].get(phase, []):
 				if p.has("mesh"):
 					names[p.mesh] = true
@@ -426,6 +456,7 @@ func _shape(p: Dictionary, pos: Vector3, facing: float, follow, colour: Color, t
 	var glow: float = p.get("glow", 1.0)
 	var spin: float = deg_to_rad(p.get("spin", 0))
 	var height: float = p.get("height", 0.0)
+	var fall: float = p.get("fall", 0.0)
 	var forward: float = p.get("forward", 0.0)
 	var braced: bool = p.get("whileBraced", false)
 	# a long effect fades in and out over a fixed time, a short one over its life
@@ -436,7 +467,7 @@ func _shape(p: Dictionary, pos: Vector3, facing: float, follow, colour: Color, t
 	_add(holder, life, func(_it, k, _dt):
 		var o: Vector3 = follow.position if follow else pos
 		var fa: float = follow.facing if follow else facing
-		holder.position = o + Vector3(sin(fa) * forward, height, cos(fa) * forward)
+		holder.position = o + Vector3(sin(fa) * forward, height + fall * (1 - minf(1, k * 4)) ** 2, cos(fa) * forward)
 		if face_cam:
 			# an upright shape seen side on is a line, so it turns to face
 			# the fixed camera (as a slash sprite would), stepped a little
