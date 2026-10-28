@@ -34,6 +34,8 @@ var place_button: Button
 var map_pick: OptionButton
 const MAPS := ["act1", "new"]
 
+var dock: Control
+
 
 func _enter_tree() -> void:
 	# a "World" dock beside the Scene tree, always there
@@ -106,14 +108,34 @@ func _enter_tree() -> void:
 		surface_pick.add_item(SURFACES[i], i + 1)
 	surface_pick.tooltip_text = "Ground to paint"
 	row.add_child(surface_pick)
-	add_control_to_dock(DOCK_SLOT_RIGHT_UL, bar)
+	_add_dock()
 	set_process(false)
 
 
 func _exit_tree() -> void:
 	if bar:
-		remove_control_from_docks(bar)
-		bar.queue_free()
+		if dock:
+			call("remove_dock", dock)
+			dock.queue_free()
+		else:
+			remove_control_from_docks(bar)
+			bar.queue_free()
+
+
+# Godot 4.6+ docks are EditorDock nodes added with add_dock (the old
+# add_control_to_dock no longer shows anything); older editors use the old call
+func _add_dock() -> void:
+	if ClassDB.class_exists("EditorDock") and has_method("add_dock"):
+		dock = ClassDB.instantiate("EditorDock")
+		dock.name = "World"
+		dock.set("title", "World")
+		dock.set("layout_key", "shadowfell_world")
+		dock.set("default_slot", DOCK_SLOT_RIGHT_UL)
+		bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		dock.add_child(bar)
+		call("add_dock", dock)
+	else:
+		add_control_to_dock(DOCK_SLOT_RIGHT_UL, bar)
 
 
 func _on_map(i: int) -> void:
