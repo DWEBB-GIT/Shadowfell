@@ -1187,6 +1187,22 @@ func show_zone(title: String, sub: String, seconds := 3.6) -> void:
 	zone_banner.position = Vector2(roundf((vp.x - zone_banner.size.x) / 2), roundf(vp.y * 0.1))
 
 
+## Fade the screen to black, run `cb` while it is dark, then fade back
+## (a night's sleep at an inn). Input is blocked until it clears.
+func fade_through(cb: Callable, fade := 0.7, hold := 0.6) -> void:
+	var veil := ColorRect.new()
+	veil.color = Color(0, 0, 0, 0)
+	veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(veil)
+	var tw := veil.create_tween()
+	tw.tween_property(veil, "color:a", 1.0, fade)
+	tw.tween_callback(cb)
+	tw.tween_interval(hold)
+	tw.tween_property(veil, "color:a", 0.0, fade)
+	tw.tween_callback(veil.queue_free)
+
+
 func toast(text: String, kind := "") -> void:
 	toast_label.text = text
 	toast_label.add_theme_color_override("font_color", Color("e09070") if kind == "bad" else UI.GOLD)

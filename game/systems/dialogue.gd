@@ -149,6 +149,9 @@ var page:
 				if DB.builds.get("forge", {}).get("npc") == npc.id and not _power_items().is_empty():
 					pg.options.append({"id": "forge", "text": "Move a legendary power", "icon": "shop", "group": "service"})
 				_service_options(def, pg)
+				if def.get("innkeeper"):
+					var bed := Inn.bed_price(npc.id)
+					pg.options.append({"id": "bed", "text": "Rent a bed for the night (%s)" % U.money(bed), "icon": "home", "group": "service", "disabled": game.inventory.coins < bed})
 				if def.get("innkeeper") and (game.world_state.rest_point != "inn:" + npc.id or game.world_state.home != "inn:" + npc.id):
 					pg.options.append({"id": "home", "text": "Make this inn your home", "icon": "home", "group": "service"})
 				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})
@@ -503,6 +506,13 @@ func choose(id: String) -> bool:
 		if not _imprint(v.src, id.substr(8)):
 			return false
 		view = {"kind": "menu"}
+	elif id == "bed":
+		var n = npc
+		if game.inventory.coins < Inn.bed_price(n.id):
+			return false
+		close()
+		game.inn.sleep(n.id)
+		return true
 	elif id == "home":
 		game.world_state.rest_point = "inn:" + npc.id
 		game.world_state.home = "inn:" + npc.id

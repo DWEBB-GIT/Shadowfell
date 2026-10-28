@@ -59,6 +59,7 @@ var keys: Keybinds
 var reputation: Reputation
 var titles: Titles
 var camp: Camp
+var inn: Inn
 var fishing: Fishing
 var cooking: Cooking
 var telegraphs: Telegraphs
@@ -139,6 +140,7 @@ func _ready() -> void:
 	reputation = Reputation.new(self)
 	titles = Titles.new(self)
 	camp = Camp.new(self)
+	inn = Inn.new(self)
 	fishing = Fishing.new(self)
 	cooking = Cooking.new(self)
 	telegraphs = Telegraphs.new(self)
