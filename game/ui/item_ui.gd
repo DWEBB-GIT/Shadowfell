@@ -583,7 +583,7 @@ func _show_char_tab() -> void:
 
 const SLOT_PX := 52 ## the paper doll's gear slots
 const FIG_W := 190 ## the figure's box, about 3/5 of its old width
-const STATS_W := 200 ## the scrolling numbers beside the paper doll
+const STATS_W := 180 ## the scrolling numbers beside the paper doll
 var _stats_scroll := 0
 
 
@@ -698,13 +698,16 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 			head.add_theme_font_override("font", UI.bold)
 			UI.rule(grid, Color(UI.GOLD, 0.35))
 			continue
-		var cell := HBoxContainer.new()
+		# a long value (what you can wear) goes under its name, so it never
+		# widens the column (Dan, 2026-10-28: keep the numbers compact)
+		var cell: BoxContainer = VBoxContainer.new() if r[1].length() > 16 else HBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var l := UI.label(cell, r[0], 13, UI.TEXT_DIM)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var value := UI.rich(cell, 13)
-		value.autowrap_mode = TextServer.AUTOWRAP_OFF
+		value.autowrap_mode = TextServer.AUTOWRAP_OFF if cell is HBoxContainer else TextServer.AUTOWRAP_WORD_SMART
 		# one total per stat: level, class and gear are already in it (Dan, 2026-10-23)
 		UI.set_rich(value, "[right][color=#efe2c0]%s[/color][/right]" % UI.esc(r[1]))
 		var v := UI.vbox(null, 1)
