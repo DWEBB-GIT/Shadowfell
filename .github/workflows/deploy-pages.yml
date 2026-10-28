@@ -2,6 +2,8 @@ name: Build and Deploy Pages
 
 # Exports the Godot game (preset "Web", single-threaded) on every push to main
 # and publishes it to GitHub Pages, so the live game always matches the source.
+# The landing site (site/, built by tools/build_site.py) sits at the root and
+# the game at /play.
 # data/build.json carries the commit and build time shown on the title screen.
 # Needs Settings > Pages > Build and deployment > Source = "GitHub Actions".
 
@@ -46,10 +48,15 @@ jobs:
 
       - name: Export Godot web build
         run: |
-          mkdir -p _site
+          mkdir -p _site/play
           ./godot --headless --path . --import || true
-          ./godot --headless --path . --export-release "Web" _site/index.html
-          test -f _site/index.wasm
+          ./godot --headless --path . --export-release "Web" _site/play/index.html
+          test -f _site/play/index.wasm
+
+      - name: Build landing site
+        run: |
+          python3 tools/build_site.py _site
+          test -f _site/index.html && test -f _site/classes.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
