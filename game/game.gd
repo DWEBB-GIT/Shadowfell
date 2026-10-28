@@ -602,9 +602,10 @@ func _click(button: String) -> bool:
 			else:
 				targeting.select(o)
 		"npc":
-			# either button selects a townsperson and talks to them, if close enough
+			# left click only selects a townsperson; right click talks to them
 			targeting.select_friendly(o)
-			_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
+			if button == "right":
+				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
 	return true
 
 
