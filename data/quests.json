@@ -204,16 +204,16 @@
       "name": "Clear the Road",
       "giver": "town_board",
       "turnIn": "mara",
-      "summary": "The dead walk the Fallen Road north of town. Put down five Ashen Ghouls and tell Mara Venn at her forge it is done.",
+      "summary": "The dead walk the Fallen Road north of town. Put down four Ashen Ghouls and tell Mara Venn at her forge it is done.",
       "offer": "BY ORDER OF THE TOWN: the road north is unsafe. Any able hand who puts down the walking dead on the Fallen Road will be paid at the forge. Mara Venn will settle.",
       "progress": "The road's no quieter yet.",
-      "complete": "Five of them? The carters will thank you, even if they never learn your name. Here's the town's coin.",
+      "complete": "Four of them? The carters will thank you, even if they never learn your name. Here's the town's coin.",
       "objectives": [
         {
           "id": "ghouls",
           "type": "kill",
           "target": "ghoul",
-          "count": 5,
+          "count": 4,
           "label": "Ashen Ghoul slain"
         }
       ],

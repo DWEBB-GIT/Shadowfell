@@ -5,18 +5,30 @@ extends RefCounted
 
 var game
 var current = null
+## how far to look for fixed points: Space reaches a few metres (a station's
+## radius at most); a click reaches what is on screen
+const REACH_NEAR := 12.0
+const CLICK_NEAR := 70.0
 
 
 func _init(g) -> void:
 	game = g
 
 
-func _candidates() -> Array:
+## Everything further than `near` metres (along x or z) is left out: there
+## are hundreds of points across the world, and building them all, with
+## each lootable's area count, twice a frame cost ~6 ms.
+func _candidates(near := INF) -> Array:
 	var loot = game.loot
 	var list := []
+	var pp: Vector3 = game.player.position
+	var far := func(x: float, z: float) -> bool: return absf(x - pp.x) > near or absf(z - pp.z) > near
 	# bodies and loot: using one loots everything close by
-	for l in loot.lootables():
-		var n: int = loot.area_count(l)
+	var lootables: Array = loot.lootables()
+	for l in lootables:
+		if far.call(l.x, l.z):
+			continue
+		var n: int = loot.area_count(l, lootables)
 		var own: String = "Loot the %s" % l.name if l.kind == "corpse" else l.entry.def.prompt
 		list.append({"key": "loot:" + l.id, "x": l.x, "z": l.z, "bias": -0.4, "loot": l, "prompt": "%s (and %d more nearby)" % [own, n - 1] if n > 1 else own, "run": func(): loot.loot_area(l)})
 	# a beast's empty body, for a skinner
@@ -27,11 +39,15 @@ func _candidates() -> Array:
 	list.append_array(game.chests.interactions())
 	list.append_array(game.grave.interactions())
 	for sh in Layout.shrines:
+		if far.call(sh.position[0], sh.position[1]):
+			continue
 		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "run": func(): game.rest_at_shrine(sh)})
 	# a hearth prompts Cooking, a forge Smelting, an alchemy bench Alchemy
 	# (the skill whose `craft.kind` is the station's kind); without the
 	# skill the prompt still shows and says where to learn it
 	for st in Layout.stations:
+		if far.call(st.position[0], st.position[1]):
+			continue
 		var sk := ""
 		for s in DB.skills.values():
 			if s.get("craft", {}).get("kind") == st.kind:
@@ -54,8 +70,12 @@ func _candidates() -> Array:
 	list.append_array(game.gathering.interactions())
 	list.append_array(game.discovery.interactions())
 	for sp in Layout.signposts:
+		if far.call(sp.position[0], sp.position[1]):
+			continue
 		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
 	for p in game.world.examine_points:
+		if far.call(p.x, p.z):
+			continue
 		var seen: bool = game.world_state.examined.has(p.id)
 		var c := {"key": "examine:" + p.id, "x": p.x, "z": p.z, "bias": 0.6 if seen else 0.2, "prompt": "Examine the cart" if p.id == "cart" else "Look around %s" % WorldMap.poi(p.id.substr(4)).get("name", "") if p.id.begins_with("poi:") else "Examine", "run": func(): examine(p.id)}
 		if p.id == "watch_post":
@@ -72,10 +92,20 @@ func click_points() -> Array:
 		return game.afterlife.interactions()
 	if game.player.dead:
 		return []
-	return _candidates().filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+
+
+const EXAMINE_REPEAT_MS := 10000
+var _examined_at := {}
 
 
 func examine(id: String) -> void:
+	# the same thing again soon after says nothing new: one line, not a
+	# chat box full of it (Dan, 2026-10-27)
+	var now := Time.get_ticks_msec()
+	if now - int(_examined_at.get(id, -EXAMINE_REPEAT_MS)) < EXAMINE_REPEAT_MS:
+		return
+	_examined_at[id] = now
 	var ws = game.world_state
 	var first: bool = not ws.examined.has(id)
 	ws.examined[id] = true
@@ -91,7 +121,7 @@ func update() -> void:
 		return
 	var best = null
 	var best_score := INF
-	for c in (game.afterlife.interactions() if player.ghost else _candidates()):
+	for c in (game.afterlife.interactions() if player.ghost else _candidates(REACH_NEAR)):
 		var d := U.hyp(c.x - player.position.x, c.z - player.position.z)
 		if d > c.get("reach", DB.CONFIG.interaction.radius):
 			continue

@@ -397,6 +397,11 @@ func set_spell_source(c: Dictionary, id: String, to: String, trainer = null) -> 
 		c.get("bar", []).erase(id)
 	if c.get("defensive") == id and to != "defensive":
 		c.erase("defensive")
+	# on the bar, taught now or dropped: no longer left for a later trainer
+	if c.has("later"):
+		c.later.erase(id)
+		if c.later.is_empty():
+			c.erase("later")
 	match to:
 		"":
 			c.get("abilities", []).erase(id)

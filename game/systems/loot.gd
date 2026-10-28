@@ -266,10 +266,12 @@ func lootables() -> Array:
 	return out
 
 
-func _area(origin: Dictionary) -> Array:
+## `all`: lootables(), when the caller already has it
+func _area(origin: Dictionary, all = null) -> Array:
 	var r: float = DB.CONFIG.loot.areaRadius
-	var all := lootables()
-	var own := all.filter(func(l): return l.id == origin.id)
+	if all == null:
+		all = lootables()
+	var own: Array = all.filter(func(l): return l.id == origin.id)
 	if origin.kind == "item" and not origin.area:
 		return own
 	return own + all.filter(func(l): return l.id != origin.id and (l.kind == "corpse" or l.get("area", false)) and U.hyp(l.x - origin.x, l.z - origin.z) <= r)
@@ -290,8 +292,8 @@ func loot_area(origin: Dictionary) -> int:
 
 
 ## How many things a loot at `origin` would take (for the prompt).
-func area_count(origin: Dictionary) -> int:
-	return _area(origin).size()
+func area_count(origin: Dictionary, all = null) -> int:
+	return _area(origin, all).size()
 
 
 func loot_corpse(id: String) -> bool:

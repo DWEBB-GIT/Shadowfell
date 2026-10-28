@@ -94,9 +94,17 @@ func _bag_loc(id: String) -> String:
 	return ""
 
 
+## the 8-slot backpack (PR #70) fills with the mining haul: empty it so
+## each step has room for what it adds
+func _clear_bags() -> void:
+	for loc in game.inventory.bag_locations():
+		game.inventory.take(loc)
+
+
 func _temper_and_scrap() -> void:
 	var f = game.forge
 	var inv = game.inventory
+	_clear_bags()
 	inv.add_item("watchmans_edge")
 	var loc := _bag_loc("watchmans_edge")
 	var st: Dictionary = inv.get_at(loc)
@@ -137,6 +145,7 @@ func _temper_and_scrap() -> void:
 func _reforge() -> void:
 	var f = game.forge
 	var inv = game.inventory
+	_clear_bags()
 	inv.add_item("old_watch_helm")
 	var loc := _bag_loc("old_watch_helm")
 	var opts: Array = f.reforge_options(inv.get_at(loc))
@@ -155,6 +164,7 @@ func _reforge() -> void:
 func _gems() -> void:
 	var f = game.forge
 	var inv = game.inventory
+	_clear_bags()
 	inv.remove_count("garnet_shard", inv.count("garnet_shard")) # mining may have found one
 	inv.add_item("garnet_shard", 15)
 	check(f.combine("garnet_chipped"), "5 shards make a chipped garnet")

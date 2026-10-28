@@ -35,11 +35,7 @@
     {
       "id": "herbalist",
       "name": "Herbalist",
-      "sells": [
-        "tool",
-        "material",
-        "consumable"
-      ],
+      "sells": ["tool", "material", "consumable"],
       "description": "Herbs, knives, draughts. Buys anything that grows."
     }
   ],
@@ -74,19 +70,13 @@
       "id": "orrin_picks",
       "name": "Orrin's picks",
       "vendorType": "outfitter",
-      "stock": [
-        "mining_pick"
-      ]
+      "stock": ["mining_pick"]
     },
     {
       "id": "briony_herbs",
       "name": "Briony's herb-shed",
       "vendorType": "herbalist",
-      "stock": [
-        "herb_knife",
-        "brass_sickle",
-        "healing_draught"
-      ]
+      "stock": ["herb_knife", "brass_sickle", "healing_draught"]
     }
   ]
 }
