@@ -50,7 +50,7 @@ func _init(g) -> void:
 	custom_minimum_size = Vector2(SIZE, SIZE)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	mouse_default_cursor_shape = Control.CURSOR_CROSS
+	mouse_default_cursor_shape = Control.CURSOR_ARROW
 	# the map is drawn square, off screen, and shown through a true circle
 	# (a polygon), so nothing outside the circle can ever show
 	view = SubViewport.new()
