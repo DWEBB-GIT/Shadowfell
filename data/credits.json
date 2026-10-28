@@ -1,0 +1,22 @@
+{
+  "creator": "Dan Webb: design, art direction and game",
+  "sections": [
+    {
+      "title": "3D models (CC BY 4.0)",
+      "note": "Turned, scaled and re-centred, textures reduced, clips added. Licence: https://creativecommons.org/licenses/by/4.0/",
+      "entries": [
+        {"what": "Granary Rat", "title": "Stylized Rat 3D Model (Free Download)", "author": "ToonMesh 3D", "licence": "CC BY 4.0", "link": "https://sketchfab.com/3d-models/stylized-rat-3d-model-free-download-d0ea5e78c5064192a685020a1520d46b"},
+        {"what": "Hen", "title": "Stylized Chicken 3D Model (Free Download)", "author": "ToonMesh 3D", "licence": "CC BY 4.0", "link": "https://sketchfab.com/3d-models/stylized-chicken-3d-model-free-download-5faf58bd65724d17bd9d1154b153b671"},
+        {"what": "Rusty dirk", "title": "Stylized Dagger", "author": "Bunty Somaiya", "licence": "CC BY 4.0", "link": "https://sketchfab.com/3d-models/stylized-dagger-44aa1520612c40fa96f707c175c9ce96"},
+        {"what": "Worn longsword", "title": "Stylized Sword (Free Download)", "author": "FilonovArt", "licence": "CC BY 4.0", "link": "https://sketchfab.com/3d-models/stylized-sword-free-download-1153c739ee6a44a5ba55c99c4246dbd0"}
+      ]
+    },
+    {
+      "title": "Fonts and engine",
+      "entries": [
+        {"what": "Fonts", "title": "DejaVu Serif and DejaVu Sans", "author": "DejaVu fonts team (Bitstream Vera derived)", "licence": "Bitstream Vera licence", "link": "https://dejavu-fonts.github.io/"},
+        {"what": "Engine", "title": "Godot Engine", "author": "Juan Linietsky, Ariel Manzur and contributors", "licence": "MIT", "link": "https://godotengine.org/license"}
+      ]
+    }
+  ]
+}
