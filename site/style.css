@@ -27,7 +27,7 @@ a:hover { color: var(--gold-hi); }
 h1, h2, h3 { font-family: "Cinzel", Georgia, serif; color: var(--gold); font-weight: 700; margin: 0 0 .4em; letter-spacing: .04em; }
 h2 { font-size: 1.35rem; text-shadow: 0 2px 0 #000; }
 h3 { font-size: 1.05rem; }
-img { max-width: 100%; display: block; }
+img { max-width: 100%; height: auto; display: block; }
 
 .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
 

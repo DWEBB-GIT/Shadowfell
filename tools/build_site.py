@@ -44,7 +44,8 @@ def main():
     e = html.escape
 
     head = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
-            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">\n'
+            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" media="print" onload="this.media=\'all\'">\n'
             '<link rel="stylesheet" href="style.css">\n<link rel="icon" href="kit/crest.png">')
 
     def header(page):
