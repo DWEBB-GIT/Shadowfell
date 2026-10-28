@@ -19,7 +19,7 @@ var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
-var zoom := 1.0 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
+var zoom := 1.15 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
 ## the mouse aims and WASD moves. Left click attacks, talks and loots; hold it
@@ -101,6 +101,8 @@ var sun: DirectionalLight3D
 var player_light: OmniLight3D
 var camera: Camera3D
 var camera_target := Vector3.ZERO
+var camera_lead := Vector3.ZERO ## how far the view runs ahead of the Warden
+var _lead_from := Vector3.ZERO
 var fog_base = null
 var _bwk := -1.0
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
@@ -1004,6 +1006,8 @@ func _update_region(dt: float) -> void:
 
 
 func _snap_camera() -> void:
+	camera_lead = Vector3.ZERO
+	_lead_from = player.position
 	camera_target = player.position
 	world.update_indoors(0, player.position)
 	_place_camera()
@@ -1011,9 +1015,28 @@ func _snap_camera() -> void:
 
 func _update_camera(dt: float) -> void:
 	# exponential smoothing: the same feel at any frame rate
-	var k := 1 - exp(-DB.CONFIG.camera.followSharpness * dt)
-	camera_target = camera_target.lerp(player.position, k)
+	var c: Dictionary = DB.CONFIG.camera
+	var k := 1 - exp(-c.followSharpness * dt)
+	_update_lead(dt)
+	camera_target = camera_target.lerp(player.position + camera_lead, k)
 	_place_camera(dt)
+
+
+## the view runs ahead the way the Warden walks, and settles back on them
+## when they stop; a jump of more than a few metres (a portal, respawn) is
+## not walking
+func _update_lead(dt: float) -> void:
+	var c: Dictionary = DB.CONFIG.camera
+	var step := player.position - _lead_from
+	step.y = 0
+	_lead_from = player.position
+	if dt <= 0.0 or step.length() > 4.0:
+		return
+	var want := Vector3.ZERO
+	if player.moving and step.length() / dt > 0.5:
+		want = step.normalized() * c.lead
+	var rate: float = c.leadIn if want != Vector3.ZERO else c.leadOut
+	camera_lead = camera_lead.lerp(want, 1 - exp(-rate * dt))
 
 
 ## a kick of the camera when a blow lands (see CONFIG.impact)
@@ -1077,7 +1100,7 @@ func _place_camera(dt := 0.0) -> void:
 	zoom = minf(zoom, _zoom_max())
 	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
-	var t := camera_target
+	var t := camera_target + Vector3(0, 0, -DB.CONFIG.camera.frame * z)
 	var sx := 0.0
 	var sy := 0.0
 	if shake > 0.001:
