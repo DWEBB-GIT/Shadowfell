@@ -15,7 +15,7 @@ var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
-var see_through: SeeThrough ## fades houses that hide you, shows your silhouette
+var see_through: SeeThrough ## fades houses that hide you
 
 
 func _init(g) -> void:

@@ -3,9 +3,8 @@ extends TextureRect
 ## The character panel's figure (src/ui/charPreview.js): the player's own
 ## model, live, with whatever they wear and carry, as in WoW's paper doll.
 ## A copy of the model stands in a small world of its own, lit from the
-## front, and copies the real one's pose every frame the panel is open, so
-## it animates, swaps gear and fades as a ghost as the player does. Drag on
-## the figure to turn it.
+## front, standing at ease; it swaps gear and fades as a ghost as the
+## player does. Drag on the figure to turn it.
 
 var game
 var turn := 0.0 ## radians the viewer has turned the figure
@@ -14,6 +13,7 @@ var pivot: Node3D
 var copy: Node3D
 var _shape := ""
 var _drag = null
+var _anim: AnimationPlayer ## the copy's own clips, kept on Idle
 
 
 func _init(g) -> void:
@@ -77,8 +77,18 @@ func render() -> void:
 			copy.queue_free()
 		copy = model.duplicate() as Node3D
 		pivot.add_child(copy)
+		# the figure stands at ease while you walk (Dan, 2026-10-28): a
+		# rigged model idles on its own clip, a part rig holds the pose it
+		# was copied in
+		_anim = copy.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if _anim and _anim.has_animation("Idle"):
+			_anim.play("Idle")
+		else:
+			_anim = null
+	if _anim:
+		_anim.advance(get_process_delta_time())
 	_sync(model, copy)
-	copy.transform = model.transform
+	copy.transform = Transform3D(Basis.from_scale(model.transform.basis.get_scale()), Vector3.ZERO)
 	# from the front: the model's own facing is on its parent, then the viewer's turn
 	pivot.rotation.y = turn
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -92,10 +102,9 @@ static func _signature(n: Node) -> String:
 	return s + ")"
 
 
-## copy the pose (and a ghost's fade) part by part
+## copy what shows (and a ghost's fade) part by part, but not the pose
 static func _sync(from: Node, to: Node) -> void:
 	if from is Node3D:
-		to.transform = from.transform
 		to.visible = from.visible
 	if from is GeometryInstance3D:
 		to.transparency = from.transparency

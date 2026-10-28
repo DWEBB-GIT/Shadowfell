@@ -100,6 +100,7 @@ var cast: Dictionary
 var swing: Dictionary
 var swing_off: Dictionary
 var log_box: VBoxContainer
+const LOG_WHEEL := 40 ## pixels the log scrolls per wheel notch
 var log_scroll: ScrollContainer ## the log's window: drag its corner grip to resize, wheel to scroll back
 var log_grip: Label
 var log_size := Vector2(420, LOG_LINES * 19) ## as the player last sized it (saved)
@@ -317,6 +318,9 @@ func _build() -> void:
 	log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	log_scroll.follow_focus = false
+	# as in Diablo, only the lines of text (and the scroll bar) take a
+	# click; between and beside them it goes through to the world
+	log_scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(log_scroll)
 	log_box = UI.vbox(log_scroll, 1)
 	log_box.custom_minimum_size = Vector2(420, 0)
@@ -493,6 +497,14 @@ func _build_char_panel() -> void:
 	char_panel = f.root
 	char_img = f.img
 	char_badge = f.badge
+	# your level is the number you want to watch go up: bigger than a foe's
+	char_badge.add_theme_font_size_override("font_size", 20)
+	char_badge.custom_minimum_size = Vector2(36, 26)
+	char_badge.size = Vector2(36, 26)
+	char_badge.position = Vector2(PORTRAIT / 2 - 18, PORTRAIT - 13)
+	char_badge.add_theme_color_override("font_color", Color("ffe08a"))
+	char_badge.add_theme_color_override("font_outline_color", Color("000000"))
+	char_badge.add_theme_constant_override("outline_size", 4)
 	var cv: VBoxContainer = f.col
 	char_name = UI.label(cv, "", 14, UI.GOLD, 4)
 	char_name.add_theme_stylebox_override("normal", _indent(false))
@@ -714,7 +726,8 @@ func _build_orbs() -> void:
 		var action: String = m[3]
 		var pad_label: String = m[4]
 		var tip: String = m[2]
-		b.pressed.connect(func(): toggle_panel(which))
+		# every button round the minimap sounds as the quest log does (Dan, 2026-10-28)
+		b.pressed.connect(func(): toggle_panel(which, "quest_log"))
 		var art := Icons.art("ui", m[5])
 		if art:
 			b.draw.connect(func():
@@ -926,10 +939,12 @@ func window_gamepad(pad, dt: float) -> void:
 
 ## Bags, character panel, spellbook, quest log and the rest: toggles for
 ## B / C / P / L, the dock and the pad.
-func toggle_panel(which: String) -> void:
+func toggle_panel(which: String, sound := "") -> void:
 	if modal:
 		return
-	game.audio.sfx("quest_log" if which == "quests" else "panel", 0.6)
+	if sound == "":
+		sound = "quest_log" if which == "quests" else "panel"
+	game.audio.sfx(sound, 0.6)
 	if which == "quests":
 		quests.toggle_log()
 	else:
@@ -1066,8 +1081,18 @@ func _log_label(entry: Array) -> void:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size = Vector2(log_box.custom_minimum_size.x, 0)
 	l.set_meta("born", entry[3])
+	l.mouse_filter = Control.MOUSE_FILTER_STOP
+	l.gui_input.connect(_log_line_input)
 	if entry[1] == "lore":
 		l.add_theme_font_override("font", UI.italic)
+
+
+## the wheel over a line scrolls the log (the scroll box itself lets
+## clicks through, so it never hears the wheel)
+func _log_line_input(e: InputEvent) -> void:
+	if e is InputEventMouseButton and e.pressed and e.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		log_scroll.scroll_vertical += (-1 if e.button_index == MOUSE_BUTTON_WHEEL_UP else 1) * LOG_WHEEL
+		root.accept_event()
 
 
 func set_log_tab(tab: String) -> void:
@@ -1599,8 +1624,11 @@ func update(dt := 0.0) -> void:
 	var over_tracker := tr.is_visible_in_tree() and tr.get_global_rect().has_point(at)
 	tr.self_modulate.a = move_toward(tr.self_modulate.a, 1.0 if over_tracker else 0.0, dt * 5)
 	var now := Time.get_ticks_msec()
+	# old lines rest faint, but read at full strength once the pointer is
+	# over the log, so the dark band never dims the words (Dan, 2026-10-28)
+	var faint := lerpf(0.6, 1.0, log_shade.modulate.a)
 	for l in log_box.get_children():
-		l.modulate.a = 0.45 if now - int(l.get_meta("born", now)) > 9000 else 1.0
+		l.modulate.a = faint if now - int(l.get_meta("born", now)) > 9000 else 1.0
 	if banner_time > 0:
 		banner_time -= dt
 		# rises in over a quarter second, fades over the last
@@ -1619,6 +1647,10 @@ func update(dt := 0.0) -> void:
 	var text: String = c.prompt if c != null and not modal else ""
 	var key: String = "A" if pad_mode else (game.keys.label("interact") if game.keys.label("interact") != "" else "F")
 	var big: bool = c != null and c.get("big", false)
+	# just the key and "Interact" (Dan, 2026-10-28); only the big mid-screen
+	# prompt (back to your body) says what it is
+	if text != "" and not big:
+		text = "Interact"
 	if _prompt_shown != text + key or _prompt_big != big:
 		_prompt_shown = text + key
 		_prompt_big = big

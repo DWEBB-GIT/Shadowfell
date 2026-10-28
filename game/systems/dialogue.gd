@@ -151,7 +151,7 @@ var page:
 				_service_options(def, pg)
 				if def.get("innkeeper"):
 					var bed := Inn.bed_price(npc.id)
-					pg.options.append({"id": "bed", "text": "Rent a bed for the night (%s)" % U.money(bed), "icon": "home", "group": "service", "disabled": game.inventory.coins < bed})
+					pg.options.append({"id": "bed", "text": "Take a rest at the inn for a while (%s)" % U.money(bed), "icon": "home", "group": "service", "disabled": game.inventory.coins < bed})
 				if def.get("innkeeper") and (game.world_state.rest_point != "inn:" + npc.id or game.world_state.home != "inn:" + npc.id):
 					pg.options.append({"id": "home", "text": "Make this inn your home", "icon": "home", "group": "service"})
 				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})

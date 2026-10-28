@@ -29,6 +29,10 @@ const SFX := {
 	"harvest": ["harvest.mp3"],
 	"equip": ["equip_1.ogg", "equip_2.ogg"],
 	"equip_weapon": ["equip_weapon.mp3"],
+	# drawing and putting away your weapons (Dan, 2026-10-28): the sword
+	# swoosh for now, the sheathe played a little lower
+	"unsheathe": ["equip_weapon.mp3"],
+	"sheathe": ["equip_weapon.mp3"],
 	"equip_armour": ["equip_armour.ogg"],
 	"level_up": ["level_up.mp3"],
 	"quest_complete": ["quest_complete.mp3"],
@@ -255,7 +259,7 @@ func _bind() -> void:
 
 # ------------------------------------------------------------- playback
 ## Plays one of Dan's recorded sounds by its SFX name.
-func sfx(id: String, level := 1.0) -> void:
+func sfx(id: String, level := 1.0, pitch := 1.0) -> void:
 	if not started or level <= 0 or not SFX.has(id):
 		return
 	var files: Array = SFX[id]
@@ -267,6 +271,7 @@ func sfx(id: String, level := 1.0) -> void:
 	p.stream = s
 	p.bus = "Effects"
 	p.volume_db = linear_to_db(level)
+	p.pitch_scale = pitch
 	p.play()
 	if not id.begins_with("step_"):
 		last_sfx_frame = Engine.get_process_frames()

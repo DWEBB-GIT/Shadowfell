@@ -89,7 +89,13 @@ func _build() -> void:
 	bags = Control.new()
 	bags.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bags)
-	character = UI.window(self, "Warden", 470, func(): close("character"))
+	character = UI.window(self, "Warden", 0, func(): close("character"))
+	character.title.size_flags_horizontal = Control.SIZE_FILL
+	character.level = UI.label(null, "", 14, UI.TEXT_DIM)
+	character.level.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	character.level.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	character.head.add_child(character.level)
+	character.head.move_child(character.level, 1)
 	# the tabs share one page area, sized by the equipment page, so the
 	# window never changes size or moves as you switch: the longer pages scroll
 	character.pages = MarginContainer.new()
@@ -576,25 +582,31 @@ func _show_char_tab() -> void:
 
 
 const SLOT_PX := 52 ## the paper doll's gear slots
+const FIG_W := 190 ## the figure's box, about 3/5 of its old width
+const STATS_W := 200 ## the scrolling numbers beside the paper doll
+var _stats_scroll := 0
 
 
-func _equip_col(parent: Node, inv, where: String) -> void:
+func _equip_col(parent: Node, inv, where: String, px := SLOT_PX) -> void:
 	for s in DB.EQUIP_SLOTS:
 		if s.col == where:
-			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), SLOT_PX, s.label)
+			var sl := _slot(parent, "e:" + s.id, inv.equipment.get(s.id), px, s.label)
 			sl.placeholder_size = 9
 			# both rings and both trinkets share one outline
 			sl.ghost = Icons.art("slots", "slot_" + s.id.rstrip("12"))
 
 
 func _render_paper_doll(inv, main: VBoxContainer) -> void:
-	var body := UI.hbox(main, 10)
-	var left := UI.vbox(body, 6)
+	# the figure and gear on the left, the numbers in their own scroll on
+	# the right, so the window stays short enough for the screen (Dan, 2026-10-28)
+	var split := UI.hbox(main, 14)
+	var gear := UI.vbox(split, 6)
+	var body := UI.hbox(gear, 4)
+	var left := UI.vbox(body, 3)
 	_equip_col(left, inv, "left")
 	var fig := PanelContainer.new()
 	fig.add_theme_stylebox_override("panel", UI.box(Color("120f0b"), Color(107 / 255.0, 85 / 255.0, 50 / 255.0, 0.45), 0))
-	fig.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fig.custom_minimum_size = Vector2(0, 5 * SLOT_PX + 4 * 6) # as tall as a column of slots
+	fig.custom_minimum_size = Vector2(FIG_W, 5 * SLOT_PX + 4 * 3) # as tall as a column of slots
 	body.add_child(fig)
 	fig.add_child(preview)
 	# rings and trinkets sit on the figure, in a row along its feet
@@ -602,10 +614,10 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	jewels.alignment = BoxContainer.ALIGNMENT_CENTER
 	jewels.size_flags_vertical = Control.SIZE_SHRINK_END
 	jewels.add_theme_constant_override("separation", 4)
-	_equip_col(jewels, inv, "fig")
-	var right := UI.vbox(body, 6)
+	_equip_col(jewels, inv, "fig", 44)
+	var right := UI.vbox(body, 3)
 	_equip_col(right, inv, "right")
-	var bottom := UI.hbox(main, 6)
+	var bottom := UI.hbox(gear, 4)
 	bottom.alignment = BoxContainer.ALIGNMENT_CENTER
 	_equip_col(bottom, inv, "bottom")
 	# the ammo slot, beside the ranged slot: which arrows Auto Shot uses
@@ -621,17 +633,31 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var prog = game.progression
 	var st = game.stats
 	var t: Dictionary = st.totals
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.custom_minimum_size = Vector2(STATS_W, 0)
+	split.add_child(sc)
+	# rebuilt on every change, so keep the reader's place
+	sc.scroll_vertical = _stats_scroll
+	sc.get_v_scroll_bar().value_changed.connect(func(v): _stats_scroll = int(v))
 	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 16)
+	grid.columns = 1
 	grid.add_theme_constant_override("v_separation", 0)
-	main.add_child(grid)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pad := MarginContainer.new() # clear of the scroll bar
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pad.add_theme_constant_override("margin_right", 18)
+	sc.add_child(pad)
+	pad.add_child(grid)
 	var lvl: int = prog.level
 	var arch: Dictionary = st.archetype
 	var wears: Array = arch.get("armourTypes", []).map(func(k): return DB.armour_types[k].name)
 	var conf: Dictionary = DB.CONFIG.stats
+	# the level sits by the name, at the top
+	character.level.text = "Level %d %s" % [lvl, arch.name]
+	# grouped under headings, as most RPGs do (Dan, 2026-10-28)
 	var rows := [
-		["Level", "%d %s" % [lvl, arch.name]],
+		"Character",
 		["Trait", arch.trait.name, arch.trait.desc] if arch.get("trait") else null,
 		["Health", "%d / %d" % [ceili(p.health), p.max_health], "", "health"],
 	]
@@ -643,14 +669,14 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		for b in res.bars:
 			rows.append([b.name, "%d / %d" % [floori(res.amount(b.id)), roundi(b.get("max", 0))], b.get("desc", "")])
 	rows += [
-		"gap",
+		"Attributes",
 		["Stamina", U.n(t.stamina), "+%s health per point" % U.n(conf.healthPerStamina), "stamina"],
 		["Strength", U.n(t.strength), "Adds to every swing and weapon ability" if st.power_stat == "strength" else "", "strength"],
 		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d%s" % [1.0 / st.agility_per_crit, lvl, "; adds to every swing and weapon ability" if st.power_stat == "agility" else ""], "agility"],
 		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
+		"Offence",
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
 		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
-		"gap",
 		["Damage", "–".join(st.swing_range.map(func(x): return U.n(x))), "Your hit with %s: its own %s damage, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
 		["Attack speed", "%.2fs" % st.attack_cooldown, "Time between swings: weapon speed %.1f, shortened by haste" % st.weapon_speed],
 		["Spell power", U.n(st.spell_power), "Added to your spells: from Intellect, and from a caster's weapon"],
@@ -658,25 +684,25 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	if st.dual_wielding:
 		rows.append(["Off hand", "%s / %.2fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
 	rows.append(["DPS", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
+	rows.append(["Miss", "%s%%" % U.fixed(Stats.miss_chance(lvl, lvl, st.accuracy), 1), "Chance to miss a foe of your own level: %s%% less for each level below you, %s%% more for each level above. Accuracy from gear (%s%%) takes it down." % [U.n(conf.missPerLevelBelow), U.n(conf.missPerLevelAbove), U.n(st.accuracy)]])
 	rows += [
-		"gap",
+		"Defence",
 		["Armour", "%s (−%d%%)" % [U.n(t.armour), roundi(Stats.mitigation(t.armour, lvl))], "Physical damage taken, against any foe."],
-		["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"],
-		["Miss", "%s%%" % U.fixed(Stats.miss_chance(lvl, lvl, st.accuracy), 1), "Chance to miss a foe of your own level: %s%% less for each level below you, %s%% more for each level above. Accuracy from gear (%s%%) takes it down." % [U.n(conf.missPerLevelBelow), U.n(conf.missPerLevelAbove), U.n(st.accuracy)]],
 		["Block", "%s%%" % U.n(st.block_chance) if st.block_chance else "no shield", "Chance to block a melee blow, which stops %s%% of it: the shield's own block chance plus block chance from gear" % U.n(conf.blockReduction), "block"],
 	]
+	rows.append("General")
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
-	var col := 0
+	rows.append(["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"])
 	for r in rows:
 		if r == null:
 			continue
 		if r is String:
-			# a gap spans the whole row
-			if col == 1:
-				UI.gap(grid, 0)
-			UI.gap(grid, 6)
-			UI.gap(grid, 6)
-			col = 0
+			# a heading over each group of numbers
+			if grid.get_child_count() > 0:
+				UI.gap(grid, 8)
+			var head := UI.label(grid, r.to_upper(), 11, UI.GOLD, 4)
+			head.add_theme_font_override("font", UI.bold)
+			UI.rule(grid, Color(UI.GOLD, 0.35))
 			continue
 		var cell := HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -694,7 +720,6 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 		grid.add_child(v)
 		if r.size() > 2 and r[2] != "":
 			tip_on(v, r[2])
-		col = (col + 1) % 2
 	var hint := UI.hint(main)
 	hint.text = "A: pick up / place   X: equip or use   Y: drop   B: back" if hud.pad_mode else "Drag items between your bags and here. Right-click to equip. Drag out of a window to drop."
 
@@ -1214,7 +1239,7 @@ func layout() -> void:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
 		_fit(character.panel, Vector2(12, 12))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(494 if open.character else 12, 12))
+		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, 12))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top

@@ -101,7 +101,9 @@ func _init(g) -> void:
 	for z in [[1, 22.0], [-1, 48.0]]:
 		var b := orb(z[1], ZOOM_R)
 		var step: int = z[0]
-		b.pressed.connect(func(): set_zoom(zoom + step))
+		b.pressed.connect(func():
+			game.audio.sfx("quest_log", 0.6)
+			set_zoom(zoom + step))
 		b.draw.connect(func(): _draw_zoom(b, step))
 		zoom_buttons.append(b)
 

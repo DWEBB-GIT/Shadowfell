@@ -2,8 +2,8 @@ class_name SeeThrough
 extends RefCounted
 ## Keeping the player in sight from the fixed camera (Dan, 2026-10-27, after
 ## Diablo 3/4 and Lost Ark): a house between the camera and the player fades
-## evenly as a whole, and the player's silhouette shows through anything
-## else that hides them (trees, walls, people).
+## evenly as a whole. (The glowing silhouette through other things was
+## taken out at Dan's word, 2026-10-28.)
 
 const FADED := 0.3 ## how solid a house stays while it hides you
 const SPEED := 4.0 ## fade steps per second
@@ -12,27 +12,14 @@ const SAMPLES := 64 ## points tested along the line from the camera to you
 
 const FLAT := preload("res://game/render/flat.gdshader")
 const FADED_SHADER := preload("res://game/render/faded.gdshader")
-const SILHOUETTE := preload("res://game/render/silhouette.gdshader")
-const MARK := preload("res://game/render/silhouette_mark.gdshader")
 
 var game
 ## {mi, solid, faded: materials, form: the house's shape (Town), fade}
 var houses := []
-var _silhouette: ShaderMaterial
-var _dressed := 0.0
 
 
 func _init(g) -> void:
 	game = g
-	# every mark pass draws before any silhouette pass, so the player's own
-	# arms and legs never show through their body
-	_silhouette = ShaderMaterial.new()
-	_silhouette.shader = MARK
-	_silhouette.render_priority = -10
-	var through := ShaderMaterial.new()
-	through.shader = SILHOUETTE
-	through.render_priority = 10
-	_silhouette.next_pass = through
 
 
 ## a house to fade; `form` is its shape in the mesh's frame (ridge along x):
@@ -65,11 +52,6 @@ func update(dt: float) -> void:
 		h.fade = move_toward(h.fade, want, SPEED * dt)
 		h.faded.set_shader_parameter("uFade", h.fade)
 		mi.material_override = h.solid if h.fade >= 1.0 else h.faded
-	# gear changes add meshes, so dress the model again now and then
-	_dressed -= dt
-	if _dressed <= 0:
-		_dressed = 0.5
-		_dress(p.model)
 
 
 ## does the house stand between the camera and your head, chest or feet?
@@ -102,11 +84,3 @@ static func _inside(f: Dictionary, q: Vector3) -> bool:
 		return absf(q.x - t[0]) <= t[1] and az <= t[1] and q.y <= t[2]
 	return false
 
-
-func _dress(n: Node) -> void:
-	if n == null:
-		return
-	if n is GeometryInstance3D and n.material_overlay == null:
-		n.material_overlay = _silhouette
-	for c in n.get_children():
-		_dress(c)

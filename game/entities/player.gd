@@ -184,6 +184,7 @@ func set_sheathed(on: bool) -> void:
 	if on == sheathed:
 		return
 	sheathed = on
+	game.audio.sfx("sheathe" if on else "unsheathe", 0.7, 0.85 if on else 1.0)
 	if on:
 		_show_sheath()
 	else:

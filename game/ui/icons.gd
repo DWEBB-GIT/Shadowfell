@@ -220,13 +220,43 @@ func player_portrait(model: Node3D) -> Texture2D:
 	return tex
 
 
+## A rigged humanoid's head from its bones at rest: [centre, span], or null.
+static func _skull(model: Node3D, box: AABB):
+	var found := model.find_children("*", "Skeleton3D", true, false)
+	if found.is_empty():
+		return null
+	var sk: Skeleton3D = found[0]
+	var neck := sk.find_bone("mixamorig_Head")
+	if neck < 0:
+		return null
+	# the skeleton's place in the model, as bounds() walks it
+	var xf := sk.transform
+	var n: Node = sk.get_parent()
+	while n != null and n != model:
+		if n is Node3D:
+			xf = n.transform * xf
+		n = n.get_parent()
+	xf = model.transform * xf
+	# the Head bone sits at the base of the skull: the head's middle is a
+	# little above it, a head and a bit of the shoulders about a fifth of
+	# the figure's height
+	var h := box.size.y
+	var at: Vector3 = xf * sk.get_bone_global_rest(neck).origin
+	return [at + Vector3(0, h * 0.055, 0), maxf(0.25, h * 0.2)]
+
+
 func _head_shot(model: Node3D) -> Texture2D:
 	return _snapshot(model, PORTRAIT_SIZE, Color.WHITE, 2.4, Color("ffe0c0"), 3.2, Vector3(1.5, 2, 3), func(cam: Camera3D, box: AABB):
 		# frame the head: the Head part if the model has one, else its top
 		var head := model.find_child("Head", true, false) as Node3D
 		var at: Vector3
 		var span: float
-		if head:
+		var skull = _skull(model, box)
+		if skull != null:
+			# a rigged model: its Head socket has no mesh, so frame the bones
+			at = skull[0]
+			span = skull[1]
+		elif head:
 			var hb := Icons.bounds(head, model)
 			at = hb.get_center()
 			span = maxf(0.3, hb.size.y * 1.25)
