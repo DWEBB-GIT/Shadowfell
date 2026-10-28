@@ -121,9 +121,10 @@ def bounds(objs):
     return lo, hi
 
 
-def retexture(objs, name, size):
-    """One plain material per model: the base colour map shrunk to `size`."""
-    img = None
+def retexture(objs, name, size, path=None):
+    """One plain material per model: the base colour map (the model's own,
+    or the image at `path`) shrunk to `size`."""
+    img = bpy.data.images.load(path) if path else None
     for o in objs:
         if o.type != "MESH":
             continue
@@ -702,13 +703,21 @@ def base_male():
     for mat in bpy.data.materials:
         if mat.name == "M_BaseMale":
             mat.name = "T_base_male"
+    humanoid(arm, meshes, 1.3)
+    export("base_male.glb")
+
+
+def humanoid(arm, meshes, down):
+    """Rest a T-posed body on a Mixamo-named skeleton with its arms lowered
+    by `down` (radians), and key the player's clips on it: Idle, Walk, Run,
+    Attack, Cast, Sit, Death and a clip for every spell pose."""
     m = lambda k: "mixamorig_" + k
     # the T-pose was for binding: the arms-down stance becomes the rest pose,
     # so the game's hand and head sockets line up with the body at rest
     # (game/entities/rig.gd, Rig.sockets)
     Poser(arm).pose({
-        m("LeftArm"): [("y", 1.3), ("x", -0.05)],
-        m("RightArm"): [("y", -1.3), ("x", -0.05)],
+        m("LeftArm"): [("y", down), ("x", -0.05)],
+        m("RightArm"): [("y", -down), ("x", -0.05)],
         m("LeftForeArm"): [("x", -0.2)],
         m("RightForeArm"): [("x", -0.2)],
     })
@@ -815,7 +824,68 @@ def base_male():
     p.clip("Death", 24, False, death)
     spell_clips(p, m)
     arm.data.pose_position = "POSE"
-    export("base_male.glb")
+
+
+# Reallusion CC bone names (as Meshy's auto-rig makes them) -> the Mixamo
+# names the game and humanoid() use
+CC_TO_MIXAMO = {"Hip": "Hips", "Waist": "Spine", "Spine01": "Spine1", "Spine02": "Spine2",
+                "NeckTwist01": "Neck", "Head": "Head"}
+for _s, _side in (("L", "Left"), ("R", "Right")):
+    CC_TO_MIXAMO.update({_s + "_Clavicle": _side + "Shoulder", _s + "_Upperarm": _side + "Arm",
+                         _s + "_Forearm": _side + "ForeArm", _s + "_Hand": _side + "Hand",
+                         _s + "_Thigh": _side + "UpLeg", _s + "_Calf": _side + "Leg", _s + "_Foot": _side + "Foot"})
+MAGE = os.path.join(SRC, "human-battle-mage-male")
+
+
+def battle_mage():
+    """The human battle mage (the player): a T-posed CC-rigged download,
+    stood facing -Y, 1.82 m tall like the base male, cut down to about
+    7000 triangles for the browser, with the player's clips keyed here."""
+    reset_scene()
+    bpy.ops.import_scene.fbx(filepath=os.path.join(MAGE, "source", "HUMAN BATTLE-MAGE-male.fbx"))
+    for o in bpy.data.objects:
+        if o.type == "MESH" and o.data.shape_keys:
+            o.shape_key_clear()
+        if o.type == "ARMATURE":
+            # its T-pose action bends the skin out of shape: the body is
+            # right with every bone at rest
+            o.animation_data.action = None
+            for pb in o.pose.bones:
+                pb.matrix_basis.identity()
+    objs = flatten()
+    arm = next(o for o in objs if o.type == "ARMATURE")
+    body = next(o for o in objs if o.type == "MESH")
+    # the bones lie on their backs (up is -Y) under the standing body: stand
+    # them up inside it, so they turn the limbs about the right joints
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    for eb in arm.data.edit_bones:
+        eb.transform(Matrix.Rotation(-math.pi / 2, 4, "X"))
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for b in arm.data.bones:
+        cc = b.name.removeprefix("CC_Base_")
+        if cc in CC_TO_MIXAMO:
+            b.name = "mixamorig_" + CC_TO_MIXAMO[cc]
+    bone = lambda n: arm.matrix_world @ arm.data.bones["mixamorig_" + n].head_local
+    left = bone("LeftArm") - bone("RightArm")
+    yaw = math.atan2(left.y, left.x)  # turn its left onto +X, so it faces -Y
+    lo, hi = bounds(objs)
+    centre = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
+    transform_all(objs, Matrix.Rotation(-yaw, 4, "Z") @ Matrix.Translation(-centre))
+    lo, hi = bounds(objs)
+    transform_all(objs, Matrix.Scale(1.82 / (hi.z - lo.z), 4))
+    # fewer triangles, before the skin (weights follow the collapsed edges)
+    dec = body.modifiers.new("Decimate", "DECIMATE")
+    dec.ratio = 7000 / len(body.data.polygons)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.modifier_move_to_index(modifier="Decimate", index=0)
+    bpy.ops.object.modifier_apply(modifier="Decimate")
+    body.name = "Body"
+    arm.name = "Skeleton"
+    next(md for md in body.modifiers if md.type == "ARMATURE").name = "Armature"
+    retexture(objs, "battle_mage", 512, os.path.join(MAGE, "textures", "Material_Pbr_Diffuse.png"))
+    humanoid(arm, [body], 1.3)
+    export("battle_mage.glb")
 
 
 if __name__ == "__main__":
@@ -828,6 +898,7 @@ if __name__ == "__main__":
         "chicken": chicken,
         "skeleton": skeleton,
         "male": base_male,
+        "mage": battle_mage,
     }
     for k, job in jobs.items():
         if not only or k in only:

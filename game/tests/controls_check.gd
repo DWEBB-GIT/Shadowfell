@@ -41,7 +41,8 @@ func _process(_dt: float) -> bool:
 			game.zoom = z
 			var o: Vector3 = game._camera_offset(1.0)
 			return rad_to_deg(atan2(o.y, o.z))
-		check(absf(pitch.call(0.6) - 40) < 0.1 and absf(pitch.call(1.0) - 52) < 0.1 and absf(pitch.call(1.6) - 60) < 0.1, "the camera tilts with the zoom")
+		var k: Dictionary = DB.CONFIG.camera.tilt
+		check(absf(pitch.call(0.6) - k.pitchNear) < 0.1 and absf(pitch.call(1.0) - k.pitchMid) < 0.1 and absf(pitch.call(1.6) - k.pitchFar) < 0.1, "the camera tilts with the zoom")
 		game.settings.set_value("classicCamera", true)
 		check(absf(pitch.call(0.6) - pitch.call(1.3)) < 0.01, "the classic camera keeps one angle")
 		game.settings.set_value("classicCamera", false)
