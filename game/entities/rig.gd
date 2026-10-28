@@ -25,12 +25,51 @@ static func ease_(t: float) -> float:
 
 
 ## Imported models (assets/blender/import_models.py) bring their own skeleton
-## and clips (Idle, Walk, Attack, Death) instead of parts to swing: `anim`
-## plays them from the same calls (play, hit, die, update).
+## and clips (Idle, Walk, Run, Attack, Cast, Sit, Death) instead of parts to
+## swing: `anim` plays them from the same calls (play, hit, die, update).
 var anim: AnimationPlayer
 var clip := ""
 ## how fast each imported model's Walk clip plays at full speed
 const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0}
+## which clip an action plays; any other action plays Attack, and these
+## hold still (gathering, crafting, looting: the bar shows the progress)
+const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
+## where the blow falls in an action clip, as a share of its length
+const CLIP_IMPACT := 0.5
+## parts the game hangs gear on (player.gd), as frames on the bones of an
+## imported skeleton: a frame sits at its bone and turns with it, lined up
+## with the model at rest like the built models' parts
+const SOCKETS := {"Torso": "mixamorig_Hips", "Head": "mixamorig_Head", "Arm_R": "mixamorig_RightArm", "Arm_L": "mixamorig_LeftArm"}
+
+
+## Give an imported humanoid the parts the built models have (see SOCKETS),
+## with the held weapon's place at the right hand.
+static func add_sockets(m: Node3D) -> void:
+	var found := m.find_children("*", "Skeleton3D", true, false)
+	if found.is_empty():
+		return
+	var sk: Skeleton3D = found[0]
+	for part in SOCKETS:
+		var bone := sk.find_bone(SOCKETS[part])
+		if bone < 0:
+			continue
+		var at := BoneAttachment3D.new()
+		at.name = "Socket_" + part
+		at.bone_name = SOCKETS[part]
+		sk.add_child(at)
+		var rest := sk.get_bone_global_rest(bone)
+		var frame := Node3D.new()
+		frame.name = part
+		frame.transform = rest.affine_inverse() * Transform3D(Basis(), rest.origin)
+		at.add_child(frame)
+		if part == "Arm_R":
+			# the grip, a little past the wrist; the blade tilted forward as
+			# the warden holds it
+			var hand := sk.get_bone_global_rest(sk.find_bone("mixamorig_RightHand")).origin
+			var weapon := Node3D.new()
+			weapon.name = "Weapon"
+			weapon.transform = Transform3D(Basis(Quaternion(0.6427876, 0, 0, 0.7660445)), hand - rest.origin + Vector3(0, -0.07, 0.02))
+			frame.add_child(weapon)
 
 
 func _init(m: Node3D, s := "warden") -> void:
@@ -40,7 +79,10 @@ func _init(m: Node3D, s := "warden") -> void:
 	if anim and not anim.has_animation("Idle"):
 		anim = null
 	if anim:
-		for n in ["Idle", "Walk"]:
+		# stepped by update(), so clips keep the game's time (and far
+		# creatures that skip update stand still, as the part rigs do)
+		anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+		for n in ["Idle", "Walk", "Run", "Sit"]:
 			if anim.has_animation(n):
 				anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 		_clip("Idle", 1.0)
@@ -104,6 +146,11 @@ func _clip(name: String, speed: float, restart := false) -> void:
 
 
 func _update_anim(dt: float, speed01: float) -> void:
+	_pick_clip(dt, speed01)
+	anim.advance(dt)
+
+
+func _pick_clip(dt: float, speed01: float) -> void:
 	move += (speed01 - move) * minf(1, dt * 10)
 	if death >= 0:
 		death += dt
@@ -111,15 +158,30 @@ func _update_anim(dt: float, speed01: float) -> void:
 		# the body sinks into the ground after a while, as the built models do
 		model.position.y = -minf(1.2, (death - 2.5) * 0.4) if death > 2.5 else 0.0
 		return
+	if off_action != null:
+		off_action.t += dt
+		if off_action.t >= off_action.duration:
+			off_action = null
 	if action != null:
 		var fresh: bool = action.t == 0.0
 		action.t += dt
-		var length := anim.get_animation("Attack").length if anim.has_animation("Attack") else 1.0
-		_clip("Attack", length / maxf(0.05, action.duration), fresh)
+		var name: String = ACTION_CLIPS.get(action.type, "Attack")
+		if name != "" and not anim.has_animation(name):
+			name = "Attack" # a creature without a Cast clip bites instead
+		if name == "" or not anim.has_animation(name):
+			_clip("Idle", 1.0)
+		else:
+			# the clip's blow (half way through) lands on the action's impact
+			var hit := maxf(0.05, action.impact * action.duration)
+			_clip(name, anim.get_animation(name).length * CLIP_IMPACT / hit, fresh)
 		if action.t >= action.duration:
 			action = null
 		return
-	if move > 0.12:
+	if (pose == "sit" or pose == "rest") and anim.has_animation("Sit"):
+		_clip("Sit", 1.0)
+	elif move > 0.9 and anim.has_animation("Run"):
+		_clip("Run", move * 0.8)
+	elif move > 0.12:
 		_clip("Walk", maxf(0.3, move) * WALK_RATE.get(style, 1.0))
 	else:
 		_clip("Idle", 1.0)

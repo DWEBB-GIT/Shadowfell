@@ -233,6 +233,24 @@ class Poser:
                 return b
         raise KeyError(key)
 
+    def pose(self, pose):
+        """Set the bones to one pose: {bone: [(axis, radians) | ("loc", Vector)]}"""
+        for pb in self.arm.pose.bones:
+            pb.rotation_mode = "QUATERNION"
+            q = Quaternion()
+            loc = Vector()
+            for k, turns in pose.items():
+                if pb.name.startswith(k + "__") or pb.name == k:
+                    for axis, a in turns:
+                        if axis == "loc":
+                            loc += self.rest[pb.name].inverted() @ a
+                            continue
+                        w = Vector({"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}[axis])
+                        local = self.rest[pb.name].inverted() @ w
+                        q = Quaternion(local.normalized(), a) @ q
+            pb.rotation_quaternion = q
+            pb.location = loc
+
     def clip(self, name, frames, loop, keys):
         """keys(t) -> {bone: [(axis, radians) | ("loc", Vector)]} for t in 0..1"""
         act = bpy.data.actions.new(name)
@@ -243,21 +261,8 @@ class Poser:
         step = 2
         for f in range(0, frames + 1, step):
             t = f / frames
-            pose = keys(t if not loop or f < frames else 0.0)
+            self.pose(keys(t if not loop or f < frames else 0.0))
             for pb in self.arm.pose.bones:
-                q = Quaternion()
-                loc = Vector()
-                for k, turns in pose.items():
-                    if pb.name.startswith(k + "__") or pb.name == k:
-                        for axis, a in turns:
-                            if axis == "loc":
-                                loc += self.rest[pb.name].inverted() @ a
-                                continue
-                            w = Vector({"x": (1, 0, 0), "y": (0, 1, 0), "z": (0, 0, 1)}[axis])
-                            local = self.rest[pb.name].inverted() @ w
-                            q = Quaternion(local.normalized(), a) @ q
-                pb.rotation_quaternion = q
-                pb.location = loc
                 pb.keyframe_insert("rotation_quaternion", frame=f)
                 pb.keyframe_insert("location", frame=f)
         act.use_fake_user = True
@@ -511,43 +516,116 @@ def base_male():
     for mat in bpy.data.materials:
         if mat.name == "M_BaseMale":
             mat.name = "T_base_male"
-    p = Poser(arm)
-    p.bone = lambda key: arm.pose.bones["mixamorig_" + key]
-    # Poser matches "KEY__" or the exact name; give it exact names
     m = lambda k: "mixamorig_" + k
+    # the T-pose was for binding: the arms-down stance becomes the rest pose,
+    # so the game's hand and head sockets line up with the body at rest
+    # (game/entities/rig.gd, Rig.sockets)
+    Poser(arm).pose({
+        m("LeftArm"): [("y", 1.3), ("x", -0.05)],
+        m("RightArm"): [("y", -1.3), ("x", -0.05)],
+        m("LeftForeArm"): [("x", -0.2)],
+        m("RightForeArm"): [("x", -0.2)],
+    })
+    bpy.context.view_layer.update()
+    for o in meshes:
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.view_layer.objects.active = o
+        o.select_set(True)
+        bpy.ops.object.modifier_apply(modifier="Armature")
+        o.modifiers.new("Armature", "ARMATURE").object = arm
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = arm
+    arm.select_set(True)
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    p = Poser(arm)
 
-    def relax(t):
-        # arms down from the T-pose; X turns are pitch, Y turns lower an arm
+    # forward is -Y: an X turn of -a swings a limb forward, +a back
+    def idle(t):
         return {
-            m("LeftArm"): [("y", 1.2)],
-            m("RightArm"): [("y", -1.2)],
-            m("LeftForeArm"): [("x", -0.15)],
-            m("RightForeArm"): [("x", -0.15)],
+            m("Spine1"): [("x", sin(t) * 0.02)],
+            m("Head"): [("z", sin(t, 1, 0.25) * 0.08)],
+            m("LeftArm"): [("x", sin(t) * 0.03)],
+            m("RightArm"): [("x", -sin(t) * 0.03)],
         }
 
-    def idle(t):
-        k = relax(t)
-        k[m("Spine1")] = [("x", sin(t) * 0.02)]
-        k[m("Head")] = [("z", sin(t, 1, 0.25) * 0.08)]
-        k[m("LeftArm")].append(("x", sin(t) * 0.03))
-        k[m("RightArm")].append(("x", -sin(t) * 0.03))
-        return k
+    def gait(stride, bob, lean, arms, knee):
+        def keys(t):
+            a = sin(t)
+            return {
+                m("Hips"): [("loc", Vector((0, 0, abs(sin(t, 2)) * bob))), ("z", a * 0.08)],
+                m("Spine"): [("x", -lean)],
+                m("Spine1"): [("z", -a * 0.12)],
+                m("LeftUpLeg"): [("x", -a * stride)],
+                m("RightUpLeg"): [("x", a * stride)],
+                m("LeftLeg"): [("x", max(0.0, sin(t, 1, 0.25)) * knee)],
+                m("RightLeg"): [("x", max(0.0, sin(t, 1, 0.75)) * knee)],
+                m("LeftArm"): [("x", a * arms)],
+                m("RightArm"): [("x", -a * arms)],
+                m("LeftForeArm"): [("x", -arms * 0.8)],
+                m("RightForeArm"): [("x", -arms * 0.8)],
+            }
+        return keys
 
-    def walk(t):
-        a = sin(t)
-        k = relax(t)
-        k[m("Hips")] = [("loc", Vector((0, 0, abs(sin(t, 2)) * 0.03))), ("z", a * 0.08)]
-        k[m("Spine1")] = [("z", -a * 0.12)]
-        k[m("LeftUpLeg")] = [("x", -a * 0.5)]
-        k[m("RightUpLeg")] = [("x", a * 0.5)]
-        k[m("LeftLeg")] = [("x", max(0.0, sin(t, 1, 0.25)) * 0.8)]
-        k[m("RightLeg")] = [("x", max(0.0, sin(t, 1, 0.75)) * 0.8)]
-        k[m("LeftArm")].append(("x", a * 0.4))
-        k[m("RightArm")].append(("x", -a * 0.4))
-        return k
+    def attack(t):
+        # placeholder swing: right arm up and back (0..0.4), down across (to 0.6)
+        up = math.sin(min(1.0, t / 0.4) * math.pi / 2) if t < 0.4 else max(0.0, 1 - (t - 0.4) / 0.2)
+        cut = 0.0 if t < 0.4 else math.sin(min(1.0, (t - 0.4) / 0.25) * math.pi / 2) * (1 - max(0.0, t - 0.7) / 0.3)
+        return {
+            m("Spine1"): [("z", 0.35 * up - 0.4 * cut)],
+            m("RightArm"): [("x", -2.4 * up - 1.1 * cut), ("y", 0.5 * cut)],
+            m("RightForeArm"): [("x", -0.6 * up)],
+            m("LeftArm"): [("x", -0.3 * up)],
+            m("RightUpLeg"): [("x", 0.2 * cut)],
+            m("LeftUpLeg"): [("x", -0.25 * cut)],
+        }
+
+    def cast(t):
+        k = math.sin(min(1.0, t / 0.3) * math.pi / 2) * (1 - max(0.0, t - 0.75) / 0.25)
+        return {
+            m("RightArm"): [("x", -1.3 * k)],
+            m("LeftArm"): [("x", -1.3 * k)],
+            m("RightForeArm"): [("x", -0.3 * k)],
+            m("LeftForeArm"): [("x", -0.3 * k)],
+            m("Spine1"): [("x", 0.1 * k)],
+        }
+
+    def sit(t):
+        # sitting on the ground, hands on the knees
+        b = sin(t) * 0.02
+        return {
+            m("Hips"): [("loc", Vector((0, 0, -0.5)))],
+            m("Spine"): [("x", -0.1 + b)],
+            m("LeftUpLeg"): [("x", -1.45)],
+            m("RightUpLeg"): [("x", -1.35)],
+            m("LeftLeg"): [("x", 1.5)],
+            m("RightLeg"): [("x", 1.4)],
+            m("LeftArm"): [("x", -0.6)],
+            m("RightArm"): [("x", -0.6)],
+        }
+
+    def death(t):
+        # knees give, then down on the back
+        k = min(1.0, t / 0.5)
+        k = k * k * (3 - 2 * k)
+        knee = math.sin(min(1.0, t / 0.25) * math.pi) * (1 - k)
+        return {
+            m("Hips"): [("x", -1.5 * k), ("loc", Vector((0, 0.15 * k, -0.8 * k - 0.15 * knee)))],
+            m("LeftLeg"): [("x", 0.6 * knee)],
+            m("RightLeg"): [("x", 0.5 * knee)],
+            m("LeftArm"): [("y", 0.9 * k)],
+            m("RightArm"): [("y", -0.7 * k)],
+            m("Head"): [("x", -0.3 * k)],
+        }
 
     p.clip("Idle", 72, True, idle)
-    p.clip("Walk", 24, True, walk)
+    p.clip("Walk", 24, True, gait(0.5, 0.03, 0.0, 0.4, 0.8))
+    p.clip("Run", 16, True, gait(0.85, 0.06, 0.18, 0.7, 1.4))
+    p.clip("Attack", 14, False, attack)
+    p.clip("Cast", 16, False, cast)
+    p.clip("Sit", 48, True, sit)
+    p.clip("Death", 24, False, death)
     arm.data.pose_position = "POSE"
     export("base_male.glb")
 
