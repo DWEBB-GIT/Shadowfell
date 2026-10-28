@@ -150,6 +150,21 @@ func show_brush(at: Vector3, radius: float, color := Color(1, 0.85, 0.3)) -> voi
 		im.surface_end()
 
 
+## A new thing for the group named `group` (NPCs, Enemies, ...) from a
+## record, not yet in the scene (the World dock's Place adds it with attach).
+func make_marker(group: String, r: Dictionary) -> Node3D:
+	for g in GROUPS:
+		if g.name == group:
+			var holder := get_node_or_null(NodePath(group))
+			return _marker(g, r, holder.get_child_count() if holder else 0)
+	return null
+
+
+func attach(n: Node3D, holder: Node) -> void:
+	holder.add_child(n, true)
+	_own(n)
+
+
 func _own(n: Node) -> void:
 	var root := get_tree().edited_scene_root if is_inside_tree() else null
 	n.owner = root if root else self
