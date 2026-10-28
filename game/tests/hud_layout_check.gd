@@ -50,7 +50,7 @@ func _process(_dt: float) -> bool:
 		for f in frames:
 			var r: Rect2 = f.get_global_rect()
 			_check(not r.intersects(hud.bottom.get_global_rect()), "unit frame clear of the spell bar")
-			_check(not r.intersects(hud.log_box.get_global_rect()), "unit frame clear of the log")
+			_check(not r.intersects(hud.log_scroll.get_global_rect()), "unit frame clear of the log")
 			_check(not r.intersects(hud.dock.get_global_rect()), "unit frame clear of the bag tray")
 			print("  unit frame ", r)
 		_check(not hud.char_panel.get_global_rect().intersects(hud.target.get_global_rect()), "unit frames clear of each other")

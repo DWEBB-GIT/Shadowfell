@@ -182,6 +182,9 @@ func start(o: Dictionary) -> bool:
 	if why != "":
 		game.hud.error("That vein %s." % why)
 		return false
+	if bags_full(o):
+		game.hud.error("Bags are full.")
+		return false
 	if game.fishing:
 		game.fishing.stop(true)
 	game.loot.stop_gathering()
@@ -189,6 +192,14 @@ func start(o: Dictionary) -> bool:
 		game.gathering.stop()
 	_swing(o)
 	return true
+
+
+## no room for the vein's ore (or its stone, where it has no ore): the rock
+## is left alone rather than spilling ore on the ground
+func bags_full(o: Dictionary) -> bool:
+	var def := rock_def(o.rock)
+	var y = def.get("ore", def.get("stone"))
+	return y != null and game.inventory.room_for(y.item) <= 0
 
 
 func _swing(o: Dictionary) -> void:
@@ -242,6 +253,9 @@ func update(dt: float, time: float) -> void:
 		_deplete(o, time)
 		mining = null
 		game.events.emit("log", {"text": "The vein is mined out. Another will glint somewhere along %s before long." % o.group.get("name", "the rock"), "kind": "muted"})
+	elif bags_full(o):
+		mining = null
+		game.hud.error("Bags are full.")
 	elif block({"rank": int(rock_def(o.rock).get("rank", 1))}) == "":
 		_swing(o) # keep swinging until it is bare, as long as you stand there
 	else:

@@ -100,6 +100,11 @@ var cast: Dictionary
 var swing: Dictionary
 var swing_off: Dictionary
 var log_box: VBoxContainer
+var log_scroll: ScrollContainer ## the log's window: drag its corner grip to resize, wheel to scroll back
+var log_grip: Label
+var log_size := Vector2(420, LOG_LINES * 19) ## as the player last sized it (saved)
+var _log_follow := true ## stuck to the newest line until the player scrolls back
+var _log_drag := false
 var log_shade: Panel
 var prompt: PanelContainer
 var prompt_key: Label
@@ -307,8 +312,30 @@ func _build() -> void:
 	log_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	log_shade.modulate.a = 0 # shown while the pointer is over the log
 	root.add_child(log_shade)
-	log_box = UI.vbox(root, 1)
+	log_scroll = ScrollContainer.new()
+	log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	log_scroll.follow_focus = false
+	root.add_child(log_scroll)
+	log_box = UI.vbox(log_scroll, 1)
 	log_box.custom_minimum_size = Vector2(420, 0)
+	var bar := log_scroll.get_v_scroll_bar()
+	bar.changed.connect(func():
+		if _log_follow:
+			log_scroll.scroll_vertical = int(bar.max_value))
+	bar.value_changed.connect(func(v): _log_follow = v >= bar.max_value - bar.page - 4)
+	var saved = Store.get_item("shadowfell.log_size")
+	if saved is String and saved != "":
+		var wh = str_to_var(saved)
+		if wh is Vector2:
+			log_size = wh
+	# the grip in the log's top right corner: drag it to size the window
+	log_grip = UI.label(root, "◥", 14, UI.TEXT_DIM, 3)
+	log_grip.mouse_filter = Control.MOUSE_FILTER_STOP
+	log_grip.mouse_default_cursor_shape = Control.CURSOR_BDIAGSIZE
+	log_grip.tooltip_text = "Drag to resize the chat"
+	log_grip.modulate.a = 0
+	log_grip.gui_input.connect(_log_grip_input)
 	log_tabs = UI.hbox(root, 2)
 	for t in LOG_TABS:
 		var b := UI.button(log_tabs, t.capitalize(), func(): set_log_tab(t), 11)
@@ -869,7 +896,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, party]:
+	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -1016,7 +1043,7 @@ func log_line(text: String, kind := "", throttle = null, rarity = null) -> void:
 		log_entries.pop_front()
 	if log_shows(log_tab, kind, rarity):
 		_log_label(log_entries[-1])
-		while log_box.get_child_count() > LOG_LINES:
+		while log_box.get_child_count() > LOG_KEEP:
 			var c := log_box.get_child(0)
 			log_box.remove_child(c)
 			c.queue_free()
@@ -1047,8 +1074,20 @@ func set_log_tab(tab: String) -> void:
 	_mark_log_tab()
 	UI.clear(log_box)
 	var shown := log_entries.filter(func(e): return log_shows(tab, e[1], e[2]))
-	for e in shown.slice(maxi(0, shown.size() - LOG_LINES)):
+	for e in shown.slice(maxi(0, shown.size() - LOG_KEEP)):
 		_log_label(e)
+	_log_follow = true
+
+
+func _log_grip_input(e: InputEvent) -> void:
+	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+		_log_drag = e.pressed
+		if not e.pressed:
+			Store.set_item("shadowfell.log_size", var_to_str(log_size))
+	elif e is InputEventMouseMotion and _log_drag:
+		# the bottom left corner stays put: right widens, up heightens
+		log_size += Vector2(e.relative.x, -e.relative.y)
+		layout()
 
 
 func _mark_log_tab() -> void:
@@ -1378,10 +1417,13 @@ func _auras(box_: HBoxContainer, list: Array, debuff := false, px := 24) -> void
 		UI.clear(box_)
 		for idx in list.size():
 			var a: Dictionary = list[idx]
+			# the icon with its time left under it, not over the art
+			var cell := UI.vbox(box_, 0)
+			cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var p := Panel.new()
 			p.custom_minimum_size = Vector2(px, px)
 			p.add_theme_stylebox_override("panel", UI.box(Color("0b0908"), Color("8a3a2a") if debuff else UI.BORDER_DIM, 0))
-			box_.add_child(p)
+			cell.add_child(p)
 			var img := TextureRect.new()
 			img.texture = icons.aura(a)
 			img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1392,11 +1434,9 @@ func _auras(box_: HBoxContainer, list: Array, debuff := false, px := 24) -> void
 			img.offset_bottom = -1
 			img.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			p.add_child(img)
-			var t := UI.label(p, "", 10 if px >= 24 else 9, Color("f0e0c0"), 3)
-			t.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-			t.offset_top = -12
-			t.offset_bottom = 2
+			var t := UI.label(cell, "", 11 if px >= 24 else 10, Color("f0e0c0"), 3)
 			t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			t.custom_minimum_size = Vector2(px, 0)
 			items.tip_at_cursor(p, func():
 				var now: Array = box_.get_meta("list", [])
 				return aura_tip(now[idx], debuff) if idx < now.size() else "")
@@ -1467,20 +1507,25 @@ func layout() -> void:
 	target.position = Vector2(cx + UNIT_GAP, top)
 	# the log fills the corner beside them; with no room there it sits above
 	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m
-	var w := clampf(room, 220, 420)
+	var w := clampf(log_size.x, 220, maxf(220, room))
+	var h := clampf(log_size.y, 60, maxf(60, vp.y * 0.6))
+	log_size = Vector2(w, h)
 	if not is_equal_approx(log_box.custom_minimum_size.x, w):
 		log_box.custom_minimum_size.x = w
 		for l in log_box.get_children():
 			(l as Control).custom_minimum_size.x = w
-	log_box.size = log_box.get_combined_minimum_size()
+	var bar_w := log_scroll.get_v_scroll_bar().get_combined_minimum_size().x
 	# the tabs (General, Combat, Loot) at the foot, the lines rising over them
 	log_tabs.size = log_tabs.get_combined_minimum_size()
 	var log_foot := vp.y - m if room >= 220 else bottom.position.y - m
 	log_tabs.position = Vector2(m, log_foot - log_tabs.size.y)
-	log_box.position = Vector2(m, log_tabs.position.y - 4 - log_box.size.y)
-	log_shade.visible = log_box.get_child_count() > 0 and log_box.is_visible_in_tree()
-	log_shade.position = log_box.position - Vector2(m, 6)
-	log_shade.size = log_box.size + Vector2(m + 60, 12)
+	log_scroll.size = Vector2(w + bar_w + 4, h)
+	log_scroll.position = Vector2(m, log_tabs.position.y - 4 - h)
+	log_grip.size = log_grip.get_combined_minimum_size()
+	log_grip.position = log_scroll.position + Vector2(log_scroll.size.x - log_grip.size.x, -log_grip.size.y)
+	log_shade.visible = log_box.get_child_count() > 0 and log_scroll.is_visible_in_tree()
+	log_shade.position = log_scroll.position - Vector2(m, 6)
+	log_shade.size = log_scroll.size + Vector2(m + 60, 12)
 	party.layout(Vector2(m, roundf(vp.y * 0.3)))
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
@@ -1524,8 +1569,11 @@ func update(dt := 0.0) -> void:
 	# the smoky bands behind the log and the objectives show only while the
 	# pointer is over them
 	var at := root.get_global_mouse_position()
-	var over_log := log_box.get_global_rect().merge(log_tabs.get_global_rect()).grow(EDGE).has_point(at)
+	var over_log := _log_drag or log_scroll.get_global_rect().merge(log_tabs.get_global_rect()).merge(log_grip.get_global_rect()).grow(EDGE).has_point(at)
 	log_shade.modulate.a = move_toward(log_shade.modulate.a, 1.0 if over_log else 0.0, dt * 5)
+	log_grip.modulate.a = log_shade.modulate.a
+	# the scroll bar stays faintly there, and firms up under the pointer
+	log_scroll.get_v_scroll_bar().modulate.a = lerpf(0.35, 1.0, log_shade.modulate.a)
 	var tr: Control = quests.tracker
 	var over_tracker := tr.is_visible_in_tree() and tr.get_global_rect().has_point(at)
 	tr.self_modulate.a = move_toward(tr.self_modulate.a, 1.0 if over_tracker else 0.0, dt * 5)
