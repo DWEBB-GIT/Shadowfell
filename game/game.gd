@@ -572,10 +572,11 @@ func _click(button: String) -> bool:
 	if _over_bob():
 		return fishing.strike()
 	var pick = _pick_under_cursor()
-	# With click to move (Settings) a click on the ground walks there, and a
-	# click on a chest, loot or a vein out of reach walks up to it and then
-	# acts. Enemies and townsfolk never walk you in.
-	var walk: bool = settings.get_value("clickToMove")
+	# With click to move (Settings, off by default) one button walks, as in
+	# WoW and Diablo 4 (Dan, 2026-10-28): the right in classic controls, the
+	# left with mouse aim. It walks to the ground clicked, or up to whoever
+	# or whatever was clicked and then acts. Without it nothing walks you.
+	var walk: bool = settings.get_value("clickToMove") and button == ("left" if mouse_aim else "right")
 	move_to = null
 	# a left click on the ground lets go of the target; a right click does not.
 	# With mouse aim a left click there attacks whoever is near the cursor.
@@ -607,18 +608,20 @@ func _click(button: String) -> bool:
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
 			if button == "right" or mouse_aim:
-				# targets and starts the attack, but never walks you in
-				# (Dan, 2026-10-28): you close the distance yourself
 				targeting.engage(o)
+				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
-					hud.error("Out of range")
+					if walk:
+						move_to = {"follow": o, "reach": 0.0}
+					else:
+						hud.error("Out of range")
 			else:
 				targeting.select(o)
 		"npc":
 			# left click only selects a townsperson; right click talks to them
 			targeting.select_friendly(o)
 			if button == "right":
-				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, false)
+				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
 	return true
 
 
@@ -658,7 +661,13 @@ func _click_move(keys_move: Dictionary, dt: float):
 		move_to = null
 		return null
 	var p := player.position
-	if m.has("hold"):
+	if m.has("follow"):
+		if not m.follow.alive or targeting.current != m.follow or targeting.target_in_reach:
+			move_to = null
+			return null
+		m.x = m.follow.position.x
+		m.z = m.follow.position.z
+	elif m.has("hold"):
 		var held: bool = input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld
 		var at = _aim_point() if held and input.mouse.onCanvas else null
 		if at != null:
