@@ -377,7 +377,7 @@ func slot_hover(s: ISlot, on: bool) -> void:
 
 ## right-click: use, equip, sell, open a bag
 func _context(loc: String) -> void:
-	# right click uses a bar slot; left click only picks it up to move it
+	# right click uses a bar slot, as a plain left click does
 	if loc.begins_with("a:"):
 		var a = game.action_bar.slots[int(loc.substr(2))]
 		if a != null:
@@ -1395,6 +1395,10 @@ func _cost_line(a: Dictionary) -> String:
 	return _l(" · ".join(parts), "#8fb4f0", 12) if not parts.is_empty() else ""
 
 
+## What an empty character panel slot takes, named as players know them
+const SLOT_TIP := {"head": "Helmet", "shoulders": "Shoulders", "back": "Cloak", "chest": "Chest", "wrists": "Bracers", "hands": "Gloves", "waist": "Belt", "legs": "Legs", "feet": "Boots", "neck": "Necklace", "finger1": "Ring", "finger2": "Ring", "mainHand": "Main Hand Weapon", "offHand": "Off Hand", "ranged": "Bow", "ammo": "Ammo"}
+
+
 func _tooltip(loc: String) -> void:
 	if loc.begins_with("a:") or loc.begins_with("k:"):
 		var id = game.action_bar.slots[int(loc.substr(2))] if loc.begins_with("a:") else loc.substr(2)
@@ -1427,7 +1431,14 @@ func _tooltip(loc: String) -> void:
 		stack = bb[i] if i < bb.size() else null
 		shop_price = stack.paid if stack else null
 	if stack == null or loc == "s:0":
-		_hide_tip()
+		# an empty gear slot names what it takes; an empty bag socket says so
+		var slot_name = SLOT_TIP.get(loc.substr(2)) if loc.begins_with("e:") and stack == null else null
+		if slot_name == null and stack == null and loc.begins_with("s:") and loc != "s:0":
+			slot_name = "Bag Slot"
+		if slot_name != null:
+			_set_tip([_name_line(slot_name, "")], [])
+		else:
+			_hide_tip()
 		return
 	var lines := _stack_lines(stack, loc, shop_price)
 	if loc == Inventory.AMMO_LOC:
@@ -1667,10 +1678,14 @@ func _up(at: Vector2) -> void:
 	ghost.visible = false
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	if not d.moved:
-		# a plain click: a bag in its socket opens that bag; bar slots are
-		# used with right click, so a left click on one does nothing
+		# a plain click: a bag in its socket opens that bag; a bar slot is
+		# used (right click uses it too; a held left click drags it)
 		if d.from.begins_with("s:"):
 			toggle_bag(int(d.from.substr(2)))
+		if d.from.begins_with("a:"):
+			var a = game.action_bar.slots[int(d.from.substr(2))]
+			if a != null:
+				game.action_bar.clicked[a] = true
 		return
 	if game.merchant.current != null and _over(shop.panel, at) and not d.from.begins_with("a:") and not d.from.begins_with("k:"):
 		game.merchant.sell(d.from)

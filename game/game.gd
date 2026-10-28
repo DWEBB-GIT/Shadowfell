@@ -578,6 +578,9 @@ func _click(button: String) -> bool:
 	# or whatever was clicked and then acts. Without it nothing walks you.
 	var walk: bool = settings.get_value("clickToMove") and button == ("left" if mouse_aim else "right")
 	move_to = null
+	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
+	# on enemies and townsfolk as a right click does; right click still acts
+	var acts: bool = button == "right" or settings.get_value("leftInteract")
 	# a left click on the ground lets go of the target; a right click does not.
 	# With mouse aim a left click there attacks whoever is near the cursor.
 	if pick == null:
@@ -607,7 +610,7 @@ func _click(button: String) -> bool:
 		"point":
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
-			if button == "right" or mouse_aim:
+			if acts or mouse_aim:
 				targeting.engage(o)
 				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
@@ -618,9 +621,10 @@ func _click(button: String) -> bool:
 			else:
 				targeting.select(o)
 		"npc":
-			# left click only selects a townsperson; right click talks to them
+			# left click only selects a townsperson (unless Interact on left
+			# click is on); right click talks to them
 			targeting.select_friendly(o)
-			if button == "right":
+			if acts:
 				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
 	return true
 
