@@ -98,8 +98,9 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 			var u: Dictionary = d.use
 			var food: Dictionary = u.get("food", {})
 			var drink: Dictionary = u.get("drink", {})
-			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0)):
-				bad.call("its use must heal, be food that heals over some seconds or a drink that restores mana over some seconds")
+			var elixir: Dictionary = u.get("elixir", {})
+			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0) or (elixir.has("stat") and elixir.get("amount", 0) > 0 and elixir.get("seconds", 0) > 0)):
+				bad.call("its use must heal, be food that heals over some seconds, a drink that restores mana over some seconds or an elixir that raises a stat for some seconds")
 		for t in d.get("reservedFor", []):
 			if not table_ids.has(t):
 				bad.call("reserved for unknown loot table %s" % t)

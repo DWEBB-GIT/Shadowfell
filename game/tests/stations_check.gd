@@ -49,9 +49,20 @@ func _plan() -> void:
 	for st in Layout.stations:
 		queue.append(func(): _station(st))
 	for sp in Layout.signposts:
-		queue.append(func(): _go(sp.position[0], sp.position[1]); _run("sign:" + sp.id); check(game.hud.sign_card.visible, "signpost %s opens its card" % sp.id))
+		queue.append(func(): _go(sp.position[0], sp.position[1]); _run("sign:" + sp.id); _sign_centred(sp.id))
 	for p in game.world.examine_points:
-		queue.append(func(): _go(p.x, p.z); _run("examine:" + p.id); _run("examine:" + p.id); _run("examine:" + p.id))
+		queue.append(func(): _go(p.x, p.z); _examine_thrice(p.id))
+
+
+## spamming Examine logs its text once, not three times
+func _examine_thrice(id: String) -> void:
+	var lines := [0]
+	var count := func(e): lines[0] += 1 if e.get("kind") == "lore" else 0
+	game.events.on("log", count)
+	for i in 3:
+		_run("examine:" + id)
+	game.events.off("log", count)
+	check(lines[0] == 1, "examining %s three times logs once (%d)" % [id, lines[0]])
 
 
 func _go(x: float, z: float) -> void:
@@ -89,6 +100,13 @@ func _station(st: Dictionary) -> void:
 				made += 1
 		game.hud.items.open.cooking = false
 		wait = 2)
+
+
+func _sign_centred(id: String) -> void:
+	var card: Control = game.hud.sign_card
+	var vp: Vector2 = card.get_viewport_rect().size
+	var mid := card.position + card.size / 2
+	check(card.visible and mid.distance_to(vp / 2) < 4, "signpost %s card sits mid-screen (%s of %s)" % [id, str(mid), str(vp)])
 
 
 func check(ok: bool, what: String) -> void:
