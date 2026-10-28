@@ -1,0 +1,113 @@
+/* Shadowfall landing site: classic MMO site layout, Old School RuneScape boxes,
+   framed with the game's own bronze UI kit (copied into kit/ by tools/build_site.py). */
+:root {
+  --bg: #0b0907;
+  --ink: #d9ccb0;
+  --dim: #9a8f78;
+  --gold: #e3b45a;
+  --gold-hi: #ffd98a;
+  --ember: #c8622e;
+  --box: #17120d;
+  --line: #4a3724;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 17px/1.55 "Crimson Text", Georgia, serif;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(200, 98, 46, .22), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, rgba(60, 80, 50, .25), transparent 60%),
+    repeating-linear-gradient(45deg, #0d0a08 0 6px, #0b0907 6px 12px);
+  min-height: 100vh;
+}
+a { color: var(--gold); }
+a:hover { color: var(--gold-hi); }
+h1, h2, h3 { font-family: "Cinzel", Georgia, serif; color: var(--gold); font-weight: 700; margin: 0 0 .4em; letter-spacing: .04em; }
+h2 { font-size: 1.35rem; text-shadow: 0 2px 0 #000; }
+h3 { font-size: 1.05rem; }
+img { max-width: 100%; display: block; }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- header banner */
+header.banner { text-align: center; padding: 34px 0 12px; }
+header.banner a { text-decoration: none; }
+.logo { display: inline-flex; align-items: center; gap: 16px; }
+.logo img { width: 76px; height: 76px; filter: drop-shadow(0 4px 6px #000); }
+.logo h1 { font-size: clamp(2rem, 7vw, 3.6rem); letter-spacing: .18em; margin: 0; color: var(--gold);
+  text-shadow: 0 0 18px rgba(227, 180, 90, .35), 0 3px 0 #2a1608, 0 5px 8px #000; }
+.tag { font-family: "Cinzel", serif; color: var(--dim); letter-spacing: .3em; font-size: .8rem; text-transform: uppercase; margin-top: 4px; }
+
+/* ---------- nav: bronze buttons from the kit */
+nav.top { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 18px 0 26px; }
+.btn {
+  display: inline-block; padding: 7px 20px; color: var(--ink); text-decoration: none;
+  font-family: "Cinzel", serif; font-size: .9rem; letter-spacing: .06em;
+  border: 6px solid transparent; border-image: url(kit/button.png) 6 fill / 6px stretch;
+  text-shadow: 0 1px 0 #000;
+}
+.btn:hover { border-image-source: url(kit/button_hover.png); color: var(--gold-hi); }
+.btn.on { color: var(--gold); }
+
+/* ---------- layout: sidebar + main, like the old MMO sites */
+.layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } .layout aside { order: 2; } }
+
+.box {
+  background: var(--box); padding: 18px 20px; margin-bottom: 20px;
+  border: 12px solid transparent; border-image: url(kit/window.png) 12 fill / 12px stretch;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
+}
+.box.panel { border-width: 8px; border-image: url(kit/panel.png) 8 fill / 8px stretch; padding: 14px 16px; }
+.box > h2:first-child { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.box p { margin: 0 0 .8em; }
+
+/* ---------- play button */
+.play {
+  display: block; text-align: center; text-decoration: none; padding: 16px 10px;
+  font: 700 1.6rem "Cinzel", serif; letter-spacing: .12em; color: #2a1406;
+  background: linear-gradient(#ffd98a, #e3a442 45%, #b06a1e);
+  border: 2px solid #5a3410; border-radius: 4px;
+  box-shadow: inset 0 1px 0 #fff3c9, inset 0 -3px 0 rgba(0, 0, 0, .25), 0 0 0 3px #1a0f06, 0 0 24px rgba(227, 160, 70, .35);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, .6);
+}
+.play:hover { filter: brightness(1.08); color: #1a0a02; }
+.play small { display: block; font: 600 .75rem "Crimson Text", serif; letter-spacing: .05em; margin-top: 2px; }
+.note { font-size: .85rem; color: var(--dim); text-align: center; margin-top: 8px; }
+
+aside ul { list-style: none; margin: 0; padding: 0; }
+aside li { padding: 5px 0; border-bottom: 1px dashed var(--line); }
+aside li:last-child { border-bottom: 0; }
+aside .crests { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 6px; }
+aside .crests img { width: 100%; }
+
+/* ---------- home */
+.hero { position: relative; padding: 0; overflow: hidden; }
+.hero img { width: 100%; }
+.hero .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 18px 14px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .85)); }
+.hero .cap p { margin: 0; font-size: 1.1rem; }
+.feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 20px; }
+.feats div { border-left: 3px solid var(--ember); padding-left: 10px; }
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.shots a { border: 2px solid var(--line); }
+.shots a:hover { border-color: var(--gold); }
+.news article { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.news article:last-child { border-bottom: 0; }
+.news time { color: var(--dim); font-size: .85rem; font-family: "Cinzel", serif; }
+
+/* ---------- classes */
+.class { display: grid; grid-template-columns: 84px 1fr; gap: 16px; }
+.class > img { width: 84px; height: 84px; filter: drop-shadow(0 3px 4px #000); }
+.class .role { font-family: "Cinzel", serif; color: var(--dim); font-size: .8rem; letter-spacing: .15em; text-transform: uppercase; margin: -4px 0 8px; }
+.class dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0 0 10px; font-size: .95rem; }
+.class dt { color: var(--gold); }
+.class dd { margin: 0; }
+.spells { display: flex; flex-wrap: wrap; gap: 6px; }
+.spells figure { margin: 0; width: 64px; text-align: center; font-size: .72rem; line-height: 1.2; color: var(--dim); }
+.spells img { width: 44px; height: 44px; margin: 0 auto 3px; border: 2px solid #6b4a26; box-shadow: 0 0 0 1px #000; }
+@media (max-width: 520px) { .class { grid-template-columns: 1fr; } }
+
+footer { text-align: center; color: var(--dim); font-size: .85rem; padding: 10px 0 40px; }
