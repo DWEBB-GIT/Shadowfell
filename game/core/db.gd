@@ -42,7 +42,10 @@ const CONFIG := {
 	"interaction": {"radius": 2.2},
 	"durability": {"deathLoss": 10, "repairFraction": 0.5},
 	"damageNumbers": {"font": 22, "sizePower": 0.6, "minScale": 0.65, "maxScale": 2.4, "life": 1.1, "critLife": 1.6, "pulseAt": 2.0, "pulse": 0.5},
-	"impact": {"shake": 0.07, "critShake": 0.16, "shakeDecay": 9.0},
+	"impact": {"shake": 0.07, "critShake": 0.16, "shakeDecay": 9.0,
+		# hit-stop on a landed melee blow: both bodies hold still this long,
+		# more for slower (heavier) weapons, more again on a crit
+		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
 	"fog": {"color": Color("3a4244"), "near": 14.0, "far": 40.0},
 	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 9.0, "fogFar": 32.0, "light": 0.68},
 	"camera": {
@@ -96,6 +99,8 @@ static var archetypes := {}
 static var abilities := {}
 ## how each spell looks: its cast animation and effects (data/spell_fx.json)
 static var spell_fx := {}
+## each spell's cast pose by name (data/spell_fx.json `poses`; Rig)
+static var spell_poses := {}
 static var enemies := {} ## raw records
 static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
@@ -164,6 +169,7 @@ static func setup(data) -> void:
 	archetypes = data.table("archetypes")
 	abilities = data.table("abilities")
 	spell_fx = f.get("spell_fx", {}).get("spells", {})
+	spell_poses = f.get("spell_fx", {}).get("poses", {})
 	enemies = with_imported(resolve_enemies(data.table("enemies")))
 	loot_tables = data.table("lootTables")
 	world_drops = data.table("worldDrops").values()

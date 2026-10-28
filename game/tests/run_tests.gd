@@ -30,7 +30,7 @@ func _initialize() -> void:
 		check(DB.abilities.has(id), "spell look %s names a known spell" % id)
 		for key in ["anim", "windupAnim"]:
 			if look.get(key) is Dictionary:
-				check(Rig.BLOWS.has(look[key].type) or look[key].type in ["guard", "strike", "slam", "brace", "shoot", "cast", "cleave"], "spell look %s uses a known pose" % id)
+				check(DB.spell_poses.has(look[key].type) or look[key].type in ["guard", "strike", "slam", "brace", "shoot", "cast", "cleave"], "spell look %s uses a known pose" % id)
 		for phase in Fx.PHASES:
 			for part in look.get(phase, []):
 				check(phase == "projectile" or part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake"], "spell look %s part %s is a known effect" % [id, part.get("fx", "mesh")])

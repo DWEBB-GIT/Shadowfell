@@ -27,6 +27,7 @@ Conventions (game/core/assets.gd and game/entities/rig.gd rely on these):
     maps, which the flat-shaded world does not use).
   * Clip names: Idle, Walk (loops), Attack, Death (plays once and holds).
 """
+import json
 import math
 import os
 
@@ -216,6 +217,68 @@ def weapon(src, out, length, pommel, flip):
     export(out, animations=False)
 
 
+# ---- spell poses -------------------------------------------------------------
+
+def key3(t, up, impact, wind, blow, snap=0.3, follow=0.3):
+    """One key of a blow, as Rig._key3 in game/entities/rig.gd: snapped into
+    the windup (`snap` of the time to `up`), held, whipped through to the
+    blow by `impact`, held there (`follow` of the rest), then back to rest."""
+    if t < up:
+        x = min(1.0, t / max(0.001, up * snap))
+        return wind * (1 - (1 - x) ** 2)
+    if t < impact:
+        x = (t - up) / (impact - up)
+        return wind + (blow - wind) * x * x
+    after = impact + (1 - impact) * follow
+    if t < after:
+        return blow
+    x = (t - after) / (1 - after)
+    return blow * (1 - x * x * (3 - 2 * x))
+
+
+# the game's body parts on the rigged player's bones, and each part axis as a
+# turn about a world axis here (game x = x, game y (up) = z, game z (forward)
+# = -y, as forward is -Y in Blender and +Z in the game)
+PART_BONES = {"Torso": "Spine1", "Head": "Head", "Arm_R": "RightArm", "Arm_L": "LeftArm", "Leg_L": "LeftUpLeg", "Leg_R": "RightUpLeg"}
+AXES = [("x", 1), ("z", 1), ("y", -1)]
+# where a clip's blow falls (Rig.CLIP_IMPACT)
+CLIP_IMPACT = 0.5
+
+
+def spell_clips(p, m):
+    """A clip for every spell pose in data/spell_fx.json `poses`, named as
+    the pose, keyed every frame so the snap and the whip stay sharp."""
+    path = os.path.join(HERE, "..", "..", "data", "spell_fx.json")
+    with open(path) as f:
+        poses = json.load(f)["poses"]
+    for name, pose in poses.items():
+        up = CLIP_IMPACT * pose["up"]
+
+        def keys(t, pose=pose, up=up):
+            out = {}
+            for part, axis, wind, blow in pose["keys"]:
+                ax, sign = AXES[axis]
+                out.setdefault(m(PART_BONES[part]), []).append((ax, sign * key3(t, up, CLIP_IMPACT, wind, blow)))
+            hips = []
+            raise_ = min(1.0, t / CLIP_IMPACT) if t < CLIP_IMPACT else max(0.0, 1 - (t - CLIP_IMPACT) / (1 - CLIP_IMPACT))
+            raise_ = raise_ * raise_ * (3 - 2 * raise_)
+            lift = 0.0
+            if "hop" in pose:
+                lift += pose["hop"] * math.sin(math.pi * min(1.0, t / CLIP_IMPACT))
+            if "sink" in pose:
+                lift -= pose["sink"] * raise_
+            if lift:
+                hips.append(("loc", Vector((0, 0, lift))))
+            if "spin" in pose:
+                k = min(1.0, t / CLIP_IMPACT)
+                hips.append(("z", -2 * math.pi * pose["spin"] * k * k * (3 - 2 * k)))
+            if hips:
+                out[m("Hips")] = hips
+            return out
+
+        p.clip(name, 24, False, keys, step=1)
+
+
 # ---- creatures ---------------------------------------------------------------
 
 class Poser:
@@ -251,14 +314,13 @@ class Poser:
             pb.rotation_quaternion = q
             pb.location = loc
 
-    def clip(self, name, frames, loop, keys):
+    def clip(self, name, frames, loop, keys, step=2):
         """keys(t) -> {bone: [(axis, radians) | ("loc", Vector)]} for t in 0..1"""
         act = bpy.data.actions.new(name)
         self.arm.animation_data_create()
         self.arm.animation_data.action = act
         for pb in self.arm.pose.bones:
             pb.rotation_mode = "QUATERNION"
-        step = 2
         for f in range(0, frames + 1, step):
             t = f / frames
             self.pose(keys(t if not loop or f < frames else 0.0))
@@ -569,16 +631,17 @@ def base_male():
         return keys
 
     def attack(t):
-        # placeholder swing: right arm up and back (0..0.4), down across (to 0.6)
-        up = math.sin(min(1.0, t / 0.4) * math.pi / 2) if t < 0.4 else max(0.0, 1 - (t - 0.4) / 0.2)
-        cut = 0.0 if t < 0.4 else math.sin(min(1.0, (t - 0.4) / 0.25) * math.pi / 2) * (1 - max(0.0, t - 0.7) / 0.3)
+        # the auto attack: a quick raise (it starts ahead of the swing clock,
+        # so it costs no time), a whip down across by 0.5 where the blow
+        # lands, a held follow-through, then back to rest
+        k = lambda wind, blow: key3(t, 0.3, 0.5, wind, blow, snap=0.8)
         return {
-            m("Spine1"): [("z", 0.35 * up - 0.4 * cut)],
-            m("RightArm"): [("x", -2.4 * up - 1.1 * cut), ("y", 0.5 * cut)],
-            m("RightForeArm"): [("x", -0.6 * up)],
-            m("LeftArm"): [("x", -0.3 * up)],
-            m("RightUpLeg"): [("x", 0.2 * cut)],
-            m("LeftUpLeg"): [("x", -0.25 * cut)],
+            m("Spine1"): [("z", k(0.4, -0.45)), ("x", k(-0.05, 0.2))],
+            m("RightArm"): [("x", k(-2.6, -0.5)), ("y", k(0.0, 0.6))],
+            m("RightForeArm"): [("x", k(-0.7, -0.05))],
+            m("LeftArm"): [("x", k(-0.4, -0.2))],
+            m("RightUpLeg"): [("x", k(0.0, 0.25))],
+            m("LeftUpLeg"): [("x", k(0.0, -0.3))],
         }
 
     def cast(t):
@@ -626,6 +689,7 @@ def base_male():
     p.clip("Cast", 16, False, cast)
     p.clip("Sit", 48, True, sit)
     p.clip("Death", 24, False, death)
+    spell_clips(p, m)
     arm.data.pose_position = "POSE"
     export("base_male.glb")
 

@@ -36,7 +36,9 @@ func _init(g) -> void:
 	ev.on("burst", func(e):
 		if not _has_look(e.get("id", ""), "impact"):
 			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
-	ev.on("enemyHit", func(e): sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8))
+	ev.on("enemyHit", func(e):
+		sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8)
+		_blow_lands(e))
 	# the weight of a landed blow: the camera kicks (nothing ever pauses)
 	ev.on("hitImpact", func(e):
 		if e.get("heavy") or e.get("crit"):
@@ -429,6 +431,30 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 			flash(at, colour)
 		"shake":
 			game.shake_camera(DB.CONFIG.impact.critShake if p.get("heavy") else DB.CONFIG.impact.shake)
+
+
+## A melee blow connecting: hit-stop on both bodies, and on an auto attack
+## a faint slash across the target in the swing's direction (main hand cuts
+## down to the left, off hand down to the right).
+func _blow_lands(e: Dictionary) -> void:
+	var hand: String = e.get("hand", "main")
+	var player = game.player
+	var enemy = e.enemy
+	if e.get("kind") != "strike" or hand == "ranged" or e.get("damage", 0) <= 0:
+		return
+	if player.position.distance_to(enemy.position) > 4.0:
+		return
+	var c: Dictionary = DB.CONFIG.impact
+	var t := minf(c.hitStopMax, c.hitStop + c.hitStopPerSecond * game.stats.hand_speed(hand))
+	if e.get("crit"):
+		t *= c.critHitStop
+	player.rig.hold(t)
+	enemy.rig.hold(t)
+	if e.get("swing"):
+		var facing := atan2(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
+		var slash := {"mesh": "fx_arc", "glow": 0.55 if not e.get("crit") else 0.85, "life": 0.18, "height": 1.25, "forward": -0.2,
+			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.55, 0.7], "spin": 60 if hand == "main" else -60}
+		_shape(slash, enemy.position, facing, null, Color("fff0d8"), {})
 
 
 ## One effect shape: placed by `height`, `forward` and `rot` around its

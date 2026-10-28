@@ -410,7 +410,9 @@ func update(dt: float, player) -> void:
 	# more to clear it), not every frame for every enemy in the world
 	if flash > 0 or _flash_shown:
 		flash = maxf(0, flash - dt * 5)
-		Rig.set_emissive(materials, flash_colour, flash * (0.35 if flash_colour == Rig.FLASH_WHITE else 0.6))
+		# a white pop for the first moment of every hit, then its own colour
+		var white: bool = flash_colour == Rig.FLASH_WHITE or flash > 0.7
+		Rig.set_emissive(materials, Rig.FLASH_WHITE if white else flash_colour, flash * (0.5 if white else 0.6))
 		_flash_shown = flash > 0
 	engaged = maxf(0, engaged - dt)
 
