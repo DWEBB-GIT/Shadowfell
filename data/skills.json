@@ -6,10 +6,7 @@
       "name": "Camping",
       "trainer": "tam",
       "cost": 10,
-      "teaches": [
-        "setCamp",
-        "returnToCamp"
-      ],
+      "teaches": ["setCamp", "returnToCamp"],
       "desc": "Pitch a camp anywhere quiet. Your spirit rises there if you fall, resting by it builds rested experience, and Return to Camp brings you back to it."
     },
     {
@@ -17,9 +14,7 @@
       "name": "Fishing",
       "trainer": "tam",
       "cost": 5,
-      "teaches": [
-        "fish"
-      ],
+      "teaches": ["fish"],
       "desc": "Cast a line into still water and strike when the bob dips. Every water has a level: you need that much Fishing to fish it, and it teaches you less once it is easy. Better rods need more skill to use.",
       "train": [
         {
@@ -89,9 +84,7 @@
       "name": "Cooking",
       "trainer": "hester",
       "cost": 10,
-      "teaches": [
-        "cook"
-      ],
+      "teaches": ["cook"],
       "maxRank": 50,
       "desc": "Cook fish and meat at a fire (a camp or the inn's hearth). Grilled perch and roast dace come with the skill; Hester teaches more as you improve. Rises as you cook.",
       "craft": {
@@ -299,11 +292,7 @@
       "green": 5,
       "grey": 0
     },
-    "bands": [
-      3,
-      6,
-      10
-    ],
+    "bands": [3, 6, 10],
     "charXpShare": 0.15
   }
 }

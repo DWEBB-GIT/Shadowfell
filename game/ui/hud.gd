@@ -1155,6 +1155,10 @@ func show_signpost(sp: Dictionary) -> void:
 		lines.append("%s  %s   %d m %s" % [l.arrow, l.label, l.metres, l.dir])
 	sign_text.text = "\n".join(lines)
 	sign_card.visible = true
+	# in the middle of the screen (Dan, 2026-10-27)
+	sign_card.size = sign_card.get_combined_minimum_size()
+	var vp := root.get_viewport_rect().size if root.is_inside_tree() else Vector2(1280, 720)
+	sign_card.position = ((vp - sign_card.size) / 2).round()
 	signpost = {"sp": sp, "at": game.player.position}
 	game.events.emit("signpostRead", {"id": sp.id})
 

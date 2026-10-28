@@ -9,7 +9,7 @@ extends Node3D
 ##
 ## Height is not saved: everything stands on the ground, as in the game.
 ##
-## Select this root node and pick a brush on the 3D view's toolbar to sculpt
+## Open it from the "World" dock (beside the Scene tree), which also holds the brushes to sculpt
 ## the ground (the World tools plugin, addons/shadowfell_world); Ctrl+S then
 ## also saves the sculpted ground.
 
@@ -148,6 +148,21 @@ func show_brush(at: Vector3, radius: float, color := Color(1, 0.85, 0.3)) -> voi
 			im.surface_set_color(color if r == radius else color.darkened(0.3))
 			im.surface_add_vertex(Vector3(x, Terrain.height_at(x, z) + 0.3, z))
 		im.surface_end()
+
+
+## A new thing for the group named `group` (NPCs, Enemies, ...) from a
+## record, not yet in the scene (the World dock's Place adds it with attach).
+func make_marker(group: String, r: Dictionary) -> Node3D:
+	for g in GROUPS:
+		if g.name == group:
+			var holder := get_node_or_null(NodePath(group))
+			return _marker(g, r, holder.get_child_count() if holder else 0)
+	return null
+
+
+func attach(n: Node3D, holder: Node) -> void:
+	holder.add_child(n, true)
+	_own(n)
 
 
 func _own(n: Node) -> void:

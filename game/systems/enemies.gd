@@ -102,18 +102,36 @@ func _respawn(dt: float) -> void:
 func _separate() -> void:
 	var player = game.player
 	var living := list.filter(func(e): return e.alive)
-	for i in living.size():
+	# sweep along x: once the next enemy is further off in x than any two
+	# could reach, none after it can touch this one (was every pair: 5 ms
+	# a frame for 85 enemies)
+	living.sort_custom(func(a, b): return a.position.x < b.position.x)
+	var n := living.size()
+	var reach := 0.0
+	for e in living:
+		reach = maxf(reach, e.radius)
+	reach *= 2
+	for i in n:
 		var a = living[i]
 		# the training dummy is planted: whoever bumps it does all the moving
-		for j in range(i + 1, living.size()):
+		var a_dummy: bool = a.cfg.get("dummy", false)
+		for j in range(i + 1, n):
 			var b = living[j]
-			var r := push_apart(a.position, a.radius, b.position, b.radius, 1.0 if a.cfg.get("dummy") else 0.0 if b.cfg.get("dummy") else 0.5)
+			var dx: float = b.position.x - a.position.x
+			if dx >= reach:
+				break
+			var mn: float = a.radius + b.radius
+			if absf(dx) >= mn or absf(b.position.z - a.position.z) >= mn:
+				continue
+			var r := push_apart(a.position, a.radius, b.position, b.radius, 1.0 if a_dummy else 0.0 if b.cfg.get("dummy", false) else 0.5)
 			a.position = r[0]
 			b.position = r[1]
 		if not player.dead:
-			var r := push_apart(player.position, player.radius, a.position, a.radius, 0.0 if a.cfg.get("dummy") else 0.85)
-			player.position = r[0]
-			a.position = r[1]
+			var mp: float = player.radius + a.radius
+			if absf(player.position.x - a.position.x) < mp and absf(player.position.z - a.position.z) < mp:
+				var r := push_apart(player.position, player.radius, a.position, a.radius, 0.0 if a_dummy else 0.85)
+				player.position = r[0]
+				a.position = r[1]
 
 
 ## Move two circles apart; `bias` is the share of the correction given to b.

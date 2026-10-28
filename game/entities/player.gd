@@ -60,9 +60,14 @@ var hidden := false
 func _init(g) -> void:
 	game = g
 	group.name = "Player"
-	model = Assets.instance("warden")
+	# the imported body (on its own skeleton, with gear sockets) or the
+	# code-built warden, by DB.CONFIG.models
+	var body: String = DB.CONFIG.models.player if DB.CONFIG.models.imported and Assets.has(DB.CONFIG.models.player) else "warden"
+	model = Assets.instance(body)
+	if body != "warden":
+		Rig.add_sockets(model)
 	group.add_child(model)
-	rig = Rig.new(model, "warden")
+	rig = Rig.new(model, body)
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part

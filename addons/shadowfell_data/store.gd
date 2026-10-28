@@ -15,7 +15,7 @@ const KINDS := ["weapon", "armor", "shield", "jewellery", "torch", "tool", "key"
 const KIND_NAMES := {"weapon": "Weapon", "armor": "Armour", "shield": "Shield", "jewellery": "Jewellery", "torch": "Torch", "tool": "Tool", "key": "Key", "bag": "Bag", "ammo": "Ammo", "consumable": "Consumable", "material": "Material", "junk": "Junk", "document": "Document"}
 const GEAR := ["weapon", "armor", "shield"]
 const EQUIPPABLE := ["weapon", "armor", "shield", "jewellery", "torch"]
-const STAT_KEYS := ["stamina", "strength", "agility", "intellect", "armour", "resistance", "block", "haste"]
+const STAT_KEYS := DB.STAT_KEYS ## the game's own list, so the two cannot drift
 ## what an item's `slot` may say, with the name the editor shows
 const SLOTS := {
 	"oneHand": "One-hand (either hand)", "mainHand": "Main hand only", "offHand": "Off hand", "ranged": "Ranged",
@@ -397,6 +397,11 @@ func set_spell_source(c: Dictionary, id: String, to: String, trainer = null) -> 
 		c.get("bar", []).erase(id)
 	if c.get("defensive") == id and to != "defensive":
 		c.erase("defensive")
+	# on the bar, taught now or dropped: no longer left for a later trainer
+	if c.has("later"):
+		c.later.erase(id)
+		if c.later.is_empty():
+			c.erase("later")
 	match to:
 		"":
 			c.get("abilities", []).erase(id)
