@@ -43,7 +43,8 @@ Dan's targets for the opening levels, built in the Godot game (`game/core/scalin
 - **Level gaps:** every hit is ×1.2 for each level the attacker is above its target, and ÷1.2 for each level below. A level 40 takes 1 damage a hit in a level 10 zone; a level 10 in a level 25 zone dies in a few hits.
 - **No world scaling:** an enemy's health, damage and armour come from its own level and type, never from yours.
 - **Items are worked out, not hand-typed:** armour, weapon damage, a shield's block chance and the stat points come from item level, slot, armour type and rarity.
-- **Left out on purpose:** hit chance and misses, dodge and parry, and penetration. Avoiding damage is the player's job (telegraphs and the defensive button), so tanks stack armour, block and Stamina.
+- **Misses (Dan, 2026-10-28):** your level is your combat skill. Your blows miss 5% of the time against a foe of your own level, 2.5% less for each level the foe is below you (0% two levels down), and 5% more for each level it is above you (capped at 60%). Accuracy takes points off. There is no extra miss at long range for bows. See "Misses" below.
+- **Left out on purpose:** dodge and parry, and penetration. Avoiding damage is the player's job (telegraphs and the defensive button), so tanks stack armour, block and Stamina.
 - **Resources:** health, plus one resource per archetype. The Warden has none; a caster would have mana from Intellect. Enemies can have mana too, shown as a blue bar.
 - **Damage numbers** float up from whoever is hit. They stay small, serif and muted: dealt in parchment white, taken in dull red, crits larger and amber with a "!", blocks show how much was stopped, heals in green.
 
@@ -63,6 +64,28 @@ Dan's targets for the opening levels, built in the Godot game (`game/core/scalin
 | Resistance | Gear (later) | The same curve, against spells |
 | Block chance | A shield (10% of its own), plus block chance on gear | Chance to stop 30% of a melee blow, capped at 50%. Brace is a guaranteed full block |
 | Haste | Gear only | Shortens the time between swings (T = W ÷ (1 + H)), ability windups, casts and the global cooldown (floor 1 s), capped at 30%. The swing animation keeps its own timing |
+| Accuracy | Gear ("of Precision", Blackwood cleaver), Hawkeye tincture, spell buffs (`accuracy` on a buff) | Each 1% takes 1% off your miss chance (never below 0), capped at 30%. Priced like haste: (item level + 4) ÷ 15 points per 1% |
+
+## Misses
+
+Your level stands in for a combat skill, so there is no separate skill to grind (Dan, 2026-10-28).
+
+miss = 5% + gap × (5% if the foe is above you, 2.5% if below) − accuracy, kept between 0% and 60%, where gap = foe level − your level.
+
+| Foe | Miss |
+|---|---|
+| 2+ levels below | 0% |
+| 1 level below | 2.5% |
+| Your level | 5% |
+| 1 level above | 10% |
+| 2 levels above | 15% |
+| 3 levels above | 20% |
+
+- **What can miss:** auto attacks (both hands and Auto Shot), weapon abilities, and direct spell hits. A missed ability does no damage and does not apply its aura or follow-up.
+- **What never misses:** damage over time ticks, channel ticks and ground zones (applying a dot does not roll either), heals, and enemy blows on you (those have block).
+- **Range:** none. A bow misses as often at 30 m as at 3 m.
+- **Show:** a grey "Miss" over the foe and "You miss the wolf." in the log. The foe still notices you.
+- **Tuning:** `CONFIG.stats` in game/core/db.gd: missBase, missPerLevelAbove, missPerLevelBelow, missCap, accuracyCap. Accuracy's item price is `statCostPerLevel.accuracy` in game/core/scaling.gd. Check: game/tests/miss_check.gd.
 
 ## The formula
 
@@ -497,7 +520,7 @@ Each one is an `archetypes` entry: base attributes, gains per level, main attrib
 
 ## Earlier decisions (2026-10-14), still standing
 
-- **No misses and no dodge chance.** Misses feel bad in action combat, where the player has already aimed; WoW removed hit rating for the same reason. Avoidance is the player's skill (telegraphs and Brace). A rogue could later get a small passive dodge as part of its kit.
+- **Small, level-based misses; no dodge chance.** Many misses feel bad in action combat (RuneScape), so a miss is rare against your own level and only bites when you punch up, as in modern WoW, where the level gap decides misses rather than a hit rating. Avoidance is the player's skill (telegraphs and Brace). A rogue could later get a small passive dodge as part of its kit.
 - **A block stops a percentage of the hit** (30%), as in WoW since Cataclysm and Diablo IV, rather than a flat value that stops whole hits early and nothing later. Brace stays a guaranteed full block, and telegraphed specials such as Grave Slam cannot be blocked.
 - **Haste** divides the time between swings, ability windups, casts and the global cooldown (floor 1 s), capped at 30%. It does not speed up the swing animation (since 2026-10-15, see The swing timer), enemy telegraphs or Brace's window.
 - **No server for now.** The game is single-player and saves in the browser. The damage formula is one pure function (`src/systems/stats.js`) fed by config and data, and the growth formulas are plain functions too, so they could run on a server or in Unity unchanged.

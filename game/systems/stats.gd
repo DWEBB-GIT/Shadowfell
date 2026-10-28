@@ -47,6 +47,7 @@ var totals: Dictionary:
 				t[k] = t.get(k, 0) + st[k]
 		for k in ATTRS:
 			t[k] = t.get(k, 0)
+		t["accuracy"] = t.get("accuracy", 0)
 		if game.cooking:
 			t.stamina += game.cooking.well_fed_stamina
 		if game.boons:
@@ -116,6 +117,12 @@ var block_chance: float:
 var haste: float:
 	get:
 		return minf(S().hasteCap, totals.get("haste", 0))
+
+## less chance to miss, from gear and elixirs (spell buffs add theirs in
+## Spells.hit_mods); never below a miss chance of 0
+var accuracy: float:
+	get:
+		return minf(S().accuracyCap, totals.get("accuracy", 0))
 
 var speed: float:
 	get:
@@ -259,6 +266,7 @@ func snapshot() -> Dictionary:
 		"spellPower": {"label": "Spell power", "v": spell_power},
 		"block": {"label": "Block chance", "v": block_chance, "text": "%s%%" % U.n(block_chance)},
 		"haste": {"label": "Haste", "v": haste, "text": "%s%%" % U.n(haste)},
+		"accuracy": {"label": "Accuracy", "v": accuracy, "text": "%s%%" % U.n(accuracy)},
 	}
 
 
@@ -273,6 +281,7 @@ var stat_block: Dictionary:
 			"armour": t.get("armour", 0),
 			"resistance": t.get("resistance", 0),
 			"block": block_chance,
+			"accuracy": accuracy,
 		}
 
 
@@ -309,6 +318,21 @@ static func compute_hit(rand: Callable, attacker: Dictionary, defender: Dictiona
 		return {"amount": n, "crit": crit, "blocked": blocked, "school": school, "carry": whole - n}
 	var amount := maxi(1, U.jround(dmg) - blocked)
 	return {"amount": amount, "crit": crit, "blocked": blocked, "school": school}
+
+
+## Your chance to miss a foe of `defender_level` (Dan, 2026-10-28): your
+## level is your combat skill. missBase against your own level, less
+## against lower foes (down to 0), missPerLevelAbove more for each level the
+## foe stands above you; accuracy takes points off. No range penalty.
+static func miss_chance(attacker_level: int, defender_level: int, accuracy := 0.0) -> float:
+	var gap := defender_level - attacker_level
+	var m: float = S().missBase + gap * (S().missPerLevelAbove if gap > 0 else S().missPerLevelBelow)
+	return clampf(m - accuracy, 0.0, S().missCap)
+
+
+## does a blow of yours miss? `bonus`: accuracy from buffs
+static func rolls_miss(rand: Callable, attacker: Dictionary, defender: Dictionary, bonus := 0.0) -> bool:
+	return rand.call() * 100 < miss_chance(attacker.level, defender.level, attacker.get("accuracy", 0.0) + bonus)
 
 
 ## A weapon roll for an ability: anywhere in the normalised range, plus power.
