@@ -1,17 +1,18 @@
 @tool
 extends EditorPlugin
 ## Sculpt brushes for the World editor (addons/shadowfell_data/world_editor.tscn).
-## Select its root node, pick a brush on the 3D view's toolbar and paint with
-## the left mouse button: Raise, Lower, Smooth, Flatten (to the height where
+## The "World" dock (beside the Scene tree) opens it and holds the brushes:
+## pick one and paint with the left mouse button: Raise, Lower, Smooth, Flatten (to the height where
 ## the stroke began), Walkable / Blocked (where players can go) and Paint
 ## ground (its surface). Shift swaps Raise/Lower and Walkable/Blocked;
 ## [ and ] change the size. Ctrl+Z undoes a stroke; Ctrl+S saves.
 
 const Sculpt := preload("sculpt.gd")
 const WorldEditor := preload("res://addons/shadowfell_data/world_editor.gd")
+const WORLD_SCENE := "res://addons/shadowfell_data/world_editor.tscn"
 const SURFACES := ["Meadow", "Marsh", "Downs", "Blackwood", "Rock", "Moor", "Sand", "Farmland", "Forest", "Snow", "Desert", "Ash", "Swamp", "Jungle", "Haunted"]
 
-var bar: HBoxContainer
+var bar: VBoxContainer
 var mode_pick: OptionButton
 var size_box: SpinBox
 var strength_box: SpinBox
@@ -28,32 +29,74 @@ var _since_draw := 0.0
 
 
 func _enter_tree() -> void:
-	bar = HBoxContainer.new()
+	# a "World" dock beside the Scene tree, always there
+	bar = VBoxContainer.new()
+	bar.name = "World"
+	var open := Button.new()
+	open.text = "Open the world (sculpt and place)"
+	open.tooltip_text = "Opens world_editor.tscn in the 3D view with everything from world.json on the real ground"
+	open.pressed.connect(_open_world)
+	bar.add_child(open)
+	var help := Label.new()
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.custom_minimum_size.x = 200
+	help.text = "Placing: click an NPC, enemy, chest or prop in the 3D view and move it with the gizmo; Ctrl+D copies it, Delete removes it.\nSculpting: pick a brush and paint with the left mouse button. Shift swaps Raise/Lower and Walkable/Blocked; [ and ] resize; Ctrl+Z undoes.\nCtrl+S saves both."
+	bar.add_child(help)
 	var label := Label.new()
-	label.text = "Sculpt"
+	label.text = "Brush"
 	bar.add_child(label)
 	mode_pick = OptionButton.new()
 	for m in Sculpt.MODES:
 		mode_pick.add_item(m)
 	mode_pick.tooltip_text = "Brush (left mouse paints; Shift swaps Raise/Lower and Walkable/Blocked)"
-	mode_pick.item_selected.connect(func(_i): _update_brush())
+	mode_pick.item_selected.connect(_on_mode)
 	bar.add_child(mode_pick)
-	size_box = _spin(bar, "Size", 2, 80, 12, 1, "Brush radius in metres ([ and ])")
-	strength_box = _spin(bar, "Strength", 0.05, 1, 0.5, 0.05, "How fast the brush works")
+	var row := GridContainer.new()
+	row.columns = 2
+	bar.add_child(row)
+	size_box = _spin(row, "Size (m)", 2, 80, 12, 1, "Brush radius in metres ([ and ])")
+	strength_box = _spin(row, "Strength", 0.05, 1, 0.5, 0.05, "How fast the brush works")
+	var sl := Label.new()
+	sl.text = "Ground"
+	row.add_child(sl)
 	surface_pick = OptionButton.new()
 	for i in SURFACES.size():
 		surface_pick.add_item(SURFACES[i], i + 1)
 	surface_pick.tooltip_text = "Ground to paint"
-	bar.add_child(surface_pick)
-	bar.visible = false
-	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, bar)
+	row.add_child(surface_pick)
+	add_control_to_dock(DOCK_SLOT_RIGHT_UL, bar)
 	set_process(false)
 
 
 func _exit_tree() -> void:
 	if bar:
-		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, bar)
+		remove_control_from_docks(bar)
 		bar.queue_free()
+
+
+func _open_world() -> void:
+	EditorInterface.open_scene_from_path(WORLD_SCENE)
+	EditorInterface.set_main_screen_editor("3D")
+	_select_root.call_deferred()
+
+
+func _select_root() -> void:
+	var root := EditorInterface.get_edited_scene_root()
+	if root and root.get_script() == WorldEditor:
+		var sel := EditorInterface.get_selection()
+		sel.clear()
+		sel.add_node(root)
+
+
+## Picking a brush selects the world's root node, which the brushes need.
+func _on_mode(_i: int) -> void:
+	if mode_pick.selected != Sculpt.OFF:
+		var root := EditorInterface.get_edited_scene_root()
+		if root == null or root.get_script() != WorldEditor:
+			_open_world()
+		else:
+			_select_root()
+	_update_brush()
 
 
 static func _spin(parent: Control, label: String, lo: float, hi: float, value: float, step: float, tip: String) -> SpinBox:
@@ -85,7 +128,6 @@ func _edit(object: Object) -> void:
 
 
 func _make_visible(visible: bool) -> void:
-	bar.visible = visible
 	if not visible and editor:
 		editor.show_brush(Vector3.ZERO, 0)
 

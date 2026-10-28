@@ -72,7 +72,7 @@ The World editor (`world_editor.tscn`) keeps its own copy of `world.json` while 
 
 ### Sculpting the ground
 
-The World editor also sculpts the ground (the *Shadowfell World tools* plugin, `addons/shadowfell_world`). Open `world_editor.tscn`, select its root node, and pick a brush from **Sculpt** on the 3D view's toolbar, then paint with the left mouse button:
+The World editor also sculpts the ground (the *Shadowfell World tools* plugin, `addons/shadowfell_world`). Use the **World** dock (top right, beside the Scene tree): **Open the world** opens `world_editor.tscn` in the 3D view; pick a brush there, then paint with the left mouse button:
 
 - **Raise / Lower**, **Smooth**, **Flatten** (to the height where the stroke began).
 - **Walkable / Blocked**: where players and monsters can go (the ground darkens where it is blocked).

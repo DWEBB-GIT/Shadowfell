@@ -9,7 +9,7 @@ extends Node3D
 ##
 ## Height is not saved: everything stands on the ground, as in the game.
 ##
-## Select this root node and pick a brush on the 3D view's toolbar to sculpt
+## Open it from the "World" dock (beside the Scene tree), which also holds the brushes to sculpt
 ## the ground (the World tools plugin, addons/shadowfell_world); Ctrl+S then
 ## also saves the sculpted ground.
 
