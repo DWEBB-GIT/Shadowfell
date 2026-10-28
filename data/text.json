@@ -92,7 +92,7 @@
         "name": "Ranger",
         "archetype": "ranger",
         "role": "Trapper and archer",
-        "blurb": "A hunter of the Blackwood fringe. Traps the path, sets the dead alight, and leaps clear when they close in. A hound joins the hunt at level 8.",
+        "blurb": "A hunter of the wild fringes. Traps the path, sets the dead alight, and leaps clear when they close in. A hound joins the hunt at level 8.",
         "traits": [
           "Agility",
           "Leather, cloth",
