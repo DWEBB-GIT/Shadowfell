@@ -657,6 +657,26 @@
       "position": [-448, 277.5]
     },
     {
+      "id": "hen_corrick_1",
+      "enemy": "farm_hen",
+      "position": [-441, 272]
+    },
+    {
+      "id": "hen_corrick_2",
+      "enemy": "farm_hen",
+      "position": [-442.5, 279]
+    },
+    {
+      "id": "hen_corrick_3",
+      "enemy": "farm_hen",
+      "position": [-439.5, 276.5]
+    },
+    {
+      "id": "hen_corrick_4",
+      "enemy": "farm_hen",
+      "position": [-443, 284]
+    },
+    {
       "id": "rat_ashby_1",
       "enemy": "granary_rat",
       "position": [-446, 300]

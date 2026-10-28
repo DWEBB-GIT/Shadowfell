@@ -46,9 +46,19 @@ static func _srgb_mesh(mesh: Mesh) -> Mesh:
 	return out
 
 
+## Imported models keep their own textured materials (named "T_...", see
+## assets/blender/import_models.py).
+static func _textured(mesh: Mesh) -> bool:
+	for i in mesh.get_surface_count():
+		var m := mesh.surface_get_material(i)
+		if m and m.resource_name.begins_with("T_"):
+			return true
+	return false
+
+
 static func _adopt_shared_materials(root: Node) -> void:
 	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
-		if mi.mesh == null:
+		if mi.mesh == null or _textured(mi.mesh):
 			continue
 		mi.mesh = _srgb_mesh(mi.mesh)
 		for i in mi.mesh.get_surface_count():
