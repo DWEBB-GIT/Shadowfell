@@ -58,14 +58,14 @@ def main():
     crests = "".join('<a href="classes.html#%s" title="%s"><img src="kit/%s.png" alt="%s"></a>'
                      % (c["id"], e(c["name"]), crest(c["id"]), e(c["name"])) for c in classes)
     aside = ('<aside><div class="box panel"><a class="play" href="play/">PLAY NOW<small>Free in your browser</small></a>'
-             '<p class="note">Desktop browser with keyboard and mouse, or a gamepad. The first load is about 20 MB.</p></div>'
+             '<p class="note">Best on a desktop browser with keyboard and mouse, or a gamepad. The first load is about 20 MB.</p></div>'
              '<div class="box panel"><h3>Classes</h3><div class="crests">%s</div></div>'
-             '<div class="box panel"><h3>Get Started</h3><ul>'
+             '<div class="box panel"><h3>First Steps</h3><ul>'
              '<li><b>WASD</b> or stick to move</li><li><b>Left click</b> selects</li>'
              '<li><b>Right click</b> talks and loots</li><li><b>Number keys</b> use abilities</li>'
              '<li>Every key can be rebound in Settings</li></ul></div></aside>' % crests)
     stamp = " &middot; build %s, %s" % (e(build["commit"]), e(build["time"])) if build.get("commit") else ""
-    footer = '<footer class="wrap">Shadowfall %s%s &middot; a work in progress</footer>' % (e(text["build"]), stamp)
+    footer = '<footer class="wrap">Shadowfall %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
 
     cards = []
     icons = set()
