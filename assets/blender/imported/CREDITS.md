@@ -20,3 +20,15 @@ scaled and re-centred; textures cut down to the base colour map at 256 or
 the hen's wings are folded in.
 
 `base_male.glb` is our own (assets/blender/base_male.blend).
+
+`battle_mage.glb` (the player since 2026-10-28) comes from Dan's download
+"human-battle-mage-male" (an FBX with a Reallusion-style auto-rig and a
+2048 px PBR texture; it looks made with an AI model generator such as
+Meshy). It came with no licence file: **source and licence still to be
+confirmed by Dan**, then credited in data/credits.json. The download is
+about 50 MB, so it is not kept in git: put it, as downloaded, in
+`assets/blender/imported/human-battle-mage-male/` to rebuild
+(`python assets/blender/import_models.py -- mage`). Changes: stood up and
+scaled to 1.82 m, cut from 50,000 to 7,000 triangles, texture reduced to
+the base colour map at 512 px, its own animation dropped and the player's
+clips keyed on it.
