@@ -768,7 +768,7 @@
       "rarity": "common",
       "use": {
         "food": {
-          "heal": 45,
+          "heal": 100,
           "seconds": 15,
           "wellFed": false
         }
@@ -777,7 +777,7 @@
       "price": 1,
       "model": "stew",
       "icon": "stew",
-      "description": "A heel of dark bread, hard enough to knock with. Restores 45 health over 15 seconds while you sit and eat."
+      "description": "A heel of dark bread, hard enough to knock with. Restores 100 health over 15 seconds while you sit and eat."
     },
     {
       "id": "spring_water",

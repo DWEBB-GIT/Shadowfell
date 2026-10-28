@@ -377,7 +377,13 @@ func slot_hover(s: ISlot, on: bool) -> void:
 
 ## right-click: use, equip, sell, open a bag
 func _context(loc: String) -> void:
-	if loc.begins_with("a:") or loc.begins_with("k:"):
+	# right click uses a bar slot; left click only picks it up to move it
+	if loc.begins_with("a:"):
+		var a = game.action_bar.slots[int(loc.substr(2))]
+		if a != null:
+			game.action_bar.clicked[a] = true
+		return
+	if loc.begins_with("k:"):
 		return
 	if _shop_click(loc):
 		return
@@ -1660,15 +1666,11 @@ func _up(at: Vector2) -> void:
 	drag = null
 	ghost.visible = false
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
-	var bar = game.action_bar
 	if not d.moved:
-		# a plain click: a bag in its socket opens that bag; a spell is cast
+		# a plain click: a bag in its socket opens that bag; bar slots are
+		# used with right click, so a left click on one does nothing
 		if d.from.begins_with("s:"):
 			toggle_bag(int(d.from.substr(2)))
-		if d.from.begins_with("a:"):
-			var a = bar.slots[int(d.from.substr(2))]
-			if a != null:
-				bar.clicked[a] = true
 		return
 	if game.merchant.current != null and _over(shop.panel, at) and not d.from.begins_with("a:") and not d.from.begins_with("k:"):
 		game.merchant.sell(d.from)
