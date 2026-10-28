@@ -805,7 +805,7 @@ func _handle_input(dt: float):
 	var pad_on := not pad_menu
 	# a spirit only walks
 	if player.ghost:
-		# a click on your body or the rest point acts, as Space does
+		# a click on your body or the rest point acts, as Interact does
 		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
 		_cursor_for(hover)
 		var clicked := input.consume_click()
@@ -892,6 +892,7 @@ func _handle_input(dt: float):
 		"rawAim": aim_now,
 		"faceAim": face_aim,
 		"tank": tank,
+		"jump": keys.pressed("jump") or (pad_on and pad.pressed(B.LS)),
 		"actions": actions,
 	}
 
