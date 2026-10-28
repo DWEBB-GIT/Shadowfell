@@ -126,6 +126,46 @@ func _text(at: Vector2, text: String, size_px: int, c: Color) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), SEA)
+	var art := Terrain.map_picture()
+	if art:
+		# the new map: Dan's painted map is the world map
+		var r := Terrain.map_rect()
+		var tl := _to_screen(r.position)
+		draw_texture_rect(art, Rect2(tl, r.size * scale_px), false)
+	elif not DB.world_map.is_empty():
+		_draw_design_map()
+	var ql = game.quests
+	for id in ql.active:
+		if not ql.tracked.has(id):
+			continue
+		var at: Dictionary = ql.goal(id)
+		if at.is_empty():
+			continue
+		var gs := _to_screen(Vector2(at.x, at.z))
+		var gc := Color("fff0a0") if id == ql.focus else Color("d8b058")
+		var k := 7.0 if id == ql.focus else 5.0
+		var diamond := PackedVector2Array([gs + Vector2(0, -k), gs + Vector2(k, 0), gs + Vector2(0, k), gs + Vector2(-k, 0)])
+		draw_colored_polygon(diamond, Color.BLACK)
+		draw_colored_polygon(PackedVector2Array(Array(diamond).map(func(v): return gs + (v - gs) * 0.7)), gc)
+		if id == ql.focus:
+			_text(gs + Vector2(0, -14), DB.quests[id].name, 11, gc)
+	# you
+	var me: Vector3 = game.player.position
+	var s := _to_screen(Vector2(me.x, me.z))
+	var f: float = game.player.facing
+	var dir := Vector2(sin(f), cos(f))
+	var side := Vector2(-dir.y, dir.x)
+	draw_colored_polygon(PackedVector2Array([s + dir * 10, s - dir * 6 + side * 6, s - dir * 3, s - dir * 6 - side * 6]), Color("ffe080"))
+	# frame and help
+	draw_rect(Rect2(Vector2.ZERO, size), UI.BORDER, false, 2.0)
+	_text(Vector2(90, 26), "THE WORLD", 18, UI.GOLD)
+	_text(Vector2(size.x / 2, size.y - 14), "Scroll to zoom  ·  drag to move  ·  M or Esc to close", 11, UI.TEXT_DIM)
+	var here := DB.region_at(me.x, me.z)
+	_text(Vector2(size.x / 2, size.y - 34), "%s%s" % [here.get("name", ""), ("  ·  " + game.subzone) if game.subzone != "" else ""], 12, UI.TEXT)
+
+
+## The old world's map, drawn from world_map.json.
+func _draw_design_map() -> void:
 	_poly(_coast, LAND)
 	for i in _islands:
 		_poly(i, LAND)
@@ -197,34 +237,6 @@ func _draw() -> void:
 		var s := _to_screen(d.at)
 		draw_rect(Rect2(s - Vector2(3, 3), Vector2(6, 6)), Color("9fd0ff"))
 	# where tracked quests lead (the followed one brightest)
-	var ql = game.quests
-	for id in ql.active:
-		if not ql.tracked.has(id):
-			continue
-		var at: Dictionary = ql.goal(id)
-		if at.is_empty():
-			continue
-		var gs := _to_screen(Vector2(at.x, at.z))
-		var gc := Color("fff0a0") if id == ql.focus else Color("d8b058")
-		var k := 7.0 if id == ql.focus else 5.0
-		var diamond := PackedVector2Array([gs + Vector2(0, -k), gs + Vector2(k, 0), gs + Vector2(0, k), gs + Vector2(-k, 0)])
-		draw_colored_polygon(diamond, Color.BLACK)
-		draw_colored_polygon(PackedVector2Array(Array(diamond).map(func(v): return gs + (v - gs) * 0.7)), gc)
-		if id == ql.focus:
-			_text(gs + Vector2(0, -14), DB.quests[id].name, 11, gc)
-	# you
-	var me: Vector3 = game.player.position
-	var s := _to_screen(Vector2(me.x, me.z))
-	var f: float = game.player.facing
-	var dir := Vector2(sin(f), cos(f))
-	var side := Vector2(-dir.y, dir.x)
-	draw_colored_polygon(PackedVector2Array([s + dir * 10, s - dir * 6 + side * 6, s - dir * 3, s - dir * 6 - side * 6]), Color("ffe080"))
-	# frame and help
-	draw_rect(Rect2(Vector2.ZERO, size), UI.BORDER, false, 2.0)
-	_text(Vector2(90, 26), "THE WORLD", 18, UI.GOLD)
-	_text(Vector2(size.x / 2, size.y - 14), "Scroll to zoom  ·  drag to move  ·  M or Esc to close", 11, UI.TEXT_DIM)
-	var here := DB.region_at(me.x, me.z)
-	_text(Vector2(size.x / 2, size.y - 34), "%s%s" % [here.get("name", ""), ("  ·  " + game.subzone) if game.subzone != "" else ""], 12, UI.TEXT)
 
 
 func _gui_input(e: InputEvent) -> void:

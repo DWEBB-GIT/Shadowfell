@@ -222,12 +222,19 @@ func _paint_world(g: Canvas2D, w: float, h: float) -> void:
 	var X := func(x: float) -> float: return (x - origin.x) * PX
 	var Z := func(z: float) -> float: return (z - origin.y) * PX
 	g.round_caps = true
-	# the ground, a pixel per 4 m sample, smoothed
+	# the ground, a pixel per 4 m sample, smoothed (the new map: Dan's picture)
 	var c := Terrain.cell()
-	_ground_tex = _ground_picture()
+	var art := Terrain.map_picture()
+	if art:
+		var r := Terrain.map_rect()
+		g.fill_style = "#0a3c6e"
+		g.fill_rect(0, 0, w, h)
+		g.draw_image(art, X.call(r.position.x), Z.call(r.position.y), r.size.x * PX, r.size.y * PX)
+	_ground_tex = _ground_picture() if art == null else null
 	var ground := _ground_tex
-	var gs := ground.get_size()
-	g.draw_image(ground, X.call(Terrain.grid_origin().x + roundi((origin.x - Terrain.grid_origin().x) / c) * c) - c * PX / 2, Z.call(Terrain.grid_origin().y + roundi((origin.y - Terrain.grid_origin().y) / c) * c) - c * PX / 2, gs.x * c * PX, gs.y * c * PX)
+	var gs := ground.get_size() if ground else Vector2.ZERO
+	if ground:
+		g.draw_image(ground, X.call(Terrain.grid_origin().x + roundi((origin.x - Terrain.grid_origin().x) / c) * c) - c * PX / 2, Z.call(Terrain.grid_origin().y + roundi((origin.y - Terrain.grid_origin().y) / c) * c) - c * PX / 2, gs.x * c * PX, gs.y * c * PX)
 	# clearings read a little lighter
 	g.fill_style = "rgba(160, 150, 110, 0.10)"
 	for cl in Layout.clearings:

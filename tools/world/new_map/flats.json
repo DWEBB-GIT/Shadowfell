@@ -1,0 +1,15 @@
+{
+  "_about": "Places drawn on Dan's map that are buildings or props, not ground: inside each oval the ground is levelled and takes `ground`, so towns, the castle and the arena come out as flat land to build on. Ovals are in map pixels (1024 x 1536): [centre x, centre y, radius x, radius y]. Edit and run tools/world/new_map/make_heightmap.py.",
+  "flats": [
+    {"name": "north castle", "oval": [680, 58, 70, 42], "ground": "snow"},
+    {"name": "snow walls and bridges", "oval": [800, 172, 78, 48], "ground": "snow"},
+    {"name": "river town", "oval": [645, 690, 112, 98], "ground": "grass"},
+    {"name": "stone circle", "oval": [135, 545, 46, 32], "ground": "grass"},
+    {"name": "dead tree", "oval": [820, 485, 58, 48], "ground": "haunted"},
+    {"name": "west port", "oval": [130, 905, 105, 62], "ground": "grass"},
+    {"name": "arena", "oval": [625, 990, 82, 56], "ground": "desert"},
+    {"name": "desert city", "oval": [515, 1368, 150, 88], "ground": "desert"},
+    {"name": "desert docks", "oval": [290, 1395, 110, 48], "ground": "desert"},
+    {"name": "whale bones", "oval": [800, 1390, 50, 26], "ground": "desert"}
+  ]
+}

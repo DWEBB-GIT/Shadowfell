@@ -52,6 +52,9 @@ func rebuild() -> void:
 		c.free()
 	DB.ready = false
 	DB.ensure()
+	if Terrain.is_new_map():
+		_rebuild_new_map()
+		return
 	_files = {"world": IO.load_file(WORLD), "scenery": IO.load_file(SCENERY)}
 	if _files.world == null or _files.scenery == null:
 		push_error("World editor: cannot read the data files")
@@ -84,6 +87,34 @@ func rebuild() -> void:
 		for i in list.size():
 			holder.add_child(_marker(g, list[i], i))
 			_own(holder.get_child(-1))
+
+
+## The new map (Dan, 2026-10-28): just its ground, all of it, to sculpt.
+## Nothing from world.json is on it, and saving writes only the ground.
+func _rebuild_new_map() -> void:
+	_files = {}
+	_ground = Node3D.new()
+	_ground.name = "Terrain"
+	add_child(_ground)
+	_chunks.clear()
+	_ground_mat = Land.ground_material()
+	var b: Dictionary = DB.world.bounds
+	for i in range(floori(b.minX / Land.CHUNK), ceili(b.maxX / Land.CHUNK)):
+		for j in range(floori(b.minZ / Land.CHUNK), ceili(b.maxZ / Land.CHUNK)):
+			_draw_chunk(Vector2i(i, j))
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-55, 35, 0)
+	add_child(sun)
+	var sea := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(b.maxX - b.minX + 800, b.maxZ - b.minZ + 800)
+	sea.mesh = plane
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.1, 0.35, 0.6, 0.75)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sea.material_override = mat
+	sea.position = Vector3((b.minX + b.maxX) / 2, DB.water.get("sea", 0.0), (b.minZ + b.maxZ) / 2)
+	add_child(sea)
 
 
 func _draw_chunk(k: Vector2i) -> void:
@@ -237,8 +268,18 @@ func _notification(what: int) -> void:
 ## The world as it stands in the scene, back into world.json and
 ## scenery.json. Returns the files written.
 func save_world() -> PackedStringArray:
-	if _files.is_empty():
-		return []
+	var saved := PackedStringArray()
+	if sculpt and sculpt.dirty:
+		var err: Error = sculpt.save()
+		if err != OK:
+			push_error("World editor: cannot save the sculpted ground (%s)" % error_string(err))
+		else:
+			saved.append(Terrain.dir.trim_prefix("res://") + "sculpt.json, world.bin")
+	if _files.is_empty(): # the new map: only its ground is edited so far
+		if saved.size():
+			print("World editor: saved ", ", ".join(saved))
+			DB.ready = false
+		return saved
 	for g in GROUPS:
 		var holder := get_node_or_null(NodePath(g.name))
 		if holder == null:
@@ -250,13 +291,6 @@ func save_world() -> PackedStringArray:
 				continue
 			out.append(_record(g, n, ids))
 		_files[g.file][g.list] = out
-	var saved := PackedStringArray()
-	if sculpt and sculpt.dirty:
-		var err: Error = sculpt.save()
-		if err != OK:
-			push_error("World editor: cannot save the sculpted ground (%s)" % error_string(err))
-		else:
-			saved.append("sculpt.json, world.bin")
 	for f in _files:
 		var path: String = WORLD if f == "world" else SCENERY
 		if IO.to_text(_files[f], false, true) == FileAccess.get_file_as_string(path):

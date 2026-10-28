@@ -81,6 +81,8 @@ static func region_at(x: float, z: float) -> Dictionary:
 	var regions: Array = DB.world.regions
 	if regions.is_empty():
 		return {}
+	if Terrain.is_new_map():
+		return regions[0]
 	var id := ""
 	for r in regions:
 		if r.has("town") and Vector2(x - r.town[0], z - r.town[1]).length() <= r.town[2]:

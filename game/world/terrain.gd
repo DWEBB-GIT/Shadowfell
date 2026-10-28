@@ -8,7 +8,16 @@ extends RefCounted
 ## every player). Gameplay asks height_at() and walk_at() instead of
 ## raycasting. Building pads and the old small ponds are worked in on top.
 
-const PATH := "res://data/terrain/world.bin"
+## Which map the ground is: "act1" (data/terrain/, baked from world_map.json)
+## or "new" (data/terrain/new_map/, Dan's 2026-10-28 map, baked from his
+## heightmap by tools/world/new_map/bake_new_map.py). Project Settings >
+## shadowfell/world/map picks it; the World dock's Map picker sets it.
+const MAPS := {"act1": "res://data/terrain/", "new": "res://data/terrain/new_map/"}
+const MAP_SETTING := "shadowfell/world/map"
+static var dir := "res://data/terrain/" ## the map's folder: world.bin, water.json, sculpt.json
+static var _ground_img: Image ## new map: the ground's colours (ground.png), or null
+static var _ground_scale := 2.0 ## metres per ground.png pixel
+static var _map_tex: Texture2D ## map_picture(), made once
 const N := 33 ## samples per tile side (32 cells, edges shared)
 
 ## surfaces, the low 4 bits of a sample's info byte (bake_world.py SURF)
@@ -37,6 +46,63 @@ const ROAD_HALF := {"road": 2.6, "lane": 2.2, "track": 1.6, "hidden": 0.9, "tunn
 static var tiles_unpacked := 0
 
 
+## The map Project Settings picks ("act1" unless set).
+static func chosen_map() -> String:
+	var m := str(ProjectSettings.get_setting(MAP_SETTING, "act1"))
+	return m if MAPS.has(m) else "act1"
+
+
+static func is_new_map() -> bool:
+	return dir == MAPS.new
+
+
+## Switch to a map's folder (drops what was loaded from the other one).
+static func use_map(map: String) -> void:
+	var d: String = MAPS.get(map, MAPS.act1)
+	if d == dir and not _file.is_empty():
+		return
+	dir = d
+	_file = PackedByteArray()
+	_tiles.clear()
+	_pad_level.clear()
+	_water_level.clear()
+	_ground_img = null
+	_map_tex = null
+	if is_new_map() and ResourceLoader.exists(dir + "ground.png"):
+		var tex: Texture2D = load(dir + "ground.png")
+		_ground_img = tex.get_image()
+		if _ground_img.is_compressed():
+			_ground_img.decompress()
+
+
+static func path() -> String:
+	return dir + "world.bin"
+
+
+## The new map's painted picture (map.jpg: Dan's top-down map) for the world
+## map and the minimap, or null on the old map (they draw the ground instead).
+static func map_picture() -> Texture2D:
+	if not is_new_map() or not ResourceLoader.exists(dir + "map.jpg"):
+		return null
+	if _map_tex == null:
+		_map_tex = ImageTexture.create_from_image((load(dir + "map.jpg") as Texture2D).get_image())
+	return _map_tex
+
+
+## The ground the map covers, in metres (x, z, width, depth).
+static func map_rect() -> Rect2:
+	return Rect2(_x0, _z0, _tx * _tile * _cell, _tz * _tile * _cell)
+
+
+## The new map's painted ground colour at a point, or null on the old map.
+static func ground_colour(x: float, z: float):
+	if _ground_img == null:
+		return null
+	var px := clampi(int((x - _x0) / _ground_scale), 0, _ground_img.get_width() - 1)
+	var pz := clampi(int((z - _z0) / _ground_scale), 0, _ground_img.get_height() - 1)
+	return _ground_img.get_pixel(px, pz)
+
+
 static func setup(world: Dictionary) -> void:
 	_bounds = world.bounds
 	_pads = world.get("pads", [])
@@ -50,9 +116,9 @@ static func setup(world: Dictionary) -> void:
 static func _load_tiles() -> void:
 	if not _file.is_empty():
 		return
-	_file = FileAccess.get_file_as_bytes(PATH)
+	_file = FileAccess.get_file_as_bytes(path())
 	if _file.size() < 36:
-		push_error("Terrain: %s is missing; run tools/world/bake_world.py" % PATH)
+		push_error("Terrain: %s is missing; run tools/world/bake_world.py" % path())
 		return
 	_x0 = _file.decode_float(8)
 	_z0 = _file.decode_float(12)
@@ -64,6 +130,8 @@ static func _load_tiles() -> void:
 	_index.resize(_tx * _tz)
 	for k in _tx * _tz:
 		_index[k] = (_file.decode_u32(36 + k * 8) << 32) | _file.decode_u32(40 + k * 8)
+	if _ground_img:
+		_ground_scale = _tx * _tile * _cell / _ground_img.get_width()
 
 
 ## The roads drawn on the ground: Act 1's lanes and tracks, the world's routes
@@ -291,7 +359,10 @@ static func _new_tile() -> Array:
 
 ## Write world.bin again with these tiles (Vector2i) packed from what is
 ## unpacked now; every other tile is copied as it was.
-static func save_tiles(edited: Dictionary, path := PATH) -> Error:
+static func save_tiles(edited: Dictionary, to := "") -> Error:
+	var live := to == "" or to == path()
+	if to == "":
+		to = path()
 	var head := _file.slice(0, 36)
 	var blobs := PackedByteArray()
 	var index := PackedByteArray()
@@ -309,13 +380,13 @@ static func save_tiles(edited: Dictionary, path := PATH) -> Error:
 				index.encode_u32(k * 8, head_len + blobs.size())
 				index.encode_u32(k * 8 + 4, blob.size())
 				blobs.append_array(blob)
-	var f := FileAccess.open(path, FileAccess.WRITE)
+	var f := FileAccess.open(to, FileAccess.WRITE)
 	if f == null:
 		return FileAccess.get_open_error()
 	var out := head + index + blobs
 	f.store_buffer(out)
 	f.close()
-	if path == PATH:
+	if live:
 		_file = out
 		for k in _tx * _tz:
 			_index[k] = (_file.decode_u32(36 + k * 8) << 32) | _file.decode_u32(40 + k * 8)

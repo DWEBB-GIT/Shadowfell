@@ -8,7 +8,9 @@ extends RefCounted
 ## edited tiles into world.bin, so the game needs no bake. bake_world.py puts
 ## sculpt.json back on top whenever the map is baked again.
 
-const PATH := "res://data/terrain/sculpt.json"
+## the sculpt layer of the map being edited (see Terrain.dir)
+static func path() -> String:
+	return Terrain.dir + "sculpt.json"
 const T := 32 ## samples per tile side, as bake_world.py's TILE
 const RATE := 6.0 ## metres a second the raise and lower brushes move at full strength
 
@@ -29,11 +31,11 @@ func load_layer() -> void:
 	_layer.clear()
 	_dirty.clear()
 	dirty = false
-	if not FileAccess.file_exists(PATH):
+	if not FileAccess.file_exists(path()):
 		return
-	var d = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path()))
 	if typeof(d) != TYPE_DICTIONARY:
-		push_error("Sculpt: cannot read %s" % PATH)
+		push_error("Sculpt: cannot read %s" % path())
 		return
 	for key in d.tiles:
 		var ij: PackedStringArray = key.split(",")
@@ -234,7 +236,7 @@ func save() -> Error:
 		"_about": "Hand edits from the World editor's sculpt brushes, on top of the baked ground (see addons/shadowfell_world/sculpt.gd). Per 128 m tile 'i,j': 32 x 32 samples, base64 zlib int16: h = height change in 5 cm steps, w = walk override (-1 none, 0 blocked .. 255 open), s = surface override (-1 none). bake_world.py applies it after baking.",
 		"version": 1, "x0": o.x, "z0": o.y, "cell": Terrain.cell(), "tiles": tiles,
 	}
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
+	var f := FileAccess.open(path(), FileAccess.WRITE)
 	if f == null:
 		return FileAccess.get_open_error()
 	f.store_string(JSON.stringify(d, "  ", false) + "\n")

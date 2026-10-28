@@ -1,0 +1,11 @@
+{
+  "_about": "The new map (Dan, 2026-10-28), baked by tools/world/new_map/bake_new_map.py. x0/z0: the north-west corner in metres; sizeX/sizeZ: its size; start: where the player starts [x, z].",
+  "x0": -1024.0,
+  "z0": -1536.0,
+  "sizeX": 2048.0,
+  "sizeZ": 3072.0,
+  "start": [
+    267.0,
+    -155.0
+  ]
+}

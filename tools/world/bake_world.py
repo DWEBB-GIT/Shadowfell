@@ -506,11 +506,11 @@ def river_levels(water, height, g, M):
     return water
 
 
-def apply_sculpt(g, height, block, surf):
+def apply_sculpt(g, height, block, surf, path=None):
     """hand edits from the World editor's brushes, on top of everything baked
     (data/terrain/sculpt.json: per 128 m tile, 32 x 32 samples of height change
     in 5 cm steps, walk override -1 none / 0..255, surface override -1 none)"""
-    path = os.path.join(ROOT, "data", "terrain", "sculpt.json")
+    path = path or os.path.join(ROOT, "data", "terrain", "sculpt.json")
     if not os.path.exists(path):
         return
     with open(path) as f:
@@ -567,17 +567,9 @@ def reachable(walk, g, start):
     return lab == lab[j, i]
 
 
-def main():
-    M = load()
-    W = M["world"]
-    sx, sz = W["sizeX"], W["sizeZ"]
-    g = Grid(-sx / 2, W["originZ"] - sz / 2, int(sx / CELL) + 1, int(sz / CELL) + 1)
-    height, block, surf, zone, box = bake_world(M, g)
-    water = bake_act1(M, g, height, block, surf, box)
-    water = river_levels(water, height, g, M)
-    water["sea"] = 0.0
-    apply_sculpt(g, height, block, surf)
-    walk = np.clip(1 - block, 0, 1)
+def write_world(path, g, height, walk, surf, zone):
+    """pack the grid into world.bin's tiles (see the top of this file);
+    returns tiles across, tiles down, tiles with land and the file's size"""
     walk_b = (walk * 255).round().astype(np.uint8)
     hq = np.clip((height + 50) * 20, 0, 65535).round().astype(np.int32)  # 5 cm steps
     info = (surf & 15) | (zone.astype(np.uint8) << 4)
@@ -610,14 +602,29 @@ def main():
             pos += len(blob)
     header = struct.pack("<4sIffffIII", b"SFW1", 1, g.x0, g.z0, CELL, SEA_FLOOR, TILE, tx, tz)
     head_len = len(header) + 8 * len(index)
-    out = os.path.join(ROOT, "data", "terrain")
-    os.makedirs(out, exist_ok=True)
-    with open(os.path.join(out, "world.bin"), "wb") as f:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
         f.write(header)
         for p, l in index:
             f.write(struct.pack("<II", p + head_len if l else 0, l))
         for b in blobs:
             f.write(b)
+    return tx, tz, len(blobs), head_len + pos
+
+
+def main():
+    M = load()
+    W = M["world"]
+    sx, sz = W["sizeX"], W["sizeZ"]
+    g = Grid(-sx / 2, W["originZ"] - sz / 2, int(sx / CELL) + 1, int(sz / CELL) + 1)
+    height, block, surf, zone, box = bake_world(M, g)
+    water = bake_act1(M, g, height, block, surf, box)
+    water = river_levels(water, height, g, M)
+    water["sea"] = 0.0
+    apply_sculpt(g, height, block, surf)
+    walk = np.clip(1 - block, 0, 1)
+    out = os.path.join(ROOT, "data", "terrain")
+    tx, tz, nblobs, size = write_world(os.path.join(out, "world.bin"), g, height, walk, surf, zone)
     water["_about"] = "Baked by tools/world/bake_world.py from world_map.json: the sea level, every river as points [x, z, water level], and lakes. Do not edit by hand."
     with open(os.path.join(out, "water.json"), "w") as f:
         json.dump(water, f, separators=(",", ":"))
@@ -635,7 +642,7 @@ def main():
         win = reach[max(0, j - 6): j + 7, max(0, i - 6): i + 7]
         if not win.any():
             missing.append(name)
-    print("tiles %d x %d, %d with land, %.2f MB" % (tx, tz, len(blobs), (head_len + pos) / 1e6))
+    print("tiles %d x %d, %d with land, %.2f MB" % (tx, tz, nblobs, size / 1e6))
     rings(M, g, walk > 0.5, start)
     print("walkable %.0f%% of land, %d places not reachable on foot from the Last Cart:" % (100 * (walk > 0.5).sum() / max(1, (height > 0.25).sum()), len(missing)))
     for m in missing:
