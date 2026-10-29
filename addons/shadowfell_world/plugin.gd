@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 ## Sculpt brushes for the World editor (addons/shadowfell_data/world_editor.tscn).
-## The "World" dock (beside the Scene tree) opens it and holds the brushes:
+## The "World" dock (a tab beside Scene, top left) opens it and holds the brushes:
 ## pick one and paint with the left mouse button: Raise, Lower, Smooth, Flatten (to the height where
 ## the stroke began), Walkable / Blocked (where players can go) and Paint
 ## ground (its surface). Shift swaps Raise/Lower and Walkable/Blocked;
@@ -130,12 +130,12 @@ func _add_dock() -> void:
 		dock.name = "World"
 		dock.set("title", "World")
 		dock.set("layout_key", "shadowfell_world")
-		dock.set("default_slot", DOCK_SLOT_RIGHT_UL)
+		dock.set("default_slot", DOCK_SLOT_LEFT_UL)
 		bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		dock.add_child(bar)
 		call("add_dock", dock)
 	else:
-		add_control_to_dock(DOCK_SLOT_RIGHT_UL, bar)
+		add_control_to_dock(DOCK_SLOT_LEFT_UL, bar)
 
 
 func _on_map(i: int) -> void:
