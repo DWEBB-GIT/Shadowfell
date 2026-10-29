@@ -494,6 +494,8 @@ func _render_sockets(inv) -> void:
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
 	bp.count = str(free)
 	bp.count_colour = Color("ff6a50") if free == 0 else Color("f0e4c8")
+	# Dan's painted backpack; the drawn one stays as the fallback
+	bp.icon = Icons.art("ui", "primary_bag")
 	bp.painter = Callable(self, "_paint_backpack")
 	tip_on(bp, "Backpack (B): %d free slot%s" % [free, "" if free == 1 else "s"])
 
