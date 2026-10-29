@@ -641,7 +641,12 @@ func _click_move(keys_move: Dictionary):
 		return null
 	var p := player.position
 	if m.has("follow"):
-		if not m.follow.alive or targeting.current != m.follow or targeting.target_in_reach:
+		# stop well inside the real swing reach (no moving leeway), so the
+		# first blow lands once both stand still
+		var f = m.follow
+		var stop: float = DB.attack.range * 0.75 + f.radius * 0.6
+		var in_shot: bool = targeting.target_in_shot
+		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
 			move_to = null
 			return null
 		m.x = m.follow.position.x
