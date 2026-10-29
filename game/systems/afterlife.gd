@@ -35,11 +35,12 @@ func rest_point() -> Dictionary:
 		var inn := inn_point()
 		if not inn.is_empty():
 			return {"x": inn.x, "z": inn.z, "label": "at %s" % inn.label, "kind": "inn"}
-	var sh = Layout.shrines[0]
-	for x in Layout.shrines:
-		if x.id == ws.shrine_activated:
-			sh = x
-	if ws.respawn != null:
+	# maps without shrines (the new terrain map) fall through to the start
+	if ws.respawn != null and not Layout.shrines.is_empty():
+		var sh = Layout.shrines[0]
+		for x in Layout.shrines:
+			if x.id == ws.shrine_activated:
+				sh = x
 		return {"x": ws.respawn.x, "z": ws.respawn.z, "label": sh.label, "kind": "shrine"}
 	return {"x": Layout.player_start.position[0], "z": Layout.player_start.position[1], "label": "at the road's end", "kind": "start"}
 

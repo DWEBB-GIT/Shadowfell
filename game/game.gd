@@ -726,6 +726,8 @@ func respawn_point() -> Dictionary:
 
 func rest_at_shrine(shrine = null) -> void:
 	if shrine == null:
+		if Layout.shrines.is_empty():
+			return
 		shrine = Layout.shrines[0]
 	var first: bool = not world_state.examined.has("shrine")
 	world_state.examined["shrine"] = true
