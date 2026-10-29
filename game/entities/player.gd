@@ -410,6 +410,7 @@ func update(dt: float, controls) -> void:
 			jump_v = 0
 	position.y = Terrain.height_at(position.x, position.z) + jump_h
 	moving = speed01 > 0
+	rig.airborne = jump_h > 0
 	rig.update(dt, speed01 * DB.CONFIG.player.runGait)
 	_sync()
 

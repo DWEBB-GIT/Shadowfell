@@ -30,8 +30,13 @@ static func ease_(t: float) -> float:
 ## swing: `anim` plays them from the same calls (play, hit, die, update).
 var anim: AnimationPlayer
 var clip := ""
+## off the ground (the player's hop): plays the Jump clip
+var airborne := false
 ## how fast each imported model's Walk clip plays at full speed
-const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 1.0, "skeleton": 1.3}
+const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 2.5, "skeleton": 1.3}
+## and its Run clip: the battle mage's Mixamo run covers 4.6 m a second, the
+## player runs 5.6 (CONFIG.player speed, runGait)
+const RUN_RATE := {"battle_mage": 0.94}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
@@ -39,8 +44,11 @@ const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "ree
 const CLIP_IMPACT := 0.5
 ## parts the game hangs gear on (player.gd), as frames on the bones of an
 ## imported skeleton: a frame sits at its bone and turns with it, lined up
-## with the model at rest like the built models' parts
-const SOCKETS := {"Torso": "mixamorig_Hips", "Head": "mixamorig_Head", "Arm_R": "mixamorig_RightArm", "Arm_L": "mixamorig_LeftArm"}
+## with the model at rest like the built models' parts. The arms' frames sit
+## at the shoulder, as the built arms do, but ride the hand, so what is held
+## stays in the hand however the elbow and wrist bend.
+const SOCKETS := {"Torso": "mixamorig_Hips", "Head": "mixamorig_Head", "Arm_R": "mixamorig_RightHand", "Arm_L": "mixamorig_LeftHand"}
+const SOCKET_AT := {"Arm_R": "mixamorig_RightArm", "Arm_L": "mixamorig_LeftArm"}
 
 
 ## Give an imported humanoid the parts the built models have (see SOCKETS),
@@ -59,17 +67,18 @@ static func add_sockets(m: Node3D) -> void:
 		at.bone_name = SOCKETS[part]
 		sk.add_child(at)
 		var rest := sk.get_bone_global_rest(bone)
+		var at_bone := sk.find_bone(SOCKET_AT.get(part, SOCKETS[part]))
+		var origin := sk.get_bone_global_rest(at_bone if at_bone >= 0 else bone).origin
 		var frame := Node3D.new()
 		frame.name = part
-		frame.transform = rest.affine_inverse() * Transform3D(Basis(), rest.origin)
+		frame.transform = rest.affine_inverse() * Transform3D(Basis(), origin)
 		at.add_child(frame)
 		if part == "Arm_R":
 			# the grip, a little past the wrist; the blade tilted forward as
 			# the warden holds it
-			var hand := sk.get_bone_global_rest(sk.find_bone("mixamorig_RightHand")).origin
 			var weapon := Node3D.new()
 			weapon.name = "Weapon"
-			weapon.transform = Transform3D(Basis(Quaternion(0.6427876, 0, 0, 0.7660445)), hand - rest.origin + Vector3(0, -0.07, 0.02))
+			weapon.transform = Transform3D(Basis(Quaternion(0.6427876, 0, 0, 0.7660445)), rest.origin - origin + Vector3(0, -0.07, 0.02))
 			frame.add_child(weapon)
 
 
@@ -192,8 +201,10 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		return
 	if (pose == "sit" or pose == "rest") and anim.has_animation("Sit"):
 		_clip("Sit", 1.0)
+	elif airborne and anim.has_animation("Jump"):
+		_clip("Jump", 0.6) # the push off and rise, held to the landing
 	elif move > 0.9 and anim.has_animation("Run"):
-		_clip("Run", move * 0.8)
+		_clip("Run", move * RUN_RATE.get(style, 0.8))
 	elif move > 0.12:
 		_clip("Walk", maxf(0.3, move) * WALK_RATE.get(style, 1.0))
 	else:
