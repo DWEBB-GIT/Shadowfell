@@ -949,7 +949,7 @@ func toggle_panel(which: String, sound := "") -> void:
 	if modal:
 		return
 	if sound == "":
-		sound = "quest_log" if which == "quests" else "panel"
+		sound = "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
 	game.audio.sfx(sound, 0.6)
 	if which == "quests":
 		quests.toggle_log()

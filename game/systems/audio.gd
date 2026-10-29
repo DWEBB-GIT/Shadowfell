@@ -23,6 +23,7 @@ const SFX := {
 	"lunge": ["heavy_whoosh.mp3"],
 	"wolf": ["wolf_growl.mp3"],
 	"gold": ["gold.ogg"],
+	"loot_gold": ["loot_gold.ogg"], # any coin picked up (Dan, 2026-10-29)
 	"pickup": ["pickup.ogg"],
 	"pickup_weapon": ["pickup_weapon.ogg"],
 	"pickup_potion": ["pickup_potion.mp3"],
@@ -38,6 +39,11 @@ const SFX := {
 	"quest_complete": ["quest_complete.mp3"],
 	"quest_log": ["quest_log.mp3"],
 	"panel": ["panel_open.mp3"],
+	"bag": ["bag_open.mp3"], # bags and the tool pack, opened or closed
+	"shop_greet": ["shop_greet.mp3"], # talking to a shopkeeper
+	"page_turn": ["page_turn.mp3"], # talking to a quest giver
+	"quest_accept": ["quest_accept.mp3"], # a quest taken: the pencil scribble
+	"quest_ready": ["quest_ready.mp3"], # a quest's objectives done out in the world
 	"potion": ["potion_drink.mp3"],
 	"chest": ["chest_open_1.wav", "chest_open_2.wav"],
 	"buy": ["buy.ogg"],
@@ -65,6 +71,7 @@ var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
 var click_player: AudioStreamPlayer
 var last_sfx_frame := -1 ## frame a specific sound last played
+var coin_frame := -1 ## frame coins were last picked up
 var rumble: AudioStreamPlayer
 var rumble_level := 0.0
 var next_crow := 6.0
@@ -203,7 +210,9 @@ func _bind() -> void:
 	ev.on("braceBlock", func(_e):
 		sfx("block"))
 	ev.on("enemyWhiff", func(_e): sfx("parry", 0.6))
-	ev.on("corpseLooted", func(_e): sfx("gold"))
+	ev.on("corpseLooted", func(_e):
+		if coin_frame != Engine.get_process_frames():
+			sfx("gold")) # the body's coins already chimed
 	ev.on("enemyWindup", func(e):
 		if e.enemy.type == "hound":
 			sfx("wolf", 0.6)
@@ -222,7 +231,12 @@ func _bind() -> void:
 			sfx("pickup_potion")
 		else:
 			sfx("pickup"))
-	ev.on("coins", func(_e): sfx("gold"))
+	ev.on("coins", func(e):
+		if e.get("amount", 0) > 0:
+			coin_frame = Engine.get_process_frames()
+			sfx("loot_gold")
+		elif e.get("amount", 0) < 0 and not e.get("bought"):
+			sfx("gold"))
 	ev.on("levelUp", func(_e): sfx("level_up"))
 	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
 	ev.on("itemEnchanted", func(_e): sfx("shrine", 0.6))
@@ -238,7 +252,6 @@ func _bind() -> void:
 			sfx("equip", 0.7))
 	ev.on("chestOpened", func(_e): sfx("chest"))
 	ev.on("itemBought", func(_e): sfx("buy"))
-	ev.on("itemSold", func(_e): sfx("gold"))
 	ev.on("mined", func(_e): sfx("mine"))
 	ev.on("skinned", func(_e): sfx("skin"))
 	ev.on("campPitched", func(_e): sfx("campfire", 0.6))
@@ -255,6 +268,10 @@ func _bind() -> void:
 		if d < 22:
 			bell(0.05 * maxf(0, 1 - d / 22), 880))
 	ev.on("questComplete", func(_e): sfx("quest_complete", 0.8))
+	ev.on("questReady", func(_e): sfx("quest_ready", 0.8))
+	ev.on("questAccepted", func(e):
+		if not e.get("quiet"):
+			sfx("quest_accept", 0.8))
 
 
 # ------------------------------------------------------------- playback

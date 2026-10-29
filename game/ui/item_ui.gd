@@ -286,6 +286,7 @@ func show_window(which: String) -> void:
 func toggle_bag(i: int) -> void:
 	if i >= game.inventory.sockets.size() or not game.inventory.sockets[i]:
 		return
+	game.audio.sfx("bag", 0.6)
 	if open_bags.has(i):
 		open_bags.erase(i)
 	else:

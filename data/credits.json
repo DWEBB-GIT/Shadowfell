@@ -13,6 +13,14 @@
       ]
     },
     {
+      "title": "Sound effects (Pixabay Content Licence)",
+      "note": "Free to use, no attribution required; credited with thanks. Licence: https://pixabay.com/service/license-summary/",
+      "entries": [
+        {"what": "Talking to a quest giver", "title": "Book Turn Page 2", "author": "freesound_community (Pixabay)", "licence": "Pixabay Content Licence", "link": "https://pixabay.com/sound-effects/book-turn-page-2-92381/"},
+        {"what": "Accepting a quest", "title": "Pencil Scribble 7", "author": "u_viypcpsnud (Pixabay)", "licence": "Pixabay Content Licence", "link": "https://pixabay.com/sound-effects/pencil-scribble-7-389260/"}
+      ]
+    },
+    {
       "title": "Fonts and engine",
       "entries": [
         {"what": "Fonts", "title": "DejaVu Serif and DejaVu Sans", "author": "DejaVu fonts team (Bitstream Vera derived)", "licence": "Bitstream Vera licence", "link": "https://dejavu-fonts.github.io/"},
