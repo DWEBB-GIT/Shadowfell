@@ -11,6 +11,7 @@ var game
 var values := {}
 var mana := 0.0
 var since_combat := INF
+var was_fighting := false
 var since_hit := INF
 var unlimited := false
 
@@ -209,6 +210,12 @@ func update(dt: float) -> void:
 	since_combat += dt
 	since_hit += dt
 	var fighting := in_combat
+	# WoW-style notice when combat starts and fades, so you know when you
+	# can eat or rest (Dan, 2026-10-29)
+	if fighting != was_fighting:
+		was_fighting = fighting
+		if game.hud:
+			game.hud.toast("Entering combat" if fighting else "Leaving combat", "bad" if fighting else "")
 	var hidden: bool = game.spells != null and game.spells.hidden
 	var m = cfg.get("mana")
 	if m:
