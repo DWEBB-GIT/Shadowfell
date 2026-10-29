@@ -11,6 +11,7 @@ var game
 var values := {}
 var mana := 0.0
 var since_combat := INF
+var was_fighting := false
 var since_hit := INF
 var unlimited := false
 
@@ -198,6 +199,10 @@ func spend(ability: Dictionary, gain = null) -> float:
 	return all
 
 
+const HEALTH_REGEN_DELAY := 5.0 ## seconds out of combat before health returns
+const HEALTH_REGEN_PERCENT := 2.0 ## of max health a second
+const HEALTH_REGEN_STILL := 1.5 ## times faster when not moving
+
 func update(dt: float) -> void:
 	var player = game.player
 	if player.dead:
@@ -205,6 +210,12 @@ func update(dt: float) -> void:
 	since_combat += dt
 	since_hit += dt
 	var fighting := in_combat
+	# WoW-style notice when combat starts and fades, so you know when you
+	# can eat or rest (Dan, 2026-10-29)
+	if fighting != was_fighting:
+		was_fighting = fighting
+		if game.hud:
+			game.hud.toast("Entering combat" if fighting else "Leaving combat", "bad" if fighting else "")
 	var hidden: bool = game.spells != null and game.spells.hidden
 	var m = cfg.get("mana")
 	if m:
@@ -219,6 +230,11 @@ func update(dt: float) -> void:
 		if b.get("points") and b.get("fadeAfter") and since_hit > b.fadeAfter and not hidden:
 			v = 0
 		values[b.id] = clampf(v, 0, b.max)
+	# WoW-style health regen: out of combat for a few seconds, faster when
+	# standing still (Dan, 2026-10-29)
+	if not fighting and since_combat > HEALTH_REGEN_DELAY and player.health < player.max_health:
+		var rate: float = HEALTH_REGEN_PERCENT * (1.0 if player.moving else HEALTH_REGEN_STILL)
+		player.health = minf(player.max_health, player.health + player.max_health * rate * dt / 100.0)
 	# Overcorrupted: health bleeds away until the bar drops (never below 1)
 	var o = overload
 	if o:

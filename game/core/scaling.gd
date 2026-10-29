@@ -55,7 +55,7 @@ const S := {
 	## health, as in WoW Classic once past the first levels)
 	"enemyHealthSeconds": 14,
 	"enemyHitShare": 20,
-	"levelOneHit": 0.88, ## level 1 foes' blows, against the share above
+	"earlyHit": [0.75, 0.82, 0.9], ## blows of level 1, 2, 3 foes against the share above; 4+ full
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
 		"fodder": {"health": 0.5, "hit": 0.5, "interval": 1.35, "armour": "none"},
@@ -196,10 +196,10 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 	var p := par(level, stats, weapon_seconds)
 	var health: float = S.enemyHealthSeconds * p.dps * t.health
 	var hit = null if not t.has("hit") else U.jround(p.health / S.enemyHitShare * t.hit)
-	# level 1 foes hit a little softer, so a new character finds their feet
-	# (Dan, 2026-10-28)
-	if hit != null and level <= 1:
-		hit = snappedf(hit * S.levelOneHit, 0.1)
+	# foes of levels 1-3 hit softer, tapering to full at 4, so a new
+	# character finds their feet (Dan, 2026-10-28/29)
+	if hit != null and level < 1 + S.earlyHit.size():
+		hit = snappedf(hit * S.earlyHit[maxi(0, int(level) - 1)], 0.1)
 	var out := {
 		"health": U.jround(health),
 		"attackInterval": t.get("interval", 0.0),
