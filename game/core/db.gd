@@ -48,7 +48,7 @@ const CONFIG := {
 		# more for slower (heavier) weapons, more again on a crit
 		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
 	"fog": {"color": Color("3a4244"), "near": 24.0, "far": 50.0},
-	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 14.0, "fogFar": 38.0, "light": 0.68},
+	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 14.0, "fogFar": 38.0, "light": 0.68, "ambient": 0.8, "ambientColor": Color("41566a")},
 	"camera": {
 		"offset": Vector3(0, 11, 10), "lookAhead": 0.5, "zoomMin": 0.6, "zoomMax": 1.35, "zoomStep": 0.08,
 		"indoorZoom": 0.22, "fov": 35.0,

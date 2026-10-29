@@ -9,11 +9,16 @@ const SUN := 2.3
 ## scaled intensity; this evens the sun out, matched by side-by-side screenshots.
 const SUN_MATCH := 0.42
 ## The colour grade over the 3D view (not the HUD), and how much brighter the
-## sun is than the matched three.js one: a stronger key light against a cooler
-## fill gives the shadows their depth.
-const GRADE := {"brightness": 1.08, "contrast": 1.12, "saturation": 1.25}
-const SUN_BOOST := 1.35
-const AMBIENT := Color("7f93ad")
+## sun is than the matched three.js one. The mood comes from the ratio of key
+## to fill: a strong warm sun over a dim, cool ambient leaves real shadow on
+## the far side of things, and filmic tone mapping rolls the lit side off
+## softly instead of washing it out. AMBIENT_K is how much of the three.js
+## hemisphere light is kept as fill.
+const GRADE := {"brightness": 0.97, "contrast": 1.2, "saturation": 1.12}
+const SUN_BOOST := 1.85
+const AMBIENT := Color("5d6f8c")
+const AMBIENT_K := 0.5
+const EXPOSURE := 1.05 ## before the filmic curve, which darkens the mid tones
 
 var started := false
 var time := 0.0
@@ -184,26 +189,25 @@ func _init_renderer() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	# three.js's hemisphere light as flat ambient. three.js divides every
 	# light by pi where Godot does not, so its intensities are scaled by 1/pi
-	# (Tex.LIGHT_SCALE), and like three.js there is no tone mapping.
+	# (Tex.LIGHT_SCALE); only part of it is kept, so shade stays shade.
 	env.ambient_light_color = AMBIENT
-	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K
 	env.ambient_light_sky_contribution = 0.0 # there is no sky: all of it is this colour
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	# The grade: the matched three.js lighting reads flat and grey on screen,
-	# so colour and contrast are lifted after the fact (Compatibility supports
-	# these adjustments and glow; both cost one cheap full-screen pass).
-	env.adjustment_enabled = true
-	env.adjustment_brightness = GRADE.brightness
-	env.adjustment_contrast = GRADE.contrast
-	env.adjustment_saturation = GRADE.saturation
-	# bright things (flames, witchlights, spell effects) bloom softly
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = EXPOSURE
+	env.tonemap_white = 1.6
+	# The grade: contrast after the fact (Compatibility supports these
+	# adjustments and glow; both cost one cheap full-screen pass).
+	set_ghost_look(false)
+	# only truly bright things (flames, witchlights, spell effects) bloom:
+	# sunlit grass stays under the threshold, so the world does not glow
 	env.glow_enabled = true
 	env.glow_normalized = true
 	for i in 7:
 		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
-	env.glow_intensity = 0.7
-	env.glow_bloom = 0.04
-	env.glow_hdr_threshold = 0.85
+	env.glow_intensity = 0.55
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 1.1
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
@@ -212,7 +216,7 @@ func _init_renderer() -> void:
 	env.fog_depth_begin = DB.CONFIG.fog.near
 	env.fog_depth_end = DB.CONFIG.fog.far
 	# the haze glows warm towards the low sun
-	env.fog_sun_scatter = 0.35
+	env.fog_sun_scatter = 0.25
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -233,7 +237,7 @@ func _init_renderer() -> void:
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 55.0
-	sun.shadow_opacity = 0.92
+	sun.shadow_opacity = 0.85
 	sun.shadow_blur = 1.5
 	add_child(sun)
 	player_light = Tex.point_light(Color("ffb070"), 5, 9, 1.6)
@@ -449,11 +453,12 @@ func respawn() -> void:
 		afterlife.revive_here()
 
 
+## The grey of the spirit world, or (off) the normal grade.
 func set_ghost_look(on: bool) -> void:
-	env.adjustment_enabled = on
-	env.adjustment_saturation = 0.15
-	env.adjustment_brightness = 0.85
-	env.adjustment_contrast = 1.1
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 0.15 if on else GRADE.saturation
+	env.adjustment_brightness = 0.85 if on else GRADE.brightness
+	env.adjustment_contrast = 1.1 if on else GRADE.contrast
 
 
 ## Pixels between a world point and the mouse, or INF behind the camera.
@@ -993,7 +998,8 @@ func _update_region(dt: float) -> void:
 		env.fog_light_color = (fog.color as Color).lerp(bw.fogColor, k)
 		env.background_color = env.fog_light_color
 		var light := lerpf(1, bw.light, k)
-		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * light
+		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * lerpf(1, bw.ambient, k)
+		env.ambient_light_color = AMBIENT.lerp(bw.ambientColor, k)
 		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
 	if region != null and Vector2(p.x - _region_at.x, p.z - _region_at.y).length() < 2.0:
 		return
@@ -1047,9 +1053,10 @@ func _place_showcase() -> void:
 	world.set_cutaway(camera.position, p + Vector3(0, 1.2, 0))
 
 
-## the sun sits up and to the west of the target, as three.js placed it
+## the sun sits low in the west-southwest (about 37 degrees up), so things
+## cast long shadows across the ground and their far sides fall dark
 func _place_sun(t: Vector3) -> void:
-	sun.position = Vector3(t.x - 14, t.y + 26, t.z + 6)
+	sun.position = Vector3(t.x - 22, t.y + 17, t.z + 9)
 	sun.look_at(t)
 
 
