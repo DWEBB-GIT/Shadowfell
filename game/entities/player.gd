@@ -355,19 +355,11 @@ func update(dt: float, controls) -> void:
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
 					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-			elif game.mouse_aim:
-				# Mouse aim: you face the way you walk, unless you aim on
-				# purpose (left button or right stick held), or an ability
-				# has just turned you
-				var face_aim = controls.get("faceAim")
-				if face_aim != null:
-					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-				elif aim_hold <= 0:
-					facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
-			else:
-				# fighting, you keep your target in front of you as you move (strafe)
-				var look := atan2(aim.x - position.x, aim.z - position.z) if (acts.get("strike") or acts.get("shoot")) and aim != null else atan2(mv.x, mv.z)
-				facing = U.turn_towards(facing, look, dt * 14)
+			elif aim_hold <= 0:
+				# Running, you face the way you run (WoW): nothing turns you
+				# back at your target, so to hit something behind you, you
+				# stop (or turn) to face it. No shooting while kiting backwards.
+				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
 			speed01 = mag
 		elif turning:
 			pass
@@ -614,6 +606,12 @@ func hold_bow(in_hand: bool) -> void:
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
+## Running, an attack or spell at an enemy needs it in your front half
+## (WoW); standing still, it turns you to it.
+func can_hit_while_moving(x: float, z: float) -> bool:
+	return not moving or facing_point(x, z, DB.attack.coneDegrees / 2.0)
+
+
 func facing_point(x: float, z: float, half_degrees: float) -> bool:
 	var dx := x - position.x
 	var dz := z - position.z
