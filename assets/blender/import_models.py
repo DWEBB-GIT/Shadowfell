@@ -15,6 +15,8 @@ assets/models/:
                          clips keyed here
   base_male.glb          the base male body on a new Mixamo-named skeleton
                          (automatic weights), with Idle and Walk test clips
+  battle_mage.glb        the player: Idle, Walk, Run and Jump retargeted from
+                         Mixamo clips (imported/mixamo), the rest keyed here
 
 Run headless with either:
     blender --background --python assets/blender/import_models.py
@@ -159,7 +161,9 @@ def retexture(objs, name, size, path=None):
             o.data.materials.append(mat)
 
 
-def export(path, animations=True):
+def export(path, animations=True, lean=False):
+    """`lean` drops the animation channels that never leave the rest pose in
+    any clip (twist and finger bones, scale), for a smaller download."""
     bpy.ops.export_scene.gltf(
         filepath=os.path.join(OUT, path), export_format="GLB", export_yup=True,
         export_apply=False, export_animations=animations, export_animation_mode="ACTIONS",
@@ -167,7 +171,117 @@ def export(path, animations=True):
         export_image_format="AUTO", export_texcoords=True, export_normals=True,
         export_skins=True, export_def_bones=False, export_reset_pose_bones=True,
         export_extras=False, export_cameras=False, export_lights=False)
+    if lean:
+        drop_still_channels(os.path.join(OUT, path))
     print("wrote", path)
+
+
+def drop_still_channels(path):
+    """Rewrite a .glb without the animation channels whose every key, in
+    every clip, is the node's rest value (so no clip ever moves it, and
+    dropping it changes nothing), and without the data only they used."""
+    import struct
+    with open(path, "rb") as f:
+        data = f.read()
+    n = struct.unpack_from("<I", data, 12)[0]
+    gl = json.loads(data[20:20 + n])
+    binlen = struct.unpack_from("<I", data, 20 + n)[0]
+    blob = data[28 + n:28 + n + binlen]
+    acc, views = gl["accessors"], gl["bufferViews"]
+    rest_of = {"translation": [0, 0, 0], "rotation": [0, 0, 0, 1], "scale": [1, 1, 1]}
+
+    def floats(a):
+        v = views[acc[a]["bufferView"]]
+        k = {"VEC3": 3, "VEC4": 4}[acc[a]["type"]]
+        return struct.unpack_from("<%df" % (acc[a]["count"] * k), blob, v.get("byteOffset", 0) + acc[a].get("byteOffset", 0)), k
+
+    def still(an, ch):
+        node = gl["nodes"][ch["target"]["node"]]
+        prop = ch["target"]["path"]
+        rest = node.get(prop, rest_of[prop])
+        vals, k = floats(an["samplers"][ch["sampler"]]["output"])
+        return all(abs(vals[i] - rest[i % k]) < 1e-4 for i in range(len(vals)))
+
+    moving = set()
+    for an in gl["animations"]:
+        for ch in an["channels"]:
+            if not still(an, ch):
+                moving.add((ch["target"]["node"], ch["target"]["path"]))
+    for an in gl["animations"]:
+        keep = [ch for ch in an["channels"] if (ch["target"]["node"], ch["target"]["path"]) in moving]
+        samplers = []
+        for ch in keep:
+            samplers.append(an["samplers"][ch["sampler"]])
+            ch["sampler"] = len(samplers) - 1
+        an["channels"], an["samplers"] = keep, samplers
+    # keep only the accessors and buffer views still referenced, repacked
+    used = set()
+
+    def walk(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in ("accessor", "indices", "inverseBindMatrices", "input", "output") and isinstance(v, int):
+                    used.add(v)
+                elif k == "attributes":
+                    used.update(v.values())
+                else:
+                    walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    walk({k: v for k, v in gl.items() if k not in ("accessors", "bufferViews")})
+    amap = {}
+    new_acc = []
+    for i, a in enumerate(acc):
+        if i in used:
+            amap[i] = len(new_acc)
+            new_acc.append(a)
+    vused = {a["bufferView"] for a in new_acc if "bufferView" in a}
+    vused |= {im["bufferView"] for im in gl.get("images", []) if "bufferView" in im}
+    vmap, new_views, out = {}, [], bytearray()
+    for i, v in enumerate(views):
+        if i not in vused:
+            continue
+        start = v.get("byteOffset", 0)
+        chunk = blob[start:start + v["byteLength"]]
+        while len(out) % 4:
+            out.append(0)
+        v = dict(v, byteOffset=len(out))
+        out += chunk
+        vmap[i] = len(new_views)
+        new_views.append(v)
+    for a in new_acc:
+        if "bufferView" in a:
+            a["bufferView"] = vmap[a["bufferView"]]
+    for im in gl.get("images", []):
+        if "bufferView" in im:
+            im["bufferView"] = vmap[im["bufferView"]]
+
+    def remap(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in ("accessor", "indices", "inverseBindMatrices", "input", "output") and isinstance(v, int):
+                    o[k] = amap[v]
+                elif k == "attributes":
+                    o[k] = {a: amap[i] for a, i in v.items()}
+                else:
+                    remap(v)
+        elif isinstance(o, list):
+            for v in o:
+                remap(v)
+    for k, v in gl.items():
+        if k not in ("accessors", "bufferViews"):
+            remap(v)
+    gl["accessors"], gl["bufferViews"] = new_acc, new_views
+    while len(out) % 4:
+        out.append(0)
+    gl["buffers"][0]["byteLength"] = len(out)
+    js = json.dumps(gl, separators=(",", ":")).encode()
+    js += b" " * (-len(js) % 4)
+    with open(path, "wb") as f:
+        f.write(struct.pack("<III", 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(out)))
+        f.write(struct.pack("<II", len(js), 0x4E4F534A) + js)
+        f.write(struct.pack("<II", len(out), 0x004E4942) + bytes(out))
 
 
 # ---- weapons -----------------------------------------------------------------
@@ -707,11 +821,116 @@ def base_male():
     export("base_male.glb")
 
 
-def humanoid(arm, meshes, down):
+MIXAMO = os.path.join(SRC, "mixamo")
+# Mixamo clips (Dan's "Action Adventure Pack", free for games, no credit
+# needed) -> the game's clip: [(file, first frame, last frame)], at 30 fps;
+# loops end on the frame they start on
+MIXAMO_CLIPS = {
+    "Idle": [("idle.fbx", 1, 298)],
+    "Walk": [("walking.fbx", 1, 32)],
+    "Run": [("running.fbx", 1, 22)],
+    # the push off and the rise, held through the hop (player.gd)
+    "Jump": [("jumping_up.fbx", 1, 8)],
+}
+
+
+def mixamo_clip(arm, tpose, name, parts):
+    """Key a Mixamo clip on `arm` (Mixamo-named bones, rest pose arms down)
+    by turning each bone by as much as the Mixamo bone turns from its
+    T-pose, about world axes, starting from the body's own T-pose (`tpose`:
+    bone -> armature-space rotation). Only the shared bones are keyed (the
+    rest follow their parents), and the hips' sway, bob and fall, but not
+    their travel: the game moves the body."""
+    sc = bpy.context.scene
+    rest = {b.name: b.matrix_local.to_quaternion() for b in arm.data.bones}
+    world = arm.matrix_world.to_quaternion()
+    shared = [b.name for b in arm.data.bones if b.name.startswith("mixamorig_")]
+    hips_rest = arm.matrix_world @ arm.data.bones["mixamorig_Hips"].head_local
+    rots, locs = [], []
+    for path, first, last in parts:
+        before, acts = set(bpy.data.objects), set(bpy.data.actions)
+        bpy.ops.import_scene.fbx(filepath=os.path.join(MIXAMO, path))
+        new = [o for o in bpy.data.objects if o not in before]
+        src = next(o for o in new if o.type == "ARMATURE")
+        bone = lambda n: src.data.bones[n.replace("mixamorig_", "mixamorig:")]
+        scale = hips_rest.z / (src.matrix_world @ bone("mixamorig_Hips").head_local).z
+        src_rest = {n: (src.matrix_world @ bone(n).matrix_local).to_quaternion() for n in shared}
+        src_hips = src.matrix_world @ bone("mixamorig_Hips").head_local
+        for f in range(first, last + 1):
+            sc.frame_set(f)
+            pose = {}
+            for n in shared:
+                pb = src.pose.bones[bone(n).name]
+                turn = (src.matrix_world @ pb.matrix).to_quaternion() @ src_rest[n].inverted()
+                pose[n] = world.inverted() @ turn @ world @ tpose[n]
+            rots.append(pose)
+            hips = src.matrix_world @ src.pose.bones[bone("mixamorig_Hips").name].head
+            locs.append((hips - src_hips) * scale)
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in new:
+            bpy.data.objects.remove(o, do_unlink=True)
+        for a in set(bpy.data.actions) - acts:
+            bpy.data.actions.remove(a)
+    # face forward: some clips stand turned a little, so turn the whole
+    # clip by the hips' mean heading
+    fwd = Vector()
+    for pose in rots:
+        fwd += (pose["mixamorig_Hips"] @ tpose["mixamorig_Hips"].inverted()) @ Vector((0, -1, 0))
+    face = Quaternion((0, 0, 1), math.atan2(-fwd.x, -fwd.y))
+    for i, pose in enumerate(rots):
+        for k in pose:
+            pose[k] = face @ pose[k]
+        locs[i] = face @ locs[i]
+    # take out the travel: the line from the first frame's hips to the last's
+    n = len(locs)
+    a, b = locs[0].copy(), locs[-1].copy()
+    for i, v in enumerate(locs):
+        k = i / max(1, n - 1)
+        v.x -= a.x + (b.x - a.x) * k
+        v.y -= a.y + (b.y - a.y) * k
+
+    act = bpy.data.actions.new(name)
+    arm.animation_data_create()
+    arm.animation_data.action = act
+    order = []
+    walk = [b for b in arm.data.bones if b.parent is None]
+    while walk:
+        b = walk.pop(0)
+        order.append(b)
+        walk += list(b.children)
+    for i, pose in enumerate(rots):
+        frame = i * FPS / 30
+        posed = {}
+        for b in order:
+            pb = arm.pose.bones[b.name]
+            pb.rotation_mode = "QUATERNION"
+            # armature-space pose = parent's pose @ (parent rest^-1 @ rest) @ basis
+            up = posed[b.parent.name] @ rest[b.parent.name].inverted() if b.parent else Quaternion()
+            if b.name in pose:
+                posed[b.name] = pose[b.name]
+                pb.rotation_quaternion = rest[b.name].inverted() @ up.inverted() @ pose[b.name]
+                pb.keyframe_insert("rotation_quaternion", frame=frame)
+            else:
+                posed[b.name] = up @ rest[b.name]
+        hips = arm.pose.bones["mixamorig_Hips"]
+        hips.location = rest["mixamorig_Hips"].inverted() @ (world.inverted() @ locs[i])
+        hips.keyframe_insert("location", frame=frame)
+    act.use_fake_user = True
+    track = arm.animation_data.nla_tracks.new()
+    track.name = name
+    track.strips.new(name, 0, act)
+    arm.animation_data.action = None
+    for pb in arm.pose.bones:
+        pb.matrix_basis.identity()
+
+
+def humanoid(arm, meshes, down, mocap=False):
     """Rest a T-posed body on a Mixamo-named skeleton with its arms lowered
     by `down` (radians), and key the player's clips on it: Idle, Walk, Run,
-    Attack, Cast, Sit, Death and a clip for every spell pose."""
+    Attack, Cast, Sit, Death and a clip for every spell pose. With `mocap`,
+    Idle, Walk, Run and Jump come from the Mixamo clips (MIXAMO_CLIPS)."""
     m = lambda k: "mixamorig_" + k
+    tpose = {b.name: b.matrix_local.to_quaternion() for b in arm.data.bones}
     # the T-pose was for binding: the arms-down stance becomes the rest pose,
     # so the game's hand and head sockets line up with the body at rest
     # (game/entities/rig.gd, Rig.sockets)
@@ -815,9 +1034,13 @@ def humanoid(arm, meshes, down):
             m("Head"): [("x", -0.3 * k)],
         }
 
-    p.clip("Idle", 72, True, idle)
-    p.clip("Walk", 24, True, gait(0.5, 0.03, 0.0, 0.4, 0.8))
-    p.clip("Run", 16, True, gait(0.85, 0.06, 0.18, 0.7, 1.4))
+    if mocap:
+        for name, parts in MIXAMO_CLIPS.items():
+            mixamo_clip(arm, tpose, name, parts)
+    else:
+        p.clip("Idle", 72, True, idle)
+        p.clip("Walk", 24, True, gait(0.5, 0.03, 0.0, 0.4, 0.8))
+        p.clip("Run", 16, True, gait(0.85, 0.06, 0.18, 0.7, 1.4))
     p.clip("Attack", 14, False, attack)
     p.clip("Cast", 16, False, cast)
     p.clip("Sit", 48, True, sit)
@@ -884,8 +1107,8 @@ def battle_mage():
     arm.name = "Skeleton"
     next(md for md in body.modifiers if md.type == "ARMATURE").name = "Armature"
     retexture(objs, "battle_mage", 512, os.path.join(MAGE, "textures", "Material_Pbr_Diffuse.png"))
-    humanoid(arm, [body], 1.3)
-    export("battle_mage.glb")
+    humanoid(arm, [body], 1.3, mocap=True)
+    export("battle_mage.glb", lean=True)
 
 
 if __name__ == "__main__":

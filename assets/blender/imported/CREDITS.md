@@ -34,3 +34,9 @@ about 50 MB, so it is not kept in git: put it, as downloaded, in
 scaled to 1.82 m, cut from 50,000 to 7,000 triangles, texture reduced to
 the base colour map at 512 px, its own animation dropped and the player's
 clips keyed on it.
+
+`mixamo/` holds the player's Idle, Walk, Run and Jump clips: animation-only
+FBX files from Adobe Mixamo's "Action Adventure Pack" (idle (2), walking,
+running, jumping up), downloaded by Dan. Mixamo animations are free to use in
+games, commercial ones too, and need no credit. import_models.py retargets
+them onto the battle mage (`mixamo_clip`).
