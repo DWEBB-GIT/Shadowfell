@@ -85,7 +85,7 @@ func buy(id: String) -> bool:
 	if not inventory.add_item(id, n, true):
 		return false # bags full: add_item says so
 	inventory.coins -= price
-	events.emit("coins", {"amount": -price})
+	events.emit("coins", {"amount": -price, "bought": true})
 	events.emit("itemBought", {"id": id, "price": price})
 	events.emit("log", {"text": "Bought: %s%s for %s." % [name, " ×%d" % n if n > 1 else "", U.money(price)], "kind": "loot"})
 	inventory._changed()

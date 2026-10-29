@@ -31,6 +31,12 @@ func open(n) -> void:
 	# how they hail you: "Hey you!" while you are nobody, your title once you
 	# have chosen one (the notice board says nothing)
 	salutation = "" if DB.npcs[n.id].get("board") else game.titles.address("greetings")
+	# a shopkeeper greets you with the clink of wares, a quest giver with a
+	# turned page (Dan, 2026-10-29)
+	if DB.npcs[n.id].get("shop"):
+		game.audio.sfx("shop_greet", 0.7)
+	elif DB.quests.values().any(func(q): return q.get("giver") == n.id or q.get("turnIn") == n.id):
+		game.audio.sfx("page_turn", 0.7)
 	game.events.emit("dialogueChanged", {})
 
 

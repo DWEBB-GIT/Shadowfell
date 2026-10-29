@@ -186,7 +186,7 @@ func accept(id: String, quiet := false) -> bool:
 		game.events.emit("log", {"text": "Quest accepted: %s." % q.name, "kind": "quest"})
 		if game.hud:
 			game.hud.toast("Quest accepted: %s" % q.name)
-	game.events.emit("questAccepted", {"id": id})
+	game.events.emit("questAccepted", {"id": id, "quiet": quiet})
 	_changed()
 	return true
 
@@ -459,6 +459,7 @@ func refresh() -> void:
 			game.events.emit("log", {"text": "%s: complete. Return to %s." % [q.name, DB.npcs[q.turnIn].name], "kind": "quest"})
 			if game.hud:
 				game.hud.toast("%s: complete" % q.name)
+			game.events.emit("questReady", {"id": id})
 	if changed:
 		_changed()
 
