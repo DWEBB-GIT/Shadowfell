@@ -357,7 +357,11 @@ func try_cast(id: String) -> bool:
 		target = _target_for(spell)
 		if not target:
 			return false
-		# a spell at an enemy turns you to it (Diablo): facing never blocks a cast
+		# running, the target must be in front of you; standing still, a
+		# spell at an enemy turns you to it
+		if not player.can_hit_while_moving(target.position.x, target.position.z):
+			game.hud.error("Target needs to be in front of you.")
+			return false
 		player.face_towards(target.position.x, target.position.z)
 		# striking from Shadow: the blow still counts as from Shadow (Opportunist)
 		break_shadow()

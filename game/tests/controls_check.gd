@@ -66,11 +66,12 @@ func _process(_dt: float) -> bool:
 		game.input.held["KeyD"] = true
 	elif f == 35:
 		check(absf(angle_difference(game.player.facing, PI / 2)) < 0.3, "mouse aim: walking away faces the way you walk (%.2f)" % game.player.facing)
+		check(not game.player.can_hit_while_moving(foe.position.x, foe.position.z), "running away, a foe behind you cannot be hit")
 		game.input.held.erase("KeyD")
 		game.settings.set_value("classicControls", true)
 	elif f == 44:
 		var to_foe := atan2(foe.position.x - game.player.position.x, foe.position.z - game.player.position.z)
-		check(absf(angle_difference(game.player.facing, to_foe)) < 0.5, "classic: in reach, you keep facing your target as you walk")
+		check(absf(angle_difference(game.player.facing, to_foe)) > 0.5, "classic: walking away turns you from your target, not towards it")
 		game.settings.set_value("classicControls", false)
 		# keyboard turning: D turns on the spot, W walks the way you face
 		game.targeting.stop_attack()
