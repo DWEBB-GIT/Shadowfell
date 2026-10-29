@@ -678,7 +678,9 @@ func _click_move(keys_move: Dictionary, dt: float):
 		m.z = m.follow.position.z
 	elif m.has("hold"):
 		var held: bool = input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld
-		var at = _aim_point() if held and input.mouse.onCanvas else null
+		# the cursor may cross the HUD (chat, objectives, portraits) while held:
+		# keep following it; the release is seen anywhere (GameInput._input)
+		var at = _aim_point() if held else null
 		if at != null:
 			m.x = at.x
 			m.z = at.z
