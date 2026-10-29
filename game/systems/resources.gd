@@ -198,6 +198,10 @@ func spend(ability: Dictionary, gain = null) -> float:
 	return all
 
 
+const HEALTH_REGEN_DELAY := 5.0 ## seconds out of combat before health returns
+const HEALTH_REGEN_PERCENT := 2.0 ## of max health a second
+const HEALTH_REGEN_STILL := 1.5 ## times faster when not moving
+
 func update(dt: float) -> void:
 	var player = game.player
 	if player.dead:
@@ -219,6 +223,11 @@ func update(dt: float) -> void:
 		if b.get("points") and b.get("fadeAfter") and since_hit > b.fadeAfter and not hidden:
 			v = 0
 		values[b.id] = clampf(v, 0, b.max)
+	# WoW-style health regen: out of combat for a few seconds, faster when
+	# standing still (Dan, 2026-10-29)
+	if not fighting and since_combat > HEALTH_REGEN_DELAY and player.health < player.max_health:
+		var rate: float = HEALTH_REGEN_PERCENT * (1.0 if player.moving else HEALTH_REGEN_STILL)
+		player.health = minf(player.max_health, player.health + player.max_health * rate * dt / 100.0)
 	# Overcorrupted: health bleeds away until the bar drops (never below 1)
 	var o = overload
 	if o:
