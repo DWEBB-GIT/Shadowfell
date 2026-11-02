@@ -3,8 +3,8 @@ extends RefCounted
 ## What abilities are paid with (src/systems/resources.js). Mana is drawn
 ## from Intellect and refills slowly in combat (fast out of it). Every other
 ## resource is a class bar, one system with different numbers per class
-## (data/archetypes.json `resources.bars`); the keys are documented in the
-## JS file. Ability costs live in data/abilities.json (`cost`, `gain`, and
+## (data/abilities/archetypes.json `resources.bars`); the keys are documented in the
+## JS file. Ability costs live in data/abilities/abilities.json (`cost`, `gain`, and
 ## `spendsAll` for finishers such as Double Cut and Purge).
 
 var game
@@ -87,9 +87,14 @@ var max_mana: float:
 	get:
 		return game.stats.max_mana
 
+## In combat while any enemy is chasing or striking you; once the last one
+## is dead (or gone home) you leave a second after your last blow (Dan,
+## 2026-10-29). `engaged` is counted once a frame in update().
 var in_combat: bool:
 	get:
-		return since_combat < (gauge_cfg.get("decayAfter", 6.0) if gauge_cfg else 6.0)
+		return engaged or since_combat < LEAVE_COMBAT_AFTER
+var engaged := false
+const LEAVE_COMBAT_AFTER := 1.0 ## seconds after the last blow with nobody fighting you
 
 ## a bar at its max with an `overload` (Overcorrupted), or null
 var overload:
@@ -146,7 +151,7 @@ func can_afford(ability: Dictionary) -> bool:
 	return unlimited or lacking(ability) == ""
 
 
-## refuse with WoW's red message if short; true if it can be paid
+## refuse with red message if short; true if it can be paid
 func check(ability: Dictionary) -> bool:
 	var short := "" if unlimited else lacking(ability)
 	if short != "":
@@ -200,7 +205,7 @@ func spend(ability: Dictionary, gain = null) -> float:
 
 
 const HEALTH_REGEN_DELAY := 5.0 ## seconds out of combat before health returns
-const HEALTH_REGEN_PERCENT := 2.0 ## of max health a second
+const HEALTH_REGEN_PERCENT := 0.8 ## of max health a second (slow: eat to heal fast)
 const HEALTH_REGEN_STILL := 1.5 ## times faster when not moving
 
 func update(dt: float) -> void:
@@ -209,13 +214,19 @@ func update(dt: float) -> void:
 		return
 	since_combat += dt
 	since_hit += dt
+	engaged = false
+	if game.enemies:
+		for e in game.enemies.list:
+			if Targeting.in_combat_with_player(e):
+				engaged = true
+				break
 	var fighting := in_combat
-	# WoW-style notice when combat starts and fades, so you know when you
-	# can eat or rest (Dan, 2026-10-29)
+	# notice when combat starts and fades, so you know when you
+	# can eat or rest 
 	if fighting != was_fighting:
 		was_fighting = fighting
 		if game.hud:
-			game.hud.toast("Entering combat" if fighting else "Leaving combat", "bad" if fighting else "")
+			game.hud.error("Entering combat" if fighting else "Leaving combat")
 	var hidden: bool = game.spells != null and game.spells.hidden
 	var m = cfg.get("mana")
 	if m:
@@ -225,13 +236,13 @@ func update(dt: float) -> void:
 		var regen: float = b.get("regenPerSecond", 0) if fighting else b.get("regenOutOfCombat", b.get("regenPerSecond", 0))
 		if regen:
 			v += regen * (b.get("shadowMultiplier", 1) if hidden else 1) * (1.0 if player.moving else 1 + b.get("stillBonus", 0)) * dt
-		if b.get("decayPerSecond") and not fighting:
+		if b.get("decayPerSecond") and not fighting and since_combat > b.get("decayAfter", 0):
 			v -= b.decayPerSecond * dt
 		if b.get("points") and b.get("fadeAfter") and since_hit > b.fadeAfter and not hidden:
 			v = 0
 		values[b.id] = clampf(v, 0, b.max)
-	# WoW-style health regen: out of combat for a few seconds, faster when
-	# standing still (Dan, 2026-10-29)
+	# health regen: out of combat for a few seconds, faster when
+	# ststanding still 
 	if not fighting and since_combat > HEALTH_REGEN_DELAY and player.health < player.max_health:
 		var rate: float = HEALTH_REGEN_PERCENT * (1.0 if player.moving else HEALTH_REGEN_STILL)
 		player.health = minf(player.max_health, player.health + player.max_health * rate * dt / 100.0)

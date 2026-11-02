@@ -170,8 +170,9 @@ func tank_axis() -> Vector2:
 	return Vector2(turn, walk)
 
 
-## Movement axis in world space: W is north (-z), D is east (+x); the arrow
-## keys move too. Diagonal input is normalised.
+## Screen-relative movement intent: W/up is negative y, D/right positive x.
+## Game converts it to world space once, using the gameplay camera yaw.
+## Diagonal input is normalised.
 func move_axis() -> Vector2:
 	var x := 0.0
 	var z := 0.0
@@ -185,3 +186,15 @@ func move_axis() -> Vector2:
 		x += 1
 	var v := Vector2(x, z)
 	return v.normalized() if v.length() > 0 else v
+
+
+## Project screen directions onto level ground. Pitch and zoom do not affect
+## movement speed. Keep analogue magnitude and cap diagonal keyboard speed.
+static func camera_direction(axis: Vector2, camera_basis: Basis) -> Vector2:
+	if axis.is_zero_approx():
+		return Vector2.ZERO
+	var right := Vector2(camera_basis.x.x, camera_basis.x.z).normalized()
+	if right.is_zero_approx():
+		right = Vector2.RIGHT
+	var down := Vector2(-right.y, right.x)
+	return (right * axis.x + down * axis.y).normalized() * minf(axis.length(), 1.0)

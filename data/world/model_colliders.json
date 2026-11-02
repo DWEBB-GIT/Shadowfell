@@ -1,0 +1,28 @@
+{
+  "_about": "Ground footprints for placed models, by model file name (no extension). Each entry is a list of circles [x, z, radius] in metres, in the model's own frame before its placement scale and turn. Trees block at the trunk only, so you can walk under the canopy; rocks block their whole base. A model listed here ignores the placement's own collider number. Measured from the meshes (Dan's nature pack), 2026-11-02.",
+  "models": {
+    "CommonTree_1": [[0.0, 0.0, 0.45]],
+    "CommonTree_2": [[0.0, 0.0, 0.45]],
+    "CommonTree_3": [[0.0, 0.0, 0.45]],
+    "CommonTree_4": [[-0.05, 0.0, 0.45]],
+    "CommonTree_5": [[0.0, 0.0, 0.42]],
+    "DeadTree_1": [[0.05, -0.05, 0.45]],
+    "DeadTree_2": [[0.05, 0.05, 0.48]],
+    "DeadTree_3": [[0.0, 0.0, 0.55]],
+    "DeadTree_4": [[0.0, 0.0, 0.7]],
+    "DeadTree_5": [[0.0, 0.0, 0.7]],
+    "Pine_1": [[0.0, 0.0, 0.25]],
+    "Pine_2": [[0.0, 0.0, 0.25]],
+    "Pine_3": [[0.0, 0.0, 0.25]],
+    "Pine_4": [[0.0, 0.0, 0.35]],
+    "Pine_5": [[0.0, 0.0, 0.35]],
+    "TwistedTree_1": [[0.08, -0.1, 1.05]],
+    "TwistedTree_2": [[-0.05, 0.0, 0.95]],
+    "TwistedTree_3": [[-0.03, -0.04, 0.95]],
+    "TwistedTree_4": [[-0.06, 0.0, 0.95]],
+    "TwistedTree_5": [[-0.03, 0.0, 0.95]],
+    "Rock_Medium_1": [[-0.19, 0.3, 1.3]],
+    "Rock_Medium_2": [[-0.23, 0.03, 1.25]],
+    "Rock_Medium_3": [[-0.16, 0.65, 1.35]]
+  }
+}

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cag8gf8rtyw2c"
-path="res://.godot/imported/battle_mage_Material_Pbr_Diffuse.png-c4bd941fde6967a47b95b84a30cbe846.ctex"
+path.s3tc="res://.godot/imported/battle_mage_Material_Pbr_Diffuse.png-c4bd941fde6967a47b95b84a30cbe846.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "65c31959cb07f68a32d34e46fd8c80e6"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/battle_mage_Material_Pbr_Diffuse.png"
-dest_files=["res://.godot/imported/battle_mage_Material_Pbr_Diffuse.png-c4bd941fde6967a47b95b84a30cbe846.ctex"]
+dest_files=["res://.godot/imported/battle_mage_Material_Pbr_Diffuse.png-c4bd941fde6967a47b95b84a30cbe846.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

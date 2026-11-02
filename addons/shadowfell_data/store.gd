@@ -8,6 +8,10 @@ const IO := preload("json_io.gd")
 
 ## where the data files are (a test points this at a copy)
 var data_dir := "res://data"
+var map_id := "act1"
+var _disk_text := {}
+var _world_disk := {}
+var _world_baseline := {}
 const MODELS_DIR := "res://assets/models"
 const SPRITES_DIR := "res://assets/icons"
 
@@ -81,6 +85,11 @@ const SPELL_KINDS := {
 	"shield": {"enemy": false, "tuning": ["duration", "absorbPercent"], "about": "A shield that soaks damage."},
 	"portal": {"enemy": false, "tuning": ["castTime", "cooldown"], "about": "A long cast that takes you to your camp or your home inn (Return Home). Not while fighting."},
 	"camp": {"enemy": false, "tuning": ["castTime"], "about": "Set Camp."},
+	"heal": {"enemy": false, "tuning": ["castTime", "healMin", "healMax"], "about": "Heal yourself. Cast time 0 = instant; above 0 it is a cast that moving interrupts. Can consume a heal over time for a bigger heal."},
+	"hot": {"enemy": false, "tuning": ["duration", "tickInterval", "healMin", "healMax"], "about": "A heal over time on you: heals every tick while it lasts."},
+	"healZone": {"enemy": false, "ground": true, "tuning": ["radius", "duration", "tickInterval", "healMin", "healMax"], "about": "A healing circle around you or on the ground that heals you every tick while you stand in it. Give it base damage to burn enemies in it too."},
+	"healBurst": {"enemy": false, "ground": true, "tuning": ["radius", "healMin", "healMax", "damageMin", "damageMax"], "about": "An instant burst around you or on the ground: heals you if you are in it, and damages every enemy in it (base damage 0 = heal only)."},
+	"thorns": {"enemy": false, "tuning": ["duration", "thornsMin", "thornsMax"], "about": "Thorns on you for a while: every enemy that lands a blow on you takes damage back."},
 }
 const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire"]
 const TARGETS := ["enemy", "ground", "self"]
@@ -120,11 +129,21 @@ signal changed
 func load_all() -> void:
 	files.clear()
 	dirty.clear()
+	_disk_text.clear()
+	map_id = Terrain.chosen_map() if data_dir == "res://data" else "act1"
 	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs", "shops", "dialogue", "factions", "text", "skills", "abilities", "archetypes", "recipes", "builds"]:
-		files[f] = IO.load_file(_path(f))
+		var file_path := _path(f)
+		_disk_text[f] = FileAccess.get_file_as_string(file_path) if FileAccess.file_exists(file_path) else ""
+		files[f] = IO.load_file(file_path) if _disk_text[f] != "" else {}
 		if files[f] == null:
 			files[f] = {}
 			push_error("Game Data: cannot read " + _path(f))
+	if map_id == "new":
+		_world_disk = files.world.duplicate(true)
+		DB.ready = false
+		DB.ensure()
+		files.world = DB.world.duplicate(true)
+	_world_baseline = files.world.duplicate(true)
 	items = files.items.get("items", [])
 	armour_types = files.items.get("armourTypes", [])
 	rarities = files.rarities.get("rarities", [])
@@ -151,6 +170,10 @@ func load_all() -> void:
 	dialogues = files.dialogue.dialogues
 	factions = files.factions.get("factions", [])
 	examine_points = PackedStringArray(files.text.get("examine", {}).keys())
+	for poi in files.world.get("pois", []):
+		var point_id: String = "poi:" + str(poi.id)
+		if not examine_points.has(point_id):
+			examine_points.append(point_id)
 	if not files.skills.has("skills"):
 		files.skills.skills = []
 	skills = files.skills.skills
@@ -161,11 +184,13 @@ func load_all() -> void:
 
 
 func _path(file: String) -> String:
-	return "%s/%s.json" % [data_dir, file]
+	if file == "world" and map_id == "new":
+		return data_dir + "/terrain/new_map/spawns.json"
+	return DataPaths.path_for(file, data_dir)
 
 
 func scan_art() -> void:
-	models = _names(MODELS_DIR, ".glb")
+	models = PackedStringArray(Assets.model_ids())
 	sprites = _names(SPRITES_DIR, ".png")
 
 
@@ -185,13 +210,28 @@ func touch(file: String) -> void:
 
 func save_all() -> PackedStringArray:
 	var saved := PackedStringArray()
-	for f in dirty:
-		var err := IO.save_file(_path(f), files[f])
+	for f in dirty.keys():
+		var path := _path(f)
+		var disk := FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else ""
+		if disk != _disk_text.get(f, ""):
+			push_error("Game Data: %s changed on disk. Revert/reopen before saving; your edits are still in this screen." % path)
+			continue
+		var output: Dictionary = files[f]
+		if f == "world" and map_id == "new":
+			output = _world_disk.duplicate(true)
+			for key in files.world:
+				if files.world[key] != _world_baseline.get(key):
+					output[key] = files.world[key]
+		var err := IO.save_file(path, output)
 		if err != OK:
 			push_error("Game Data: cannot write %s (%s)" % [_path(f), error_string(err)])
 			continue
 		saved.append(f + ".json")
-	dirty.clear()
+		dirty.erase(f)
+		_disk_text[f] = FileAccess.get_file_as_string(path)
+		if f == "world":
+			_world_disk = output.duplicate(true)
+			_world_baseline = files.world.duplicate(true)
 	changed.emit()
 	return saved
 
@@ -317,6 +357,17 @@ static func needed_tuning(a: Dictionary) -> Array:
 	if a.kind == "cast" and a.get("ranged") == true:
 		return ["cooldown", "castTime", "damageMultiplier"]
 	return ["cooldown"] + k.tuning
+
+
+## a weapon ability rolls the weapon (or bow): a weapon multiplier, a shot,
+## or a damage over time with no base roll of its own (Spells._damage)
+static func weapon_ability(a: Dictionary) -> bool:
+	var t: Dictionary = a.get("tuning", {})
+	if a.get("ranged") == true or t.has("damageMultiplier"):
+		return true
+	if a.get("kind") in ["cleave", "burst", "charge"]:
+		return true
+	return a.get("kind") == "dot" and not t.has("damageMin")
 
 
 ## mana and every class bar: what a cost or gain may name
@@ -450,7 +501,7 @@ func trained_by(npc_id) -> Array:
 	var out := []
 	for a in archetypes:
 		for t in a.get("trained", []):
-			if t.get("trainer") == npc_id:
+			if DB.taught_by(t, npc_id):
 				out.append({"class": a, "entry": t})
 	return out
 

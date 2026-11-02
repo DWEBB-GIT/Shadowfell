@@ -11,6 +11,9 @@ extends RefCounted
 ## to engage it. Abilities go to the selected enemy; with nothing selected
 ## they go to the enemy nearest your aim, which a faint ring shows.
 ##
+## Target lock (Settings, on by default) is the soft lock; turned off,
+## abilities need a selected target.
+##
 ## Only what you can see: soft lock, Tab and RT pick only enemies inside the
 ## camera view, or ones already fighting you.
 
@@ -28,7 +31,7 @@ var _last_for = null
 
 ## Is this enemy chasing or striking the player?
 static func in_combat_with_player(e) -> bool:
-	return e != null and e.alive and (e.state == "chase" or e.state == "attack")
+	return e != null and e.alive and (e.state == "chase" or e.state == "attack" or e.state == "flee")
 
 
 func _init(g) -> void:
@@ -79,7 +82,11 @@ func targetable(e) -> bool:
 ## The enemy a soft lock picks for an ability with reach `range`, given an
 ## aim point: inside the arc around the aim direction (or right under the
 ## cursor), favouring the smallest angle and then the nearest.
-func soft_target(aim, range_: float):
+## With Target lock off (Settings, Controls) nothing locks on by itself:
+## only Tab (`force`) still picks the enemy ahead.
+func soft_target(aim, range_: float, force := false):
+	if not force and not game.settings.get_value("targetLock"):
+		return null
 	var player = game.player
 	var p: Vector3 = player.position
 	var ax: float = aim.x - p.x if aim != null else sin(player.facing)
@@ -156,7 +163,7 @@ func engage(enemy) -> bool:
 		return false
 	if not attacking:
 		attacking = true
-		# WoW: a fresh fight opens the moment the target is in reach: the
+		# A fresh fight opens the moment the target is in reach: the
 		# clocks are ready, and the first blow comes after a short, visible
 		# windup. Switching targets mid-fight keeps the running clocks.
 		var p = game.player
@@ -204,7 +211,7 @@ func cycle(aim):
 	if near.is_empty():
 		return select(null)
 	if current == null or not near.has(current):
-		var s = soft_target(aim, DB.CONFIG.targeting.range)
+		var s = soft_target(aim, DB.CONFIG.targeting.range, true)
 		return select(s if s != null else near[0])
 	return select(near[(near.find(current) + 1) % near.size()])
 

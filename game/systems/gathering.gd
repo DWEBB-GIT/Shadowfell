@@ -1,6 +1,6 @@
 class_name Gathering
 extends RefCounted
-## Gathering nodes (data/nodes.json): herb patches now, and whatever else is
+## Gathering nodes (data/professions/nodes.json): herb patches now, and whatever else is
 ## picked off the land later (Woodcutting's trees, say). A node kind needs
 ## its skill at its level; one gather gives its yield, maybe a rare bonus,
 ## and skill experience by the colour of the task (Skills.gain).
@@ -155,7 +155,7 @@ func start(n: Dictionary) -> bool:
 		game.hud.error("That %s %s." % [v.name.to_lower(), why])
 		return false
 	if game.inventory.room_for(kind_def(n.kind).yields.item) <= 0:
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)

@@ -1,5 +1,6 @@
 class_name Game
 extends Node3D
+const ZoneGradeS = preload("res://game/world/zone_grade.gd")
 ## Game initialisation and the main loop (src/main.js). Each system owns its
 ## own state; this node wires them together and routes input.
 
@@ -14,17 +15,17 @@ const SUN_MATCH := 0.42
 ## the far side of things, and filmic tone mapping rolls the lit side off
 ## softly instead of washing it out. AMBIENT_K is how much of the three.js
 ## hemisphere light is kept as fill.
-const GRADE := {"brightness": 0.97, "contrast": 1.2, "saturation": 1.12}
-const SUN_BOOST := 1.85
-const AMBIENT := Color("5d6f8c")
-const AMBIENT_K := 0.5
-const EXPOSURE := 1.05 ## before the filmic curve, which darkens the mid tones
+const GRADE := {"brightness": 1.0, "contrast": 1.08, "saturation": 0.96}
+const SUN_BOOST := 2.05
+const AMBIENT := Color("71869bff")
+const AMBIENT_K := 0.82
+const EXPOSURE := 1.15
 
 var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
-var zoom := 1.15 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
+var zoom: float = DB.CONFIG.camera.zoomDefault
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
 ## the mouse aims and WASD moves. Left click attacks, talks and loots; hold it
@@ -82,7 +83,9 @@ var forge: Forge
 var law: Law
 var boons: Boons
 var sparkles: Sparkles
+var xp_orbs ## render/xp_orbs.gd
 var interaction: Interaction
+var puzzles: WorldPuzzles
 var action_bar: ActionBar
 var hud: Hud
 var audio: AudioSystem
@@ -101,6 +104,7 @@ var move_to = null
 var shake := 0.0
 var cursor := "-" ## the cursor shown (Cursors), "" for the arrow
 
+var atmosphere: Atmosphere
 var env: Environment
 var sun: DirectionalLight3D
 var player_light: OmniLight3D
@@ -108,6 +112,11 @@ var camera: Camera3D
 var camera_target := Vector3.ZERO
 var fog_base = null
 var _bwk := -1.0
+## The colour grade in force now (ZoneGradeS), easing towards the one where
+## the player stands; empty until the first region update.
+var grade := {}
+var _ghost := false
+var _grade_check := 0.0
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
 var _region_at := Vector2(INF, INF)
 var _region_from := Vector2.ZERO
@@ -117,12 +126,15 @@ func _ready() -> void:
 	DB.ensure()
 	scene = self
 	_init_renderer()
+	add_child(preload("res://game/ui/perf_overlay.gd").new())
 	input = GameInput.new()
 	input.name = "Input"
 	add_child(input)
 	collision = Collision.new()
 	world = World.new(self).build()
 	add_child(world.group)
+	atmosphere = Atmosphere.new(self)
+	add_child(atmosphere)
 	water_and_dark = WaterAndDark.new(self).build()
 
 	world_state = WorldState.new(self)
@@ -157,12 +169,14 @@ func _ready() -> void:
 	loot = Loot.new(self)
 	chests = Chests.new(self)
 	discovery = Discovery.new(self).build()
+	puzzles = WorldPuzzles.new(self).build()
 	mining = Mining.new(self)
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
 	law = Law.new(self)
 	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
+	xp_orbs = preload("res://game/render/xp_orbs.gd").new(self)
 	interaction = Interaction.new(self)
 	action_bar = ActionBar.new(self)
 	# every button in every menu clicks
@@ -181,6 +195,7 @@ func _ready() -> void:
 func _init_renderer() -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_scale = DB.CONFIG.camera.renderScale
+	vp.msaa_3d = Viewport.MSAA_2X
 	# View-distance fog: clear around the player, swallowing the road ahead.
 	# Things past `far` are not drawn at all.
 	env = Environment.new()
@@ -205,9 +220,9 @@ func _init_renderer() -> void:
 	env.glow_normalized = true
 	for i in 7:
 		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
-	env.glow_intensity = 0.55
+	env.glow_intensity = 0.28
 	env.glow_bloom = 0.0
-	env.glow_hdr_threshold = 1.1
+	env.glow_hdr_threshold = 1.4
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
@@ -216,7 +231,11 @@ func _init_renderer() -> void:
 	env.fog_depth_begin = DB.CONFIG.fog.near
 	env.fog_depth_end = DB.CONFIG.fog.far
 	# the haze glows warm towards the low sun
-	env.fog_sun_scatter = 0.25
+	env.fog_sun_scatter = 0.12
+	# Contact shading anchors the simple meshes without repainting the assets.
+	env.ssao_enabled = true
+	env.ssao_radius = 1.1
+	env.ssao_intensity = 1.15
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -230,17 +249,18 @@ func _init_renderer() -> void:
 
 	# dusk: a low amber sun and a warm glow around the Warden
 	sun = DirectionalLight3D.new()
-	sun.light_color = Color("ffc888")
+	sun.light_color = Color("ffe0b2")
 	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
-	sun.shadow_normal_bias = 1.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 55.0
-	sun.shadow_opacity = 0.85
+	sun.shadow_normal_bias = 0.65
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 72.0
+	sun.shadow_opacity = 0.78
 	sun.shadow_blur = 1.5
 	add_child(sun)
-	player_light = Tex.point_light(Color("ffb070"), 5, 9, 1.6)
+	player_light = Tex.point_light(Color("e6ded0"), 9.0, 7.5, 1.6)
+	player_light.light_volumetric_fog_energy = 0.05
 	player_light.shadow_enabled = false
 	add_child(player_light)
 
@@ -286,6 +306,7 @@ func enter_world(id: String) -> void:
 		if k.id == c.classId:
 			archetype_id = k.archetype
 	roster.touch(id)
+	keys.load_scheme(keys.aim) # this character's own bindings, if they keep them
 	hud.set_character(c)
 	start_game(boot_save.status == "ok")
 	load_world()
@@ -339,9 +360,7 @@ func _model_shelf() -> Node3D:
 	shelf.name = "ModelShelf"
 	scene.add_child(shelf)
 	var names: Array = []
-	for f in ResourceLoader.list_directory("res://assets/models/"):
-		if f.ends_with(".glb"):
-			names.append(f.get_basename())
+	names = Assets.model_ids()
 	var cols := ceili(sqrt(names.size()))
 	for k in names.size():
 		var m := Assets.instance(names[k])
@@ -362,6 +381,23 @@ func log_out() -> void:
 	save.autosave_enabled = false
 	to_select = true
 	get_tree().reload_current_scene()
+
+
+## Main menu, Exit Game: save, then close the game. In a browser there is
+## no window to close, so it goes back to the landing page (/play's parent).
+func exit_game() -> void:
+	if player.dead:
+		hud.toast("You cannot leave while defeated.")
+		return
+	var r := save.save(true)
+	if not r.ok:
+		hud.toast(r.reason)
+		return
+	save.autosave_enabled = false
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.location.href = new URL('..', window.location.href).href")
+	else:
+		get_tree().quit()
 
 
 func _hook_click(n: Node) -> void:
@@ -418,12 +454,14 @@ func start_game(resume: bool) -> void:
 	mining.spawn_all()
 	gathering.spawn_all()
 	hud.hide_title()
+	hud.hud_edit.close() # never start in edit mode or with the belt open
+	hud.belt.close()
 	started = true
 	_snap_camera()
 	if resumed:
 		hud.log_line("You take up the road again.", "lore")
 	else:
-		hud.log_line("The Fallen Road. Somewhere ahead lies the old watch post.", "lore")
+		hud.log_line(DB.world.get("openingText", "The Fallen Road. Somewhere ahead lies the old watch post."), "lore")
 
 
 # ----------------------------------------------------------- game events
@@ -444,7 +482,32 @@ func release_spirit() -> bool:
 	hud.hide_death()
 	afterlife.release()
 	_snap_camera()
+	_arrive("Your spirit drifts…")
 	return true
+
+
+## Arriving far away (the spirit rising at its rest point): the loading
+## screen covers the ground being built around you, a slice each frame,
+## instead of a long stall in plain view (Dan, 2026-11-02).
+func _arrive(text: String) -> void:
+	var land = world.land
+	if land == null or land.missing(camera_target) == 0:
+		return
+	land.gentle = true
+	hud.show_loading()
+	var tree := get_tree()
+	var total := maxi(1, land.missing(camera_target))
+	while true:
+		var left: int = land.missing(camera_target)
+		hud.loading.show_progress(text, 1.0 - float(left) / total)
+		if left == 0:
+			break
+		land.update(camera_target, false, 30.0)
+		await tree.process_frame
+	land.gentle = false
+	# one more frame so the new ground is drawn before the screen lifts
+	await tree.process_frame
+	hud.hide_loading()
 
 
 ## Release and return to life at once at the rest point, wounded.
@@ -455,10 +518,19 @@ func respawn() -> void:
 
 ## The grey of the spirit world, or (off) the normal grade.
 func set_ghost_look(on: bool) -> void:
+	_ghost = on
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 0.15 if on else GRADE.saturation
-	env.adjustment_brightness = 0.85 if on else GRADE.brightness
-	env.adjustment_contrast = 1.1 if on else GRADE.contrast
+	if on:
+		env.adjustment_saturation = 0.15
+		env.adjustment_brightness = 0.85
+		env.adjustment_contrast = 1.1
+		env.adjustment_color_correction = null
+	elif not grade.is_empty():
+		ZoneGradeS.apply_colour(env, grade)
+	else:
+		env.adjustment_saturation = GRADE.saturation
+		env.adjustment_brightness = GRADE.brightness
+		env.adjustment_contrast = GRADE.contrast
 
 
 ## Pixels between a world point and the mouse, or INF behind the camera.
@@ -484,28 +556,42 @@ func _pick_under_cursor():
 				best = {"kind": "point", "obj": c}
 		return best
 	for e in enemies.list:
+		if not _near_cursor_view(e.position.x,e.position.z):
+			continue
 		# the body and the feet both count, so tall and short foes are easy to click
 		if e.alive:
 			cands.append(["enemy", e, minf(_screen_dist(e.position + Vector3(0, 1, 0)), _screen_dist(e.position + Vector3(0, 0.3, 0))) - 6])
 	for n in npcs.list:
+		if not _near_cursor_view(n.position.x,n.position.z):
+			continue
 		cands.append(["npc", n, _screen_dist(n.position + Vector3(0, 1, 0))])
 	for c in chests.list:
+		if not _near_cursor_view(c.x,c.z):
+			continue
 		if not chests.opened(c):
 			cands.append(["chest", c, _screen_dist(Vector3(c.x, Terrain.height_at(c.x, c.z) + 0.4, c.z))])
 	for sp in Layout.signposts:
+		if not _near_cursor_view(sp.position[0],sp.position[1]):
+			continue
 		var x: float = sp.position[0]
 		var z: float = sp.position[1]
 		var y := Terrain.height_at(x, z)
 		cands.append(["sign", sp, minf(_screen_dist(Vector3(x, y + 1.0, z)), _screen_dist(Vector3(x, y + 1.9, z)))])
 	for l in loot.lootables() + loot.skinnables():
+		if not _near_cursor_view(l.x,l.z):
+			continue
 		var d := _screen_dist(Vector3(l.x, Terrain.height_at(l.x, l.z) + 0.3, l.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["loot", l, d])
 	for v in mining.veins():
+		if not _near_cursor_view(v.x,v.z):
+			continue
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["vein", v, d])
 	for v in gathering.live():
+		if not _near_cursor_view(v.x,v.z):
+			continue
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["herb", v, d])
@@ -764,7 +850,7 @@ func manual_save() -> Dictionary:
 # -------------------------------------------------------------- the loop
 func _aim_point():
 	var m := Vector2(input.mouse.x, input.mouse.y)
-	var plane := Plane(Vector3.UP, player.position.y + 0.5)
+	var plane := Plane(Vector3.UP, player.position.y - player.jump_h + 0.5)
 	return plane.intersects_ray(camera.project_ray_origin(m), camera.project_ray_normal(m))
 
 
@@ -776,9 +862,9 @@ func _pad_aim() -> Vector3:
 	var l := pad.left
 	var dir: Vector2
 	if r.z > 0.3:
-		dir = Vector2(r.x, r.y)
+		dir = GameInput.camera_direction(Vector2(r.x, r.y), camera.global_basis)
 	elif l.z > 0.3:
-		dir = Vector2(l.x, l.y)
+		dir = GameInput.camera_direction(Vector2(l.x, l.y), camera.global_basis)
 	else:
 		dir = Vector2(sin(player.facing), cos(player.facing))
 	var n := dir.normalized() if dir.length() > 0 else Vector2(0, 1)
@@ -803,23 +889,48 @@ func _handle_input(dt: float):
 		return null
 	if hud.modal == "loading":
 		return null
+	# Escape closes what is open, then drops the target, then opens the menu
 	if input.consume("Escape") and not hud.close_modal():
-		targeting.clear()
+		if targeting.current != null or targeting.friendly != null:
+			targeting.clear()
+		elif hud.modal == null:
+			hud.main_menu.open()
 	if hud.modal == "death":
 		if input.consume("Enter") or keys.pressed("interact") or pad.pressed(B.A):
 			release_spirit()
+		return null
+	if hud.modal == "edit": # moving the HUD about: no walking or casting
+		hud.hud_edit.gamepad(pad, dt)
 		return null
 	if hud.modal == "document":
 		if pad.pressed(B.B) or pad.pressed(B.A):
 			hud.close_modal()
 		return null
-	if keys.pressed("bags") or pad.pressed(B.START):
+	if hud.modal == "confirm":
+		if input.consume("Enter") or pad.pressed(B.A):
+			hud.answer_confirm(true)
+		elif pad.pressed(B.B):
+			hud.answer_confirm(false)
+		return null
+	# View + Start (held together, as Select + Start) opens edit mode
+	if pad.held(B.VIEW) and pad.pressed(B.START):
+		hud.hud_edit.open()
+	elif keys.pressed("bags") or pad.pressed(B.START):
 		hud.toggle_panel("bags")
+	if keys.pressed("toolbelt"):
+		hud.belt.toggle()
 	if keys.pressed("character") or pad.pressed(B.VIEW):
 		hud.toggle_panel("character")
-	for w in ["spellbook", "talents", "skills", "settings"]:
+	for w in ["spellbook", "talents", "skills"]:
 		if keys.pressed(w):
 			hud.toggle_panel(w)
+	# O opens the Main Menu, never Settings directly (Dan, 2026-11-02);
+	# with Settings open it closes them
+	if keys.pressed("settings"):
+		if hud.items.open.settings:
+			hud.toggle_panel("settings")
+		else:
+			hud.toggle_main_menu()
 	# D-pad right opens and closes the log (it moves the highlight in the bags)
 	if keys.pressed("map"):
 		hud.toggle_world_map()
@@ -827,12 +938,17 @@ func _handle_input(dt: float):
 		hud.toggle_panel("quests")
 	# With a window open the pad drives the window; the world keeps running
 	# and the keyboard and mouse still play, as in WoW.
-	var pad_menu: bool = hud.any_window_open
-	if pad_menu:
+	# the tool belt open on a pad takes the D-pad, A and B as a window does
+	var pad_menu: bool = hud.any_window_open or hud.belt.visible
+	if hud.belt.visible:
+		hud.belt.gamepad(pad)
+	elif pad_menu:
 		hud.window_gamepad(pad, dt)
 	elif pad.pressed(B.UP):
 		hud.toggle_panel("spellbook")
-	if keys.pressed("save") or (not pad_menu and pad.pressed(B.DOWN)):
+	elif pad.pressed(B.DOWN): # D-pad down: the tool belt (the game saves itself)
+		hud.belt.toggle()
+	if keys.pressed("save"):
 		manual_save()
 	if hud.blocks_gameplay:
 		return null
@@ -862,9 +978,11 @@ func _handle_input(dt: float):
 					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left" if mouse_aim else "right"}
 					fx.move_marker(at.x, at.z)
 		var gm := input.move_axis()
-		var gkeys: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}
+		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)
 		var gcm = _click_move(gkeys, dt)
-		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}}
+		# a spirit can still hop (Dan, 2026-11-02)
+		var ghop: bool = keys.pressed("jump") or (pad_on and pad.pressed(B.LS))
+		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}, "jump": ghop}
 	if player.dead:
 		return null
 	if keys.pressed("sheathe"):
@@ -873,7 +991,7 @@ func _handle_input(dt: float):
 		player.set_sitting(not player.sitting)
 
 	var km := input.move_axis()
-	var keys_move: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": km.x, "z": km.y}
+	var keys_move := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else km)
 	var cm = _click_move(keys_move, dt)
 	var move: Dictionary = cm if cm != null else keys_move
 	# keyboard turning: the keys turn and walk you, relative to your facing
@@ -906,6 +1024,9 @@ func _handle_input(dt: float):
 			_right_click_aim()
 		else:
 			_click("right")
+	# Manual movement also wins over a new click destination in this frame.
+	if keys_move.x or keys_move.z:
+		move_to = null
 	# Mouse aim: the left button held aims you at the cursor (or at your
 	# target, once you are swinging at it); so does the right stick
 	var face_aim = null
@@ -970,8 +1091,10 @@ func step(dt: float) -> void:
 		gathering.update(dt, time)
 		law.update(dt)
 		boons.update(dt)
+		afterlife.update(dt)
 		water_and_dark.update(dt, time)
 		discovery.update(dt)
+		puzzles.update(dt)
 		enemies.update(dt)
 		grave.update(dt)
 		npcs.update(dt)
@@ -982,6 +1105,7 @@ func step(dt: float) -> void:
 		interaction.update()
 		loot.update(dt, time)
 		sparkles.update(dt)
+		xp_orbs.update(dt)
 		fx.update(dt)
 		audio.update(dt)
 		if pending_death != null and hud.modal != "death":
@@ -998,22 +1122,27 @@ func step(dt: float) -> void:
 
 ## Which region and named place the Warden is in, and the air there: the
 ## fog and light shade smoothly into the gloom of the Blackwood and other
-## dark woods. The region is looked up every few metres, and a new one only
-## counts once you are a little way into it, so a border does not flicker.
+## dark woods, and colour zones (ZoneGradeS, data/terrain/<map>/grades.json)
+## lay their own tint, fog and light over that, eased in as you walk. The
+## region is looked up every few metres, and a new one only counts once you
+## are a little way into it, so a border does not flicker.
 func _update_region(dt: float) -> void:
 	var p := player.position
-	var k := move_toward(_bwk, Terrain.gloom(p.x, p.z), dt * 0.6) if _bwk >= 0.0 else Terrain.gloom(p.x, p.z)
-	if k != _bwk:
-		_bwk = k
-		var bw: Dictionary = DB.CONFIG.blackwood
-		var fog: Dictionary = DB.CONFIG.fog
-		fog_base = {"near": lerpf(fog.near, bw.fogNear, k), "far": lerpf(fog.far, bw.fogFar, k)}
-		env.fog_light_color = (fog.color as Color).lerp(bw.fogColor, k)
-		env.background_color = env.fog_light_color
-		var light := lerpf(1, bw.light, k)
-		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * lerpf(1, bw.ambient, k)
-		env.ambient_light_color = AMBIENT.lerp(bw.ambientColor, k)
-		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
+	var snap := _bwk < 0.0
+	var k := move_toward(_bwk, Terrain.gloom(p.x, p.z), dt * 0.6) if not snap else Terrain.gloom(p.x, p.z)
+	_bwk = k
+	_grade_check -= dt
+	if _grade_check <= 0.0:
+		_grade_check = 1.0
+		if ZoneGradeS.changed_on_disk():
+			ZoneGradeS.reload()
+	var target := ZoneGradeS.target_at(p.x, p.z, air(k), ZoneGradeS.list())
+	if snap or grade.is_empty():
+		grade = target
+		_apply_grade()
+	elif ZoneGradeS.distance(grade, target) > 0.002:
+		grade = ZoneGradeS.mix(grade, target, 1.0 - exp(-dt * 1.5))
+		_apply_grade()
 	if region != null and Vector2(p.x - _region_at.x, p.z - _region_at.y).length() < 2.0:
 		return
 	_region_at = Vector2(p.x, p.z)
@@ -1034,16 +1163,48 @@ func _update_region(dt: float) -> void:
 		events.emit("subzoneChanged", {"name": sub, "announce": started})
 
 
+## The world's own air at a gloom of `k` (0 open land, 1 deep Blackwood):
+## the grade before any colour zone.
+static func air(k: float) -> Dictionary:
+	var bw: Dictionary = DB.CONFIG.blackwood
+	var fog: Dictionary = DB.CONFIG.fog
+	return {"tint": Color.WHITE, "shadowTint": Color.WHITE, "tintStrength": 0.0,
+		"saturation": GRADE.saturation, "contrast": GRADE.contrast, "brightness": GRADE.brightness,
+		"fogColor": (fog.color as Color).lerp(bw.fogColor, k), "fogNear": lerpf(fog.near, bw.fogNear, k),
+		"fogFar": lerpf(fog.far, bw.fogFar, k), "fogAmount": 1.0, "mist": 1.0,
+		"ambientColor": AMBIENT.lerp(bw.ambientColor, k), "ambient": lerpf(1, bw.ambient, k),
+		"sunlight": lerpf(1, bw.light, k)}
+
+
+func _apply_grade() -> void:
+	var g := grade
+	fog_base = {"near": g.fogNear, "far": maxf(g.fogFar, g.fogNear + 1.0)}
+	env.fog_light_color = g.fogColor
+	env.background_color = g.fogColor
+	env.fog_density = clampf(g.fogAmount, 0.0, 1.0)
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient
+	env.ambient_light_color = g.ambientColor
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight
+	if not _ghost:
+		ZoneGradeS.apply_colour(env, g)
+
+
 func _snap_camera() -> void:
-	camera_target = player.position
+	camera_target = _camera_follow_position()
 	world.update_indoors(0, player.position)
 	_place_camera()
+
+
+## Follow terrain height during a jump, keeping the leap visible without
+## lifting the whole view. Normal slopes and the ghost still follow as before.
+func _camera_follow_position() -> Vector3:
+	return player.position - Vector3.UP * player.jump_h
 
 
 func _update_camera(dt: float) -> void:
 	# exponential smoothing: the same feel at any frame rate
 	var k := 1 - exp(-DB.CONFIG.camera.followSharpness * dt)
-	camera_target = camera_target.lerp(player.position, k)
+	camera_target = camera_target.lerp(_camera_follow_position(), k)
 	_place_camera(dt)
 
 
@@ -1078,26 +1239,14 @@ func _classic_camera() -> bool:
 
 
 func _zoom_max() -> float:
-	var c: Dictionary = DB.CONFIG.camera
-	return c.zoomMax if _classic_camera() else c.tilt.zoomMax
+	return DB.CONFIG.camera.zoomMax
 
 
-## Where the camera sits from the player at distance scale `z`. Classic: one
-## angle (CONFIG.camera.offset). Otherwise the angle follows the zoom: low
-## and close for towns and exploring, steeper further out for fights.
+## Both camera choices keep their pitch throughout the zoom range. There
+## is no pan, orbit or cursor-driven look-ahead; north stays screen-up.
 func _camera_offset(z: float) -> Vector3:
 	var c: Dictionary = DB.CONFIG.camera
-	if _classic_camera():
-		return c.offset * z
-	var k: Dictionary = c.tilt
-	var pitch: float
-	if zoom <= 1.0:
-		pitch = lerpf(k.pitchNear, k.pitchMid, clampf(inverse_lerp(c.zoomMin, 1.0, zoom), 0, 1))
-	else:
-		pitch = lerpf(k.pitchMid, k.pitchFar, clampf(inverse_lerp(1.0, k.zoomMax, zoom), 0, 1))
-	var d: float = (c.offset as Vector3).length() * k.distance * z
-	var a := deg_to_rad(pitch)
-	return Vector3(0, sin(a) * d, cos(a) * d)
+	return (c.lowerOffset if _classic_camera() else c.offset) * z
 
 
 func _place_camera(dt := 0.0) -> void:
@@ -1106,10 +1255,10 @@ func _place_camera(dt := 0.0) -> void:
 		return
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
-	zoom = minf(zoom, _zoom_max())
-	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
+	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
+	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
-	var t := camera_target + Vector3(0, 0, -DB.CONFIG.camera.frame * z)
+	var t := camera_target + Vector3(0, 1.0, 0)
 	var sx := 0.0
 	var sy := 0.0
 	if shake > 0.001:
@@ -1126,8 +1275,35 @@ func _place_camera(dt := 0.0) -> void:
 		env.fog_depth_begin = fog_base.near + extra
 		env.fog_depth_end = fog_base.far + extra
 		camera.far = env.fog_depth_end + 6
-	camera.look_at(Vector3(t.x + sx, t.y + 1.0 + sy, t.z - DB.CONFIG.camera.lookAhead * z)) # a little ahead, up the road
+	camera.look_at(Vector3(t.x + sx, t.y + sy, t.z))
 	_place_sun(t)
 	var p := player.position
 	player_light.position = Vector3(p.x, p.y + 2.4, p.z + 0.6)
 	world.set_cutaway(camera.position, p + Vector3(0, 1.2, 0))
+
+
+func _exit_tree() -> void:
+	set_process(false)
+	events._handlers.clear()
+	if input:
+		input.is_bound = Callable()
+	RenderCleanup.detach(self)
+	# World owns Town, and Town points back to World. Break the reference
+	# cycle on exit so streamed materials and shaders can actually be released.
+	if world and world.town:
+		world.town.world = null
+	UI.icons = null
+
+
+## The fixed camera cannot show targets beyond this local square. Reject them
+## before terrain sampling and screen projection; clicks still evaluate now.
+func _near_cursor_view(x: float, z: float) -> bool:
+	return absf(x-player.position.x) <= Interaction.CLICK_NEAR and absf(z-player.position.z) <= Interaction.CLICK_NEAR
+
+
+## Only keyboard/stick intent passes through this conversion. Click routes
+## and mouse/target positions already live in world space.
+func _screen_move(axis: Vector2) -> Dictionary:
+	var basis: Basis = camera.global_basis if is_instance_valid(camera) else Basis.IDENTITY
+	var direction := GameInput.camera_direction(axis, basis)
+	return {"x": direction.x, "z": direction.y}

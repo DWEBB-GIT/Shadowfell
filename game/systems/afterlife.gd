@@ -6,7 +6,8 @@ extends RefCounted
 ## either run back to the body and rise there, or return to life at once
 ## where it stands. What they carried waits in a grave by the body (grave.gd).
 ## Either way they come back Wounded: less health until they rest at an inn
-## or pay a healer (Dan, 2026-10-27).
+## or pay a healer (Dan, 2026-10-27), or until death.woundSeconds of play
+## pass and the wounds close on their own (Dan, 2026-10-29).
 ##
 ## The enemy that killed the player is remembered (`world_state.nemesis`): it
 ## carries a skull until it falls. It gives no extra damage or XP (Dan,
@@ -18,6 +19,7 @@ var corpse = null ## { x, z, mesh }
 var coin_loss := 0
 var wounds := 0 ## each revival adds one, up to death.maxWounds
 var wound_rest := 0.0 ## seconds rested at an inn towards healing them
+var wound_left := 0.0 ## seconds of play until they close on their own
 
 
 func _init(g) -> void:
@@ -93,10 +95,11 @@ func release() -> bool:
 func revive_at_corpse() -> bool:
 	if not ghost or corpse == null or not near_corpse:
 		return false
-	var c: Dictionary = corpse
+	# you rise where your spirit stands, beside the body (Dan, 2026-10-29)
+	var at: Vector3 = game.player.position
 	_end()
 	_wound()
-	game.player.revive(c.x, c.z, DB.CONFIG.death.corpseHealth)
+	game.player.revive(at.x, at.z, DB.CONFIG.death.corpseHealth)
 	game.events.emit("log", {"text": "You return to your body, wounded. Rest at an inn or find a healer.", "kind": "heal"})
 	return true
 
@@ -117,7 +120,17 @@ func revive_here() -> bool:
 func _wound() -> void:
 	wounds = mini(int(DB.CONFIG.death.maxWounds), wounds + 1)
 	wound_rest = 0.0
+	wound_left = DB.CONFIG.death.woundSeconds
 	game.recompute_max_health()
+
+
+## wounds close on their own after a while, if no inn or healer is near
+func update(dt: float) -> void:
+	if wounds <= 0 or ghost:
+		return
+	wound_left -= dt
+	if wound_left <= 0:
+		heal_wounds("Your wounds have closed on their own.")
 
 
 ## the share of maximum health your wounds take away
@@ -131,6 +144,7 @@ func heal_wounds(how: String) -> void:
 		return
 	wounds = 0
 	wound_rest = 0.0
+	wound_left = 0.0
 	game.recompute_max_health()
 	game.events.emit("log", {"text": how, "kind": "heal"})
 	game.hud.toast("Your wounds are healed")
@@ -150,7 +164,7 @@ var wound_aura:
 	get:
 		if wounds <= 0:
 			return null
-		return {"id": "wounded", "name": "Wounded" + (" ×%d" % wounds if wounds > 1 else ""), "text": "%d%% less maximum health. Rest at an inn or pay a healer to mend it." % roundi(100 - wound_factor * 100)}
+		return {"id": "wounded", "name": "Wounded" + (" ×%d" % wounds if wounds > 1 else ""), "left": wound_left, "total": DB.CONFIG.death.woundSeconds, "text": "%d%% less maximum health. Rest at an inn or pay a healer to mend it, or it fades in time." % roundi(100 - wound_factor * 100)}
 
 
 var near_corpse: bool:
@@ -193,6 +207,7 @@ func reset() -> void:
 	coin_loss = 0
 	wounds = 0
 	wound_rest = 0.0
+	wound_left = 0.0
 
 
 func _place_corpse(x: float, z: float, facing: float) -> void:

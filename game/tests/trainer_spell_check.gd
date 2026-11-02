@@ -39,6 +39,17 @@ func _process(_dt: float) -> bool:
 		_ok(row[0].state == "locked" and row[0].need.begins_with("Requires") and not sk.learn_spell("rend"), "a quest gate locks it until the quest is handed in: %s" % [row])
 		game.quests.done["missing_delivery"] = true
 		_ok(game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend")[0].state == "learn", "handing the quest in unlocks it")
+		# several trainers may teach the same spell (Dan, 2026-11-02)
+		_ok(game.dialogue.train_rows("brask").filter(func(r): return r.id == "spell:rend").is_empty(), "a trainer not named does not teach it")
+		DB.archetypes.warden.trained[0].trainers = ["brask"]
+		_ok(game.dialogue.train_rows("brask").filter(func(r): return r.id == "spell:rend").size() == 1, "a second trainer in trainers teaches it too")
+		_ok(game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend").size() == 1, "and the first still does")
+		var fishing: Dictionary = DB.skills.fishing
+		var had = fishing.get("trainers")
+		fishing.trainers = ["brask"]
+		_ok(game.dialogue.train_rows("brask").any(func(r): return r.id == "train:fishing"), "a skill can have more than one trainer")
+		if had == null:
+			fishing.erase("trainers")
 		_ok(sk.learn_spell("rend") and sk.knows_ability("rend") and game.inventory.coins == 85, "learning it costs its coins and teaches it")
 		var data: Dictionary = game.save.serialize()
 		_ok(data.spells == ["rend"], "the save keeps it")

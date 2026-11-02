@@ -21,6 +21,7 @@ const LOOT_KINDS := ["loot", "item", "skin", "scrap", "gem", "reforge"]
 const LOG_LINES := 7 ## lines on screen
 const LOG_KEEP := 80 ## lines kept for switching tabs
 const SLOT := 48
+const SLOT_USE := 40 ## a consumable slot on the bar
 const EDGE := 12.0 ## the gap between the HUD and the screen edge
 ## the menus in the right dock: [window, glyph, tip, key action, pad label,
 ## Dan's icon (assets/icons/ui), drawn over the glyph when it exists]
@@ -30,18 +31,18 @@ const MICRO := [
 	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
 	["talents", "❀", "Talents", "talents", "", "menu_talents"],
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
-	["settings", "☰", "Settings", "settings", "", "menu_settings"],
+	# opens the Main Menu, as Escape and O do (Dan, 2026-11-02)
+	["menu", "☰", "Main Menu", "settings", "", "menu_settings"],
 ]
-const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
-const UNIT_W := 236.0 ## the width of your frame and your target's
-const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
-const ORB_R := 14.0 ## the menu orbs round the minimap
-const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
-const ORB_STEP := 22.4
+const UNIT_GAP := 124.0 ## from the middle of the screen to each unit frame
+const UNIT_W := 196.0 ## the width of your frame and your target's
+const UNIT_H := 84.0 ## the room kept over the spell bar for the unit frames
+const ORB_R := 14.0 ## the round menu buttons in the top-left row
+const WINDOW_TOP := EDGE + ORB_R * 2 + 10 ## windows open under the menu row
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
-## 'title' | 'document' | 'death'. Bags, character panel and spellbook are
+## 'title' | 'document' | 'death' | 'confirm' | 'menu' | 'edit' | 'loading'. Bags, character panel and spellbook are
 ## not modal: the world keeps running while they are open, as in WoW.
 var modal = "title"
 var pad_mode := false
@@ -57,6 +58,9 @@ var shown_target = null
 var portrait_of = null
 
 var icons: Icons
+var belt ## the tool belt, folded up out of the tray
+var menus: HBoxContainer ## the menu buttons, top left
+var hud_edit ## edit mode: the player moves the HUD's pieces
 var keybind_ui: KeybindUI
 var items: ItemUI
 var quests: QuestUI
@@ -133,9 +137,13 @@ var log_tab := "general"
 var log_entries: Array = [] ## [text, kind, rarity, born], newest last
 var party: PartyFrames
 var backdrop: ColorRect
+var main_menu
 var death: PanelContainer
 var death_text: Label
 var document: PanelContainer
+var confirm_box: PanelContainer
+var confirm_text: Label
+var confirm_yes := Callable()
 var doc_title: Label
 var doc_body: RichTextLabel
 var sign_card: PanelContainer
@@ -224,8 +232,10 @@ func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -
 	fill.offset_bottom = -1
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
-	var l := UI.label(track, "", text_size, Color("f0e4c8"), 4)
+	var l := UI.label(track, "", text_size, Color("f0e4c8"), 3)
 	l.add_theme_font_override("font", UI.bold)
+	# bold and outlined on a slim bar, so it may go under UI.MIN_TEXT
+	l.add_theme_font_size_override("font_size", text_size)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
 	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -310,7 +320,8 @@ func _build() -> void:
 
 	# the log, bottom left (#log), on a smoky band that fades to the right
 	log_shade = Panel.new()
-	log_shade.add_theme_stylebox_override("panel", UI.shade("left", 0.55))
+	var shade := UI.box(Color(0.03, 0.025, 0.02, 0.55), Color(0, 0, 0, 0), 4, 0)
+	log_shade.add_theme_stylebox_override("panel", shade)
 	log_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	log_shade.modulate.a = 0 # shown while the pointer is over the log
 	root.add_child(log_shade)
@@ -429,7 +440,7 @@ func _build() -> void:
 	quick_bind_banner.add_theme_stylebox_override("panel", UI.box(UI.WINDOW, UI.GOLD, 0, 1, Vector4(14, 8, 14, 8)))
 	UI.label(quick_bind_banner, "Quick bind: hover a spell or utility bar slot and press a key. Esc when done.", 14, UI.GOLD)
 	quick_bind_banner.visible = false
-	mute = UI.label(root, "Sound off (Settings, O)", 12, UI.TEXT_DIM, 3)
+	mute = UI.label(root, "Sound off (Main Menu, Settings, Audio)", 12, UI.TEXT_DIM, 3)
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
@@ -453,7 +464,10 @@ func _build() -> void:
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
-	items.tip_on(coins, "Money")
+	belt = preload("res://game/ui/tool_belt.gd").new(game, self)
+	root.add_child(belt)
+	hud_edit = preload("res://game/ui/hud_edit.gd").new(game, self)
+	root.add_child(hud_edit)
 	_build_modals()
 	title = TitleScreen.new(game)
 	root.add_child(title)
@@ -500,15 +514,15 @@ func _build_char_panel() -> void:
 	var cv: VBoxContainer = f.col
 	# the name and level share one dark bar, the level at its far end
 	var nb := _name_bar(cv, false)
-	char_name = UI.label(nb, "", 14, UI.GOLD, 4)
+	char_name = UI.label(nb, "", 13, UI.GOLD, 4)
 	char_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	char_name.clip_text = true
 	char_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# your level is the number you want to watch go up: bright gold
-	char_badge = UI.label(nb, "", 14, Color("ffe08a"), 4)
+	char_badge = UI.label(nb, "", 13, Color("ffe08a"), 4)
 	char_badge.add_theme_font_override("font", UI.bold)
 	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the name bar
-	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 18, false)
+	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 16, false, 11)
 	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
 	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
 	pips = UI.hbox(_indented(cv, false), 3)
@@ -522,8 +536,8 @@ func _player_portrait() -> void:
 		char_img.texture = icons.player_portrait(game.player.model)
 
 
-const PORTRAIT := 64.0 ## the round portrait on the unit frames
-const BAR_UNDER := 14.0 ## how far the bars run in under the portrait's rim
+const PORTRAIT := 50.0 ## the round portrait on the unit frames
+const BAR_UNDER := 10.0 ## how far the bars run in under the portrait's rim
 
 ## a unit frame with no box: a column of bars that starts under the round
 ## portrait's rim (on the right when `mirror`), the portrait drawn over it
@@ -545,11 +559,18 @@ func _unit_frame(parent: Control, mirror: bool) -> Dictionary:
 func _unit_bar(parent: Control, hi: Color, lo: Color, height: int, mirror: bool, text_size := 11) -> Dictionary:
 	var bar := UnitBar.new(hi, lo, height, mirror)
 	parent.add_child(bar)
-	var l := UI.label(bar, "", text_size, Color("f0e4c8"), 4)
+	var l := UI.label(bar, "", text_size, Color("f0e4c8"), 3)
 	l.add_theme_font_override("font", UI.bold)
+	l.add_theme_font_size_override("font_size", text_size)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
-	l.offset_left = 0.0 if mirror else BAR_UNDER
-	l.offset_right = -BAR_UNDER if mirror else 0.0
+	# centred on the part you see: clear of the portrait's rim at one end
+	# and the bar's point at the other
+	var tip := height * UnitBar.TIP
+	l.offset_left = tip if mirror else BAR_UNDER
+	l.offset_right = -BAR_UNDER if mirror else -tip
+	# a line box keeps room for descenders: lift the text to the middle
+	l.offset_top = -1
+	l.offset_bottom = -1
 	# text taller than a slim bar spills out evenly, not all below it
 	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -643,9 +664,9 @@ func _build_target() -> void:
 	target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# not shown (its crossed swords read as a close button); holds the tip
 	target_kind = UI.label(null, "", 13, UI.GOLD, 3)
-	target_hp = _unit_bar(tv, Color("d8553c"), Color("8a2218"), 18, true)
-	target_mp = _unit_bar(tv, Color("5a8ad8"), Color("24407e"), 12, true, 9)
-	target_stagger = _unit_bar(tv, Color("e8d080"), Color("a08030"), 12, true, 9)
+	target_hp = _unit_bar(tv, Color("d8553c"), Color("8a2218"), 16, true, 11)
+	target_mp = _unit_bar(tv, Color("5a8ad8"), Color("24407e"), 12, true, 10)
+	target_stagger = _unit_bar(tv, Color("e8d080"), Color("a08030"), 12, true, 10)
 	# what it is casting, the bar draining towards the portrait as it winds up
 	var tc := _indented(tv, true)
 	target_cast = _cast_bar(tc, Color("e89a50"), Color("a04e20"), 0, 12, true)
@@ -692,7 +713,9 @@ func _build_bottom() -> void:
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
 			row.add_child(_divider())
-		var s := ISlot.new("a:%d" % i, SLOT)
+		# the consumable slots are smaller than the spells, set on the bar's floor
+		var s := ISlot.new("a:%d" % i, SLOT_USE if b.get("utility") else SLOT)
+		s.size_flags_vertical = Control.SIZE_SHRINK_END
 		s.bar = true
 		row.add_child(s)
 		slots.append(s)
@@ -703,7 +726,8 @@ var _sockets_box: HBoxContainer
 
 
 ## bottom right, one row level with the spell bar: money and the bag
-## sockets (#right-dock). The menus are orbs round the minimap (_build_orbs).
+## sockets (#right-dock), the tool pack's slot first: it opens the tool belt.
+## The menus are a row top left (_build_orbs).
 func _build_dock() -> void:
 	dock = UI.panel(root, 0)
 	dock.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 4, 8, 4)))
@@ -720,20 +744,35 @@ func _build_dock() -> void:
 	purse.mouse_filter = Control.MOUSE_FILTER_PASS
 	coins = UI.rich(purse, 13)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
+	# money lives in the backpack now (its tip and the bag window's foot), not
+	# on the screen (Dan, 2026-11-02); the empty plaque keeps the tray's top
+	purse.visible = false
 
 
-## the menus as round buttons down the minimap's left rim, RuneScape style,
-## from the top: character first. The key shows in each one's tip.
+## the menus as a row of round buttons in the top-left corner, character
+## first (Dan, 2026-11-02: off the minimap, where they hid the quest arrows).
+## The key shows in each one's tip.
 func _build_orbs() -> void:
-	var i := 0
+	menus = UI.hbox(root, 4)
+	menus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for m in MICRO:
-		var b := minimap.orb(ORB_TOP - ORB_STEP * i, ORB_R)
+		var b := Button.new()
+		b.focus_mode = Control.FOCUS_NONE
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		b.custom_minimum_size = Vector2(ORB_R * 2, ORB_R * 2)
+		menus.add_child(b)
+		b.draw.connect(func(): minimap._draw_orb(b, ORB_R))
 		var which: String = m[0]
 		var action: String = m[3]
 		var pad_label: String = m[4]
 		var tip: String = m[2]
-		# every button round the minimap sounds as the quest log does (Dan, 2026-10-28)
-		b.pressed.connect(func(): toggle_panel(which, "quest_log"))
+		# every menu button sounds as the quest log does (Dan, 2026-10-28)
+		b.pressed.connect(func():
+			if which == "menu":
+				toggle_main_menu()
+			else:
+				toggle_panel(which, "quest_log"))
 		var art := Icons.art("ui", m[5])
 		if art:
 			b.draw.connect(func():
@@ -749,11 +788,10 @@ func _build_orbs() -> void:
 			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
 		b.mouse_exited.connect(func(): items.cursor_tip_off())
 		micro_buttons[action] = [b, tip]
-		i += 1
 
 
 ## the kit's bronze divider, upright between two groups in a row
-func _divider() -> Control:
+func _divider(gap := 3) -> Control:
 	var sep := TextureRect.new()
 	sep.texture = UI.kit("divider")
 	sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -761,8 +799,8 @@ func _divider() -> Control:
 	sep.custom_minimum_size = Vector2(8, 0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 3)
-	m.add_theme_constant_override("margin_right", 3)
+	m.add_theme_constant_override("margin_left", gap)
+	m.add_theme_constant_override("margin_right", gap)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	m.add_child(sep)
 	return m
@@ -807,6 +845,20 @@ func _build_modals() -> void:
 	doc_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	doc_body.add_theme_color_override("default_color", Color("e2d4b0"))
 	document.visible = false
+	# a yes/no question over everything (confirm())
+	confirm_box = UI.panel(root, 0, UI.WINDOW, UI.BORDER)
+	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "window", 20))
+	confirm_box.mouse_filter = Control.MOUSE_FILTER_STOP
+	var cv := UI.vbox(confirm_box, 12)
+	confirm_text = UI.wrapped(UI.label(cv, "", 16, UI.TEXT))
+	confirm_text.custom_minimum_size = Vector2(320, 0)
+	confirm_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var cb := UI.hbox(cv, 12)
+	cb.alignment = BoxContainer.ALIGNMENT_CENTER
+	UI.button(cb, "Yes", func(): answer_confirm(true), 14)
+	UI.button(cb, "No", func(): answer_confirm(false), 14)
+	confirm_box.visible = false
+	main_menu = preload("res://game/ui/main_menu.gd").new(game, self)
 
 
 # ------------------------------------------------------------ title screen
@@ -853,7 +905,8 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		main_menu.cancel()
+		for c in [death, document, confirm_box, backdrop, hud_edit, main_menu.panel, main_menu.wait_panel, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map, purse]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -916,7 +969,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
+	for c in [char_panel, target, bottom, dock, belt, menus, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -927,7 +980,7 @@ func over_hud(at: Vector2) -> bool:
 ## and the item windows do not.
 var blocks_gameplay: bool:
 	get:
-		return modal == "title" or modal == "document" or modal == "loading"
+		return modal == "title" or modal == "document" or modal == "loading" or modal == "confirm"
 
 ## any of the item, quest or dialogue windows
 var any_window_open: bool:
@@ -949,12 +1002,62 @@ func toggle_panel(which: String, sound := "") -> void:
 	if modal:
 		return
 	if sound == "":
-		sound = "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+		sound = _panel_sound(which)
+	# a panel closes with the sound it opened with (Dan, 2026-10-29)
+	if panel_open(which):
+		sound = open_sounds.get(which, sound)
+	else:
+		open_sounds[which] = sound
 	game.audio.sfx(sound, 0.6)
 	if which == "quests":
 		quests.toggle_log()
 	else:
 		items.toggle(which)
+
+
+## the sound each open panel opened with, played again as it closes
+var open_sounds := {}
+
+
+static func _panel_sound(which: String) -> String:
+	return "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+
+
+func panel_open(which: String) -> bool:
+	if which == "quests":
+		return quests.log_open
+	if which == "bags":
+		return items.bags_open
+	return items.open.get(which, false)
+
+
+## a panel's own close button: the sound it opened with
+func panel_closed_sound(which: String) -> void:
+	game.audio.sfx(open_sounds.get(which, _panel_sound(which)), 0.6)
+
+
+## The window opened last sits over the others (Dan, 2026-10-29): first in
+## its own layer (`layer`, the item or quest windows), then that layer over
+## the other one. Both stay under the world map and the modal windows.
+func raise(layer: Control, win: Control) -> void:
+	if win == null or win.get_parent() != layer:
+		return
+	layer.move_child(win, -1)
+	var other: Control = quests if layer == items else items
+	if other != null and layer.get_index() < other.get_index():
+		root.move_child(layer, other.get_index())
+
+
+## the Main Menu button: opens it over whatever is open, or closes it
+func toggle_main_menu() -> void:
+	if main_menu.is_open:
+		main_menu.close()
+		return
+	if modal:
+		return
+	items.close_all()
+	quests.close_all()
+	main_menu.open()
 
 
 func toggle_world_map() -> void:
@@ -1019,6 +1122,33 @@ func show_death(_coins_lost: int, destination: String) -> void:
 	death.visible = true
 
 
+## Ask a yes/no question in a box over the game; `on_yes` runs on Yes.
+func confirm(text: String, on_yes: Callable) -> void:
+	if modal != null:
+		return
+	modal = "confirm"
+	confirm_text.text = text
+	confirm_yes = on_yes
+	game.audio.sfx("panel", 0.6)
+	backdrop.visible = true
+	root.move_child(backdrop, -1)
+	root.move_child(confirm_box, -1)
+	confirm_box.visible = true
+
+
+func answer_confirm(yes: bool) -> void:
+	if modal != "confirm":
+		return
+	modal = null
+	confirm_box.visible = false
+	backdrop.visible = false
+	game.audio.sfx("panel", 0.6)
+	var f := confirm_yes
+	confirm_yes = Callable()
+	if yes and f.is_valid():
+		f.call()
+
+
 func hide_death() -> void:
 	death.visible = false
 	backdrop.visible = false
@@ -1032,10 +1162,18 @@ func close_modal(force := false) -> bool:
 	if keybind_ui.quick:
 		keybind_ui.set_quick(false)
 		return true
+	if modal == "edit":
+		hud_edit.close()
+		return true
+	if main_menu.close():
+		return true
 	if modal == "document":
 		document.visible = false
 		backdrop.visible = false
 		modal = null
+		return true
+	if modal == "confirm":
+		answer_confirm(false)
 		return true
 	if world_map.visible:
 		world_map.visible = false
@@ -1083,7 +1221,7 @@ static func log_shows(tab: String, kind: String, rarity) -> bool:
 
 func _log_label(entry: Array) -> void:
 	var colour: Color = Items.rarity_colour(entry[2]) if entry[2] else LOG_COLOURS.get(entry[1], UI.TEXT)
-	var l := UI.label(log_box, entry[0], 13, colour, 4)
+	var l := UI.label(log_box, entry[0], 12, colour, 4)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size = Vector2(log_box.custom_minimum_size.x, 0)
 	l.set_meta("born", entry[3])
@@ -1538,15 +1676,18 @@ func layout() -> void:
 	var m := EDGE
 	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
+	# the rim buttons stand outside the map, so it keeps room for them
+	minimap.position = Vector2(vp.x - m - Minimap.SIZE - Minimap.OUT_RIGHT, m + Minimap.OUT_TOP)
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
 	# the tray stands as tall as the spell bar and level with it
 	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
 	dock.size = dock.get_combined_minimum_size()
 	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
-	purse.size = purse.get_combined_minimum_size()
-	purse.position = Vector2(dock.position.x + dock.size.x - 8 - purse.size.x, dock.position.y - purse.size.y + 3)
+	purse.size = Vector2.ZERO
+	purse.position = Vector2(dock.position.x + dock.size.x, dock.position.y)
+	menus.size = menus.get_combined_minimum_size()
+	menus.position = Vector2(m, m)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
@@ -1558,7 +1699,8 @@ func layout() -> void:
 	char_panel.position = Vector2(cx - UNIT_GAP - char_panel.size.x, top)
 	target.position = Vector2(cx + UNIT_GAP, top)
 	# the log fills the corner beside them; with no room there it sits above
-	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m
+	var bar_room := log_scroll.get_v_scroll_bar().get_combined_minimum_size().x + 4
+	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m - bar_room
 	var w := clampf(log_size.x, 220, maxf(220, room))
 	var h := clampf(log_size.y, 60, maxf(60, vp.y * 0.6))
 	log_size = Vector2(w, h)
@@ -1576,8 +1718,14 @@ func layout() -> void:
 	log_grip.size = log_grip.get_combined_minimum_size()
 	log_grip.position = log_scroll.position + Vector2(log_scroll.size.x - log_grip.size.x, -log_grip.size.y)
 	log_shade.visible = log_box.get_child_count() > 0 and log_scroll.is_visible_in_tree()
-	log_shade.position = log_scroll.position - Vector2(m, 6)
-	log_shade.size = log_scroll.size + Vector2(m + 60, 12)
+	# the shade fits the chat exactly: from the grip's top to the tabs' foot,
+	# as wide as the lines and their scroll bar (Dan, 2026-11-02: it ran past
+	# the right edge and stopped short of the top)
+	var shade_top := minf(log_grip.position.y, log_scroll.position.y) - 2
+	var shade_foot := maxf(log_tabs.position.y + log_tabs.size.y, log_scroll.position.y + log_scroll.size.y) + 3
+	var shade_right := maxf(log_scroll.position.x + log_scroll.size.x, log_tabs.position.x + log_tabs.size.x) + 4
+	log_shade.position = Vector2(log_scroll.position.x - 6, shade_top)
+	log_shade.size = Vector2(shade_right - log_shade.position.x, shade_foot - shade_top)
 	party.layout(Vector2(m, roundf(vp.y * 0.3)))
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
@@ -1599,16 +1747,23 @@ func layout() -> void:
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
+	# then the pieces the player moved in edit mode
+	hud_edit.apply(vp)
+	var tool_slot = items.slots.get("s:%d" % Items.TOOL_SOCKET)
+	if tool_slot != null and is_instance_valid(tool_slot) and tool_slot.is_inside_tree():
+		belt.place(Rect2(tool_slot.global_position - root.global_position, tool_slot.size))
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)
-	for win in [death, document]:
+	for win in [death, document, confirm_box]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
+	main_menu.layout(vp)
 
 
 func update(dt := 0.0) -> void:
 	numbers.update(dt)
+	main_menu.update(dt)
 	# fading messages
 	toast_left = maxf(0, toast_left - dt)
 	toast_label.modulate.a = minf(1, toast_left / 0.4)
@@ -1676,6 +1831,7 @@ func update(dt := 0.0) -> void:
 	labels.update(dt)
 	quests.update_marks()
 	items.update(dt)
+	belt.refresh()
 	layout()
 
 
@@ -1701,7 +1857,7 @@ func _update_target() -> void:
 	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
 	if friend != null:
 		target_name.text = friend.name
-		target_name.add_theme_color_override("font_color", Color("a8e08c"))
+		target_name.add_theme_color_override("font_color", UI.NAME_FRIENDLY)
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
 		target_kind.text = ""
@@ -1713,7 +1869,7 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("f0d050") if shown.passive else Color("e8c8a0"))
+	target_name.add_theme_color_override("font_color", UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
@@ -1791,7 +1947,7 @@ func _update_enemy_bars() -> void:
 		bar.name_row.visible = elite or targeted or nemesis
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("f0d050") if e.passive else Color("ffb08a") if targeted else Color("d8c7a0"))
+		bar.name.add_theme_color_override("font_color", UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null

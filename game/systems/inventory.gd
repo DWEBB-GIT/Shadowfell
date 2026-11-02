@@ -57,6 +57,10 @@ func reset() -> void:
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
+	# everyone starts with a small belt pouch, so the tool belt is its own
+	# place from the start and a bought rod never shows in the bags too
+	# (Dan, 2026-11-02); the Warden's tool pack replaces it
+	sockets[Items.TOOL_SOCKET] = {"id": STARTER_POUCH, "slots": _empty_slots(int(Items.get_def(STARTER_POUCH).bagSlots))}
 	sockets[0].slots[0] = {"id": "healing_draught", "count": DB.CONFIG.player.startDraughts}
 	ammo_choice = null
 	var arch: Dictionary = game.stats.archetype if game.stats else DB.archetypes[DB.CONFIG.player.archetype]
@@ -65,6 +69,9 @@ func reset() -> void:
 	bag[1] = {"id": ActionBar.STARTER_FOOD, "count": DB.CONFIG.player.startFood}
 	if arch.get("resources", {}).has("mana"):
 		bag[2] = {"id": ActionBar.STARTER_DRINK, "count": DB.CONFIG.player.startDrinks}
+	# Return Home lives in the backpack as a charm, not on the tool belt
+	# (Dan, 2026-11-02)
+	bag[bag.size() - 1] = {"id": HOME_CHARM, "count": 1}
 	var gear: Dictionary = arch.get("startingGear", {})
 	for slot in gear:
 		if slot == "ammo":
@@ -294,8 +301,41 @@ var tool_pack:
 		return sockets[Items.TOOL_SOCKET]
 
 
+## Is this tool on your tool belt? (Dan, 2026-11-02) Tools work only from
+## the belt (the tool pack), never from the bags, so a better pick in your
+## bags does nothing until you swap it in. A torch in your hand counts.
+## Before the tool pack is earned, the bags are your belt.
+func on_belt(id: String) -> bool:
+	var off = equipment.get("offHand")
+	if off and off.id == id:
+		return true
+	var pack = tool_pack
+	if not pack:
+		return count(id) > 0
+	for s in pack.slots:
+		if s and s.id == id:
+			return true
+	return false
+
+
+const STARTER_POUCH := "belt_pouch"
+
+
+## a bigger tool pack takes the old one's place and its tools; the old one
+## is thrown away (the starter pouch) or goes into the bags
 func _fit_tool_pack(id: String) -> void:
+	var old = tool_pack
 	_put("s:%d" % Items.TOOL_SOCKET, {"id": id, "count": 1})
+	if old:
+		var free := 0
+		for st in old.slots:
+			if st:
+				while free < tool_pack.slots.size() and tool_pack.slots[free] != null:
+					free += 1
+				if free < tool_pack.slots.size():
+					tool_pack.slots[free] = st
+				else:
+					_insert(st.id, st.get("count", 1), st.get("rolls"))
 	_stow_tools()
 	game.events.emit("log", {"text": "Your tools go into the %s, out of your bags." % Items.get_def(id).name.to_lower(), "kind": "loot"})
 
@@ -345,7 +385,7 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 	if def.is_empty():
 		return false
 	if def.get("toolPack", false):
-		if tool_pack:
+		if tool_pack and int(Items.get_def(tool_pack.id).get("bagSlots", 0)) >= int(def.get("bagSlots", 0)):
 			return false
 		_fit_tool_pack(id)
 		if not quiet:
@@ -354,6 +394,8 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 		return true
 	if room_for(id) < n:
 		game.events.emit("log", {"text": "Your bags are full.", "kind": "muted", "throttle": "bags-full"})
+		if game.hud:
+			game.hud.error("Your bags are full.")
 		return false
 	_insert(id, n, rolls)
 	if not quiet:
@@ -371,7 +413,7 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 func room_for(id: String) -> int:
 	var def := Items.get_def(id)
 	if def.get("toolPack", false):
-		return 0 if tool_pack else 1
+		return 0 if tool_pack and int(Items.get_def(tool_pack.id).get("bagSlots", 0)) >= int(def.get("bagSlots", 0)) else 1
 	var room := 0
 	for loc in _slots_for(id):
 		var s = get_at(loc)
@@ -602,6 +644,10 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
+	# a charm that casts an ability (the Homeward charm: Return Home)
+	if def.get("use", {}).has("ability"):
+		game.action_bar.clicked[def.use.ability] = true
+		return true
 	if def.get("use", {}).has("food") or def.get("use", {}).has("drink"):
 		return game.cooking.eat(loc)
 	if def.kind == "consumable":
@@ -800,6 +846,9 @@ func use_draught(loc = null) -> bool:
 
 
 # ------------------------------------------------------------ saving
+const HOME_CHARM := "homeward_charm" ## the backpack charm that casts Return Home
+
+
 func serialize() -> Dictionary:
 	var sk := []
 	for s in sockets:
@@ -807,7 +856,7 @@ func serialize() -> Dictionary:
 	var eq := {}
 	for k in equipment:
 		eq[k] = clone(equipment[k])
-	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield"], "ammo": ammo_choice}
+	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice}
 
 
 func apply(data: Dictionary) -> void:
@@ -844,5 +893,9 @@ func apply(data: Dictionary) -> void:
 			equipment.offHand = {"id": "kite_shield", "count": 1}
 		else:
 			_insert("kite_shield", 1)
+	# characters made before the charm get one once
+	if not data.get("granted", []).has(HOME_CHARM) and _find(HOME_CHARM) == null:
+		if _insert(HOME_CHARM, 1) > 0:
+			back.append({"id": HOME_CHARM, "count": 1})
 	game.player.show_equipment(equipment)
 	_changed()

@@ -3,8 +3,8 @@
     python3 tools/build_site.py _site
 
 Copies site/ into the folder, fills the shared header, sidebar and footer,
-renders the Classes page from data/text.json (title.classes, only classes
-with an archetype) and data/archetypes.json / abilities.json, and copies the
+renders the Classes page from data/ui/text.json (title.classes, only classes
+with an archetype) and data/abilities/archetypes.json / abilities.json, and copies the
 bronze UI kit, class crests and spell icons the pages use. The game itself is
 exported to <folder>/play by the Pages workflow.
 """
@@ -20,7 +20,15 @@ KIT = ["button", "button_hover", "panel", "window"]
 
 
 def load(name):
-    with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
+    """A data file by its flat name; data/catalogue.json says which folder it lives in."""
+    data = os.path.join(ROOT, "data")
+    path = os.path.join(data, name)
+    catalogue = os.path.join(data, "catalogue.json")
+    if not os.path.exists(path) and os.path.exists(catalogue):
+        with open(catalogue, encoding="utf-8") as f:
+            files = json.load(f).get("files", {})
+        path = os.path.join(data, files.get(name[:-5], name))
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 

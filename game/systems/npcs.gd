@@ -37,8 +37,21 @@ class Npc:
 		facing = rest_facing
 		group = Node3D.new()
 		group.name = "Npc_" + id
+		group.add_to_group(World.MOVING_GROUP)
 		model = Assets.instance(d.model)
 		group.add_child(model)
+		if d.get("tool"):
+			var hand := model.find_child("Arm_R", true, false) as Node3D
+			if hand:
+				var built_in := model.find_child("Weapon", true, false) as Node3D
+				if built_in:
+					built_in.visible = false
+				var tool := Assets.instance(d.tool)
+				tool.name = "WorkTool"
+				tool.position = Vector3(0, -0.55, 0.04)
+				tool.rotation_degrees.x = -25
+				tool.scale = Vector3.ONE * d.get("toolScale", 0.8)
+				hand.add_child(tool)
 		rig = Rig.new(model, "warden")
 		# townsfolk who share a model are told apart by a tint
 		if d.get("tint"):
@@ -66,7 +79,8 @@ class Npc:
 		# only someone you are talking to turns to you, and keeps an eye on
 		# you until you walk off
 		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
-		var anvil = def.get("anvil")
+		var anvil = def.get("anvil", def.get("workAt"))
+		rig.pose = def.get("idlePose") if not near else null
 		var want: float
 		if board:
 			want = rest_facing
@@ -84,9 +98,12 @@ class Npc:
 			work_timer -= dt
 			if work_timer <= 0:
 				work_timer = 1.5 + randf() * 0.8
-				rig.play("strike", 0.6, 0.45)
-				game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
-		rig.update(dt, 0)
+				rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
+				if def.has("anvil"):
+					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
+		# limbs only move where the camera could see them
+		if U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
+			rig.update(dt, 0)
 		group.position = position
 		group.rotation.y = facing
 
@@ -121,7 +138,10 @@ func update(dt: float) -> void:
 		n.update_presence()
 	for n in all:
 		if n.present:
-			n.update(dt, game.player)
+			var near: bool = n.position.distance_squared_to(game.player.position) < 180.0 * 180.0
+			n.group.visible = near
+			if near:
+				n.update(dt, game.player)
 
 
 ## what the interaction system offers for each NPC

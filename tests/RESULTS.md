@@ -241,7 +241,7 @@ Result: **208/208 passed**
 
 | | Check | Evidence |
 |---|---|---|
-| ✅ | Every item comes from one database with slot, stats, price and icon | 18 items in src/data/items.json, all valid |
+| ✅ | Every item comes from one database with slot, stats, price and icon | 18 items in src/data/items/items.json, all valid |
 | ✅ | The database check catches a malformed item (extra) | broken_blade: unknown quality shiny; broken_blade: price must be a whole number of coins; broken_blade: a weapon needs damage [min, max] |
 | ✅ | Tooltips show what a merchant would pay, and the item quality | Healing draughtConsumableA small bottle of something bitter and red. Restores 42 health.Sells for 1 coinRight-click to drink |
 | ✅ | Quest items cannot be dropped (extra) | "You keep hold of the Carriage manifest. Someone will want it." |

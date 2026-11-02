@@ -54,8 +54,11 @@ func held(b: int) -> bool:
 	return b < now.size() and now[b]
 
 
+## a press is an edge: a button already down on the first poll (a pad that
+## reports buttons held at load) never counts, so the game can't start with
+## the tool belt or HUD edit mode open
 func pressed(b: int) -> bool:
-	return held(b) and not (b < prev.size() and prev[b])
+	return held(b) and b < prev.size() and not prev[b]
 
 
 ## Menu navigation: a direction from the d-pad or left stick, repeating

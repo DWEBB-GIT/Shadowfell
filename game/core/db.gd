@@ -15,24 +15,39 @@ const CONFIG := {
 	# the imported player body, used while `imported` is on ("base_male" is
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
-	"player": {"archetype": "warden", "speed": 5.6, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
+	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
+	## base move speed (Dan, 2026-11-02).
+	## Chasing a fight, an enemy runs at a percent of it: its own `runSpeed`
+	## in enemies.json (named and special mobs, slow shamblers, fast beasts up
+	## to 150), else its type's `byType`, else `default`. Most mobs run a
+	## little faster than you (110-120) so they catch up; you shake them by
+	## out-lasting the leash. Snares still slow them. It swings on the run at
+	## anything within its reach + `reachGrace` m. Wandering and walking home
+	## use the enemy's own `speed` (m/s).
+	"chase": {"default": 115, "byType": {"fodder": 110, "normal": 115, "armoured": 110, "skirmisher": 120, "pack_beast": 135, "elite": 115, "heavy": 100, "boss": 100}, "reachGrace": 0.3,
+		# wounded beasts and men break and run, slower than they chase (Dan, 2026-11-02);
+		# the dead never flee. An enemy can set `flees` true/false itself.
+		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	"death": {
 		# your bags and coins wait in a grave for graveSeconds of play, then
 		# `scavengers` carry them off; each revival leaves a wound (-woundHealth%
 		# max health, up to maxWounds) until you rest woundRestSeconds at an inn
-		# or pay a healer healPrice a wound (Dan, 2026-10-27)
-		"graveSeconds": 900.0, "scavengers": 2, "woundHealth": 15.0, "maxWounds": 3, "woundRestSeconds": 20.0,
+		# or pay a healer healPrice a wound (Dan, 2026-10-27); they close on
+		# their own after woundSeconds of play (Dan, 2026-10-29)
+		"graveSeconds": 900.0, "scavengers": 2, "woundHealth": 15.0, "maxWounds": 3, "woundRestSeconds": 20.0, "woundSeconds": 900.0,
 		"healers": ["grue", "aveline"], "healPrice": 5,
-		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
+		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 10.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
 	"fishing": {"castTime": 0.6, "duration": 12.0, "biteMin": 2.0, "biteMax": 8.0, "biteWindow": 1.4, "biteBase": 85.0, "bitePerSkill": 0.5, "biteCap": 97.0, "noBiteAfter": 6.0, "reelTime": 0.45, "baseChance": 75.0, "chancePerRank": 0.6, "clickRadius": 60.0},
 	# a bed at an inn (an innkeeper npc; its `bedPrice` beats this price):
 	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
 	# of a level of rested experience, and the inn as your rest point
 	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
-	"progression": {"maxLevel": 100, "firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
+	"progression": {"maxLevel": 50, "firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
 	"stats": {
 		"healthBase": 20.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
 		"powerPerMainStat": 0.3, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
@@ -47,19 +62,16 @@ const CONFIG := {
 		# hit-stop on a landed melee blow: both bodies hold still this long,
 		# more for slower (heavier) weapons, more again on a crit
 		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
-	"fog": {"color": Color("3a4244"), "near": 24.0, "far": 50.0},
-	"blackwood": {"fogColor": Color("1d2725"), "fogNear": 14.0, "fogFar": 38.0, "light": 0.68, "ambient": 0.8, "ambientColor": Color("41566a")},
+	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
+	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
-		"offset": Vector3(0, 11, 10), "lookAhead": 0.5, "zoomMin": 0.6, "zoomMax": 1.35, "zoomStep": 0.08,
-		"indoorZoom": 0.22, "fov": 35.0,
-		# the camera's angle follows the zoom (Settings: Classic camera keeps
-		# `offset`'s one angle): pitch in degrees above the ground at zoomMin,
-		# at zoom 1 and at zoomMax; distance is `offset`'s length times this
-		"tilt": {"pitchNear": 46.0, "pitchMid": 56.0, "pitchFar": 62.0, "distance": 1.5, "zoomMax": 1.6}, "followSharpness": 8.0, "renderScale": 0.62,
-		# framed like Diablo 4 and Lost Ark: locked on the Warden, high, well
-		# back and narrow, so the ground reads flat and far all round; the view
-		# is centred `frame` metres north of them, just clear of the action bar
-		"frame": 0.5,
+		# Stable north-up view: 45 degrees down by default (lowerOffset, Settings "Lower camera angle" on), 50 degrees with it off.
+		# Zoom changes distance, never pitch or player-facing direction.
+		# At 16:9 the default sees roughly 39 m across the player plane.
+		"offset": Vector3(0, 27.6067, 23.1648), "lowerOffset": Vector3(0, 25.5, 25.5),
+		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.98,
+		"indoorZoom": 0.14, "fov": 35.0,
+		"followSharpness": 12.0, "renderScale": 1.0, "frame": 0.0,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
 	"targeting": {"range": 26.0, "dropRange": 34.0, "clickRadius": 46.0, "softArc": 60.0, "softAimRadius": 2.5, "screenMargin": 0.03},
@@ -95,16 +107,19 @@ const EQUIP_SLOTS := [
 static var ready := false
 ## items with gear numbers worked out (scaled), by id
 static var items := {}
-## items as written in data/items.json (a tempered item is worked out again from these)
+## items as written in data/items/items.json (a tempered item is worked out again from these)
 static var raw_items := {}
 static var armour_types := {}
 static var suffixes := {}
 static var archetypes := {}
 static var abilities := {}
-## how each spell looks: its cast animation and effects (data/spell_fx.json)
+## how each spell looks: its cast animation and effects (data/abilities/spell_fx.json)
 static var spell_fx := {}
-## each spell's cast pose by name (data/spell_fx.json `poses`; Rig)
+## each spell's cast pose by name (data/abilities/spell_fx.json `poses`; Rig)
 static var spell_poses := {}
+## how moments that are not spells look, by event name, such as levelUp
+## (data/abilities/spell_fx.json `moments`; Fx.moment)
+static var fx_moments := {}
 static var enemies := {} ## raw records
 static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
@@ -124,20 +139,20 @@ static var renown: Dictionary = {}
 static var title_lines: Dictionary = {}
 static var mock_chance := 0.2
 static var world: Dictionary = {}
-static var world_map: Dictionary = {} ## data/world_map.json (WorldMap): the whole world's design map and Act 1's layout
+static var world_map: Dictionary = {} ## data/world/world_map.json (WorldMap): the whole world's design map and Act 1's layout
 static var water: Dictionary = {} ## data/terrain/water.json: sea level, rivers and lakes, baked with the terrain
 static var scenery: Dictionary = {}
 static var text: Dictionary = {}
 static var ability_file: Dictionary = {}
-static var builds: Dictionary = {} ## data/builds.json (Builds)
-static var mining: Dictionary = {} ## data/mining.json (Mining)
-static var nodes: Dictionary = {} ## data/nodes.json (Gathering): herb patches and the like
+static var builds: Dictionary = {} ## data/abilities/builds.json (Builds)
+static var mining: Dictionary = {} ## data/professions/mining.json (Mining)
+static var nodes: Dictionary = {} ## data/professions/nodes.json (Gathering): herb patches and the like
 static var skill_ladder: Dictionary = {} ## skills.json `ladder` (Skills): trainer ranks, skill experience, perks
-static var forge: Dictionary = {} ## data/forge.json (Forge)
-static var enchanting: Dictionary = {} ## data/enchanting.json (Forge: enchant, scrap)
-static var gems: Dictionary = {} ## data/gems.json (Gems)
-static var infamy: Dictionary = {} ## data/infamy.json (Law)
-static var boons: Dictionary = {} ## data/boons.json (Boons)
+static var forge: Dictionary = {} ## data/professions/forge.json (Forge)
+static var enchanting: Dictionary = {} ## data/professions/enchanting.json (Forge: enchant, scrap)
+static var gems: Dictionary = {} ## data/professions/gems.json (Gems)
+static var infamy: Dictionary = {} ## data/npcs/infamy.json (Law)
+static var boons: Dictionary = {} ## data/abilities/boons.json (Boons)
 static var leash_distance := 18.0
 
 ## Tuning taken from the content, under the names gameplay code uses
@@ -153,6 +168,22 @@ static var max_pushbacks := 2
 static var enemy_cfg := {}
 ## abilities with a `kind` (the spell engine runs them)
 static var spells := {}
+
+
+## Who teaches a skill, recipe, rank or class spell: its `trainer`, plus
+## anyone in `trainers` (Dan, 2026-11-02: several trainers may teach the same thing)
+static func teachers_of(entry: Dictionary) -> Array:
+	var out := []
+	if entry.get("trainer"):
+		out.append(entry.trainer)
+	for n in entry.get("trainers", []):
+		if not out.has(n):
+			out.append(n)
+	return out
+
+
+static func taught_by(entry: Dictionary, npc_id) -> bool:
+	return npc_id != null and npc_id != "" and teachers_of(entry).has(npc_id)
 
 
 static func setup(data) -> void:
@@ -174,6 +205,7 @@ static func setup(data) -> void:
 	abilities = data.table("abilities")
 	spell_fx = f.get("spell_fx", {}).get("spells", {})
 	spell_poses = f.get("spell_fx", {}).get("poses", {})
+	fx_moments = f.get("spell_fx", {}).get("moments", {})
 	enemies = with_imported(resolve_enemies(data.table("enemies")))
 	loot_tables = data.table("lootTables")
 	world_drops = data.table("worldDrops").values()
@@ -226,6 +258,29 @@ static func setup(data) -> void:
 		world_map = {}
 		world = new_map_world(world)
 		scenery = new_map_scenery(scenery)
+		# The district names its resident teachers without changing the old
+		# continent's content or a character's already learned abilities.
+		var teachers: Dictionary = world.get("trainerOverrides", {})
+		archetypes = archetypes.duplicate(true)
+		skills = skills.duplicate(true)
+		recipes = recipes.duplicate(true)
+		var swap := func(t: Dictionary) -> void:
+			if t.has("trainer"):
+				t.trainer = teachers.get(t.trainer, t.trainer)
+			if t.has("trainers"):
+				t.trainers = t.trainers.map(func(n): return teachers.get(n, n))
+		for a in archetypes.values():
+			for t in a.get("trained", []):
+				t.trainer = t.get("trainer", "")
+				swap.call(t)
+		for t in skills.values() + recipes.values():
+			swap.call(t)
+		# An opening belongs to the map whose giver is actually present.
+		# The legacy cart quest must not auto-start on a different continent.
+		quests = quests.duplicate(true)
+		for q in quests.values():
+			if q.get("autoAccept") and not world.npcSpawns.any(func(sp): return sp.npc == q.giver):
+				q.autoAccept = false
 	var wpath := Terrain.dir + "water.json"
 	water = JSON.parse_string(FileAccess.get_file_as_string(wpath)) if FileAccess.file_exists(wpath) else {}
 	Terrain.setup(world)
@@ -237,7 +292,7 @@ static func setup(data) -> void:
 ## The world as the new map has it: the old world's records with nothing
 ## placed (no NPCs, loot, buildings or roads; only the enemies in its
 ## spawns.json), starting where data/terrain/new_map/map.json says.
-static func new_map_world(w: Dictionary) -> Dictionary:
+static func new_map_world(w: Dictionary, placements_path := "") -> Dictionary:
 	var out := w.duplicate()
 	for k in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "signposts", "gates", "townWalls",
 			"houses", "stations", "buildings", "pads", "water", "obscured", "dangerZones", "roads"]:
@@ -249,16 +304,25 @@ static func new_map_world(w: Dictionary) -> Dictionary:
 		out.playerStart = {"position": m.start, "facing": 180}
 		out.bounds = {"minX": m.x0, "maxX": m.x0 + m.sizeX, "minZ": m.z0, "maxZ": m.z0 + m.sizeZ}
 	# the few things placed on it by hand so far (spawns.json)
-	var placed = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "spawns.json")) if FileAccess.file_exists(Terrain.dir + "spawns.json") else null
+	var placement_file: String = placements_path if placements_path != "" else Terrain.dir + "spawns.json"
+	var placed = JSON.parse_string(FileAccess.get_file_as_string(placement_file)) if FileAccess.file_exists(placement_file) else null
 	if placed is Dictionary:
-		out.enemySpawns = placed.get("enemySpawns", [])
+		for key in placed:
+			if key != "_about":
+				out[key] = placed[key]
 	return out
 
 
-static func new_map_scenery(s: Dictionary) -> Dictionary:
+static func new_map_scenery(s: Dictionary, placements_path := "") -> Dictionary:
 	var out := s.duplicate()
 	for k in ["props", "clearings", "lights", "witchlights", "motes", "fairyRings"]:
 		out[k] = []
+	var path: String = placements_path if placements_path != "" else Terrain.dir + "scenery.json"
+	var placed = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	if placed is Dictionary:
+		for key in placed:
+			if key != "_about":
+				out[key] = placed[key]
 	return out
 
 
@@ -266,7 +330,11 @@ static func new_map_scenery(s: Dictionary) -> Dictionary:
 static func ensure() -> void:
 	if ready:
 		return
-	setup(load("res://game/autoload/game_data.gd").new())
+	# Tool reloads use a temporary loader, not the game's autoload node.
+	# The database keeps the Dictionaries; the loader itself must be freed.
+	var data = load("res://game/autoload/game_data.gd").new()
+	setup(data)
+	data.free()
 
 
 static func xp_for_next_level(level: int) -> int:

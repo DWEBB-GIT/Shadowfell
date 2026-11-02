@@ -127,16 +127,19 @@ func _check() -> void:
 func save() -> void:
 	found = Checks.run(s)
 	var saved := s.save_all()
-	for p in pages:
-		if "new_ids" in p:
-			p.new_ids.clear()
+	if s.dirty.is_empty():
+		for p in pages:
+			if "new_ids" in p:
+				p.new_ids.clear()
 	if Engine.is_editor_hint():
 		var fs := EditorInterface.get_resource_filesystem()
 		for f in saved:
-			fs.update_file(s.data_dir + "/" + f)
+			fs.update_file(s._path(f.get_basename()))
 	_refresh_lists()
 	_check()
 	status.text = "Saved " + ", ".join(saved) + ("   ·   %d check%s still fail: the browser build will refuse the data until they are fixed" % [found.size(), "" if found.size() == 1 else "s"] if found.size() else "")
+	if not s.dirty.is_empty():
+		status.text += " · Some changes could not be saved; see Output. Edits are retained."
 
 
 func revert() -> void:
@@ -155,5 +158,10 @@ func _refresh_lists() -> void:
 
 
 func _open_world() -> void:
+	# A saved editor layout may have the World tab behind Inspector.
+	if ClassDB.class_exists("EditorDock"):
+		for dock in EditorInterface.get_base_control().find_children("*", "EditorDock", true, false):
+			if dock.get("layout_key") == "shadowfell_world":
+				dock.call("make_visible")
 	EditorInterface.open_scene_from_path("res://addons/shadowfell_data/world_editor.tscn")
 	EditorInterface.set_main_screen_editor("3D")

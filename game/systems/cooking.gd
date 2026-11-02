@@ -1,6 +1,6 @@
 class_name Cooking
 extends RefCounted
-## Cooking (data/recipes.json; src/systems/cooking.js), learned from Hester
+## Cooking (data/professions/recipes.json; src/systems/cooking.js), learned from Hester
 ## at the Ford Inn, and the food it makes. A recipe needs a skill rank, its
 ## ingredients and a fire close by; each dish takes a short cast; moving
 ## stops it; a recipe is orange, yellow, green or grey by how easy it now
@@ -114,7 +114,7 @@ static func craft_of(sk: String) -> Dictionary:
 
 ## what a trainer can teach you now (you must know the skill first)
 func offered_by(npc_id: String) -> Array:
-	return DB.recipes.values().filter(func(r): return r.get("trainer") == npc_id and game.skills.has(r.skill) and not learned.has(r.id))
+	return DB.recipes.values().filter(func(r): return DB.taught_by(r, npc_id) and game.skills.has(r.skill) and not learned.has(r.id))
 
 
 func learn_recipe(id: String) -> bool:
@@ -149,6 +149,8 @@ func blocked(r: Dictionary) -> String:
 		return "Requires %s %d." % [DB.skills[r.skill].name, r.rank]
 	if can_make(r) < 1:
 		return "You are missing ingredients."
+	if game.inventory.room_for(r.output.item) < r.output.count:
+		return "Your bags are full."
 	if near_station(r.get("station", "fire")) == "":
 		return "Requires %s." % ("a cooking fire" if r.get("station", "fire") == "fire" else craft_of(r.skill).get("station", "a " + r.station))
 	if player.dead or player.casting != null or player.lunge != null:

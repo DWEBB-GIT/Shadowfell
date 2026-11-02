@@ -2,7 +2,7 @@ class_name Terrain
 extends RefCounted
 ## The ground anywhere in the world: height, whether it can be walked on,
 ## what it is (surface) and which zone it belongs to. Baked from
-## data/world_map.json by tools/world/bake_world.py into data/terrain/world.bin:
+## data/world/world_map.json by tools/world/bake_world.py into data/terrain/world.bin:
 ## a 4 m grid cut into 128 m tiles, each packed on its own, so only the tiles
 ## somebody stands near are ever unpacked (a server would do the same for
 ## every player). Gameplay asks height_at() and walk_at() instead of
@@ -18,6 +18,7 @@ static var dir := "res://data/terrain/" ## the map's folder: world.bin, water.js
 static var _ground_img: Image ## new map: the ground's colours (ground.png), or null
 static var _ground_scale := 2.0 ## metres per ground.png pixel
 static var _map_tex: Texture2D ## map_picture(), made once
+static var _surface_paint := {} ## hand-painted samples use the surface palette over the map image
 const N := 33 ## samples per tile side (32 cells, edges shared)
 
 ## surfaces, the low 4 bits of a sample's info byte (bake_world.py SURF)
@@ -68,6 +69,7 @@ static func use_map(map: String) -> void:
 	_water_level.clear()
 	_ground_img = null
 	_map_tex = null
+	_surface_paint.clear()
 	if is_new_map() and ResourceLoader.exists(dir + "ground.png"):
 		var tex: Texture2D = load(dir + "ground.png")
 		_ground_img = tex.get_image()
@@ -97,6 +99,9 @@ static func map_rect() -> Rect2:
 ## The new map's painted ground colour at a point, or null on the old map.
 static func ground_colour(x: float, z: float):
 	if _ground_img == null:
+		return null
+	var sample_key := Vector2i(roundi((x - _x0) / _cell), roundi((z - _z0) / _cell))
+	if _surface_paint.has(sample_key):
 		return null
 	var px := clampi(int((x - _x0) / _ground_scale), 0, _ground_img.get_width() - 1)
 	var pz := clampi(int((z - _z0) / _ground_scale), 0, _ground_img.get_height() - 1)
@@ -132,6 +137,34 @@ static func _load_tiles() -> void:
 		_index[k] = (_file.decode_u32(36 + k * 8) << 32) | _file.decode_u32(40 + k * 8)
 	if _ground_img:
 		_ground_scale = _tx * _tile * _cell / _ground_img.get_width()
+	_load_surface_paint()
+
+
+static func set_surface_paint(a: int, b: int, surface: int) -> void:
+	var key := Vector2i(a, b)
+	if surface < 0:
+		_surface_paint.erase(key)
+	else:
+		_surface_paint[key] = surface
+
+
+static func _load_surface_paint() -> void:
+	_surface_paint.clear()
+	var sculpt_path := dir + "sculpt.json"
+	if not FileAccess.file_exists(sculpt_path):
+		return
+	var layer = JSON.parse_string(FileAccess.get_file_as_string(sculpt_path))
+	if not layer is Dictionary:
+		return
+	for key in layer.get("tiles", {}):
+		var parts: PackedStringArray = str(key).split(",")
+		var raw := Marshalls.base64_to_raw(layer.tiles[key].get("s", "")).decompress(32 * 32 * 2, FileAccess.COMPRESSION_DEFLATE)
+		if parts.size() != 2 or raw.size() != 32 * 32 * 2:
+			continue
+		for index in 32 * 32:
+			var surface := raw.decode_s16(index * 2)
+			if surface >= 0:
+				set_surface_paint(int(parts[0]) * 32 + index % 32, int(parts[1]) * 32 + index / 32, surface)
 
 
 ## The roads drawn on the ground: Act 1's lanes and tracks, the world's routes

@@ -3,7 +3,7 @@ import { ITEMS } from '../data/items.js';
 import { STATIONS } from '../world/layout.js';
 import { moneyText } from '../ui/money.js';
 
-// Cooking (data/recipes.json), learned from Hester at the Ford Inn, and the
+// Cooking (data/professions/recipes.json), learned from Hester at the Ford Inn, and the
 // food it makes. As in WoW's professions:
 //   * a recipe needs a skill rank, its ingredients and a fire close by (your
 //     camp or a hearth); the starter recipes come with the skill and the rest

@@ -9,6 +9,9 @@ extends RefCounted
 ## chunk_trees() wherever anything moves, drawn or not).
 
 const CUTAWAY := preload("res://game/render/cutaway.gdshader")
+const TERRAIN_SURFACE := preload("res://game/render/terrain_surface.gdshader")
+const CONTROL_STEP := 2.0
+const CONTROL_BORDER := 4.0
 const GRASS := preload("res://game/render/grass.gdshader")
 const GRASS_NEAR := 34.0 ## grass is full size within this of the camera's focus
 const GRASS_FAR := 46.0 ## and has sunk away by here (game/render/grass.gdshader)
@@ -43,18 +46,18 @@ const WOODS := {
 const ROCKS := {Terrain.ROCK: 0.16, Terrain.SNOW: 0.1, Terrain.MOOR: 0.06, Terrain.ASH: 0.12, Terrain.DOWNS: 0.03, Terrain.DESERT: 0.06}
 const GRASSY := [Terrain.MEADOW, Terrain.FARMLAND, Terrain.DOWNS, Terrain.FOREST, Terrain.BLACKWOOD, Terrain.MARSH, Terrain.MOOR, Terrain.JUNGLE, Terrain.SWAMP]
 
+var gentle := false ## a loading screen covers an arrival: no build-it-all stall
 var game
 var group: Node3D
 var chunks := {} ## Vector2i -> Node3D
 var focus := Vector3.ZERO
 var built := 0 ## chunks built so far (for the perf tools)
-var _ground_mat: StandardMaterial3D
+var _ground_mat: ShaderMaterial
 var _sea_mat: StandardMaterial3D
 var _grass_mat: ShaderMaterial
 var _cover := {} ## Vector2i -> the chunk's grass (shown only when some of it is in reach)
 var _blade: ArrayMesh
 var _models := {} ## model -> [mesh, cutaway material]
-var _cutaways: Array = []
 static var _clear_cells := {} ## 32 m cell -> [[x, z, r]]: ground kept free of trees
 
 
@@ -72,7 +75,7 @@ func _init(g, parent: Node3D) -> void:
 	_sea_mat.roughness = 0.4
 	_grass_mat = ShaderMaterial.new()
 	_grass_mat.shader = GRASS
-	_grass_mat.set_shader_parameter("albedo", Color("4a5a32"))
+	_grass_mat.set_shader_parameter("albedo", Color("c1caa2"))
 	_grass_mat.set_shader_parameter("uNear", GRASS_NEAR)
 	_grass_mat.set_shader_parameter("uFar", GRASS_FAR)
 	_blade = _grass_blade()
@@ -80,23 +83,62 @@ func _init(g, parent: Node3D) -> void:
 	_build_rivers_and_lakes()
 
 
-static func ground_material() -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.vertex_color_is_srgb = true
-	mat.albedo_texture = Tex.ground_detail()
-	mat.roughness = 1.0
+static func ground_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = TERRAIN_SURFACE
+	mat.set_shader_parameter("ground_detail", Tex.ground_detail())
 	return mat
+
+
+## A padded world-space colour/road field, not vertex paint. Neighbour chunks
+## sample identical positions, including after paint/undo or a terrain reload.
+static func surface_control(k: Vector2i) -> Image:
+	var count := int((CHUNK + CONTROL_BORDER * 2.0) / CONTROL_STEP) + 1
+	var img := Image.create(count, count, false, Image.FORMAT_RGBA8)
+	var origin := Vector2(k.x * CHUNK - CONTROL_BORDER, k.y * CHUNK - CONTROL_BORDER)
+	var grid_origin := Terrain.grid_origin()
+	var grid_cache := {}
+	for j in count:
+		for i in count:
+			var x := origin.x + i * CONTROL_STEP
+			var z := origin.y + j * CONTROL_STEP
+			var key := Vector2i(roundi((x - grid_origin.x) / Terrain.cell()), roundi((z - grid_origin.y) / Terrain.cell()))
+			if not grid_cache.has(key):
+				grid_cache[key] = Terrain.grid(key.x, key.y)
+			var g: Array = grid_cache[key]
+			var painted = Terrain.ground_colour(x, z)
+			var c: Color
+			if painted is Color:
+				c = painted.lerp(painted.darkened(0.18), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
+			else:
+				var palette: Array = GROUND.get(g[2], GROUND[Terrain.MEADOW])
+				c = Color(palette[0]).lightened(0.07).lerp(Color(palette[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
+			c.a = 1.0 - smoothstep(-0.8, 1.0, Terrain.road_edge(x, z))
+			img.set_pixel(i, j, c)
+	return img
+
+
+static func _ground_height(x: float, z: float, cache: Dictionary) -> float:
+	var key := Vector2(x, z)
+	if not cache.has(key):
+		cache[key] = Terrain.height_at(x, z)
+	return float(cache[key])
+
+
+static func ground_normal(x: float, z: float, cache: Dictionary = {}) -> Vector3:
+	var e := 2.0
+	return Vector3(_ground_height(x - e, z, cache) - _ground_height(x + e, z, cache), e * 2.0, _ground_height(x, z - e, cache) - _ground_height(x, z + e, cache)).normalized()
 
 
 # ------------------------------------------------------------- streaming
 ## Build the chunks around `at` that are missing (nearest first, within a
 ## time budget unless `all`) and free the far ones.
-func update(at: Vector3, all := false) -> void:
+func update(at: Vector3, all := false, budget_ms := BUDGET_MS) -> void:
 	focus = at
 	var c := Vector2i(floori(at.x / CHUNK), floori(at.z / CHUNK))
-	# arriving somewhere new (loading in, a portal, a boat): build it all now
-	all = all or not chunks.has(c)
+	# arriving somewhere new (loading in, a portal, a boat): build it all now,
+	# unless a loading screen is up and builds it a little each frame (gentle)
+	all = all or (not gentle and not chunks.has(c))
 	var reach := int(ceil(RADIUS / CHUNK)) + 1
 	var want := []
 	for i in range(c.x - reach, c.x + reach + 1):
@@ -111,7 +153,7 @@ func update(at: Vector3, all := false) -> void:
 	var t0 := Time.get_ticks_usec()
 	for w in want:
 		chunks[w[1]] = _build_chunk(w[1])
-		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > BUDGET_MS:
+		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > budget_ms:
 			break
 	for k in chunks.keys():
 		var d := _chunk_distance(k, at)
@@ -122,6 +164,19 @@ func update(at: Vector3, all := false) -> void:
 		elif _cover.has(k):
 			_cover[k].visible = d < GRASS_FAR + 4.0
 	_grass_mat.set_shader_parameter("uFocus", at)
+
+
+## chunks within reach of `at` not built yet
+func missing(at: Vector3) -> int:
+	var c := Vector2i(floori(at.x / CHUNK), floori(at.z / CHUNK))
+	var reach := int(ceil(RADIUS / CHUNK)) + 1
+	var n := 0
+	for i in range(c.x - reach, c.x + reach + 1):
+		for j in range(c.y - reach, c.y + reach + 1):
+			var k := Vector2i(i, j)
+			if not chunks.has(k) and _chunk_distance(k, at) <= RADIUS:
+				n += 1
+	return n
 
 
 static func _chunk_distance(k: Vector2i, at: Vector3) -> float:
@@ -147,9 +202,6 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		n.add_child(sea)
 	var trees := chunk_trees(k)
 	_plant(n, trees + chunk_rocks(k))
-	var shaft := World.sun_shaft(k, trees)
-	if shaft:
-		n.add_child(shaft)
 	_grass(n, k)
 	built += 1
 	return n
@@ -157,59 +209,27 @@ func _build_chunk(k: Vector2i) -> Node3D:
 
 # ------------------------------------------------------------- the ground
 ## One chunk of ground: 4 m squares (2 m where buildings or ponds need the
-## detail), flat shaded, coloured by surface, roads and high ground.
+## detail). Smooth lighting and world-space surface controls are independent of triangles.
 static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 	var x0 := k.x * CHUNK
 	var z0 := k.y * CHUNK
 	var step := 2.0 if _needs_detail(x0, z0) else Terrain.cell()
 	var n := int(CHUNK / step)
 	var pos := PackedVector3Array()
-	var cols := PackedColorArray()
+	var vertex_normals := PackedVector3Array()
 	pos.resize((n + 1) * (n + 1))
-	cols.resize((n + 1) * (n + 1))
+	vertex_normals.resize((n + 1) * (n + 1))
+	var height_cache := {}
 	var sea := false
-	var rand := RandomNumberGenerator.new()
-	rand.seed = hash(k)
-	var road_col := Color("6a5c48")
-	var rock_col := Color("5a5650")
-	var snow_col := Color("c8ccd0")
-	var o := Terrain.grid_origin()
 	for j in n + 1:
 		for i in n + 1:
 			var x := x0 + i * step
 			var z := z0 + j * step
-			var h := Terrain.height_at(x, z)
+			var h := _ground_height(x, z, height_cache)
 			pos[j * (n + 1) + i] = Vector3(x, h, z)
+			vertex_normals[j * (n + 1) + i] = ground_normal(x, z, height_cache)
 			if h < 0.3:
 				sea = true
-			var g := Terrain.grid(roundi((x - o.x) / Terrain.cell()), roundi((z - o.y) / Terrain.cell()))
-			var slope := absf(Terrain.base_height(x + 2, z) - Terrain.base_height(x - 2, z)) + absf(Terrain.base_height(x, z + 2) - Terrain.base_height(x, z - 2))
-			var painted = Terrain.ground_colour(x, z)
-			var c: Color
-			if painted != null:
-				# the new map: Dan's painted ground, darker where it cannot be walked
-				# and on steep sides, so open ground still reads at a glance
-				c = (painted as Color).lerp((painted as Color).darkened(0.18), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
-				c = c.lerp(c.darkened(0.1), rand.randf() * 0.5)
-				c = c.darkened(clampf((slope - 2.5) / 12.0, 0.0, 0.2))
-			else:
-				var pal: Array = GROUND.get(g[2], GROUND[Terrain.MEADOW])
-				# open ground a shade lighter, high ground darker: where you can walk
-				# reads at a glance from the iso camera (Dan's readability rule)
-				c = Color(pal[0]).lightened(0.07).lerp(Color(pal[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
-				c = c.lerp(c.darkened(0.25), rand.randf() * 0.6)
-				if rand.randf() < 0.1:
-					c = c.lerp(Color("5a4a36"), 0.35)
-				# steep high ground shows its rock, the tops their snow
-				c = c.lerp(rock_col, clampf((slope - 2.5) / 4.0, 0.0, 0.9))
-			if h > 75 and g[2] != Terrain.DESERT and g[2] != Terrain.ASH:
-				c = c.lerp(snow_col, clampf((h - 75) / 20.0, 0.0, 1.0))
-			var road := Terrain.road_edge(x, z)
-			if road < 1.0:
-				c = c.lerp(road_col, (1.0 - smoothstep(-0.8, 1.0, road)) * (0.75 + rand.randf() * 0.25))
-			if h < 1.2 and g[2] != Terrain.SEA:
-				c = c.lerp(Color("8a8060"), clampf((1.2 - h) / 0.9, 0.0, 0.6))
-			cols[j * (n + 1) + i] = c
 	var verts := PackedVector3Array()
 	var vcols := PackedColorArray()
 	var norms := PackedVector3Array()
@@ -228,11 +248,10 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 			var d := j * w + i + 1
 			# two triangles split from (x+1, z) to (x, z+1), as Terrain.base_height
 			for tri in [[a, d, b], [b, d, c]]:
-				var nrm := (pos[tri[2]] - pos[tri[0]]).cross(pos[tri[1]] - pos[tri[0]]).normalized()
 				for idx in tri:
 					verts[v] = pos[idx]
-					vcols[v] = cols[idx]
-					norms[v] = nrm
+					vcols[v] = Color.WHITE
+					norms[v] = vertex_normals[idx]
 					uvs[v] = Vector2(pos[idx].x, pos[idx].z) / 6.0
 					v += 1
 	var arrays := []
@@ -246,7 +265,13 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.name = "Ground"
 	mi.mesh = mesh
-	mi.material_override = mat
+	var surface: ShaderMaterial = mat.duplicate() if mat is ShaderMaterial else ground_material()
+	var control := surface_control(k)
+	surface.set_shader_parameter("surface_control", ImageTexture.create_from_image(control))
+	surface.set_shader_parameter("control_origin", Vector2(x0 - CONTROL_BORDER, z0 - CONTROL_BORDER))
+	surface.set_shader_parameter("control_world_size", Vector2.ONE * control.get_width() * CONTROL_STEP)
+	surface.set_shader_parameter("control_step", CONTROL_STEP)
+	mi.material_override = surface
 	# the ground only receives shadows
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mi.set_meta("sea", sea)
@@ -431,37 +456,24 @@ func _model(model: String):
 			m.shader = CUTAWAY
 			var base := mi.get_active_material(0)
 			m.set_shader_parameter("albedo", base.albedo_color if base is BaseMaterial3D else Color.WHITE)
-			_cutaways.append(m)
 			out = [mi.mesh, m]
 		src.free()
 	_models[model] = out
 	return out
 
 
-## another material that dissolves between the camera and the player (Town)
-func add_cutaway(m: ShaderMaterial) -> void:
-	_cutaways.append(m)
-
-
-func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:
-	for m in _cutaways:
-		m.set_shader_parameter("uCamPos", camera_pos)
-		m.set_shader_parameter("uFocus", at)
+## the see-through circle follows the player: one pair of global shader
+## values shared by every cutaway material (cutaway.gdshaderinc)
+static var cut_cam := Vector3.ZERO ## last values sent, for checks
+static func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:
+	cut_cam = camera_pos
+	RenderingServer.global_shader_parameter_set("sf_cut_cam", camera_pos)
+	RenderingServer.global_shader_parameter_set("sf_cut_focus", at)
 
 
 # ------------------------------------------------------------- grass
 static func _grass_blade() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for k in 3:
-		var a := k / 3.0 * PI
-		var cx := cos(a) * 0.18
-		var cz := sin(a) * 0.18
-		st.add_vertex(Vector3(-cx, 0, -cz))
-		st.add_vertex(Vector3(cx * 0.2 + 0.05, 0.45, cz * 0.2))
-		st.add_vertex(Vector3(cx, 0, cz))
-	st.generate_normals()
-	return st.commit()
+	return preload("res://game/render/meadow_grass.gd").make_mesh()
 
 
 ## low-poly grass tufts on open grassy ground, only drawn close by
@@ -470,20 +482,23 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 	rand.seed = hash(Vector3i(k.x, k.y, 3))
 	var xfs := []
 	var cols := []
-	for i in 900:
+	var near := World._town_near(k.x * CHUNK, k.y * CHUNK, (k.x + 1) * CHUNK, (k.y + 1) * CHUNK)
+	for i in 1200:
 		var x := k.x * CHUNK + rand.randf() * CHUNK
 		var z := k.y * CHUNK + rand.randf() * CHUNK
 		var rot := rand.randf() * PI
-		var s := 0.6 + rand.randf() * 0.9
-		var sy := s * (0.7 + rand.randf() * 0.8)
+		var s := 0.75 + rand.randf() * 0.45
+		var sy := 0.8 + rand.randf() * 0.3
 		var hue := 0.2 + rand.randf() * 0.06
 		var sat := 0.25 + rand.randf() * 0.15
 		var lig := 0.34 + rand.randf() * 0.16
 		var surf := Terrain.surface_at(x, z)
 		if not GRASSY.has(surf) or Terrain.walk_at(x, z) < 0.6:
 			continue
-		if Terrain.road_edge(x, z) < 0.0 and rand.randf() > 0.15:
-			continue # a few tufts break through the road
+		if Terrain.road_edge(x, z) < 0.8:
+			continue # keep road centres and their walking shoulders readable
+		if not World._clear_of(near, x, z) or Terrain.water_at(x, z, -0.7) != null:
+			continue
 		if game.world != null and game.world.on_floor(x, z):
 			continue
 		var y := Terrain.height_at(x, z)

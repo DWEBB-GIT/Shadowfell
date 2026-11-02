@@ -1,0 +1,845 @@
+{
+  "_about": "Vendor types say what kinds of goods a vendor deals in; shops are the stock a particular vendor sells. Merchants buy anything sellable at CONFIG.shop.sellFraction of its price. Vendor types with `repairs` mend gear (Repair all).",
+  "vendorTypes": [
+    {
+      "id": "smith",
+      "name": "Smith",
+      "sells": [
+        "weapon",
+        "ammo",
+        "armor",
+        "shield",
+        "material",
+        "consumable",
+        "bag",
+        "torch"
+      ],
+      "description": "A frontier smith: arms and armour, and the road supplies travellers ask for.",
+      "repairs": true
+    },
+    {
+      "id": "general",
+      "name": "General goods",
+      "sells": [
+        "consumable",
+        "bag",
+        "material",
+        "document"
+      ],
+      "description": "Supplies, bags and sundries."
+    },
+    {
+      "id": "outfitter",
+      "name": "Outfitter",
+      "sells": [
+        "tool",
+        "ammo",
+        "torch",
+        "consumable",
+        "material",
+        "bag"
+      ],
+      "description": "Rods, lights and the things a traveller forgets."
+    },
+    {
+      "id": "innkeeper",
+      "name": "Innkeeper",
+      "sells": [
+        "consumable"
+      ],
+      "description": "Food, drink and a bed."
+    },
+    {
+      "id": "tanner",
+      "name": "Tanner",
+      "sells": [
+        "tool",
+        "material"
+      ],
+      "description": "Knives, hides and leather. Buys anything with fur on."
+    },
+    {
+      "id": "herbalist",
+      "name": "Herbalist",
+      "sells": [
+        "tool",
+        "material",
+        "consumable"
+      ],
+      "description": "Herbs, knives, draughts. Buys anything that grows."
+    },
+    {
+      "id": "curio",
+      "name": "Curios (test)",
+      "sells": [
+        "weapon",
+        "armor"
+      ],
+      "description": "Test vendor: free fancy gear to preview glows and cosmetics."
+    }
+  ],
+  "shops": [
+    {
+      "id": "mara_forge",
+      "name": "Mara's forge",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "iron_gloves",
+        "hob_boots",
+        "mail_chausses",
+        "iron_shield",
+        "arming_sword",
+        "rusty_dirk",
+        "bone_athame",
+        "hunting_bow",
+        "rough_arrow",
+        "travellers_satchel",
+        "torch"
+      ],
+      "faction": "road_wardens"
+    },
+    {
+      "id": "tam_outfitters",
+      "name": "Tam's tackle",
+      "vendorType": "outfitter",
+      "stock": [
+        "fishing_rod",
+        "yew_fishing_rod",
+        "ash_fishing_rod",
+        "cut_bait",
+        "rough_arrow",
+        "barbed_arrow",
+        "leather_quiver",
+        "torch",
+        "healing_draught",
+        "lockpicks"
+      ],
+      "faction": "mere_folk"
+    },
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "vendorType": "innkeeper",
+      "stock": [
+        "grilled_perch",
+        "travellers_stew", "mug_of_ale", "black_stout", "cup_of_wine",
+        "healing_draught"
+      ]
+    },
+    {
+      "id": "agna_tannery",
+      "name": "Agna's tannery",
+      "vendorType": "tanner",
+      "stock": [
+        "skinning_knife"
+      ]
+    },
+    {
+      "id": "orrin_picks",
+      "name": "Orrin's picks",
+      "vendorType": "outfitter",
+      "stock": [
+        "mining_pick"
+      ]
+    },
+    {
+      "id": "briony_herbs",
+      "name": "Briony's herb-shed",
+      "vendorType": "herbalist",
+      "stock": [
+        "herb_knife",
+        "brass_sickle",
+        "healing_draught",
+        "hawkeye_tincture"
+      ]
+    },
+    {
+      "id": "tf_inn",
+      "name": "The Lantern Inn",
+      "vendorType": "innkeeper",
+      "stock": [
+        "grilled_perch",
+        "travellers_stew",
+        "healing_draught"
+      ]
+    },
+    {
+      "id": "tf_forge",
+      "name": "Iren's Forge",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "iron_gloves",
+        "hob_boots",
+        "mail_chausses",
+        "iron_shield",
+        "arming_sword",
+        "rusty_dirk",
+        "bone_athame",
+        "hunting_bow",
+        "rough_arrow",
+        "travellers_satchel",
+        "torch"
+      ],
+      "faction": "road_wardens"
+    },
+    {
+      "id": "vr_tackle",
+      "name": "Tobin's Tackle",
+      "vendorType": "outfitter",
+      "stock": [
+        "fishing_rod",
+        "yew_fishing_rod",
+        "ash_fishing_rod",
+        "cut_bait",
+        "rough_arrow",
+        "barbed_arrow",
+        "leather_quiver",
+        "torch",
+        "healing_draught",
+        "lockpicks"
+      ],
+      "faction": "mere_folk"
+    },
+    {
+      "id": "vr_apothecary",
+      "name": "Morrow's Apothecary",
+      "vendorType": "herbalist",
+      "stock": [
+        "herb_knife",
+        "brass_sickle",
+        "healing_draught",
+        "hawkeye_tincture"
+      ]
+    },
+    {
+      "id": "wm_lantern_crossing_supplies",
+      "name": "Lantern Crossing provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_lantern_crossing_arming_sword",
+        "wm_lantern_crossing_rusty_dirk",
+        "wm_lantern_crossing_ritual_knife",
+        "wm_lantern_crossing_hunting_bow",
+        "wm_lantern_crossing_iron_shield",
+        "wm_lantern_crossing_travelling_clothes",
+        "wm_lantern_crossing_frayed_robe",
+        "wm_lantern_crossing_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_mossreed_landing_supplies",
+      "name": "Mossreed Landing provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_mossreed_landing_arming_sword",
+        "wm_mossreed_landing_rusty_dirk",
+        "wm_mossreed_landing_ritual_knife",
+        "wm_mossreed_landing_hunting_bow",
+        "wm_mossreed_landing_iron_shield",
+        "wm_mossreed_landing_travelling_clothes",
+        "wm_mossreed_landing_frayed_robe",
+        "wm_mossreed_landing_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_rillbank_quays_supplies",
+      "name": "Rillbank Quays provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_rillbank_quays_arming_sword",
+        "wm_rillbank_quays_rusty_dirk",
+        "wm_rillbank_quays_ritual_knife",
+        "wm_rillbank_quays_hunting_bow",
+        "wm_rillbank_quays_iron_shield",
+        "wm_rillbank_quays_travelling_clothes",
+        "wm_rillbank_quays_frayed_robe",
+        "wm_rillbank_quays_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_millward_supplies",
+      "name": "Millward provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_millward_arming_sword",
+        "wm_millward_rusty_dirk",
+        "wm_millward_ritual_knife",
+        "wm_millward_hunting_bow",
+        "wm_millward_iron_shield",
+        "wm_millward_travelling_clothes",
+        "wm_millward_frayed_robe",
+        "wm_millward_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_reedward_supplies",
+      "name": "Reedward Cooperative provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_reedward_arming_sword",
+        "wm_reedward_rusty_dirk",
+        "wm_reedward_ritual_knife",
+        "wm_reedward_hunting_bow",
+        "wm_reedward_iron_shield",
+        "wm_reedward_travelling_clothes",
+        "wm_reedward_frayed_robe",
+        "wm_reedward_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_pumpstead_supplies",
+      "name": "Pumpstead provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_pumpstead_arming_sword",
+        "wm_pumpstead_rusty_dirk",
+        "wm_pumpstead_ritual_knife",
+        "wm_pumpstead_hunting_bow",
+        "wm_pumpstead_iron_shield",
+        "wm_pumpstead_travelling_clothes",
+        "wm_pumpstead_frayed_robe",
+        "wm_pumpstead_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_north_ferry_supplies",
+      "name": "Willow Ferry provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_north_ferry_arming_sword",
+        "wm_north_ferry_rusty_dirk",
+        "wm_north_ferry_ritual_knife",
+        "wm_north_ferry_hunting_bow",
+        "wm_north_ferry_iron_shield",
+        "wm_north_ferry_travelling_clothes",
+        "wm_north_ferry_frayed_robe",
+        "wm_north_ferry_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_tollhouse_rise_supplies",
+      "name": "Tollhouse Rise provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_tollhouse_rise_arming_sword",
+        "wm_tollhouse_rise_rusty_dirk",
+        "wm_tollhouse_rise_ritual_knife",
+        "wm_tollhouse_rise_hunting_bow",
+        "wm_tollhouse_rise_iron_shield",
+        "wm_tollhouse_rise_travelling_clothes",
+        "wm_tollhouse_rise_frayed_robe",
+        "wm_tollhouse_rise_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_stiltmarket_supplies",
+      "name": "Stiltmarket provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_stiltmarket_arming_sword",
+        "wm_stiltmarket_rusty_dirk",
+        "wm_stiltmarket_ritual_knife",
+        "wm_stiltmarket_hunting_bow",
+        "wm_stiltmarket_iron_shield",
+        "wm_stiltmarket_travelling_clothes",
+        "wm_stiltmarket_frayed_robe",
+        "wm_stiltmarket_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_causeway_watch_supplies",
+      "name": "Causeway Watch provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_causeway_watch_arming_sword",
+        "wm_causeway_watch_rusty_dirk",
+        "wm_causeway_watch_ritual_knife",
+        "wm_causeway_watch_hunting_bow",
+        "wm_causeway_watch_iron_shield",
+        "wm_causeway_watch_travelling_clothes",
+        "wm_causeway_watch_frayed_robe",
+        "wm_causeway_watch_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_greyroot_supplies",
+      "name": "Greyroot Refuge provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_greyroot_arming_sword",
+        "wm_greyroot_rusty_dirk",
+        "wm_greyroot_ritual_knife",
+        "wm_greyroot_hunting_bow",
+        "wm_greyroot_iron_shield",
+        "wm_greyroot_travelling_clothes",
+        "wm_greyroot_frayed_robe",
+        "wm_greyroot_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_scribes_rest_supplies",
+      "name": "Scribes’ Hollow provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_scribes_rest_arming_sword",
+        "wm_scribes_rest_rusty_dirk",
+        "wm_scribes_rest_ritual_knife",
+        "wm_scribes_rest_hunting_bow",
+        "wm_scribes_rest_iron_shield",
+        "wm_scribes_rest_travelling_clothes",
+        "wm_scribes_rest_frayed_robe",
+        "wm_scribes_rest_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_brinewatch_docks_supplies",
+      "name": "Brinewatch Docks provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_brinewatch_docks_arming_sword",
+        "wm_brinewatch_docks_rusty_dirk",
+        "wm_brinewatch_docks_ritual_knife",
+        "wm_brinewatch_docks_hunting_bow",
+        "wm_brinewatch_docks_iron_shield",
+        "wm_brinewatch_docks_travelling_clothes",
+        "wm_brinewatch_docks_frayed_robe",
+        "wm_brinewatch_docks_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_saltmere_supplies",
+      "name": "Saltmere Outpost provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_saltmere_arming_sword",
+        "wm_saltmere_rusty_dirk",
+        "wm_saltmere_ritual_knife",
+        "wm_saltmere_hunting_bow",
+        "wm_saltmere_iron_shield",
+        "wm_saltmere_travelling_clothes",
+        "wm_saltmere_frayed_robe",
+        "wm_saltmere_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_highmere_market_supplies",
+      "name": "Highmere Market provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_highmere_market_arming_sword",
+        "wm_highmere_market_rusty_dirk",
+        "wm_highmere_market_ritual_knife",
+        "wm_highmere_market_hunting_bow",
+        "wm_highmere_market_iron_shield",
+        "wm_highmere_market_travelling_clothes",
+        "wm_highmere_market_frayed_robe",
+        "wm_highmere_market_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_quarryend_supplies",
+      "name": "Quarryend provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_quarryend_arming_sword",
+        "wm_quarryend_rusty_dirk",
+        "wm_quarryend_ritual_knife",
+        "wm_quarryend_hunting_bow",
+        "wm_quarryend_iron_shield",
+        "wm_quarryend_travelling_clothes",
+        "wm_quarryend_frayed_robe",
+        "wm_quarryend_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_cinder_gate_supplies",
+      "name": "Cinder Gate provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_cinder_gate_arming_sword",
+        "wm_cinder_gate_rusty_dirk",
+        "wm_cinder_gate_ritual_knife",
+        "wm_cinder_gate_hunting_bow",
+        "wm_cinder_gate_iron_shield",
+        "wm_cinder_gate_travelling_clothes",
+        "wm_cinder_gate_frayed_robe",
+        "wm_cinder_gate_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_ashworks_supplies",
+      "name": "Ashworks provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_ashworks_arming_sword",
+        "wm_ashworks_rusty_dirk",
+        "wm_ashworks_ritual_knife",
+        "wm_ashworks_hunting_bow",
+        "wm_ashworks_iron_shield",
+        "wm_ashworks_travelling_clothes",
+        "wm_ashworks_frayed_robe",
+        "wm_ashworks_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_windscar_supplies",
+      "name": "Windscar Redoubt provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_windscar_arming_sword",
+        "wm_windscar_rusty_dirk",
+        "wm_windscar_ritual_knife",
+        "wm_windscar_hunting_bow",
+        "wm_windscar_iron_shield",
+        "wm_windscar_travelling_clothes",
+        "wm_windscar_frayed_robe",
+        "wm_windscar_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_high_pass_supplies",
+      "name": "Heatherpass Relay provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_high_pass_arming_sword",
+        "wm_high_pass_rusty_dirk",
+        "wm_high_pass_ritual_knife",
+        "wm_high_pass_hunting_bow",
+        "wm_high_pass_iron_shield",
+        "wm_high_pass_travelling_clothes",
+        "wm_high_pass_frayed_robe",
+        "wm_high_pass_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_furnace_camp_supplies",
+      "name": "Redkiln Camp provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_furnace_camp_arming_sword",
+        "wm_furnace_camp_rusty_dirk",
+        "wm_furnace_camp_ritual_knife",
+        "wm_furnace_camp_hunting_bow",
+        "wm_furnace_camp_iron_shield",
+        "wm_furnace_camp_travelling_clothes",
+        "wm_furnace_camp_frayed_robe",
+        "wm_furnace_camp_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_ember_relay_supplies",
+      "name": "Ember Relay provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_ember_relay_arming_sword",
+        "wm_ember_relay_rusty_dirk",
+        "wm_ember_relay_ritual_knife",
+        "wm_ember_relay_hunting_bow",
+        "wm_ember_relay_iron_shield",
+        "wm_ember_relay_travelling_clothes",
+        "wm_ember_relay_frayed_robe",
+        "wm_ember_relay_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_frostgate_supplies",
+      "name": "Frostgate provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_frostgate_arming_sword",
+        "wm_frostgate_rusty_dirk",
+        "wm_frostgate_ritual_knife",
+        "wm_frostgate_hunting_bow",
+        "wm_frostgate_iron_shield",
+        "wm_frostgate_travelling_clothes",
+        "wm_frostgate_frayed_robe",
+        "wm_frostgate_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_lantern_pass_supplies",
+      "name": "Rimepass provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_lantern_pass_arming_sword",
+        "wm_lantern_pass_rusty_dirk",
+        "wm_lantern_pass_ritual_knife",
+        "wm_lantern_pass_hunting_bow",
+        "wm_lantern_pass_iron_shield",
+        "wm_lantern_pass_travelling_clothes",
+        "wm_lantern_pass_frayed_robe",
+        "wm_lantern_pass_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_hearthwatch_supplies",
+      "name": "Hearthwatch provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_hearthwatch_arming_sword",
+        "wm_hearthwatch_rusty_dirk",
+        "wm_hearthwatch_ritual_knife",
+        "wm_hearthwatch_hunting_bow",
+        "wm_hearthwatch_iron_shield",
+        "wm_hearthwatch_travelling_clothes",
+        "wm_hearthwatch_frayed_robe",
+        "wm_hearthwatch_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_wellward_supplies",
+      "name": "Sable Well provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_wellward_arming_sword",
+        "wm_wellward_rusty_dirk",
+        "wm_wellward_ritual_knife",
+        "wm_wellward_hunting_bow",
+        "wm_wellward_iron_shield",
+        "wm_wellward_travelling_clothes",
+        "wm_wellward_frayed_robe",
+        "wm_wellward_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_caravan_rest_supplies",
+      "name": "Duneshade Rest provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_caravan_rest_arming_sword",
+        "wm_caravan_rest_rusty_dirk",
+        "wm_caravan_rest_ritual_knife",
+        "wm_caravan_rest_hunting_bow",
+        "wm_caravan_rest_iron_shield",
+        "wm_caravan_rest_travelling_clothes",
+        "wm_caravan_rest_frayed_robe",
+        "wm_caravan_rest_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_dune_watch_supplies",
+      "name": "Dune Watch provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_dune_watch_arming_sword",
+        "wm_dune_watch_rusty_dirk",
+        "wm_dune_watch_ritual_knife",
+        "wm_dune_watch_hunting_bow",
+        "wm_dune_watch_iron_shield",
+        "wm_dune_watch_travelling_clothes",
+        "wm_dune_watch_frayed_robe",
+        "wm_dune_watch_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_whitebough_supplies",
+      "name": "Whitebough Hospice provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_whitebough_arming_sword",
+        "wm_whitebough_rusty_dirk",
+        "wm_whitebough_ritual_knife",
+        "wm_whitebough_hunting_bow",
+        "wm_whitebough_iron_shield",
+        "wm_whitebough_travelling_clothes",
+        "wm_whitebough_frayed_robe",
+        "wm_whitebough_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_last_beacon_supplies",
+      "name": "Last Beacon provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_last_beacon_arming_sword",
+        "wm_last_beacon_rusty_dirk",
+        "wm_last_beacon_ritual_knife",
+        "wm_last_beacon_hunting_bow",
+        "wm_last_beacon_iron_shield",
+        "wm_last_beacon_travelling_clothes",
+        "wm_last_beacon_frayed_robe",
+        "wm_last_beacon_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_saltroad_supplies",
+      "name": "Saltroad Caravanserai provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_saltroad_arming_sword",
+        "wm_saltroad_rusty_dirk",
+        "wm_saltroad_ritual_knife",
+        "wm_saltroad_hunting_bow",
+        "wm_saltroad_iron_shield",
+        "wm_saltroad_travelling_clothes",
+        "wm_saltroad_frayed_robe",
+        "wm_saltroad_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_glass_road_supplies",
+      "name": "Glassroad Station provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_glass_road_arming_sword",
+        "wm_glass_road_rusty_dirk",
+        "wm_glass_road_ritual_knife",
+        "wm_glass_road_hunting_bow",
+        "wm_glass_road_iron_shield",
+        "wm_glass_road_travelling_clothes",
+        "wm_glass_road_frayed_robe",
+        "wm_glass_road_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_north_ledger_gate_supplies",
+      "name": "Rimewatch Gate provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_north_ledger_gate_arming_sword",
+        "wm_north_ledger_gate_rusty_dirk",
+        "wm_north_ledger_gate_ritual_knife",
+        "wm_north_ledger_gate_hunting_bow",
+        "wm_north_ledger_gate_iron_shield",
+        "wm_north_ledger_gate_travelling_clothes",
+        "wm_north_ledger_gate_frayed_robe",
+        "wm_north_ledger_gate_warden_hauberk"
+      ]
+    },
+    {
+      "id": "wm_sunseal_court_supplies",
+      "name": "Sunseal Court provisions",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "rough_arrow",
+        "torch",
+        "wm_sunseal_court_arming_sword",
+        "wm_sunseal_court_rusty_dirk",
+        "wm_sunseal_court_ritual_knife",
+        "wm_sunseal_court_hunting_bow",
+        "wm_sunseal_court_iron_shield",
+        "wm_sunseal_court_travelling_clothes",
+        "wm_sunseal_court_frayed_robe",
+        "wm_sunseal_court_warden_hauberk"
+      ]
+    },
+    {
+      "id": "test_curios",
+      "name": "Fancy gear (test)",
+      "vendorType": "curio",
+      "stock": [
+        "test_emberbrand",
+        "test_frostbite",
+        "test_voidfang",
+        "test_dawnblade",
+        "test_venomtooth",
+        "test_bloodreaver",
+        "test_glow_wings",
+        "test_halo",
+        "test_horns"
+      ]
+    }
+  ]
+}

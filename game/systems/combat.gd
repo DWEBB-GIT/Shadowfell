@@ -199,10 +199,10 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 		events.emit("playerMiss", {})
 		return null
 	var off := hand == "off"
-	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show, "echo": true})
+	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.0, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show, "echo": true})
 	if hit.get("miss"):
 		return target
-	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand})
+	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand, "show": show})
 	events.emit("log", {"text": "%s the %s for %d%s.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, " (%d holy)" % hit.holy if hit.get("holy") else "", _crit_text(hit)], "kind": "hit"})
 	if target.dead:
 		on_enemy_defeated(target)
@@ -233,7 +233,7 @@ func update_arrows(dt: float) -> void:
 			continue
 		# the arrow adds its own damage: ammoDps for each second of bow speed
 		var bonus: float = (Items.get_def(a.ammo).get("ammoDps", 0) if a.ammo else 0.0) * game.stats.hand_speed("ranged")
-		var hit := _player_hit(e, 1, {"stagger": 0.12}, {"swing": true, "hand": "ranged", "bonus": bonus})
+		var hit := _player_hit(e, 1, {"stagger": 0.0}, {"swing": true, "hand": "ranged", "bonus": bonus})
 		if hit.get("miss"):
 			continue
 		game.events.emit("enemyHit", {"enemy": e, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": "ranged"})
@@ -298,9 +298,13 @@ func on_enemy_defeated(enemy) -> void:
 		game.events.emit("xpGained", {"target": enemy, "amount": game.progression.add_xp(xp, true)})
 	if enemy.cfg.get("reputation"):
 		game.reputation.add_all(enemy.cfg.reputation)
-	# coins stay on the body until looted; a beast's body also waits for a skinner
-	if enemy.cfg.get("coins", 0) > 0 or loot.keep_for_skinning(enemy):
-		loot.add_corpse(enemy, enemy.cfg.get("coins", 0))
+	# coins fall to the ground beside the body as a purse to pick up; a
+	# beast's body still waits for a skinner
+	var coins := int(round(float(enemy.cfg.get("coins", 0))))
+	if coins > 0:
+		loot.drop_coins(enemy, coins)
+	if loot.keep_for_skinning(enemy):
+		loot.add_corpse(enemy, 0)
 	if enemy.cfg.get("uniqueDrop"):
 		loot.drop_unique(enemy)
 	loot.drop_from_enemy(enemy)

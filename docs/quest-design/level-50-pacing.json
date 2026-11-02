@@ -1,0 +1,2091 @@
+{
+  "schema_version": 3,
+  "design_date": "2026-10-31",
+  "level_cap": 50,
+  "starting_level": 1,
+  "level_up_count": 49,
+  "status": "Timing targets remain unmeasured. Runtime cap 50, hub placements and first regional quest prototypes are installed.",
+  "clock": "First character creation to first reaching 50; active play including reading, travel, ordinary queues, crafting and dungeons. Excludes AFK, offline time and post-cap map clearing.",
+  "profiles": [
+    {
+      "id": "speedrunner",
+      "hours": 45,
+      "time_factor": 0.75,
+      "relative_xp_per_minute": 1.3333333333333333
+    },
+    {
+      "id": "baseline",
+      "hours": 60,
+      "time_factor": 1,
+      "relative_xp_per_minute": 1
+    },
+    {
+      "id": "explorer",
+      "hours": 80,
+      "time_factor": 1.3333333333333333,
+      "relative_xp_per_minute": 0.75
+    }
+  ],
+  "phases": [
+    {
+      "name": "The Hook",
+      "arrival_levels": [
+        2,
+        10
+      ],
+      "transitions": 9,
+      "allowed_baseline_minutes": [
+        5,
+        20
+      ],
+      "baseline_minutes": 120
+    },
+    {
+      "name": "The Groove",
+      "arrival_levels": [
+        11,
+        40
+      ],
+      "transitions": 30,
+      "allowed_baseline_minutes": [
+        30,
+        75
+      ],
+      "baseline_minutes": 2140
+    },
+    {
+      "name": "The Prestige",
+      "arrival_levels": [
+        41,
+        50
+      ],
+      "transitions": 10,
+      "allowed_baseline_minutes": [
+        90,
+        150
+      ],
+      "baseline_minutes": 1340
+    }
+  ],
+  "runtime_xp_curve": {
+    "status": "Existing linear costs retained; diagnostic only, not calibrated for a 60-hour campaign.",
+    "first_level_xp": 280,
+    "growth_per_level": 200,
+    "formula": "280 + 200 * (from_level - 1)",
+    "total_xp_to_50": 248920
+  },
+  "zones": [
+    {
+      "id": "thornford",
+      "name": "Thornford Reach",
+      "theme": "Village, orchard and haunted road",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "thornford"
+      ],
+      "return_pocket_ids": [
+        "old_bell_wing"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Temperate farms, hedges and a wooded road"
+    },
+    {
+      "id": "rillbank",
+      "name": "Rillbank Vale",
+      "theme": "River freight, fishing and civic trade",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "lantern_crossing",
+        "rillbank_quays",
+        "millward",
+        "north_ferry",
+        "tollhouse_rise"
+      ],
+      "return_pocket_ids": [
+        "sealhouse_cellars",
+        "rook_audit_house"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "River valley, mills and freight landings"
+    },
+    {
+      "id": "mirefen",
+      "name": "Mirefen",
+      "theme": "Reed hamlets, drainage and marsh hunts",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "mossreed_landing",
+        "reedward",
+        "pumpstead",
+        "stiltmarket",
+        "causeway_watch"
+      ],
+      "return_pocket_ids": [
+        "drowned_pumphouse"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Wetland, peat, reeds and raised paths"
+    },
+    {
+      "id": "paleweald",
+      "name": "Paleweald",
+      "theme": "Haunted woodland and public archives",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "greyroot",
+        "scribes_rest"
+      ],
+      "return_pocket_ids": [],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Haunted woodland and sheltered archive settlements"
+    },
+    {
+      "id": "brinewatch",
+      "name": "Brinewatch Strand",
+      "theme": "Harbor work, wrecks and coastal trails",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "brinewatch_docks",
+        "saltmere"
+      ],
+      "return_pocket_ids": [
+        "stormwatch"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Salt coast, cliffs, beaches and working harbors"
+    },
+    {
+      "id": "highmere",
+      "name": "Highmere Downs",
+      "theme": "Upland commons, quarries and horse farms",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "highmere_market",
+        "quarryend",
+        "windscar",
+        "high_pass"
+      ],
+      "return_pocket_ids": [],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Rolling uplands, grazing, quarries and small high waters"
+    },
+    {
+      "id": "cinder",
+      "name": "Cinder Reach",
+      "theme": "Volcanic industry and rescue work",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "cinder_gate",
+        "ashworks",
+        "furnace_camp",
+        "ember_relay"
+      ],
+      "return_pocket_ids": [
+        "deep_crucible"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Ash country, lava-cut rock and industrial work camps"
+    },
+    {
+      "id": "frostward",
+      "name": "Frostward Marches",
+      "theme": "Snowbound settlements and fuel disputes",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "frostgate",
+        "lantern_pass",
+        "hearthwatch",
+        "whitebough",
+        "last_beacon",
+        "north_ledger_gate"
+      ],
+      "return_pocket_ids": [
+        "whitefall_vaults"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Snowbound borderlands, passes and sheltered settlements"
+    },
+    {
+      "id": "sable",
+      "name": "Sunscar Basin",
+      "theme": "Oasis towns, caravans and water rights",
+      "state": "Authored regional world/quest prototype; full route pacing, advanced mechanics and dungeon scenes remain unverified or unbuilt.",
+      "hub_ids": [
+        "wellward",
+        "caravan_rest",
+        "dune_watch",
+        "saltroad",
+        "glass_road",
+        "sunseal_court"
+      ],
+      "return_pocket_ids": [
+        "sunken_cistern"
+      ],
+      "level_label_policy": "Show individual hub and dangerous-pocket ranges. The region is geography, not one long levelling assignment.",
+      "biome_identity": "Sun-baked desert, salt roads, dunes and oasis settlements"
+    }
+  ],
+  "levels": [
+    {
+      "from_level": 1,
+      "to_level": 2,
+      "phase": "The Hook",
+      "primary_zone": "thornford",
+      "baseline_minutes": 5,
+      "speedrunner_minutes": 3.75,
+      "explorer_minutes": 6.666666666666667,
+      "cumulative_baseline_minutes": 5,
+      "cumulative_speedrunner_minutes": 3.75,
+      "cumulative_explorer_minutes": 6.666666666666667,
+      "current_runtime_xp_to_next": 280,
+      "cumulative_current_runtime_xp": 280,
+      "required_current_curve_xp_per_minute": 56.0,
+      "route_bracket": "opening",
+      "alternate_zone": "thornford",
+      "route_options": [
+        "thornford"
+      ],
+      "primary_hub": "thornford",
+      "alternate_hub": "thornford",
+      "eligible_hubs": [
+        "thornford"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 2,
+      "to_level": 3,
+      "phase": "The Hook",
+      "primary_zone": "thornford",
+      "baseline_minutes": 8,
+      "speedrunner_minutes": 6.0,
+      "explorer_minutes": 10.666666666666666,
+      "cumulative_baseline_minutes": 13,
+      "cumulative_speedrunner_minutes": 9.75,
+      "cumulative_explorer_minutes": 17.333333333333332,
+      "current_runtime_xp_to_next": 480,
+      "cumulative_current_runtime_xp": 760,
+      "required_current_curve_xp_per_minute": 60.0,
+      "route_bracket": "opening",
+      "alternate_zone": "thornford",
+      "route_options": [
+        "thornford"
+      ],
+      "primary_hub": "thornford",
+      "alternate_hub": "thornford",
+      "eligible_hubs": [
+        "thornford"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 3,
+      "to_level": 4,
+      "phase": "The Hook",
+      "primary_zone": "thornford",
+      "baseline_minutes": 10,
+      "speedrunner_minutes": 7.5,
+      "explorer_minutes": 13.333333333333334,
+      "cumulative_baseline_minutes": 23,
+      "cumulative_speedrunner_minutes": 17.25,
+      "cumulative_explorer_minutes": 30.666666666666668,
+      "current_runtime_xp_to_next": 680,
+      "cumulative_current_runtime_xp": 1440,
+      "required_current_curve_xp_per_minute": 68.0,
+      "route_bracket": "opening",
+      "alternate_zone": "thornford",
+      "route_options": [
+        "thornford"
+      ],
+      "primary_hub": "thornford",
+      "alternate_hub": "thornford",
+      "eligible_hubs": [
+        "thornford"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 4,
+      "to_level": 5,
+      "phase": "The Hook",
+      "primary_zone": "thornford",
+      "baseline_minutes": 12,
+      "speedrunner_minutes": 9.0,
+      "explorer_minutes": 16.0,
+      "cumulative_baseline_minutes": 35,
+      "cumulative_speedrunner_minutes": 26.25,
+      "cumulative_explorer_minutes": 46.666666666666664,
+      "current_runtime_xp_to_next": 880,
+      "cumulative_current_runtime_xp": 2320,
+      "required_current_curve_xp_per_minute": 73.33333333333333,
+      "route_bracket": "opening",
+      "alternate_zone": "thornford",
+      "route_options": [
+        "thornford"
+      ],
+      "primary_hub": "thornford",
+      "alternate_hub": "thornford",
+      "eligible_hubs": [
+        "thornford"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 5,
+      "to_level": 6,
+      "phase": "The Hook",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 14,
+      "speedrunner_minutes": 10.5,
+      "explorer_minutes": 18.666666666666668,
+      "cumulative_baseline_minutes": 49,
+      "cumulative_speedrunner_minutes": 36.75,
+      "cumulative_explorer_minutes": 65.33333333333333,
+      "current_runtime_xp_to_next": 1080,
+      "cumulative_current_runtime_xp": 3400,
+      "required_current_curve_xp_per_minute": 77.14285714285714,
+      "route_bracket": "outskirts",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "lantern_crossing",
+      "alternate_hub": "mossreed_landing",
+      "eligible_hubs": [
+        "lantern_crossing",
+        "mossreed_landing"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 6,
+      "to_level": 7,
+      "phase": "The Hook",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 16,
+      "speedrunner_minutes": 12.0,
+      "explorer_minutes": 21.333333333333332,
+      "cumulative_baseline_minutes": 65,
+      "cumulative_speedrunner_minutes": 48.75,
+      "cumulative_explorer_minutes": 86.66666666666667,
+      "current_runtime_xp_to_next": 1280,
+      "cumulative_current_runtime_xp": 4680,
+      "required_current_curve_xp_per_minute": 80.0,
+      "route_bracket": "outskirts",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "lantern_crossing",
+      "alternate_hub": "mossreed_landing",
+      "eligible_hubs": [
+        "lantern_crossing",
+        "mossreed_landing"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 7,
+      "to_level": 8,
+      "phase": "The Hook",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 17,
+      "speedrunner_minutes": 12.75,
+      "explorer_minutes": 22.666666666666668,
+      "cumulative_baseline_minutes": 82,
+      "cumulative_speedrunner_minutes": 61.5,
+      "cumulative_explorer_minutes": 109.33333333333333,
+      "current_runtime_xp_to_next": 1480,
+      "cumulative_current_runtime_xp": 6160,
+      "required_current_curve_xp_per_minute": 87.05882352941177,
+      "route_bracket": "outskirts",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "lantern_crossing",
+      "alternate_hub": "mossreed_landing",
+      "eligible_hubs": [
+        "lantern_crossing",
+        "mossreed_landing"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 8,
+      "to_level": 9,
+      "phase": "The Hook",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 18,
+      "speedrunner_minutes": 13.5,
+      "explorer_minutes": 24.0,
+      "cumulative_baseline_minutes": 100,
+      "cumulative_speedrunner_minutes": 75.0,
+      "cumulative_explorer_minutes": 133.33333333333334,
+      "current_runtime_xp_to_next": 1680,
+      "cumulative_current_runtime_xp": 7840,
+      "required_current_curve_xp_per_minute": 93.33333333333333,
+      "route_bracket": "outskirts",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "lantern_crossing",
+      "alternate_hub": "mossreed_landing",
+      "eligible_hubs": [
+        "lantern_crossing",
+        "mossreed_landing"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 9,
+      "to_level": 10,
+      "phase": "The Hook",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 20,
+      "speedrunner_minutes": 15.0,
+      "explorer_minutes": 26.666666666666668,
+      "cumulative_baseline_minutes": 120,
+      "cumulative_speedrunner_minutes": 90.0,
+      "cumulative_explorer_minutes": 160.0,
+      "current_runtime_xp_to_next": 1880,
+      "cumulative_current_runtime_xp": 9720,
+      "required_current_curve_xp_per_minute": 94.0,
+      "route_bracket": "outskirts",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "lantern_crossing",
+      "alternate_hub": "mossreed_landing",
+      "eligible_hubs": [
+        "lantern_crossing",
+        "mossreed_landing"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 10,
+      "to_level": 11,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 30,
+      "speedrunner_minutes": 22.5,
+      "explorer_minutes": 40.0,
+      "cumulative_baseline_minutes": 150,
+      "cumulative_speedrunner_minutes": 112.5,
+      "cumulative_explorer_minutes": 200.0,
+      "current_runtime_xp_to_next": 2080,
+      "cumulative_current_runtime_xp": 11800,
+      "required_current_curve_xp_per_minute": 69.33333333333333,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "rillbank_quays",
+      "alternate_hub": "reedward",
+      "eligible_hubs": [
+        "rillbank_quays",
+        "reedward"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 11,
+      "to_level": 12,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 45,
+      "speedrunner_minutes": 33.75,
+      "explorer_minutes": 60.0,
+      "cumulative_baseline_minutes": 195,
+      "cumulative_speedrunner_minutes": 146.25,
+      "cumulative_explorer_minutes": 260.0,
+      "current_runtime_xp_to_next": 2280,
+      "cumulative_current_runtime_xp": 14080,
+      "required_current_curve_xp_per_minute": 50.666666666666664,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "rillbank_quays",
+      "alternate_hub": "reedward",
+      "eligible_hubs": [
+        "rillbank_quays",
+        "reedward"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 12,
+      "to_level": 13,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 55,
+      "speedrunner_minutes": 41.25,
+      "explorer_minutes": 73.33333333333333,
+      "cumulative_baseline_minutes": 250,
+      "cumulative_speedrunner_minutes": 187.5,
+      "cumulative_explorer_minutes": 333.3333333333333,
+      "current_runtime_xp_to_next": 2480,
+      "cumulative_current_runtime_xp": 16560,
+      "required_current_curve_xp_per_minute": 45.09090909090909,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "rillbank_quays",
+      "alternate_hub": "reedward",
+      "eligible_hubs": [
+        "rillbank_quays",
+        "reedward"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 13,
+      "to_level": 14,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 65,
+      "speedrunner_minutes": 48.75,
+      "explorer_minutes": 86.66666666666667,
+      "cumulative_baseline_minutes": 315,
+      "cumulative_speedrunner_minutes": 236.25,
+      "cumulative_explorer_minutes": 420.0,
+      "current_runtime_xp_to_next": 2680,
+      "cumulative_current_runtime_xp": 19240,
+      "required_current_curve_xp_per_minute": 41.23076923076923,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "millward",
+      "alternate_hub": "pumpstead",
+      "eligible_hubs": [
+        "millward",
+        "pumpstead"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 14,
+      "to_level": 15,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 70,
+      "speedrunner_minutes": 52.5,
+      "explorer_minutes": 93.33333333333333,
+      "cumulative_baseline_minutes": 385,
+      "cumulative_speedrunner_minutes": 288.75,
+      "cumulative_explorer_minutes": 513.3333333333334,
+      "current_runtime_xp_to_next": 2880,
+      "cumulative_current_runtime_xp": 22120,
+      "required_current_curve_xp_per_minute": 41.142857142857146,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "millward",
+      "alternate_hub": "pumpstead",
+      "eligible_hubs": [
+        "millward",
+        "pumpstead"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 15,
+      "to_level": 16,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 460,
+      "cumulative_speedrunner_minutes": 345.0,
+      "cumulative_explorer_minutes": 613.3333333333334,
+      "current_runtime_xp_to_next": 3080,
+      "cumulative_current_runtime_xp": 25200,
+      "required_current_curve_xp_per_minute": 41.06666666666667,
+      "route_bracket": "river_hubs",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "millward",
+      "alternate_hub": "pumpstead",
+      "eligible_hubs": [
+        "millward",
+        "pumpstead"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 16,
+      "to_level": 17,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 535,
+      "cumulative_speedrunner_minutes": 401.25,
+      "cumulative_explorer_minutes": 713.3333333333334,
+      "current_runtime_xp_to_next": 3280,
+      "cumulative_current_runtime_xp": 28480,
+      "required_current_curve_xp_per_minute": 43.733333333333334,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "north_ferry",
+      "alternate_hub": "stiltmarket",
+      "eligible_hubs": [
+        "north_ferry",
+        "stiltmarket"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 17,
+      "to_level": 18,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 610,
+      "cumulative_speedrunner_minutes": 457.5,
+      "cumulative_explorer_minutes": 813.3333333333334,
+      "current_runtime_xp_to_next": 3480,
+      "cumulative_current_runtime_xp": 31960,
+      "required_current_curve_xp_per_minute": 46.4,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "north_ferry",
+      "alternate_hub": "stiltmarket",
+      "eligible_hubs": [
+        "north_ferry",
+        "stiltmarket"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 18,
+      "to_level": 19,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 685,
+      "cumulative_speedrunner_minutes": 513.75,
+      "cumulative_explorer_minutes": 913.3333333333334,
+      "current_runtime_xp_to_next": 3680,
+      "cumulative_current_runtime_xp": 35640,
+      "required_current_curve_xp_per_minute": 49.06666666666667,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "north_ferry",
+      "alternate_hub": "stiltmarket",
+      "eligible_hubs": [
+        "north_ferry",
+        "stiltmarket"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 19,
+      "to_level": 20,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 760,
+      "cumulative_speedrunner_minutes": 570.0,
+      "cumulative_explorer_minutes": 1013.3333333333334,
+      "current_runtime_xp_to_next": 3880,
+      "cumulative_current_runtime_xp": 39520,
+      "required_current_curve_xp_per_minute": 51.733333333333334,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "tollhouse_rise",
+      "alternate_hub": "causeway_watch",
+      "eligible_hubs": [
+        "tollhouse_rise",
+        "causeway_watch"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 20,
+      "to_level": 21,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 835,
+      "cumulative_speedrunner_minutes": 626.25,
+      "cumulative_explorer_minutes": 1113.3333333333333,
+      "current_runtime_xp_to_next": 4080,
+      "cumulative_current_runtime_xp": 43600,
+      "required_current_curve_xp_per_minute": 54.4,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "tollhouse_rise",
+      "alternate_hub": "causeway_watch",
+      "eligible_hubs": [
+        "tollhouse_rise",
+        "causeway_watch"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 21,
+      "to_level": 22,
+      "phase": "The Groove",
+      "primary_zone": "rillbank",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 910,
+      "cumulative_speedrunner_minutes": 682.5,
+      "cumulative_explorer_minutes": 1213.3333333333333,
+      "current_runtime_xp_to_next": 4280,
+      "cumulative_current_runtime_xp": 47880,
+      "required_current_curve_xp_per_minute": 57.06666666666667,
+      "route_bracket": "river_border",
+      "alternate_zone": "mirefen",
+      "route_options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "primary_hub": "tollhouse_rise",
+      "alternate_hub": "causeway_watch",
+      "eligible_hubs": [
+        "tollhouse_rise",
+        "causeway_watch"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 22,
+      "to_level": 23,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 985,
+      "cumulative_speedrunner_minutes": 738.75,
+      "cumulative_explorer_minutes": 1313.3333333333333,
+      "current_runtime_xp_to_next": 4480,
+      "cumulative_current_runtime_xp": 52360,
+      "required_current_curve_xp_per_minute": 59.733333333333334,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "greyroot",
+      "alternate_hub": "brinewatch_docks",
+      "eligible_hubs": [
+        "greyroot",
+        "brinewatch_docks"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 23,
+      "to_level": 24,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1060,
+      "cumulative_speedrunner_minutes": 795.0,
+      "cumulative_explorer_minutes": 1413.3333333333333,
+      "current_runtime_xp_to_next": 4680,
+      "cumulative_current_runtime_xp": 57040,
+      "required_current_curve_xp_per_minute": 62.4,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "greyroot",
+      "alternate_hub": "brinewatch_docks",
+      "eligible_hubs": [
+        "greyroot",
+        "brinewatch_docks"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 24,
+      "to_level": 25,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1135,
+      "cumulative_speedrunner_minutes": 851.25,
+      "cumulative_explorer_minutes": 1513.3333333333333,
+      "current_runtime_xp_to_next": 4880,
+      "cumulative_current_runtime_xp": 61920,
+      "required_current_curve_xp_per_minute": 65.06666666666666,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "greyroot",
+      "alternate_hub": "brinewatch_docks",
+      "eligible_hubs": [
+        "greyroot",
+        "brinewatch_docks"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 25,
+      "to_level": 26,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1210,
+      "cumulative_speedrunner_minutes": 907.5,
+      "cumulative_explorer_minutes": 1613.3333333333333,
+      "current_runtime_xp_to_next": 5080,
+      "cumulative_current_runtime_xp": 67000,
+      "required_current_curve_xp_per_minute": 67.73333333333333,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "scribes_rest",
+      "alternate_hub": "saltmere",
+      "eligible_hubs": [
+        "scribes_rest",
+        "saltmere"
+      ],
+      "eligible_return_pockets": [
+        "sealhouse_cellars",
+        "drowned_pumphouse"
+      ]
+    },
+    {
+      "from_level": 26,
+      "to_level": 27,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1285,
+      "cumulative_speedrunner_minutes": 963.75,
+      "cumulative_explorer_minutes": 1713.3333333333333,
+      "current_runtime_xp_to_next": 5280,
+      "cumulative_current_runtime_xp": 72280,
+      "required_current_curve_xp_per_minute": 70.4,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "scribes_rest",
+      "alternate_hub": "saltmere",
+      "eligible_hubs": [
+        "scribes_rest",
+        "saltmere"
+      ],
+      "eligible_return_pockets": [
+        "sealhouse_cellars",
+        "drowned_pumphouse"
+      ]
+    },
+    {
+      "from_level": 27,
+      "to_level": 28,
+      "phase": "The Groove",
+      "primary_zone": "paleweald",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1360,
+      "cumulative_speedrunner_minutes": 1020.0,
+      "cumulative_explorer_minutes": 1813.3333333333333,
+      "current_runtime_xp_to_next": 5480,
+      "cumulative_current_runtime_xp": 77760,
+      "required_current_curve_xp_per_minute": 73.06666666666666,
+      "route_bracket": "middle",
+      "alternate_zone": "brinewatch",
+      "route_options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "primary_hub": "scribes_rest",
+      "alternate_hub": "saltmere",
+      "eligible_hubs": [
+        "scribes_rest",
+        "saltmere"
+      ],
+      "eligible_return_pockets": [
+        "sealhouse_cellars",
+        "drowned_pumphouse"
+      ]
+    },
+    {
+      "from_level": 28,
+      "to_level": 29,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1435,
+      "cumulative_speedrunner_minutes": 1076.25,
+      "cumulative_explorer_minutes": 1913.3333333333333,
+      "current_runtime_xp_to_next": 5680,
+      "cumulative_current_runtime_xp": 83440,
+      "required_current_curve_xp_per_minute": 75.73333333333333,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "highmere_market",
+      "alternate_hub": "cinder_gate",
+      "eligible_hubs": [
+        "highmere_market",
+        "cinder_gate"
+      ],
+      "eligible_return_pockets": [
+        "sealhouse_cellars",
+        "drowned_pumphouse"
+      ]
+    },
+    {
+      "from_level": 29,
+      "to_level": 30,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1510,
+      "cumulative_speedrunner_minutes": 1132.5,
+      "cumulative_explorer_minutes": 2013.3333333333333,
+      "current_runtime_xp_to_next": 5880,
+      "cumulative_current_runtime_xp": 89320,
+      "required_current_curve_xp_per_minute": 78.4,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "highmere_market",
+      "alternate_hub": "cinder_gate",
+      "eligible_hubs": [
+        "highmere_market",
+        "cinder_gate"
+      ],
+      "eligible_return_pockets": [
+        "sealhouse_cellars",
+        "drowned_pumphouse"
+      ]
+    },
+    {
+      "from_level": 30,
+      "to_level": 31,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1585,
+      "cumulative_speedrunner_minutes": 1188.75,
+      "cumulative_explorer_minutes": 2113.3333333333335,
+      "current_runtime_xp_to_next": 6080,
+      "cumulative_current_runtime_xp": 95400,
+      "required_current_curve_xp_per_minute": 81.06666666666666,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "highmere_market",
+      "alternate_hub": "cinder_gate",
+      "eligible_hubs": [
+        "highmere_market",
+        "cinder_gate"
+      ],
+      "eligible_return_pockets": [
+        "stormwatch"
+      ]
+    },
+    {
+      "from_level": 31,
+      "to_level": 32,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1660,
+      "cumulative_speedrunner_minutes": 1245.0,
+      "cumulative_explorer_minutes": 2213.3333333333335,
+      "current_runtime_xp_to_next": 6280,
+      "cumulative_current_runtime_xp": 101680,
+      "required_current_curve_xp_per_minute": 83.73333333333333,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "quarryend",
+      "alternate_hub": "ashworks",
+      "eligible_hubs": [
+        "quarryend",
+        "ashworks"
+      ],
+      "eligible_return_pockets": [
+        "stormwatch"
+      ]
+    },
+    {
+      "from_level": 32,
+      "to_level": 33,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1735,
+      "cumulative_speedrunner_minutes": 1301.25,
+      "cumulative_explorer_minutes": 2313.3333333333335,
+      "current_runtime_xp_to_next": 6480,
+      "cumulative_current_runtime_xp": 108160,
+      "required_current_curve_xp_per_minute": 86.4,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "quarryend",
+      "alternate_hub": "ashworks",
+      "eligible_hubs": [
+        "quarryend",
+        "ashworks"
+      ],
+      "eligible_return_pockets": [
+        "stormwatch"
+      ]
+    },
+    {
+      "from_level": 33,
+      "to_level": 34,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1810,
+      "cumulative_speedrunner_minutes": 1357.5,
+      "cumulative_explorer_minutes": 2413.3333333333335,
+      "current_runtime_xp_to_next": 6680,
+      "cumulative_current_runtime_xp": 114840,
+      "required_current_curve_xp_per_minute": 89.06666666666666,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "quarryend",
+      "alternate_hub": "ashworks",
+      "eligible_hubs": [
+        "quarryend",
+        "ashworks"
+      ],
+      "eligible_return_pockets": [
+        "stormwatch"
+      ]
+    },
+    {
+      "from_level": 34,
+      "to_level": 35,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1885,
+      "cumulative_speedrunner_minutes": 1413.75,
+      "cumulative_explorer_minutes": 2513.3333333333335,
+      "current_runtime_xp_to_next": 6880,
+      "cumulative_current_runtime_xp": 121720,
+      "required_current_curve_xp_per_minute": 91.73333333333333,
+      "route_bracket": "foothills",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "quarryend",
+      "alternate_hub": "ashworks",
+      "eligible_hubs": [
+        "quarryend",
+        "ashworks"
+      ],
+      "eligible_return_pockets": [
+        "stormwatch"
+      ]
+    },
+    {
+      "from_level": 35,
+      "to_level": 36,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 1960,
+      "cumulative_speedrunner_minutes": 1470.0,
+      "cumulative_explorer_minutes": 2613.3333333333335,
+      "current_runtime_xp_to_next": 7080,
+      "cumulative_current_runtime_xp": 128800,
+      "required_current_curve_xp_per_minute": 94.4,
+      "route_bracket": "frontier",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "windscar",
+      "alternate_hub": "furnace_camp",
+      "eligible_hubs": [
+        "windscar",
+        "furnace_camp"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 36,
+      "to_level": 37,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 2035,
+      "cumulative_speedrunner_minutes": 1526.25,
+      "cumulative_explorer_minutes": 2713.3333333333335,
+      "current_runtime_xp_to_next": 7280,
+      "cumulative_current_runtime_xp": 136080,
+      "required_current_curve_xp_per_minute": 97.06666666666666,
+      "route_bracket": "frontier",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "windscar",
+      "alternate_hub": "furnace_camp",
+      "eligible_hubs": [
+        "windscar",
+        "furnace_camp"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 37,
+      "to_level": 38,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 2110,
+      "cumulative_speedrunner_minutes": 1582.5,
+      "cumulative_explorer_minutes": 2813.3333333333335,
+      "current_runtime_xp_to_next": 7480,
+      "cumulative_current_runtime_xp": 143560,
+      "required_current_curve_xp_per_minute": 99.73333333333333,
+      "route_bracket": "frontier",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "windscar",
+      "alternate_hub": "furnace_camp",
+      "eligible_hubs": [
+        "windscar",
+        "furnace_camp"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 38,
+      "to_level": 39,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 2185,
+      "cumulative_speedrunner_minutes": 1638.75,
+      "cumulative_explorer_minutes": 2913.3333333333335,
+      "current_runtime_xp_to_next": 7680,
+      "cumulative_current_runtime_xp": 151240,
+      "required_current_curve_xp_per_minute": 102.4,
+      "route_bracket": "frontier",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "high_pass",
+      "alternate_hub": "ember_relay",
+      "eligible_hubs": [
+        "high_pass",
+        "ember_relay"
+      ],
+      "eligible_return_pockets": [
+        "deep_crucible"
+      ]
+    },
+    {
+      "from_level": 39,
+      "to_level": 40,
+      "phase": "The Groove",
+      "primary_zone": "highmere",
+      "baseline_minutes": 75,
+      "speedrunner_minutes": 56.25,
+      "explorer_minutes": 100.0,
+      "cumulative_baseline_minutes": 2260,
+      "cumulative_speedrunner_minutes": 1695.0,
+      "cumulative_explorer_minutes": 3013.3333333333335,
+      "current_runtime_xp_to_next": 7880,
+      "cumulative_current_runtime_xp": 159120,
+      "required_current_curve_xp_per_minute": 105.06666666666666,
+      "route_bracket": "frontier",
+      "alternate_zone": "cinder",
+      "route_options": [
+        "highmere",
+        "cinder"
+      ],
+      "primary_hub": "high_pass",
+      "alternate_hub": "ember_relay",
+      "eligible_hubs": [
+        "high_pass",
+        "ember_relay"
+      ],
+      "eligible_return_pockets": [
+        "deep_crucible"
+      ]
+    },
+    {
+      "from_level": 40,
+      "to_level": 41,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 100,
+      "speedrunner_minutes": 75.0,
+      "explorer_minutes": 133.33333333333334,
+      "cumulative_baseline_minutes": 2360,
+      "cumulative_speedrunner_minutes": 1770.0,
+      "cumulative_explorer_minutes": 3146.6666666666665,
+      "current_runtime_xp_to_next": 8080,
+      "cumulative_current_runtime_xp": 167200,
+      "required_current_curve_xp_per_minute": 80.8,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "frostgate",
+      "alternate_hub": "wellward",
+      "eligible_hubs": [
+        "frostgate",
+        "wellward"
+      ],
+      "eligible_return_pockets": [
+        "deep_crucible"
+      ]
+    },
+    {
+      "from_level": 41,
+      "to_level": 42,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 115,
+      "speedrunner_minutes": 86.25,
+      "explorer_minutes": 153.33333333333334,
+      "cumulative_baseline_minutes": 2475,
+      "cumulative_speedrunner_minutes": 1856.25,
+      "cumulative_explorer_minutes": 3300.0,
+      "current_runtime_xp_to_next": 8280,
+      "cumulative_current_runtime_xp": 175480,
+      "required_current_curve_xp_per_minute": 72.0,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "frostgate",
+      "alternate_hub": "wellward",
+      "eligible_hubs": [
+        "frostgate",
+        "wellward"
+      ],
+      "eligible_return_pockets": [
+        "deep_crucible"
+      ]
+    },
+    {
+      "from_level": 42,
+      "to_level": 43,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 125,
+      "speedrunner_minutes": 93.75,
+      "explorer_minutes": 166.66666666666666,
+      "cumulative_baseline_minutes": 2600,
+      "cumulative_speedrunner_minutes": 1950.0,
+      "cumulative_explorer_minutes": 3466.6666666666665,
+      "current_runtime_xp_to_next": 8480,
+      "cumulative_current_runtime_xp": 183960,
+      "required_current_curve_xp_per_minute": 67.84,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "lantern_pass",
+      "alternate_hub": "caravan_rest",
+      "eligible_hubs": [
+        "lantern_pass",
+        "caravan_rest"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 43,
+      "to_level": 44,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 130,
+      "speedrunner_minutes": 97.5,
+      "explorer_minutes": 173.33333333333334,
+      "cumulative_baseline_minutes": 2730,
+      "cumulative_speedrunner_minutes": 2047.5,
+      "cumulative_explorer_minutes": 3640.0,
+      "current_runtime_xp_to_next": 8680,
+      "cumulative_current_runtime_xp": 192640,
+      "required_current_curve_xp_per_minute": 66.76923076923077,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "lantern_pass",
+      "alternate_hub": "caravan_rest",
+      "eligible_hubs": [
+        "lantern_pass",
+        "caravan_rest"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 44,
+      "to_level": 45,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 135,
+      "speedrunner_minutes": 101.25,
+      "explorer_minutes": 180.0,
+      "cumulative_baseline_minutes": 2865,
+      "cumulative_speedrunner_minutes": 2148.75,
+      "cumulative_explorer_minutes": 3820.0,
+      "current_runtime_xp_to_next": 8880,
+      "cumulative_current_runtime_xp": 201520,
+      "required_current_curve_xp_per_minute": 65.77777777777777,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "hearthwatch",
+      "alternate_hub": "dune_watch",
+      "eligible_hubs": [
+        "hearthwatch",
+        "dune_watch"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 45,
+      "to_level": 46,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 140,
+      "speedrunner_minutes": 105.0,
+      "explorer_minutes": 186.66666666666666,
+      "cumulative_baseline_minutes": 3005,
+      "cumulative_speedrunner_minutes": 2253.75,
+      "cumulative_explorer_minutes": 4006.6666666666665,
+      "current_runtime_xp_to_next": 9080,
+      "cumulative_current_runtime_xp": 210600,
+      "required_current_curve_xp_per_minute": 64.85714285714286,
+      "route_bracket": "prestige_approach",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "hearthwatch",
+      "alternate_hub": "dune_watch",
+      "eligible_hubs": [
+        "hearthwatch",
+        "dune_watch",
+        "whitebough",
+        "saltroad"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 46,
+      "to_level": 47,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 145,
+      "speedrunner_minutes": 108.75,
+      "explorer_minutes": 193.33333333333334,
+      "cumulative_baseline_minutes": 3150,
+      "cumulative_speedrunner_minutes": 2362.5,
+      "cumulative_explorer_minutes": 4200.0,
+      "current_runtime_xp_to_next": 9280,
+      "cumulative_current_runtime_xp": 219880,
+      "required_current_curve_xp_per_minute": 64.0,
+      "route_bracket": "late_act",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "whitebough",
+      "alternate_hub": "saltroad",
+      "eligible_hubs": [
+        "whitebough",
+        "saltroad"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 47,
+      "to_level": 48,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 150,
+      "speedrunner_minutes": 112.5,
+      "explorer_minutes": 200.0,
+      "cumulative_baseline_minutes": 3300,
+      "cumulative_speedrunner_minutes": 2475.0,
+      "cumulative_explorer_minutes": 4400.0,
+      "current_runtime_xp_to_next": 9480,
+      "cumulative_current_runtime_xp": 229360,
+      "required_current_curve_xp_per_minute": 63.2,
+      "route_bracket": "late_act",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "last_beacon",
+      "alternate_hub": "glass_road",
+      "eligible_hubs": [
+        "last_beacon",
+        "glass_road"
+      ],
+      "eligible_return_pockets": []
+    },
+    {
+      "from_level": 48,
+      "to_level": 49,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 150,
+      "speedrunner_minutes": 112.5,
+      "explorer_minutes": 200.0,
+      "cumulative_baseline_minutes": 3450,
+      "cumulative_speedrunner_minutes": 2587.5,
+      "cumulative_explorer_minutes": 4600.0,
+      "current_runtime_xp_to_next": 9680,
+      "cumulative_current_runtime_xp": 239040,
+      "required_current_curve_xp_per_minute": 64.53333333333333,
+      "route_bracket": "finale",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "north_ledger_gate",
+      "alternate_hub": "sunseal_court",
+      "eligible_hubs": [
+        "north_ledger_gate",
+        "sunseal_court"
+      ],
+      "eligible_return_pockets": [
+        "old_bell_wing"
+      ]
+    },
+    {
+      "from_level": 49,
+      "to_level": 50,
+      "phase": "The Prestige",
+      "primary_zone": "frostward",
+      "baseline_minutes": 150,
+      "speedrunner_minutes": 112.5,
+      "explorer_minutes": 200.0,
+      "cumulative_baseline_minutes": 3600,
+      "cumulative_speedrunner_minutes": 2700.0,
+      "cumulative_explorer_minutes": 4800.0,
+      "current_runtime_xp_to_next": 9880,
+      "cumulative_current_runtime_xp": 248920,
+      "required_current_curve_xp_per_minute": 65.86666666666666,
+      "route_bracket": "finale",
+      "alternate_zone": "sable",
+      "route_options": [
+        "frostward",
+        "sable"
+      ],
+      "primary_hub": "north_ledger_gate",
+      "alternate_hub": "sunseal_court",
+      "eligible_hubs": [
+        "north_ledger_gate",
+        "sunseal_court"
+      ],
+      "eligible_return_pockets": [
+        "old_bell_wing"
+      ]
+    }
+  ],
+  "route_brackets": [
+    {
+      "id": "opening",
+      "name": "Village opening",
+      "travel_levels": [
+        1,
+        5
+      ],
+      "arrival_levels": [
+        2,
+        5
+      ],
+      "options": [
+        "thornford"
+      ],
+      "hub_chains": {
+        "thornford": [
+          "thornford"
+        ]
+      },
+      "baseline_minutes": 35,
+      "current_curve_xp_requirement": 2320,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "outskirts",
+      "name": "Onward settlements",
+      "travel_levels": [
+        5,
+        10
+      ],
+      "arrival_levels": [
+        6,
+        10
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "lantern_crossing"
+        ],
+        "mirefen": [
+          "mossreed_landing"
+        ]
+      },
+      "baseline_minutes": 85,
+      "current_curve_xp_requirement": 7400,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "river_hubs",
+      "name": "Trade and work hubs",
+      "travel_levels": [
+        10,
+        16
+      ],
+      "arrival_levels": [
+        11,
+        16
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "rillbank_quays",
+          "millward"
+        ],
+        "mirefen": [
+          "reedward",
+          "pumpstead"
+        ]
+      },
+      "baseline_minutes": 340,
+      "current_curve_xp_requirement": 15480,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "river_border",
+      "name": "Upper lowlands",
+      "travel_levels": [
+        16,
+        22
+      ],
+      "arrival_levels": [
+        17,
+        22
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "north_ferry",
+          "tollhouse_rise"
+        ],
+        "mirefen": [
+          "stiltmarket",
+          "causeway_watch"
+        ]
+      },
+      "baseline_minutes": 450,
+      "current_curve_xp_requirement": 22680,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "middle",
+      "name": "Woodland or coast",
+      "travel_levels": [
+        22,
+        28
+      ],
+      "arrival_levels": [
+        23,
+        28
+      ],
+      "options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "hub_chains": {
+        "paleweald": [
+          "greyroot",
+          "scribes_rest"
+        ],
+        "brinewatch": [
+          "brinewatch_docks",
+          "saltmere"
+        ]
+      },
+      "baseline_minutes": 450,
+      "current_curve_xp_requirement": 29880,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "foothills",
+      "name": "Upland or works",
+      "travel_levels": [
+        28,
+        35
+      ],
+      "arrival_levels": [
+        29,
+        35
+      ],
+      "options": [
+        "highmere",
+        "cinder"
+      ],
+      "hub_chains": {
+        "highmere": [
+          "highmere_market",
+          "quarryend"
+        ],
+        "cinder": [
+          "cinder_gate",
+          "ashworks"
+        ]
+      },
+      "baseline_minutes": 525,
+      "current_curve_xp_requirement": 43960,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "frontier",
+      "name": "Upper frontier",
+      "travel_levels": [
+        35,
+        40
+      ],
+      "arrival_levels": [
+        36,
+        40
+      ],
+      "options": [
+        "highmere",
+        "cinder"
+      ],
+      "hub_chains": {
+        "highmere": [
+          "windscar",
+          "high_pass"
+        ],
+        "cinder": [
+          "furnace_camp",
+          "ember_relay"
+        ]
+      },
+      "baseline_minutes": 375,
+      "current_curve_xp_requirement": 37400,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "prestige_approach",
+      "name": "End-level settlements",
+      "travel_levels": [
+        40,
+        46
+      ],
+      "arrival_levels": [
+        41,
+        46
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "frostgate",
+          "lantern_pass",
+          "hearthwatch"
+        ],
+        "sable": [
+          "wellward",
+          "caravan_rest",
+          "dune_watch"
+        ]
+      },
+      "baseline_minutes": 745,
+      "current_curve_xp_requirement": 51480,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "late_act",
+      "name": "Late-act approaches",
+      "travel_levels": [
+        46,
+        48
+      ],
+      "arrival_levels": [
+        47,
+        48
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "whitebough",
+          "last_beacon"
+        ],
+        "sable": [
+          "saltroad",
+          "glass_road"
+        ]
+      },
+      "baseline_minutes": 295,
+      "current_curve_xp_requirement": 18760,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "finale",
+      "name": "Final-chapter hubs",
+      "travel_levels": [
+        48,
+        50
+      ],
+      "arrival_levels": [
+        49,
+        50
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "north_ledger_gate"
+        ],
+        "sable": [
+          "sunseal_court"
+        ]
+      },
+      "baseline_minutes": 300,
+      "current_curve_xp_requirement": 19560,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    }
+  ],
+  "routing_revision_date": "2026-11-01",
+  "routing_policy": {
+    "bands": "The player-facing level ranges belong to named hubs and pockets, not entire macro-regions.",
+    "duplication": "Two alternatives in each onward slice; overlapping hubs and return pockets permit mixed routes.",
+    "accounting": "Ten disjoint budget slices partition all 49 gains. User area bands such as 25–30, 30–40 and 45–50 overlap those slices and are never added as extra compulsory XP/time.",
+    "story_gates": "Equivalent regional chapters should set one shared story outcome. OR/outcome-based quest gates and single-claim shared chapter rewards require engine work; do not encode both regional chains in the current all-required prerequisite list.",
+    "switching": "Keep partial objectives and earned rewards, accept the next appropriate local job, and never require repeating the opening of the alternative zone.",
+    "state": "Route plans and future regions only; current game has not gained these zones or branch-gate mechanics."
+  },
+  "example_routes": [
+    {
+      "id": "river_woodland_fire_snow",
+      "name": "River, woodland, fire and snow",
+      "choices": {
+        "opening": "thornford",
+        "outskirts": "rillbank",
+        "river_hubs": "rillbank",
+        "river_border": "rillbank",
+        "middle": "paleweald",
+        "foothills": "highmere",
+        "frontier": "highmere",
+        "prestige_approach": "frostward",
+        "late_act": "frostward",
+        "finale": "frostward"
+      }
+    },
+    {
+      "id": "marsh_coast_downs_desert",
+      "name": "Marsh, coast, downs and desert",
+      "choices": {
+        "opening": "thornford",
+        "outskirts": "mirefen",
+        "river_hubs": "mirefen",
+        "river_border": "mirefen",
+        "middle": "brinewatch",
+        "foothills": "cinder",
+        "frontier": "cinder",
+        "prestige_approach": "sable",
+        "late_act": "sable",
+        "finale": "sable"
+      }
+    }
+  ],
+  "new_region_briefs": [
+    {
+      "region": "mirefen",
+      "goal": "Make the lowlands bracket playable through practical marsh life rather than a second river port.",
+      "story": "A drainage cooperative holds flood-damaged duplicates of the relief accounts. Restoring a safe delivery circuit and comparing the surviving receipts can establish the same provenance that Rillbank finds in freight records.",
+      "local_stories": [
+        "An eel fisher and a reed cutter dispute a blocked channel.",
+        "Recover flood-marked household records before a salvage dealer sells them as waste paper.",
+        "Hunt the marsh predator taking livestock from raised pens."
+      ],
+      "mechanics_boundary": "These are briefs, not added quest records. Full content, traversal, enemies, services and alternate chapter gating remain to build."
+    },
+    {
+      "region": "highmere",
+      "goal": "Offer a grounded upland route through the same levels as the volcanic frontier.",
+      "story": "Common-land leases, quarry wage books and confiscated grazing rights expose another arm of the collection network. A local hearing can establish the same onward lead as Cinder’s industrial records.",
+      "local_stories": [
+        "A horse breeder has hired an inspector who is afraid of horses.",
+        "Two villages disagree about who repairs the drove bridge before market day.",
+        "Track the raiders using abandoned quarry shelters."
+      ],
+      "mechanics_boundary": "These are briefs, not added quest records. Do not imply mounts, hearings or defended repairs are already implemented."
+    }
+  ],
+  "quest_hubs_file": "quest-hubs.json",
+  "area_brackets": [
+    {
+      "level_band": [
+        1,
+        5
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        5,
+        10
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        10,
+        16
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        16,
+        22
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        22,
+        28
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        25,
+        30
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        28,
+        35
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        30,
+        40
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        40,
+        46
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        45,
+        50
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        48,
+        50
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        50,
+        50
+      ],
+      "endgame": true,
+      "budget_status": "Outside the level-1–50 clock; all enemies level 50 normal or elite."
+    }
+  ],
+  "world_names_file": "world-names.json",
+  "instanced_dungeons_file": "instanced-dungeons.json",
+  "dungeon_time_policy": "Included within the existing 45/60/80-hour envelopes, not added on top.",
+  "initial_dungeon_layouts": 7,
+  "deferred_dungeons_file": "deferred-dungeons.json",
+  "post_cap_dungeon_policy": "Reuse The Unwritten Court’s existing rooms/core bosses at level 50. No additional post-cap layout is scheduled.",
+  "maximum_dungeon_layouts": 8,
+  "dungeon_mechanics_file": "dungeon-mechanics.md"
+}

@@ -28,17 +28,21 @@ func _names() -> Array:
 	var player = game.player
 	if settings.get_value("playerName") and game.character and not player.dead:
 		# your name in the law's colour: clean, Amber (seen), red (Wanted), Outlaw
-		out.append({"text": game.titles.full_name(game.character.name), "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15, 0)})
+		out.append({"text": game.titles.full_name(game.character.name), "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15 * DB.CONFIG.player.visualScale, 0)})
 	if not settings.get_value("names"):
 		return out
 	for n in game.npcs.list:
-		out.append({"text": n.name, "sub": "<%s>" % n.def.title if n.def.get("title") else "", "colour": Color("9ee070"), "at": n.position + Vector3(0, 2.15, 0)})
+		if Vector2(n.position.x-player.position.x,n.position.z-player.position.z).length_squared() > RANGE * RANGE:
+			continue
+		out.append({"text": n.name, "sub": "<%s>" % n.def.title if n.def.get("title") else "", "colour": UI.NAME_FRIENDLY, "at": n.position + Vector3(0, 2.15, 0)})
 	for e in game.enemies.list:
+		if Vector2(e.position.x-player.position.x,e.position.z-player.position.z).length_squared() > RANGE * RANGE:
+			continue
 		if not e.alive or game.hud.enemy_bars.has(e.id):
 			continue
 		var h: float = e.cfg.get("barHeight", 3.0 if e.cfg.get("elite") else 2.1)
 		var lawful: bool = e.cfg.get("lawful", "") != "" and e.protected
-		out.append({"text": e.cfg.name, "colour": Color("9ee070") if lawful else Color("f0d050") if e.passive else Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
+		out.append({"text": e.cfg.name, "colour": UI.NAME_FRIENDLY if lawful else UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE, "at": e.position + Vector3(0, h, 0)})
 	return out
 
 
@@ -47,6 +51,8 @@ func _ground_items() -> Array:
 	if not game.settings.get_value("lootNames"):
 		return out
 	for l in game.loot.active:
+		if Vector2(l.x-game.player.position.x,l.z-game.player.position.z).length_squared() > RANGE * RANGE:
+			continue
 		var r = l.def.get("reward")
 		# quest pick-ups (firewood, ore...) carry no name: their sparkle and
 		# the quest log show them (Dan, 2026-10-19)

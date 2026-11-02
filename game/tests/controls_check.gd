@@ -1,5 +1,5 @@
 extends SceneTree
-## Mouse aim and classic controls, and the camera's tilt:
+## Mouse aim and classic controls, and stable camera pitch:
 ##   godot --headless --path . --script res://game/tests/controls_check.gd
 
 var failures := 0
@@ -13,7 +13,9 @@ var t0 := 0 ## the frame the world is ready (after the loading screen)
 func _process(_dt: float) -> bool:
 	frame += 1
 	if frame == 1:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 		Store.dir = "user://test_store_controls"
+		DirAccess.make_dir_recursive_absolute(Store.dir)
 		for f in DirAccess.get_files_at(Store.dir):
 			DirAccess.remove_absolute(Store.dir + "/" + f)
 		game = load("res://game/main.tscn").instantiate()
@@ -36,13 +38,12 @@ func _process(_dt: float) -> bool:
 		game.keys.bind("bar0", "KeyT")
 		check(game.keys.keys("bar0") == ["KeyT", "MouseRight"], "rebinding slot 1 keeps the right button")
 		game.keys.reset_all()
-		# the camera: low near, steep far; classic keeps one angle
+		# Both camera choices hold one pitch while changing distance.
 		var pitch := func(z: float) -> float:
 			game.zoom = z
 			var o: Vector3 = game._camera_offset(1.0)
 			return rad_to_deg(atan2(o.y, o.z))
-		var k: Dictionary = DB.CONFIG.camera.tilt
-		check(absf(pitch.call(0.6) - k.pitchNear) < 0.1 and absf(pitch.call(1.0) - k.pitchMid) < 0.1 and absf(pitch.call(1.6) - k.pitchFar) < 0.1, "the camera tilts with the zoom")
+		check(absf(pitch.call(0.8) - pitch.call(1.35)) < 0.01, "the isometric camera keeps one angle throughout zoom")
 		game.settings.set_value("classicCamera", true)
 		check(absf(pitch.call(0.6) - pitch.call(1.3)) < 0.01, "the classic camera keeps one angle")
 		game.settings.set_value("classicCamera", false)
@@ -69,9 +70,9 @@ func _process(_dt: float) -> bool:
 		check(not game.player.can_hit_while_moving(foe.position.x, foe.position.z), "running away, a foe behind you cannot be hit")
 		game.input.held.erase("KeyD")
 		game.settings.set_value("classicControls", true)
-	elif f == 44:
+	elif f == 50:
 		var to_foe := atan2(foe.position.x - game.player.position.x, foe.position.z - game.player.position.z)
-		check(absf(angle_difference(game.player.facing, to_foe)) > 0.5, "classic: walking away turns you from your target, not towards it")
+		check(absf(angle_difference(game.player.facing, to_foe)) > 0.5, "classic: walking away turns you from your target, not towards it (%.2f)" % game.player.facing)
 		game.settings.set_value("classicControls", false)
 		# keyboard turning: D turns on the spot, W walks the way you face
 		game.targeting.stop_attack()
@@ -80,15 +81,15 @@ func _process(_dt: float) -> bool:
 		start = game.player.position
 		game.player.facing = 0.0
 		game.input.held["KeyD"] = true
-	elif f == 45:
+	elif f == 51:
 		check(not game.player.moving, "keyboard turning: turning is not moving")
-	elif f == 54:
+	elif f == 60:
 		var at: Vector3 = game.player.position - start
 		check(Vector2(at.x, at.z).length() < 0.05, "keyboard turning: D turns without walking (%s)" % at)
 		check(game.player.facing < -0.2, "keyboard turning: D turns you clockwise (%.2f)" % game.player.facing)
 		game.input.held.erase("KeyD")
 		game.input.held["KeyW"] = true
-	elif f == 64:
+	elif f == 70:
 		var p0: Vector3 = game.player.position
 		game.input.held.erase("KeyW")
 		var fwd := Vector2(sin(game.player.facing), cos(game.player.facing))
