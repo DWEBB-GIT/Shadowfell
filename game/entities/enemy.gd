@@ -133,12 +133,19 @@ var move_speed: float:
 	get:
 		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
 
-## running after the player in a fight: never slower than the player's run
-## share (CONFIG.chase), still slowed by snares
+## running after the player in a fight: a percent of the player's base move
+## speed (CONFIG.chase: the enemy's `runSpeed`, else its type's), still
+## slowed by snares
 var chase_speed: float:
 	get:
-		var floor_: float = DB.CONFIG.player.speed * DB.CONFIG.chase.share
-		return maxf(cfg.speed, floor_) * (1 - minf(90, mods.slow) / 100.0) if cfg.speed > 0 else 0.0
+		if cfg.speed <= 0:
+			return 0.0
+		return DB.CONFIG.player.speed * run_percent / 100.0 * (1 - minf(90, mods.slow) / 100.0)
+
+var run_percent: float:
+	get:
+		var c: Dictionary = DB.CONFIG.chase
+		return float(cfg.get("runSpeed", c.byType.get(cfg.get("type", ""), c.default)))
 
 var damage_taken_scale: float:
 	get:

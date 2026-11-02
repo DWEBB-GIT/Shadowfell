@@ -136,6 +136,7 @@ func play_off(duration: float, impact := 0.4) -> void:
 
 func hit() -> void:
 	flinch = 1.0
+	snap = 0.0 # the head snaps back (models without a Hit clip, the player)
 	# an imported model with a Hit clip flinches with it (never mid-swing);
 	# on the move only the upper body flinches, the legs keep running
 	if anim and anim.has_animation("Hit") and action == null and death < 0:
@@ -230,6 +231,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 	_pick_clip(dt, speed01)
 	anim.advance(dt)
 	_apply_upper(dt)
+	_apply_snap(dt)
 	if track_steps:
 		_watch_feet(dt)
 
@@ -345,6 +347,48 @@ func _apply_upper(dt: float) -> void:
 		var q := a.rotation_track_interpolate(tb[0], t)
 		var b: int = tb[1]
 		_skel.set_bone_pose_rotation(b, _skel.get_bone_pose_rotation(b).slerp(q, _upper_w))
+
+
+## A blow taken (Dan, 2026-11-02): the head whips back and the chest gives
+## a little, then both settle. Pose only: the body never leaves its spot.
+## Laid over the clip each frame on models without a Hit clip of their own.
+var snap := -1.0 ## seconds since the blow, -1 at rest
+var _snap_bones = null ## [[bone, share], ...]
+const SNAP_IN := 0.06 ## seconds to whip back
+const SNAP_OUT := 0.32 ## seconds to settle
+const SNAP_ANGLE := 0.5 ## radians, head + neck + chest together
+
+
+func _apply_snap(dt: float) -> void:
+	if snap < 0:
+		return
+	snap += dt
+	if snap >= SNAP_IN + SNAP_OUT or death >= 0 or anim.has_animation("Hit"):
+		snap = -1.0
+		return
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			snap = -1.0
+			return
+		_skel = found[0]
+	if _snap_bones == null:
+		_snap_bones = []
+		for pair in [["mixamorig_Spine2", 0.2], ["mixamorig_Neck", 0.3], ["mixamorig_Head", 0.5]]:
+			var b := _skel.find_bone(pair[0])
+			if b >= 0:
+				_snap_bones.append([b, pair[1]])
+	var k := snap / SNAP_IN if snap < SNAP_IN else 1.0 - ease_((snap - SNAP_IN) / SNAP_OUT)
+	# the model faces +Z in its parent, so tipping back is a turn about +X
+	var holder: Node3D = model.get_parent() if model.get_parent() is Node3D else model
+	var axis_skel := (_skel.global_basis.inverse() * holder.global_basis * Vector3.RIGHT).normalized()
+	for pair in _snap_bones:
+		var b: int = pair[0]
+		var parent := _skel.get_bone_parent(b)
+		var pb := _skel.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
+		var axis := (pb.inverse() * axis_skel).normalized()
+		var turn := Quaternion(axis, -SNAP_ANGLE * float(pair[1]) * k)
+		_skel.set_bone_pose_rotation(b, turn * _skel.get_bone_pose_rotation(b))
 
 
 ## The bones from the waist up: walking up from the head, every bone that

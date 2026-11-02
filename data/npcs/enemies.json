@@ -1,9 +1,10 @@
 {
-  "_about": "`attitude`: \"aggressive\" enemies attack anyone who comes within `detection`; \"passive\" ones (yellow names, like the wild boar) mind their own business until struck. An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank). `base`: a level variant (WoW's one creature entry per zone) names the enemy it copies and states only what differs. `maxLevel`: each spawn rolls its level from `level` to `maxLevel`. `worldDrops: false`: it drops nothing from the level's world-drop band (beasts). An `imported` block swaps in an imported, textured model and the fields that go with it (e.g. { \"model\": \"rat\", \"scale\": 1.5 }) while CONFIG.models.imported is on (game/core/db.gd); the entry's own fields are the code-built version to switch back to.",
+  "_about": "`attitude`: \"aggressive\" enemies attack anyone who comes within `detection`; \"passive\" ones (yellow names, like the wild boar) mind their own business until struck. An enemy with `dummy: true` (the training dummy) never moves, attacks or dies: its health fills again when it reaches zero or after a few seconds out of combat. Enemy types: stats, behaviour and what they drop. Where they stand is in world.json (enemySpawns). `type` (fodder, pack_beast, normal, skirmisher, armoured, elite, heavy, boss) and `level` work out health, damage, attackInterval, armour (or `armourClass`: none, light, armoured, heavy), an elite's special and an aimed shot (src/data/scaling.js); a number stated here wins. `runSpeed`: chasing, how fast it runs as a percent of the player's base move speed (CONFIG.chase in game/core/db.gd gives each type a default, 110-120 for most; fast beasts up to 150, shamblers under 100). `respawn`: seconds after a kill before that spawn point brings the enemy back (0 = never, for bosses and story enemies). `skin`: the loot table a beast's body yields when skinned (with Skinning and a knife); the rank needed comes from its level (src/systems/loot.js skinRank). `base`: a level variant (WoW's one creature entry per zone) names the enemy it copies and states only what differs. `maxLevel`: each spawn rolls its level from `level` to `maxLevel`. `worldDrops: false`: it drops nothing from the level's world-drop band (beasts). An `imported` block swaps in an imported, textured model and the fields that go with it (e.g. { \"model\": \"rat\", \"scale\": 1.5 }) while CONFIG.models.imported is on (game/core/db.gd); the entry's own fields are the code-built version to switch back to.",
   "leashDistance": 18,
   "enemies": [
     {
       "id": "ghoul",
+      "runSpeed": 90,
       "blood": "bone",
       "name": "Ashen Ghoul",
       "attitude": "aggressive",
@@ -65,6 +66,7 @@
     },
     {
       "id": "hound",
+      "runSpeed": 135,
       "name": "Barrow Wolf",
       "attitude": "aggressive",
       "model": "hound",
@@ -204,6 +206,7 @@
     },
     {
       "id": "greyjaw",
+      "runSpeed": 150,
       "name": "Old Greyjaw",
       "attitude": "aggressive",
       "model": "hound",
@@ -235,6 +238,7 @@
     },
     {
       "id": "wild_boar",
+      "runSpeed": 125,
       "name": "Wild Boar",
       "attitude": "passive",
       "model": "hound",
@@ -261,6 +265,7 @@
     },
     {
       "id": "ridge_wolf",
+      "runSpeed": 135,
       "name": "Ridge Wolf",
       "attitude": "aggressive",
       "model": "hound",
@@ -290,6 +295,7 @@
     },
     {
       "id": "bristleback",
+      "runSpeed": 130,
       "name": "Old Bristleback",
       "attitude": "aggressive",
       "model": "hound",
@@ -458,6 +464,7 @@
     },
     {
       "id": "corrick_pig",
+      "runSpeed": 100,
       "name": "Corrick Sow",
       "attitude": "passive",
       "lawful": "livestock",
@@ -483,6 +490,7 @@
     },
     {
       "id": "farm_hen",
+      "runSpeed": 100,
       "name": "Hen",
       "attitude": "passive",
       "lawful": "livestock",
@@ -506,6 +514,7 @@
     },
     {
       "id": "reeves_hound",
+      "runSpeed": 115,
       "name": "Thatch Corrow, the Reeve's Hound",
       "attitude": "aggressive",
       "model": "mara",
@@ -527,6 +536,7 @@
     },
     {
       "id": "granary_rat",
+      "runSpeed": 120,
       "name": "Granary Rat",
       "attitude": "aggressive",
       "model": "hound",
@@ -559,6 +569,7 @@
     },
     {
       "id": "hedge_fox",
+      "runSpeed": 140,
       "name": "Hedge Fox",
       "attitude": "passive",
       "model": "hound",
@@ -607,6 +618,7 @@
     },
     {
       "id": "blackwood_prowler",
+      "runSpeed": 145,
       "name": "Blackwood Prowler",
       "attitude": "aggressive",
       "model": "hound",
@@ -637,6 +649,7 @@
     },
     {
       "id": "deadfall_ogre",
+      "runSpeed": 95,
       "name": "Deadfall Ogre",
       "attitude": "aggressive",
       "model": "brute",
