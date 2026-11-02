@@ -53,7 +53,7 @@ Class trainers have specific locations: Rowan teaches wardens at the watch house
 
 ## Player and grass readability
 
-The fixed elevated camera retains its pitch while zooming. Default zoom is now 0.98, framing about **39 m across at 16:9**, with a closer 0.72 minimum and 1.3 maximum. There is no look-ahead control. A 1.2 visual scale makes the player and attached gear clearer; collision radius, movement and combat distances retain their original values. Together these changes make the figure roughly one third larger on screen. The 720p integration check measures a 48.6 pixel character-height projection. The paper doll compensates for this scale to avoid cropping.
+The fixed elevated camera retains its pitch while zooming. Default zoom is now 0.98, framing about **39 m across at 16:9**, with a closer 0.5 minimum (about 18 m from the player, for a close look) and 1.3 maximum. There is no look-ahead control. A 1.2 visual scale makes the player and attached gear clearer; collision radius, movement and combat distances retain their original values. Together these changes make the figure roughly one third larger on screen. The 720p integration check measures a 48.6 pixel character-height projection. The paper doll compensates for this scale to avoid cropping.
 
 Grass now uses a short original five-leaf clump, approximately 18–23 cm before instance variation, with gentle wind. Placed Common/Wispy grass is replaced while preserving placement and rotation; `sourceModel` and `sourceScale` retain the old values. Streamed grass uses the same small shape. Source pack files remain unchanged. Boars use original Godot-native body/snout/tusk geometry rather than a recoloured wolf.
 
