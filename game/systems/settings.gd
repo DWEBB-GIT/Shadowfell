@@ -15,7 +15,9 @@ const SETTINGS := [
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "group": "Controls and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "group": "Controls and camera", "default": false},
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "group": "Controls and camera", "default": true},
-	{"id": "lampShadows", "label": "Shadows from lamps and torches (turn off if the game slows near lights)", "group": "Graphics", "default": true},
+	# 0 off, 1 the player only, 2 the player, enemies and NPCs. Each step
+	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).
+	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "group": "Graphics", "default": 1, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
 	{"id": "volMaster", "label": "Master volume", "group": "Sound", "default": 70, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "group": "Sound", "default": 100, "min": 0, "max": 100},
 	{"id": "volAmbience", "label": "Ambience", "group": "Sound", "default": 100, "min": 0, "max": 100},
@@ -36,6 +38,8 @@ static func _def(id: String):
 ## a stored value made safe: the right type, and inside a slider's range
 static func _clean(s: Dictionary, v):
 	if s.has("min"):
+		if typeof(v) == TYPE_BOOL and s.has("names"):
+			return 1 if v else 0
 		return clampi(U.jround(v), s.min, s.max) if (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and is_finite(v) else s.default
 	return v if typeof(v) == TYPE_BOOL else s.default
 

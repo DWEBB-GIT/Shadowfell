@@ -222,9 +222,12 @@ func _build_settings() -> void:
 			val.custom_minimum_size = Vector2(38, 0)
 			val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			# sliders as they move, so the sound follows the hand
+			var names: Array = s.get("names", [])
+			if not names.is_empty():
+				val.custom_minimum_size = Vector2(70, 0)
 			sl.value_changed.connect(func(x):
 				game.settings.set_value(id, int(x))
-				val.text = "%d%%" % int(x))
+				val.text = names[int(x)] if not names.is_empty() else "%d%%" % int(x))
 			settings_win.inputs[id] = [sl, val]
 		else:
 			var cb := CheckBox.new()
@@ -1031,7 +1034,8 @@ func _render_settings() -> void:
 		var parts: Array = w.inputs[id]
 		if parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
-			parts[1].text = "%d%%" % int(v)
+			var names: Array = Settings._def(id).get("names", [])
+			parts[1].text = names[int(v)] if not names.is_empty() else "%d%%" % int(v)
 		else:
 			parts[0].set_pressed_no_signal(v)
 	hud.keybind_ui.render()
