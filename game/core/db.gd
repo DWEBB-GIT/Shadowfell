@@ -15,7 +15,7 @@ const CONFIG := {
 	# the imported player body, used while `imported` is on ("base_male" is
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
-	"player": {"archetype": "warden", "speed": 5.6, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	"player": {"archetype": "warden", "speed": 6.2, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	"death": {

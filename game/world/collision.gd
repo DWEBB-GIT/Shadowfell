@@ -77,12 +77,19 @@ func off_blocked_ground(pos: Vector3) -> Vector3:
 	return pos
 
 
+## A hop clears a low obstacle once the feet are this share of its height up
+## (the legs tuck under). Clearing only at its full height left a window of
+## a fifth of a second at the top of the hop, too short to cross a fence
+## at a run (Dan, 2026-11-02).
+const CLEAR_AT := 0.5
+
+
 ## Push a moving circle (a Vector3, x/z used) out of obstacles and off
 ## blocked ground, and keep it in the world. Returns the corrected position.
 func resolve(pos: Vector3, radius: float, lift := 0.0) -> Vector3:
 	for pass_ in 2:
 		for c in _nearby(pos.x, pos.z, radius + 2):
-			if lift > c.h:
+			if lift > 0.0 and lift >= c.h * CLEAR_AT:
 				continue
 			var dx: float = pos.x - c.x
 			var dz: float = pos.z - c.z

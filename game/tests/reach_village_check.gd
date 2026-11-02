@@ -59,7 +59,7 @@ func _run() -> void:
 	check(pigs.size() == 3 and pigs.all(func(e): return e.protected), "farm has three surviving protected pigs")
 	var model: Node3D = game.player.model
 	check(is_equal_approx(model.scale.x, DB.CONFIG.player.visualScale), "player body and attached equipment use the readability scale")
-	check(is_equal_approx(game.player.radius, 0.4) and DB.CONFIG.player.speed == 5.6, "readability does not alter collision radius or movement speed")
+	check(is_equal_approx(game.player.radius, 0.4) and DB.CONFIG.player.speed == 6.2, "readability does not alter collision radius or movement speed")
 	game.zoom = DB.CONFIG.camera.zoomDefault
 	game._snap_camera()
 	var body_height: float = game.camera.unproject_position(game.player.position).distance_to(game.camera.unproject_position(game.player.position + Vector3(0, 2.15 * DB.CONFIG.player.visualScale, 0)))

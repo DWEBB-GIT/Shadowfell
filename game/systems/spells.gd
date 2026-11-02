@@ -297,7 +297,15 @@ func try_cast(id: String) -> bool:
 	var stats = game.stats
 	# Nothing about auto attack blocks an ability: only another cast, a
 	# charge in flight, or the global cooldown does.
-	if not DB.spells.has(id) or player.dead or player.lunge != null or player.casting != null:
+	if not DB.spells.has(id) or player.dead:
+		return false
+	# pressed in the last moments of a cast or a charge, it waits in the
+	# spell queue and goes the instant that ends (Dan, 2026-11-02)
+	var busy = player.casting if player.casting != null else player.lunge
+	if busy != null:
+		var left: float = (busy.get("total", busy.get("duration", 0.0)) - busy.t) if not busy.get("channel", false) else INF
+		if left <= DB.spell_queue_window and id != busy.id:
+			queued = {"id": id, "left": DB.spell_queue_window + 0.1}
 		return false
 	if not game.skills.knows_ability(id):
 		return false
