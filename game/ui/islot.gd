@@ -15,7 +15,10 @@ var loc := ""
 var icon: Texture2D
 var letter := ""
 var count := ""
-var count_colour := Color("f0e4c8")
+## keys and counts in a bright gold, bold and outlined, so they read at a
+## glance (Dan, 2026-11-02: the dull gold was hard to read)
+const LABEL := Color("ffd84a")
+var count_colour := LABEL
 var count_centre := false ## a quiver's arrows: centred along the bottom
 var count_size := 12
 var placeholder := ""
@@ -153,16 +156,16 @@ func _draw() -> void:
 		for i in 4:
 			draw_rect(r.grow(1.5 + i * 1.5), Color(glow, glow.a * (1.0 - i / 4.0)), false, 1.5)
 	if key != "":
-		var f := UI.font
-		var ks := 10 if bar else 9
-		var kp := Vector2(well.position.x + 1, well.position.y + f.get_ascent(ks))
-		draw_string_outline(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, 3, Color.BLACK)
-		draw_string(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, UI.GOLD)
+		var f := UI.bold
+		var ks := 11 if bar else 10
+		var kp := Vector2(well.position.x + 2, well.position.y + f.get_ascent(ks))
+		draw_string_outline(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, 4, Color.BLACK)
+		draw_string(f, kp, key, HORIZONTAL_ALIGNMENT_LEFT, -1, ks, LABEL)
 	if count != "":
-		var f := UI.bold if count_centre else UI.font
+		var f := UI.bold
 		var w := f.get_string_size(count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size).x
-		var p := Vector2((size.x - w) / 2 if count_centre else well.end.x - w - 1, well.end.y - f.get_descent(count_size))
-		draw_string_outline(f, p, count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size, 3, Color.BLACK)
+		var p := Vector2((size.x - w) / 2 if count_centre else well.end.x - w - 2, well.end.y - f.get_descent(count_size))
+		draw_string_outline(f, p, count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size, 4, Color.BLACK)
 		draw_string(f, p, count, HORIZONTAL_ALIGNMENT_LEFT, -1, count_size, count_colour)
 	if focused:
 		draw_rect(r.grow(2), Color("f2d27a"), false, 2)
