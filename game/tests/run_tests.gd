@@ -24,7 +24,7 @@ func _initialize() -> void:
 	for g in data.files.mining.veinGroups:
 		for o in g.outcrops:
 			check(Terrain.walk_at(o[0], o[1]) >= 0.5, "vein outcrop of %s stands on open ground" % g.id)
-	# spell looks (data/spell_fx.json) name real spells, poses and shapes
+	# spell looks (data/abilities/spell_fx.json) name real spells, poses and shapes
 	for id in DB.spell_fx:
 		var look: Dictionary = DB.spell_fx[id]
 		check(DB.abilities.has(id), "spell look %s names a known spell" % id)

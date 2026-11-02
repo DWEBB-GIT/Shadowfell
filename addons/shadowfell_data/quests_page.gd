@@ -12,7 +12,7 @@ const UI := preload("ui.gd")
 const KEY_ORDER := ["id", "name", "giver", "turnIn", "autoAccept", "requires", "choice", "summary", "offer", "progress", "complete", "objectives", "reward", "setsFlag", "turnInLog"]
 const OBJECTIVE_ORDER := ["id", "type", "target", "count", "keep", "label", "location"]
 const REWARD_ORDER := ["coins", "xp", "items", "reputation", "infamy"]
-const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"]]
+const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"], ["puzzle", "Solve a world mechanism"]]
 
 ## open another record (an npc) on its own tab
 signal open_record(kind: String, id: String)
@@ -352,7 +352,10 @@ func _objective(q: Dictionary, o: Dictionary, i: int) -> void:
 				o.target = s.examine_points[0] if s.examine_points.size() else ""
 			"talk":
 				o.target = q.get("turnIn")
-		if v in ["examine", "talk"]:
+			"puzzle":
+				var mechanisms: Array = s.files.world.get("puzzles", [])
+				o.target = mechanisms[0].id if not mechanisms.is_empty() else ""
+		if v in ["examine", "talk", "puzzle"]:
 			o.erase("count")
 		elif not o.has("count"):
 			o.count = 1
@@ -374,6 +377,10 @@ func _objective(q: Dictionary, o: Dictionary, i: int) -> void:
 				_changed()), "A point in the world to look at (text.json examine).")
 		"talk":
 			UI.note(box, "Go and speak to %s (the hand-in npc)." % s.npc_name(q.get("turnIn")))
+		"puzzle":
+			UI.row(g, "Mechanism", UI.choice(s.files.world.get("puzzles", []).map(func(p): return [p.id, p.name]), o.get("target"), func(v):
+				o.target = v
+				_changed()), "Operate the placed mechanism. Reading its clue does not solve it. Move it in World → Puzzles.")
 	if o.get("type") in ["kill", "collect"]:
 		UI.row(g, "Count", UI.spin(o.get("count", 1), 1, 999, 1, func(v):
 			o.count = v

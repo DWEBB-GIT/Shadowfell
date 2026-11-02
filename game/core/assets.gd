@@ -60,24 +60,39 @@ static func _adopt_shared_materials(root: Node) -> void:
 	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null or _textured(mi.mesh):
 			continue
-		mi.mesh = _srgb_mesh(mi.mesh)
+		if RenderingServer.get_current_rendering_method() == "gl_compatibility":
+			mi.mesh = _srgb_mesh(mi.mesh)
 		for i in mi.mesh.get_surface_count():
 			var m := mi.mesh.surface_get_material(i)
 			mi.set_surface_override_material(i, shared_material(m.resource_name if m else ""))
 
 
 static func has(name: String) -> bool:
-	return ResourceLoader.exists(MODELS % name)
+	return ResourceLoader.exists(model_path(name))
+
+
+## Existing model ids still work; scenery may also use a project scene or glTF.
+static func model_path(name: String) -> String:
+	if name.begins_with("res://"):
+		return name
+	if _paths.is_empty():
+		_load_paths()
+	if _paths.has(name):
+		return _paths[name]
+	var native := "res://assets/models/%s.tscn" % name
+	return native if ResourceLoader.exists(native) else MODELS % name
 
 
 static func instance(name: String) -> Node3D:
 	if not _cache.has(name):
-		_cache[name] = load(MODELS % name) if has(name) else null
+		_cache[name] = load(model_path(name)) if has(name) else null
 	var scene: PackedScene = _cache[name]
 	if scene:
 		var n := scene.instantiate() as Node3D
-		n.name = name
-		_adopt_shared_materials(n)
+		n.name = name.get_file().get_basename()
+		# Pack scenes keep their authored textures and materials.
+		if not name.begins_with("res://") and model_path(name).ends_with(".glb"):
+			_adopt_shared_materials(n)
 		return n
 	var holder := Node3D.new()
 	holder.name = name
@@ -88,3 +103,42 @@ static func instance(name: String) -> Node3D:
 	box.position.y = 0.6
 	holder.add_child(box)
 	return holder
+
+
+## Tint an instance with private materials, leaving the source pack untouched.
+static func tint_instance(root: Node3D, tint: Color) -> void:
+	if tint.is_equal_approx(Color.WHITE):
+		return
+	# Keep materials on the parent until its meshes are destroyed. Otherwise
+	# Godot 4.7 can release an override before removing its renderer dependency.
+	var materials: Array = root.get_meta("_shadowfell_tint_materials", [])
+	var meshes: Array = root.find_children("*", "MeshInstance3D", true, false)
+	if root is MeshInstance3D:
+		meshes.append(root)
+	for mi: MeshInstance3D in meshes:
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var original := mi.get_active_material(i)
+			if original is BaseMaterial3D:
+				var material: BaseMaterial3D = original.duplicate()
+				material.albedo_color *= tint
+				materials.append(material)
+				mi.set_surface_override_material(i, material)
+	root.set_meta("_shadowfell_tint_materials", materials)
+
+
+static var _paths := {}
+static func _load_paths() -> void:
+	var path := "res://assets/model_library.json"
+	if FileAccess.file_exists(path):
+		var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if data is Dictionary:
+			_paths = data.get("models", {})
+
+static func model_ids() -> Array:
+	if _paths.is_empty():
+		_load_paths()
+	var ids := _paths.keys()
+	ids.sort()
+	return ids

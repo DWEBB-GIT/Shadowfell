@@ -1,0 +1,131 @@
+[gd_scene load_steps=15 format=3]
+
+[sub_resource type="StandardMaterial3D" id="1"]
+albedo_color = Color(0.36, 0.25, 0.15, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="2"]
+albedo_color = Color(0.22, 0.16, 0.1, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="3"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="4"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="5"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="6"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="7"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="8"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="9"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="10"]
+size = Vector3(0.39, 0.16, 1.8)
+
+[sub_resource type="BoxMesh" id="11"]
+size = Vector3(0.16, 0.8, 0.16)
+
+[sub_resource type="BoxMesh" id="12"]
+size = Vector3(0.16, 0.8, 0.16)
+
+[sub_resource type="BoxMesh" id="13"]
+size = Vector3(0.16, 0.8, 0.16)
+
+[sub_resource type="BoxMesh" id="14"]
+size = Vector3(0.16, 0.8, 0.16)
+
+[node name="PondDock" type="Node3D"]
+
+[node name="Plank0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.5, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("3")
+material_override = SubResource("1")
+
+[node name="Plank1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.07, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("4")
+material_override = SubResource("1")
+
+[node name="Plank2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.64, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("5")
+material_override = SubResource("1")
+
+[node name="Plank3" type="MeshInstance3D" parent="."]
+position = Vector3(-0.20999999999999996, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("6")
+material_override = SubResource("1")
+
+[node name="Plank4" type="MeshInstance3D" parent="."]
+position = Vector3(0.21999999999999997, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("7")
+material_override = SubResource("1")
+
+[node name="Plank5" type="MeshInstance3D" parent="."]
+position = Vector3(0.6499999999999999, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("8")
+material_override = SubResource("1")
+
+[node name="Plank6" type="MeshInstance3D" parent="."]
+position = Vector3(1.08, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("9")
+material_override = SubResource("1")
+
+[node name="Plank7" type="MeshInstance3D" parent="."]
+position = Vector3(1.5099999999999998, 0.12, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("10")
+material_override = SubResource("1")
+
+[node name="Post-1.4-0.75" type="MeshInstance3D" parent="."]
+position = Vector3(-1.4, -0.15, -0.75)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("11")
+material_override = SubResource("2")
+
+[node name="Post-1.40.75" type="MeshInstance3D" parent="."]
+position = Vector3(-1.4, -0.15, 0.75)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("12")
+material_override = SubResource("2")
+
+[node name="Post1.4-0.75" type="MeshInstance3D" parent="."]
+position = Vector3(1.4, -0.15, -0.75)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("13")
+material_override = SubResource("2")
+
+[node name="Post1.40.75" type="MeshInstance3D" parent="."]
+position = Vector3(1.4, -0.15, 0.75)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("14")
+material_override = SubResource("2")

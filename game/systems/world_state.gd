@@ -15,6 +15,7 @@ var ground := [] ## items the player dropped: { uid, id, count, x, z }
 var corpses := {} ## enemyId -> { x, z, coins } for bodies not yet looted
 var next_ground_uid := 1
 var flags := {} ## story facts, e.g. 'manifest_delivered'
+var puzzles := {} ## mechanism id -> dial values / sequence progress / solved
 var camp = null ## { x, z } of the camp, if one is pitched
 var rest_point := "shrine" ## 'camp', 'shrine' or 'inn:<npc>'
 var home := "" ## 'inn:<npc>' once an innkeeper keeps a bed for you (Return Home goes there)
@@ -42,6 +43,7 @@ func reset() -> void:
 	corpses = {}
 	next_ground_uid = 1
 	flags = {}
+	puzzles = {}
 	camp = null
 	rest_point = "shrine"
 	home = ""
@@ -93,6 +95,7 @@ func serialize() -> Dictionary:
 		"ground": ground.duplicate(true),
 		"corpses": corpses.duplicate(true),
 		"flags": flags.keys(),
+		"puzzles": puzzles.duplicate(true),
 		"camp": camp.duplicate() if camp else null,
 		"restPoint": rest_point,
 		"home": home,
@@ -131,6 +134,7 @@ func apply(data: Dictionary) -> void:
 	for g in ground:
 		next_ground_uid = maxi(next_ground_uid, g.uid + 1)
 	flags = _set_of(data.get("flags"))
+	puzzles = data.get("puzzles", {}).duplicate(true) if WorldPuzzles.valid_saved_states(data.get("puzzles", {})) else {}
 	camp = data.camp.duplicate() if data.get("camp") else null
 	var rp = data.get("restPoint")
 	rest_point = "camp" if rp == "camp" and camp else rp if typeof(rp) == TYPE_STRING and rp.begins_with("inn:") else "shrine"

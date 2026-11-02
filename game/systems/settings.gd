@@ -16,7 +16,7 @@ const SETTINGS := [
 	{"id": "targetLock", "label": "Target lock (with nothing selected, abilities lock on to the enemy you face)", "tab": "controls", "default": true},
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "tab": "controls", "group": "Scheme and camera", "default": false},
-	{"id": "classicCamera", "label": "Classic camera (one lower angle at every zoom)", "tab": "controls", "group": "Scheme and camera", "default": false},
+	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},
 	{"id": "soundOn", "label": "Enable sound", "tab": "audio", "default": true},
 	{"id": "outputDevice", "label": "Output device", "tab": "audio", "default": "Default", "choice": true},
@@ -24,8 +24,9 @@ const SETTINGS := [
 	{"id": "volMusic", "label": "Music", "tab": "audio", "default": 60, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "tab": "audio", "default": 100, "min": 0, "max": 100},
 	{"id": "volAmbience", "label": "Ambience (forest, town, birds, bells)", "tab": "audio", "default": 100, "min": 0, "max": 100},
-	{"id": "names", "label": "Show names over characters", "tab": "interface", "default": true},
+	{"id": "names", "label": "Show NPC names", "tab": "interface", "default": true},
 	{"id": "playerName", "label": "Show your own name over your character", "tab": "interface", "default": true},
+	{"id": "bloodEffects", "label": "Small blood effects on living creatures", "tab": "interface", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
 ]
 

@@ -14,17 +14,17 @@ const SUN_MATCH := 0.42
 ## the far side of things, and filmic tone mapping rolls the lit side off
 ## softly instead of washing it out. AMBIENT_K is how much of the three.js
 ## hemisphere light is kept as fill.
-const GRADE := {"brightness": 0.97, "contrast": 1.2, "saturation": 1.12}
-const SUN_BOOST := 1.85
-const AMBIENT := Color("5d6f8c")
-const AMBIENT_K := 0.5
-const EXPOSURE := 1.05 ## before the filmic curve, which darkens the mid tones
+const GRADE := {"brightness": 1.0, "contrast": 1.08, "saturation": 0.96}
+const SUN_BOOST := 2.05
+const AMBIENT := Color("71869bff")
+const AMBIENT_K := 0.82
+const EXPOSURE := 1.15
 
 var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
-var zoom := 1.15 ## mouse wheel camera zoom (CONFIG.camera.zoomMin..zoomMax)
+var zoom: float = DB.CONFIG.camera.zoomDefault
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
 ## the mouse aims and WASD moves. Left click attacks, talks and loots; hold it
@@ -83,6 +83,7 @@ var law: Law
 var boons: Boons
 var sparkles: Sparkles
 var interaction: Interaction
+var puzzles: WorldPuzzles
 var action_bar: ActionBar
 var hud: Hud
 var audio: AudioSystem
@@ -101,6 +102,7 @@ var move_to = null
 var shake := 0.0
 var cursor := "-" ## the cursor shown (Cursors), "" for the arrow
 
+var atmosphere: Atmosphere
 var env: Environment
 var sun: DirectionalLight3D
 var player_light: OmniLight3D
@@ -123,6 +125,8 @@ func _ready() -> void:
 	collision = Collision.new()
 	world = World.new(self).build()
 	add_child(world.group)
+	atmosphere = Atmosphere.new(self)
+	add_child(atmosphere)
 	water_and_dark = WaterAndDark.new(self).build()
 
 	world_state = WorldState.new(self)
@@ -157,6 +161,7 @@ func _ready() -> void:
 	loot = Loot.new(self)
 	chests = Chests.new(self)
 	discovery = Discovery.new(self).build()
+	puzzles = WorldPuzzles.new(self).build()
 	mining = Mining.new(self)
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
@@ -181,6 +186,7 @@ func _ready() -> void:
 func _init_renderer() -> void:
 	var vp := get_viewport()
 	vp.scaling_3d_scale = DB.CONFIG.camera.renderScale
+	vp.msaa_3d = Viewport.MSAA_2X
 	# View-distance fog: clear around the player, swallowing the road ahead.
 	# Things past `far` are not drawn at all.
 	env = Environment.new()
@@ -205,9 +211,9 @@ func _init_renderer() -> void:
 	env.glow_normalized = true
 	for i in 7:
 		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
-	env.glow_intensity = 0.55
+	env.glow_intensity = 0.28
 	env.glow_bloom = 0.0
-	env.glow_hdr_threshold = 1.1
+	env.glow_hdr_threshold = 1.4
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
@@ -216,7 +222,11 @@ func _init_renderer() -> void:
 	env.fog_depth_begin = DB.CONFIG.fog.near
 	env.fog_depth_end = DB.CONFIG.fog.far
 	# the haze glows warm towards the low sun
-	env.fog_sun_scatter = 0.25
+	env.fog_sun_scatter = 0.12
+	# Contact shading anchors the simple meshes without repainting the assets.
+	env.ssao_enabled = true
+	env.ssao_radius = 1.1
+	env.ssao_intensity = 1.15
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -230,17 +240,18 @@ func _init_renderer() -> void:
 
 	# dusk: a low amber sun and a warm glow around the Warden
 	sun = DirectionalLight3D.new()
-	sun.light_color = Color("ffc888")
+	sun.light_color = Color("ffe0b2")
 	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
-	sun.shadow_normal_bias = 1.0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 55.0
-	sun.shadow_opacity = 0.85
+	sun.shadow_normal_bias = 0.65
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 72.0
+	sun.shadow_opacity = 0.78
 	sun.shadow_blur = 1.5
 	add_child(sun)
-	player_light = Tex.point_light(Color("ffb070"), 5, 9, 1.6)
+	player_light = Tex.point_light(Color("e6ded0"), 9.0, 7.5, 1.6)
+	player_light.light_volumetric_fog_energy = 0.05
 	player_light.shadow_enabled = false
 	add_child(player_light)
 
@@ -340,9 +351,7 @@ func _model_shelf() -> Node3D:
 	shelf.name = "ModelShelf"
 	scene.add_child(shelf)
 	var names: Array = []
-	for f in ResourceLoader.list_directory("res://assets/models/"):
-		if f.ends_with(".glb"):
-			names.append(f.get_basename())
+	names = Assets.model_ids()
 	var cols := ceili(sqrt(names.size()))
 	for k in names.size():
 		var m := Assets.instance(names[k])
@@ -441,7 +450,7 @@ func start_game(resume: bool) -> void:
 	if resumed:
 		hud.log_line("You take up the road again.", "lore")
 	else:
-		hud.log_line("The Fallen Road. Somewhere ahead lies the old watch post.", "lore")
+		hud.log_line(DB.world.get("openingText", "The Fallen Road. Somewhere ahead lies the old watch post."), "lore")
 
 
 # ----------------------------------------------------------- game events
@@ -502,28 +511,42 @@ func _pick_under_cursor():
 				best = {"kind": "point", "obj": c}
 		return best
 	for e in enemies.list:
+		if not _near_cursor_view(e.position.x,e.position.z):
+			continue
 		# the body and the feet both count, so tall and short foes are easy to click
 		if e.alive:
 			cands.append(["enemy", e, minf(_screen_dist(e.position + Vector3(0, 1, 0)), _screen_dist(e.position + Vector3(0, 0.3, 0))) - 6])
 	for n in npcs.list:
+		if not _near_cursor_view(n.position.x,n.position.z):
+			continue
 		cands.append(["npc", n, _screen_dist(n.position + Vector3(0, 1, 0))])
 	for c in chests.list:
+		if not _near_cursor_view(c.x,c.z):
+			continue
 		if not chests.opened(c):
 			cands.append(["chest", c, _screen_dist(Vector3(c.x, Terrain.height_at(c.x, c.z) + 0.4, c.z))])
 	for sp in Layout.signposts:
+		if not _near_cursor_view(sp.position[0],sp.position[1]):
+			continue
 		var x: float = sp.position[0]
 		var z: float = sp.position[1]
 		var y := Terrain.height_at(x, z)
 		cands.append(["sign", sp, minf(_screen_dist(Vector3(x, y + 1.0, z)), _screen_dist(Vector3(x, y + 1.9, z)))])
 	for l in loot.lootables() + loot.skinnables():
+		if not _near_cursor_view(l.x,l.z):
+			continue
 		var d := _screen_dist(Vector3(l.x, Terrain.height_at(l.x, l.z) + 0.3, l.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["loot", l, d])
 	for v in mining.veins():
+		if not _near_cursor_view(v.x,v.z):
+			continue
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["vein", v, d])
 	for v in gathering.live():
+		if not _near_cursor_view(v.x,v.z):
+			continue
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["herb", v, d])
@@ -782,7 +805,7 @@ func manual_save() -> Dictionary:
 # -------------------------------------------------------------- the loop
 func _aim_point():
 	var m := Vector2(input.mouse.x, input.mouse.y)
-	var plane := Plane(Vector3.UP, player.position.y + 0.5)
+	var plane := Plane(Vector3.UP, player.position.y - player.jump_h + 0.5)
 	return plane.intersects_ray(camera.project_ray_origin(m), camera.project_ray_normal(m))
 
 
@@ -794,9 +817,9 @@ func _pad_aim() -> Vector3:
 	var l := pad.left
 	var dir: Vector2
 	if r.z > 0.3:
-		dir = Vector2(r.x, r.y)
+		dir = GameInput.camera_direction(Vector2(r.x, r.y), camera.global_basis)
 	elif l.z > 0.3:
-		dir = Vector2(l.x, l.y)
+		dir = GameInput.camera_direction(Vector2(l.x, l.y), camera.global_basis)
 	else:
 		dir = Vector2(sin(player.facing), cos(player.facing))
 	var n := dir.normalized() if dir.length() > 0 else Vector2(0, 1)
@@ -884,7 +907,7 @@ func _handle_input(dt: float):
 					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left" if mouse_aim else "right"}
 					fx.move_marker(at.x, at.z)
 		var gm := input.move_axis()
-		var gkeys: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": gm.x, "z": gm.y}
+		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)
 		var gcm = _click_move(gkeys, dt)
 		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}}
 	if player.dead:
@@ -895,7 +918,7 @@ func _handle_input(dt: float):
 		player.set_sitting(not player.sitting)
 
 	var km := input.move_axis()
-	var keys_move: Dictionary = {"x": pad.left.x, "z": pad.left.y} if pad_on and pad.left.z > 0 else {"x": km.x, "z": km.y}
+	var keys_move := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else km)
 	var cm = _click_move(keys_move, dt)
 	var move: Dictionary = cm if cm != null else keys_move
 	# keyboard turning: the keys turn and walk you, relative to your facing
@@ -928,6 +951,9 @@ func _handle_input(dt: float):
 			_right_click_aim()
 		else:
 			_click("right")
+	# Manual movement also wins over a new click destination in this frame.
+	if keys_move.x or keys_move.z:
+		move_to = null
 	# Mouse aim: the left button held aims you at the cursor (or at your
 	# target, once you are swinging at it); so does the right stick
 	var face_aim = null
@@ -994,6 +1020,7 @@ func step(dt: float) -> void:
 		boons.update(dt)
 		water_and_dark.update(dt, time)
 		discovery.update(dt)
+		puzzles.update(dt)
 		enemies.update(dt)
 		grave.update(dt)
 		npcs.update(dt)
@@ -1057,15 +1084,21 @@ func _update_region(dt: float) -> void:
 
 
 func _snap_camera() -> void:
-	camera_target = player.position
+	camera_target = _camera_follow_position()
 	world.update_indoors(0, player.position)
 	_place_camera()
+
+
+## Follow terrain height during a jump, keeping the leap visible without
+## lifting the whole view. Normal slopes and the ghost still follow as before.
+func _camera_follow_position() -> Vector3:
+	return player.position - Vector3.UP * player.jump_h
 
 
 func _update_camera(dt: float) -> void:
 	# exponential smoothing: the same feel at any frame rate
 	var k := 1 - exp(-DB.CONFIG.camera.followSharpness * dt)
-	camera_target = camera_target.lerp(player.position, k)
+	camera_target = camera_target.lerp(_camera_follow_position(), k)
 	_place_camera(dt)
 
 
@@ -1100,26 +1133,14 @@ func _classic_camera() -> bool:
 
 
 func _zoom_max() -> float:
-	var c: Dictionary = DB.CONFIG.camera
-	return c.zoomMax if _classic_camera() else c.tilt.zoomMax
+	return DB.CONFIG.camera.zoomMax
 
 
-## Where the camera sits from the player at distance scale `z`. Classic: one
-## angle (CONFIG.camera.offset). Otherwise the angle follows the zoom: low
-## and close for towns and exploring, steeper further out for fights.
+## Both camera choices keep their pitch throughout the zoom range. There
+## is no pan, orbit or cursor-driven look-ahead; north stays screen-up.
 func _camera_offset(z: float) -> Vector3:
 	var c: Dictionary = DB.CONFIG.camera
-	if _classic_camera():
-		return c.offset * z
-	var k: Dictionary = c.tilt
-	var pitch: float
-	if zoom <= 1.0:
-		pitch = lerpf(k.pitchNear, k.pitchMid, clampf(inverse_lerp(c.zoomMin, 1.0, zoom), 0, 1))
-	else:
-		pitch = lerpf(k.pitchMid, k.pitchFar, clampf(inverse_lerp(1.0, k.zoomMax, zoom), 0, 1))
-	var d: float = (c.offset as Vector3).length() * k.distance * z
-	var a := deg_to_rad(pitch)
-	return Vector3(0, sin(a) * d, cos(a) * d)
+	return (c.lowerOffset if _classic_camera() else c.offset) * z
 
 
 func _place_camera(dt := 0.0) -> void:
@@ -1128,10 +1149,10 @@ func _place_camera(dt := 0.0) -> void:
 		return
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
-	zoom = minf(zoom, _zoom_max())
+	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
 	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
-	var t := camera_target + Vector3(0, 0, -DB.CONFIG.camera.frame * z)
+	var t := camera_target + Vector3(0, 1.0, 0)
 	var sx := 0.0
 	var sy := 0.0
 	if shake > 0.001:
@@ -1148,8 +1169,35 @@ func _place_camera(dt := 0.0) -> void:
 		env.fog_depth_begin = fog_base.near + extra
 		env.fog_depth_end = fog_base.far + extra
 		camera.far = env.fog_depth_end + 6
-	camera.look_at(Vector3(t.x + sx, t.y + 1.0 + sy, t.z - DB.CONFIG.camera.lookAhead * z)) # a little ahead, up the road
+	camera.look_at(Vector3(t.x + sx, t.y + sy, t.z))
 	_place_sun(t)
 	var p := player.position
 	player_light.position = Vector3(p.x, p.y + 2.4, p.z + 0.6)
 	world.set_cutaway(camera.position, p + Vector3(0, 1.2, 0))
+
+
+func _exit_tree() -> void:
+	set_process(false)
+	events._handlers.clear()
+	if input:
+		input.is_bound = Callable()
+	RenderCleanup.detach(self)
+	# World owns Town, and Town points back to World. Break the reference
+	# cycle on exit so streamed materials and shaders can actually be released.
+	if world and world.town:
+		world.town.world = null
+	UI.icons = null
+
+
+## The fixed camera cannot show targets beyond this local square. Reject them
+## before terrain sampling and screen projection; clicks still evaluate now.
+func _near_cursor_view(x: float, z: float) -> bool:
+	return absf(x-player.position.x) <= Interaction.CLICK_NEAR and absf(z-player.position.z) <= Interaction.CLICK_NEAR
+
+
+## Only keyboard/stick intent passes through this conversion. Click routes
+## and mouse/target positions already live in world space.
+func _screen_move(axis: Vector2) -> Dictionary:
+	var basis: Basis = camera.global_basis if is_instance_valid(camera) else Basis.IDENTITY
+	var direction := GameInput.camera_direction(axis, basis)
+	return {"x": direction.x, "z": direction.y}

@@ -9,6 +9,8 @@ extends EditorPlugin
 
 const Sculpt := preload("sculpt.gd")
 const WorldEditor := preload("res://addons/shadowfell_data/world_editor.gd")
+const Catalog := preload("catalog.gd")
+const PlacementInspector := preload("placement_inspector.gd")
 const WORLD_SCENE := "res://addons/shadowfell_data/world_editor.tscn"
 const PLACE_KINDS := ["NPC", "Enemy", "Item", "Chest", "Prop", "Shrine", "Signpost"]
 const PROP_MODELS := ["anvil", "awning", "bone_pile", "camp", "cart", "chest", "cottage", "crate", "crate_broken", "dead_tree", "fence", "forge", "grave0", "grave1", "lamp_post", "palisade", "pine", "rock0", "rock1", "ruin_wall", "shrine", "standing_stone", "watch_post", "waymarker", "well", "wheel"]
@@ -32,12 +34,28 @@ var kind_pick: OptionButton
 var what_pick: OptionButton
 var place_button: Button
 var map_pick: OptionButton
+var asset_search: LineEdit
+var asset_category: OptionButton
+var scale_min: SpinBox
+var scale_max: SpinBox
+var random_turn: CheckBox
+var scatter_count: SpinBox
+var scatter_radius: SpinBox
+var snap_size: SpinBox
+var collision_radius: SpinBox
+var _catalog: Array = []
+var _inspector: EditorInspectorPlugin
 const MAPS := ["act1", "new"]
 
 var dock: Control
+var _scroll: ScrollContainer
 
 
 func _enter_tree() -> void:
+	_inspector = PlacementInspector.new()
+	_inspector.plugin = self
+	add_inspector_plugin(_inspector)
+	scene_changed.connect(_scene_changed)
 	# a "World" dock beside the Scene tree, always there
 	bar = VBoxContainer.new()
 	bar.name = "World"
@@ -59,14 +77,14 @@ func _enter_tree() -> void:
 	map_pick.add_item("Act 1 world")
 	map_pick.add_item("New map (2026-10-28)")
 	map_pick.select(MAPS.find(Terrain.chosen_map()))
-	map_pick.tooltip_text = "Which map the World editor opens and the game plays on (Project Settings > shadowfell/world/map). The new map has only its ground so far."
+	map_pick.tooltip_text = "The active map for editing and play. Each map keeps its own terrain and placements."
 	map_pick.item_selected.connect(_on_map)
 	mrow.add_child(map_pick)
 	bar.add_child(mrow)
 	var help := Label.new()
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size.x = 200
-	help.text = "Placing: pick what under Place, press the Place button, then click the ground (each click places one). Click anything placed to move it with the gizmo; Ctrl+D copies it, Delete removes it. Its other fields are in the Inspector (record).\nSculpting: pick a brush and paint with the left mouse button. Shift swaps Raise/Lower and Walkable/Blocked; [ and ] resize; Ctrl+Z undoes.\nCtrl+S saves both."
+	help.text = "Choose an asset, enable Place and click ground (Esc stops). Select nodes in the Scene tree to move, rotate or scale. Brushes sculpt and paint.\nCtrl+Z: undo · Ctrl+S: save\nShift: reverse brush · [ / ]: resize"
 	bar.add_child(help)
 	var pl := Label.new()
 	pl.text = "Place"
@@ -76,10 +94,36 @@ func _enter_tree() -> void:
 		kind_pick.add_item(k)
 	kind_pick.item_selected.connect(func(_i): _fill_what())
 	bar.add_child(kind_pick)
+	asset_search = LineEdit.new()
+	asset_search.placeholder_text = "Find a tree, grass, NPC…"
+	asset_search.text_changed.connect(func(_text): _fill_what())
+	bar.add_child(asset_search)
+	asset_category = OptionButton.new()
+	for category in ["All assets", "Trees", "Grass", "Plants", "Rocks", "Buildings", "Props", "Characters", "Items"]:
+		asset_category.add_item(category)
+	asset_category.item_selected.connect(func(_i): _fill_what())
+	bar.add_child(asset_category)
 	what_pick = OptionButton.new()
 	what_pick.fit_to_longest_item = false
 	what_pick.tooltip_text = "Which one to place"
 	bar.add_child(what_pick)
+	bar.add_child(_button("Refresh asset library", func():
+		_catalog = Catalog.models()
+		DB.ready = false
+		_fill_what()))
+	bar.add_child(_button("Choose a project scene…", _choose_scene))
+	var options := GridContainer.new()
+	options.columns = 2
+	bar.add_child(options)
+	scale_min = _spin(options, "Scale min", 0.01, 100, 1, 0.01, "Random uniform scale: minimum")
+	scale_max = _spin(options, "Scale max", 0.01, 100, 1, 0.01, "Random uniform scale: maximum")
+	snap_size = _spin(options, "Grid (m)", 0, 100, 0, 0.25, "Zero places freely; otherwise snap X/Z to this grid")
+	scatter_count = _spin(options, "Props per click", 1, 100, 1, 1, "Props only: scatter several instances in one undoable placement")
+	scatter_radius = _spin(options, "Scatter radius", 0, 80, 8, 1, "Props only: scatter radius in metres; only walkable land is used")
+	collision_radius = _spin(options, "Prop collider", 0, 20, 0, 0.1, "Circular footprint before scaling; zero for grass and decorative plants")
+	random_turn = CheckBox.new()
+	random_turn.text = "Random prop rotation"
+	bar.add_child(random_turn)
 	place_button = Button.new()
 	place_button.text = "Place: click the ground"
 	place_button.toggle_mode = true
@@ -110,37 +154,54 @@ func _enter_tree() -> void:
 	row.add_child(surface_pick)
 	_add_dock()
 	set_process(false)
+	_catalog = Catalog.models()
+	_fill_what()
 
 
 func _exit_tree() -> void:
+	if _painting:
+		_end_stroke()
+	if _inspector:
+		remove_inspector_plugin(_inspector)
 	if bar:
 		if dock:
 			call("remove_dock", dock)
 			dock.queue_free()
 		else:
-			remove_control_from_docks(bar)
-			bar.queue_free()
+			remove_control_from_docks(_scroll)
+			_scroll.queue_free()
 
 
 # Godot 4.6+ docks are EditorDock nodes added with add_dock (the old
 # add_control_to_dock no longer shows anything); older editors use the old call
 func _add_dock() -> void:
+	_scroll = ScrollContainer.new()
+	_scroll.name = "World"
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(bar)
 	if ClassDB.class_exists("EditorDock") and has_method("add_dock"):
 		dock = ClassDB.instantiate("EditorDock")
 		dock.name = "World"
 		dock.set("title", "World")
 		dock.set("layout_key", "shadowfell_world")
-		dock.set("default_slot", DOCK_SLOT_LEFT_UL)
-		bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		dock.add_child(bar)
+		dock.set("default_slot", DOCK_SLOT_LEFT_UR)
+		_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		dock.add_child(_scroll)
 		call("add_dock", dock)
 	else:
-		add_control_to_dock(DOCK_SLOT_LEFT_UL, bar)
+		add_control_to_dock(DOCK_SLOT_LEFT_UL, _scroll)
 
 
 func _on_map(i: int) -> void:
-	if sculpt and sculpt.dirty:
-		push_warning("World: save (Ctrl+S) or undo the sculpting first; the map was not changed")
+	var data_screen := EditorInterface.get_editor_main_screen().get_node_or_null("GameData")
+	if data_screen and not data_screen.s.dirty.is_empty():
+		push_warning("World: save or revert your Game Data changes before switching maps")
+		map_pick.select(MAPS.find(Terrain.chosen_map()))
+		return
+	var current_root := EditorInterface.get_edited_scene_root()
+	if (sculpt and sculpt.dirty) or (current_root and current_root.get_script() == WorldEditor and current_root.has_unsaved_changes()):
+		push_warning("World: save (Ctrl+S) your placements and terrain before switching maps")
 		map_pick.select(MAPS.find(Terrain.chosen_map()))
 		return
 	ProjectSettings.set_setting(Terrain.MAP_SETTING, MAPS[i])
@@ -150,13 +211,54 @@ func _on_map(i: int) -> void:
 	sculpt = null # the brushes' layer belongs to the map
 	var root := EditorInterface.get_edited_scene_root()
 	if root and root.get_script() == WorldEditor:
+		get_undo_redo().clear_history(get_undo_redo().get_object_history_id(root))
 		root.rebuild()
 		sculpt = Sculpt.new()
 		root.sculpt = sculpt
+	if data_screen:
+		data_screen.revert()
 	print("World: now on the %s map" % ("new" if MAPS[i] == "new" else "Act 1"))
 
 
+func _scene_changed(root: Node) -> void:
+	if _painting:
+		_end_stroke()
+	editor = root as Node3D if root and root.get_script() == WorldEditor else null
+	if editor:
+		if sculpt == null:
+			sculpt = Sculpt.new()
+		editor.sculpt = sculpt
+
+
+static func _button(label: String, action: Callable) -> Button:
+	var b := Button.new()
+	b.text = label
+	b.pressed.connect(action)
+	return b
+
+
+func _choose_scene() -> void:
+	var dialog := EditorFileDialog.new()
+	dialog.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
+	dialog.access = EditorFileDialog.ACCESS_RESOURCES
+	dialog.filters = PackedStringArray(["*.glb,*.gltf,*.tscn ; 3D scenes and models"])
+	dialog.file_selected.connect(func(path: String):
+		_catalog.append([path.get_file().get_basename(), path])
+		kind_pick.select(PLACE_KINDS.find("Prop"))
+		asset_search.clear()
+		_fill_what()
+		for index in what_pick.item_count:
+			if what_pick.get_item_metadata(index) == path:
+				what_pick.select(index)
+		dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free)
+	bar.add_child(dialog)
+	dialog.popup_centered_ratio(0.7)
+
+
 func _open_world() -> void:
+	if dock and dock.has_method("make_visible"):
+		dock.call("make_visible")
 	EditorInterface.open_scene_from_path(WORLD_SCENE)
 	EditorInterface.set_main_screen_editor("3D")
 	_select_root.call_deferred()
@@ -201,12 +303,18 @@ func _fill_what() -> void:
 			for id in DB.items:
 				rows.append([str(DB.items[id].get("name", id)), id])
 		"Prop":
-			for m in PROP_MODELS:
-				rows.append([m, m])
+			rows.append_array(_catalog)
 		_:
 			rows.append(["(one)", ""])
+	asset_category.disabled = PLACE_KINDS[kind_pick.selected] != "Prop"
 	rows.sort_custom(func(a, b): return a[0].naturalnocasecmp_to(b[0]) < 0)
 	for r in rows:
+		if not asset_category.disabled and asset_category.selected > 0:
+			var category := asset_category.get_item_text(asset_category.selected).to_lower()
+			if not Assets.model_path(str(r[1])).contains("/" + category + "/"):
+				continue
+		if asset_search.text != "" and not (str(r[0]) + " " + str(r[1])).to_lower().contains(asset_search.text.to_lower()):
+			continue
 		what_pick.add_item(r[0])
 		what_pick.set_item_metadata(what_pick.item_count - 1, r[1])
 
@@ -234,18 +342,38 @@ func _place() -> void:
 	var at = _hit()
 	if at == null or what_pick.item_count == 0:
 		return
-	var nr := _new_record(PLACE_KINDS[kind_pick.selected], str(what_pick.get_item_metadata(what_pick.selected)))
-	var rec: Dictionary = nr[1]
-	rec.position = [String.num(at.x, 2).to_float(), String.num(at.z, 2).to_float()]
-	var node: Node3D = editor.make_marker(nr[0], rec)
-	if node == null:
-		return
-	var holder: Node = editor.get_node(NodePath(nr[0]))
+	var kind: String = PLACE_KINDS[kind_pick.selected]
+	var id := str(what_pick.get_item_metadata(what_pick.selected))
+	var count := int(scatter_count.value) if kind == "Prop" else 1
 	var ur := get_undo_redo()
-	ur.create_action("Place " + node.name, UndoRedo.MERGE_DISABLE, editor)
-	ur.add_do_method(editor, "attach", node, holder)
-	ur.add_do_reference(node)
-	ur.add_undo_method(holder, "remove_child", node)
+	ur.create_action("Place " + kind, UndoRedo.MERGE_DISABLE, editor)
+	for index in count:
+		var point: Vector3 = at
+		if count > 1:
+			var angle := randf() * TAU
+			var distance := sqrt(randf()) * scatter_radius.value
+			point += Vector3(sin(angle), 0, cos(angle)) * distance
+		if snap_size.value > 0:
+			point.x = snappedf(point.x, snap_size.value)
+			point.z = snappedf(point.z, snap_size.value)
+		if count > 1 and not Terrain.walkable(point.x, point.z):
+			continue
+		var nr := _new_record(kind, id)
+		var rec: Dictionary = nr[1]
+		rec.position = [snappedf(point.x, 0.01), snappedf(point.z, 0.01)]
+		if kind == "Prop":
+			rec.scale = randf_range(minf(scale_min.value, scale_max.value), maxf(scale_min.value, scale_max.value))
+			rec.rotation = randf_range(-180, 180) if random_turn.button_pressed else 0
+			if collision_radius.value > 0:
+				rec.collider = collision_radius.value
+		var node: Node3D = editor.make_marker(nr[0], rec)
+		if node == null:
+			continue
+		var holder: Node = editor.get_node(NodePath(nr[0]))
+		ur.add_do_method(editor, "attach", node, holder)
+		ur.add_do_reference(node)
+		ur.add_undo_method(holder, "remove_child", node)
+		editor.ensure_ground(node.position, 32)
 	ur.commit_action()
 
 
@@ -276,11 +404,28 @@ static func _spin(parent: Control, label: String, lo: float, hi: float, value: f
 
 
 func _handles(object: Object) -> bool:
-	return object is Node3D and object.get_script() == WorldEditor
+	return object is Node3D and (object.get_script() == WorldEditor or object.has_meta("record"))
+
+
+func _get_unsaved_status(for_scene: String) -> String:
+	if not is_inside_tree():
+		return ""
+	var root := EditorInterface.get_edited_scene_root()
+	if root and root.get_script() == WorldEditor and (for_scene == "" or for_scene == root.scene_file_path) and root.has_unsaved_changes():
+		return "Shadowfell world placements or sculpted terrain have unsaved changes."
+	return ""
 
 
 func _edit(object: Object) -> void:
-	editor = object as Node3D
+	# Godot clears selection while the edited scene is being removed. There
+	# is no scene to resolve at that point; finish the stroke and release it.
+	if object == null or not is_inside_tree():
+		if _painting and is_inside_tree():
+			_end_stroke()
+		editor = null
+		return
+	var root := EditorInterface.get_edited_scene_root()
+	editor = root as Node3D if object and root and root.get_script() == WorldEditor else null
 	if editor:
 		if sculpt == null:
 			sculpt = Sculpt.new()
@@ -291,6 +436,8 @@ func _edit(object: Object) -> void:
 
 func _make_visible(visible: bool) -> void:
 	if not visible and editor:
+		if _painting:
+			_end_stroke()
 		editor.show_brush(Vector3.ZERO, 0)
 
 
@@ -303,6 +450,10 @@ func _mode() -> int:
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 	if editor == null or not is_instance_valid(editor):
+		return AFTER_GUI_INPUT_PASS
+	if event is InputEventMouse and event.alt_pressed:
+		if _painting:
+			_end_stroke()
 		return AFTER_GUI_INPUT_PASS
 	_camera = camera
 	if place_button.button_pressed:
@@ -337,6 +488,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 				return AFTER_GUI_INPUT_PASS
 			_target = hit.y
 			_painting = true
+			editor.capture_height_offsets()
 			sculpt.begin_stroke()
 			_since_draw = 1.0
 			set_process(true)
@@ -351,7 +503,8 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 func _hit():
 	if _camera == null:
 		return null
-	return Sculpt.ray_hit(_camera.project_ray_origin(_mouse), _camera.project_ray_normal(_mouse))
+	var point = Sculpt.ray_hit(_camera.project_ray_origin(_mouse), _camera.project_ray_normal(_mouse))
+	return point if point != null and Terrain.map_rect().has_point(Vector2(point.x, point.z)) else null
 
 
 func _update_brush() -> void:
@@ -376,6 +529,9 @@ func _update_brush() -> void:
 func _process(delta: float) -> void:
 	if not _painting or editor == null or not is_instance_valid(editor):
 		set_process(false)
+		return
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_end_stroke()
 		return
 	var hit = _hit()
 	if hit != null:

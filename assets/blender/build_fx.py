@@ -16,7 +16,7 @@ or, with the bpy module installed (pip install bpy):
 
 Conventions (game/systems/fx.gd relies on these):
   * 1 Blender unit = 1 metre; every shape is about 1 m across so the game
-    scales it (data/spell_fx.json). Forward is Blender -Y (+Z in the game).
+    scales it (data/abilities/spell_fx.json). Forward is Blender -Y (+Z in the game).
   * No colour of its own: the "Col" attribute is greyscale brightness, 1 at
     the hot edge, 0 where the shape fades out. The game draws the shapes
     additively and tints them per spell, so black reads as transparent and

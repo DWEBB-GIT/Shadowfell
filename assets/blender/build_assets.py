@@ -30,6 +30,8 @@ import bmesh
 from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from model_paths import model_output
 OUT_GLB = os.path.normpath(os.path.join(HERE, "..", "models"))
 OUT_FBX = os.path.normpath(os.path.join(HERE, "..", "fbx"))
 os.makedirs(OUT_GLB, exist_ok=True)
@@ -211,7 +213,7 @@ def part(name, parent, joint, fn):
 
 
 def export(name):
-    glb = os.path.join(OUT_GLB, name + ".glb")
+    glb = model_output(name + ".glb")
     bpy.ops.export_scene.gltf(
         filepath=glb,
         export_format="GLB",

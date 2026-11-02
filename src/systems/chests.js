@@ -5,7 +5,7 @@ import { ITEMS } from '../data/items.js';
 import { heightAt } from '../world/terrain.js';
 
 
-// Chests in the world (data/world.json `chests`). Walk up and open one (E,
+// Chests in the world (data/world/world.json `chests`). Walk up and open one (E,
 // or click it): what it holds goes into your bags (onto the ground beside
 // it if they are full) and its silver into your purse. A chest with a
 // `lock` needs its key in your bags, or Lockpicking of at least `pick`
