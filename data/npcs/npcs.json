@@ -1334,6 +1334,18 @@
       "shop": "wm_sunseal_court_supplies",
       "innkeeper": false,
       "bedPrice": 12
+    },
+    {
+      "id": "test_vendor",
+      "name": "Quill the Curious",
+      "title": "Test vendor: fancy gear",
+      "mapIcon": "vendor",
+      "level": 10,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#c9a6ff",
+      "shop": "test_curios",
+      "dialogue": "test_vendor"
     }
   ]
 }

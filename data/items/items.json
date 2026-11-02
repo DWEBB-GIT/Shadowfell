@@ -6724,6 +6724,195 @@
       "model": "coin_purse",
       "icon": "coin_purse",
       "description": "The surviving local record. Compare its original limits with the later collection stamp."
+    },
+    {
+      "id": "test_emberbrand",
+      "name": "Emberbrand (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 2,
+      "speed": 2.4,
+      "stack": 1,
+      "price": 0,
+      "model": "arming_sword",
+      "icon": "arming_sword",
+      "description": "Test item: a fire enchantment's glow. Burns orange and sheds sparks.",
+      "glow": {
+        "colour": "#ff7a2a",
+        "strength": 2.6,
+        "pulse": 0.8,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_frostbite",
+      "name": "Frostbite (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 4,
+      "speed": 2.5,
+      "stack": 1,
+      "price": 0,
+      "model": "militia_sword",
+      "icon": "militia_sword",
+      "description": "Test item: a frost enchantment's glow. Cold blue, slow pulse.",
+      "glow": {
+        "colour": "#7fd8ff",
+        "strength": 2.4,
+        "pulse": 0.5,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_voidfang",
+      "name": "Voidfang (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 4,
+      "speed": 1.7,
+      "stack": 1,
+      "price": 0,
+      "model": "bone_knife",
+      "icon": "bone_knife",
+      "description": "Test item: a shadow enchantment's glow. Deep violet, restless.",
+      "glow": {
+        "colour": "#a65cff",
+        "strength": 2.8,
+        "pulse": 1.4,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_dawnblade",
+      "name": "Dawnblade (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "mainHand",
+      "itemLevel": 3,
+      "speed": 2.0,
+      "stack": 1,
+      "price": 0,
+      "model": "watchmans_edge",
+      "icon": "watchmans_edge",
+      "description": "Test item: a holy enchantment's glow. Steady gold.",
+      "glow": {
+        "colour": "#ffd76a",
+        "strength": 2.2,
+        "pulse": 0.0,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_venomtooth",
+      "name": "Venomtooth (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "mainHand",
+      "itemLevel": 2,
+      "speed": 2.6,
+      "stack": 1,
+      "price": 0,
+      "model": "rusted_falchion",
+      "icon": "rusted_falchion",
+      "description": "Test item: a poison enchantment's glow. Sickly green.",
+      "glow": {
+        "colour": "#7dff5a",
+        "strength": 2.4,
+        "pulse": 1.0,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_bloodreaver",
+      "name": "Bloodreaver (test)",
+      "kind": "weapon",
+      "rarity": "epic",
+      "slot": "mainHand",
+      "itemLevel": 4,
+      "speed": 2.8,
+      "stack": 1,
+      "price": 0,
+      "model": "blackwood_cleaver",
+      "icon": "blackwood_cleaver",
+      "description": "Test item: a blood enchantment's glow. Red, beating like a heart.",
+      "glow": {
+        "colour": "#ff2a3a",
+        "strength": 2.6,
+        "pulse": 1.8,
+        "motes": true
+      },
+      "test": true
+    },
+    {
+      "id": "test_glow_wings",
+      "name": "Radiant wings (test)",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "back",
+      "armourType": "cloth",
+      "itemLevel": 1,
+      "stack": 1,
+      "price": 0,
+      "icon": "watch_helm",
+      "cosmetic": "wings",
+      "glow": {
+        "colour": "#9fe8ff",
+        "strength": 2.2,
+        "pulse": 0.4
+      },
+      "test": true,
+      "description": "Test item: glowing wings worn as a cloak."
+    },
+    {
+      "id": "test_halo",
+      "name": "Halo (test)",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "head",
+      "armourType": "cloth",
+      "itemLevel": 1,
+      "stack": 1,
+      "price": 0,
+      "icon": "watch_helm",
+      "cosmetic": "halo",
+      "glow": {
+        "colour": "#ffe08a",
+        "strength": 2.6,
+        "pulse": 0.3
+      },
+      "test": true,
+      "description": "Test item: a golden halo worn as a helmet."
+    },
+    {
+      "id": "test_horns",
+      "name": "Horns (test)",
+      "kind": "armor",
+      "rarity": "legendary",
+      "slot": "head",
+      "armourType": "cloth",
+      "itemLevel": 1,
+      "stack": 1,
+      "price": 0,
+      "icon": "watch_helm",
+      "cosmetic": "horns",
+      "glow": {
+        "colour": "#ff4a1a",
+        "strength": 2.4,
+        "pulse": 0.9
+      },
+      "test": true,
+      "description": "Test item: dark curling horns with ember tips, worn as a helmet."
     }
   ]
 }

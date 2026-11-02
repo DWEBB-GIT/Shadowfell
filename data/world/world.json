@@ -1769,6 +1769,14 @@
         411.5
       ],
       "facing": 270
+    },
+    {
+      "npc": "test_vendor",
+      "position": [
+        -397.0,
+        431.0
+      ],
+      "facing": 225
     }
   ],
   "enemySpawns": [

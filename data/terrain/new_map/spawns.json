@@ -2107,6 +2107,14 @@
   ],
   "npcSpawns": [
 	{
+	  "npc": "test_vendor",
+	  "position": [
+		-444,
+		-198
+	  ],
+	  "facing": 225
+	},
+	{
 	  "npc": "agna",
 	  "position": [
 		266.75,
