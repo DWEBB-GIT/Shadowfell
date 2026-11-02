@@ -136,7 +136,7 @@ var log_tab := "general"
 var log_entries: Array = [] ## [text, kind, rarity, born], newest last
 var party: PartyFrames
 var backdrop: ColorRect
-var main_menu: MainMenu
+var main_menu
 var death: PanelContainer
 var death_text: Label
 var document: PanelContainer
@@ -853,7 +853,7 @@ func _build_modals() -> void:
 	UI.button(cb, "Yes", func(): answer_confirm(true), 14)
 	UI.button(cb, "No", func(): answer_confirm(false), 14)
 	confirm_box.visible = false
-	main_menu = MainMenu.new(game, self)
+	main_menu = preload("res://game/ui/main_menu.gd").new(game, self)
 
 
 # ------------------------------------------------------------ title screen

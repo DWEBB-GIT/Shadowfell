@@ -57,7 +57,7 @@ func _process(dt: float) -> bool:
 		32:
 			_shot("logout_countdown")
 			var left: float = hud.main_menu.left
-			_check(left < MainMenu.COUNTDOWN and left > MainMenu.COUNTDOWN - 1, "the countdown runs (%.2f s left)" % left)
+			_check(left < preload("res://game/ui/main_menu.gd").COUNTDOWN and left > preload("res://game/ui/main_menu.gd").COUNTDOWN - 1, "the countdown runs (%.2f s left)" % left)
 			_check(hud.main_menu.wait_label.text.begins_with("Logging out in"), "it says so: " + hud.main_menu.wait_label.text)
 			game.input.pressed["Escape"] = true
 		34:

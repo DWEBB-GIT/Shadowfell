@@ -1,5 +1,6 @@
 class_name Game
 extends Node3D
+const ZoneGradeS = preload("res://game/world/zone_grade.gd")
 ## Game initialisation and the main loop (src/main.js). Each system owns its
 ## own state; this node wires them together and routes input.
 
@@ -111,7 +112,7 @@ var camera: Camera3D
 var camera_target := Vector3.ZERO
 var fog_base = null
 var _bwk := -1.0
-## The colour grade in force now (ZoneGrade), easing towards the one where
+## The colour grade in force now (ZoneGradeS), easing towards the one where
 ## the player stands; empty until the first region update.
 var grade := {}
 var _ghost := false
@@ -524,7 +525,7 @@ func set_ghost_look(on: bool) -> void:
 		env.adjustment_contrast = 1.1
 		env.adjustment_color_correction = null
 	elif not grade.is_empty():
-		ZoneGrade.apply_colour(env, grade)
+		ZoneGradeS.apply_colour(env, grade)
 	else:
 		env.adjustment_saturation = GRADE.saturation
 		env.adjustment_brightness = GRADE.brightness
@@ -1113,7 +1114,7 @@ func step(dt: float) -> void:
 
 ## Which region and named place the Warden is in, and the air there: the
 ## fog and light shade smoothly into the gloom of the Blackwood and other
-## dark woods, and colour zones (ZoneGrade, data/terrain/<map>/grades.json)
+## dark woods, and colour zones (ZoneGradeS, data/terrain/<map>/grades.json)
 ## lay their own tint, fog and light over that, eased in as you walk. The
 ## region is looked up every few metres, and a new one only counts once you
 ## are a little way into it, so a border does not flicker.
@@ -1125,14 +1126,14 @@ func _update_region(dt: float) -> void:
 	_grade_check -= dt
 	if _grade_check <= 0.0:
 		_grade_check = 1.0
-		if ZoneGrade.changed_on_disk():
-			ZoneGrade.reload()
-	var target := ZoneGrade.target_at(p.x, p.z, air(k), ZoneGrade.list())
+		if ZoneGradeS.changed_on_disk():
+			ZoneGradeS.reload()
+	var target := ZoneGradeS.target_at(p.x, p.z, air(k), ZoneGradeS.list())
 	if snap or grade.is_empty():
 		grade = target
 		_apply_grade()
-	elif ZoneGrade.distance(grade, target) > 0.002:
-		grade = ZoneGrade.mix(grade, target, 1.0 - exp(-dt * 1.5))
+	elif ZoneGradeS.distance(grade, target) > 0.002:
+		grade = ZoneGradeS.mix(grade, target, 1.0 - exp(-dt * 1.5))
 		_apply_grade()
 	if region != null and Vector2(p.x - _region_at.x, p.z - _region_at.y).length() < 2.0:
 		return
@@ -1177,7 +1178,7 @@ func _apply_grade() -> void:
 	env.ambient_light_color = g.ambientColor
 	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight
 	if not _ghost:
-		ZoneGrade.apply_colour(env, g)
+		ZoneGradeS.apply_colour(env, g)
 
 
 func _snap_camera() -> void:
