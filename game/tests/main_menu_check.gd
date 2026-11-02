@@ -85,6 +85,8 @@ func _process(dt: float) -> bool:
 			# Target lock off: nothing locks on by itself
 			var e = game.enemies.list[0]
 			var p: Vector3 = game.player.position
+			# the new map's spawns can be far away: stand one just ahead, on screen
+			e.position = p + Vector3(0, 0, -6)
 			game.player.facing = atan2(e.position.x - p.x, e.position.z - p.z)
 			var far := 999.0
 			game.settings.set_value("targetLock", false)
