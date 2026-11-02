@@ -58,7 +58,7 @@
       "id": "ford_inn",
       "name": "The Ford Inn",
       "vendorType": "innkeeper",
-      "stock": ["grilled_perch", "travellers_stew", "healing_draught"]
+      "stock": ["grilled_perch", "travellers_stew", "mug_of_ale", "black_stout", "cup_of_wine", "healing_draught"]
     },
     {
       "id": "agna_tannery",
