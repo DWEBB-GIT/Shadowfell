@@ -1,6 +1,6 @@
 class_name Town
 extends RefCounted
-## Towns and the gates of the opening, from data/world.json: `houses` (kit
+## Towns and the gates of the opening, from data/world/world.json: `houses` (kit
 ## built from a few boxes under a gabled roof whose colour says what it is
 ## at a glance from the iso camera: thatch, slate or tile; you cannot go
 ## in), `townWalls` (palisades along lines) and `gates`. A gate shuts its
@@ -61,6 +61,18 @@ func _build_house(h: Dictionary) -> void:
 	var w: float = h.size[0]
 	var d: float = h.size[1]
 	var turn := deg_to_rad(h.get("rotation", 0))
+	var mi := house_visual(h)
+	world.see_through.add_house(mi, mi.get_meta("house_form"))
+	mi.position = Vector3(x, Terrain.height_at(x, z), z)
+	mi.rotation.y += turn
+	group.add_child(mi)
+	world._wall_colliders(x, z, turn, [[-w / 2, -d / 2, w / 2, -d / 2], [w / 2, -d / 2, w / 2, d / 2], [-w / 2, d / 2, w / 2, d / 2], [-w / 2, -d / 2, -w / 2, d / 2]], 0.3, true)
+
+
+## The same building geometry for play and the authoring view.
+static func house_visual(h: Dictionary) -> MeshInstance3D:
+	var w: float = h.size[0]
+	var d: float = h.size[1]
 	# the ridge runs along the longer side: build with it along local x
 	var across := d > w
 	var length := d if across else w
@@ -96,12 +108,20 @@ func _build_house(h: Dictionary) -> void:
 			for sz in [-1, 1]:
 				m.box(Vector3(length * k, wy, sz * (hs + 0.04)), Vector3(0.75, 0.8, 0.1), WINDOW)
 	# the door, on its side
-	var door := _door_side(str(h.get("door", "s")), across)
+	var door := _door_side(visible_door_side(h), across)
 	var dp: Vector3 = Vector3(door.x * (hl + 0.05), 1.45, door.y * (hs + 0.05))
 	var dsize := Vector3(0.12, 2.2, 1.3) if door.x != 0 else Vector3(1.3, 2.2, 0.12)
 	if door.x == 0:
 		dp.x = length * 0.08
 	m.box(dp, dsize, DOOR)
+	var forward := Vector3(door.x,0,door.y)
+	var along := Vector3(door.y,0,-door.x)
+	var lintel := Vector3(0.2,0.18,1.65) if door.x != 0 else Vector3(1.65,0.18,0.2)
+	m.box(dp+Vector3(0,1.16,0)+forward*0.035,lintel,BEAM)
+	for side in [-1.0,1.0]:
+		m.box(dp+along*side*0.75+forward*0.04,Vector3(0.17,2.35,0.17),BEAM)
+	var step_size := Vector3(0.9,0.14,1.8) if door.x != 0 else Vector3(1.8,0.14,0.9)
+	m.box(Vector3(dp.x,0.22,dp.z)+forward*0.42,step_size,STONE)
 	# a steep gabled roof with deep eaves: the shape the iso camera reads
 	var pitch := deg_to_rad(48.0)
 	var eave := 0.5
@@ -130,14 +150,28 @@ func _build_house(h: Dictionary) -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = h.id
 	mi.mesh = m.mesh()
-	world.see_through.add_house(mi, form) # fades as a whole when it hides you
-	mi.position = Vector3(x, Terrain.height_at(x, z), z)
-	mi.rotation.y = turn + (PI / 2.0 if across else 0.0)
-	group.add_child(mi)
-	world._wall_colliders(x, z, turn, [[-w / 2, -d / 2, w / 2, -d / 2], [w / 2, -d / 2, w / 2, d / 2], [-w / 2, d / 2, w / 2, d / 2], [-w / 2, -d / 2, -w / 2, d / 2]], 0.3, true)
-
+	mi.set_meta("house_form", form)
+	mi.rotation.y = PI / 2.0 if across else 0.0
+	return mi
 
 ## the door's face in the ridge-along-x frame: (±1, 0) a gable end, (0, ±1) a long side
+## Keep an authored front if it faces the camera; correct hidden side/back
+## doors, including narrow houses whose roof mesh is turned a quarter.
+static func visible_door_side(h: Dictionary) -> String:
+	var directions := {"n":Vector3.FORWARD,"s":Vector3.BACK,"e":Vector3.RIGHT,"w":Vector3.LEFT}
+	var basis := Basis(Vector3.UP,deg_to_rad(float(h.get("rotation",0))))
+	var chosen: String = str(h.get("door","s"))
+	if (basis * directions.get(chosen,Vector3.BACK)).dot(Vector3.BACK) > 0.45:
+		return chosen
+	var best := -INF
+	for side in directions:
+		var facing: float = (basis * directions[side]).dot(Vector3.BACK)
+		if facing > best:
+			chosen = side
+			best = facing
+	return chosen
+
+
 static func _door_side(side: String, across: bool) -> Vector2i:
 	var world_dir: Vector2i = {"n": Vector2i(0, -1), "s": Vector2i(0, 1), "e": Vector2i(1, 0), "w": Vector2i(-1, 0)}.get(side, Vector2i(0, 1))
 	if not across:

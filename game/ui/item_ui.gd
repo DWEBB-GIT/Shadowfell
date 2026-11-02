@@ -114,6 +114,8 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character.tabs[id] = b
 	preview = CharPreview.new(game)
+	# Own the preview even if this character panel is never opened.
+	character.main.add_child(preview)
 	spellbook = UI.window(self, "Spells", 500, func(): close("spellbook"))
 	skills_win = UI.window(self, "Professions", 420, func(): close("skills"))
 	# both scroll once they outgrow the screen, with a line of help under
@@ -1139,7 +1141,7 @@ func _upgrade_lines(id: String) -> Array:
 
 # ------------------------------------------------------------------ talents
 ## Path points buy each spell's Enhanced rank, then one of its two forks;
-## one key passive per character (builds.gd, data/builds.json).
+## one key passive per character (builds.gd, data/abilities/builds.json).
 func _render_talents() -> void:
 	var w := talents
 	w.panel.visible = open.talents

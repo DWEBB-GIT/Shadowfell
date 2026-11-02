@@ -1,6 +1,6 @@
 class_name Cooking
 extends RefCounted
-## Cooking (data/recipes.json; src/systems/cooking.js), learned from Hester
+## Cooking (data/professions/recipes.json; src/systems/cooking.js), learned from Hester
 ## at the Ford Inn, and the food it makes. A recipe needs a skill rank, its
 ## ingredients and a fire close by; each dish takes a short cast; moving
 ## stops it; a recipe is orange, yellow, green or grey by how easy it now

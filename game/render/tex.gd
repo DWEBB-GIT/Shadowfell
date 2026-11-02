@@ -56,17 +56,22 @@ static func blob() -> Texture2D:
 static func ground_detail() -> Texture2D:
 	if _cache.has("ground"):
 		return _cache.ground
-	var rand := U.Seeded.new(7)
-	var s := 64
+	var noise := FastNoiseLite.new()
+	noise.seed = 7
+	noise.frequency = 0.08
+	noise.fractal_octaves = 3
+	var s := 128
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
-	img.fill(Color8(0xd8, 0xd8, 0xd8))
-	for i in 900:
-		var v := int(floor(170 + rand.next() * 85))
-		var w := 1 + int(floor(rand.next() * 2))
-		var x := int(floor(rand.next() * s))
-		var y := int(floor(rand.next() * s))
-		var h := w + int(floor(rand.next() * 2))
-		img.fill_rect(Rect2i(x, y, w, h).intersection(Rect2i(0, 0, s, s)), Color8(v, v, v))
+	# Periodic sampling keeps tile edges continuous. Quiet grain lets the
+	# painted palette and directional light describe the ground's form.
+	for y in s:
+		for x in s:
+			var fx := float(x) / s
+			var fy := float(y) / s
+			var a := lerpf(noise.get_noise_2d(x, y), noise.get_noise_2d(x - s, y), fx)
+			var b := lerpf(noise.get_noise_2d(x, y - s), noise.get_noise_2d(x - s, y - s), fx)
+			var v := 0.87 + lerpf(a, b, fy) * 0.075
+			img.set_pixel(x, y, Color(v, v, v))
 	img.generate_mipmaps() # sampled with mipmaps; without them GL samples black
 	_cache.ground = ImageTexture.create_from_image(img)
 	return _cache.ground

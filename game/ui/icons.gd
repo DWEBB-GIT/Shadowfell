@@ -105,7 +105,7 @@ func _snapshot(obj: Node3D, size: int, ambient: Color, ambient_k: float, key: Co
 	vp.add_child(cam)
 	frame.call(cam, bounds(obj))
 	add_child(vp)
-	return vp.get_texture()
+	return _bake(vp)
 
 
 ## The box around a model's meshes, in the model's parent space.
@@ -147,7 +147,7 @@ func _glyph(id: String) -> Texture2D:
 	c.draw.connect(func(): Glyphs.paint(Canvas2D.new(c), id, GLYPH_SIZE))
 	vp.add_child(c)
 	add_child(vp)
-	return vp.get_texture()
+	return _bake(vp)
 
 
 ## the icon for an aura: its item's (an elixir), Dan's painted one
@@ -210,7 +210,7 @@ var _player_shot: SubViewport ## the player's own portrait, made again as their 
 ## The player frame's portrait: the player's own model as it looks now,
 ## gear and all (a copy, so the picture holds still)
 func player_portrait(model: Node3D) -> Texture2D:
-	if _player_shot:
+	if is_instance_valid(_player_shot):
 		_player_shot.queue_free()
 	var copy := model.duplicate() as Node3D
 	copy.visible = true
@@ -266,3 +266,35 @@ func _head_shot(model: Node3D) -> Texture2D:
 			span = maxf(box.size.x, maxf(box.size.z, 0.6)) * 0.8
 		var dist := span / tan(deg_to_rad(cam.fov) / 2)
 		cam.transform = Transform3D(Basis(), Vector3(at.x + dist * 0.3, at.y + span * 0.05, at.z + dist)).looking_at(Vector3(at.x, at.y - span * 0.2, at.z), Vector3.UP))
+
+
+func _exit_tree() -> void:
+	items.clear()
+	abilities.clear()
+	_portraits.clear()
+	_sprites.clear()
+	_player_shot = null
+
+
+var _bakes: Array = []
+func _bake(vp: SubViewport) -> ImageTexture:
+	var image := Image.create(vp.size.x, vp.size.y, false, Image.FORMAT_RGBA8)
+	var texture := ImageTexture.create_from_image(image)
+	_bakes.append({"vp":vp, "texture":texture})
+	return texture
+
+func _ready() -> void:
+	RenderingServer.frame_post_draw.connect(_finish_bakes)
+
+func _finish_bakes() -> void:
+	for job in _bakes:
+		var vp: SubViewport = job.vp
+		if not is_instance_valid(vp) or not vp.is_inside_tree():
+			continue
+		if DisplayServer.get_name() != "headless":
+			var image := vp.get_texture().get_image()
+			if image and not image.is_empty():
+				job.texture.set_image(image)
+		RenderCleanup.detach(vp)
+		vp.queue_free()
+	_bakes.clear()

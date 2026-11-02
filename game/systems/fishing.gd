@@ -43,7 +43,8 @@ func _say(text: String, key: String) -> bool:
 func cast(aim) -> bool:
 	var player = game.player
 	if not game.skills.has("fishing"):
-		return _say("You do not know how to fish. Old Tam by the mere can teach you.", "fish-skill")
+		var teacher: String = DB.npcs.get(DB.skills.fishing.trainer, {}).get("name", "the fishing trainer")
+		return _say("You do not know how to fish. %s can teach you." % teacher, "fish-skill")
 	if not has_rod:
 		return _say("You need a fishing rod in your bags.", "fish-rod")
 	if player.casting != null or player.pending != null:

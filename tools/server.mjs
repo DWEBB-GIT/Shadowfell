@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, 'data');
+const registryPath = path.join(DATA, 'catalogue.json');
+const registry = fs.existsSync(registryPath) ? JSON.parse(fs.readFileSync(registryPath, 'utf8')).files : {};
+const dataFile = (name) => path.join(DATA, registry[name.replace(/\.json$/, '')] || name);
 const PORT = Number(process.env.PORT) || 5180;
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
@@ -25,7 +28,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const save = url.pathname.match(/^\/api\/data\/([a-z_]+\.json)$/);
   if (save && req.method === 'PUT') {
-    const file = path.join(DATA, save[1]);
+    const file = dataFile(save[1]);
     if (!fs.existsSync(file)) return send(res, 404, `no data file ${save[1]}`);
     let body = '';
     req.on('data', (c) => (body += c));
@@ -43,7 +46,7 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/data' && req.method === 'GET') {
     const out = {};
-    for (const f of fs.readdirSync(DATA).filter((f) => f.endsWith('.json'))) out[f] = fs.readFileSync(path.join(DATA, f), 'utf8');
+    for (const f of (Object.keys(registry).length ? Object.keys(registry).map(k => k + '.json') : fs.readdirSync(DATA).filter(f => f.endsWith('.json')))) out[f] = fs.readFileSync(dataFile(f), 'utf8');
     return send(res, 200, JSON.stringify(out), 'application/json');
   }
   if (req.method !== 'GET') return send(res, 405, 'method not allowed');

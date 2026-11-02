@@ -1,6 +1,6 @@
 @tool
 extends HSplitContainer
-## Abilities: class spells and skill tools (data/abilities.json). A new
+## Abilities: class spells and skill tools (data/abilities/abilities.json). A new
 ## spell picks what kind it is (a cast, a damage over time, a cleave...) and
 ## starts with the numbers that kind needs; the generic spell engine runs it
 ## with no new code. Put it in a class's spellbook here, and say whether the
@@ -9,9 +9,10 @@ extends HSplitContainer
 
 const DataStore := preload("store.gd")
 const UI := preload("ui.gd")
+const Fields := preload("ability_fields.gd")
 
 ## fields shown by the form; the rest are edited as JSON under Other fields
-const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "skill", "bar", "everyone", "requires", "status", "applies", "spreadsOnDeath", "follow", "inShadow", "spreads", "spendsAll", "portal"]
+const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "skill", "bar", "everyone", "requires", "status", "applies", "spreadsOnDeath", "follow", "inShadow", "spreads", "spendsAll", "portal", "execute", "bonusVs", "stacks", "loadouts"]
 ## what an aura (`applies`) can do to its target, besides its name and duration
 const AURA_EFFECTS := [["stun", "Stuns (1 = yes)"], ["sleep", "Puts to sleep (1 = yes; any hit wakes)"], ["slow", "Slows by %"], ["damageTaken", "Damage taken +%"], ["damageDealt", "Damage dealt +% (negative weakens)"]]
 
@@ -180,6 +181,7 @@ func _build() -> void:
 	_amounts(a, "cost", "Cost", "What it spends: mana, or a class bar (resolve, energy, focus...).")
 	_amounts(a, "gain", "Gain", "What it gives back: combo points, resolve...")
 	_effects(a)
+	_mechanics(a)
 	_other(a)
 	_classes(a)
 	_skill(a)
@@ -206,7 +208,7 @@ func _set_kind(k: String) -> void:
 		a.tuning = {}
 	for key in DataStore.needed_tuning(a):
 		if not a.tuning.has(key):
-			a.tuning[key] = 0
+			a.tuning[key] = Fields.default_value(key)
 	_changed(true)
 
 
@@ -218,6 +220,17 @@ func _tuning(a: Dictionary) -> void:
 	if not a.has("tuning"):
 		a.tuning = {}
 	var t: Dictionary = a.tuning
+	if a.get("kind") == "instant" and not a.get("ranged", false):
+		UI.row(UI.grid(form), "Damage source", UI.choice([["fixed", "Fixed spell damage"], ["weapon", "Weapon damage"]], "weapon" if t.has("damageMultiplier") else "fixed", func(value):
+			if value == "weapon":
+				t.erase("damageMin")
+				t.erase("damageMax")
+				t.damageMultiplier = 1
+			else:
+				t.erase("damageMultiplier")
+				t.damageMin = 1
+				t.damageMax = 2
+			_changed(true)))
 	var g := UI.grid(form)
 	for key in t.keys():
 		var h := HBoxContainer.new()
@@ -229,12 +242,16 @@ func _tuning(a: Dictionary) -> void:
 			_changed(true), "Remove this number" if not need.has(key) else "Needed by this kind")
 		x.disabled = need.has(key)
 		h.add_child(x)
-		UI.row(g, key, h)
+		UI.row(g, key, h, Fields.help(key))
+		if not Fields.applicable(key, a):
+			UI.note(form, "%s is used by %s; the %s implementation does not use it." % [key, ", ".join(Fields.FIELDS[key][1]), a.get("kind", "custom")], Color("d0b070"))
 	var missing := need.filter(func(n): return not t.has(n))
 	for m in missing:
 		form.add_child(UI.button("+ %s (needed)" % m, func():
-			t[m] = 0
+			t[m] = Fields.default_value(m)
 			_changed(true)))
+	UI.note(form, "Add any supported option below. Its tooltip explains the effect and which spell types use it. Cost, resource finishers, auras, weapon variants and other mechanics are further down.")
+	_number_picker(form, t, a)
 	var add := UI.hbox(form)
 	var key_edit := LineEdit.new()
 	key_edit.placeholder_text = "another number, e.g. healPercent"
@@ -245,6 +262,148 @@ func _tuning(a: Dictionary) -> void:
 		if key != "" and not t.has(key):
 			t[key] = 0
 			_changed(true)))
+
+
+## Searchable library shared by base numbers and weapon-specific overrides.
+func _number_picker(parent: Control, values: Dictionary, ability: Dictionary, attach := Callable()) -> void:
+	var row := UI.hbox(parent)
+	var search_box := LineEdit.new()
+	search_box.placeholder_text = "Find an option…"
+	search_box.custom_minimum_size.x = 170
+	row.add_child(search_box)
+	var pick := OptionButton.new()
+	pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pick.fit_to_longest_item = false
+	row.add_child(pick)
+	var description := UI.note(parent, "", Color(0.65, 0.7, 0.75))
+	var fill := func(query: String):
+		pick.clear()
+		for key in Fields.FIELDS:
+			if values.has(key) or (not query.is_empty() and not (key + " " + Fields.help(key)).to_lower().contains(query.to_lower())):
+				continue
+			pick.add_item(key + (" (other spell types)" if not Fields.applicable(key, ability) else ""))
+			pick.set_item_metadata(pick.item_count - 1, key)
+			pick.set_item_tooltip(pick.item_count - 1, Fields.help(key))
+		if pick.item_count:
+			pick.select(0)
+			description.text = Fields.help(str(pick.get_item_metadata(0)))
+		else:
+			description.text = "No matching options."
+	search_box.text_changed.connect(fill)
+	pick.item_selected.connect(func(index): description.text = Fields.help(str(pick.get_item_metadata(index))))
+	row.add_child(UI.button("Add option", func():
+		if pick.item_count == 0:
+			return
+		if attach.is_valid():
+			attach.call()
+		var key := str(pick.get_item_metadata(pick.selected))
+		values[key] = Fields.default_value(key)
+		_changed(true)))
+	fill.call("")
+
+
+func _aura_followup(aura: Dictionary, depth: int) -> void:
+	form.add_child(UI.check(aura.has("then"), "Then apply another aura after this one ends", func(on):
+		if on:
+			aura.then = {"name": "Stunned", "duration": 2, "stun": 1}
+		else:
+			aura.erase("then")
+		_changed(true)))
+	if not aura.get("then") is Dictionary:
+		return
+	var next: Dictionary = aura.then
+	var grid := UI.grid(form)
+	UI.row(grid, "Next aura name", UI.line(str(next.get("name", "")), func(value):
+		next.name = value
+		_changed()))
+	UI.row(grid, "Next aura duration", UI.spin(next.get("duration", 2), 0.05, 600, 0.25, func(value):
+		next.duration = value
+		_changed(), " s"))
+	for field in AURA_EFFECTS:
+		var key: String = field[0]
+		UI.row(grid, field[1], UI.spin(next.get(key, 0), -100, 100, 1, func(value):
+			next[key] = value
+			_changed()))
+	if depth < 5:
+		_aura_followup(next, depth + 1)
+
+
+func _mechanics(a: Dictionary) -> void:
+	UI.heading(form, "Additional mechanics")
+	UI.note(form, "These controls expose existing engine behaviours. Combine a spell kind, numbers, cost/gain, finishers, auras and these modifiers. A completely new behaviour still needs a runtime implementation.")
+	form.add_child(UI.check(a.has("execute"), "Bonus damage against a low-health enemy", func(on): _put("execute", {"below": 30, "percent": 50} if on else null, true)))
+	if a.get("execute") is Dictionary:
+		var grid := UI.grid(form)
+		for entry in [["below", "Enemy health below %"], ["percent", "Extra damage %"]]:
+			var key: String = entry[0]
+			UI.row(grid, entry[1], UI.spin(a.execute.get(key, 0), 0, 1000, 1, func(value):
+				a.execute[key] = value
+				_changed()))
+	form.add_child(UI.check(a.has("bonusVs"), "Weapon strike bonus against a status or aura", func(on): _put("bonusVs", {"status": "poisoned", "percent": 25} if on else null, true)))
+	if a.get("bonusVs") is Dictionary:
+		var bonus: Dictionary = a.bonusVs
+		var grid := UI.grid(form)
+		var mode := "status" if bonus.has("status") else "aura"
+		UI.row(grid, "Checks", UI.choice([["status", "A status"], ["aura", "An ability's aura"]], mode, func(value):
+			bonus.erase("status")
+			bonus.erase("aura")
+			bonus[value] = "poisoned" if value == "status" else a.id
+			_changed(true)))
+		var choices := s.statuses().map(func(x): return [x.id, x.get("name", x.id)]) if mode == "status" else s.ability_choices()
+		UI.row(grid, "Required effect", UI.choice(choices, bonus.get(mode), func(value):
+			bonus[mode] = value
+			_changed()))
+		UI.row(grid, "Extra damage %", UI.spin(bonus.get("percent", 0), 0, 1000, 1, func(value):
+			bonus.percent = value
+			_changed()))
+		UI.note(form, "Used by instant melee weapon strikes (damageMultiplier).")
+	form.add_child(UI.check(a.has("stacks"), "Landed hits grant stacking critical-chance buffs", func(on): _put("stacks", {"id": a.id + "Stacks", "name": a.get("name", a.id), "max": 3, "duration": 10, "critBonus": 10} if on else null, true)))
+	if a.get("stacks") is Dictionary:
+		var stacks: Dictionary = a.stacks
+		var grid := UI.grid(form)
+		for key in ["id", "name"]:
+			UI.row(grid, "Stack " + key, UI.line(str(stacks.get(key, "")), func(value):
+				stacks[key] = value
+				_changed()))
+		for entry in [["max", "Maximum stacks"], ["duration", "Duration (s)"], ["critBonus", "Crit chance per stack %"]]:
+			var key: String = entry[0]
+			UI.row(grid, entry[1], UI.spin(stacks.get(key, 1), 0, 1000, 1, func(value):
+				stacks[key] = value
+				_changed()))
+		UI.note(form, "Granted by direct hits that run landed-hit effects. A critical hit consumes critical-chance stacks.")
+	UI.heading(form, "Weapon loadout variants")
+	UI.note(form, "Override numbers and resource gain for a shield, two weapons, or a main-hand weapon alone. Unset values inherit the base spell. The twoHand key means the runtime's main-hand-only loadout.")
+	for entry in [["shield", "With a shield"], ["dualWield", "Dual wielding"], ["twoHand", "Main hand only"]]:
+		var key: String = entry[0]
+		var variants: Dictionary = a.get("loadouts", {})
+		form.add_child(UI.check(variants.has(key), entry[1], func(on):
+			if not a.has("loadouts"):
+				a.loadouts = variants
+			if on:
+				variants[key] = {}
+			else:
+				variants.erase(key)
+				if variants.is_empty():
+					a.erase("loadouts")
+			_changed(true)))
+		if not variants.get(key) is Dictionary:
+			continue
+		var variant: Dictionary = variants[key]
+		var values: Dictionary = variant.get("tuning", {})
+		var grid := UI.grid(form)
+		for field in values.keys():
+			var row := UI.hbox(grid)
+			# UI.row expects an unattached control.
+			grid.remove_child(row)
+			row.add_child(UI.spin(values[field], -1000, 100000, 0.01, func(value):
+				values[field] = value
+				_changed()))
+			row.add_child(UI.button("✕", func():
+				values.erase(field)
+				_changed(true)))
+			UI.row(grid, field, row, Fields.help(field))
+		_number_picker(form, values, a, func(): variant.tuning = values)
+		_amounts(variant, "gain", "Variant gain", "Overrides the base gain while this weapon loadout is active.")
 
 
 ## cost or gain: {resource: amount}
@@ -296,6 +455,7 @@ func _effects(a: Dictionary) -> void:
 	if a.get("kind") == "portal":
 		UI.row(g, "Takes you to", UI.choice([["home", "Your home inn"], ["camp", "Your camp"]], a.get("portal", "home"), func(v): _put("portal", v)))
 	UI.row(g, "Spends all", UI.choice([[null, "(no)"]] + s.resource_ids().map(func(x): return [x, x.capitalize()]), a.get("spendsAll"), func(v): _put("spendsAll", v)), "A finisher: it spends all of this and hits harder for each point.")
+	UI.row(g, "Spreads on death", UI.check(a.get("spreadsOnDeath", false), "Damage over time or aura jumps to a nearby enemy", func(on): _put("spreadsOnDeath", true if on else null)))
 
 	UI.note(form, "Aura it puts on the target:")
 	var has: bool = a.get("applies") is Dictionary
@@ -325,18 +485,7 @@ func _effects(a: Dictionary) -> void:
 			else:
 				ap[key] = v
 			_changed()))
-	UI.row(g, "Spreads on death", UI.check(a.get("spreadsOnDeath", false), "Jumps to the nearest enemy when the target dies", func(on): _put("spreadsOnDeath", true if on else null)))
-	var then := UI.line(JSON.stringify(ap.then) if ap.has("then") else "", func(txt):
-		var v = JSON.parse_string(txt) if txt.strip_edges() != "" else null
-		if txt.strip_edges() == "":
-			ap.erase("then")
-		elif v is Dictionary:
-			ap.then = v
-		else:
-			return
-		_changed())
-	then.placeholder_text = "{\"name\": \"Stunned\", \"duration\": 2, \"stun\": 1}"
-	UI.row(g, "Then", then, "Optional: a second aura when this one ends, as JSON (Bring to Kneel slows, then stuns).")
+	_aura_followup(ap, 0)
 
 
 ## the fields the form has no control for (applies, follow, loadouts...), as JSON
@@ -503,10 +652,14 @@ func create(kind: String, spell_name: String) -> Dictionary:
 	a.desc = ""
 	var t := {}
 	for key in ["cooldown"] + k.tuning:
-		t[key] = 6 if key == "cooldown" else 1
+		t[key] = Fields.default_value(key)
 	a.tuning = t
 	if kind == "control":
 		a.applies = {"name": spell_name, "duration": 4, "stun": 1}
+	if kind == "portal":
+		a.portal = "home"
+	if kind == "purge":
+		a.spendsAll = "corruption"
 	s.abilities.append(a)
 	new_ids[a.id] = true
 	s.touch("abilities")
@@ -527,6 +680,15 @@ func _rename_new(id: String) -> void:
 		for t in c.get("trained", []):
 			if t.get("ability") == a.id:
 				t.ability = id
+				s.touch("archetypes")
+		for key in ["bar", "later"]:
+			var entries: Array = c.get(key, [])
+			if entries.has(a.id):
+				entries[entries.find(a.id)] = id
+				s.touch("archetypes")
+		if c.get("defensive") == a.id:
+			c.defensive = id
+			s.touch("archetypes")
 	for sk in s.skills:
 		var teaches: Array = sk.get("teaches", [])
 		if teaches.has(a.id):

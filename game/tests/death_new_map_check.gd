@@ -21,6 +21,9 @@ func _process(_dt: float) -> bool:
 		var made: Dictionary = game.roster.create("Ghost Tester", "occultist")
 		game.enter_world(made.character.id)
 	elif frame == 3:
+		# Simulate an unfinished map without shrines. The authored district
+		# now has its own shrines; this still exercises the fallback.
+		Layout.shrines = []
 		_ok(Layout.shrines.is_empty(), "the new map has no shrines")
 		game.player.take_damage(99999)
 		game.on_player_death(null)

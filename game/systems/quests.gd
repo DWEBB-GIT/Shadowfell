@@ -1,6 +1,6 @@
 class_name Quests
 extends RefCounted
-## Quests, WoW style (data/quests.json; src/systems/quests.js). A quest is
+## Quests, WoW style (data/quests/quests.json; src/systems/quests.js). A quest is
 ## offered by its giver once the quests it requires are done, accepted into
 ## the quest log, and handed in to its turn-in npc once every objective is
 ## met. Kills are counted per quest from the moment it is taken. Items are
@@ -44,7 +44,7 @@ static func condition_holds(g, when) -> bool:
 func _init(g) -> void:
 	game = g
 	reset()
-	for ev in ["inventoryChanged", "examined", "levelUp", "skillsChanged"]:
+	for ev in ["inventoryChanged", "examined", "levelUp", "skillsChanged", "puzzleSolved"]:
 		game.events.on(ev, func(_e): refresh())
 	game.events.on("enemyDefeated", func(e):
 		count_kill(e.enemy.type)
@@ -86,6 +86,8 @@ func status(id: String) -> String:
 	var q = DB.quests.get(id)
 	if q == null:
 		return "locked"
+	if str(q.get("map", "act1")) != Terrain.chosen_map():
+		return "locked"
 	if done.has(id):
 		return "done"
 	if accepted.has(id):
@@ -95,6 +97,12 @@ func status(id: String) -> String:
 	for r in q.get("requires", []):
 		if not done.has(r):
 			return "locked"
+	# Alternative regional chapters share an outcome without requiring both routes.
+	if q.has("minLevel") and game.progression.level < int(q.minLevel):
+		return "locked"
+	var alternatives: Array = q.get("requiresAny", [])
+	if not alternatives.is_empty() and not alternatives.any(func(r): return done.has(r)):
+		return "locked"
 	# a profession's rank quest waits for the skill (`skillReq`)
 	var sr = q.get("skillReq")
 	if sr != null and game.skills.rank(sr.skill) < int(sr.level):
@@ -125,6 +133,8 @@ func objectives(id: String) -> Array:
 				have = 1 if game.world_state.examined.has(o.target) else 0
 			"talk":
 				have = need
+			"puzzle":
+				have = need if game.puzzles != null and game.puzzles.solved(o.target) else 0
 		have = mini(have, need)
 		out.append({"id": o.id, "type": o.type, "target": o.get("target", ""), "label": o.label, "have": have, "need": need, "done": have >= need, "location": o.get("location")})
 	return out
@@ -158,6 +168,9 @@ var active: Array:
 func for_npc(npc_id: String) -> Array:
 	var out := []
 	for q in DB.quests.values():
+		# Only evaluate this resident's quests; status resolves progression and objectives.
+		if q.get("giver") != npc_id and q.get("turnIn") != npc_id:
+			continue
 		var s := status(q.id)
 		if (s == "ready" and q.get("turnIn") == npc_id) or (s == "available" and q.get("giver") == npc_id) or (s == "active" and q.get("turnIn") == npc_id):
 			out.append({"id": q.id, "status": s})
@@ -245,7 +258,7 @@ func complete(id: String) -> bool:
 		game.progression.add_xp(r.xp)
 	if r.get("reputation"):
 		game.reputation.add_all(r.reputation)
-	# a dark choice is remembered (data/infamy.json)
+	# a dark choice is remembered (data/npcs/infamy.json)
 	if r.get("infamy"):
 		game.law.add_infamy(r.infamy, "for what you did")
 	events.emit("questComplete", {"id": id})
@@ -295,6 +308,10 @@ func goal(id: String) -> Dictionary:
 			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}
 		if o.type == "talk":
 			return npc_goal(o.target)
+		if o.type == "puzzle":
+			var p := WorldPuzzles.definition(o.target)
+			if not p.is_empty():
+				return {"x": p.position[0], "z": p.position[1], "r": 5, "label": p.name}
 		if o.type == "kill":
 			var p: Vector3 = game.player.position if game.player else Vector3.ZERO
 			var best := {}

@@ -36,11 +36,14 @@ import json
 import math
 import os
 import re
+import sys
 
 import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from model_paths import model_output
 SRC = os.path.join(HERE, "imported")
 OUT = os.path.normpath(os.path.join(HERE, "..", "models"))
 FPS = 24
@@ -165,14 +168,14 @@ def export(path, animations=True, lean=False):
     """`lean` drops the animation channels that never leave the rest pose in
     any clip (twist and finger bones, scale), for a smaller download."""
     bpy.ops.export_scene.gltf(
-        filepath=os.path.join(OUT, path), export_format="GLB", export_yup=True,
+        filepath=model_output(path), export_format="GLB", export_yup=True,
         export_apply=False, export_animations=animations, export_animation_mode="ACTIONS",
         export_force_sampling=True, export_anim_single_armature=True,
         export_image_format="AUTO", export_texcoords=True, export_normals=True,
         export_skins=True, export_def_bones=False, export_reset_pose_bones=True,
         export_extras=False, export_cameras=False, export_lights=False)
     if lean:
-        drop_still_channels(os.path.join(OUT, path))
+        drop_still_channels(model_output(path))
     print("wrote", path)
 
 
@@ -365,7 +368,7 @@ CLIP_IMPACT = 0.5
 
 
 def spell_clips(p, m):
-    """A clip for every spell pose in data/spell_fx.json `poses`, named as
+    """A clip for every spell pose in data/abilities/spell_fx.json `poses`, named as
     the pose, keyed every frame so the snap and the whip stay sharp."""
     path = os.path.join(HERE, "..", "..", "data", "spell_fx.json")
     with open(path) as f:

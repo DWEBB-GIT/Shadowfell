@@ -1,6 +1,6 @@
 class_name Skills
 extends RefCounted
-## Skills learned from trainers (data/skills.json; src/systems/skills.js).
+## Skills learned from trainers (data/professions/skills.json; src/systems/skills.js).
 ## A skill unlocks the abilities it `teaches`. Skills with a `maxRank` rise
 ## with use, as WoW's professions do: fishing goes up by one with each catch.
 ## A class's `trained` spells (archetypes.json) are learned from a trainer
@@ -142,7 +142,7 @@ func learn_spell(ability: String) -> bool:
 		return false
 	game.inventory.lose_coins(cost)
 	spells.append(ability)
-	var free := ActionBar.free_slot(game.action_bar.slots)
+	var free := ActionBar.free_spell_slot(game.action_bar.slots)
 	if free >= 0:
 		game.action_bar.place(ability, free)
 	events.emit("log", {"text": "You learn %s. It is in your spellbook (P)." % a.name, "kind": "level"})

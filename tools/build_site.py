@@ -3,8 +3,8 @@
     python3 tools/build_site.py _site
 
 Copies site/ into the folder, fills the shared header, sidebar and footer,
-renders the Classes page from data/text.json (title.classes, only classes
-with an archetype) and data/archetypes.json / abilities.json, and copies the
+renders the Classes page from data/ui/text.json (title.classes, only classes
+with an archetype) and data/abilities/archetypes.json / abilities.json, and copies the
 bronze UI kit, class crests and spell icons the pages use. The game itself is
 exported to <folder>/play by the Pages workflow.
 """

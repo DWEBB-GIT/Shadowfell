@@ -1,5 +1,5 @@
-// Player-facing writing that no item, npc or quest owns, from data/text.json.
-// (Quest and objective text lives in data/quests.json.)
+// Player-facing writing that no item, npc or quest owns, from data/ui/text.json.
+// (Quest and objective text lives in data/quests/quests.json.)
 
 import { DB } from './db.js';
 

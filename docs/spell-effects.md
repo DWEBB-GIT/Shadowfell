@@ -2,11 +2,11 @@
 
 Every spell gets its own cast pose and its own effect, so a player can tell
 what was cast from the picture alone. This is the plan for all of them; the
-built ones live in `data/spell_fx.json`.
+built ones live in `data/abilities/spell_fx.json`.
 
 ## How it works
 
-- **Cast poses** are data: `poses` in `data/spell_fx.json` gives, for each body
+- **Cast poses** are data: `poses` in `data/abilities/spell_fx.json` gives, for each body
   part (Torso, Head, Arm_L, Arm_R, Leg_L, Leg_R), its turn at the top of the
   windup and when the blow lands. The rigged player plays each pose as a
   Blender clip of the same name, baked by `assets/blender/import_models.py`;
@@ -21,7 +21,7 @@ built ones live in `data/spell_fx.json`.
   (abstract shapes only: arcs, rings, cracks, tears, streaks, columns, a ward)
   and exported to `assets/models/fx/*.glb`. They carry no colour, only
   brightness, and are drawn additively, so one shape serves every school.
-- **Looks** are data: `data/spell_fx.json` says, per spell, which pose to play
+- **Looks** are data: `data/abilities/spell_fx.json` says, per spell, which pose to play
   and which shapes and particles to show when it goes and where it lands.
   A spell with no entry keeps its kind's generic pose and effect.
 - **Readable from the fixed isometric camera**: flat shapes lie on the ground;
