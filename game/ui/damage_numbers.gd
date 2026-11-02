@@ -30,6 +30,10 @@ func _init(g) -> void:
 
 
 ## how big a number is against the usual hit (1 = the base font)
+## your own hits read bigger than what hits you (Dan, 2026-11-02)
+const DEALT_SCALE := 1.35
+
+
 static func number_scale(amount: float, usual: float) -> float:
 	var t: Dictionary = DB.CONFIG.damageNumbers
 	if not usual or usual <= 0 or not amount:
@@ -81,6 +85,8 @@ func add(e: Dictionary) -> void:
 	if crit:
 		colour = COLOURS.takenCrit if kind == "taken" else COLOURS.big if pulse else COLOURS.crit
 	var scale_ := 0.8 if cls == "block" or cls == "miss" else number_scale(ratio, 1)
+	if kind == "dealt":
+		scale_ *= DEALT_SCALE
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", roundi(t.font * scale_))

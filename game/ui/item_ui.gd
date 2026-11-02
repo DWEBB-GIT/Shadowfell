@@ -545,6 +545,7 @@ func _render_sockets(inv) -> void:
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
 	bp.count = str(free)
+	bp.count_size = 18 # big enough to read at a glance (Dan, 2026-11-02)
 	bp.count_colour = Color("ff6a50") if free == 0 else ISlot.LABEL
 	# Dan's painted backpack; the drawn one stays as the fallback
 	bp.icon = Icons.art("ui", "primary_bag")
@@ -1722,7 +1723,7 @@ func world_tip(pick) -> void:
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
 	elif pick.kind == "enemy":
-		text = _name_line(key.cfg.name, "#f0d050" if key.passive else "#ff8a6a") + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
+		text = _name_line(key.cfg.name, "#" + (UI.NAME_PASSIVE if key.passive else UI.NAME_HOSTILE).to_html(false)) + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
 	else:
 		text = _name_line(key.name, "#a8e08c") + (_l("<%s>" % _esc(key.def.title), "#9a8f78", 12) if key.def.get("title") else "") + _l("Level %s" % U.n(key.def.get("level", 1)))
 	if not is_same(tip_key, key) or tip_text != text:
