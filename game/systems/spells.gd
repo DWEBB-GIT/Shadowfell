@@ -107,6 +107,8 @@ func reset() -> void:
 	blows = []
 	queued = null
 	shadow_grace = 0.0
+	if game.get("runes"):
+		game.runes.reset()
 
 
 var trait_: Dictionary:
@@ -215,6 +217,8 @@ func has_status(enemy, status: String) -> bool:
 	for d in dots:
 		if d.enemy == enemy and DB.spells[d.id].get("status") == status:
 			return true
+	if game.runes and game.runes.has_status(enemy, status):
+		return true
 	for a in auras:
 		if a.enemy != enemy:
 			continue

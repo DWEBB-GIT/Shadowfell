@@ -93,7 +93,7 @@ func _init(g) -> void:
 			siphon_beam(c, SCHOOL_COLOURS.get(c.spell.get("school"), Color("9a5ae0"))))
 	ev.on("darkCircle", func(e): shockwave(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), e.radius, Color("9a7cff")))
 	# spells (game/systems/spells.gd)
-	ev.on("spellFlash", func(e): flash(e.position, SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
+	ev.on("spellFlash", func(e): flash(e.position, Color(e.colour) if e.has("colour") else SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
 	ev.on("zone", func(e): zone(e.x, e.z, e.radius, e.duration, SCHOOL_COLOURS.get(e.get("school"), Color("ffd070"))))
 	# a set trap is a small dull ring until it is sprung or wears out
 	ev.on("trap", func(e): traps[e.key] = zone(e.x, e.z, e.radius, e.duration, Color("8a7050"), 0.35))

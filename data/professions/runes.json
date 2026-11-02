@@ -1,0 +1,30 @@
+{
+  "_about": "Weapon runes (Dan, 2026-11-02): one rune a weapon, put on by using a rune scroll (an item with `rune`) from the bags, which enchants the main-hand weapon (asks before replacing one). Saves keep it as rolls.rune. Code: game/systems/runes.gd. A rune procs on your weapon hits (auto attacks, arrows) `ppm` times a minute on average whatever the weapon's speed (chance = ppm x speed / 60), and its effect is a share of the hit's weapon damage, so it grows with your gear. `effect` kinds: dot (damage over `duration` in ticks of `tick`, status), strike (instant damage; `chain` more enemies within `chainRange`), slow (instant damage plus a slow aura), heal (instant damage and heals you `healPercent` of it; `undeadBonus` % more against bone and grave foes), vulnerable (an aura: `damageTaken` % more for `duration`). `glow`: the weapon's look (FancyGear); its strength rises `strengthPerRank` for each enchant rank on the weapon and motes appear from rank `motesFromRank`.",
+  "glowScale": { "strengthPerRank": 0.15, "motesFromRank": 3 },
+  "runes": [
+    { "id": "embers", "name": "Embers", "school": "fire", "status": "burning", "ppm": 4,
+      "text": "Your weapon hits sometimes set the target Burning: {pct}% of the hit as fire over 6 sec.",
+      "effect": { "kind": "dot", "percent": 45, "duration": 6, "tick": 1.5 },
+      "glow": { "colour": "#ff7a2a", "strength": 1.0, "pulse": 1.1 } },
+    { "id": "rime", "name": "Rime", "school": "frost", "status": "slowed", "ppm": 4,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as frost and slow the target by 30% for 4 sec.",
+      "effect": { "kind": "slow", "percent": 25, "slow": 30, "duration": 4 },
+      "glow": { "colour": "#7fd8ff", "strength": 1.0, "pulse": 0.0 } },
+    { "id": "venom", "name": "Venom", "school": "nature", "status": "poisoned", "ppm": 5,
+      "text": "Your weapon hits sometimes leave the target Poisoned: {pct}% of the hit as nature over 10 sec.",
+      "effect": { "kind": "dot", "percent": 50, "duration": 10, "tick": 2 },
+      "glow": { "colour": "#7ee05a", "strength": 1.0, "pulse": 0.5 } },
+    { "id": "storm", "name": "Storm", "school": "storm", "ppm": 3,
+      "text": "Your weapon hits sometimes call lightning: {pct}% of the hit to the target and one more enemy nearby.",
+      "effect": { "kind": "strike", "percent": 55, "chain": 1, "chainRange": 6 },
+      "glow": { "colour": "#ffe680", "strength": 1.0, "pulse": 2.6 } },
+    { "id": "dawn", "name": "Dawn", "school": "holy", "ppm": 3,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as holy and heal you for as much. Half again against the undead.",
+      "effect": { "kind": "heal", "percent": 35, "healPercent": 100, "undeadBonus": 50 },
+      "glow": { "colour": "#ffd27a", "strength": 1.0, "pulse": 0.35 } },
+    { "id": "dread", "name": "Dread", "school": "shadow", "status": "vulnerable", "ppm": 3,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as shadow and leave the target Vulnerable: 8% more damage taken for 5 sec.",
+      "effect": { "kind": "vulnerable", "percent": 20, "damageTaken": 8, "duration": 5 },
+      "glow": { "colour": "#a65cff", "strength": 1.0, "pulse": 1.5 } }
+  ]
+}

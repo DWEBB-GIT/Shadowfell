@@ -624,6 +624,9 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
+	# a rune scroll: its rune goes on the main-hand weapon
+	if def.get("rune"):
+		return game.runes.use_scroll(loc)
 	# a charm that casts an ability (the Homeward charm: Return Home)
 	if def.get("use", {}).has("ability"):
 		game.action_bar.clicked[def.use.ability] = true

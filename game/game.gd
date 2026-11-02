@@ -80,6 +80,7 @@ var discovery: Discovery ## POI markers, discovering places, boats
 var mining: Mining
 var gathering: Gathering
 var forge: Forge
+var runes: Runes
 var law: Law
 var boons: Boons
 var sparkles: Sparkles
@@ -173,6 +174,7 @@ func _ready() -> void:
 	mining = Mining.new(self)
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
+	runes = Runes.new(self)
 	law = Law.new(self)
 	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
@@ -1075,6 +1077,7 @@ func step(dt: float) -> void:
 		time += dt
 		player.update(dt, controls)
 		spells.update(dt)
+		runes.update(dt)
 		combat.update_arrows(dt)
 		resources.update(dt)
 		camp.update(dt, time)

@@ -60,6 +60,9 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	else:
 		enemy.hurt(hit.amount, hurt_opts)
 		visuals.call()
+	# a rune on the weapon may answer the blow (data/professions/runes.json)
+	if game.runes and not o.get("noRune", false):
+		game.runes.on_weapon_hit(enemy, hand, hit.amount)
 	return hit
 
 

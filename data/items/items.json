@@ -6896,6 +6896,84 @@
       },
       "test": true,
       "description": "Test item: dark curling horns with ember tips, worn as a helmet."
+    },
+    {
+      "id": "rune_embers",
+      "name": "Rune of Embers (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "embers",
+      "description": "Test item: a rune scroll. Use it to put the Embers rune on your main-hand weapon, which then glows with it.",
+      "test": true
+    },
+    {
+      "id": "rune_rime",
+      "name": "Rune of Rime (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "rime",
+      "description": "Test item: a rune scroll. Use it to put the Rime rune on your main-hand weapon, which then glows with it.",
+      "test": true
+    },
+    {
+      "id": "rune_venom",
+      "name": "Rune of Venom (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "venom",
+      "description": "Test item: a rune scroll. Use it to put the Venom rune on your main-hand weapon, which then glows with it.",
+      "test": true
+    },
+    {
+      "id": "rune_storm",
+      "name": "Rune of Storm (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "storm",
+      "description": "Test item: a rune scroll. Use it to put the Storm rune on your main-hand weapon, which then glows with it.",
+      "test": true
+    },
+    {
+      "id": "rune_dawn",
+      "name": "Rune of Dawn (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "dawn",
+      "description": "Test item: a rune scroll. Use it to put the Dawn rune on your main-hand weapon, which then glows with it.",
+      "test": true
+    },
+    {
+      "id": "rune_dread",
+      "name": "Rune of Dread (test)",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 5,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "rune": "dread",
+      "description": "Test item: a rune scroll. Use it to put the Dread rune on your main-hand weapon, which then glows with it.",
+      "test": true
     }
   ]
 }
