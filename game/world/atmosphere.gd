@@ -16,6 +16,13 @@ var sources: Array = []
 ## pool only writes a lamp when the source it shows actually changes.
 var lamps: Array[OmniLight3D] = []
 var _slot: Array = []
+## A shadowless light beside each shadow lamp that lights only moving bodies
+## (World.MOVING_LAYER). The shadow lamp itself leaves that layer out, so
+## nothing that animates is ever paired with it: in Godot every move or
+## skeleton pose of a shadow caster paired with a shadowed light marks its
+## shadow map for a full re-render, which was costing frames whenever the
+## player, an enemy or an idling NPC stood near a lamp.
+var _twins: Array[OmniLight3D] = []
 var volumes: Array[FogVolume] = []
 var wisps: Array = []
 var _wait := 0.0
@@ -90,6 +97,19 @@ func _init(g) -> void:
 		add_child(light)
 		lamps.append(light)
 		_slot.append(null)
+		if i < SHADOW_BUDGET:
+			light.light_cull_mask = 0xFFFFF ^ World.MOVING_LAYER
+			var twin := OmniLight3D.new()
+			twin.name = "LocalLightBodies_%02d" % i
+			twin.light_cull_mask = World.MOVING_LAYER
+			twin.light_specular = light.light_specular
+			twin.light_volumetric_fog_energy = 0.0
+			twin.distance_fade_enabled = true
+			twin.distance_fade_begin = light.distance_fade_begin
+			twin.distance_fade_length = light.distance_fade_length
+			twin.visible = false
+			add_child(twin)
+			_twins.append(twin)
 	if _volumetric:
 		game.env.volumetric_fog_enabled = true
 		game.env.volumetric_fog_density = 0.004
@@ -133,6 +153,33 @@ func _init(g) -> void:
 		clear.material = clear_mat
 		add_child(clear)
 		wisps.append(clear)
+
+func _ready() -> void:
+	get_tree().node_added.connect(_on_node_added)
+	for body in get_tree().get_nodes_in_group(World.MOVING_GROUP):
+		_mark_moving(body)
+
+
+## Puts everything drawn under a moving body (its model, gear swapped in
+## later, a held torch) on the moving layer.
+func _mark_moving(n: Node) -> void:
+	if n is VisualInstance3D and not (n.layers & World.LIGHT_FIXTURE_LAYER):
+		n.layers = World.MOVING_LAYER
+	for c in n.get_children():
+		_mark_moving(c)
+
+
+func _on_node_added(n: Node) -> void:
+	if not n is VisualInstance3D:
+		return
+	var up := n.get_parent()
+	while up != null and up is Node3D:
+		if up.is_in_group(World.MOVING_GROUP):
+			if not (n.layers & World.LIGHT_FIXTURE_LAYER):
+				n.layers = World.MOVING_LAYER
+			return
+		up = up.get_parent()
+
 
 func _source(p: Vector3, colour: Color, energy: float, radius: float, flicker: bool, kind := "fixture", shadows := false) -> void:
 	# Stylised pools retain light across the full nearby tree/prop silhouette.
@@ -201,17 +248,24 @@ func _process(dt: float) -> void:
 				at.x = snappedf(at.x, 8)
 				at.z = snappedf(at.z, 8)
 				at.y = Terrain.height_at(at.x, at.z) + 1.7
-				volumes[i].position = at
-				volumes[i].visible = at.y > 0.5 and Terrain.water_at(at.x, at.z) == null
+				# Written only when they change: setting even the same
+				# position or material value re-uploads it.
+				if not volumes[i].position.is_equal_approx(at):
+					volumes[i].position = at
+					volumes[i].visible = at.y > 0.5 and Terrain.water_at(at.x, at.z) == null
 				var mat: FogMaterial = volumes[i].material
-				mat.albedo = colour
-				mat.density = lerpf(0.026, 0.046, maxf(deep, 0.3))
+				var density := lerpf(0.026, 0.046, maxf(deep, 0.3))
+				if not mat.albedo.is_equal_approx(colour) or not is_equal_approx(mat.density, density):
+					mat.albedo = colour
+					mat.density = density
 	for i in lamps.size():
 		var light := lamps[i]
 		if _slot[i] == null:
 			continue
 		var s: Dictionary = _slot[i]
 		light.light_energy = s.energy * (0.92 + 0.05 * sin(_time * 7 + s.seed) + 0.03 * sin(_time * 13 + s.seed)) if s.flicker else s.energy
+		if i < _twins.size():
+			_twins[i].light_energy = light.light_energy
 	for clear in wisps:
 		clear.position = focus + Vector3(0, 2.5, 0)
 
@@ -259,6 +313,16 @@ func _fill(slots: Array, wanted: Array) -> void:
 		light.light_volumetric_fog_energy = s.fog
 		light.light_energy = s.energy
 		light.visible = true
+		if i < _twins.size():
+			var twin := _twins[i]
+			twin.position = s.at
+			twin.light_color = s.colour
+			twin.omni_range = s.radius
+			twin.omni_attenuation = s.attenuation
+			twin.light_energy = s.energy
+			twin.visible = true
 	for i in free:
 		_slot[i] = null
 		lamps[i].visible = false
+		if i < _twins.size():
+			_twins[i].visible = false

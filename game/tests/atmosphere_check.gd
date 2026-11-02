@@ -34,6 +34,10 @@ func _run() -> void:
 		check(game.hud.icons.find_children("*","SubViewport",true,false).is_empty(),"one-shot icon and portrait rendering worlds are released")
 	check(game.atmosphere.sources.size() > 100,"village lamps, hearths and windows have light sources")
 	check(game.atmosphere.lamps.size() == 16,"point lights have a fixed pool of sixteen")
+	var a = game.atmosphere
+	check(a._twins.size() == a.SHADOW_BUDGET and a.lamps.slice(0, a.SHADOW_BUDGET).all(func(l): return not (l.light_cull_mask & World.MOVING_LAYER)),"shadow lamps skip moving bodies; a shadowless twin lights them")
+	var bodies: Array = [game.player.group] + game.enemies.list.slice(0, 3).map(func(e): return e.group)
+	check(bodies.all(func(b): return b.find_children("*","MeshInstance3D",true,false).all(func(m): return m.layers == World.MOVING_LAYER)),"player and enemy meshes sit on the moving layer")
 	var forward := RenderingServer.get_current_rendering_method() == "forward_plus"
 	check(not forward or game.env.volumetric_fog_enabled,"Forward+ enables real volumetric fog")
 	check(not forward or game.atmosphere.volumes.size() == 8,"ground fog uses eight local volumes")
