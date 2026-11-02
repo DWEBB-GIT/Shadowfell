@@ -16,8 +16,12 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
-	if main:
-		main.queue_free()
+	if is_instance_valid(main):
+		# The preview panel lives under EditorMainScreen, not this plugin.
+		# Release its viewports now, before that editor screen leaves the tree.
+		RenderCleanup.detach(main)
+		main.free()
+		main = null
 
 
 func _has_main_screen() -> bool:
@@ -26,6 +30,8 @@ func _has_main_screen() -> bool:
 
 func _make_visible(visible: bool) -> void:
 	if main:
+		if visible and main.s.dirty.is_empty():
+			main.revert()
 		main.visible = visible
 
 

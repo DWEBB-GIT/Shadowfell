@@ -13,7 +13,7 @@ A small dark fantasy action RPG prototype built to the *Shadowfall Game Design &
 - **Character creation:** pick a class (the Warden for now; the Ranger and Occultist are shown as coming later), type a name or roll one with the dice (gamepad Y), then **Create and enter**. Names are one or two words of letters and must be unique.
 - **Character select:** your characters with their level, class and where they stand, latest first. Enter world (or double-click), Create new, or Delete (asks first, and removes that save). Up to 10 characters.
 - **Saves:** each character has its own save in the browser. The first character keeps the old save key, so a save from before this build shows up as a character called Warden. **Settings → Save and return to characters** logs out.
-- The keyboard (arrows, Enter, Esc, Del) and the gamepad (D-pad or stick, A, B, Y) drive every screen. Title text, classes and the name lists are in `data/text.json` under `title`.
+- The keyboard (arrows, Enter, Esc, Del) and the gamepad (D-pad or stick, A, B, Y) drive every screen. Title text, classes and the name lists are in `data/ui/text.json` under `title`.
 
 No install, web server or internet connection is needed. Three.js and every Blender model are bundled into `dist/shadowfall.js`, so the game also runs offline.
 
@@ -52,8 +52,8 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Indoors.** Walk in through the inn's west door. Its walls are solid; inside, the roof hides, the front wall fades to a ghost, and the camera comes in about a fifth closer. All of it eases back as you step out.
 - **Hester Vale**, the innkeeper, sells food, teaches Cooking (10 coins) and its recipes, and can make the inn your home: if you fall, you wake by her hearth. Standing inside the inn with no enemy near builds rested experience, as by your camp fire.
 - **Cooking.** Learn it and you know Grilled Perch and Roast Dace. Hester teaches Hound Steak (Cooking 10), Traveller's Stew (20, hound meat and perch) and Smoked Eel (30). Cook at the inn hearth (E there opens the Cooking window) or by your camp: a 2.5 s cast each, Cook or Cook all, and moving stops it. Recipes are orange, yellow, green or grey (WoW): orange always raises the skill, yellow usually, green now and then, grey never.
-- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Eat for 10 seconds (even at full health) to become **Well Fed**: +2 Stamina for 15 minutes. Recipes live in `data/recipes.json`.
-- **Signposts.** Four posts along the road (outside Brackenford, by the mere turning, at the fork for the watch post and the Blackwood, and inside the Blackwood). Hover over one to see where its arms point, with distance and direction, or press E (or click it) to read it on screen until you walk on. They live in `data/world.json` `signposts`.
+- **Food.** Use a dish to sit and eat: it heals over 15 seconds, out of a fight only, and stops if you move or are hit. Eat for 10 seconds (even at full health) to become **Well Fed**: +2 Stamina for 15 minutes. Recipes live in `data/professions/recipes.json`.
+- **Signposts.** Four posts along the road (outside Brackenford, by the mere turning, at the fork for the watch post and the Blackwood, and inside the Blackwood). Hover over one to see where its arms point, with distance and direction, or press E (or click it) to read it on screen until you walk on. They live in `data/world/world.json` `signposts`.
 - **Fishing.** Each cast runs a 20-second fishing bar. Whether anything bites is rolled when you cast, and the chance rises with your Fishing skill: your rank, plus your best rod (Tam's yew rod +10) and bait (cut bait +5, one used per cast). If the bar runs out without a bite, nothing was biting. The cursor turns into a hook over your bob.
 
 ## Combat feel (WoW)
@@ -71,7 +71,7 @@ The project is a git repository (branch `main`). `dist/` is committed so a fresh
 - **Resolve** is the Warden's class gauge (0 to 100), shown under the mana bar. Each landed weapon swing gives 12, each hit you take 6, and a block 10 more. It fades at 8 a second once you have been out of the fight for 6 seconds.
 - **Costs:** Shield Break 25 Resolve, Rend 20, Cleave 30; Hallowed Bolt 20 mana, Smite 15, Hallowed Ground 30, Rebuke 10. Lunge is free and gives 15 Resolve, and Battle Cry gives 25, so both open a fight. Brace, the draught, camp and fishing are free.
 - A slot you can't afford is dimmed, and its tooltip shows the cost. Trying it says "Not enough mana" or "Not enough Resolve".
-- Each class's mana and gauge numbers live in `data/archetypes.json` (`resources`), and ability costs in `data/abilities.json` (`cost`, `gain`). A later class gets its own gauge by giving it a different `gauge` block.
+- Each class's mana and gauge numbers live in `data/abilities/archetypes.json` (`resources`), and ability costs in `data/abilities/abilities.json` (`cost`, `gain`). A later class gets its own gauge by giving it a different `gauge` block.
 
 ## Swing timer, layout and key bindings
 
@@ -98,18 +98,18 @@ Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-an
 
 ## The world (Dan's list, part 3)
 
-- **Respawns.** Every enemy type has `respawn` (seconds) in `data/enemies.json`: ghouls 90, hounds 75, archers 120, the brute 300, the seer 0 (never). A killed enemy comes back at its spawn point when its time is up (an unlooted body goes then), so you can grind for experience. Timers run on play time and are saved.
+- **Respawns.** Every enemy type has `respawn` (seconds) in `data/npcs/enemies.json`: ghouls 90, hounds 75, archers 120, the brute 300, the seer 0 (never). A killed enemy comes back at its spawn point when its time is up (an unlooted body goes then), so you can grind for experience. Timers run on play time and are saved.
 - **Names** float over townsfolk (green, with their title) and enemies (red, until their health bar shows). **Settings** (O, or the ☰ button) can hide names over characters and names of items on the ground.
 - **Running** is the default: 6.5 m/s (was a 5 m/s walk), with a quicker stride.
-- **Chests** (`chests` in `data/world.json`): the Traveller's chest by the cart (open), the Watch-post coffer at the watch post (locked: the Watch-post key, lying by the graves, or Lockpicking 1) and the Poacher's cache in the Blackwood (Lockpicking 3 only). Old Tam teaches **Lockpicking** and sells lockpicks; every lock picked raises the skill. Open with E or a click; contents go to your bags, silver to your purse.
+- **Chests** (`chests` in `data/world/world.json`): the Traveller's chest by the cart (open), the Watch-post coffer at the watch post (locked: the Watch-post key, lying by the graves, or Lockpicking 1) and the Poacher's cache in the Blackwood (Lockpicking 3 only). Old Tam teaches **Lockpicking** and sells lockpicks; every lock picked raises the skill. Open with E or a click; contents go to your bags, silver to your purse.
 - **Sparkles.** Gold motes rise from unopened chests, quest items in the world (the manifest) and places still to examine.
-- **Reputation** (`data/factions.json`): the Road Wardens and the Folk of the Mere. Quests (`reward.reputation`) and kills in their area (`reputation` per enemy type) raise it; standings run Hostile, Neutral, Friendly (1000), Honored (3000), Revered (6000), Exalted (12000). A faction's vendors (`faction` on a shop) take 5/10/15/20% off from Friendly up. The character window lists each faction's standing. Gated items and areas can read the standing later.
-- **Renown and titles** (`renown` in `data/factions.json`, titles in `data/titles.json`): you start a nobody, and townsfolk hail you with "Hello there." or "Hey you!". Renown is part of reputation, the standing that spans every faction, shown at the top of the Reputation tab. It comes from deeds: 5 per quest, 5 per level, 15 for the first kill of each elite type, and 1 for every 50 reputation earned with any faction. It rises through Nobody, A Familiar Face (20), Known (60), Respected (120), Renowned (200) and Famous (350). Once your renown and a title's own conditions allow it (a skill rank, a foe beaten, a faction standing), choose it on the character window's Titles tab. NPCs then greet you and bid you farewell by it ("Hello, Adventurer.", "Farewell, Master Angler."), and sometimes mock it.
+- **Reputation** (`data/npcs/factions.json`): the Road Wardens and the Folk of the Mere. Quests (`reward.reputation`) and kills in their area (`reputation` per enemy type) raise it; standings run Hostile, Neutral, Friendly (1000), Honored (3000), Revered (6000), Exalted (12000). A faction's vendors (`faction` on a shop) take 5/10/15/20% off from Friendly up. The character window lists each faction's standing. Gated items and areas can read the standing later.
+- **Renown and titles** (`renown` in `data/npcs/factions.json`, titles in `data/npcs/titles.json`): you start a nobody, and townsfolk hail you with "Hello there." or "Hey you!". Renown is part of reputation, the standing that spans every faction, shown at the top of the Reputation tab. It comes from deeds: 5 per quest, 5 per level, 15 for the first kill of each elite type, and 1 for every 50 reputation earned with any faction. It rises through Nobody, A Familiar Face (20), Known (60), Respected (120), Renowned (200) and Famous (350). Once your renown and a title's own conditions allow it (a skill rank, a foe beaten, a faction standing), choose it on the character window's Titles tab. NPCs then greet you and bid you farewell by it ("Hello, Adventurer.", "Farewell, Master Angler."), and sometimes mock it.
 
 ## Money, durability and gear (Dan's list, part 2)
 
 - **Gold and silver.** The purse holds silver and shows it as gold and silver with coin icons (100 silver = 1 gold, converted automatically: 1 gold less 1 silver is 99 silver). Prices in the data are in silver. `src/ui/money.js` formats it everywhere: bags, shop, quest rewards, tooltips ("Sell for 3 (coin)") and the log.
-- **Durability.** Weapons, armour and shields start at 100%. Dying takes 10% off everything worn (`CONFIG.durability`). At 0% an item is broken: its icon turns red, it gives no stats, and a broken weapon swings like bare hands. Smiths (vendor types with `repairs` in `data/shops.json`, so Mara) have a **Repair all** button; mending costs half the item's price for the missing share.
+- **Durability.** Weapons, armour and shields start at 100%. Dying takes 10% off everything worn (`CONFIG.durability`). At 0% an item is broken: its icon turns red, it gives no stats, and a broken weapon swings like bare hands. Smiths (vendor types with `repairs` in `data/npcs/shops.json`, so Mara) have a **Repair all** button; mending costs half the item's price for the missing share.
 - **Character panel** has every WoW slot: head, neck, shoulders, back, chest, wrists, hands, waist, legs, feet, two rings, two trinkets, main hand and off hand. Items say `slot: "finger"` or `"trinket"` to go in either of a pair; kind `jewellery` covers rings, necks and trinkets. No items use the new slots yet (they need models).
 - **Rebalance.** Weapon damage is about an eighth of what it was (the worn longsword is 3–7 at 2.2 s), power adds 0.25 per point of Strength, starting armour is 5 and the kite shield blocks 5%. Enemy health is 45% of what it was and enemy damage 70%, so a ghoul (22 health) takes three swings. Old saves keep their rolled names; rolled damage from before the change falls back to the item's own.
 - **Ground loot** shows its name in its rarity colour above it.
@@ -117,7 +117,7 @@ Dan approved this design on 15 October; [docs/stats-and-damage.md](docs/stats-an
 ## Combat and targeting fixes (Dan's list, part 1)
 
 - Engaging a target waits one full weapon swing before the first hit (2.2 s with the longsword). Casting a spell stops swings, and the swing timer restarts when the cast ends.
-- **Brace** is a spell now (kind `guard`, still on Space, off the global cooldown). **Rebuke** (key 5, kind `interrupt`, 10 m, 10 s cooldown) breaks an enemy cast and locks it out for 3 s. Each enemy attack has `interruptible` in `data/enemies.json`: archer shots and Grasping Dark can be interrupted, Grave Slam cannot.
+- **Brace** is a spell now (kind `guard`, still on Space, off the global cooldown). **Rebuke** (key 5, kind `interrupt`, 10 m, 10 s cooldown) breaks an enemy cast and locks it out for 3 s. Each enemy attack has `interruptible` in `data/npcs/enemies.json`: archer shots and Grasping Dark can be interrupted, Grave Slam cannot.
 - Red errors mid screen: "You have no target.", "Out of range", "You need to be closer to interact with that target.". Abilities with `target: ground` or `self` need no target.
 - Cursors: a sword over enemies, a speech bubble over NPCs (grey when out of reach), a bag over loot. Left and right click do the same thing on friendly NPCs.
 - The swing animation now chops down instead of up.
@@ -149,9 +149,9 @@ All content lives in `data/`, one JSON file per part of the game: items, item ra
 
 ## Items and Mara's forge
 
-- **Item database.** Every item is defined once in `data/items.json`: name, kind, slot, armour type, quality, damage, stats, use effect, bag size, stack size, buy price, model and icon. The game checks the file at startup and logs any malformed entry. Adding an item is a new entry there, plus a Blender model if it needs a new look.
+- **Item database.** Every item is defined once in `data/items/items.json`: name, kind, slot, armour type, quality, damage, stats, use effect, bag size, stack size, buy price, model and icon. The game checks the file at startup and logs any malformed entry. Adding an item is a new entry there, plus a Blender model if it needs a new look.
 - **Mara Venn's forge** stands beside the watch post: a forge, an anvil and an awning, with Mara hammering at her anvil until you come close. Press E (A on a pad) to talk to her. Her shop opens on the left with your bags on the right.
-  - Click an item to buy it (A on a pad). Shops and their stock are in `data/shops.json`; Mara herself is in `data/npcs.json`.
+  - Click an item to buy it (A on a pad). Shops and their stock are in `data/npcs/shops.json`; Mara herself is in `data/npcs/npcs.json`.
   - Right-click anything in your bags (or drag it onto her window, or Y on a pad) to sell it. Merchants pay a quarter of the price, as in WoW, and tooltips show what an item sells for.
   - Anything sold can be bought back for what it fetched until you leave the game.
   - Quest items cannot be sold or dropped.
@@ -175,7 +175,7 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
 
 ## Gear drops and random stat rolls
 
-- **Rarity.** Every item has a rarity from `data/rarities.json`, which sets the colour of its name, its bag-slot border, its loot line in the log and its glint on the ground:
+- **Rarity.** Every item has a rarity from `data/items/rarities.json`, which sets the colour of its name, its bag-slot border, its loot line in the log and its glint on the ground:
 
   | Rarity | Colour | What it is |
   |---|---|---|
@@ -186,7 +186,7 @@ A forest track leaves the Fallen Road below the watch post, passes west of Mara'
   | Epic | Purple | The best gear, kept for bosses (Witchbane, the seer's blade) |
   | Legendary | Orange | Reserved for a handful of items; none yet |
 
-- **Drop tables, rarity first.** Every enemy type names a loot table in `data/loot_tables.json`. A kill drops the table's `always` items (a hound's meat, and often its pelt), then has a chance to drop something: it rolls a rarity by weight, then an item from that rarity's list. A ghoul, for example, drops junk 22.5% of the time, common gear 14%, enhanced 7% and rare 1.4%. The Blackwood Seer always drops enhanced gear or better, and Witchbane 15% of the time. An item can be `reservedFor` one table (a boss's weapon), and the data check stops it appearing anywhere else. Drops lie beside the body and are looted with it in one go.
+- **Drop tables, rarity first.** Every enemy type names a loot table in `data/items/loot_tables.json`. A kill drops the table's `always` items (a hound's meat, and often its pelt), then has a chance to drop something: it rolls a rarity by weight, then an item from that rarity's list. A ghoul, for example, drops junk 22.5% of the time, common gear 14%, enhanced 7% and rare 1.4%. The Blackwood Seer always drops enhanced gear or better, and Witchbane 15% of the time. An item can be `reservedFor` one table (a boss's weapon), and the data check stops it appearing anywhere else. Drops lie beside the body and are looted with it in one go.
 - **Rolled gear.** Gear that drops rolls a little, as in Diablo:
   - armour, block and other stats move up to 20% either side of the database value;
   - weapon damage moves up to 12%;

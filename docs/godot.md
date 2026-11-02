@@ -1,5 +1,7 @@
 # Shadowfell in Godot
 
+**Current authoring workflow:** see [Building Shadowfell in Godot](authoring.md) for the expanded World tools, new-map placement, nature-asset library and ability controls. The port history below predates those improvements.
+
 Shadowfell is moving from the browser build (JavaScript and Three.js, in `src/`) to **Godot 4.5**. The Godot project sits at the root of this repo (`project.godot`), next to the browser build, so both read the same content:
 
 - `data/*.json`: items, enemies, quests, abilities, the world layout. Edit them by hand, with the quest editor (`npm run editor`), or ask Claude.
@@ -139,7 +141,7 @@ To measure: `game/tests/perf_parts.gd` (CPU per system) and
 
 ## The world map and how it is built
 
-Dan's painted map is the master. `data/world_map.json` holds it traced
+Dan's painted map is the master. `data/world/world_map.json` holds it traced
 (`world`: coast, zones, settlements, routes, landmarks; `terrain`: mountains,
 forests, rivers; `act1`: Act 1's regions, valleys, POIs and story notes).
 `tools/world/bake_world.py` turns it into `data/terrain/world.bin` and
@@ -156,7 +158,7 @@ mountain landmarks should be listed.
 - M opens the world map (`WorldMapUI`): zones, roads, boats, the places
   you've found and you.
 - Act 1 sits in the world at `world.act1Offset`; positions in
-  `data/world.json` are world positions.
+  `data/world/world.json` are world positions.
 - `game/tests/world_check.gd` checks the tiles, regions, chunk cost,
   discovery, boats and saves.
 

@@ -1,4 +1,4 @@
-// The world's layout, read from data/world.json and data/scenery.json and
+// The world's layout, read from data/world/world.json and data/world/scenery.json and
 // exposed under the names the world code uses. Pure data: positions are
 // [x, z] in metres, rotations in degrees around the vertical axis. North is
 // -z, so the road climbs "up" the screen from the start towards the watch
@@ -26,7 +26,7 @@ export const PLAYER_START = W.playerStart;
 export const SHRINES = W.shrines;
 export const SHRINE = SHRINES[0];
 
-// Townsfolk where they stand, merged with who they are (data/npcs.json).
+// Townsfolk where they stand, merged with who they are (data/npcs/npcs.json).
 export const NPCS = W.npcSpawns.map((s) => {
   const n = DB.npcs[s.npc];
   return { ...n, ...s, id: n.id };
@@ -57,7 +57,7 @@ export const OBSCURED = DB.obscured;
 export const BUILDINGS = W.buildings || [];
 // Places that count as a cooking fire (the inn's hearth); a pitched camp counts too.
 export const STATIONS = W.stations || [];
-// road signposts: each arm points to a location (data/world.json `signposts`)
+// road signposts: each arm points to a location (data/world/world.json `signposts`)
 export const SIGNPOSTS = W.signposts || [];
 // Ground flattened for a building: [x, z, radius].
 export const PADS = W.pads || [];

@@ -13,7 +13,7 @@
 import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
 
 export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'ammo', 'consumable', 'material', 'junk', 'document'];
-// rarity ids, lowest first (data/rarities.json holds their names and colours)
+// rarity ids, lowest first (data/items/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
 const EQUIPPABLE = ['weapon', 'armor', 'shield', 'jewellery', 'torch'];

@@ -1,6 +1,6 @@
 class_name WorldMapUI
 extends Control
-## The world map (M): the whole world as Dan painted it (data/world_map.json):
+## The world map (M): the whole world as Dan painted it (data/world/world_map.json):
 ## coast, zones with their names and levels, mountains, rivers, the roads
 ## and boat routes, Act 1 in detail, the places you have discovered and where
 ## you are. Scroll to zoom, drag to pan; it opens centred on you.
@@ -28,6 +28,7 @@ var _zones: Array = [] ## {poly, colour, name, levels, label}
 var _rock: Array = []
 var _snow: Array = []
 var _forest: Array = []
+var _survey: Texture2D
 
 
 func _init(g) -> void:
@@ -73,7 +74,15 @@ static func _circle(at: Array, r: float) -> PackedVector2Array:
 func open() -> void:
 	var p: Vector3 = game.player.position
 	center = Vector2(p.x, p.z)
-	scale_px = 0.35
+	if Terrain.is_new_map():
+		layout()
+		var rect := Terrain.map_rect()
+		center = rect.get_center()
+		scale_px = minf(size.x / rect.size.x, (size.y - 100) / rect.size.y)
+	else:
+		scale_px = 0.35
+	if Terrain.is_new_map() and _survey == null:
+		_build_survey()
 	visible = true
 	layout()
 	queue_redraw()
@@ -133,8 +142,33 @@ func _text(at: Vector2, text: String, size_px: int, c: Color) -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), SEA)
 	var art := Terrain.map_picture()
-	if art:
-		# the new map: Dan's painted map is the world map
+	if Terrain.is_new_map() and _survey != null:
+		var r := Terrain.map_rect()
+		draw_texture_rect(_survey, Rect2(_to_screen(r.position), r.size * scale_px), false)
+		for road in Terrain.roads():
+			_line(road.points, Color("d1b581"), maxf(1.5, road.half * 2.0 * scale_px))
+		for region in DB.world.regions:
+			if not region.get("campaign", false):
+				continue
+			var zone_rect: Array = region.rect
+			draw_rect(Rect2(_to_screen(Vector2(zone_rect[0], zone_rect[1])), Vector2(zone_rect[2], zone_rect[3]) * scale_px), Color(0.9, 0.85, 0.65, 0.25), false, 1.0)
+			if scale_px < 0.5:
+				_text(_to_screen(Vector2(region.label[0], region.label[1])), region.name, 12, UI.TEXT)
+		for p in WorldMap.pois:
+			var dungeon: bool = p.kind == "dungeon"
+			var hub: bool = p.get("hub", "") != "" or p.kind == "town" or p.get("returnPocket", false)
+			if not dungeon and not hub and scale_px < 0.7:
+				continue
+			var at := _to_screen(Vector2(p.at[0], p.at[1]))
+			draw_circle(at, 4.0 if dungeon else 3.0, Color("e98272") if dungeon else Color("e5c886"))
+			if dungeon and scale_px < 0.35:
+				_text(at + Vector2(0, -8), str(int(p.get("dungeonNumber", 0))), 11, Color("ffd7b1"))
+			if scale_px >= (0.35 if dungeon else 0.5):
+				var label: String = p.name + ("  " + str(p.levels) if p.has("levels") else "")
+				_text(at + Vector2(0, -12), label, 12, UI.TEXT)
+		if scale_px < 0.3:
+			_draw_campaign_key()
+	elif art:
 		var r := Terrain.map_rect()
 		var tl := _to_screen(r.position)
 		draw_texture_rect(art, Rect2(tl, r.size * scale_px), false)
@@ -170,10 +204,34 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([s + dir * 10, s - dir * 6 + side * 6, s - dir * 3, s - dir * 6 - side * 6]), Color("ffe080"))
 	# frame and help
 	draw_rect(Rect2(Vector2.ZERO, size), UI.BORDER, false, 2.0)
-	_text(Vector2(90, 26), "THE WORLD", 18, UI.GOLD)
+	_text(Vector2(105, 26), "REGION MAP" if Terrain.is_new_map() else "THE WORLD", 18, UI.GOLD)
 	_text(Vector2(size.x / 2, size.y - 14), "Scroll to zoom  ·  drag to move  ·  M or Esc to close", 11, UI.TEXT_DIM)
 	var here := DB.region_at(me.x, me.z)
 	_text(Vector2(size.x / 2, size.y - 34), "%s%s" % [here.get("name", ""), ("  ·  " + game.subzone) if game.subzone != "" else ""], 12, UI.TEXT)
+
+
+## Survey the actual saved terrain; the illustrated atlas is concept art,
+## so it cannot guide somebody through newly sculpted roads and hills.
+func _build_survey() -> void:
+	var r := Terrain.map_rect()
+	var step := 8.0
+	var img := Image.create(ceili(r.size.x / step), ceili(r.size.y / step), false, Image.FORMAT_RGB8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var wx := r.position.x + (x + 0.5) * step
+			var wz := r.position.y + (y + 0.5) * step
+			var h := Terrain.height_at(wx, wz)
+			var col := SEA
+			if h > 0.3:
+				var painted = Terrain.ground_colour(wx, wz)
+				col = painted if painted is Color else Color(Land.GROUND.get(Terrain.surface_at(wx, wz), Land.GROUND[Terrain.MEADOW])[0]).lightened(0.18)
+				var slope := Terrain.height_at(wx - step, wz - step) - h
+				col = col.lightened(clampf(slope * 0.025, 0, 0.18)).darkened(clampf(-slope * 0.025, 0, 0.3))
+			var pond = Terrain.water_at(wx, wz)
+			if pond != null:
+				col = Color(pond.get("color", "#416e78"))
+			img.set_pixel(x, y, col)
+	_survey = ImageTexture.create_from_image(img)
 
 
 ## The old world's map, drawn from world_map.json.
@@ -267,3 +325,27 @@ func _gui_input(e: InputEvent) -> void:
 		center -= e.relative / scale_px
 		queue_redraw()
 		accept_event()
+
+
+## Use the wide map margin for readable brackets and the seven-layout key.
+func _draw_campaign_key() -> void:
+	var y := 65.0
+	_text(Vector2(155, y), "REGIONS AND LEVELS", 13, UI.GOLD)
+	for region in DB.world.regions:
+		if not region.get("campaign", false):
+			continue
+		y += 22
+		_text(Vector2(155, y), str(region.name) + "  " + str(region.levels), 12, UI.TEXT)
+	y += 34
+	_text(Vector2(155, y), "DUNGEON ENTRANCES", 13, UI.GOLD)
+	var seen := {}
+	for entrance in DB.world.get("dungeonEntrances", []):
+		if seen.has(entrance.dungeon):
+			continue
+		seen[entrance.dungeon] = true
+		y += 24
+		var label: String = "%d. %s  %d–%d" % [int(entrance.number), entrance.name, int(entrance.levels[0]), int(entrance.levels[1])]
+		_text(Vector2(155, y), label, 11, UI.TEXT)
+	y += 26
+	_text(Vector2(155, y), "Entrances are sealed", 10, UI.TEXT_DIM)
+	_text(Vector2(155, y + 18), "Zoom in for individual hub brackets", 10, UI.TEXT_DIM)

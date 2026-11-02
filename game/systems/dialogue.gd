@@ -4,7 +4,7 @@ extends RefCounted
 ## a greeting with its choices grouped and marked by kind: quests, things to
 ## ask, then services (the shop, the trainer, the inn) and Goodbye. A quest
 ## opens its own page. Topics open small dialogue trees from
-## data/dialogue.json. Training opens the trainer window (view 'train').
+## data/quests/dialogue.json. Training opens the trainer window (view 'train').
 ##
 ## This system owns where the conversation is; the HUD shows it and passes
 ## choices back. Walking away ends it, as with a shop.
@@ -398,7 +398,7 @@ func _service_choose(id: String, v: Dictionary) -> bool:
 
 
 # ------------------------------------------------------------ the forge
-## Mara moves a legendary power (data/builds.json `forge`): the item that
+## Mara moves a legendary power (data/abilities/builds.json `forge`): the item that
 ## carries it is melted down, and the power goes onto another piece for the
 ## same place (any weapon for a weapon).
 

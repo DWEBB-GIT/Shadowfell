@@ -5,6 +5,9 @@ extends RefCounted
 ## warm light sources and mist. Registers obstacles with collision and
 ## examine points with the interaction system.
 
+const Entrance := preload("res://game/world/building_entrance.gd")
+const LIGHT_FIXTURE_LAYER := 1 << 19
+
 var game
 var group: Node3D
 var flicker_lights: Array = []
@@ -27,15 +30,9 @@ func _init(g) -> void:
 func build() -> World:
 	land = Land.new(game, group)
 	for p in Layout.props:
-		var obj := Assets.instance(p.model)
+		var obj := prop_instance(p)
 		var x: float = p.position[0]
 		var z: float = p.position[1]
-		obj.position = Vector3(x, Terrain.height_at(x, z), z)
-		obj.rotation.y = deg_to_rad(p.get("rotation", 0))
-		if p.get("tilt"):
-			obj.rotation.z = -deg_to_rad(p.tilt)
-		if p.get("scale"):
-			obj.scale = Vector3.ONE * p.scale
 		group.add_child(obj)
 		_add_collider(p, x, z)
 		if p.get("examine"):
@@ -59,12 +56,45 @@ func build() -> World:
 const LOW_PROPS := {"fence": 1.05}
 
 
+## Shared by world construction and authoring round-trip checks.
+static func prop_instance(p: Dictionary) -> Node3D:
+	var obj := Assets.instance(p.model)
+	var x: float = p.position[0]
+	var z: float = p.position[1]
+	obj.position = Vector3(x, Terrain.height_at(x, z) + p.get("heightOffset", 0.0), z)
+	obj.rotation.y = deg_to_rad(p.get("rotation", 0))
+	if p.get("tilt"):
+		obj.rotation.z = -deg_to_rad(p.tilt)
+	if p.get("scale"):
+		obj.scale = Vector3.ONE * p.scale
+	if p.has("scale3"):
+		obj.scale = Vector3(p.scale3[0], p.scale3[1], p.scale3[2])
+	if p.has("rotation3"):
+		obj.rotation_degrees = Vector3(p.rotation3[0], p.rotation3[1], p.rotation3[2])
+	if p.has("tint"):
+		Assets.tint_instance(obj, Color(p.tint))
+	if str(p.model).get_file().get_basename() in ["lamp_post", "torch"]:
+		mark_light_fixture(obj)
+	return obj
+
+
+static func mark_light_fixture(root: Node3D) -> void:
+	# A flame must not be enclosed by its own fixture in the local shadow map.
+	# The sun still casts the posts' silhouettes; fixture lights skip this layer.
+	if root is GeometryInstance3D:
+		root.layers = LIGHT_FIXTURE_LAYER
+	for mesh in root.find_children("*", "GeometryInstance3D", true, false):
+		mesh.layers = LIGHT_FIXTURE_LAYER
+
+
 func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	var col = p.get("collider")
 	if not col:
 		return
 	var s: float = p.get("scale", 1.0)
-	var h: float = LOW_PROPS.get(p.get("model", ""), INF) * s
+	if p.has("scale3"):
+		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
+	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
 		game.collision.add(x, z, col * s, false, h)
 		return
@@ -122,18 +152,19 @@ func _build_buildings() -> void:
 		g.name = b.id
 		g.position = Vector3(x, Terrain.height_at(x, z) - 0.1, z)
 		g.add_child(Assets.instance(b.shell))
+		g.add_child(Entrance.approach(b))
 		var fade := []
 		for m in [b.front, b.roof]:
-			var obj := Assets.instance(m)
+			var obj := Entrance.make_front(b) if m == b.front else Assets.instance(m)
 			fade.append({"obj": obj, "mats": Rig.isolate_materials(obj)})
 			g.add_child(obj)
-		if b.get("light"):
+		if b.get("light") and not ProjectSettings.get_setting("shadowfell/lighting/pooled", true):
 			var light := Tex.point_light(Color("ffa050"), 4, 10, 1.4)
 			light.position = Vector3(b.light[0], 1.1, b.light[1])
 			g.add_child(light)
 			flicker_lights.append({"light": light, "base": 4.0, "seed": x})
 		group.add_child(g)
-		_wall_colliders(x, z, 0, b.walls, 0.28, true) # building walls block sight
+		_wall_colliders(x, z, 0, Entrance.walls(b), 0.28, true) # building walls block sight
 		for f in b.get("furniture", []):
 			game.collision.add(x + f[0], z + f[1], f[2])
 		var w: float = b.size[0]
@@ -241,7 +272,7 @@ func _add_lights() -> void:
 		var x: float = l.position[0]
 		var z: float = l.position[1]
 		var light: OmniLight3D = null
-		if not l.get("noLight"):
+		if not l.get("noLight") and not ProjectSettings.get_setting("shadowfell/lighting/pooled", true):
 			light = Tex.point_light(Color(l.color) if l.get("color") is String else Color("ffa860"), l.intensity, l.distance, 1.6)
 			light.position = Vector3(x, Terrain.height_at(x, z) + l.height, z)
 			group.add_child(light)
@@ -292,16 +323,19 @@ func _add_lights() -> void:
 			flame.mesh = fc
 			var fm := _unshaded(Color("ffa040"))
 			fm.disable_fog = true
+			flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			flame.material_override = fm
 			flame.position.y = 1.42
 			var gm := Tex.fx_material(Tex.glint(), Color(Color("ffa050"), 0.8), true, true)
 			gm.disable_fog = true
 			var glow := Tex.sprite(gm)
+			glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			glow.scale = Vector3.ONE * 2.2
 			glow.position.y = 1.45
 			for n in [post, bowl, flame, glow]:
 				brazier.add_child(n)
 			brazier.position = Vector3(x, Terrain.height_at(x, z), z)
+			mark_light_fixture(brazier)
 			group.add_child(brazier)
 			flames.append({"flame": flame, "glow": glow, "seed": randf() * 10})
 			game.collision.add(x, z, 0.35)
@@ -431,6 +465,8 @@ static func _box(size: Vector3, c: Color, unshaded: bool) -> MeshInstance3D:
 const MIST_REPEAT := 96.0
 
 func _add_mist() -> void:
+	if RenderingServer.get_current_rendering_method() == "forward_plus":
+		return
 	for i in 10:
 		var mat := Tex.fx_material(Tex.mist(), Color(Color("b8c4c0"), 0.22), false)
 		mat.render_priority = 1

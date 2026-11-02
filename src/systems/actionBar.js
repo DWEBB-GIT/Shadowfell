@@ -12,7 +12,7 @@ import { CONFIG } from '../config.js';
 // can be dragged between slots, dragged off the bar, and put back from the
 // spellbook. A slot location is 'a:<index>', a spellbook entry 'k:<ability>'.
 
-// Abilities come from data/abilities.json. `target`: 'enemy' abilities go to
+// Abilities come from data/abilities/abilities.json. `target`: 'enemy' abilities go to
 // the selected enemy (or the one nearest your aim) within `range`; 'ground'
 // ones land at the aim point; 'self' ones need no aim. `tuning` holds the
 // numbers each runs on. Abilities with `bar: false` (auto attack, id

@@ -3,42 +3,42 @@
 // which takes its archetypes, abilities and enemies from here) and never
 // from the files directly.
 //
-//   data/items.json        items, armour types, random-roll suffixes
-//   data/archetypes.json   playable archetypes
-//   data/abilities.json    player abilities and their tuning
-//   data/enemies.json      enemy types (stats, behaviour, loot table)
-//   data/rarities.json     item rarity tiers (junk to legendary) and colours
-//   data/loot_tables.json  what enemies drop: a rarity roll, then an item
-//   data/npcs.json         townsfolk (their shop and quests)
-//   data/shops.json        vendor types and shop stock
-//   data/quests.json       quests: giver, objectives, turn-in, reward
-//   data/dialogue.json     what townsfolk say: greetings, topics, replies
-//   data/world.json        regions, roads, shrines, locations, spawns, loot
-//   data/scenery.json      props, clearings, lights
-//   data/text.json         intro, documents, examine text
-//   data/skills.json       skills learned from trainers (camping, fishing, cooking)
-//   data/recipes.json      recipes for crafting skills (cooking)
-//   data/titles.json       titles and how NPCs address you by them
+//   data/items/items.json        items, armour types, random-roll suffixes
+//   data/abilities/archetypes.json   playable archetypes
+//   data/abilities/abilities.json    player abilities and their tuning
+//   data/npcs/enemies.json      enemy types (stats, behaviour, loot table)
+//   data/items/rarities.json     item rarity tiers (junk to legendary) and colours
+//   data/items/loot_tables.json  what enemies drop: a rarity roll, then an item
+//   data/npcs/npcs.json         townsfolk (their shop and quests)
+//   data/npcs/shops.json        vendor types and shop stock
+//   data/quests/quests.json       quests: giver, objectives, turn-in, reward
+//   data/quests/dialogue.json     what townsfolk say: greetings, topics, replies
+//   data/world/world.json        regions, roads, shrines, locations, spawns, loot
+//   data/world/scenery.json      props, clearings, lights
+//   data/ui/text.json         intro, documents, examine text
+//   data/professions/skills.json       skills learned from trainers (camping, fishing, cooking)
+//   data/professions/recipes.json      recipes for crafting skills (cooking)
+//   data/npcs/titles.json       titles and how NPCs address you by them
 //
 // See CONTRIBUTING.md for how to add content.
 
-import items from '../../data/items.json';
-import archetypes from '../../data/archetypes.json';
-import abilities from '../../data/abilities.json';
-import enemies from '../../data/enemies.json';
-import lootTables from '../../data/loot_tables.json';
-import rarities from '../../data/rarities.json';
-import npcs from '../../data/npcs.json';
-import shops from '../../data/shops.json';
-import quests from '../../data/quests.json';
-import dialogue from '../../data/dialogue.json';
-import world from '../../data/world.json';
-import scenery from '../../data/scenery.json';
-import text from '../../data/text.json';
-import skills from '../../data/skills.json';
-import factions from '../../data/factions.json';
-import recipes from '../../data/recipes.json';
-import titles from '../../data/titles.json';
+import items from '../../data/items/items.json';
+import archetypes from '../../data/abilities/archetypes.json';
+import abilities from '../../data/abilities/abilities.json';
+import enemies from '../../data/npcs/enemies.json';
+import lootTables from '../../data/items/loot_tables.json';
+import rarities from '../../data/items/rarities.json';
+import npcs from '../../data/npcs/npcs.json';
+import shops from '../../data/npcs/shops.json';
+import quests from '../../data/quests/quests.json';
+import dialogue from '../../data/quests/dialogue.json';
+import world from '../../data/world/world.json';
+import scenery from '../../data/world/scenery.json';
+import text from '../../data/ui/text.json';
+import skills from '../../data/professions/skills.json';
+import factions from '../../data/npcs/factions.json';
+import recipes from '../../data/professions/recipes.json';
+import titles from '../../data/npcs/titles.json';
 import { validateGameData, indexById, resolveEnemies } from './schema.js';
 
 export const RAW = {

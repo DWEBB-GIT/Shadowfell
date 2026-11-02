@@ -1,4 +1,4 @@
-// Items: the database entries (data/items.json, loaded by data/db.js) and
+// Items: the database entries (data/items/items.json, loaded by data/db.js) and
 // the rules around them: random rolls, what one particular item is, and what
 // a merchant pays for it. Fields of an item record:
 //
@@ -6,7 +6,7 @@
 // kind:       weapon | armor | shield | jewellery | torch | tool | bag | consumable | material | junk | document
 // slot:       the character slot an equippable item goes into (or finger / trinket)
 // armourType: an armour type id (who may wear it: see archetypes.json)
-// rarity:     a data/rarities.json id: junk | common | enhanced | rare | epic |
+// rarity:     a data/items/rarities.json id: junk | common | enhanced | rare | epic |
 //             legendary | quest (the colour of its name and border)
 // reservedFor: the only loot tables that may drop it (a boss's own weapon)
 // itemLevel:  gear only: the level its numbers are worked out for. Its armour,
@@ -163,7 +163,7 @@ export function sellPrice(item, fraction) {
   return d && !d.quest ? Math.floor(itemView(stack).price * fraction) : 0;
 }
 
-// What one enemy drops (data/loot_tables.json): every `always` item, then
+// What one enemy drops (data/items/loot_tables.json): every `always` item, then
 // `rolls` tries at `chance`, each rolling a rarity by weight and then an item
 // from that rarity's list. Returns [{ id, count, rarity }].
 export function rollLoot(table, rand) {
@@ -189,7 +189,7 @@ function pickWeighted(list, rand) {
   return list.find((e) => (pick -= e.weight) < 0) || list[list.length - 1];
 }
 
-// Loot placed in the world (data/world.json placedLoot).
+// Loot placed in the world (data/world/world.json placedLoot).
 export const LOOT = DB.world.placedLoot;
 
 // Unique drops: an enemy type with `uniqueDrop` leaves that item where it

@@ -1,6 +1,6 @@
 class_name Spells
 extends RefCounted
-## The spell engine (src/systems/spells.js). Abilities in data/abilities.json
+## The spell engine (src/systems/spells.js). Abilities in data/abilities/abilities.json
 ## with a `kind` are run here from their data alone, so a new spell is a new
 ## record, not new code. The kinds and the keys a record may carry are
 ## documented at the top of src/systems/spells.js; this is a line-by-line
@@ -199,7 +199,7 @@ func tuned(id):
 
 
 # ------------------------------------------------------------ status tags
-## Does `enemy` carry a status (data/builds.json `statuses`)? Damage over
+## Does `enemy` carry a status (data/abilities/builds.json `statuses`)? Damage over
 ## time and auras name theirs (`status`); the rest are read off what an
 ## effect does: a slow is Slowed, a stun or sleep Stunned, more damage taken
 ## Vulnerable, less dealt Weakened, a full stagger bar Staggered.
@@ -246,7 +246,7 @@ var fortify: float:
 
 
 ## what a spell going off does for your key passive: Zeal stacks
-## The spell's own cast pose (data/spell_fx.json `anim`), else the kind's
+## The spell's own cast pose (data/abilities/spell_fx.json `anim`), else the kind's
 ## `type`. `keep_timing`: a blow that lands on its own clock (a sweep, a
 ## burst, a charge) takes only the pose, so blow and pose stay together.
 ## `key` "windupAnim" takes the look's `windupAnim` pose (the held part of a cast)
@@ -264,7 +264,7 @@ func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep
 	game.player.rig.play(a.type, duration, impact)
 
 
-## The spell's own effects (data/spell_fx.json): `windup` on you while a
+## The spell's own effects (data/abilities/spell_fx.json): `windup` on you while a
 ## cast is drawn out, `cast` on you as it goes, `impact` where it lands.
 func _show(spell: Dictionary, phase: String, at: Vector3, facing: float, follow = null) -> void:
 	if DB.spell_fx.has(spell.id):

@@ -2,7 +2,7 @@ import { DB } from '../data/db.js';
 import { CONFIG } from '../config.js';
 import { computeHit, enemyBlock, weaponRoll, swingRoll } from './stats.js';
 
-// The spell engine. Abilities in data/abilities.json with a `kind` are run
+// The spell engine. Abilities in data/abilities/abilities.json with a `kind` are run
 // here from their data alone, so a new spell is a new record, not new code:
 //
 //   cast     a cast bar (moving interrupts it), then a bolt flies at the

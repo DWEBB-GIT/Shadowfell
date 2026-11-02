@@ -1,6 +1,6 @@
 @tool
 extends HSplitContainer
-## Dialogue: what each npc says (data/dialogue.json). Greetings (the last
+## Dialogue: what each npc says (data/quests/dialogue.json). Greetings (the last
 ## whose condition holds is said on opening), topics on the first page that
 ## open a node, and nodes with replies that open another node or go back.
 ## Quests, the shop, training and Goodbye are added by the game.
