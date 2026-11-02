@@ -301,7 +301,7 @@ func _trains(n: Dictionary) -> void:
 	UI.heading(form, "Trains")
 	UI.note(form, "Anything here gives them a Train choice. Map icon Class trainer marks a class trainer on the minimap.", Color(0.6, 0.6, 0.6))
 	UI.note(form, "Skills:")
-	var skills := s.skills.filter(func(sk): return sk.get("trainer") == n.id)
+	var skills := s.skills.filter(func(sk): return DB.taught_by(sk, n.id))
 	for sk in skills:
 		var row := UI.hbox(form)
 		var b := LinkButton.new()
@@ -310,12 +310,19 @@ func _trains(n: Dictionary) -> void:
 		b.pressed.connect(func(): open_record.emit("skill", sk.id))
 		row.add_child(b)
 	var bar := UI.hbox(form)
-	var others := s.skills.filter(func(sk): return sk.get("trainer") != n.id).map(func(sk): return [sk.id, "%s (now %s)" % [sk.get("name", sk.id), s.npc_name(sk.get("trainer"))]])
+	var others := s.skills.filter(func(sk): return not DB.taught_by(sk, n.id)).map(func(sk): return [sk.id, "%s (taught by %s)" % [sk.get("name", sk.id), ", ".join(DB.teachers_of(sk).map(func(x): return s.npc_name(x)))]])
 	if others.size():
 		bar.add_child(UI.choice([[null, "+ teach a skill"]] + others, null, func(v):
 			if v == null:
 				return
-			s.skill(v).trainer = n.id
+			# another trainer for it: whoever taught it still does
+			var sk: Dictionary = s.skill(v)
+			if not sk.get("trainer"):
+				sk.trainer = n.id
+			else:
+				if not sk.has("trainers"):
+					sk.trainers = []
+				sk.trainers.append(n.id)
 			s.touch("skills")
 			_build.call_deferred()))
 	bar.add_child(UI.button("New skill", func(): open_record.emit("new_skill", n.id), "Make a new skill they teach, on the Skills tab"))
@@ -376,7 +383,7 @@ func _trains(n: Dictionary) -> void:
 		_build.call_deferred(), "Every spell in the chosen class's spellbook that is not on its starting bar and not taught by someone else: this npc teaches it (teach starting-bar spells one by one to take them off the bar)"))
 	add.add_child(UI.button("New spell", func(): open_record.emit("new_spell", n.id), "Make a new spell on the Abilities tab; tick a class and choose this trainer there"))
 	UI.note(form, "Teaching a spell from the starting bar takes it off the bar, so a new character must train it. A spell from outside the class's spellbook is added to it.", Color(0.6, 0.6, 0.6))
-	var recipes := s.recipes.filter(func(r): return r.get("trainer") == n.id)
+	var recipes := s.recipes.filter(func(r): return DB.taught_by(r, n.id))
 	if recipes.size():
 		UI.note(form, "Recipes: %s (recipes.json)." % ", ".join(recipes.map(func(r): return s.item(r.get("output", {}).get("item")).get("name", r.id))))
 

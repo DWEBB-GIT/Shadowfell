@@ -31,7 +31,7 @@ var _last_for = null
 
 ## Is this enemy chasing or striking the player?
 static func in_combat_with_player(e) -> bool:
-	return e != null and e.alive and (e.state == "chase" or e.state == "attack")
+	return e != null and e.alive and (e.state == "chase" or e.state == "attack" or e.state == "flee")
 
 
 func _init(g) -> void:

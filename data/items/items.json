@@ -686,6 +686,23 @@
       "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
     },
     {
+      "id": "belt_pouch",
+      "name": "Belt pouch",
+      "kind": "bag",
+      "toolPack": true,
+      "holds": [
+        "tool",
+        "torch"
+      ],
+      "rarity": "common",
+      "bagSlots": 3,
+      "stack": 1,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "A plain pouch on your belt for a few tools, so they take no bag space. A proper tool pack replaces it."
+    },
+    {
       "id": "tool_pack",
       "name": "Warden's tool pack",
       "kind": "bag",

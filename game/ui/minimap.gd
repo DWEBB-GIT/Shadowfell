@@ -681,7 +681,7 @@ func _rim(g: Canvas2D, s: Vector2, R: float, colour: String, glyph: String, reac
 	if d - reach <= R - 4:
 		return
 	var a := atan2(dy, dx)
-	var r := R - 9
+	var r := R - 18 ## in from the rim, clear of the zoom buttons (Dan, 2026-11-02)
 	var x := R + cos(a) * r
 	var y := R + sin(a) * r
 	if glyph != "":

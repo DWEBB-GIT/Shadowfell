@@ -215,8 +215,9 @@ func _set_kind(k: String) -> void:
 
 ## kinds that hit: a weapon blow (cleave, burst, charge) or anything that
 ## may roll a spell or a weapon
-const DAMAGE_KINDS := ["cast", "dot", "instant", "aoe", "cleave", "burst", "charge", "interrupt", "channel"]
-const SCALING_KEYS := ["damageMin", "damageMax", "damageMultiplier", "weaponDamage", "spellPower"]
+const DAMAGE_KINDS := ["cast", "dot", "instant", "aoe", "cleave", "burst", "charge", "interrupt", "channel", "healZone", "healBurst"]
+const HEAL_KINDS := ["heal", "hot", "healZone", "healBurst"]
+const SCALING_KEYS := ["damageMin", "damageMax", "damageMultiplier", "weaponDamage", "spellPower", "healMin", "healMax", "healPower", "thornsMin", "thornsMax"]
 
 
 ## Scaling (Dan, 2026-11-02): how every ability grows with gear, as WoW
@@ -224,12 +225,20 @@ const SCALING_KEYS := ["damageMin", "damageMax", "damageMultiplier", "weaponDama
 ## of spell power; a spell is a base roll plus shares of both.
 func _scaling(a: Dictionary) -> void:
 	UI.heading(form, "Scaling")
-	if not (a.get("kind") in DAMAGE_KINDS):
-		UI.note(form, "A %s does no damage, so nothing here scales." % a.get("kind", "spell"), Color(0.6, 0.6, 0.6))
-		return
 	if not a.has("tuning"):
 		a.tuning = {}
+	if a.get("kind") in HEAL_KINDS:
+		_heal_scaling(a)
+	if a.get("kind") == "thorns":
+		_thorns_scaling(a)
+		return
+	if not (a.get("kind") in DAMAGE_KINDS):
+		if not (a.get("kind") in HEAL_KINDS):
+			UI.note(form, "A %s does no damage, so nothing here scales." % a.get("kind", "spell"), Color(0.6, 0.6, 0.6))
+		return
 	var t: Dictionary = a.tuning
+	if a.kind in HEAL_KINDS:
+		UI.note(form, "Damage to enemies%s: set Base damage max to 0 to only heal." % (" in it every tick" if a.kind == "healZone" else " caught in it"), Color("d0b070"))
 	var dot: bool = a.kind == "dot"
 	var weapon: bool = DataStore.weapon_ability(a)
 	var g := UI.grid(form)
@@ -253,6 +262,55 @@ func _scaling(a: Dictionary) -> void:
 	pct.call("spellPower", 1.0, "Spell power", "Share of your spell power added (100 = all of it).")
 	var each := " Each tick then takes Tick multiplier of that." if t.has("tickMultiplier") else ""
 	UI.note(form, "Damage = base + weapon damage %% x a weapon hit + spell power %% x spell power.%s" % each, Color(0.6, 0.6, 0.6))
+
+
+## a heal: a base roll that never grows plus a share of spell power, as damage
+## is; a heal may also eat a heal over time on you for more (Swiftmend)
+func _heal_scaling(a: Dictionary) -> void:
+	var t: Dictionary = a.tuning
+	var g := UI.grid(form)
+	var h := HBoxContainer.new()
+	for key in ["healMin", "healMax"]:
+		h.add_child(UI.spin(t.get(key, 0), 0, 100000, 0.5, func(v):
+			t[key] = v
+			_changed()))
+	var each := " every tick" if a.kind in ["hot", "healZone"] else ""
+	UI.row(g, "Base healing", h, "A fixed roll, min to max%s: keep it small so gear matters." % each)
+	UI.row(g, "Healing power", UI.spin(roundf(t.get("healPower", 1.0) * 1000) / 10.0, 0, 10000, 1, func(v):
+		t.healPower = v / 100.0
+		_changed(), " %"), "Share of your spell power added to each heal%s (100 = all of it)." % each)
+	if a.kind == "heal":
+		var hots: Array = [[null, "(nothing)"]]
+		for x in s.abilities:
+			if x.get("kind") == "hot":
+				hots.append([x.id, x.get("name", x.id)])
+		UI.row(g, "Consumes", UI.choice(hots, a.get("consumes"), func(v):
+			if v != null and not t.has("consumePercent"):
+				t.consumePercent = 100
+			elif v == null:
+				t.erase("consumePercent")
+			_put("consumes", v, true)), "Eats this heal over time on you and adds what it had left. It cannot be cast without one.")
+		if a.get("consumes"):
+			UI.row(g, "Of what is left", UI.spin(t.get("consumePercent", 100), 0, 1000, 5, func(v):
+				t.consumePercent = v
+				_changed(), " %"), "100 = all the healing the heal over time still had to give.")
+	UI.note(form, "Healing = base + healing power %% x spell power%s. Direct heals can crit." % each, Color(0.6, 0.6, 0.6))
+
+
+## thorns: what each attacker takes back
+func _thorns_scaling(a: Dictionary) -> void:
+	var t: Dictionary = a.tuning
+	var g := UI.grid(form)
+	var h := HBoxContainer.new()
+	for key in ["thornsMin", "thornsMax"]:
+		h.add_child(UI.spin(t.get(key, 0), 0, 100000, 0.5, func(v):
+			t[key] = v
+			_changed()))
+	UI.row(g, "Damage back", h, "What every enemy that lands a blow on you takes, min to max.")
+	UI.row(g, "Spell power", UI.spin(roundf(t.get("spellPower", 0.0) * 1000) / 10.0, 0, 10000, 1, func(v):
+		t.spellPower = v / 100.0
+		_changed(), " %"), "Share of your spell power added to each thorns hit.")
+	UI.note(form, "Thorns = base + spell power %% x spell power, on every blow that lands on you (blocked ones too). It never misses.", Color(0.6, 0.6, 0.6))
 
 
 func _tuning(a: Dictionary) -> void:
@@ -624,6 +682,16 @@ func _classes(a: Dictionary) -> void:
 		gate.tooltip_text = "Locked at the trainer until this quest is handed in"
 		tr.add_child(gate)
 		tr.add_child(UI.button("Open", func(): open_record.emit("npc", entry.trainer), "Open the trainer on the NPCs tab"))
+		var more := UI.hbox(form)
+		var pad2 := Control.new()
+		pad2.custom_minimum_size.x = 24
+		more.add_child(pad2)
+		var al := Label.new()
+		al.text = "also taught by"
+		more.add_child(al)
+		more.add_child(UI.extra_trainers(s, entry, func():
+			s.touch("archetypes")
+			_changed(true)))
 
 
 func _skill(a: Dictionary) -> void:

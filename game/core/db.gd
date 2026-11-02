@@ -26,7 +26,10 @@ const CONFIG := {
 	## out-lasting the leash. Snares still slow them. It swings on the run at
 	## anything within its reach + `reachGrace` m. Wandering and walking home
 	## use the enemy's own `speed` (m/s).
-	"chase": {"default": 115, "byType": {"fodder": 110, "normal": 115, "armoured": 110, "skirmisher": 120, "pack_beast": 135, "elite": 115, "heavy": 100, "boss": 100}, "reachGrace": 0.3},
+	"chase": {"default": 115, "byType": {"fodder": 110, "normal": 115, "armoured": 110, "skirmisher": 120, "pack_beast": 135, "elite": 115, "heavy": 100, "boss": 100}, "reachGrace": 0.3,
+		# wounded beasts and men break and run, slower than they chase (Dan, 2026-11-02);
+		# the dead never flee. An enemy can set `flees` true/false itself.
+		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	"death": {
@@ -37,7 +40,7 @@ const CONFIG := {
 		# their own after woundSeconds of play (Dan, 2026-10-29)
 		"graveSeconds": 900.0, "scavengers": 2, "woundHealth": 15.0, "maxWounds": 3, "woundRestSeconds": 20.0, "woundSeconds": 900.0,
 		"healers": ["grue", "aveline"], "healPrice": 5,
-		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
+		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 10.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
 	"fishing": {"castTime": 0.6, "duration": 12.0, "biteMin": 2.0, "biteMax": 8.0, "biteWindow": 1.4, "biteBase": 85.0, "bitePerSkill": 0.5, "biteCap": 97.0, "noBiteAfter": 6.0, "reelTime": 0.45, "baseChance": 75.0, "chancePerRank": 0.6, "clickRadius": 60.0},
 	# a bed at an inn (an innkeeper npc; its `bedPrice` beats this price):
 	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
@@ -167,6 +170,22 @@ static var enemy_cfg := {}
 static var spells := {}
 
 
+## Who teaches a skill, recipe, rank or class spell: its `trainer`, plus
+## anyone in `trainers` (Dan, 2026-11-02: several trainers may teach the same thing)
+static func teachers_of(entry: Dictionary) -> Array:
+	var out := []
+	if entry.get("trainer"):
+		out.append(entry.trainer)
+	for n in entry.get("trainers", []):
+		if not out.has(n):
+			out.append(n)
+	return out
+
+
+static func taught_by(entry: Dictionary, npc_id) -> bool:
+	return npc_id != null and npc_id != "" and teachers_of(entry).has(npc_id)
+
+
 static func setup(data) -> void:
 	var f: Dictionary = data.files
 	forge = f.get("forge", {})
@@ -245,12 +264,17 @@ static func setup(data) -> void:
 		archetypes = archetypes.duplicate(true)
 		skills = skills.duplicate(true)
 		recipes = recipes.duplicate(true)
-		for a in archetypes.values():
-			for t in a.get("trained", []):
-				t.trainer = teachers.get(t.get("trainer", ""), t.get("trainer", ""))
-		for t in skills.values() + recipes.values():
+		var swap := func(t: Dictionary) -> void:
 			if t.has("trainer"):
 				t.trainer = teachers.get(t.trainer, t.trainer)
+			if t.has("trainers"):
+				t.trainers = t.trainers.map(func(n): return teachers.get(n, n))
+		for a in archetypes.values():
+			for t in a.get("trained", []):
+				t.trainer = t.get("trainer", "")
+				swap.call(t)
+		for t in skills.values() + recipes.values():
+			swap.call(t)
 		# An opening belongs to the map whose giver is actually present.
 		# The legacy cart quest must not auto-start on a different continent.
 		quests = quests.duplicate(true)
