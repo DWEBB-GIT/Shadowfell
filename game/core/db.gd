@@ -108,6 +108,9 @@ static var abilities := {}
 static var spell_fx := {}
 ## each spell's cast pose by name (data/abilities/spell_fx.json `poses`; Rig)
 static var spell_poses := {}
+## how moments that are not spells look, by event name, such as levelUp
+## (data/abilities/spell_fx.json `moments`; Fx.moment)
+static var fx_moments := {}
 static var enemies := {} ## raw records
 static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
@@ -177,6 +180,7 @@ static func setup(data) -> void:
 	abilities = data.table("abilities")
 	spell_fx = f.get("spell_fx", {}).get("spells", {})
 	spell_poses = f.get("spell_fx", {}).get("poses", {})
+	fx_moments = f.get("spell_fx", {}).get("moments", {})
 	enemies = with_imported(resolve_enemies(data.table("enemies")))
 	loot_tables = data.table("lootTables")
 	world_drops = data.table("worldDrops").values()
