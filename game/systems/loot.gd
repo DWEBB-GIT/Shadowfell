@@ -54,7 +54,7 @@ func start_gather(entry: Dictionary) -> bool:
 		return false
 	var item = entry.def.get("reward", {}).get("item")
 	if item and game.inventory.room_for(item) <= 0:
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)

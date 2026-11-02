@@ -221,6 +221,7 @@ func complete(id: String) -> bool:
 	for g in gifts:
 		if inventory.room_for(g.item) < g.get("count", 1):
 			events.emit("log", {"text": "Make room in your bags for the reward first.", "kind": "muted", "throttle": "quest-room"})
+			game.hud.error("Your bags are full.")
 			return false
 	for o in q.objectives:
 		if o.type == "collect" and not o.get("keep"):
