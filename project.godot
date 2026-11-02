@@ -83,6 +83,17 @@ renderer/rendering_method.web="gl_compatibility"
 environment/ssao/quality=1
 environment/volumetric_fog/volume_depth=48
 
+[shader_globals]
+
+sf_cut_cam={
+"type": "vec3",
+"value": Vector3(0, -1000, 0)
+}
+sf_cut_focus={
+"type": "vec3",
+"value": Vector3(0, -1000, 0)
+}
+
 [shadowfell]
 
 world/map="new"

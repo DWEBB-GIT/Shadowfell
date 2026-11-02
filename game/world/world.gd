@@ -18,7 +18,7 @@ var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
-var see_through: SeeThrough ## fades houses that hide you
+var see_through: SeeThrough ## houses with the see-through circle
 
 
 func _init(g) -> void:
@@ -75,6 +75,10 @@ static func prop_instance(p: Dictionary) -> Node3D:
 		Assets.tint_instance(obj, Color(p.tint))
 	if str(p.model).get_file().get_basename() in ["lamp_post", "torch"]:
 		mark_light_fixture(obj)
+	# the nature pack: trees, rocks and plants open a see-through circle
+	# around the player instead of hiding them
+	if str(p.model).contains("/environment/nature/"):
+		Assets.use_cutaway(obj)
 	return obj
 
 
@@ -89,6 +93,11 @@ static func mark_light_fixture(root: Node3D) -> void:
 
 func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	var col = p.get("collider")
+	# a model with a measured footprint (trees at the trunk, rocks at the
+	# base) uses that, whatever the placement says
+	var measured = model_collider(str(p.model))
+	if measured != null:
+		col = measured
 	if not col:
 		return
 	var s: float = p.get("scale", 1.0)
@@ -108,6 +117,21 @@ func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	var r := deg_to_rad(p.get("rotation", 0))
 	for c in col:
 		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s, false, h)
+
+
+static var _model_colliders = null
+
+## the measured footprint of a model, by file name
+## (data/world/model_colliders.json), or null
+static func model_collider(model: String):
+	if _model_colliders == null:
+		_model_colliders = {}
+		var path := DataPaths.path_for("model_colliders")
+		if FileAccess.file_exists(path):
+			var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if d is Dictionary:
+				_model_colliders = d.get("models", {})
+	return _model_colliders.get(model.get_file().get_basename())
 
 
 ## walls as rows of small circles, from [x1, z1, x2, z2] segments in the
@@ -240,7 +264,12 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 	return false
 
 
+## The see-through circle is for when you are outside and something stands
+## between you and the camera. Inside a building (its front and roof already
+## lift away) it is switched off: camera and focus at one point cut nothing.
 func set_cutaway(camera_pos: Vector3, focus: Vector3) -> void:
+	if indoors != null:
+		camera_pos = focus
 	land.set_cutaway(camera_pos, focus)
 
 
@@ -528,7 +557,6 @@ func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
 	town.update(dt)
-	see_through.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3
 		var z: float = m.z + MIST_REPEAT * roundf((focus.z - m.z) / MIST_REPEAT) + cos(time * 0.04 + m.seed) * 2
