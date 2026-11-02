@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caa1bmhil0y7h"
-path="res://.godot/imported/skeleton_T_skeleton.png-e5566d34f14f800e8c603b477c8ee96b.ctex"
+path.s3tc="res://.godot/imported/skeleton_T_skeleton.png-e5566d34f14f800e8c603b477c8ee96b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "52eb38341815cc784caad475bdf9126e"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/skeleton_T_skeleton.png"
-dest_files=["res://.godot/imported/skeleton_T_skeleton.png-e5566d34f14f800e8c603b477c8ee96b.ctex"]
+dest_files=["res://.godot/imported/skeleton_T_skeleton.png-e5566d34f14f800e8c603b477c8ee96b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

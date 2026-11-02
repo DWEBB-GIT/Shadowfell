@@ -1,7 +1,7 @@
 class_name Builds
 extends RefCounted
-## Build layers (after Diablo 4), all from data/builds.json and the
-## `upgrades` on spells in data/abilities.json:
+## Build layers (after Diablo 4), all from data/abilities/builds.json and the
+## `upgrades` on spells in data/abilities/abilities.json:
 ## - path points, one a level from `pathPoints.fromLevel`, buy a spell's
 ##   Enhanced rank and then one of its two forks;
 ## - one key passive per character, from `keyPassiveLevel`;

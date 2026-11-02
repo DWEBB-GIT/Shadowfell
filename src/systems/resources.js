@@ -1,6 +1,6 @@
 // What abilities are paid with. Mana is drawn from Intellect and refills
 // slowly in combat (fast out of it). Every other resource is a class bar,
-// one system with different numbers per class (data/archetypes.json
+// one system with different numbers per class (data/abilities/archetypes.json
 // `resources.bars`):
 //
 //   max, start ('empty' | 'full'), colour
@@ -19,7 +19,7 @@
 //   overload           at max: { name, damageBonus %, healthLossPercent a
 //                      second } until it drops below max (Overcorrupted)
 //
-// Ability costs live in data/abilities.json (`cost`, `gain`, and
+// Ability costs live in data/abilities/abilities.json (`cost`, `gain`, and
 // `spendsAll` for finishers such as Double Cut and Purge).
 
 export class Resources {

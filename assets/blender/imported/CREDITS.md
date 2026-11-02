@@ -27,7 +27,7 @@ the hen's wings are folded in.
 "human-battle-mage-male" (an FBX with a Reallusion-style auto-rig and a
 2048 px PBR texture; it looks made with an AI model generator such as
 Meshy). It came with no licence file: **source and licence still to be
-confirmed by Dan**, then credited in data/credits.json. The download is
+confirmed by Dan**, then credited in data/meta/credits.json. The download is
 about 50 MB, so it is not kept in git: put it, as downloaded, in
 `assets/blender/imported/human-battle-mage-male/` to rebuild
 (`python assets/blender/import_models.py -- mage`). Changes: stood up and

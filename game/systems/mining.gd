@@ -1,6 +1,6 @@
 class_name Mining
 extends RefCounted
-## Mining (data/mining.json), a gathering profession like Skinning: a
+## Mining (data/professions/mining.json), a gathering profession like Skinning: a
 ## trainer, a pick in the tool pack, and a rank that rises with every swing
 ## that is not yet easy for you (5 ranks an ore level).
 ##

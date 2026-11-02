@@ -1835,7 +1835,7 @@ async function itemDatabase(browser) {
     const g = window.__shadowfall;
     return { errors: g.itemErrors, count: Object.keys(g.items).length, missing: Object.entries(g.items).filter(([, d]) => !(Number.isInteger(d.price) && d.icon && d.rarity)).map(([id]) => id) };
   });
-  record('Every item comes from one database with slot, stats, price and icon', db.errors.length === 0 && db.missing.length === 0 && db.count >= 9, `${db.count} items in src/data/items.json, all valid`);
+  record('Every item comes from one database with slot, stats, price and icon', db.errors.length === 0 && db.missing.length === 0 && db.count >= 9, `${db.count} items in src/data/items/items.json, all valid`);
   const caught = await page.evaluate(() => {
     const g = window.__shadowfall;
     const bad = { broken_blade: { name: 'Broken blade', kind: 'weapon', slot: 'mainHand', rarity: 'shiny', stack: 1, price: -1, model: 'worn_sword', icon: 'worn_sword', description: 'x' } };
@@ -1886,7 +1886,7 @@ async function forge(browser) {
     g.step(1 / 60);
     return { current: g.merchant.current, shop: !document.getElementById('shop-window').hidden, bags: g.hud.items.openBags.size > 0, stock: document.querySelectorAll('#shop-stock .islot').length, talking: g.dialogue.isOpen };
   }));
-  const maraStock = await page.evaluate(() => window.__shadowfall.db.shops.mara_forge.stock.length); // (from data/shops.json)
+  const maraStock = await page.evaluate(() => window.__shadowfall.db.shops.mara_forge.stock.length); // (from data/npcs/shops.json)
   record('Mara Venn stands at her forge; talking to her offers her wares, which open beside the bags', talk.mara && talk.prompt === 'Talk to Mara Venn' && talk.options.includes('shop') && talk.current === 'mara_forge' && talk.shop && talk.bags && talk.stock === maraStock && !talk.talking, `prompt "${talk.prompt}", choices: ${talk.options.join(', ')}; ${talk.stock} items for sale, bags open: ${talk.bags}`);
 
   const buy = await page.evaluate(() => {
@@ -4907,7 +4907,7 @@ async function targetingFixes(browser) {
 }
 
 // ------------------------------------------------------------- class kits
-// Each class (data/archetypes.json) plays its own six-spell base kit on its
+// Each class (data/abilities/archetypes.json) plays its own six-spell base kit on its
 // own resources (Dan, 2026-10-19). One fresh character per class.
 async function classKits(browser) {
   current = 'Class kits';

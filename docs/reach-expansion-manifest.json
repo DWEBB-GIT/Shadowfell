@@ -1,0 +1,171 @@
+{
+  "continentMetres": [
+    2048,
+    3072
+  ],
+  "visualAssets": "Original Godot-native geometry, authored for Shadowfell; no external textures.",
+  "grassReplacements": 962,
+  "terrainTiles": [
+    [
+      3,
+      10
+    ],
+    [
+      4,
+      8
+    ],
+    [
+      4,
+      9
+    ],
+    [
+      4,
+      10
+    ],
+    [
+      5,
+      7
+    ],
+    [
+      5,
+      8
+    ],
+    [
+      5,
+      9
+    ],
+    [
+      5,
+      10
+    ]
+  ],
+  "mainQuests": [
+    "vr_first_hunt",
+    "tf_lanterns",
+    "tf_bell",
+    "vr_names",
+    "vr_crypt"
+  ],
+  "optionalQuests": [
+    "tf_briar",
+    "tf_herbs",
+    "vr_perch",
+    "vr_hollow_story",
+    "vr_fence_dispute",
+    "vr_pig_wolf",
+    "vr_reed_message",
+    "vr_lost_brooch"
+  ],
+  "places": [
+    [
+      "vr_willow",
+      "Willow Pond",
+      "place",
+      [
+        -395,
+        -172
+      ],
+      1,
+      "Willows lean over clear water. Tobin keeps his tackle beside the landing."
+    ],
+    [
+      "vr_mill",
+      "Miller's Pool",
+      "place",
+      [
+        -523,
+        -217
+      ],
+      1,
+      "A quiet pool west of the inn. A good place to fish away an afternoon."
+    ],
+    [
+      "vr_hall",
+      "Thornford Town Hall",
+      "town",
+      [
+        -453,
+        -165
+      ],
+      1,
+      "Mayor Alder keeps the village rolls. Some names in the northern burial book have been scratched out."
+    ],
+    [
+      "vr_meadow",
+      "Holt Meadow",
+      "hunt",
+      [
+        -332,
+        -309
+      ],
+      1,
+      "Young boars root through broken orchard fencing. Beyond the meadow the woods grow darker."
+    ],
+    [
+      "vr_graves",
+      "The Nameless Yard",
+      "ruin",
+      [
+        -343,
+        -456
+      ],
+      4,
+      "Every headstone faces the old watch. Three family names have been chiselled away."
+    ],
+    [
+      "vr_hollow",
+      "Mourning Hollow",
+      "village",
+      [
+        -310,
+        -382
+      ],
+      3,
+      "Three shuttered homes shelter beneath the black trees. Morrow still tends the apothecary."
+    ],
+    [
+      "vr_crypt",
+      "The Bell Crypt",
+      "dungeon",
+      [
+        -313,
+        -486
+      ],
+      5,
+      "The procession ends at a sealed family crypt. Its keeper carries the missing names."
+    ],
+    [
+      "vr_pool",
+      "Widow's Mirror",
+      "place",
+      [
+        -297,
+        -404
+      ],
+      4,
+      "No birds drink here. Patient anglers sometimes see a second moon beneath the water."
+    ],
+    [
+      "vr_boundary",
+      "The Orchard Boundary",
+      "story",
+      [
+        -369,
+        -264
+      ],
+      1,
+      "The old stone points to a hedge north of the timber trail. Osric's new fence is three paces over the line. A faded village seal confirms Heda's claim."
+    ],
+    [
+      "vr_briar_den",
+      "Briarjaw's Run",
+      "hunt",
+      [
+        -303,
+        -282
+      ],
+      2,
+      "Pig bristles cling to the briars. A lone wolf has been using this run to reach Holt Farm."
+    ]
+  ]
+}

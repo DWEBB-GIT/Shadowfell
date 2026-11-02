@@ -1,6 +1,6 @@
 class_name Layout
 extends RefCounted
-## The world's layout from data/world.json and data/scenery.json, under the
+## The world's layout from data/world/world.json and data/world/scenery.json, under the
 ## names the world code uses (src/world/layout.js). Positions are [x, z] in
 ## metres, rotations in degrees around the vertical axis. North is -z.
 

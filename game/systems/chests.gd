@@ -1,6 +1,6 @@
 class_name Chests
 extends RefCounted
-## Chests in the world (data/world.json `chests`; src/systems/chests.js).
+## Chests in the world (data/world/world.json `chests`; src/systems/chests.js).
 ## Walk up and open one (E, or click it): what it holds goes into your bags
 ## (onto the ground beside it if they are full) and its silver into your
 ## purse. A chest with a `lock` needs its key in your bags, or Lockpicking

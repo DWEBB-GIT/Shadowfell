@@ -34,6 +34,8 @@ func build() -> Discovery:
 		var x: float = p.at[0]
 		var z: float = p.at[1]
 		game.world.examine_points.append({"id": "poi:" + p.id, "x": x, "z": z})
+		if p.get("noMarker", false):
+			continue # the authored mechanism already supplies a physical landmark
 		if _built_up(x, z):
 			continue # something already stands here (the town, the cart...)
 		var m: Array = MARKERS.get(p.kind, ["waymarker", 1.0])

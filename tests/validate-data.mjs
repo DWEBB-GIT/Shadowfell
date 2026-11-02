@@ -12,13 +12,15 @@ import { isScaledItem, itemSpend } from '../src/data/scaling.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
-const MODELS = fs.readdirSync(path.join(ROOT, 'assets', 'models')).filter((f) => f.endsWith('.glb')).map((f) => f.slice(0, -4));
+const MODELS = Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/model_library.json'), 'utf8')).models);
 
 const raw = {};
 const texts = {};
 const problems = [];
-for (const f of fs.readdirSync(DATA).filter((f) => f.endsWith('.json')).sort()) {
-  texts[f] = fs.readFileSync(path.join(DATA, f), 'utf8');
+const catalogue = JSON.parse(fs.readFileSync(path.join(DATA, 'catalogue.json'), 'utf8')).files;
+for (const [key, location] of Object.entries(catalogue)) {
+  const f = key + '.json';
+  texts[f] = fs.readFileSync(path.join(DATA, location), 'utf8');
   try {
     raw[f] = JSON.parse(texts[f]);
   } catch (err) {

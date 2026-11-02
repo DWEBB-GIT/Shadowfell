@@ -1,6 +1,6 @@
 class_name WaterAndDark
 extends RefCounted
-## Ponds and dark places, both from data/world.json (src/world/waterAndDark.js).
+## Ponds and dark places, both from data/world/world.json (src/world/waterAndDark.js).
 ##
 ## Water: a still surface over a bowl in the ground (Terrain dips the land
 ## under it), which the Warden cannot walk into. Fishing casts into it.
@@ -45,11 +45,13 @@ func build() -> WaterAndDark:
 			continue # a lake in the land itself (Land draws it, the ground blocks it)
 		var level := Terrain.water_level(w)
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(Color.hex(0x1f3a3cff), 0.88)
+		mat.albedo_color = Color(Color(w.get("color", "#1f3a3c")), 0.92)
 		mat.emission_enabled = true
 		mat.emission = Color.hex(0x0a1618ff)
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.roughness = 0.28
+		mat.metallic = 0.1
 		var surface := MeshInstance3D.new()
 		surface.mesh = flat_ring(0, w.radius + 0.4, 48)
 		surface.material_override = mat

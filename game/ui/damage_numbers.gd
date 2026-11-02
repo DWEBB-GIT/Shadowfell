@@ -90,16 +90,24 @@ func add(e: Dictionary) -> void:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(l)
 	var cfg = target.get("cfg")
-	var high: float = (2.6 if cfg and cfg.get("elite") else 1.8) + e.get("lift", 0.0)
+	var high: float = float(cfg.get("barHeight",3.0 if cfg.get("elite") else 2.1)) if cfg else 1.8
+	high += e.get("lift",0.0)
+	# Nameplates already extend upward from barHeight. Start the number
+	# above the whole plate, with a screen-space gap that also works zoomed out.
+	var clearance := 0.0
+	if cfg:
+		var plate = game.hud.enemy_bars.get(target.id)
+		clearance = maxf(52.0,plate.root.get_combined_minimum_size().y if plate else 52.0)+16.0
 	# spread numbers a little so quick hits do not stack exactly
 	var dx := (items.size() % 3) * 18 - 18
 	var life: float = t.critLife if crit else t.life
 	if kind == "xp":
 		# above the killing blow's number, and it stays a while
 		high += 0.6
+		clearance += 20.0
 		dx = 0
 		life = t.critLife
-	items.append({"label": l, "pos": target.position + Vector3(0, high, 0), "t": 0.0, "dx": dx, "crit": crit, "pulse": pulse, "life": life})
+	items.append({"label": l, "pos": target.position + Vector3(0, high, 0), "t": 0.0, "dx": dx, "clearance": clearance, "crit": crit, "pulse": pulse, "life": life})
 	while items.size() > MAX:
 		items.pop_front().label.queue_free()
 
@@ -126,7 +134,7 @@ func update(dt: float) -> void:
 			sc += t.pulse * sin(n.t / 0.45 * PI)
 		l.pivot_offset = l.size / 2
 		l.scale = Vector2(sc, sc)
-		l.position = Vector2(s.x + n.dx, s.y - k * 50) - l.size / 2
+		l.position = Vector2(s.x + n.dx, s.y - n.clearance - k * 50) - l.size / 2
 		# everything fades over the last 40% of its life
 		l.modulate.a = 1.0 if k < 0.6 else 1 - (k - 0.6) / 0.4
 

@@ -261,6 +261,12 @@ func update(dt: float, speed01: float) -> void:
 		model.position.y = -0.5
 	elif death < 0:
 		model.position.y = 0
+	if airborne and action == null and death < 0:
+		# Built-in characters without a Jump clip tuck their knees as well.
+		_rot("Leg_L", 0, -0.5)
+		_rot("Leg_R", 0, -0.65)
+		_rot("Arm_L", 0, -0.2)
+		_rot("Arm_R", 0, -0.2)
 	if pose == "fish" and action == null:
 		_rot("Arm_R", 0, -1.0)
 		_rot("Arm_L", 0, -0.35)
@@ -292,7 +298,7 @@ func _apply_off_action(dt: float) -> void:
 		off_action = null
 
 
-## Each spell's own cast pose is data (data/spell_fx.json `poses`, read
+## Each spell's own cast pose is data (data/abilities/spell_fx.json `poses`, read
 ## into DB.spell_poses): [part, axis, windup, blow] keys, and how far into
 ## the windup the strike starts. Axis 0 raises an arm forward when negative;
 ## 1 twists (positive turns left); 2 swings an arm out (negative for the

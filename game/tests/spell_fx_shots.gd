@@ -1,5 +1,5 @@
 extends SceneTree
-## Pictures of spell looks (data/spell_fx.json) mid-cast, for checking a new
+## Pictures of spell looks (data/abilities/spell_fx.json) mid-cast, for checking a new
 ## effect or pose without opening the editor (needs a display; on a server
 ## use xvfb-run):
 ##   godot --path . --script res://game/tests/spell_fx_shots.gd -- out_dir heavyStrike,cleave,...

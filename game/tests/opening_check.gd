@@ -1,5 +1,5 @@
 extends SceneTree
-## The opening widens in rings (data/world.json `gates`, `houses`, `townWalls`):
+## The opening widens in rings (data/world/world.json `gates`, `houses`, `townWalls`):
 ##   godot --headless --path . --script res://game/tests/opening_check.gd
 ## A new character's town gates and the Neck are shut, a shut gate blocks and
 ## says why, the town gates open once The Missing Delivery is handed in, the
