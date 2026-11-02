@@ -36,8 +36,9 @@ func _run() -> void:
 	check(game.atmosphere.lamps.size() == 16,"point lights have a fixed pool of sixteen")
 	var a = game.atmosphere
 	check(a._twins.size() == a.SHADOW_BUDGET and a.lamps.slice(0, a.SHADOW_BUDGET).all(func(l): return not (l.light_cull_mask & World.MOVING_LAYER)),"shadow lamps skip moving bodies; a shadowless twin lights them")
-	var bodies: Array = [game.player.group] + game.enemies.list.slice(0, 3).map(func(e): return e.group)
-	check(bodies.all(func(b): return b.find_children("*","MeshInstance3D",true,false).all(func(m): return m.layers == World.MOVING_LAYER)),"player and enemy meshes sit on the moving layer")
+	var bodies: Array = game.enemies.list.slice(0, 3).map(func(e): return e.group)
+	check(bodies.all(func(b): return b.find_children("*","MeshInstance3D",true,false).all(func(m): return m.layers == World.MOVING_LAYER)),"enemy meshes sit on the moving layer")
+	check(game.player.group.find_children("*","MeshInstance3D",true,false).all(func(m): return not (m.layers & World.MOVING_LAYER)),"the player keeps a lamp shadow")
 	var forward := RenderingServer.get_current_rendering_method() == "forward_plus"
 	check(not forward or game.env.volumetric_fog_enabled,"Forward+ enables real volumetric fog")
 	check(not forward or game.atmosphere.volumes.size() == 8,"ground fog uses eight local volumes")
