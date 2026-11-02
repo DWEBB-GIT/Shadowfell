@@ -31,7 +31,7 @@ const MICRO := [
 	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
 	["talents", "❀", "Talents", "talents", "", "menu_talents"],
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
-	# opens the Main Menu, as Escape does (Dan, 2026-11-02); O still opens Settings
+	# opens the Main Menu, as Escape and O do (Dan, 2026-11-02)
 	["menu", "☰", "Main Menu", "settings", "", "menu_settings"],
 ]
 const UNIT_GAP := 124.0 ## from the middle of the screen to each unit frame
@@ -440,7 +440,7 @@ func _build() -> void:
 	quick_bind_banner.add_theme_stylebox_override("panel", UI.box(UI.WINDOW, UI.GOLD, 0, 1, Vector4(14, 8, 14, 8)))
 	UI.label(quick_bind_banner, "Quick bind: hover a spell or utility bar slot and press a key. Esc when done.", 14, UI.GOLD)
 	quick_bind_banner.visible = false
-	mute = UI.label(root, "Sound off (Settings, O: Audio)", 12, UI.TEXT_DIM, 3)
+	mute = UI.label(root, "Sound off (Main Menu, Settings, Audio)", 12, UI.TEXT_DIM, 3)
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
@@ -784,7 +784,7 @@ func _build_orbs() -> void:
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.mouse_entered.connect(func():
-			var k: String = pad_label if pad_mode else "Esc" if which == "menu" else game.keys.label(action)
+			var k: String = pad_label if pad_mode else game.keys.label(action)
 			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
 		b.mouse_exited.connect(func(): items.cursor_tip_off())
 		micro_buttons[action] = [b, tip]

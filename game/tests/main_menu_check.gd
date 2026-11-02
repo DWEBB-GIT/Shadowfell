@@ -113,6 +113,10 @@ func _process(dt: float) -> bool:
 			_check(hud.main_menu.is_open and not hud.items.open.settings, "the menu button opens the Main Menu")
 			orb.pressed.emit()
 			_check(not hud.main_menu.is_open and hud.modal == null, "pressing it again closes it")
+			game.input.pressed["KeyO"] = true
+		54:
+			_check(hud.main_menu.is_open and not hud.items.open.settings, "O opens the Main Menu, not Settings")
+			hud.main_menu.close()
 			print("main menu: %d failed" % bad)
 			quit(1 if bad else 0)
 	return false
