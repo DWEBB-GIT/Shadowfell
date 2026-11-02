@@ -174,7 +174,7 @@ func _build() -> void:
 	if n.get("innkeeper", false):
 		UI.row(g, "Bed price", UI.spin(n.get("bedPrice", 5), 0, 100000, 1, func(v): _put("bedPrice", v)), "Coins for a night's sleep: full health and mana, wounds mended, rested experience.")
 	UI.row(g, "Smith", UI.check(n.get("forge", false), "Reforges, punches sockets and lets you smelt", func(on): _put("forge", true if on else null)))
-	UI.row(g, "Enchanter", UI.check(n.get("enchanter", false), "Enchants gear (+1 item level a rank) and scraps it into dust and gems", func(on): _put("enchanter", true if on else null)))
+	UI.row(g, "Refiner", UI.check(n.get("refiner", false), "Refines gear (+1 item level a rank, may fail) and scraps it into stones and gems; also does Runecraft", func(on): _put("refiner", true if on else null)))
 	UI.row(g, "Jeweller", UI.check(n.get("jeweller", false), "Makes gems from shards, sets and removes gems", func(on): _put("jeweller", true if on else null)))
 	UI.row(g, "Notice board", UI.check(n.get("board", false), "A notice board, not a person (no greeting by title)", func(on): _put("board", on)))
 

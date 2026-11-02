@@ -217,9 +217,9 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 		pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
 		if game.skills.has("mining"):
 			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
-	if def.get("enchanter"):
+	if def.get("refiner"):
 		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
-		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (dust and gems)", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (stones and gems)", "icon": "shop", "group": "service"})
 	if def.get("jeweller"):
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
@@ -254,13 +254,13 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 	var back := {"id": "menu", "text": "Back", "icon": "back"}
 	match v.kind:
 		"enchant":
-			pg.text = "Each rank I weave in is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring dust for the piece's level, and coin."
+			pg.text = "Each rank I weave in is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring stones for the piece's level, and coin. The weave does not always take; when it slips you lose only the stones, and the piece remembers the try."
 			for loc in fg.gear_locations():
 				var st = inv.get_at(loc)
 				var cost: Dictionary = fg.temper_cost(st)
 				if cost.is_empty():
 					continue
-				pg.options.append({"id": "enchant:" + loc, "text": "%s → +%d: %s" % [_gear_name(loc), cost.rank, fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
+				pg.options.append({"id": "enchant:" + loc, "text": "%s → +%d (%d%%): %s" % [_gear_name(loc), cost.rank, cost.chance, fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
 			if pg.options.is_empty():
 				pg.text += "\n\nNothing you carry will take refining. Plain gear has no magic to wake, and the rest holds all it can."
 		"scrap":

@@ -181,6 +181,8 @@ static func valid_rolls(id: String, r) -> bool:
 		return false
 	if r.has("power") and Builds.power_def(r.power).is_empty():
 		return false
+	if r.has("resolve") and not (_is_int(r.resolve) and r.resolve >= 0 and r.resolve <= 100):
+		return false
 	if r.has("temper") and not (_is_int(r.temper) and r.temper >= 0 and r.temper <= 10):
 		return false
 	if r.has("socket") and not (_is_int(r.socket) and r.socket >= 0 and r.socket <= 2):

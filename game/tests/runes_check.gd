@@ -22,6 +22,7 @@ func _process(_dt: float) -> bool:
 		var made: Dictionary = game.roster.create("Rune Tester", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 3:
+		_refine()
 		_scrolls()
 		_drag()
 		_glow()
@@ -80,6 +81,36 @@ func _scrolls() -> void:
 	_ok(Runes.of(inv.equipment.mainHand) == "embers", "a different rune waits for a yes")
 	game.hud.modal = null
 	_ok(game.runes.apply(inv._find("rune_rime"), "rime") and Runes.of(inv.equipment.mainHand) == "rime", "saying yes replaces it with Rime")
+
+
+## Refining (Dan, 2026-11-02): stones, a chance that can slip, and a
+## failed try only costs the stones while making the next one likelier.
+func _refine() -> void:
+	var inv = game.inventory
+	var fg = game.forge
+	_clear_bags()
+	inv.add_item("test_frostbite", 1, true)
+	var loc = inv._find("test_frostbite")
+	inv.add_item("faint_dust", 20, true)
+	inv.add_item("soulshard", 2, true)
+	inv.coins += 5000
+	_ok(Items.get_def("faint_dust").name == "Gloamstone", "the first band's stone is Gloamstone")
+	var rnd = game.random
+	game.random = func(): return 0.0
+	_ok(fg.temper(loc) and fg.temper(loc), "+1 and +2 always take")
+	var c3: Dictionary = fg.temper_cost(inv.get_at(loc))
+	_ok(c3.chance < 100, "+3 can slip (%d%%)" % c3.chance)
+	var stones: int = inv.count("faint_dust")
+	game.random = func(): return 0.999
+	_ok(not fg.temper(loc), "a slip fails the try")
+	_ok(Items.temper_of(inv.get_at(loc)) == 2 and inv.count("test_frostbite") == 1, "but the item keeps its rank and is not lost")
+	_ok(inv.count("faint_dust") < stones, "the stones are spent")
+	_ok(fg.temper_cost(inv.get_at(loc)).chance == mini(100, c3.chance + 10), "and the next try is 10% likelier")
+	_ok(Items.valid_rolls("test_frostbite", inv.get_at(loc).rolls), "the item's resolve is a valid roll")
+	game.random = func(): return 0.0
+	_ok(fg.temper(loc) and Forge.resolve_of(inv.get_at(loc)) == 0, "a success clears the resolve")
+	game.random = rnd
+	_clear_bags()
 
 
 ## Drag a scroll onto any weapon: one in the bags, the off hand.

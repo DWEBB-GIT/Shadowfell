@@ -1462,47 +1462,47 @@
     },
     {
       "id": "faint_dust",
-      "name": "Faint dust",
+      "name": "Gloamstone",
       "kind": "material",
       "rarity": "common",
       "stack": 20,
       "price": 3,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Grey motes that glitter when no one looks straight at them. An enchanter spends it refining gear up to level 10."
+      "description": "A dull grey stone that drinks the light around it. A refiner spends it on gear up to level 10."
     },
     {
       "id": "glimmering_dust",
-      "name": "Glimmering dust",
+      "name": "Wyrdstone",
       "kind": "material",
       "rarity": "common",
       "stack": 20,
       "price": 6,
       "model": "rock1",
       "icon": "rock1",
-      "description": "It drifts up out of the pouch if you leave it open. An enchanter spends it refining gear up to level 22."
+      "description": "Veined with lines that move when you are not looking. A refiner spends it on gear up to level 22."
     },
     {
       "id": "radiant_dust",
-      "name": "Radiant dust",
+      "name": "Starsteel",
       "kind": "material",
       "rarity": "enhanced",
       "stack": 20,
       "price": 12,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Bright enough to read by. An enchanter spends it refining gear up to level 38."
+      "description": "A shard of fallen star, cold to the touch and bright enough to read by. A refiner spends it on gear up to level 38."
     },
     {
       "id": "eldritch_dust",
-      "name": "Eldritch dust",
+      "name": "Godsiron",
       "kind": "material",
       "rarity": "rare",
       "stack": 20,
       "price": 25,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Black, and it shines anyway. An enchanter spends it refining the highest gear."
+      "description": "Black iron from no mine of men, and it shines anyway. A refiner spends it on the highest gear."
     },
     {
       "id": "soulshard",
@@ -1513,7 +1513,7 @@
       "price": 100,
       "model": "grave_iron",
       "icon": "grave_iron",
-      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Enchanters need one for the last refining rank on the finest gear."
+      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Refiners need one for the last rank on the finest gear."
     },
     {
       "id": "whetstone",
