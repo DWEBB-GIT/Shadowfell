@@ -125,9 +125,9 @@ func _add_collider(p: Dictionary, x: float, z: float, obj: Node3D = null) -> voi
 		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
 	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
 	if h == INF and obj != null:
-		var measured := prop_height(obj, Terrain.height_at(x, z))
-		if measured <= JUMPABLE:
-			h = measured
+		var ph: float = prop_height(obj, Terrain.height_at(x, z))
+		if ph <= JUMPABLE:
+			h = ph
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
 		game.collision.add(x, z, col * s, false, h)
 		return
