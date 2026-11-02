@@ -150,9 +150,13 @@ func start() -> void:
 		add_child(p)
 		voices.append(p)
 	apply_volumes()
+	apply_device()
 	game.events.on("settingsChanged", func(e):
-		if str(e.get("id", "")).begins_with("vol"):
-			apply_volumes())
+		var id := str(e.get("id", ""))
+		if id.begins_with("vol") or id == "soundOn":
+			apply_volumes()
+		elif id == "outputDevice":
+			apply_device())
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
 	amb_loop = AudioStreamPlayer.new()
@@ -190,8 +194,20 @@ func apply_volumes() -> void:
 	for b in [["Master", "volMaster"], ["Effects", "volEffects"], ["Ambience", "volAmbience"], ["Music", "volMusic"]]:
 		var v: float = pow(float(st.get_value(b[1])) / 100.0, 2)
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b[0]), linear_to_db(maxf(v, 0.00001)))
+	var off: bool = not st.get_value("soundOn")
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), off)
 	if game.hud:
-		game.hud.set_muted(float(st.get_value("volMaster")) == 0)
+		game.hud.set_muted(off or float(st.get_value("volMaster")) == 0)
+
+
+## the speakers to play through (Settings, Audio); browsers offer only Default
+func output_devices() -> PackedStringArray:
+	return AudioServer.get_output_device_list()
+
+
+func apply_device() -> void:
+	var want: String = game.settings.get_value("outputDevice")
+	AudioServer.output_device = want if output_devices().has(want) else "Default"
 
 
 func _bind() -> void:

@@ -22,6 +22,7 @@ var active: Array = [] ## { def, x, z, group, glint, base_y, seed, depleted }
 var regrow: Array = [] ## { entry, at }: gathering nodes waiting to grow back
 var gathering = null ## { entry, t, total, from } or, skinning, { skin, name, t, total, from }
 var unique := {}
+var _auto_t := 0.0
 ## seconds an item lies on the ground before it is gone (Dan, 2026-11-02);
 ## the time left is saved with it, so it counts only while you play
 const GROUND_LIFE := 300.0
@@ -526,6 +527,23 @@ func update(dt: float, time: float) -> void:
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
 		if l.get("beam"):
 			l.beam.material_override.albedo_color.a = 0.75 + sin(time * 1.8 + l.seed) * 0.15
+	_auto_t -= dt
+	if _auto_t <= 0:
+		_auto_t = 0.25
+		auto_loot()
+
+
+## Auto loot (Settings, Controls): out of a fight, walking up to a body or
+## what fell from one takes it, and everything near it, as a click would.
+func auto_loot() -> void:
+	var p = game.player
+	if not game.settings.get_value("autoLoot") or p == null or p.dead or gathering != null or game.resources.in_combat:
+		return
+	var reach: float = DB.CONFIG.loot.reach
+	for l in lootables():
+		if (l.kind == "corpse" or l.get("area", false)) and U.hyp(l.x - p.position.x, l.z - p.position.z) <= reach:
+			loot_area(l)
+			return
 
 
 # ------------------------------------------------------------ skinning

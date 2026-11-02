@@ -304,6 +304,7 @@ func enter_world(id: String) -> void:
 		if k.id == c.classId:
 			archetype_id = k.archetype
 	roster.touch(id)
+	keys.load_scheme(keys.aim) # this character's own bindings, if they keep them
 	hud.set_character(c)
 	start_game(boot_save.status == "ok")
 	load_world()
@@ -378,6 +379,23 @@ func log_out() -> void:
 	save.autosave_enabled = false
 	to_select = true
 	get_tree().reload_current_scene()
+
+
+## Main menu, Exit Game: save, then close the game. In a browser there is
+## no window to close, so it goes back to the landing page (/play's parent).
+func exit_game() -> void:
+	if player.dead:
+		hud.toast("You cannot leave while defeated.")
+		return
+	var r := save.save(true)
+	if not r.ok:
+		hud.toast(r.reason)
+		return
+	save.autosave_enabled = false
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.location.href = new URL('..', window.location.href).href")
+	else:
+		get_tree().quit()
 
 
 func _hook_click(n: Node) -> void:
@@ -869,8 +887,12 @@ func _handle_input(dt: float):
 		return null
 	if hud.modal == "loading":
 		return null
+	# Escape closes what is open, then drops the target, then opens the menu
 	if input.consume("Escape") and not hud.close_modal():
-		targeting.clear()
+		if targeting.current != null or targeting.friendly != null:
+			targeting.clear()
+		elif hud.modal == null:
+			hud.main_menu.open()
 	if hud.modal == "death":
 		if input.consume("Enter") or keys.pressed("interact") or pad.pressed(B.A):
 			release_spirit()
