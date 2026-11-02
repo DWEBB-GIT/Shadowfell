@@ -20,7 +20,15 @@ KIT = ["button", "button_hover", "panel", "window"]
 
 
 def load(name):
-    with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
+    """A data file by its flat name; data/catalogue.json says which folder it lives in."""
+    data = os.path.join(ROOT, "data")
+    path = os.path.join(data, name)
+    catalogue = os.path.join(data, "catalogue.json")
+    if not os.path.exists(path) and os.path.exists(catalogue):
+        with open(catalogue, encoding="utf-8") as f:
+            files = json.load(f).get("files", {})
+        path = os.path.join(data, files.get(name[:-5], name))
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
