@@ -67,15 +67,6 @@
         "consumable"
       ],
       "description": "Herbs, knives, draughts. Buys anything that grows."
-    },
-    {
-      "id": "curios",
-      "name": "Curios",
-      "sells": [
-        "weapon",
-        "armor"
-      ],
-      "description": "Test goods (Dan, 2026-11-02): glowing blades and fancy wear, to see how they look."
     }
   ],
   "shops": [
@@ -823,21 +814,6 @@
         "wm_sunseal_court_travelling_clothes",
         "wm_sunseal_court_frayed_robe",
         "wm_sunseal_court_warden_hauberk"
-      ]
-    },
-    {
-      "id": "test_curios",
-      "name": "Pell's curios",
-      "vendorType": "curios",
-      "stock": [
-        "test_glow_fire",
-        "test_glow_frost",
-        "test_glow_holy",
-        "test_glow_shadow",
-        "test_glow_venom",
-        "test_glow_wings",
-        "test_halo",
-        "test_horns"
       ]
     }
   ]
