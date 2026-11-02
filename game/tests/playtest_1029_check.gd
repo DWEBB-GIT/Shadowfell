@@ -91,7 +91,13 @@ func _run() -> void:
 	hud.close_modal()
 
 	# talking to a vendor opens the bags; goodbye closes them
+	# any shopkeeper standing in the world (the new map moved Mara out)
 	var mara = game.npcs.by_id("mara")
+	if mara == null:
+		for n in game.npcs.list:
+			if DB.npcs.get(n.id, {}).get("shop"):
+				mara = n
+				break
 	game.dialogue.open(mara)
 	check(items.bags_open, "a vendor's talk opens your bags")
 	game.dialogue.close()

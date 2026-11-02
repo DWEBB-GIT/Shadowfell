@@ -354,7 +354,7 @@ func _hover_tip() -> void:
 	var mp := get_local_mouse_position()
 	var best = null
 	if game.started and mp.distance_to(c) <= R:
-		var scale: float = (ZOOMS if Terrain.map_picture() == null else PAINTING_ZOOMS)[zoom]
+		var scale: float = ZOOMS[zoom]
 		var p: Vector3 = game.player.position
 		var near := 8.0
 		for m in _marks:
