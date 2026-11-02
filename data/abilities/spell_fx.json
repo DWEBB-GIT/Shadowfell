@@ -410,5 +410,22 @@
         {"fx": "sparks", "n": 8, "colour": "#ffe090"}
       ]
     }
+  },
+  "moments": {
+    "_about": "Looks for moments that are not spells, by event name, played on you with the same effect parts as a spell's `cast` (Fx.moment). Two more parts work here and on spells: `light` (a real light that flares and dies: `energy`, `range`, `height`, `life`) and bigger `sparks` (`spread`, `rise` [min, max], `life`, `size`, `gravity`, `height`).",
+    "levelUp": {
+      "cast": [
+        {"fx": "light", "colour": "#ffd890", "energy": 6.0, "range": 10, "height": 2.2, "life": 1.8, "follow": true},
+        {"fx": "mesh", "mesh": "fx_crest", "colour": "#ffc860", "glow": 0.5, "follow": true, "height": 0.06, "life": 2.0, "size": [0.8, 2.6], "spin": 50},
+        {"fx": "ring", "radius": 4.5, "colour": "#ffe0a0"},
+        {"fx": "mesh", "mesh": "fx_helix", "colour": "#ffc458", "glow": 1.0, "follow": true, "life": 1.6, "size": [0.6, 0.85], "scale": [1, 5.5, 1], "spin": 720},
+        {"fx": "mesh", "mesh": "fx_pillar", "colour": "#ffe8b0", "glow": 0.3, "follow": true, "life": 1.2, "size": [0.25, 0.45], "scale": [1, 10.0, 1]},
+        {"fx": "mesh", "mesh": "fx_nova", "colour": "#fff0c8", "glow": 0.8, "follow": true, "delay": 0.05, "life": 0.5, "height": 1.3, "faceCamera": true, "size": [0.4, 2.6], "spin": 40},
+        {"fx": "mesh", "mesh": "fx_nova", "colour": "#ffb850", "glow": 0.6, "follow": true, "delay": 0.15, "life": 0.9, "height": 1.3, "faceCamera": true, "size": [0.8, 2.0], "spin": -25},
+        {"fx": "sparks", "n": 36, "colour": "#ffd870", "spread": 6, "rise": [4, 9], "life": 1.0, "size": 0.32, "gravity": 7, "height": 0.4},
+        {"fx": "sparks", "n": 20, "colour": "#fff0c0", "delay": 0.35, "spread": 3, "rise": [3, 6], "life": 0.9, "size": 0.22, "gravity": 4, "height": 1.6},
+        {"fx": "mesh", "mesh": "fx_halo", "colour": "#ffe680", "glow": 0.9, "follow": true, "delay": 0.5, "life": 1.5, "height": 2.3, "size": [0.7, 0.35], "spin": 360}
+      ]
+    }
   }
 }

@@ -56,7 +56,9 @@ func _init(g) -> void:
 	ev.on("playerHurt", func(e):
 		game.shake_camera(DB.CONFIG.impact.critShake if e.get("heavy") else DB.CONFIG.impact.shake * 0.6)
 		game.hud.flash_damage())
-	ev.on("levelUp", func(_e): pillar(game.player.position))
+	# a hero's moment: a seal, a spiral and a column of light, a star flare,
+	# a fountain of sparks and a flash of real light (data `moments.levelUp`)
+	ev.on("levelUp", func(_e): moment("levelUp"))
 	# an enchanter's work: a violet light rises off you
 	ev.on("itemEnchanted", func(_e): pillar(game.player.position, Color("c8a0ff")))
 	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
@@ -125,6 +127,7 @@ func prewarm(pos: Vector3) -> void:
 	sparks(under, 1)
 	flash(under, Color.WHITE)
 	pillar(under)
+	light(under, null, {"life": 0.1, "energy": 0.0}, Color.WHITE)
 	zone(under.x, under.z, 1, 0.1)
 	ground_puff(under, 1, 1.0)
 	var splat := Tex.ground_quad(Tex.fx_material(Tex.splat(), Color("4e0806"), false))
@@ -166,16 +169,42 @@ func shockwave(pos: Vector3, radius: float, colour := Color("ffd9a0")) -> void:
 	dust(pos, 14, radius * 0.7)
 
 
-func sparks(pos: Vector3, n: int, colour := Color("ffc890")) -> void:
+## `o` (an effect part) can make them bigger and longer lived: `spread`
+## (sideways speed), `rise` [min, max] upward speed, `life`, `size`,
+## `gravity` and `height` (where they start above `pos`).
+func sparks(pos: Vector3, n: int, colour := Color("ffc890"), o := {}) -> void:
+	var spread: float = o.get("spread", 4.0)
+	var rise: Array = o.get("rise", [1.5, 4.0])
+	var life: float = o.get("life", 0.3)
+	var size: float = o.get("size", 0.25)
+	var gravity: float = o.get("gravity", 12.0)
 	for i in n:
 		var s := Tex.sprite(Tex.fx_material(Tex.glint(), colour, true, true))
-		s.scale = Vector3.ONE * 0.25
-		s.position = Vector3(pos.x, pos.y + 1.1, pos.z)
-		var v := Vector3((randf() - 0.5) * 4, 1.5 + randf() * 2.5, (randf() - 0.5) * 4)
-		_add(s, 0.3 + randf() * 0.15, func(it, k, dt):
+		s.scale = Vector3.ONE * size
+		s.position = Vector3(pos.x, pos.y + o.get("height", 1.1), pos.z)
+		var v := Vector3((randf() - 0.5) * spread, lerpf(rise[0], rise[1], randf()), (randf() - 0.5) * spread)
+		_add(s, life * (1 + randf() * 0.5), func(it, k, dt):
 			it.obj.position += it.v * dt
-			it.v.y -= 12 * dt
-			it.obj.material_override.albedo_color.a = 1 - k, {"v": v})
+			it.v.y -= gravity * dt
+			it.obj.material_override.albedo_color.a = 1 - k * k, {"v": v})
+
+
+## A burst of real light that flares and dies away (`p`: `colour`,
+## `energy`, `range`, `height`, `life`). No shadows, and only its energy
+## changes as it plays, so it costs no more than a lamp for a moment.
+func light(at: Vector3, follow, p: Dictionary, colour: Color) -> void:
+	var l := OmniLight3D.new()
+	l.light_color = colour
+	l.omni_range = p.get("range", 8.0)
+	l.shadow_enabled = false
+	l.light_energy = 0
+	var energy: float = p.get("energy", 3.0)
+	var height: float = p.get("height", 1.5)
+	l.position = at + Vector3.UP * height
+	_add(l, p.get("life", 1.2), func(it, k, _dt):
+		if follow:
+			it.obj.position = follow.position + Vector3.UP * height
+		it.obj.light_energy = energy * minf(1, k / 0.06) * pow(1 - k, 1.6))
 
 
 func dust(pos: Vector3, n: int, spread := 0.6) -> void:
@@ -415,12 +444,20 @@ static func _has_look(id: String, phase: String) -> bool:
 
 static func _look_meshes() -> Array:
 	var names := {}
-	for id in DB.spell_fx:
+	for look in DB.spell_fx.values() + DB.fx_moments.values():
+		if not look is Dictionary: # an `_about` note
+			continue
 		for phase in PHASES:
-			for p in DB.spell_fx[id].get(phase, []):
+			for p in look.get(phase, []):
 				if p.has("mesh"):
 					names[p.mesh] = true
 	return names.keys()
+
+
+## A moment's look (data/abilities/spell_fx.json `moments`), played on you.
+func moment(id: String) -> void:
+	var p = game.player
+	spell_fx({"id": id, "phase": "cast", "position": p.position, "facing": p.facing, "follow": p})
 
 
 ## A spell's own look: every part of its `cast` or `impact` list
@@ -429,7 +466,7 @@ static func _look_meshes() -> Array:
 func spell_fx(e: Dictionary) -> void:
 	var spell: Dictionary = DB.abilities.get(e.id, {})
 	var school: Color = SCHOOL_COLOURS.get(spell.get("school"), SCHOOL_COLOURS.physical)
-	for p in DB.spell_fx.get(e.id, {}).get(e.phase, []):
+	for p in DB.spell_fx.get(e.id, DB.fx_moments.get(e.id, {})).get(e.phase, []):
 		var go := _spell_part.bind(p, e, school)
 		if p.get("delay", 0) > 0:
 			_add(Node3D.new(), p.delay, func(_it, k, _dt):
@@ -450,7 +487,9 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 		"ring":
 			shockwave(at, p.get("radius", 2.0), colour)
 		"sparks":
-			sparks(at, int(p.get("n", 6)), colour if p.has("colour") else Color("ffc890"))
+			sparks(at, int(p.get("n", 6)), colour if p.has("colour") else Color("ffc890"), p)
+		"light":
+			light(at, follow, p, colour)
 		"dust":
 			dust(at, int(p.get("n", 6)), p.get("spread", 0.6))
 		"flash":
