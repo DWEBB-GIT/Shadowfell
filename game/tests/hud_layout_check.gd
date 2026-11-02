@@ -22,8 +22,17 @@ func _process(_dt: float) -> bool:
 	elif frame == 2:
 		var made: Dictionary = game.roster.create("Layout Tester", "warden")
 		game.enter_world(made.character.id)
+	elif frame == 18:
+		game.hud.belt.toggle()
 	elif frame == 20:
 		var hud = game.hud
+		var belt: Rect2 = hud.belt.get_global_rect()
+		_check(hud.belt.visible and hud.belt.column.get_child_count() > 0, "the tool belt opens and lists the starting tools")
+		_check(belt.end.y <= hud.dock.get_global_rect().position.y and belt.position.y >= 0, "the tool belt folds up above the tray, on screen")
+		_check(not belt.intersects(hud.bottom.get_global_rect()), "the tool belt clear of the spell bar")
+		_check(hud.menus.get_global_rect().end.y <= hud.WINDOW_TOP, "windows open under the menu row")
+		_check(not hud.purse.visible, "no money plaque on screen")
+		hud.belt.toggle()
 		var mm = hud.minimap
 		var place: Rect2 = mm.location.get_global_rect()
 		var xy: Rect2 = mm.coords.get_global_rect()

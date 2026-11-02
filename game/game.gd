@@ -838,6 +838,8 @@ func _handle_input(dt: float):
 		return null
 	if keys.pressed("bags") or pad.pressed(B.START):
 		hud.toggle_panel("bags")
+	if keys.pressed("toolbelt"):
+		hud.belt.toggle()
 	if keys.pressed("character") or pad.pressed(B.VIEW):
 		hud.toggle_panel("character")
 	for w in ["spellbook", "talents", "skills", "settings"]:
