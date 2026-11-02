@@ -22,7 +22,7 @@ func _process(dt: float) -> bool:
 		DB.ready = false
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
-		var made: Dictionary = game.roster.create("Dodge Tester", "warden")
+		var made: Dictionary = game.roster.create("Dodge Tester", OS.get_environment("DODGE_CLASS") if OS.get_environment("DODGE_CLASS") != "" else "warden")
 		game.enter_world(made.character.id)
 	elif not game.started or game.hud.blocks_gameplay or game.hud.loading.visible:
 		frame = 2
@@ -52,7 +52,7 @@ func _process(dt: float) -> bool:
 		if t.done or waited > 400:
 			_ok(t.done and waited < 400, "%s %s landed" % [e.cfg.name, cur[1]])
 			game.input.held.erase("KeyS")
-			print("checked %s %s after %d frames, player moved %.1f m, still inside %s" % [e.cfg.name, cur[1], waited, p.position.distance_to(pstart), t.shape.contains(p.position.x, p.position.z, p.radius)])
+			print("checked %s %s after %d frames (%.2fs), player moved %.1f m, still inside %s" % [e.cfg.name, cur[1], waited, waited * dt, p.position.distance_to(pstart), t.shape.contains(p.position.x, p.position.z, p.radius)])
 			cur = null
 		elif e.casting == null:
 			game.input.held.erase("KeyS")
@@ -81,6 +81,8 @@ func _begin(c) -> void:
 	e.special_timer = 0.0 if kind == "special" else 99.0
 	e.circle_timer = 0.0 if kind == "circle" else 99.0
 	e.attack_timer = 0.0
+	game.targeting.select(e)
+	game.targeting.engage(e)
 	e.update(0.016, p)
 	start = e.position
 	pstart = p.position
