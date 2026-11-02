@@ -108,7 +108,13 @@ func _run() -> void:
 
 func _bag_stacks() -> int:
 	var inv = game.inventory
-	return inv.bag_locations().filter(func(l): return inv.get_at(l) != null and l.split(":")[1].to_int() < Items.BAG_SOCKETS).size()
+	return inv.bag_locations().filter(func(l): return inv.get_at(l) != null and l.split(":")[1].to_int() < Items.BAG_SOCKETS and not _kept(inv.get_at(l).id)).size()
+
+
+## keys, documents and quest items stay in your bags when you fall (grave.gd)
+func _kept(id: String) -> bool:
+	var def := Items.get_def(id)
+	return Grave.KEEP_KINDS.has(def.get("kind")) or def.get("rarity") == "quest"
 
 
 func _ok(cond: bool, what: String) -> void:

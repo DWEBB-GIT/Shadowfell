@@ -23,7 +23,10 @@ func _process(_dt: float) -> bool:
 		var made: Dictionary = game.roster.create("Layout Tester", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 18:
-		game.hud.belt.toggle()
+		if game.hud.modal != null and Engine.get_process_frames() < 2000:
+			frame -= 1 # wait out the loading screen (it blocks panels)
+		else:
+			game.hud.belt.toggle()
 	elif frame == 20:
 		var hud = game.hud
 		var belt: Rect2 = hud.belt.get_global_rect()
