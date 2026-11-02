@@ -54,7 +54,7 @@ const CONFIG := {
 		# Zoom changes distance, never pitch or player-facing direction.
 		# At 16:9 the default sees roughly 39 m across the player plane.
 		"offset": Vector3(0, 27.6067, 23.1648), "lowerOffset": Vector3(0, 25.5, 25.5),
-		"lookAhead": 0.0, "zoomMin": 0.72, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.98,
+		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.98,
 		"indoorZoom": 0.14, "fov": 35.0,
 		"followSharpness": 12.0, "renderScale": 1.0, "frame": 0.0,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
