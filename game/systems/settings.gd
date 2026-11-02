@@ -28,6 +28,7 @@ const SETTINGS := [
 	{"id": "playerName", "label": "Show your own name over your character", "tab": "interface", "default": true},
 	{"id": "bloodEffects", "label": "Small blood effects on living creatures", "tab": "interface", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
+	{"id": "lampShadows", "label": "Shadows from lamps and torches (turn off if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": true},
 ]
 
 var game
