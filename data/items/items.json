@@ -190,6 +190,22 @@
       "description": "A small bottle of something bitter and red. Restores 42 health. The body takes two minutes to bear another."
     },
     {
+      "id": "homeward_charm",
+      "name": "Homeward charm",
+      "kind": "key",
+      "rarity": "quest",
+      "stack": 1,
+      "price": 0,
+      "quest": true,
+      "model": "manifest",
+      "icon": "manifest",
+      "sprite": "spells/returnHome",
+      "use": {
+        "ability": "returnHome"
+      },
+      "description": "A knot of cord and a bent nail, warm in the hand. Use it to Return Home: 10 seconds thinking of your bed, then you step back to the inn you made your home (ask an innkeeper). Not while fighting. Once every 30 minutes."
+    },
+    {
       "id": "grave_iron",
       "name": "Grave-iron bar",
       "kind": "material",

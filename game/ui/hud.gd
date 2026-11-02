@@ -33,9 +33,9 @@ const MICRO := [
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
 	["settings", "☰", "Settings", "settings", "", "menu_settings"],
 ]
-const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
-const UNIT_W := 236.0 ## the width of your frame and your target's
-const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
+const UNIT_GAP := 124.0 ## from the middle of the screen to each unit frame
+const UNIT_W := 196.0 ## the width of your frame and your target's
+const UNIT_H := 84.0 ## the room kept over the spell bar for the unit frames
 const ORB_R := 14.0 ## the round menu buttons in the top-left row
 const WINDOW_TOP := EDGE + ORB_R * 2 + 10 ## windows open under the menu row
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
@@ -230,8 +230,10 @@ func _bar(parent: Control, hi: Color, lo: Color, height: int, text_size := 11) -
 	fill.offset_bottom = -1
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
-	var l := UI.label(track, "", text_size, Color("f0e4c8"), 4)
+	var l := UI.label(track, "", text_size, Color("f0e4c8"), 3)
 	l.add_theme_font_override("font", UI.bold)
+	# bold and outlined on a slim bar, so it may go under UI.MIN_TEXT
+	l.add_theme_font_size_override("font_size", text_size)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
 	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -316,7 +318,8 @@ func _build() -> void:
 
 	# the log, bottom left (#log), on a smoky band that fades to the right
 	log_shade = Panel.new()
-	log_shade.add_theme_stylebox_override("panel", UI.shade("left", 0.55))
+	var shade := UI.box(Color(0.03, 0.025, 0.02, 0.55), Color(0, 0, 0, 0), 4, 0)
+	log_shade.add_theme_stylebox_override("panel", shade)
 	log_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	log_shade.modulate.a = 0 # shown while the pointer is over the log
 	root.add_child(log_shade)
@@ -509,15 +512,15 @@ func _build_char_panel() -> void:
 	var cv: VBoxContainer = f.col
 	# the name and level share one dark bar, the level at its far end
 	var nb := _name_bar(cv, false)
-	char_name = UI.label(nb, "", 14, UI.GOLD, 4)
+	char_name = UI.label(nb, "", 13, UI.GOLD, 4)
 	char_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	char_name.clip_text = true
 	char_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# your level is the number you want to watch go up: bright gold
-	char_badge = UI.label(nb, "", 14, Color("ffe08a"), 4)
+	char_badge = UI.label(nb, "", 13, Color("ffe08a"), 4)
 	char_badge.add_theme_font_override("font", UI.bold)
 	char_level = UI.label(null, "", 13, UI.TEXT_DIM) # the level shows on the name bar
-	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 18, false)
+	hp = _unit_bar(cv, Color("d8553c"), Color("8a2218"), 16, false, 11)
 	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
 	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
 	pips = UI.hbox(_indented(cv, false), 3)
@@ -531,8 +534,8 @@ func _player_portrait() -> void:
 		char_img.texture = icons.player_portrait(game.player.model)
 
 
-const PORTRAIT := 64.0 ## the round portrait on the unit frames
-const BAR_UNDER := 14.0 ## how far the bars run in under the portrait's rim
+const PORTRAIT := 50.0 ## the round portrait on the unit frames
+const BAR_UNDER := 10.0 ## how far the bars run in under the portrait's rim
 
 ## a unit frame with no box: a column of bars that starts under the round
 ## portrait's rim (on the right when `mirror`), the portrait drawn over it
@@ -554,11 +557,18 @@ func _unit_frame(parent: Control, mirror: bool) -> Dictionary:
 func _unit_bar(parent: Control, hi: Color, lo: Color, height: int, mirror: bool, text_size := 11) -> Dictionary:
 	var bar := UnitBar.new(hi, lo, height, mirror)
 	parent.add_child(bar)
-	var l := UI.label(bar, "", text_size, Color("f0e4c8"), 4)
+	var l := UI.label(bar, "", text_size, Color("f0e4c8"), 3)
 	l.add_theme_font_override("font", UI.bold)
+	l.add_theme_font_size_override("font_size", text_size)
 	l.set_anchors_preset(Control.PRESET_FULL_RECT)
-	l.offset_left = 0.0 if mirror else BAR_UNDER
-	l.offset_right = -BAR_UNDER if mirror else 0.0
+	# centred on the part you see: clear of the portrait's rim at one end
+	# and the bar's point at the other
+	var tip := height * UnitBar.TIP
+	l.offset_left = tip if mirror else BAR_UNDER
+	l.offset_right = -BAR_UNDER if mirror else -tip
+	# a line box keeps room for descenders: lift the text to the middle
+	l.offset_top = -1
+	l.offset_bottom = -1
 	# text taller than a slim bar spills out evenly, not all below it
 	l.grow_vertical = Control.GROW_DIRECTION_BOTH
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -652,9 +662,9 @@ func _build_target() -> void:
 	target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	# not shown (its crossed swords read as a close button); holds the tip
 	target_kind = UI.label(null, "", 13, UI.GOLD, 3)
-	target_hp = _unit_bar(tv, Color("d8553c"), Color("8a2218"), 18, true)
-	target_mp = _unit_bar(tv, Color("5a8ad8"), Color("24407e"), 12, true, 9)
-	target_stagger = _unit_bar(tv, Color("e8d080"), Color("a08030"), 12, true, 9)
+	target_hp = _unit_bar(tv, Color("d8553c"), Color("8a2218"), 16, true, 11)
+	target_mp = _unit_bar(tv, Color("5a8ad8"), Color("24407e"), 12, true, 10)
+	target_stagger = _unit_bar(tv, Color("e8d080"), Color("a08030"), 12, true, 10)
 	# what it is casting, the bar draining towards the portrait as it winds up
 	var tc := _indented(tv, true)
 	target_cast = _cast_bar(tc, Color("e89a50"), Color("a04e20"), 0, 12, true)
@@ -775,7 +785,7 @@ func _build_orbs() -> void:
 
 
 ## the kit's bronze divider, upright between two groups in a row
-func _divider() -> Control:
+func _divider(gap := 3) -> Control:
 	var sep := TextureRect.new()
 	sep.texture = UI.kit("divider")
 	sep.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -783,8 +793,8 @@ func _divider() -> Control:
 	sep.custom_minimum_size = Vector2(8, 0)
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var m := MarginContainer.new()
-	m.add_theme_constant_override("margin_left", 3)
-	m.add_theme_constant_override("margin_right", 3)
+	m.add_theme_constant_override("margin_left", gap)
+	m.add_theme_constant_override("margin_right", gap)
 	m.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	m.add_child(sep)
 	return m
@@ -888,7 +898,7 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, confirm_box, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		for c in [death, document, confirm_box, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map, purse]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -1189,7 +1199,7 @@ static func log_shows(tab: String, kind: String, rarity) -> bool:
 
 func _log_label(entry: Array) -> void:
 	var colour: Color = Items.rarity_colour(entry[2]) if entry[2] else LOG_COLOURS.get(entry[1], UI.TEXT)
-	var l := UI.label(log_box, entry[0], 13, colour, 4)
+	var l := UI.label(log_box, entry[0], 12, colour, 4)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size = Vector2(log_box.custom_minimum_size.x, 0)
 	l.set_meta("born", entry[3])
@@ -1667,7 +1677,8 @@ func layout() -> void:
 	char_panel.position = Vector2(cx - UNIT_GAP - char_panel.size.x, top)
 	target.position = Vector2(cx + UNIT_GAP, top)
 	# the log fills the corner beside them; with no room there it sits above
-	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m
+	var bar_room := log_scroll.get_v_scroll_bar().get_combined_minimum_size().x + 4
+	var room := minf(bottom.position.x, char_panel.position.x) - 2 * m - bar_room
 	var w := clampf(log_size.x, 220, maxf(220, room))
 	var h := clampf(log_size.y, 60, maxf(60, vp.y * 0.6))
 	log_size = Vector2(w, h)
@@ -1685,8 +1696,14 @@ func layout() -> void:
 	log_grip.size = log_grip.get_combined_minimum_size()
 	log_grip.position = log_scroll.position + Vector2(log_scroll.size.x - log_grip.size.x, -log_grip.size.y)
 	log_shade.visible = log_box.get_child_count() > 0 and log_scroll.is_visible_in_tree()
-	log_shade.position = log_scroll.position - Vector2(m, 6)
-	log_shade.size = log_scroll.size + Vector2(m + 60, 12)
+	# the shade fits the chat exactly: from the grip's top to the tabs' foot,
+	# as wide as the lines and their scroll bar (Dan, 2026-11-02: it ran past
+	# the right edge and stopped short of the top)
+	var shade_top := minf(log_grip.position.y, log_scroll.position.y) - 2
+	var shade_foot := maxf(log_tabs.position.y + log_tabs.size.y, log_scroll.position.y + log_scroll.size.y) + 3
+	var shade_right := maxf(log_scroll.position.x + log_scroll.size.x, log_tabs.position.x + log_tabs.size.x) + 4
+	log_shade.position = Vector2(log_scroll.position.x - 6, shade_top)
+	log_shade.size = Vector2(shade_right - log_shade.position.x, shade_foot - shade_top)
 	party.layout(Vector2(m, roundf(vp.y * 0.3)))
 	for b in [[cast, 42], [swing, 22], [swing_off, 8]]:
 		var r: Control = b[0].root
@@ -1816,7 +1833,7 @@ func _update_target() -> void:
 	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
 	if friend != null:
 		target_name.text = friend.name
-		target_name.add_theme_color_override("font_color", Color("a8e08c"))
+		target_name.add_theme_color_override("font_color", UI.NAME_FRIENDLY)
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
 		target_kind.text = ""
@@ -1828,7 +1845,7 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("f0d050") if shown.passive else Color("e8c8a0"))
+	target_name.add_theme_color_override("font_color", UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
@@ -1906,7 +1923,7 @@ func _update_enemy_bars() -> void:
 		bar.name_row.visible = elite or targeted or nemesis
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("f0d050") if e.passive else Color("ffb08a") if targeted else Color("d8c7a0"))
+		bar.name.add_theme_color_override("font_color", UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null
