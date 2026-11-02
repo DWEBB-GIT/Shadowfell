@@ -710,22 +710,42 @@ func become_ghost(x: float, z: float) -> void:
 	_set_casts_shadow(false)
 
 
-## A spirit casts no shadow: the body and everything hung on it (gear,
-## weapons, shields, the blob under the feet). Gear put on later is made
-## by the same model, so it is checked again when the spirit rises.
-var _shadow_off: Array = []
+## A spirit casts no shadow and fades whole: the body and everything hung
+## on it (gear, weapons, shields; the blob under the feet goes). Gear put on
+## while a spirit is caught by show_equipment; all comes back on revive.
+var _shadow_off: Array = [] ## [instance, its cast_shadow]
+var _gear_faded: Array = [] ## [mesh, surface, its own override before]
 func _set_casts_shadow(on: bool) -> void:
 	if on:
 		for pair in _shadow_off:
 			if is_instance_valid(pair[0]):
 				pair[0].cast_shadow = pair[1]
 		_shadow_off.clear()
+		for g in _gear_faded:
+			if is_instance_valid(g[0]):
+				g[0].set_surface_override_material(g[1], g[2])
+		_gear_faded.clear()
 		ground_shadow.visible = true
 		return
 	for gi: GeometryInstance3D in model.find_children("*", "GeometryInstance3D", true, false):
 		if gi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
 			_shadow_off.append([gi, gi.cast_shadow])
 			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# gear meshes share their materials with the item models: fade copies
+	var copies := []
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(i)
+			if m == null or m in materials or copies.has(m):
+				continue
+			var c := m.duplicate()
+			_gear_faded.append([mi, i, mi.get_surface_override_material(i)])
+			mi.set_surface_override_material(i, c)
+			copies.append(c)
+	Rig.set_alpha(copies, 0.45)
+	Rig.set_emissive(copies, Color(0.35, 0.55, 0.8), 1)
 	ground_shadow.visible = false
 
 

@@ -55,6 +55,14 @@ func _process(_dt: float) -> bool:
 				if gi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
 					casting += 1
 			_ok(casting == 0, "a spirit casts no shadow (%d parts still do)" % casting)
+			var solid := 0
+			for mi: MeshInstance3D in game.player.model.find_children("*", "MeshInstance3D", true, false):
+				if mi.visible and mi.mesh != null:
+					for i in mi.mesh.get_surface_count():
+						var m := mi.get_active_material(i)
+						if m is BaseMaterial3D and m.albedo_color.a >= 1.0:
+							solid += 1
+			_ok(solid == 0, "a spirit fades whole, gear too (%d parts solid)" % solid)
 			game.player.update(0.016, {"move": {"x": 0.0, "z": 0.0}, "jump": true})
 			game.player.update(0.05, {"move": {"x": 0.0, "z": 0.0}})
 			_ok(game.player.jump_h > 0.0, "a spirit can hop")
