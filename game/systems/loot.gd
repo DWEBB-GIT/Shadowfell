@@ -245,7 +245,10 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 			beam = _beam(group, Items.rarity_colour(rarity), rarity)
 	# coins and plain (junk/common) drops lie bare, no glint (Dan 2026-11-02)
-	var bare: bool = coins > 0 or (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
+	if coins > 0: # a tiny gold sparkle just above the coins
+		glint.scale = Vector3.ONE * 0.22
+		glint.material_override.albedo_color = Color(Color("fff2b0"), 0.6)
+	var bare: bool = (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
 	glint.visible = not bare
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
@@ -257,40 +260,83 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	return entry
 
 
-## Coins on the ground: a pile of gold coins and a pile of silver beside
-## it (100 silver to the gold), each bright enough to spot without a glow.
-## Bigger sums stack taller, up to a cap.
+## Coins on the ground: a mound of gold coins and a mound of silver beside
+## it (100 silver to the gold), with a few strays tipped over around them.
+## Low-poly chunky coins in the kit's flat style: a darker rim and a bright
+## stamped face, bright enough to spot without a glow. Bigger sums make
+## bigger mounds, up to a cap.
 func _coin_piles(coins: int) -> Node3D:
 	var root := Node3D.new()
-	var piles := [[int(coins / 100.0), Color("ffc928"), Vector3(-0.09, 0, 0)], [coins % 100, Color("e8eef5"), Vector3(0.09, 0, 0.04)]]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = coins * 7919 + 13
+	var piles := [[int(coins / 100.0), Color("ffc22e"), Color("b07a12"), Vector3(-0.13, 0, 0)], [coins % 100, Color("eef3f8"), Color("8e98a6"), Vector3(0.13, 0, 0.05)]]
 	for p in piles:
 		if p[0] <= 0:
 			continue
-		var m := StandardMaterial3D.new()
-		m.albedo_color = p[1]
-		m.metallic = 0.6
-		m.roughness = 0.3
-		m.emission_enabled = true
-		m.emission = p[1]
-		m.emission_energy_multiplier = 0.45 # lit from within a touch so it reads in shade
-		var disc := CylinderMesh.new()
-		disc.top_radius = 0.07
-		disc.bottom_radius = 0.07
-		disc.height = 0.022
-		disc.radial_segments = 10
-		disc.material = m
-		var n: int = clampi(1 + int(sqrt(float(p[0]))), 2, 7)
-		for i in n:
-			var c := MeshInstance3D.new()
-			c.mesh = disc
-			c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			c.position = p[2] + Vector3(sin(i * 2.4) * 0.02, 0.012 + i * 0.022, cos(i * 2.4) * 0.02)
-			root.add_child(c)
-		var loose := MeshInstance3D.new() # one coin fallen flat beside the pile
-		loose.mesh = disc
-		loose.position = p[2] + Vector3(0.0, 0.012, 0.13)
-		root.add_child(loose)
+		var face := _coin_mat(p[1], 0.5)
+		var rim := _coin_mat(p[2], 0.25)
+		var n: int = clampi(3 + int(sqrt(float(p[0])) * 1.5), 4, 14)
+		# a mound: rings of coins, each ring smaller and higher
+		var i := 0
+		var ring := 0
+		while i < n:
+			var per: int = maxi(1, 5 - ring * 2)
+			var r: float = 0.09 - ring * 0.045
+			for k in per:
+				if i >= n:
+					break
+				var a: float = TAU * k / per + ring * 0.7
+				var pos: Vector3 = p[3] + Vector3(cos(a) * r, 0.02 + ring * 0.035, sin(a) * r)
+				root.add_child(_coin(face, rim, pos, Vector3(rng.randf_range(-0.25, 0.25), rng.randf() * TAU, rng.randf_range(-0.25, 0.25))))
+				i += 1
+			ring += 1
+		for k in 2 + mini(int(p[0]) / 25, 3): # strays rolled off the mound
+			var a := rng.randf() * TAU
+			var d := rng.randf_range(0.17, 0.27)
+			root.add_child(_coin(face, rim, p[3] + Vector3(cos(a) * d, 0.02, sin(a) * d), Vector3(rng.randf_range(-0.15, 0.15), rng.randf() * TAU, 0)))
 	return root
+
+
+func _coin_mat(c: Color, glow: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = c
+	m.metallic = 0.5
+	m.roughness = 0.35
+	m.emission_enabled = true
+	m.emission = c
+	m.emission_energy_multiplier = glow # lit from within a touch so it reads in shade
+	return m
+
+
+## One chunky coin: a rimmed body with a raised, brighter face on top.
+func _coin(face: Material, rim: Material, pos: Vector3, rot: Vector3) -> Node3D:
+	var c := Node3D.new()
+	var body := MeshInstance3D.new()
+	var bm := CylinderMesh.new()
+	bm.top_radius = 0.075
+	bm.bottom_radius = 0.075
+	bm.height = 0.03
+	bm.radial_segments = 8
+	bm.rings = 1
+	bm.material = rim
+	body.mesh = bm
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	c.add_child(body)
+	var top := MeshInstance3D.new()
+	var tm := CylinderMesh.new()
+	tm.top_radius = 0.056
+	tm.bottom_radius = 0.056
+	tm.height = 0.008
+	tm.radial_segments = 8
+	tm.rings = 1
+	tm.material = face
+	top.mesh = tm
+	top.position.y = 0.017
+	top.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	c.add_child(top)
+	c.position = pos
+	c.rotation = rot
+	return c
 
 
 ## Green and better gear on the ground: a column of its colour rising off
