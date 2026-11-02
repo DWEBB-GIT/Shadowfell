@@ -535,48 +535,6 @@ func _add_mist() -> void:
 		mist.append({"mesh": m, "mat": mat, "x": fmod(i * 37.0, MIST_REPEAT), "z": fmod(i * 59.0 + 11.0, MIST_REPEAT), "seed": i * 2.1, "lift": 0.5 + (i % 3) * 0.25, "deep": -1.0})
 
 
-## Sun shafts where the low sun pokes through the canopy: at the edge of
-## open ground beside thick woods, at most one per chunk and only in some.
-## Cheap additive ribbons (see light_shaft.gdshader), only drawn near the
-## camera. In the Blackwood the light is thinner and greener.
-const SHAFT_AXIS := Vector3(14, -26, -6) ## the sun's travel, as Game._place_sun aims it
-
-static func sun_shaft(k: Vector2i, trees: Array) -> Node3D:
-	var rand := RandomNumberGenerator.new()
-	rand.seed = hash(Vector3i(k.x, k.y, 5))
-	if rand.randf() > 0.4:
-		return null
-	var axis := SHAFT_AXIS.normalized()
-	for t in trees:
-		if t.solid or rand.randf() > 0.3:
-			continue
-		# open ground a few metres off a high-ground tree
-		var a := rand.randf() * TAU
-		var x: float = t.x + cos(a) * 5.0
-		var z: float = t.z + sin(a) * 5.0
-		if Terrain.walk_at(x, z) < 0.7 or Terrain.road_edge(x, z) < 1.0:
-			continue
-		var deep := Terrain.gloom(x, z) > 0.5
-		var length := 10.0 + rand.randf() * 3
-		var mat := ShaderMaterial.new()
-		mat.shader = load("res://game/render/light_shaft.gdshader")
-		mat.set_shader_parameter("uAxis", axis)
-		mat.set_shader_parameter("uLength", length)
-		mat.set_shader_parameter("uWidth", 1.0 + rand.randf())
-		mat.set_shader_parameter("uSeed", rand.randf() * 10)
-		mat.set_shader_parameter("uColor", Color(Color("c8e0a0") if deep else Color("ffd08a"), 0.13 + rand.randf() * 0.06))
-		var m := Tex.sprite(mat)
-		# the origin sits up in the crowns so the shaft lands on (x, z)
-		m.position = Vector3(x, Terrain.height_at(x, z), z) - axis * length * 0.95
-		# culling uses the quad's own box: give it the shaft's real reach
-		var reach := axis * length
-		m.custom_aabb = AABB(reach.min(Vector3.ZERO) - Vector3(4, 4, 4), reach.abs() + Vector3(8, 8, 8))
-		m.visibility_range_end = 44.0
-		m.name = "SunShaft"
-		return m
-	return null
-
-
 func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
