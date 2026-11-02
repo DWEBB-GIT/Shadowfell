@@ -92,7 +92,7 @@ miss = 5% + gap × (5% if the foe is above you, 2.5% if below) − accuracy, kep
 ```
 auto attack swing = roll(weapon min..max) + power × weapon speed ÷ 0.6
 weapon ability    = (roll(the weapon's damage over 2.4 s) + power) × ability multiplier
-spell             = roll(spell min..max) × (level + 4) ÷ 5 + spell power
+spell             = roll(spell min..max) + spellPower × spell power + weaponDamage × weapon roll
 enemy blow        = the enemy's damage × (1 ± 35%)
 
 then, for every hit:
@@ -491,7 +491,14 @@ Played in order, the Warden tends to meet the brute and the seer a level or two 
 
 ## Spells
 
-Player spells grow with the caster as weapons grow with item level: a spell's `damageMin`–`damageMax` in `data/abilities/abilities.json` is its level 1 damage, ×(level + 4) ÷ 5, plus spell power. At level 1: Hallowed Bolt 3–4 (a 1.6 s cast), Smite 1–3, Hallowed Ground 1 a second, Rebuke 1. Enemy spells are hits on you, so they follow the enemy table instead.
+**Every ability scales with gear (Dan, 2026-11-02), as WoW coefficients.** There are no damage ranks: a stronger hit comes from better gear, so weapons and caster weapons matter to every class all the way to the cap.
+
+- Weapon abilities: `damageMultiplier` is the share of a weapon roll (Light Strike 160% weapon damage). Weapon damage over time: `tickMultiplier` of a weapon roll each tick.
+- Spells: a small base roll `damageMin`–`damageMax` (fixed), plus `spellPower` × spell power (1 = all of it, the default) plus `weaponDamage` × a weapon roll. `tickMultiplier` then applies to the whole of each tick.
+- Casters (Occultist) take all their spell power. The Paladin's holy spells take a share of the weapon roll and less spell power, since a Strength class has little: Light's Hammer 1–2 + 35% weapon damage + 80% spell power, each Light's Burn tick 15% weapon + 30% spell power; Hallowed Bolt 1–2 + 35% weapon + 90% spell power; Smite 1 + 20% weapon + 60%; Hallowed Ground 0–1 + 15% weapon + 30% a tick; Rebuke 0–1 + 10% weapon + 30%. These keep the level 1 numbers about where they were.
+- Forks that say "x% more" scale the coefficients too (`scale` on `spellPower` / `weaponDamage`).
+- Spell tooltips show the line "Scales with …".
+- **Editor:** every ability that hits has a Scaling section in the Game Data editor's Abilities tab. A weapon ability sets Weapon damage % (`damageMultiplier`, or `tickMultiplier` for a weapon damage over time) and Spell power % (`spellPower`, none unless set). A spell sets Base damage (`damageMin`–`damageMax`), Weapon damage % (`weaponDamage`) and Spell power % (`spellPower`, 100% unless set). So Light Strike can also take a share of spell power, and Light's Hammer a share of the weapon.
 
 ## Building future archetypes
 

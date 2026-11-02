@@ -354,6 +354,17 @@ static func needed_tuning(a: Dictionary) -> Array:
 	return ["cooldown"] + k.tuning
 
 
+## a weapon ability rolls the weapon (or bow): a weapon multiplier, a shot,
+## or a damage over time with no base roll of its own (Spells._damage)
+static func weapon_ability(a: Dictionary) -> bool:
+	var t: Dictionary = a.get("tuning", {})
+	if a.get("ranged") == true or t.has("damageMultiplier"):
+		return true
+	if a.get("kind") in ["cleave", "burst", "charge"]:
+		return true
+	return a.get("kind") == "dot" and not t.has("damageMin")
+
+
 ## mana and every class bar: what a cost or gain may name
 func resource_ids() -> Array:
 	var out := ["mana"]

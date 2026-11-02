@@ -177,6 +177,7 @@ func _build() -> void:
 		UI.row(g, "From a bow", UI.check(a.get("ranged", false), "Shot from the ranged weapon (needs a bow and an arrow)", func(on): _put("ranged", true if on else null, true)))
 	UI.row(g, "On the bar", UI.check(a.get("bar", true) != false, "Can sit on the spell bar and shows in the spellbook", func(on): _put("bar", null if on else false)))
 
+	_scaling(a)
 	_tuning(a)
 	_amounts(a, "cost", "Cost", "What it spends: mana, or a class bar (resolve, energy, focus...).")
 	_amounts(a, "gain", "Gain", "What it gives back: combo points, resolve...")
@@ -212,6 +213,48 @@ func _set_kind(k: String) -> void:
 	_changed(true)
 
 
+## kinds that hit: a weapon blow (cleave, burst, charge) or anything that
+## may roll a spell or a weapon
+const DAMAGE_KINDS := ["cast", "dot", "instant", "aoe", "cleave", "burst", "charge", "interrupt", "channel"]
+const SCALING_KEYS := ["damageMin", "damageMax", "damageMultiplier", "weaponDamage", "spellPower"]
+
+
+## Scaling (Dan, 2026-11-02): how every ability grows with gear, as WoW
+## coefficients. A weapon ability is a share of a weapon roll plus any share
+## of spell power; a spell is a base roll plus shares of both.
+func _scaling(a: Dictionary) -> void:
+	UI.heading(form, "Scaling")
+	if not (a.get("kind") in DAMAGE_KINDS):
+		UI.note(form, "A %s does no damage, so nothing here scales." % a.get("kind", "spell"), Color(0.6, 0.6, 0.6))
+		return
+	if not a.has("tuning"):
+		a.tuning = {}
+	var t: Dictionary = a.tuning
+	var dot: bool = a.kind == "dot"
+	var weapon: bool = DataStore.weapon_ability(a)
+	var g := UI.grid(form)
+	var pct := func(key: String, fallback: float, label: String, tip: String):
+		UI.row(g, label, UI.spin(roundf(t.get(key, fallback) * 1000) / 10.0, 0, 10000, 1, func(v):
+			t[key] = v / 100.0
+			_changed(), " %"), tip)
+	if weapon:
+		var wkey := "tickMultiplier" if dot else "damageMultiplier"
+		pct.call(wkey, 1.0, "Weapon damage", "Share of a weapon (or bow) hit%s. 160 = Light Strike." % (" every tick" if dot else ""))
+		pct.call("spellPower", 0.0, "Spell power", "Share of your spell power added%s (Intellect and caster weapons)." % (" every tick" if dot else ""))
+		UI.note(form, "Damage = weapon damage %% x a weapon hit + spell power %% x spell power%s." % (", every tick" if dot else ""), Color(0.6, 0.6, 0.6))
+		return
+	var h := HBoxContainer.new()
+	for key in ["damageMin", "damageMax"]:
+		h.add_child(UI.spin(t.get(key, 0), 0, 100000, 0.5, func(v):
+			t[key] = v
+			_changed()))
+	UI.row(g, "Base damage", h, "A fixed roll, min to max, that never grows: keep it small so gear matters.")
+	pct.call("weaponDamage", 0.0, "Weapon damage", "Share of a weapon hit added (power included).")
+	pct.call("spellPower", 1.0, "Spell power", "Share of your spell power added (100 = all of it).")
+	var each := " Each tick then takes Tick multiplier of that." if t.has("tickMultiplier") else ""
+	UI.note(form, "Damage = base + weapon damage %% x a weapon hit + spell power %% x spell power.%s" % each, Color(0.6, 0.6, 0.6))
+
+
 func _tuning(a: Dictionary) -> void:
 	UI.heading(form, "Numbers")
 	var need := DataStore.needed_tuning(a)
@@ -233,6 +276,8 @@ func _tuning(a: Dictionary) -> void:
 			_changed(true)))
 	var g := UI.grid(form)
 	for key in t.keys():
+		if key in SCALING_KEYS or (key == "tickMultiplier" and DataStore.weapon_ability(a)):
+			continue
 		var h := HBoxContainer.new()
 		h.add_child(UI.spin(t[key], -1000, 100000, 0.01, func(v):
 			t[key] = v
@@ -245,7 +290,7 @@ func _tuning(a: Dictionary) -> void:
 		UI.row(g, key, h, Fields.help(key))
 		if not Fields.applicable(key, a):
 			UI.note(form, "%s is used by %s; the %s implementation does not use it." % [key, ", ".join(Fields.FIELDS[key][1]), a.get("kind", "custom")], Color("d0b070"))
-	var missing := need.filter(func(n): return not t.has(n))
+	var missing := need.filter(func(n): return not t.has(n) and not (n in SCALING_KEYS))
 	for m in missing:
 		form.add_child(UI.button("+ %s (needed)" % m, func():
 			t[m] = Fields.default_value(m)

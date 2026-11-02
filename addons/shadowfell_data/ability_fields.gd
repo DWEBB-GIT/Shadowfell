@@ -8,6 +8,8 @@ const FIELDS := {
 	"damageMin": [1, ["cast", "instant", "interrupt", "aoe", "channel", "dot"], "Minimum fixed spell damage. Instant weapon strikes use damageMultiplier instead."],
 	"damageMax": [2, ["cast", "instant", "interrupt", "aoe", "channel", "dot"], "Maximum fixed spell damage; at least damageMin."],
 	"damageMultiplier": [1, ["instant", "cast", "cleave", "burst", "charge"], "Weapon/bow damage multiplier: 1 = 100%. Cast uses this only with From a bow."],
+	"spellPower": [1, ["cast", "instant", "interrupt", "aoe", "channel", "dot", "cleave", "burst", "charge"], "Share of spell power added (1 = 100%). Spells default to 1, weapon abilities to 0. Set in Scaling."],
+	"weaponDamage": [0.35, ["cast", "instant", "interrupt", "aoe", "channel", "dot"], "Share of a weapon roll a spell adds (1 = 100%). Set in Scaling."],
 	"perPoint": [0.2, ["instant", "cleave", "burst"], "Adds this much weapon multiplier per point spent. Also choose Spends all in Needs and effects."],
 	"bothHands": [1, ["instant", "cleave"], "1 adds off-hand damage while dual wielding; 0 uses the main hand."],
 	"castTime": [1.5, ["cast", "channel", "portal", "camp"], "Seconds spent casting or channelling; haste shortens this."],
