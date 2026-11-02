@@ -32,8 +32,9 @@ func open(n) -> void:
 	# have chosen one (the notice board says nothing)
 	salutation = "" if DB.npcs[n.id].get("board") else game.titles.address("greetings")
 	# a shopkeeper greets you with the clink of wares, a quest giver with a
-	# turned page (Dan, 2026-10-29)
-	if DB.npcs[n.id].get("shop"):
+	# turned page (Dan, 2026-10-29); one with a quest for you now (a trainer
+	# who keeps a shop too) turns the page
+	if DB.npcs[n.id].get("shop") and game.quests.for_npc(n.id).is_empty():
 		game.audio.sfx("shop_greet", 0.7)
 	elif DB.quests.values().any(func(q): return q.get("giver") == n.id or q.get("turnIn") == n.id):
 		game.audio.sfx("page_turn", 0.7)
@@ -536,6 +537,9 @@ func choose(id: String) -> bool:
 		return true
 	elif id.begins_with("quest:"):
 		view = {"kind": "quest", "id": id.substr(6)}
+		# opening a quest turns the page, from any npc, trainers too (Dan,
+		# 2026-11-02); it stands in for the button's click
+		game.audio.sfx("page_turn", 0.7)
 	elif id.begins_with("node:"):
 		view = {"kind": "node", "id": id.substr(5)}
 	elif id == "accept" and v.kind == "quest":
