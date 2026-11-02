@@ -188,9 +188,6 @@ func _build_chunk(k: Vector2i) -> Node3D:
 		n.add_child(sea)
 	var trees := chunk_trees(k)
 	_plant(n, trees + chunk_rocks(k))
-	var shaft := World.sun_shaft(k, trees)
-	if shaft:
-		n.add_child(shaft)
 	_grass(n, k)
 	built += 1
 	return n

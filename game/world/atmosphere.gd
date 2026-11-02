@@ -5,12 +5,19 @@ const LIGHT_BUDGET := 16
 const VOLUME_BUDGET := 8
 const SHADOW_BUDGET := 2
 const SHADOW_REACH := 16.0
+## A shadowed source keeps its shadow until this much further away, so
+## walking along a boundary doesn't hand shadows back and forth.
+const SHADOW_HOLD := 4.0
 var game
 var sources: Array = []
+## The first SHADOW_BUDGET lamps always have shadows on; the rest never do.
+## Switching a light's shadow (or its range) re-renders its shadow map and
+## re-pairs everything it lights, which froze the game near lamps, so the
+## pool only writes a lamp when the source it shows actually changes.
 var lamps: Array[OmniLight3D] = []
+var _slot: Array = []
 var volumes: Array[FogVolume] = []
 var wisps: Array = []
-var shafts: Array[Node3D] = []
 var _wait := 0.0
 var _time := 0.0
 var _volumetric := false
@@ -67,7 +74,7 @@ func _init(g) -> void:
 	for i in LIGHT_BUDGET:
 		var light := OmniLight3D.new()
 		light.name = "LocalLight_%02d" % i
-		light.shadow_enabled = false
+		light.shadow_enabled = i < SHADOW_BUDGET
 		light.omni_shadow_mode = OmniLight3D.SHADOW_DUAL_PARABOLOID
 		light.shadow_caster_mask = ((1 << 20) - 1) ^ World.LIGHT_FIXTURE_LAYER
 		light.shadow_bias = 0.04
@@ -82,6 +89,7 @@ func _init(g) -> void:
 		light.visible = false
 		add_child(light)
 		lamps.append(light)
+		_slot.append(null)
 	if _volumetric:
 		game.env.volumetric_fog_enabled = true
 		game.env.volumetric_fog_density = 0.004
@@ -125,7 +133,6 @@ func _init(g) -> void:
 		clear.material = clear_mat
 		add_child(clear)
 		wisps.append(clear)
-	_build_shafts()
 
 func _source(p: Vector3, colour: Color, energy: float, radius: float, flicker: bool, kind := "fixture", shadows := false) -> void:
 	# Stylised pools retain light across the full nearby tree/prop silhouette.
@@ -166,25 +173,6 @@ func _windows(b: Dictionary, enterable: bool) -> void:
 			add_child(window)
 	_source(base + basis * Vector3(0, 1.7, span / 2.0 + 0.7), Color("ffbe7c"), 1.7, 6.0, false, "window")
 
-func _build_shafts() -> void:
-	# Authored tree groups on the new map do not use procedural chunk trees.
-	# Sparse art-directed ribbons reinforce real volumetric sun scattering.
-	for p in [[-445,-330],[-568,-298],[-400,-187],[-530,-78],[522,-414],[401,-551]]:
-		var mat := ShaderMaterial.new()
-		mat.shader = load("res://game/render/light_shaft.gdshader")
-		mat.set_shader_parameter("uAxis", World.SHAFT_AXIS.normalized())
-		mat.set_shader_parameter("uLength", 16.0)
-		mat.set_shader_parameter("uWidth", 1.6)
-		mat.set_shader_parameter("uFadeNear", 38.0)
-		mat.set_shader_parameter("uFadeFar", 60.0)
-		mat.set_shader_parameter("uColor", Color(0.95, 0.83, 0.54, 0.10 if _volumetric else 0.17))
-		var shaft := Tex.sprite(mat)
-		shaft.position = Vector3(p[0], Terrain.height_at(p[0], p[1]), p[1]) - World.SHAFT_AXIS.normalized() * 15.0
-		shaft.custom_aabb = AABB(Vector3(-6,-20,-6), Vector3(22,24,20))
-		shaft.visibility_range_end = 65
-		add_child(shaft)
-		shafts.append(shaft)
-
 func _process(dt: float) -> void:
 	if not is_instance_valid(game) or not game.player:
 		return
@@ -200,25 +188,7 @@ func _process(dt: float) -> void:
 		for house in game.world.see_through.houses:
 			for window in _window_groups.get(str(house.mi.name), []):
 				window.visible = house.fade > 0.98
-		var nearby: Array = sources.filter(func(s): return s.at.distance_squared_to(focus) < 55.0 * 55.0)
-		nearby.sort_custom(func(a,b): return a.at.distance_squared_to(focus) < b.at.distance_squared_to(focus))
-		var shadow_count := 0
-		for i in LIGHT_BUDGET:
-			lamps[i].visible = i < nearby.size()
-			if i < nearby.size():
-				var s: Dictionary = nearby[i]
-				lamps[i].position = s.at
-				lamps[i].light_color = s.colour
-				lamps[i].omni_range = s.radius
-				lamps[i].omni_attenuation = s.attenuation
-				lamps[i].light_volumetric_fog_energy = s.fog
-				var casts: bool = s.shadows and shadow_count < SHADOW_BUDGET and s.at.distance_squared_to(focus) < SHADOW_REACH * SHADOW_REACH
-				lamps[i].shadow_enabled = casts
-				if casts:
-					shadow_count += 1
-				lamps[i].set_meta("source", s)
-			else:
-				lamps[i].shadow_enabled = false
+		_assign_lamps(focus)
 		if _volumetric:
 			var deep := Terrain.gloom(focus.x, focus.z)
 			var colour := Color("8c9da5").lerp(Color("72938f"), deep)
@@ -236,10 +206,59 @@ func _process(dt: float) -> void:
 				var mat: FogMaterial = volumes[i].material
 				mat.albedo = colour
 				mat.density = lerpf(0.026, 0.046, maxf(deep, 0.3))
-	for light in lamps:
-		if not light.visible:
+	for i in lamps.size():
+		var light := lamps[i]
+		if _slot[i] == null:
 			continue
-		var s: Dictionary = light.get_meta("source")
+		var s: Dictionary = _slot[i]
 		light.light_energy = s.energy * (0.92 + 0.05 * sin(_time * 7 + s.seed) + 0.03 * sin(_time * 13 + s.seed)) if s.flicker else s.energy
 	for clear in wisps:
 		clear.position = focus + Vector3(0, 2.5, 0)
+
+
+## Nearest sources to the pool: shadowed fixtures within reach to the shadow
+## lamps, the rest to plain ones. A source already on a lamp stays there.
+func _assign_lamps(focus: Vector3) -> void:
+	var nearby: Array = sources.filter(func(s): return s.at.distance_squared_to(focus) < 55.0 * 55.0)
+	nearby.sort_custom(func(a,b): return a.at.distance_squared_to(focus) < b.at.distance_squared_to(focus))
+	var shadowed: Array = []
+	if _shadows_wanted():
+		for s in nearby:
+			if shadowed.size() >= SHADOW_BUDGET:
+				break
+			var reach := SHADOW_REACH + (SHADOW_HOLD if _slot.slice(0, SHADOW_BUDGET).any(func(o): return is_same(o, s)) else 0.0)
+			if s.shadows and s.at.distance_squared_to(focus) < reach * reach:
+				shadowed.append(s)
+	var plain: Array = nearby.filter(func(s): return not shadowed.any(func(o): return is_same(o, s))).slice(0, LIGHT_BUDGET - SHADOW_BUDGET)
+	_fill(range(SHADOW_BUDGET), shadowed)
+	_fill(range(SHADOW_BUDGET, LIGHT_BUDGET), plain)
+
+
+func _shadows_wanted() -> bool:
+	return game.settings == null or game.settings.get_value("lampShadows") != false
+
+
+func _fill(slots: Array, wanted: Array) -> void:
+	var free: Array = []
+	var placed: Array = []
+	for i in slots:
+		if _slot[i] != null and wanted.any(func(s): return is_same(s, _slot[i])):
+			placed.append(_slot[i])
+		else:
+			free.append(i)
+	for s in wanted:
+		if placed.any(func(o): return is_same(o, s)):
+			continue
+		var i: int = free.pop_front()
+		_slot[i] = s
+		var light := lamps[i]
+		light.position = s.at
+		light.light_color = s.colour
+		light.omni_range = s.radius
+		light.omni_attenuation = s.attenuation
+		light.light_volumetric_fog_energy = s.fog
+		light.light_energy = s.energy
+		light.visible = true
+	for i in free:
+		_slot[i] = null
+		lamps[i].visible = false

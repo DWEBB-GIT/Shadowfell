@@ -15,6 +15,7 @@ const SETTINGS := [
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "group": "Controls and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "group": "Controls and camera", "default": false},
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "group": "Controls and camera", "default": false},
+	{"id": "lampShadows", "label": "Shadows from lamps and torches (turn off if the game slows near lights)", "group": "Graphics", "default": true},
 	{"id": "volMaster", "label": "Master volume", "group": "Sound", "default": 70, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "group": "Sound", "default": 100, "min": 0, "max": 100},
 	{"id": "volAmbience", "label": "Ambience", "group": "Sound", "default": 100, "min": 0, "max": 100},
