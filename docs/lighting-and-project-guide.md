@@ -57,3 +57,20 @@ The older browser prototype's JavaScript data validator still expects its previo
 Godot 4.7.2 still prints `Can't use get_node() with absolute paths from outside the active scene tree` during editor shutdown with the generated World editor scene open. The editor exits successfully. This does not appear in the tested game startup, character creation, character resume, combat, fishing, inn, minimap or quest flows. The normal empty-project editor and this project's recovery-mode editor do not reproduce it; either editor add-on alone with the generated World scene open does. Its exact remaining source has not been identified. Do not treat this as a fully error-free editor cleanup.
 
 The saved editor layout's references to a disconnected second monitor were corrected. Temporary diagnostic traces have been removed, and both authoring add-ons remain enabled.
+
+## Colour zones (per-area mood)
+
+Each area can have its own colour grade, fog and light: warm gold over Thornford and the fields, violet over graveyards and the Paleweald. Zones live per map in `data/terrain/<map>/grades.json` (code: `game/world/zone_grade.gd`).
+
+To tune them in Godot:
+
+1. In the **World** dock, press **Open the world**. Zones appear under **Colour zones** in the Scene tree, each drawn as two rings on the ground (full strength, and where the fade ends).
+2. Select a zone. The 3D view takes on its look straight away. Move it with the gizmo and change it in the Inspector:
+   - **Radius / Feather**: full strength inside the radius, fading out over the feather.
+   - **Colour**: tint (highlights), shadow tint, tint strength, saturation, contrast, brightness.
+   - **Fog** (tick *Change fog*): fog colour, start and end distance, strength, and volumetric mist (desktop only).
+   - **Light** (tick *Change light*): fill-light colour and amount, sunlight amount.
+3. **New colour zone at the view centre** (World dock) adds one; Ctrl+D copies one; Delete removes one.
+4. Ctrl+S saves. A game running from the editor picks the change up within a second, so you can keep both open and tune while you walk.
+
+With nothing selected, the editor view shows the grade wherever the view is centred (untick *Colour Preview* on the WorldEditor root to turn it off). Zones that overlap blend; the lower one in the list wins. The game eases between zones as you walk. The cost is one small colour ramp in the tonemap pass that runs anyway, so it is the same on the web build.
