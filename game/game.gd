@@ -126,6 +126,7 @@ func _ready() -> void:
 	DB.ensure()
 	scene = self
 	_init_renderer()
+	add_child(preload("res://game/ui/perf_overlay.gd").new())
 	input = GameInput.new()
 	input.name = "Input"
 	add_child(input)

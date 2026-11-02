@@ -38,6 +38,7 @@ func build() -> World:
 	land = Land.new(game, group)
 	for p in Layout.props:
 		var obj := prop_instance(p)
+		budget_prop(obj, str(p.model))
 		var x: float = p.position[0]
 		var z: float = p.position[1]
 		group.add_child(obj)
@@ -81,6 +82,31 @@ static func prop_height(obj: Node3D, ground: float) -> float:
 			if c is Node3D:
 				stack.append([c, xf * (c as Node3D).transform])
 	return top - ground if top > -INF else INF
+
+
+## Grass, clover, flowers, ferns and mushrooms: thousands of tiny props whose
+## shadows nobody sees. They skip the sun's shadow pass (each one would
+## otherwise be drawn again per shadow split) and stop drawing past
+## GROUND_COVER_RANGE from the camera (the default view reaches ~67 m).
+const GROUND_COVER := ["/nature/grass/", "MeadowGrass", "Flower_", "Fern_", "Mushroom_", "Clover"]
+const GROUND_COVER_RANGE := 90.0
+
+static func is_ground_cover(model: String) -> bool:
+	for k in GROUND_COVER:
+		if model.contains(k):
+			return true
+	return false
+
+
+static func budget_prop(obj: Node3D, model: String) -> void:
+	if not is_ground_cover(model):
+		return
+	var meshes: Array = obj.find_children("*", "GeometryInstance3D", true, false)
+	if obj is GeometryInstance3D:
+		meshes.append(obj)
+	for g: GeometryInstance3D in meshes:
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		g.visibility_range_end = GROUND_COVER_RANGE
 
 
 ## Shared by world construction and authoring round-trip checks.
