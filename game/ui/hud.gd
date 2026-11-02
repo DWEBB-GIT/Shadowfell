@@ -36,8 +36,8 @@ const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
 const UNIT_W := 236.0 ## the width of your frame and your target's
 const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
 const ORB_R := 14.0 ## the menu orbs round the minimap
-const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
-const ORB_STEP := 22.4
+const ORB_TOP := 248.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
+const ORB_STEP := 21.0
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
@@ -1538,7 +1538,8 @@ func layout() -> void:
 	var m := EDGE
 	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
+	# the rim buttons stand outside the map, so it keeps room for them
+	minimap.position = Vector2(vp.x - m - Minimap.SIZE - Minimap.OUT_RIGHT, m + Minimap.OUT_TOP)
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
 	# the tray stands as tall as the spell bar and level with it
