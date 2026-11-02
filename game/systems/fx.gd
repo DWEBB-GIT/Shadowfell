@@ -475,6 +475,11 @@ func contact_impact(e: Dictionary) -> void:
 	_add(pop, 0.1, func(it, k, _dt):
 		it.obj.scale = Vector3.ONE * size * (1.0 + k * 0.6)
 		mat.albedo_color.a = 0.7 * (1.0 - k) * (1.0 - k))
+	# a crit or a weapon ability jolts the body back (the look only)
+	var hard: bool = crit or (e.get("kind", "") == "strike" and not e.get("swing", false))
+	if hard and e.get("hand", "") != "ranged" and enemy.rig:
+		var p = game.player
+		enemy.rig.knock(Vector3(enemy.position.x - p.position.x, 0, enemy.position.z - p.position.z), 0.26 if crit else 0.16)
 	if game.settings.get_value("bloodEffects") and e.get("kind", "") == "strike":
 		spatter(enemy, at, crit)
 

@@ -100,6 +100,32 @@ func _run() -> void:
 		var reds := _named("BloodDroplet")
 		game.events.emit("enemyHit", {"enemy": undead, "damage": 5, "kind": "strike", "swing": false})
 		check(_named("BloodDroplet") == reds and _named("HitChip") > 0, "the undead throw bone chips, not blood")
+	# a crit jolts the body back without moving the creature
+	if bandit:
+		for i in 60:
+			bandit.rig.update(dt, 0.0)
+		var at: Vector3 = bandit.position
+		var model_at: Vector3 = bandit.rig.model.position
+		game.events.emit("enemyHit", {"enemy": bandit, "damage": 5, "crit": true, "kind": "strike", "swing": true})
+		check(bandit.rig.model.position.distance_to(model_at) > 0.1, "a crit jolts the body back")
+		check(bandit.position == at, "but the enemy itself does not move")
+		for i in 60:
+			bandit.rig.update(dt, 0.0)
+		check(bandit.rig.model.position.distance_to(model_at) < 0.01, "and it settles back")
+
+	# the spell queue covers the end of a cast, not only the global cooldown
+	var sp = game.spells
+	pl.casting = {"id": "testCast", "t": 0.8, "total": 1.0, "channel": false}
+	sp.queued = null
+	sp.try_cast("cleave")
+	check(sp.queued != null and sp.queued.id == "cleave", "a key pressed near the end of a cast is queued")
+	pl.casting = {"id": "testCast", "t": 0.1, "total": 1.0, "channel": false}
+	sp.queued = null
+	sp.try_cast("cleave")
+	check(sp.queued == null, "but not one pressed early in the cast")
+	pl.casting = null
+	check(DB.CONFIG.player.speed == 6.2, "the player runs at 6.2 m/s")
+
 	for i in 400:
 		game.fx.update(dt)
 	check(_named("BloodSplat") == 0 and _named("BloodDroplet") == 0 and _named("JumpDust") == 0, "it all fades away")

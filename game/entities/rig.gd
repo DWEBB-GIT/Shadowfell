@@ -43,8 +43,8 @@ var airborne := false
 ## how fast each imported model's Walk clip plays at full speed
 const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 2.5, "skeleton": 1.3}
 ## and its Run clip: the battle mage's Mixamo run covers 4.6 m a second, the
-## player runs 5.6 (CONFIG.player speed, runGait)
-const RUN_RATE := {"battle_mage": 0.94}
+## player runs 6.2 (CONFIG.player speed, runGait; 5.6 until 2026-11-02)
+const RUN_RATE := {"battle_mage": 1.04}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
@@ -130,6 +130,39 @@ func hit() -> void:
 		_clip("Hit", 1.0, true)
 
 
+## A visual recoil from a heavy blow or a crit: the body jolts away from the
+## attacker along `dir` (world space, flat) and leans back, then settles.
+## Only the model moves; the creature itself stays where it stands (Dan,
+## 2026-11-02: no shoving enemies around).
+func knock(dir: Vector3, amount: float) -> void:
+	if death >= 0 or dir.length_squared() < 0.0001:
+		return
+	var local := dir.normalized().rotated(Vector3.UP, -model.get_parent().rotation.y) if model.get_parent() is Node3D else dir.normalized()
+	recoil_dir = local
+	recoil_amp = amount
+	recoil = 1.0
+	_apply_recoil()
+
+
+var recoil := 0.0 ## 1 at the blow, easing to 0
+var recoil_amp := 0.0
+var recoil_dir := Vector3.ZERO
+var _recoil_pos := Vector3.ZERO
+var _recoil_rot := Vector2.ZERO
+const RECOIL_TILT := 0.9 ## radians of lean per metre of jolt
+
+
+func _apply_recoil() -> void:
+	var k := recoil * recoil
+	var off := recoil_dir * recoil_amp * k
+	var lean := Vector2(recoil_dir.z, -recoil_dir.x) * recoil_amp * RECOIL_TILT * k
+	model.position += off - _recoil_pos
+	model.rotation.x += lean.x - _recoil_rot.x
+	model.rotation.z += lean.y - _recoil_rot.y
+	_recoil_pos = off
+	_recoil_rot = lean
+
+
 ## Hit-stop: hold the whole body still for `t` seconds as a blow lands, so it
 ## reads as meeting something solid. Only the look pauses; the game runs on.
 func hold(t: float) -> void:
@@ -137,6 +170,8 @@ func hold(t: float) -> void:
 
 
 func die() -> void:
+	recoil = 0.0
+	_apply_recoil()
 	death = 0.0
 	action = null
 	off_action = null
@@ -253,6 +288,11 @@ func _pick_clip(dt: float, speed01: float) -> void:
 
 
 func update(dt: float, speed01: float) -> void:
+	if recoil > 0:
+		# held at full jolt through the hit-stop, then it settles
+		if held <= 0:
+			recoil = maxf(0.0, recoil - dt * 4.0)
+		_apply_recoil()
 	# hit-stop: the body holds still for a moment as a blow connects
 	if held > 0:
 		held -= dt
