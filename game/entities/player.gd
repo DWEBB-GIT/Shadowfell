@@ -329,7 +329,17 @@ func _update_jump(dt: float, requested: bool) -> void:
 	rig.airborne = jump_h > 0.0 or jump_v > 0.0
 
 
+## a red flash on the body as a blow lands, so a hit reads from the
+## zoomed-out camera (Dan, 2026-11-02); the head snap is Rig._apply_snap
+var hit_flash := 0.0
+var _hit_flash_shown := false
+
+
 func update(dt: float, controls) -> void:
+	if (hit_flash > 0 or _hit_flash_shown) and not dead:
+		hit_flash = maxf(0, hit_flash - dt * 4)
+		Rig.set_emissive(materials, Rig.FLASH_RED, hit_flash * 0.55)
+		_hit_flash_shown = hit_flash > 0
 	for k in cooldowns:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
@@ -687,6 +697,8 @@ func take_damage(amount: float) -> bool:
 		return false
 	health = maxf(0, health - amount)
 	rig.hit()
+	if amount > 0:
+		hit_flash = 1.0
 	if health <= 0:
 		dead = true
 		dead_time = 0
