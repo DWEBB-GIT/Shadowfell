@@ -165,6 +165,12 @@ func _initialize() -> void:
 		var pg = main.page_named(page)
 		for r in (s.items if page == "Items" else s.skills if page == "Skills" else s.quests):
 			pg.select(r.id)
+	# every ability opens, and each that hits shows its Scaling numbers
+	for a in s.abilities:
+		abil.select(a.id)
+		var labels: Array = abil.form.find_children("*", "Label", true, false).map(func(l): return l.text)
+		if a.get("kind") in abil.DAMAGE_KINDS:
+			_ok(labels.has("Spell power") and labels.has("Weapon damage"), "%s shows Scaling (spell power and weapon damage)" % a.id)
 	abil.current = spell
 	abil._set_kind("dot")
 	_ok(spell.tuning.has("tickInterval") and spell.target == "enemy", "changing a spell's kind adds the numbers it needs")

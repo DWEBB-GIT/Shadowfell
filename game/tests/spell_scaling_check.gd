@@ -56,3 +56,11 @@ func _run() -> void:
 	_ok(line.contains("35% weapon damage") and line.contains("80% spell power"), "tooltip names the coefficients: " + line)
 	line = game.hud.items._scaling_line(DB.abilities.holyStrike)
 	_ok(line.contains("160% weapon damage"), "Light Strike tooltip: " + line)
+	# a weapon ability can take a share of spell power too (editor Scaling)
+	var hs: Dictionary = DB.abilities.holyStrike.tuning.duplicate()
+	game.random = func() -> float: return 0.5
+	var plain: float = sp._weapon_base(hs) * hs.damageMultiplier
+	hs.spellPower = 0.5
+	var with_sp: float = sp._weapon_base(hs) * hs.damageMultiplier
+	_ok(is_equal_approx(with_sp - plain, 0.5 * game.stats.spell_power), "Light Strike + 50%% spell power adds half your spell power (%s)" % (with_sp - plain))
+	_ok(game.hud.items._scaling_line({"tuning": hs}).contains("50% spell power"), "tooltip shows a weapon ability's spell power")

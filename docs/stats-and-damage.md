@@ -498,6 +498,7 @@ Played in order, the Warden tends to meet the brute and the seer a level or two 
 - Casters (Occultist) take all their spell power. The Paladin's holy spells take a share of the weapon roll and less spell power, since a Strength class has little: Light's Hammer 1–2 + 35% weapon damage + 80% spell power, each Light's Burn tick 15% weapon + 30% spell power; Hallowed Bolt 1–2 + 35% weapon + 90% spell power; Smite 1 + 20% weapon + 60%; Hallowed Ground 0–1 + 15% weapon + 30% a tick; Rebuke 0–1 + 10% weapon + 30%. These keep the level 1 numbers about where they were.
 - Forks that say "x% more" scale the coefficients too (`scale` on `spellPower` / `weaponDamage`).
 - Spell tooltips show the line "Scales with …".
+- **Editor:** every ability that hits has a Scaling section in the Game Data editor's Abilities tab. A weapon ability sets Weapon damage % (`damageMultiplier`, or `tickMultiplier` for a weapon damage over time) and Spell power % (`spellPower`, none unless set). A spell sets Base damage (`damageMin`–`damageMax`), Weapon damage % (`weaponDamage`) and Spell power % (`spellPower`, 100% unless set). So Light Strike can also take a share of spell power, and Light's Hammer a share of the weapon.
 
 ## Building future archetypes
 

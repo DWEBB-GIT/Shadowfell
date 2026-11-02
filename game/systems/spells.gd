@@ -631,7 +631,18 @@ func _weapon_base(t: Dictionary) -> float:
 	var base := Stats.weapon_roll(game.random, stats)
 	if t.get("bothHands") and stats.dual_wielding:
 		base += Stats.weapon_roll(game.random, stats) * DB.CONFIG.stats.offHandDamage
-	return base
+	return base + _gear_extra(t, t.get("damageMultiplier", 1.0))
+
+
+## A weapon ability's extra from the editor's Scaling numbers: a base roll
+## (`damageMin`-`damageMax`) and a share of spell power (`spellPower`, none
+## unless stated), divided by the multiplier the weapon roll gets so they
+## land as stated (Dan, 2026-11-02: every ability can scale with both)
+func _gear_extra(t: Dictionary, mult: float) -> float:
+	var extra: float = t.get("spellPower", 0.0) * game.stats.spell_power
+	if t.has("damageMin"):
+		extra += t.damageMin + (t.get("damageMax", t.damageMin) - t.damageMin) * game.random.call()
+	return extra / mult if mult > 0 else 0.0
 
 
 func _bonus_vs(spell: Dictionary, enemy) -> float:
@@ -751,7 +762,7 @@ func _arrow_lands(spell: Dictionary, enemy, ammo) -> void:
 	if spell.kind == "dot":
 		_apply_dot(spell, enemy, ammo)
 		return
-	var hit := _damage(spell, enemy, _bow_roll(ammo), "Your %s hits the {name} for {n}." % spell.name, spell.tuning.damageMultiplier, {"stagger": 0.15, "knockFrom": game.player.position, "knockback": 0.1})
+	var hit := _damage(spell, enemy, _bow_roll(ammo) + _gear_extra(spell.tuning, spell.tuning.damageMultiplier), "Your %s hits the {name} for {n}." % spell.name, spell.tuning.damageMultiplier, {"stagger": 0.15, "knockFrom": game.player.position, "knockback": 0.1})
 	_landed(spell, enemy, hit)
 
 
@@ -1144,11 +1155,11 @@ func update(dt: float) -> void:
 			d.next += t.tickInterval
 			var base: float
 			if spell.get("ranged"):
-				base = _bow_roll(d.get("ammo"))
+				base = _bow_roll(d.get("ammo")) + _gear_extra(t, 1.0)
 			elif t.has("damageMin"):
 				base = _spell_base(t)
 			else:
-				base = Stats.weapon_roll(game.random, game.stats)
+				base = Stats.weapon_roll(game.random, game.stats) + _gear_extra(t, 1.0)
 			var hit := _damage(spell, d.enemy, base, "", t.tickMultiplier, {"stagger": 0.0}, d)
 			events.emit("dotTick", {"id": d.id, "damage": hit.amount})
 			# Leech: a share of every tick heals you
