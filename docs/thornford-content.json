@@ -1,0 +1,390 @@
+{
+  "_about": "Thornford Reach: editable first district, built from the installed stylized assets. New-map quests only. World placements and sculpt edits are in data/terrain/new_map.",
+  "locations": [
+    {
+      "id": "tf_town",
+      "name": "Thornford",
+      "position": [
+        -450,
+        -207
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_cairn",
+      "name": "The Fallen Lantern",
+      "position": [
+        -465,
+        -300
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_camp",
+      "name": "Briarwood Camp",
+      "position": [
+        -575,
+        -275
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_hollow",
+      "name": "Wolf Hollow",
+      "position": [
+        -555,
+        -360
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_watch",
+      "name": "Old Watch Ruins",
+      "position": [
+        -450,
+        -425
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_shrine",
+      "name": "Dawnstone Shrine",
+      "position": [
+        -415,
+        -485
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_orchard",
+      "name": "Holt Orchard",
+      "position": [
+        -350,
+        -270
+      ],
+      "radius": 20
+    }
+  ],
+  "npcs": [
+    {
+      "id": "tf_rowan",
+      "name": "Captain Rowan",
+      "title": "Thornford Watch",
+      "mapIcon": "trainer",
+      "level": 10,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#a4bdc2",
+      "dialogue": "tf_rowan"
+    },
+    {
+      "id": "tf_elsie",
+      "name": "Elsie Reed",
+      "title": "Lantern Inn",
+      "mapIcon": "innkeeper",
+      "level": 8,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#c9b4a1",
+      "shop": "tf_inn",
+      "innkeeper": true,
+      "bedPrice": 2,
+      "dialogue": "tf_elsie"
+    },
+    {
+      "id": "tf_iren",
+      "name": "Iren Holt",
+      "title": "Smith",
+      "mapIcon": "blacksmith",
+      "level": 10,
+      "model": "mara",
+      "rig": "warden",
+      "shop": "tf_forge",
+      "forge": true,
+      "dialogue": "tf_iren"
+    },
+    {
+      "id": "tf_scout",
+      "name": "Scout Fen",
+      "title": "Briarwood Watch",
+      "level": 6,
+      "model": "tam",
+      "rig": "warden",
+      "tint": "#a3b892",
+      "dialogue": "tf_scout"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "tf_revenant",
+      "base": "ghoul",
+      "name": "Lantern-road Revenant",
+      "level": 1,
+      "detection": 7,
+      "respawn": 90
+    },
+    {
+      "id": "tf_wolf",
+      "base": "hound",
+      "name": "Briarwood Wolf",
+      "level": 2,
+      "pack": 0,
+      "detection": 7,
+      "respawn": 100
+    },
+    {
+      "id": "tf_sentry",
+      "base": "ghoul",
+      "name": "Fallen Watch Sentry",
+      "level": 2,
+      "detection": 7,
+      "respawn": 120
+    },
+    {
+      "id": "tf_keeper",
+      "base": "brute",
+      "name": "The Bellkeeper",
+      "level": 3,
+      "detection": 8,
+      "respawn": 240
+    }
+  ],
+  "quests": [
+    {
+      "id": "tf_lanterns",
+      "name": "Where the Lanterns Went Out",
+      "map": "new",
+      "giver": "tf_rowan",
+      "turnIn": "tf_rowan",
+      "summary": "Follow the lantern road north, examine the fallen watch lantern and defeat three revenants. Return to Captain Rowan in Thornford.",
+      "offer": "The watch carried lanterns up the north road last night. None came home. Find their fallen lantern by the cart and put three of those dead things to rest. Come back here when it is done.",
+      "progress": "Follow the marked paths. The signposts will bring you back to Thornford.",
+      "complete": "The lantern glass is cold. Rowan turns it over in his hands. 'They reached the old watch. Speak to Fen in Briarwood before you go after them.'",
+      "objectives": [
+        {
+          "id": "lantern",
+          "type": "examine",
+          "target": "poi:tf_cairn",
+          "label": "Examine the fallen lantern",
+          "location": "tf_cairn"
+        },
+        {
+          "id": "dead",
+          "type": "kill",
+          "target": "tf_revenant",
+          "count": 3,
+          "label": "Road revenants defeated",
+          "location": "tf_cairn"
+        }
+      ],
+      "reward": {
+        "coins": 25,
+        "xp": 260,
+        "items": [
+          {
+            "item": "healing_draught",
+            "count": 2
+          }
+        ]
+      },
+      "requires": [],
+      "autoAccept": true
+    },
+    {
+      "id": "tf_briar",
+      "name": "The Way Through Briarwood",
+      "map": "new",
+      "giver": "tf_scout",
+      "turnIn": "tf_scout",
+      "summary": "Clear three Briarwood wolves and survey Wolf Hollow. The woodland path loops back to the watch road.",
+      "offer": "The wolves have taken the hollow south of this camp. Clear three and look over the hollow. Its eastern path will put you back on the watch road, below the ruins.",
+      "progress": "Follow the marked paths. The signposts will bring you back to Thornford.",
+      "complete": "You have done the Reach a kindness. Here, take this for the road.",
+      "objectives": [
+        {
+          "id": "wolves",
+          "type": "kill",
+          "target": "tf_wolf",
+          "count": 3,
+          "label": "Briarwood wolves defeated",
+          "location": "tf_hollow"
+        },
+        {
+          "id": "hollow",
+          "type": "examine",
+          "target": "poi:tf_hollow",
+          "label": "Survey Wolf Hollow",
+          "location": "tf_hollow"
+        }
+      ],
+      "reward": {
+        "coins": 20,
+        "xp": 400,
+        "items": [
+          {
+            "item": "tool_pack",
+            "count": 1
+          }
+        ]
+      },
+      "requires": [
+        "tf_lanterns"
+      ]
+    },
+    {
+      "id": "tf_bell",
+      "name": "The Silent Watch",
+      "map": "new",
+      "giver": "tf_rowan",
+      "turnIn": "tf_rowan",
+      "summary": "Find the Old Watch Ruins, defeat the Bellkeeper and visit Dawnstone Shrine. Return to Captain Rowan.",
+      "offer": "Fen has opened the western loop. Now take the road north to the broken watchtower. The Bellkeeper is still there, though no living hand rings that bell. End his watch, then climb to Dawnstone Shrine and tell me what you found.",
+      "progress": "Follow the marked paths. The signposts will bring you back to Thornford.",
+      "complete": "For the first time in days, birds call along the north road. Rowan sets a shield on the table. 'The Reach has a road again. And now it has a Warden.'",
+      "objectives": [
+        {
+          "id": "ruins",
+          "type": "examine",
+          "target": "poi:tf_watch",
+          "label": "Search the Old Watch Ruins",
+          "location": "tf_watch"
+        },
+        {
+          "id": "keeper",
+          "type": "kill",
+          "target": "tf_keeper",
+          "count": 1,
+          "label": "The Bellkeeper defeated",
+          "location": "tf_watch"
+        },
+        {
+          "id": "shrine",
+          "type": "examine",
+          "target": "poi:tf_shrine",
+          "label": "Visit Dawnstone Shrine",
+          "location": "tf_shrine"
+        }
+      ],
+      "reward": {
+        "coins": 40,
+        "xp": 400,
+        "items": [
+          {
+            "item": "iron_shield",
+            "count": 1
+          }
+        ]
+      },
+      "requires": [
+        "tf_briar"
+      ],
+      "setsFlag": "tf_reach_safe"
+    },
+    {
+      "id": "tf_herbs",
+      "name": "Something for the Road",
+      "map": "new",
+      "giver": "tf_elsie",
+      "turnIn": "tf_elsie",
+      "summary": "Gather three ditchbell flowers beside the Briarwood path and bring them to Elsie at the Lantern Inn.",
+      "offer": "Blue ditchbell grows along the western woodland path. Bring me three sprigs. You need no training to pick those marked patches, and I will brew something useful for your pack.",
+      "progress": "Follow the marked paths. The signposts will bring you back to Thornford.",
+      "complete": "You have done the Reach a kindness. Here, take this for the road.",
+      "objectives": [
+        {
+          "id": "herbs",
+          "type": "collect",
+          "target": "ditchbell",
+          "count": 3,
+          "label": "Ditchbell flowers",
+          "location": "tf_camp"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "xp": 100,
+        "items": [
+          {
+            "item": "healing_draught",
+            "count": 1
+          }
+        ]
+      },
+      "requires": []
+    }
+  ],
+  "dialogues": [
+    {
+      "id": "tf_rowan",
+      "greetings": [
+        {
+          "text": "Welcome to Thornford, Warden. The north road needs a steady hand. Keep the lanterns on your left and you will find your way back."
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "tf_elsie",
+      "greetings": [
+        {
+          "text": "A bed, a hot meal, and a little light in the windows. That is what I can offer. Set your home here before you take the woodland road."
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "tf_iren",
+      "greetings": [
+        {
+          "text": "The forge is hot. I can mend what the woods have bitten and sell you something that bites back."
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "tf_scout",
+      "greetings": [
+        {
+          "text": "Thornford lies east. Wolf Hollow is south. Follow its eastern path to rejoin the watch road; you do not need to cut through the thickets."
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    }
+  ],
+  "shops": [
+    {
+      "id": "tf_inn",
+      "name": "The Lantern Inn",
+      "vendorType": "innkeeper",
+      "stock": [
+        "grilled_perch",
+        "travellers_stew",
+        "healing_draught"
+      ]
+    },
+    {
+      "id": "tf_forge",
+      "name": "Iren's Forge",
+      "vendorType": "smith",
+      "stock": [
+        "healing_draught",
+        "iron_gloves",
+        "hob_boots",
+        "mail_chausses",
+        "iron_shield",
+        "arming_sword",
+        "rusty_dirk",
+        "bone_athame",
+        "hunting_bow",
+        "rough_arrow",
+        "travellers_satchel",
+        "torch"
+      ],
+      "faction": "road_wardens"
+    }
+  ]
+}

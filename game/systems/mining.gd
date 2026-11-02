@@ -1,6 +1,6 @@
 class_name Mining
 extends RefCounted
-## Mining (data/mining.json), a gathering profession like Skinning: a
+## Mining (data/professions/mining.json), a gathering profession like Skinning: a
 ## trainer, a pick in the tool pack, and a rank that rises with every swing
 ## that is not yet easy for you (5 ranks an ore level).
 ##
@@ -146,7 +146,7 @@ var pick:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("miningPick") and inv.has(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
+			if d.get("miningPick") and inv.on_belt(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
 				best = d
 		return best
 

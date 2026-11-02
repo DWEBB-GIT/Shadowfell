@@ -40,6 +40,7 @@ const KEY_ACTIONS := [
 	{"id": "map", "label": "World map", "group": "Menus", "keys": ["KeyM"]},
 	{"id": "settings", "label": "Settings", "group": "Menus", "keys": ["KeyO"]},
 	{"id": "bags", "label": "Bags", "group": "Menus", "keys": ["KeyB", "KeyI"]},
+	{"id": "toolbelt", "label": "Tool belt", "group": "Menus", "keys": ["KeyT"]},
 	{"id": "skills", "label": "Professions", "group": "Menus", "keys": ["KeyU"]},
 	{"id": "save", "label": "Save the game", "group": "Menus", "keys": ["KeyK"]},
 ]

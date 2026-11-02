@@ -19,6 +19,14 @@ var flinch := 0.0
 var held := 0.0 ## hit-stop left (hold)
 var death := -1.0 ## -1 alive, otherwise seconds since death
 var pose = null ## a held pose ('fish', 'sit' to eat, 'rest' to sit) when no action plays
+## footfalls: counts up each time a foot comes down in the walk or run (the
+## player's footstep sounds follow it, see AudioSystem._footsteps). Set
+## track_steps to watch an imported skeleton's feet.
+var steps := 0
+var track_steps := false
+var _feet := [] ## { bone, y, dy, low } per foot of an imported skeleton
+var _skel: Skeleton3D
+var _step_gap := 0.0
 
 
 static func ease_(t: float) -> float:
@@ -35,8 +43,8 @@ var airborne := false
 ## how fast each imported model's Walk clip plays at full speed
 const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 2.5, "skeleton": 1.3}
 ## and its Run clip: the battle mage's Mixamo run covers 4.6 m a second, the
-## player runs 5.6 (CONFIG.player speed, runGait)
-const RUN_RATE := {"battle_mage": 0.94}
+## player runs 6.2 (CONFIG.player speed, runGait; 5.6 until 2026-11-02)
+const RUN_RATE := {"battle_mage": 1.04}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
@@ -122,6 +130,39 @@ func hit() -> void:
 		_clip("Hit", 1.0, true)
 
 
+## A visual recoil from a heavy blow or a crit: the body jolts away from the
+## attacker along `dir` (world space, flat) and leans back, then settles.
+## Only the model moves; the creature itself stays where it stands (Dan,
+## 2026-11-02: no shoving enemies around).
+func knock(dir: Vector3, amount: float) -> void:
+	if death >= 0 or dir.length_squared() < 0.0001:
+		return
+	var local := dir.normalized().rotated(Vector3.UP, -model.get_parent().rotation.y) if model.get_parent() is Node3D else dir.normalized()
+	recoil_dir = local
+	recoil_amp = amount
+	recoil = 1.0
+	_apply_recoil()
+
+
+var recoil := 0.0 ## 1 at the blow, easing to 0
+var recoil_amp := 0.0
+var recoil_dir := Vector3.ZERO
+var _recoil_pos := Vector3.ZERO
+var _recoil_rot := Vector2.ZERO
+const RECOIL_TILT := 0.9 ## radians of lean per metre of jolt
+
+
+func _apply_recoil() -> void:
+	var k := recoil * recoil
+	var off := recoil_dir * recoil_amp * k
+	var lean := Vector2(recoil_dir.z, -recoil_dir.x) * recoil_amp * RECOIL_TILT * k
+	model.position += off - _recoil_pos
+	model.rotation.x += lean.x - _recoil_rot.x
+	model.rotation.z += lean.y - _recoil_rot.y
+	_recoil_pos = off
+	_recoil_rot = lean
+
+
 ## Hit-stop: hold the whole body still for `t` seconds as a blow lands, so it
 ## reads as meeting something solid. Only the look pauses; the game runs on.
 func hold(t: float) -> void:
@@ -129,6 +170,8 @@ func hold(t: float) -> void:
 
 
 func die() -> void:
+	recoil = 0.0
+	_apply_recoil()
 	death = 0.0
 	action = null
 	off_action = null
@@ -167,6 +210,39 @@ func _clip(name: String, speed: float, restart := false) -> void:
 func _update_anim(dt: float, speed01: float) -> void:
 	_pick_clip(dt, speed01)
 	anim.advance(dt)
+	if track_steps:
+		_watch_feet(dt)
+
+
+## A foot that has been coming down and stops, near the ground, is a step.
+func _watch_feet(dt: float) -> void:
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			track_steps = false
+			return
+		_skel = found[0]
+		var hips := _skel.find_bone("mixamorig_Hips")
+		for n in ["mixamorig_LeftFoot", "mixamorig_RightFoot"]:
+			var b := _skel.find_bone(n)
+			if b < 0 or hips < 0:
+				continue
+			var rest := _skel.get_bone_global_rest(b).origin.y
+			var leg := _skel.get_bone_global_rest(hips).origin.y - rest
+			_feet.append({"bone": b, "y": rest, "dy": 0.0, "low": rest + leg * 0.12})
+		if _feet.is_empty():
+			track_steps = false
+			return
+	_step_gap -= dt
+	var walking := clip == "Walk" or clip == "Run"
+	for f in _feet:
+		var y := _skel.get_bone_global_pose(f.bone).origin.y
+		var dy: float = y - f.y
+		if walking and f.dy < 0 and dy >= 0 and y < f.low and _step_gap <= 0:
+			steps += 1
+			_step_gap = 0.15
+		f.y = y
+		f.dy = dy
 
 
 func _pick_clip(dt: float, speed01: float) -> void:
@@ -212,6 +288,11 @@ func _pick_clip(dt: float, speed01: float) -> void:
 
 
 func update(dt: float, speed01: float) -> void:
+	if recoil > 0:
+		# held at full jolt through the hit-stop, then it settles
+		if held <= 0:
+			recoil = maxf(0.0, recoil - dt * 4.0)
+		_apply_recoil()
 	# hit-stop: the body holds still for a moment as a blow connects
 	if held > 0:
 		held -= dt
@@ -222,7 +303,11 @@ func update(dt: float, speed01: float) -> void:
 		return
 	move += (speed01 - move) * minf(1, dt * 10)
 	var stride := 6.0 if style == "brute" else 7.0 if style == "ghoul" else 13.0 if style == "hound" else 9.0
+	var was := phase
 	phase += dt * stride * maxf(0.2, move)
+	# a foot is down at each end of the leg swing (sin(phase) at +-1)
+	if move > 0.12 and floori(was / PI + 0.5) != floori(phase / PI + 0.5):
+		steps += 1
 	flinch = maxf(0, flinch - dt * 4)
 	reset()
 
@@ -261,6 +346,12 @@ func update(dt: float, speed01: float) -> void:
 		model.position.y = -0.5
 	elif death < 0:
 		model.position.y = 0
+	if airborne and action == null and death < 0:
+		# Built-in characters without a Jump clip tuck their knees as well.
+		_rot("Leg_L", 0, -0.5)
+		_rot("Leg_R", 0, -0.65)
+		_rot("Arm_L", 0, -0.2)
+		_rot("Arm_R", 0, -0.2)
 	if pose == "fish" and action == null:
 		_rot("Arm_R", 0, -1.0)
 		_rot("Arm_L", 0, -0.35)
@@ -292,7 +383,7 @@ func _apply_off_action(dt: float) -> void:
 		off_action = null
 
 
-## Each spell's own cast pose is data (data/spell_fx.json `poses`, read
+## Each spell's own cast pose is data (data/abilities/spell_fx.json `poses`, read
 ## into DB.spell_poses): [part, axis, windup, blow] keys, and how far into
 ## the windup the strike starts. Axis 0 raises an arm forward when negative;
 ## 1 twists (positive turns left); 2 swings an arm out (negative for the

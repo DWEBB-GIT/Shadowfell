@@ -1,0 +1,850 @@
+{
+  "schema_version": 1,
+  "revision_date": "2026-11-01",
+  "purpose": "Instanced content blueprints, not loaded runtime scenes.",
+  "character_cap": 50,
+  "group_size_assumption": 3,
+  "solo_story_supported": true,
+  "dungeons": [
+    {
+      "id": "di_siltwheel",
+      "name": "Blackpick Mine",
+      "region": "rillbank",
+      "entrance_hub": "lantern_crossing",
+      "entrance_pocket": null,
+      "local_area_band": [
+        5,
+        10
+      ],
+      "entry_level": 8,
+      "recommended_level": [
+        8,
+        10
+      ],
+      "enemy_levels": [
+        8,
+        10
+      ],
+      "boss_level": 10,
+      "minutes": [
+        15,
+        20
+      ],
+      "bosses": [
+        "Hobb the Paymaster",
+        "Foreman Blackpick"
+      ],
+      "local_story": "Bandits have occupied the crossing’s mine and taken tools and a shift crew hostage. Recover the payroll, free the miners and reopen the supply road. One miner is furious that the ransom includes a charge for using his own shovel.",
+      "wider_story_link": "A stolen relief-delivery seal connects a buyer of the ore to the Quiet Levy. The bandit problem matters locally even before that connection is understood.",
+      "loot_examples": [
+        "Blackpick Workgloves — hands",
+        "Recovered Payband — ring",
+        "Freed Miners’ Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "An empty marked practice bay shows a cone, a line and a circle before combat. A miner explains each shape in one sentence.",
+        "A shield bearer escorts a vulnerable payroll runner. Draw its attacks away, face its cone into clear ground, and let another player stop the runner.",
+        "A tauntable foreman threatens a marked miner in a forgiving practice encounter. A room-mounted alarm bell supplies a visible fallback fixate for parties without a trained taunt.",
+        "Two bosses, a checkpoint after the first, a rescue shortcut and a safe exit."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        -175.0,
+        -204.0
+      ],
+      "production_phase": "First instance pilot: camera readability, telegraphs, threat and taunt foundations",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "rillbank"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "A bandit-held working mine: timber galleries, ore carts and a stolen-payroll camp. No waterworks dungeon.",
+      "previous_design_name": "The Siltwheel",
+      "lessons": [
+        {
+          "id": "telegraphs",
+          "goal": "Read direction, shape and impact timing.",
+          "safe_practice": "Non-damaging demonstration, then one slow attack at a time.",
+          "assessment": "Foreman combines a frontal sweep with a separately timed circle.",
+          "failure_recovery": "First practice mistake causes a modest hit and a short hint, never an instant death."
+        },
+        {
+          "id": "taunt_threat",
+          "goal": "Taunt a threatening enemy away from a vulnerable ally and face its frontal safely.",
+          "safe_practice": "Marked miner practice and an explained alarm-bell fixate.",
+          "assessment": "Party protects a miner while disabling the foreman’s supply cart.",
+          "failure_recovery": "Ally retreats safely; the objective resets without deleting boss progress."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "lantern_crossing",
+          "position": [
+            -175.0,
+            -204.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_tollward",
+      "name": "Silkburrow Caverns",
+      "region": "rillbank",
+      "entrance_hub": "tollhouse_rise",
+      "entrance_pocket": null,
+      "local_area_band": [
+        16,
+        22
+      ],
+      "entry_level": 18,
+      "recommended_level": [
+        19,
+        21
+      ],
+      "enemy_levels": [
+        19,
+        21
+      ],
+      "boss_level": 21,
+      "minutes": [
+        20,
+        25
+      ],
+      "bosses": [
+        "The Threadkeeper",
+        "Old Mother Manylegs"
+      ],
+      "local_story": "Couriers and livestock have vanished into webbed smuggling tunnels. Cut trapped people down, recover an ordinary family parcel and stop the brood reaching the farms.",
+      "wider_story_link": "A trapped courier carries duplicate seizure orders. Rescue provides evidence, while the brood remains a wildlife problem rather than another servant of the Collector.",
+      "loot_examples": [
+        "Silkburrow Wrap — back",
+        "Courier’s Unlost Ring — ring",
+        "Broodbreaker’s Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Cut a harmless practice cocoon open before any player can be trapped. Every weapon or damaging spell can break a hostile web.",
+        "The first player web roots but does not silence, disarm or prevent targeting the web. Its nameplate and self-target action remain visible.",
+        "An ally can cut a victim free faster. In solo mode the player can attack or interact with their own web. No consumable, blade type, fire spell or extra player is required.",
+        "Control a skitterer before it reaches an egg clutch. Roots stop movement, stuns stop movement and actions, and interrupts stop the broodcaller’s marked cast.",
+        "Cave corners teach sight breaks on ordinary ranged spiders before the boss adds pressure. Two bosses and checkpoints bound the run."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        133.0,
+        -608.0
+      ],
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "rillbank"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "A natural cave system beneath the toll road: limestone chambers, root tunnels, web bridges and a spider nursery.",
+      "previous_design_name": "Tollward Vaults",
+      "lessons": [
+        {
+          "id": "rescue_webs",
+          "goal": "Notice a trapped ally and cut a targetable web before focusing the boss.",
+          "safe_practice": "Free an NPC, then a self-breakable practice web.",
+          "assessment": "An announced cocoon overlaps a clearly separate frontal attack.",
+          "failure_recovery": "Webs have a maximum lifetime, do no lethal damage by themselves and dissolve on reset."
+        },
+        {
+          "id": "control",
+          "goal": "Choose the right tool for a runner or a caster.",
+          "safe_practice": "One runner and one marked broodcaller in separate packs; a reusable cave snare is available.",
+          "assessment": "Bounded add wave includes a runner to root/stun and a caster to interrupt or hard-control.",
+          "failure_recovery": "A missed runner adds a small bounded wave, not an endless egg cascade."
+        },
+        {
+          "id": "line_of_sight",
+          "goal": "Use a real rock corner to make ranged enemies reposition.",
+          "safe_practice": "One low-damage ranged spider with a safe retreat corner.",
+          "assessment": "Group ranged adds before a web rescue.",
+          "failure_recovery": "No sealed door or irreversible pull requires a specific tank class."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "tollhouse_rise",
+          "position": [
+            133.0,
+            -608.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_yewbound",
+      "name": "Yewbound Catacombs",
+      "region": "paleweald",
+      "entrance_hub": "scribes_rest",
+      "entrance_pocket": null,
+      "local_area_band": [
+        22,
+        28
+      ],
+      "entry_level": 25,
+      "recommended_level": [
+        26,
+        28
+      ],
+      "enemy_levels": [
+        26,
+        28
+      ],
+      "boss_level": 28,
+      "minutes": [
+        25,
+        30
+      ],
+      "bosses": [
+        "The Namekeeper",
+        "The Hollow Copyist"
+      ],
+      "local_story": "The archive’s burial custodians have risen. Recover a family name-book and return disturbed memorials while rescuing the living caretaker.",
+      "wider_story_link": "Copied burial names reveal how the Levy turns remembrance into ownership. A grave-cult has been selling those names onward; the later necromancer lair reveals its buyer.",
+      "loot_examples": [
+        "Namekeeper’s Cord — waist",
+        "Unforgotten Mantle — back",
+        "Caretaker’s Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "A practice grave-caller demonstrates an interruptible heal. Breaking its binding candle is the universal fallback.",
+        "Two limited add groups teach target priority. Grave-callers cast, bone runners pursue a witness and shielded custodians face their current threat target.",
+        "A safe chamber teaches an index-and-epitaph puzzle with a visible reset. Evidence has a readable solution, not a random interaction sequence.",
+        "Two bosses revisit web-style ally rescue using breakable grave bindings. Roots do not interrupt casts; boss stagger is shown separately from hard control."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        557.0,
+        -424.0
+      ],
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "paleweald"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "An old woodland crypt beneath the archive: burial niches, mossy stone, undead custodians and a small grave-cult.",
+      "previous_design_name": "The Yewbound Archive",
+      "lessons": [
+        {
+          "id": "interrupt_priority",
+          "goal": "Stop the important cast rather than every small attack.",
+          "safe_practice": "One long, named grave-heal cast with a candle alternative.",
+          "assessment": "The Copyist combines a heal cast with a controllable runner.",
+          "failure_recovery": "A missed heal restores a capped amount of health, not a full reset."
+        },
+        {
+          "id": "add_management",
+          "goal": "Split useful jobs: hold the front, control the runner, stop the caster and rescue the witness.",
+          "safe_practice": "Two short packs introduce jobs separately.",
+          "assessment": "A capped wave combines previously practised jobs.",
+          "failure_recovery": "No encounter requires a dedicated healer, cleanse or a particular class composition."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "scribes_rest",
+          "position": [
+            557.0,
+            -424.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_crucible",
+      "name": "Deep Crucible",
+      "region": "cinder",
+      "entrance_hub": "ember_relay",
+      "entrance_pocket": "deep_crucible",
+      "local_area_band": [
+        30,
+        40
+      ],
+      "entry_level": 37,
+      "recommended_level": [
+        38,
+        40
+      ],
+      "enemy_levels": [
+        38,
+        40
+      ],
+      "boss_level": 40,
+      "minutes": [
+        25,
+        30
+      ],
+      "bosses": [
+        "The Slag Shepherd",
+        "The Bound Furnace",
+        "The Red Foreman"
+      ],
+      "local_story": "The inner works are consuming their safety wards. A crew needs a usable way out before the next furnace cycle.",
+      "wider_story_link": "The plant’s orders show how bound work is being turned into power for the wider network. Its rescue/evidence route matches the upland route’s onward result.",
+      "loot_examples": [
+        "Cinderproof Pauldrons — shoulders",
+        "Quenched Ember Charm — neck",
+        "Crucible Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Practise a stationary heat lane, then one moving furnace sweep before combining them.",
+        "A furnace ward pressures the current threat holder. A trained taunt or cooling lever can relieve the marked defender; taunt does not cancel an already committed ground attack.",
+        "Stun or root slag carriers before they reach a hot channel. A room gate supplies a slower control alternative.",
+        "Cooling channels and machinery have visible states and manual resets. Keep the first build on stable floors; collapsing platforms are outside scope.",
+        "Rescue workers and recover their wage record. Three bosses, each followed by a safe checkpoint."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        253.0,
+        680.0
+      ],
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "cinder"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "A volcanic cave forge: basalt galleries, ore channels and a furnace operated with bound labour.",
+      "lessons": [
+        {
+          "id": "hazards",
+          "goal": "Read environmental telegraphs while continuing useful combat jobs.",
+          "safe_practice": "Static heat lane, moving sweep, then a simple add pack.",
+          "assessment": "Safe-lane rotation overlaps one controllable slag carrier.",
+          "failure_recovery": "Safe edges stay visible, hazards cannot seal the only exit and falling never deletes the run."
+        },
+        {
+          "id": "defender_relief",
+          "goal": "Use taunt or a universal room control to relieve a threatened defender.",
+          "safe_practice": "One labelled furnace mark and a cooling-lever demonstration.",
+          "assessment": "An announced heat mark overlaps a manageable frontal.",
+          "failure_recovery": "No perfect taunt chain or mandatory two-tank composition is required."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "ember_relay",
+          "position": [
+            253.0,
+            680.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_coldhearth",
+      "name": "Coldhearth Sanctuary",
+      "region": "frostward",
+      "entrance_hub": "hearthwatch",
+      "entrance_pocket": null,
+      "local_area_band": [
+        40,
+        46
+      ],
+      "entry_level": 43,
+      "recommended_level": [
+        44,
+        46
+      ],
+      "enemy_levels": [
+        44,
+        46
+      ],
+      "boss_level": 46,
+      "minutes": [
+        30,
+        35
+      ],
+      "bosses": [
+        "Sir Edric, Last at the Door",
+        "The Ashen Vigil",
+        "The Oathbound Castellan"
+      ],
+      "local_story": "Dead knights protect a sanctuary whose living refugees have been reclassified as intruders. Restore the original oath and open the shelter without treating every defender as mindless evil.",
+      "wider_story_link": "A forged amendment to the sanctuary charter mirrors the altered relief contracts. The oath’s wording gives living witnesses a way to challenge the larger binding.",
+      "loot_examples": [
+        "Hearthwarden’s Boots — feet",
+        "Coalkeeper’s Coat — chest",
+        "Winter Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "A training effigy practises a frontal that must be faced away from allies and a named interruptible oath-cast.",
+        "A slow pressure meter is reduced by lighting shelter braziers and dealing with attendants, not only by meeting a damage threshold.",
+        "Control a squire carrying a replacement seal, rescue a chilled witness and rotate useful jobs as the safe shelter changes.",
+        "An optional oath-reading resolution releases one named knight after the encounter. It preserves the same reward budget and does not require killing a sympathetic character.",
+        "Three bosses with checkpoints. A generous normal-mode soft enrage rewards good play without a rigid gear gate."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        293.0,
+        -1420.0
+      ],
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "frostward"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "A forgotten snowbound temple inside the old bastion, still defended by dead knights who remember their oath.",
+      "previous_design_name": "Coldhearth Bastion",
+      "lessons": [
+        {
+          "id": "soft_pressure",
+          "goal": "Manage mounting pressure through damage, control and useful room actions.",
+          "safe_practice": "One pressure source and an explained brazier counter.",
+          "assessment": "The Castellan adds familiar frontals while an attendant feeds the pressure meter.",
+          "failure_recovery": "Story mode caps pressure and supplies a recovery window; higher tuning is a later pass."
+        },
+        {
+          "id": "role_rotation",
+          "goal": "Read the encounter and take an available useful job.",
+          "safe_practice": "Optional NPC prompts describe an unfilled job without assigning a class.",
+          "assessment": "A shelter move changes who can safely rescue, interrupt or control.",
+          "failure_recovery": "Room controls remain reachable for melee and ranged characters, including short parties."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "hearthwatch",
+          "position": [
+            293.0,
+            -1420.0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_graveshroud",
+      "name": "Graveshroud Hollow",
+      "region": "thornford",
+      "entrance_hub": "thornford",
+      "entrance_pocket": "old_bell_wing",
+      "local_area_band": [
+        48,
+        50
+      ],
+      "entry_level": 48,
+      "recommended_level": [
+        48,
+        49
+      ],
+      "enemy_levels": [
+        48,
+        49
+      ],
+      "boss_level": 49,
+      "minutes": [
+        30,
+        35
+      ],
+      "bosses": [
+        "The Bone Lantern",
+        "The Choir of Borrowed Names",
+        "Magister Vey, the Debtkeeper"
+      ],
+      "local_story": "Return to the opening village after its apparent recovery. Necromancers are stealing the names the player restored and using them to bind the recently dead. Recover a villager’s memorial keepsake rather than simply collecting another ledger.",
+      "wider_story_link": "The Debtkeeper supplies binding vessels to the Court. Destroying the stock weakens this operation, but equivalent outdoor evidence keeps this dungeon optional for the campaign.",
+      "loot_examples": [
+        "Graveshroud Cowl — class-compatible head choices",
+        "Unborrowed Name — neck",
+        "Debtbreaker’s Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Introduce two linked seals sequentially in a safe room before using them during combat.",
+        "In a full party, teams can suppress two seal channels concurrently while another player controls a bone runner or protects a witness.",
+        "Solo mode uses persistent seal latches and sequential actions. Short parties and a dead or disconnected ally switch to the same recoverable sequence.",
+        "Do not teleport players into isolated lethal rooms. Maintain sight lines, short walkways and reachable rescues.",
+        "Three bosses combine known interrupts, controllable adds and breakable bindings. The existing low-level Crypt Keeper is not replaced or rescaled."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        -305,
+        -486
+      ],
+      "production_phase": "Late-game return dungeon after instancing, control and recovery are reliable",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "thornford"
+      ],
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "theme": "A deep natural cave reached through Thornford’s sealed crypt wing, with necromancer workshops and stolen memorials. The early exterior crypt stays unchanged.",
+      "lessons": [
+        {
+          "id": "coordination",
+          "goal": "Coordinate linked objectives while preserving combat priorities.",
+          "safe_practice": "Two safe seals with long-lived latches and an explicit reset.",
+          "assessment": "Vey combines linked channels, one runner and a familiar telegraph.",
+          "failure_recovery": "No simultaneous-input hard lock. Latches persist in solo/short-party mode; a missed sequence delays the encounter rather than wiping everyone."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "thornford",
+          "position": [
+            -305,
+            -486
+          ]
+        }
+      ]
+    },
+    {
+      "id": "di_unwritten",
+      "name": "The Unwritten Court",
+      "region": "frostward",
+      "entrance_hub": "north_ledger_gate",
+      "entrance_pocket": null,
+      "local_area_band": [
+        48,
+        50
+      ],
+      "entry_level": 48,
+      "recommended_level": [
+        49,
+        50
+      ],
+      "enemy_levels": [
+        49,
+        50
+      ],
+      "boss_level": 50,
+      "minutes": [
+        35,
+        40
+      ],
+      "bosses": [
+        "The Empty Witness",
+        "The Keeper of Bonds",
+        "The Collector"
+      ],
+      "local_story": "Recovered names and evidence are brought to the place that turns them into binding orders. The rescued witnesses must leave as people, not entries.",
+      "wider_story_link": "The northern and southern approaches converge on this one private final instance. Completing the chapter ends the campaign’s collection scheme and earns level 50 once.",
+      "loot_examples": [
+        "Cord of the Unbound — neck",
+        "Witness of Dawn — back",
+        "Liberator’s Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Three short chapters combine previously practised telegraphs, threat/facing, interruptible casts, controllable adds, rescue bindings and linked room controls.",
+        "Introduce at most one new variation: evidence changes which of two familiar attack lanes is safe. Practise it harmlessly before the Collector.",
+        "Each boss has only one primary mechanic plus one supporting pressure at a time. The finale does not stack every lesson at once.",
+        "Solo and party versions reach the same ending. Entry remains 48; the planned final chapter earns level 50 once rather than requiring level 50 first.",
+        "Reuse the same layout and core bosses for the planned level-50 replay. Raid preparation is optional, and first-clear rewards are never paid twice."
+      ],
+      "main_finale": true,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear",
+          "mechanics": "Same readable lessons with sequential controls, self-rescue and forgiving pressure. No missing-class or extra-player lock."
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials",
+          "mechanics": "Three-player target. Threat/facing, control, damage, rescues and room actions give flexible jobs without a fixed class composition."
+        }
+      },
+      "readiness": "Planning only. Instance runtime, encounters, class-training coverage and real loot remain to implement.",
+      "scene": null,
+      "entrance_position": [
+        697.0,
+        -1316.0
+      ],
+      "production_phase": "Campaign finale after both approach stories are authored",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "additional_entrance_hubs": [
+        "sunseal_court"
+      ],
+      "regions": [
+        "frostward",
+        "sable"
+      ],
+      "location_type": "Shared final private realm, reached from either end-level region",
+      "scope_status": "Approved seven-layout plan; blueprint only",
+      "level_50_replay": {
+        "status": "Planned repeat configuration of the existing instance, not an additional layout",
+        "minimum_level": 50,
+        "enemy_levels": [
+          50,
+          50
+        ],
+        "boss_level": 50,
+        "character_xp": 0,
+        "reuse": "Same rooms and core boss mechanics; tuning/loot pass only, with no new dungeon or boss roster required.",
+        "story": "Residual binding echoes after the victory, not a return of the defeated Collector in the campaign chronology.",
+        "receipts": "Normal repeat loot only. No second campaign completion, first-clear award or capstone reward.",
+        "purpose": "Optional preparation for future raids using the same layout. Future raid systems are not implemented or required for campaign completion."
+      },
+      "theme": "The binding Court: a shared final realm where recovered names can be freed.",
+      "lessons": [
+        {
+          "id": "final_exam",
+          "goal": "Recognise familiar signals and choose a useful response without a new rule for every room.",
+          "safe_practice": "A harmless evidence-lane demonstration and familiar opening packs.",
+          "assessment": "The Collector rotates, rather than simultaneously stacks, threat, control, rescue and seal phases.",
+          "failure_recovery": "Checkpoint at each boss. Reset clears bindings and hazards, preserves earned receipts and provides an exit."
+        }
+      ],
+      "boss_teaching_rule": "Demonstrate safely, practise under light pressure, assess with one familiar supporting mechanic, then revisit later. At most two major overlapping demands in normal mode.",
+      "entrance_positions": [
+        {
+          "hub": "north_ledger_gate",
+          "position": [
+            697.0,
+            -1316.0
+          ]
+        },
+        {
+          "hub": "sunseal_court",
+          "position": [
+            725.0,
+            1320.0
+          ]
+        }
+      ]
+    }
+  ],
+  "instance_contract": {
+    "isolation": "Each solo player or party owns a private run, with isolated enemies, doors, mechanisms, checkpoints and loot. An outdoor boss or underground coordinate is not an instance.",
+    "entry": "Discover an entrance, meet its minimum level, choose a supported mode and record the exact overworld return position/facing before loading the private context.",
+    "objective_scope": "Events carry dungeon/run identity and participant eligibility. Outdoor kills and another party’s actions cannot complete the run.",
+    "death": "Return to the latest safe run checkpoint or leave through the entrance; do not respawn through an unrelated overworld shrine.",
+    "save_resume": "Persist supported checkpoint/boss progress and reward receipts; on an unsupported or broken resume, recover safely at the verified overworld entrance without duplicating rewards.",
+    "party": "Membership, reconnect, owner departure and shared boss state need authoritative rules. Networked parties are not implemented by this document.",
+    "exit": "Restore the overworld context, location, camera, collision, region lighting and minimap. Keep dungeon corpses and drops out of the overworld save lists.",
+    "rewards": "Per-character first-clear/chapter receipts, separate per-run boss loot and an exactly-once global capstone. Retry/reconnect/reset cannot replay first-clear grants.",
+    "mechanics": "Keep threat, bindings, seal latches, hazard phases, pressure and control immunity local to the run; clear them on reset/exit. Short-party or disconnect recovery must never strand a player."
+  },
+  "reward_policy": {
+    "numbers": "Actual item stats, drop weights, XP and coin payouts await encounter/economy calibration. Loot names here are examples, not item records.",
+    "role_coverage": "Use existing item/slot templates for each of the five classes; a staff, bow and melee alternative share the same item budget. No trinket slot is assumed.",
+    "party_and_solo": "The campaign story and usable gear do not depend on finding a group. Party mode may offer extra choice/materials and harder mechanics.",
+    "first_clear_xp": "Prototype a modest first-clear fraction of the local level requirement, then budget trash, boss and quest XP together. No automatic full level per dungeon.",
+    "endgame": "Level-50 normal and elite enemies only; no character XP beyond cap. Difficulty comes from health, abilities and encounter structure."
+  },
+  "pacing_policy": {
+    "level_placement": "Recommended levels are at or above the midpoint of the stated local area band, usually in its upper third.",
+    "time": "Successful normal clears target 15–40 minutes. Separately measure first attempts, wipes, travel and queue time.",
+    "baseline": "Seven layouts are available, not seven mandatory clears. Dungeon activity replaces time and XP inside the existing 60-hour target.",
+    "alternatives": "Normal progression never requires a group-dungeon clear. The solo-capable shared finale remains part of the main story; all other dungeons substitute for outdoor XP/time within their intervals.",
+    "finale": "The shared final chapter is solo-capable and awards level 50; completing the other approach does not award it twice.",
+    "route_parity": "Outdoor chapters on Mirefen, Highmere, coast and desert alternatives retain equivalent gear and story outcomes. Rootlock and Quarry stories survive outdoors without separate instances.",
+    "timing": "Early introduction at 8–10. Wider mid-game gaps support exploration. Three late runs at 44–46, 48–49 and 49–50. Level proximity is not equal to time proximity: reinforce lessons in outdoor hubs between runs."
+  },
+  "implementation_status": "Planning only. Current game constructs one overworld; private run contexts, party authority and dungeon persistence still need implementation.",
+  "initial_layout_limit": 8,
+  "deferred_designs_file": "deferred-dungeons.json",
+  "scope_policy": "Seven distinct layouts approved. Absolute maximum eight. No eighth layout is scheduled or named. An eighth requires a deliberate roster revision. Replay modes, alternative entrances and difficulty tuning reuse existing geometry and core bosses. Deferred ideas are reference only, not additional commitments.",
+  "initial_layout_target": 7,
+  "initial_layout_minimum": 7,
+  "approved_layout_count": 7,
+  "mechanics_curriculum_file": "dungeon-mechanics.md",
+  "teaching_contract": {
+    "telegraphs": "Shape, direction, outline/pattern, cast name and progress communicate the same event. Never rely on colour or sound alone. Telegraphs stay above grass, webs and effects and inside the fixed camera’s readable play area.",
+    "timing_targets": "Initial tutorial attacks aim for 2.5–3 seconds of warning, later normal attacks generally at least 1.5 seconds after a clear signal. Tune with movement speed, camera, melee escape distance and real latency before treating these as final values.",
+    "taunt": "Build and expose threat, current target, forced-target duration and taunt immunity. Successful taunt raises the user to current top threat and briefly forces future eligible targeting. It never cancels an attack or removes its telegraph. Already committed ground attacks keep their announced area. Repeated taunts cannot permanently lock a boss.",
+    "control": "Interrupt stops a marked cast. Stun prevents actions and movement for its duration. Root prevents movement and does not by itself stop casts. Boss stagger uses a visible separate meter. Each dangerous add displays its relevant vulnerabilities.",
+    "utility": "Every class gets a viable damage job, defensive response and a trained interrupt or suitable hard-control option before their first required counter. Roots and slows alone do not satisfy a cast-interrupt gate. Missing class utility has an explicit encounter-control alternative.",
+    "roles": "Useful jobs are defender/facing, priority damage, interrupt, runner control, rescue and room action. Rotate jobs between encounters. No required healer, mandatory class, compulsory two-tank swap or profession gate.",
+    "rescue": "Player bindings are targetable, readable and removable by ordinary attacks or an explicit interaction. Self-rescue remains available in solo and when all surviving players are bound. Reset and exit always remove bindings.",
+    "implementation": "These are acceptance requirements, not claims the current game supplies threat tables, taunts, dispels, line-of-sight AI, private runs or full 1–50 class training."
+  }
+}

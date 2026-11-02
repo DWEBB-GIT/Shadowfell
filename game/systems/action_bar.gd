@@ -3,9 +3,10 @@ extends RefCounted
 ## The spell bar (src/systems/actionBar.js). Six spell slots (1 2 3 4 Q E)
 ## and four utility slots (Shift-1 to Shift-4; on a pad, hold D-pad left and
 ## press a face button), each with a fixed key. The player decides which
-## ability sits in which slot, Diablo style. The utility slots take items
-## and tools (Fishing, Set Camp, Cooking) only, never spells. A slot can
-## also hold an item, as 'item:<id>'.
+## ability sits in which slot, Diablo style. The utility slots are the
+## consumable slots: items only (draughts, food, drink, bandages), as
+## 'item:<id>'. Fishing, Set Camp, Cooking and Return Home live on the tool
+## belt (game/ui/tool_belt.gd), never on the bar (Dan, 2026-11-02).
 
 const BAR_SLOTS := [
 	{"kbm": "1", "pad": "X"},
@@ -21,7 +22,8 @@ const BAR_SLOTS := [
 ]
 ## the bow abilities go onto free spell slots the first time a bow is equipped
 const BOW_ABILITIES := ["quickShot", "venomArrow"]
-const UTILITY_ABILITIES := ["fish", "setCamp", "cook"]
+## the abilities that live on the tool belt instead of the bar
+const BELT_ABILITIES := ["fish", "setCamp", "cook", "returnHome"]
 ## what every new character carries (inventory.gd) and has on the utility bar
 const STARTER_FOOD := "trail_bread"
 const STARTER_DRINK := "spring_water"
@@ -34,12 +36,12 @@ var clicked := {} ## abilities clicked on the bar this frame
 var had_bow := false
 
 
-## a class's starting bar: its six spells, then on the utility slots a
-## draught, food, a drink for a class with mana, and Return Home
+## a class's starting bar: its six spells, then on the consumable slots a
+## draught, food and a drink for a class with mana
 static func default_bar(archetype: Dictionary) -> Array:
 	var out: Array = archetype.bar.duplicate()
 	var drink = "item:" + STARTER_DRINK if archetype.get("resources", {}).has("mana") else null
-	out.append_array(["item:healing_draught", "item:" + STARTER_FOOD, drink, "returnHome"])
+	out.append_array(["item:healing_draught", "item:" + STARTER_FOOD, drink, null])
 	return out
 
 
@@ -57,7 +59,7 @@ static func _valid_entry(a) -> bool:
 	var ref = item_ref(a)
 	if ref != null:
 		return DB.items.has(ref)
-	return DB.abilities.has(a) and DB.abilities[a].get("bar", true) != false
+	return DB.abilities.has(a) and DB.abilities[a].get("bar", true) != false and not BELT_ABILITIES.has(a)
 
 
 ## what a bar entry is called, ability or item
@@ -84,15 +86,14 @@ static func free_spell_slot(s: Array) -> int:
 	return -1
 
 
-## what may sit in a utility slot: items, skill tools and portals, never class spells
+## what may sit in a consumable slot: items only
 static func utility_ok(a) -> bool:
-	var ab: Dictionary = DB.abilities.get(a, {}) if a else {}
-	return not a or item_ref(a) != null or ab.has("skill") or ab.get("kind") == "portal"
+	return not a or item_ref(a) != null
 
 
 ## may this ability sit on the bar (and show in the spellbook)?
 static func bar_ability(g, id) -> bool:
-	return DB.abilities.has(id) and DB.abilities[id].get("bar", true) != false and g.skills.knows_ability(id)
+	return DB.abilities.has(id) and DB.abilities[id].get("bar", true) != false and not BELT_ABILITIES.has(id) and g.skills.knows_ability(id)
 
 
 func _init(g) -> void:
@@ -124,7 +125,7 @@ func fits(a, index: int) -> bool:
 	if index < 0 or index >= BAR_SLOTS.size() or not is_slot_utility(index) or utility_ok(a):
 		return true
 	if game.hud:
-		game.hud.error("Only items and tools go on the utility bar")
+		game.hud.error("Only potions, food, drink and bandages go in these slots")
 	return false
 
 
@@ -224,16 +225,4 @@ func apply(saved: Array) -> void:
 		var free := free_spell_slot(slots)
 		if a and free >= 0 and not slots.has(a):
 			slots[free] = a
-	# bars saved before the utility slots: move Fishing and Set Camp there
-	if saved.size() < BAR_SLOTS.size():
-		for u in UTILITY_ABILITIES:
-			var at := slots.find(u)
-			var free := -1
-			for k in BAR_SLOTS.size():
-				if not slots[k] and is_slot_utility(k):
-					free = k
-					break
-			if at >= 0 and not is_slot_utility(at) and free >= 0:
-				slots[at] = null
-				slots[free] = u
 	_changed()

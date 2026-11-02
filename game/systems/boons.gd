@@ -1,6 +1,6 @@
 class_name Boons
 extends RefCounted
-## Timed boons (data/boons.json). Inspired: more experience for a while, so
+## Timed boons (data/abilities/boons.json). Inspired: more experience for a while, so
 ## the reward for curiosity is more play rather than skipped play. You are
 ## Inspired by reading a lore document for the first time, or by paying the
 ## bard at the Ford Inn for a tale (once a day). The clock runs only while

@@ -1,0 +1,33 @@
+{
+  "files": {
+    "items": "items/items.json",
+    "rarities": "items/rarities.json",
+    "loot_tables": "items/loot_tables.json",
+    "quests": "quests/quests.json",
+    "dialogue": "quests/dialogue.json",
+    "npcs": "npcs/npcs.json",
+    "shops": "npcs/shops.json",
+    "factions": "npcs/factions.json",
+    "infamy": "npcs/infamy.json",
+    "titles": "npcs/titles.json",
+    "abilities": "abilities/abilities.json",
+    "archetypes": "abilities/archetypes.json",
+    "spell_fx": "abilities/spell_fx.json",
+    "builds": "abilities/builds.json",
+    "boons": "abilities/boons.json",
+    "skills": "professions/skills.json",
+    "recipes": "professions/recipes.json",
+    "forge": "professions/forge.json",
+    "enchanting": "professions/enchanting.json",
+    "gems": "professions/gems.json",
+    "mining": "professions/mining.json",
+    "nodes": "professions/nodes.json",
+    "world": "world/world.json",
+    "scenery": "world/scenery.json",
+    "world_map": "world/world_map.json",
+    "text": "ui/text.json",
+    "credits": "meta/credits.json",
+    "enemies": "npcs/enemies.json",
+    "model_colliders": "world/model_colliders.json"
+  }
+}

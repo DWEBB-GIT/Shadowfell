@@ -17,7 +17,7 @@ import { SPELLS } from '../systems/spells.js';
 // Warden's Brace raises the shield and turns aside the next blow. There is
 // no dodge roll or sprint.
 //
-// Spells (abilities with a `kind` in data/abilities.json) are run by the
+// Spells (abilities with a `kind` in data/abilities/abilities.json) are run by the
 // spell engine (src/systems/spells.js); the player only holds the cast in
 // progress, so nothing else can start while it fills.
 

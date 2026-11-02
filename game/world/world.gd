@@ -5,6 +5,9 @@ extends RefCounted
 ## warm light sources and mist. Registers obstacles with collision and
 ## examine points with the interaction system.
 
+const Entrance := preload("res://game/world/building_entrance.gd")
+const LIGHT_FIXTURE_LAYER := 1 << 19
+
 var game
 var group: Node3D
 var flicker_lights: Array = []
@@ -15,7 +18,7 @@ var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
-var see_through: SeeThrough ## fades houses that hide you
+var see_through: SeeThrough ## houses with the see-through circle
 
 
 func _init(g) -> void:
@@ -27,17 +30,11 @@ func _init(g) -> void:
 func build() -> World:
 	land = Land.new(game, group)
 	for p in Layout.props:
-		var obj := Assets.instance(p.model)
+		var obj := prop_instance(p)
 		var x: float = p.position[0]
 		var z: float = p.position[1]
-		obj.position = Vector3(x, Terrain.height_at(x, z), z)
-		obj.rotation.y = deg_to_rad(p.get("rotation", 0))
-		if p.get("tilt"):
-			obj.rotation.z = -deg_to_rad(p.tilt)
-		if p.get("scale"):
-			obj.scale = Vector3.ONE * p.scale
 		group.add_child(obj)
-		_add_collider(p, x, z)
+		_add_collider(p, x, z, obj)
 		if p.get("examine"):
 			var off: Array = p.get("examineOffset", [0, 0])
 			var r := deg_to_rad(p.get("rotation", 0))
@@ -55,13 +52,84 @@ func build() -> World:
 	return self
 
 
-func _add_collider(p: Dictionary, x: float, z: float) -> void:
+## props low enough to jump over: their height in metres (Collision `h`).
+## Anything else not listed is measured from its model, and counts as low
+## when its top is under JUMPABLE (a crate, a grave, a small rock).
+const LOW_PROPS := {"fence": 1.05}
+const JUMPABLE := 1.25
+
+
+## How high a placed prop stands above the ground under it (its meshes'
+## bounds, in the prop's own placement), or INF when it has no meshes.
+static func prop_height(obj: Node3D, ground: float) -> float:
+	var top := -INF
+	var stack := [[obj, obj.transform]]
+	while stack:
+		var it: Array = stack.pop_back()
+		var n: Node = it[0]
+		var xf: Transform3D = it[1]
+		if n is VisualInstance3D:
+			top = maxf(top, (xf * (n as VisualInstance3D).get_aabb()).end.y)
+		for c in n.get_children():
+			if c is Node3D:
+				stack.append([c, xf * (c as Node3D).transform])
+	return top - ground if top > -INF else INF
+
+
+## Shared by world construction and authoring round-trip checks.
+static func prop_instance(p: Dictionary) -> Node3D:
+	var obj := Assets.instance(p.model)
+	var x: float = p.position[0]
+	var z: float = p.position[1]
+	obj.position = Vector3(x, Terrain.height_at(x, z) + p.get("heightOffset", 0.0), z)
+	obj.rotation.y = deg_to_rad(p.get("rotation", 0))
+	if p.get("tilt"):
+		obj.rotation.z = -deg_to_rad(p.tilt)
+	if p.get("scale"):
+		obj.scale = Vector3.ONE * p.scale
+	if p.has("scale3"):
+		obj.scale = Vector3(p.scale3[0], p.scale3[1], p.scale3[2])
+	if p.has("rotation3"):
+		obj.rotation_degrees = Vector3(p.rotation3[0], p.rotation3[1], p.rotation3[2])
+	if p.has("tint"):
+		Assets.tint_instance(obj, Color(p.tint))
+	if str(p.model).get_file().get_basename() in ["lamp_post", "torch"]:
+		mark_light_fixture(obj)
+	# the nature pack: trees, rocks and plants open a see-through circle
+	# around the player instead of hiding them
+	if str(p.model).contains("/environment/nature/"):
+		Assets.use_cutaway(obj)
+	return obj
+
+
+static func mark_light_fixture(root: Node3D) -> void:
+	# A flame must not be enclosed by its own fixture in the local shadow map.
+	# The sun still casts the posts' silhouettes; fixture lights skip this layer.
+	if root is GeometryInstance3D:
+		root.layers = LIGHT_FIXTURE_LAYER
+	for mesh in root.find_children("*", "GeometryInstance3D", true, false):
+		mesh.layers = LIGHT_FIXTURE_LAYER
+
+
+func _add_collider(p: Dictionary, x: float, z: float, obj: Node3D = null) -> void:
 	var col = p.get("collider")
+	# a model with a measured footprint (trees at the trunk, rocks at the
+	# base) uses that, whatever the placement says
+	var measured = model_collider(str(p.model))
+	if measured != null:
+		col = measured
 	if not col:
 		return
 	var s: float = p.get("scale", 1.0)
+	if p.has("scale3"):
+		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
+	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
+	if h == INF and obj != null:
+		var measured := prop_height(obj, Terrain.height_at(x, z))
+		if measured <= JUMPABLE:
+			h = measured
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
-		game.collision.add(x, z, col * s)
+		game.collision.add(x, z, col * s, false, h)
 		return
 	if typeof(col) == TYPE_DICTIONARY and col.has("box"):
 		# a closed box (a cottage): its four walls
@@ -72,7 +140,22 @@ func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	# compound collider: offsets in the prop's local space
 	var r := deg_to_rad(p.get("rotation", 0))
 	for c in col:
-		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s)
+		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s, false, h)
+
+
+static var _model_colliders = null
+
+## the measured footprint of a model, by file name
+## (data/world/model_colliders.json), or null
+static func model_collider(model: String):
+	if _model_colliders == null:
+		_model_colliders = {}
+		var path := DataPaths.path_for("model_colliders")
+		if FileAccess.file_exists(path):
+			var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if d is Dictionary:
+				_model_colliders = d.get("models", {})
+	return _model_colliders.get(model.get_file().get_basename())
 
 
 ## walls as rows of small circles, from [x1, z1, x2, z2] segments in the
@@ -117,18 +200,19 @@ func _build_buildings() -> void:
 		g.name = b.id
 		g.position = Vector3(x, Terrain.height_at(x, z) - 0.1, z)
 		g.add_child(Assets.instance(b.shell))
+		g.add_child(Entrance.approach(b))
 		var fade := []
 		for m in [b.front, b.roof]:
-			var obj := Assets.instance(m)
+			var obj := Entrance.make_front(b) if m == b.front else Assets.instance(m)
 			fade.append({"obj": obj, "mats": Rig.isolate_materials(obj)})
 			g.add_child(obj)
-		if b.get("light"):
+		if b.get("light") and not ProjectSettings.get_setting("shadowfell/lighting/pooled", true):
 			var light := Tex.point_light(Color("ffa050"), 4, 10, 1.4)
 			light.position = Vector3(b.light[0], 1.1, b.light[1])
 			g.add_child(light)
 			flicker_lights.append({"light": light, "base": 4.0, "seed": x})
 		group.add_child(g)
-		_wall_colliders(x, z, 0, b.walls, 0.28, true) # building walls block sight
+		_wall_colliders(x, z, 0, Entrance.walls(b), 0.28, true) # building walls block sight
 		for f in b.get("furniture", []):
 			game.collision.add(x + f[0], z + f[1], f[2])
 		var w: float = b.size[0]
@@ -204,7 +288,12 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 	return false
 
 
+## The see-through circle is for when you are outside and something stands
+## between you and the camera. Inside a building (its front and roof already
+## lift away) it is switched off: camera and focus at one point cut nothing.
 func set_cutaway(camera_pos: Vector3, focus: Vector3) -> void:
+	if indoors != null:
+		camera_pos = focus
 	land.set_cutaway(camera_pos, focus)
 
 
@@ -236,7 +325,7 @@ func _add_lights() -> void:
 		var x: float = l.position[0]
 		var z: float = l.position[1]
 		var light: OmniLight3D = null
-		if not l.get("noLight"):
+		if not l.get("noLight") and not ProjectSettings.get_setting("shadowfell/lighting/pooled", true):
 			light = Tex.point_light(Color(l.color) if l.get("color") is String else Color("ffa860"), l.intensity, l.distance, 1.6)
 			light.position = Vector3(x, Terrain.height_at(x, z) + l.height, z)
 			group.add_child(light)
@@ -287,16 +376,19 @@ func _add_lights() -> void:
 			flame.mesh = fc
 			var fm := _unshaded(Color("ffa040"))
 			fm.disable_fog = true
+			flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			flame.material_override = fm
 			flame.position.y = 1.42
 			var gm := Tex.fx_material(Tex.glint(), Color(Color("ffa050"), 0.8), true, true)
 			gm.disable_fog = true
 			var glow := Tex.sprite(gm)
+			glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			glow.scale = Vector3.ONE * 2.2
 			glow.position.y = 1.45
 			for n in [post, bowl, flame, glow]:
 				brazier.add_child(n)
 			brazier.position = Vector3(x, Terrain.height_at(x, z), z)
+			mark_light_fixture(brazier)
 			group.add_child(brazier)
 			flames.append({"flame": flame, "glow": glow, "seed": randf() * 10})
 			game.collision.add(x, z, 0.35)
@@ -426,6 +518,8 @@ static func _box(size: Vector3, c: Color, unshaded: bool) -> MeshInstance3D:
 const MIST_REPEAT := 96.0
 
 func _add_mist() -> void:
+	if RenderingServer.get_current_rendering_method() == "forward_plus":
+		return
 	for i in 10:
 		var mat := Tex.fx_material(Tex.mist(), Color(Color("b8c4c0"), 0.22), false)
 		mat.render_priority = 1
@@ -487,7 +581,6 @@ func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
 	town.update(dt)
-	see_through.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3
 		var z: float = m.z + MIST_REPEAT * roundf((focus.z - m.z) / MIST_REPEAT) + cos(time * 0.04 + m.seed) * 2

@@ -1,0 +1,208 @@
+{
+  "_about": "Player-facing writing that is not owned by an item, npc or quest: the intro, readable documents and examine text. A document with `lore: true` makes you Inspired the first time you read it (boons.json).",
+  "intro": "You came up the Fallen Road for work, not glory. A blacksmith named Mara Venn will pay for word of a missing iron delivery. That is reason enough.",
+  "documents": {
+    "torn_page": {
+      "title": "A Torn Page",
+      "lore": true,
+      "body": [
+        "<p class=\"doc-head\">Half a page, torn from a ledger, trodden into the road</p>",
+        "<p>...paid in full for the bells, six, small. Hollin's man to take them up the Fallen Road and leave them where he is told, and not at the chapel, whatever the priest says.</p>",
+        "<p>The hedge-lads to keep the road quiet while it is done. Pay them in the new silver. They will not ask where it comes from. They never do.</p>",
+        "<p class=\"doc-margin\">Below, pressed into the paper rather than written: a circle with a line drawn across it, like an eye kept shut.</p>"
+      ]
+    },
+    "blackhedge_orders": {
+      "title": "Folded Orders",
+      "lore": true,
+      "body": [
+        "<p class=\"doc-head\">A square of good paper, folded small, in a hand far neater than any Blackhedge man's</p>",
+        "<p>Keep the drain at Ashby's running foul until the harvest is in and the farms are at each other's throats. Folk who hate their neighbours do not look up the road.</p>",
+        "<p>Take what pigs you like. Let Corrick blame Ashby. Let the reeve blame you, if he must; you will be paid for the trouble.</p>",
+        "<p>Burn this.</p>",
+        "<p class=\"doc-margin\">It is sealed with black wax, pressed with a closed eye.</p>"
+      ]
+    },
+    "manifest": {
+      "title": "Carriage Manifest",
+      "lore": true,
+      "body": [
+        "<p class=\"doc-head\">HOLLIN &amp; DAUGHTERS, CARTERS<br>Fallen Road toll, third day of Thawmonth</p>",
+        "<p><b>Consignment:</b> grave-iron, <s>twelve</s> <i>nine</i> bars, bearing the mark of Venn's forge.</p>",
+        "<p><b>For:</b> the quartermaster at the old watch post, Ashford Rise.</p>",
+        "<p><b>Driver:</b> <span class=\"scratched\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> &mdash; scored out hard enough to tear the paper.</p>",
+        "<p><b>Also carried:</b> six bells, small, for the chapel.</p>",
+        "<p class=\"doc-margin\">Along the margin, in a different hand:<br>&ldquo;Not the bells. Whatever he tells you, the bells do not go into the ground at Hallow Cut. Bring them back with the iron.&rdquo;</p>"
+      ]
+    }
+  },
+  "examine": {
+    "cart": "A merchant cart, dragged off the road and abandoned. One wheel is gone and the chest in the bed has been forced. Whoever did it was not interested in the iron.",
+    "waymarker": "An old road marker. The distance to the watch post has been chiselled away, and someone has scratched a small bell beneath it.",
+    "hallow_cut": "Timber grave markers, newer than anything else on this road. A small bell hangs from each. The earth around them has been turned recently.",
+    "watch_post": "The door of the watch post is barred from the outside. Nobody has come or gone in some time.",
+    "blackwood_edge": "A standing stone at the edge of the pines, older than the road. A rune on its face gives off a cold green light, and fresh claw marks score its base.",
+    "hound_den": "Gnawed bones, some of them still in boots. The barrow wolves den here, and they do not like visitors.",
+    "archer_camp": "A smashed crate stamped with the watch tower. Arrows, no bowstrings, and a cold fire. The archers here stopped needing to eat some time ago.",
+    "seer_stones": "A ring of stones lit with witchlight. Grave-iron bars have been driven into the earth at its heart, nine of them, in a circle. So this is where Mara's iron went.",
+    "shrine_first": "The candles are fresh and someone has left bread in the bowl this morning. Whoever keeps this shrine is not far away.",
+    "well": "The well is deep and the water sweet. Someone has scratched the names of the drowned along the rim; the list stops forty years ago.",
+    "ashby_field": "Barley, or what was barley. The stalks have gone grey and slick, and the ground under them is black and smells of a cellar. It is worst at the south end, by the hedge, and fades the further north you walk.",
+    "boundary_stone": "The old stone that marks where Ashby land ends and Corrick land begins. The turf around its foot has been lifted and laid back, more than once, by someone careful. Underneath is a hollow just big enough for a letter.",
+    "ashby_drain": "A stone culvert mouth, half sunk in the bank. Black water seeps out of it into the Ashby barley. It runs back under the hedge, under Corrick land, to the old graves on the hill. The capstones have been lifted and set back, and not long ago: the moss is torn. In the mud there are boot prints, big and hobnailed. Not a farmer's.",
+    "blackhedge_camp": "From behind the rock you can see the camp: a fire, a lean-to, crates from carts that never reached Brackenford. Six of them that you can count, knotted black rags round their arms, and a big man in a red coat who never sits down. They are better armed than you and there are more of them. Not today.",
+    "harl_strongbox": "Under the coin and the cheap rings, a letter, sealed in grey wax pressed with a closed eye: 'For the Ashby business. Sour the ground, set the two houses at each other, and the land will come cheap. Payment as agreed. Further work to follow.' It is not signed.",
+    "blackhedge_pigpen": "A pen of hurdles behind the camp, and three fat pigs in it, every one with a notch cut in its left ear. Somebody is eating well on Bram Corrick's account.",
+    "fairy_ring": "A ring of pale toadstools that glow faintly, brighter when you look away. The grass inside is greener than it has any right to be. At the edge someone has left a saucer of milk and a coffin nail bent into a hook: the old way of asking the Gentry a favour, or of paying one back.",
+    "poi:tf_town": "An old trading village sheltering the last watch on the western road.",
+    "poi:tf_cairn": "A winter-work chit is pinched inside the lantern: ROOK & SONS — CONTINUANCE OF SERVICE. The worker’s date of burial precedes the chit by twenty-three years. The payment column is blank.",
+    "poi:tf_camp": "The foresters left their axes behind. Wolves circle the old camp.",
+    "poi:tf_hollow": "Fresh pawprints turn through the briars. A narrow path rejoins the watch road to the east.",
+    "poi:tf_watch": "Orders nailed under the watch bell carry a rook-shaped seal. “Relief deferred pending settlement.” A watchman has scratched beneath it: WHO RELIEVES THE DEAD?",
+    "poi:tf_shrine": "The old charter reads: “A day’s service ends at dusk. The dead owe no labour.” New nail holes surround it. Someone hung a different notice over the limit.",
+    "poi:tf_orchard": "The orchard lane forms a second way back from the old watch road.",
+    "poi:vr_willow": "Willows lean over clear water. Tobin keeps his tackle beside the landing.",
+    "poi:vr_mill": "A quiet pool west of the inn. A good place to fish away an afternoon.",
+    "poi:vr_hall": "The winter relief contract bought three carts of grain. Alder’s signature is clear. The continuation clause below it was inserted in a different ink.",
+    "poi:vr_meadow": "The boars have broken the orchard fence. A timber chit tied to a post is stamped DELAYED — STAFF REASSIGNED. Heda has added: THE PIGS ARE NOT WAITING.",
+    "poi:vr_graves": "Three family names were scraped away, then copied onto a collection roll. Beside each is an old settled debt and the words SERVICE CONTINUES. The youngest stone simply says “a good father”.",
+    "poi:vr_hollow": "Three shuttered homes shelter beneath the black trees. Morrow still tends the apothecary.",
+    "poi:vr_crypt": "Family seals hang from the keeper’s chain beside a winter account book. One forwarding address survives: Rook & Sons, Rillbank Office. The crypt is a burial place made into a counting house.",
+    "poi:vr_pool": "No birds drink here. Patient anglers sometimes see a second moon beneath the water.",
+    "poi:vr_boundary": "The old stone points to a hedge north of the timber trail. Osric's new fence is three paces over the line. A faded village seal confirms Heda's claim.",
+    "poi:vr_briar_den": "Pig bristles cling to the briars. A lone wolf has been using this run to reach Holt Farm.",
+    "nr_master": "A straight stamp crosses the master measure’s joint. Iren marks it after each check. This stamp is intact.",
+    "nr_witness": "The gauge’s witness stamp is split at its hinge. It has slipped. The extra length is wear, not a new official inch.",
+    "nr_willow_notes": "Perch shelter under the reed shade. Small rings form where insects touch the quiet water. Tobin’s notebook asks for what you see, not an impressive story.",
+    "nr_mill_notes": "Here the bank is open and the breeze ripples the surface. Fish turn below the dock’s shadow. Two nearby waters offer different shelter.",
+    "nr_road_mark": "A cut stump shows a boot and an arrow pointing home. Under it: “KEEP THE PALE BOULDER ON YOUR RIGHT ON THE WAY OUT.” Someone planned for the return journey.",
+    "nr_camp_mark": "A pale stone marks the safe camp approach. Its back bears the same boot, pointing toward Thornford. The route works both ways; the reverse face is the part people forget.",
+    "nr_shelter_boots": "Adult bootprints go in. Smaller boots follow. All leave by the same path. There are no drag marks and no wolf tracks inside the shelter.",
+    "nr_shelter_note": "“Borrowed one kettle. Returning it when the little one stops shivering. — D.” Under it, in Fen’s hand: KEEP THE KETTLE. BRING YOURSELVES BACK.",
+    "nr_label_shelf": "Left tray: sleeping draught, taken by mouth. Right tray: boot liniment, external use. Two labels slipped off. The shelf list is correct; the loose labels are the problem.",
+    "nr_bee_box": "The old bee box is quiet. Its rain flap has collapsed over the opening. No monster, no curse: a small roof badly overdue for repair.",
+    "nr_blossom": "Few insects visit the blossoms here. The leaves are sound and the flowers undamaged. Heda can try moving the box and mending its rain flap.",
+    "nr_water_board": "COMMON WATER AGREEMENT. Orchard: only a trickle for the roots. Mill: full flow while the wheel turns. Pond: a trickle must always remain. No household receives a private river. A smaller hand adds: THIS INCLUDES YOU, OSRIC.",
+    "nr_memorial_verse": "“From the hearth we first are carried; by the sheaf our days are fed. By the lantern we come homeward; then in rest we name our dead.” Four small bells bear these same symbols. Lyra has pencilled: One verse. No speed required.",
+    "poi:nr_water_place": "Three handles divide a shared supply. The board northwest of Willow Pond sets out the agreement.",
+    "poi:nr_memorial_place": "Four small memorial bells stand beside a verse. The collector used the great bell; these belong to the families."
+  },
+  "title": {
+    "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "build": "Alpha 0.1",
+    "tagline": "The Fallen Road",
+    "maxCharacters": 10,
+    "classes": [
+      {
+        "id": "warden",
+        "name": "Warrior",
+        "archetype": "warden",
+        "role": "Weapon master",
+        "blurb": "Steel, shield and stubbornness. The last one standing.",
+        "traits": [
+          "Strength",
+          "Plate, mail, leather, cloth",
+          "Resolve",
+          "Strong: area damage, long fights. Weak: escaping, ranged foes"
+        ]
+      },
+      {
+        "id": "rogue",
+        "name": "Rogue",
+        "archetype": "rogue",
+        "role": "Shadow assassin",
+        "blurb": "Strike from the shadows. Gone before they fall.",
+        "traits": [
+          "Agility",
+          "Leather, cloth",
+          "Energy and combo points",
+          "Strong: single-target burst, control. Weak: packs, long fights"
+        ]
+      },
+      {
+        "id": "ranger",
+        "name": "Ranger",
+        "archetype": "ranger",
+        "role": "Trapper and archer",
+        "blurb": "Bow, trap and hound. The wild is your weapon.",
+        "traits": [
+          "Agility",
+          "Leather, cloth",
+          "Focus",
+          "Strong: control, fire spread, escaping. Weak: being cornered"
+        ]
+      },
+      {
+        "id": "occultist",
+        "name": "Occultist",
+        "archetype": "occultist",
+        "role": "Curse-caster",
+        "blurb": "Rot and ruin. Your foes die slowly. You don't.",
+        "traits": [
+          "Intellect",
+          "Cloth",
+          "Mana and Corruption",
+          "Strong: spread damage, survival. Weak: burst, moving fights"
+        ]
+      },
+      {
+        "id": "paladin",
+        "name": "Paladin",
+        "archetype": "paladin",
+        "role": "Holy juggernaut",
+        "blurb": "Holy fury in heavy plate. Unmoving. Unbreakable.",
+        "traits": [
+          "Strength",
+          "Plate, mail, leather, cloth",
+          "Mana",
+          "Strong: big crits, toughness. Weak: speed, chasing"
+        ]
+      }
+    ],
+    "names": {
+      "first": [
+        "Aldric",
+        "Bryn",
+        "Cael",
+        "Dorrin",
+        "Edda",
+        "Fenn",
+        "Garrow",
+        "Hale",
+        "Isolde",
+        "Jory",
+        "Kestrel",
+        "Lorne",
+        "Maud",
+        "Nessa",
+        "Osric",
+        "Perrin",
+        "Quill",
+        "Rowan",
+        "Sable",
+        "Tamsin",
+        "Ulric",
+        "Vesna",
+        "Wren",
+        "Yorick"
+      ],
+      "last": [
+        "Ashford",
+        "Blackmere",
+        "Coldwater",
+        "Duskhollow",
+        "Emberly",
+        "Fallowe",
+        "Greyholt",
+        "Hollin",
+        "Ironside",
+        "Marsh",
+        "Nettle",
+        "Ravenscar",
+        "Stour",
+        "Thorne",
+        "Wexley"
+      ]
+    }
+  }
+}

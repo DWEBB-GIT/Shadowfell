@@ -1,0 +1,3724 @@
+{
+  "_about": "The world: regions, roads, where the player starts, shrines, named locations (for quests and the map), and where npcs, enemies and loot are placed. Positions are [x, z] in metres; north is -z. Positions are world positions (see world_map.json; Act 1 sits at its act1Offset). `regions`: Brackenford (`town`: [x, z, radius]), then Act 1's regions and the world's zones, each {id, name, levels}; which one you are in comes from the map, not the record. `roads` are drawn streets only (the world's roads come from world_map.json). A pond with `carved` is a lake baked into the ground, with `rx`/`rz` for an oval. `water`: ponds you can fish (a loot table of fish). `obscured`: areas too dark to enter without a torch. `chests`: chests to open, with `items`, `coins` (silver: a number, or a range {min, max} rolled when opened) and an optional `lock` ({key: item id, pick: Lockpicking rank}). placedLoot with `respawn` (seconds) is a gathering node: it grows back after it is taken; `scale` resizes its model; `quest` makes it takeable (and sparkle) only while that quest is active and still needs the item. `gates`: a gateway on a `line` that blocks until any of its `opensWhen` conditions holds (`shut`: never opens); `ring` is the stage of the opening it closes. `townWalls`: palisades along `lines`. `houses`: kit-built buildings you cannot enter (`roof`: thatch, slate or tile; `walls`: plaster, timber or stone).",
+  "bounds": {
+    "minX": -2560,
+    "maxX": 2560,
+    "minZ": -3840,
+    "maxZ": 3840
+  },
+  "regions": [
+    {
+      "id": "brackenford",
+      "name": "Brackenford",
+      "levels": "1-6",
+      "town": [
+        -620,
+        437,
+        75
+      ]
+    },
+    {
+      "id": "bracken_vale",
+      "name": "Bracken Vale",
+      "levels": "1-6"
+    },
+    {
+      "id": "stillwater",
+      "name": "Stillwater",
+      "levels": "6-9"
+    },
+    {
+      "id": "sallow_downs",
+      "name": "Sallow Downs",
+      "levels": "Act 2"
+    },
+    {
+      "id": "blackwood",
+      "name": "The Blackwood",
+      "levels": "6-10"
+    },
+    {
+      "id": "hallow_cut",
+      "name": "Hallow Cut",
+      "levels": "Later act"
+    },
+    {
+      "id": "barrow_fields",
+      "name": "Barrow Fields",
+      "levels": "Later act (around 20)"
+    },
+    {
+      "id": "wrack",
+      "name": "The Wrack",
+      "levels": "6-12"
+    },
+    {
+      "id": "kingsfold",
+      "name": "The Kingsfold",
+      "levels": "15-25"
+    },
+    {
+      "id": "elderholt",
+      "name": "The Elderholt",
+      "levels": "15-25"
+    },
+    {
+      "id": "mirefen",
+      "name": "The Mirefen",
+      "levels": "15-25"
+    },
+    {
+      "id": "sump",
+      "name": "Blackwater Sump",
+      "levels": "25-35"
+    },
+    {
+      "id": "howes",
+      "name": "The Howe Moors",
+      "levels": "20-30"
+    },
+    {
+      "id": "witherwood",
+      "name": "The Witherwood",
+      "levels": "25-35"
+    },
+    {
+      "id": "scarrow",
+      "name": "The Scarrow",
+      "levels": "20-30"
+    },
+    {
+      "id": "greyfells",
+      "name": "The Grey Fells",
+      "levels": "35-45"
+    },
+    {
+      "id": "scour",
+      "name": "The Scour",
+      "levels": "35-45"
+    },
+    {
+      "id": "sunder",
+      "name": "Sunder Strand",
+      "levels": "30-40"
+    },
+    {
+      "id": "tanglewild",
+      "name": "The Tanglewild",
+      "levels": "40-50"
+    },
+    {
+      "id": "hoarlands",
+      "name": "The Hoarlands",
+      "levels": "45-55"
+    },
+    {
+      "id": "embercrown",
+      "name": "Embercrown",
+      "levels": "50-60"
+    }
+  ],
+  "roads": [
+    {
+      "id": "town_street",
+      "name": "Ford Street",
+      "kind": "lane",
+      "halfWidth": 2.2,
+      "points": [
+        [
+          -620,
+          397
+        ],
+        [
+          -625,
+          415
+        ],
+        [
+          -626,
+          433
+        ],
+        [
+          -626,
+          447
+        ],
+        [
+          -622,
+          459
+        ],
+        [
+          -616,
+          468
+        ],
+        [
+          -610,
+          476
+        ]
+      ]
+    },
+    {
+      "id": "market_lane",
+      "name": "Market Lane",
+      "kind": "lane",
+      "halfWidth": 2,
+      "points": [
+        [
+          -549,
+          452
+        ],
+        [
+          -565,
+          450
+        ],
+        [
+          -585,
+          446
+        ],
+        [
+          -600,
+          442
+        ],
+        [
+          -614,
+          441
+        ]
+      ]
+    }
+  ],
+  "playerStart": {
+    "position": [
+      -402,
+      435
+    ],
+    "facing": 180
+  },
+  "shrines": [
+    {
+      "id": "shrine_road",
+      "position": [
+        -379.4,
+        438.2
+      ],
+      "rotation": -90,
+      "label": "at the roadside shrine"
+    },
+    {
+      "id": "shrine_blackwood",
+      "position": [
+        -584.4,
+        -50
+      ],
+      "rotation": -90,
+      "label": "at the shrine at the forest edge"
+    }
+  ],
+  "locations": [
+    {
+      "id": "cart",
+      "name": "The abandoned cart",
+      "position": [
+        -395.3,
+        429
+      ],
+      "radius": 5
+    },
+    {
+      "id": "hallow_cut",
+      "name": "Hallow Cut",
+      "position": [
+        -209.5,
+        -305
+      ],
+      "radius": 9
+    },
+    {
+      "id": "watch_post",
+      "name": "The watch post",
+      "position": [
+        -206,
+        -2
+      ],
+      "radius": 6
+    },
+    {
+      "id": "hound_den",
+      "name": "The wolf den",
+      "position": [
+        -735,
+        -195.5
+      ],
+      "radius": 7
+    },
+    {
+      "id": "archer_camp",
+      "name": "The archers' camp",
+      "position": [
+        -459.4,
+        -215
+      ],
+      "radius": 7
+    },
+    {
+      "id": "seer_glade",
+      "name": "The seer's glade",
+      "position": [
+        -640.4,
+        -375
+      ],
+      "radius": 8
+    },
+    {
+      "id": "stillwater_mere",
+      "name": "Stillwater Mere",
+      "position": [
+        -862,
+        219
+      ],
+      "radius": 6
+    },
+    {
+      "id": "barrow_hollow",
+      "name": "The Barrow Hollow",
+      "position": [
+        -970,
+        -250
+      ],
+      "radius": 6
+    },
+    {
+      "id": "brackenford",
+      "name": "Brackenford",
+      "position": [
+        -620,
+        437
+      ],
+      "radius": 16
+    },
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "position": [
+        -610,
+        433
+      ],
+      "radius": 6
+    },
+    {
+      "id": "blackwood_deadfall",
+      "name": "Deadfall in the Blackwood",
+      "position": [
+        -587,
+        -51
+      ],
+      "radius": 9
+    },
+    {
+      "id": "hallow_cut_ore",
+      "name": "Ore in Hallow Cut",
+      "position": [
+        -208,
+        -307
+      ],
+      "radius": 7
+    },
+    {
+      "id": "ashby_farm",
+      "name": "Ashby farm",
+      "position": [
+        -441,
+        297
+      ],
+      "radius": 8
+    },
+    {
+      "id": "corrick_farm",
+      "name": "Corrick farm",
+      "position": [
+        -441,
+        278
+      ],
+      "radius": 7
+    },
+    {
+      "id": "boundary_stone",
+      "name": "The boundary stone",
+      "position": [
+        -432.5,
+        286.5
+      ],
+      "radius": 3
+    },
+    {
+      "id": "old_drain",
+      "name": "The old drain",
+      "position": [
+        -441,
+        291
+      ],
+      "radius": 4
+    },
+    {
+      "id": "boar_runs",
+      "name": "The boar runs",
+      "position": [
+        -750,
+        350
+      ],
+      "radius": 11
+    },
+    {
+      "id": "wolf_ridge",
+      "name": "Wolf ridge",
+      "position": [
+        -730,
+        215
+      ],
+      "radius": 6
+    },
+    {
+      "id": "tannery",
+      "name": "Agna's tannery",
+      "position": [
+        -602,
+        445
+      ],
+      "radius": 4
+    },
+    {
+      "id": "blackhedge_camp",
+      "name": "Blackhedge camp",
+      "position": [
+        -825,
+        -40
+      ],
+      "radius": 8
+    },
+    {
+      "id": "blackhedge_lookout",
+      "name": "The lookout rock",
+      "position": [
+        -814.5,
+        -31.5
+      ],
+      "radius": 3
+    },
+    {
+      "id": "granary",
+      "name": "The Ashby granary",
+      "position": [
+        -446,
+        300
+      ],
+      "radius": 5
+    },
+    {
+      "id": "fairy_ring",
+      "name": "The Fairy Ring",
+      "position": [
+        -910,
+        -115
+      ],
+      "radius": 4
+    },
+    {
+      "id": "wolf_hollow",
+      "name": "Wolf Hollow",
+      "position": [
+        -780.5,
+        254.5
+      ],
+      "radius": 6
+    },
+    {
+      "id": "prowler_runs",
+      "name": "The Prowler Runs",
+      "position": [
+        -516,
+        -181
+      ],
+      "radius": 7
+    },
+    {
+      "id": "ogre_deadfall",
+      "name": "The Ogre's Deadfall",
+      "position": [
+        -575,
+        -49
+      ],
+      "radius": 6
+    },
+    {
+      "id": "blackpool",
+      "name": "The Blackpool",
+      "position": [
+        -663.1,
+        -343.6
+      ],
+      "radius": 9
+    },
+    {
+      "id": "blackwood_herbs",
+      "name": "Bloodroot in the Blackwood",
+      "position": [
+        -650,
+        -340
+      ],
+      "radius": 40
+    },
+    {
+      "id": "tf_town",
+      "name": "Thornford",
+      "position": [
+        -450,
+        -207
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_cairn",
+      "name": "The Fallen Lantern",
+      "position": [
+        -465,
+        -300
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_camp",
+      "name": "Briarwood Camp",
+      "position": [
+        -575,
+        -275
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_hollow",
+      "name": "Wolf Hollow",
+      "position": [
+        -555,
+        -360
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_watch",
+      "name": "Old Watch Ruins",
+      "position": [
+        -450,
+        -425
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_shrine",
+      "name": "Dawnstone Shrine",
+      "position": [
+        -415,
+        -485
+      ],
+      "radius": 20
+    },
+    {
+      "id": "tf_orchard",
+      "name": "Holt Orchard",
+      "position": [
+        -350,
+        -270
+      ],
+      "radius": 20
+    },
+    {
+      "id": "vr_willow",
+      "name": "Willow Pond",
+      "position": [
+        -395,
+        -172
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_mill",
+      "name": "Miller's Pool",
+      "position": [
+        -523,
+        -217
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_hall",
+      "name": "Thornford Town Hall",
+      "position": [
+        -453,
+        -165
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_meadow",
+      "name": "Holt Meadow",
+      "position": [
+        -332,
+        -309
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_graves",
+      "name": "The Nameless Yard",
+      "position": [
+        -343,
+        -456
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_hollow",
+      "name": "Mourning Hollow",
+      "position": [
+        -310,
+        -382
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_crypt",
+      "name": "The Bell Crypt",
+      "position": [
+        -313,
+        -486
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_pool",
+      "name": "Widow's Mirror",
+      "position": [
+        -297,
+        -404
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_boundary",
+      "name": "The Orchard Boundary",
+      "position": [
+        -369,
+        -264
+      ],
+      "radius": 18
+    },
+    {
+      "id": "vr_briar_den",
+      "name": "Briarjaw's Run",
+      "position": [
+        -303,
+        -282
+      ],
+      "radius": 18
+    },
+    {
+      "id": "nr_master",
+      "name": "Read Iren’s master measure",
+      "position": [
+        -431,
+        -195
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_witness",
+      "name": "Inspect the rejected gauge’s mark",
+      "position": [
+        -432,
+        -202
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_willow_notes",
+      "name": "Survey Willow Pond’s reed edge",
+      "position": [
+        -396,
+        -163
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_mill_notes",
+      "name": "Survey Miller’s Pool’s open bank",
+      "position": [
+        -526,
+        -209
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_road_mark",
+      "name": "Read the split-stump route mark",
+      "position": [
+        -512,
+        -268
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_camp_mark",
+      "name": "Read the pale-boulder route mark",
+      "position": [
+        -561,
+        -266
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_shelter_boots",
+      "name": "Inspect the shelter bootprints",
+      "position": [
+        -582,
+        -292
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_shelter_note",
+      "name": "Read the shelter’s borrowed-kettle note",
+      "position": [
+        -579,
+        -299
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_label_shelf",
+      "name": "Read the apothecary shelf list",
+      "position": [
+        -321,
+        -380
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_bee_box",
+      "name": "Check the orchard’s quiet bee box",
+      "position": [
+        -358,
+        -253
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_blossom",
+      "name": "Inspect the eastern blossom branch",
+      "position": [
+        -330,
+        -265
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_water_board",
+      "name": "Read the water-allocation board",
+      "position": [
+        -411,
+        -187
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_memorial_verse",
+      "name": "Read the memorial verse",
+      "position": [
+        -366,
+        -448
+      ],
+      "radius": 3
+    },
+    {
+      "id": "nr_water_place",
+      "name": "The Common Water",
+      "position": [
+        -411,
+        -182
+      ],
+      "radius": 8
+    },
+    {
+      "id": "nr_memorial_place",
+      "name": "The Four Small Bells",
+      "position": [
+        -366,
+        -443
+      ],
+      "radius": 8
+    },
+    {
+      "id": "wm_lantern_crossing",
+      "name": "Lantern Crossing",
+      "position": [
+        -208.0,
+        -176.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_lantern_crossing_worksite",
+      "name": "Lantern Crossing worksite",
+      "position": [
+        -248.0,
+        -140.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_mossreed_landing",
+      "name": "Mossreed Landing",
+      "position": [
+        -540.0,
+        -60.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_mossreed_landing_worksite",
+      "name": "Mossreed Landing worksite",
+      "position": [
+        -536.0,
+        -116.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_rillbank_quays",
+      "name": "Rillbank Quays",
+      "position": [
+        -80.0,
+        -240.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_rillbank_quays_worksite",
+      "name": "Rillbank Quays worksite",
+      "position": [
+        -48.0,
+        -196.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_millward",
+      "name": "Millward",
+      "position": [
+        -92.0,
+        -380.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_millward_worksite",
+      "name": "Millward worksite",
+      "position": [
+        -148.0,
+        -388.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_millward_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        -94.0,
+        -360.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_reedward",
+      "name": "Reedward Cooperative",
+      "position": [
+        -612.0,
+        128.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_reedward_worksite",
+      "name": "Reedward Cooperative worksite",
+      "position": [
+        -564.0,
+        132.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_pumpstead",
+      "name": "Pumpstead",
+      "position": [
+        -512.0,
+        224.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_pumpstead_worksite",
+      "name": "Pumpstead worksite",
+      "position": [
+        -548.0,
+        296.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_north_ferry",
+      "name": "Willow Ferry",
+      "position": [
+        20.0,
+        -476.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_north_ferry_worksite",
+      "name": "Willow Ferry worksite",
+      "position": [
+        -4.0,
+        -524.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_tollhouse_rise",
+      "name": "Tollhouse Rise",
+      "position": [
+        100.0,
+        -580.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_tollhouse_rise_worksite",
+      "name": "Tollhouse Rise worksite",
+      "position": [
+        152.0,
+        -560.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_stiltmarket",
+      "name": "Stiltmarket",
+      "position": [
+        -380.0,
+        44.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_stiltmarket_worksite",
+      "name": "Stiltmarket worksite",
+      "position": [
+        -464.0,
+        40.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_causeway_watch",
+      "name": "Causeway Watch",
+      "position": [
+        -292.0,
+        28.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_causeway_watch_worksite",
+      "name": "Causeway Watch worksite",
+      "position": [
+        -268.0,
+        -24.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_causeway_watch_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        -294.0,
+        48.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_greyroot",
+      "name": "Greyroot Refuge",
+      "position": [
+        412.0,
+        -556.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_greyroot_worksite",
+      "name": "Greyroot Refuge worksite",
+      "position": [
+        444.0,
+        -472.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_scribes_rest",
+      "name": "Scribes’ Hollow",
+      "position": [
+        524.0,
+        -396.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_scribes_rest_worksite",
+      "name": "Scribes’ Hollow worksite",
+      "position": [
+        484.0,
+        -408.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_brinewatch_docks",
+      "name": "Brinewatch Docks",
+      "position": [
+        -692.0,
+        68.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_brinewatch_docks_worksite",
+      "name": "Brinewatch Docks worksite",
+      "position": [
+        -628.0,
+        20.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_saltmere",
+      "name": "Saltmere Outpost",
+      "position": [
+        -580.0,
+        296.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_saltmere_worksite",
+      "name": "Saltmere Outpost worksite",
+      "position": [
+        -608.0,
+        328.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_highmere_market",
+      "name": "Highmere Market",
+      "position": [
+        280.0,
+        -820.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_highmere_market_worksite",
+      "name": "Highmere Market worksite",
+      "position": [
+        292.0,
+        -908.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_quarryend",
+      "name": "Quarryend",
+      "position": [
+        48.0,
+        -940.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_quarryend_worksite",
+      "name": "Quarryend worksite",
+      "position": [
+        92.0,
+        -904.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_quarryend_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        46.0,
+        -920.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_cinder_gate",
+      "name": "Cinder Gate",
+      "position": [
+        -380.0,
+        248.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_cinder_gate_worksite",
+      "name": "Cinder Gate worksite",
+      "position": [
+        -424.0,
+        236.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_ashworks",
+      "name": "Ashworks",
+      "position": [
+        -128.0,
+        420.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_ashworks_worksite",
+      "name": "Ashworks worksite",
+      "position": [
+        -80.0,
+        384.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_windscar",
+      "name": "Windscar Redoubt",
+      "position": [
+        -160.0,
+        -1132.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_windscar_worksite",
+      "name": "Windscar Redoubt worksite",
+      "position": [
+        -168.0,
+        -1076.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_high_pass",
+      "name": "Heatherpass Relay",
+      "position": [
+        152.0,
+        -1112.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_high_pass_worksite",
+      "name": "Heatherpass Relay worksite",
+      "position": [
+        116.0,
+        -1152.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_furnace_camp",
+      "name": "Redkiln Camp",
+      "position": [
+        104.0,
+        492.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_furnace_camp_worksite",
+      "name": "Redkiln Camp worksite",
+      "position": [
+        160.0,
+        500.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_ember_relay",
+      "name": "Ember Relay",
+      "position": [
+        220.0,
+        708.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_ember_relay_worksite",
+      "name": "Ember Relay worksite",
+      "position": [
+        176.0,
+        740.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_ember_relay_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        218.0,
+        728.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_frostgate",
+      "name": "Frostgate",
+      "position": [
+        -172.0,
+        -1388.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_frostgate_worksite",
+      "name": "Frostgate worksite",
+      "position": [
+        -176.0,
+        -1428.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_lantern_pass",
+      "name": "Rimepass",
+      "position": [
+        96.0,
+        -1404.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_lantern_pass_worksite",
+      "name": "Rimepass worksite",
+      "position": [
+        112.0,
+        -1332.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_hearthwatch",
+      "name": "Hearthwatch",
+      "position": [
+        260.0,
+        -1392.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_hearthwatch_worksite",
+      "name": "Hearthwatch worksite",
+      "position": [
+        208.0,
+        -1408.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_wellward",
+      "name": "Sable Well",
+      "position": [
+        -112.0,
+        1140.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_wellward_worksite",
+      "name": "Sable Well worksite",
+      "position": [
+        -64.0,
+        1116.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_caravan_rest",
+      "name": "Duneshade Rest",
+      "position": [
+        -292.0,
+        968.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_caravan_rest_worksite",
+      "name": "Duneshade Rest worksite",
+      "position": [
+        -312.0,
+        1024.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_dune_watch",
+      "name": "Dune Watch",
+      "position": [
+        60.0,
+        908.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_dune_watch_worksite",
+      "name": "Dune Watch worksite",
+      "position": [
+        40.0,
+        856.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_dune_watch_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        58.0,
+        928.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_whitebough",
+      "name": "Whitebough Hospice",
+      "position": [
+        620.0,
+        -1208.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_whitebough_worksite",
+      "name": "Whitebough Hospice worksite",
+      "position": [
+        668.0,
+        -1184.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_last_beacon",
+      "name": "Last Beacon",
+      "position": [
+        516.0,
+        -1412.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_last_beacon_worksite",
+      "name": "Last Beacon worksite",
+      "position": [
+        448.0,
+        -1400.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_saltroad",
+      "name": "Saltroad Caravanserai",
+      "position": [
+        228.0,
+        1052.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_saltroad_worksite",
+      "name": "Saltroad Caravanserai worksite",
+      "position": [
+        256.0,
+        1004.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_glass_road",
+      "name": "Glassroad Station",
+      "position": [
+        412.0,
+        1208.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_glass_road_worksite",
+      "name": "Glassroad Station worksite",
+      "position": [
+        400.0,
+        1264.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_north_ledger_gate",
+      "name": "Rimewatch Gate",
+      "position": [
+        664.0,
+        -1288.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_north_ledger_gate_worksite",
+      "name": "Rimewatch Gate worksite",
+      "position": [
+        608.0,
+        -1340.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_sunseal_court",
+      "name": "Sunseal Court",
+      "position": [
+        692.0,
+        1348.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_sunseal_court_worksite",
+      "name": "Sunseal Court worksite",
+      "position": [
+        748.0,
+        1344.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_sunseal_court_allocation_clue",
+      "name": "The agreed allocation",
+      "position": [
+        690.0,
+        1368.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_sealhouse_cellars",
+      "name": "Sealhouse Outer Yard",
+      "position": [
+        44.0,
+        -188.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_drowned_pumphouse",
+      "name": "Drowned Pumphouse",
+      "position": [
+        -452.0,
+        344.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_stormwatch",
+      "name": "Stormwatch Point",
+      "position": [
+        -508.0,
+        412.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_deep_crucible",
+      "name": "Deep Crucible",
+      "position": [
+        -20.0,
+        504.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_rook_audit_house",
+      "name": "Rook’s Outer Yard",
+      "position": [
+        32.0,
+        -328.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_whitefall_vaults",
+      "name": "Whitefall Ridge",
+      "position": [
+        312.0,
+        -1268.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_return_sunken_cistern",
+      "name": "Saltglass Wastes",
+      "position": [
+        132.0,
+        1024.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_lantern_crossing_pond",
+      "name": "Lantern Crossing fishing pond",
+      "position": [
+        -246.99,
+        -191.62
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_mossreed_landing_pond",
+      "name": "Mossreed Landing fishing pond",
+      "position": [
+        -577.03,
+        -40.17
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_greyroot_pond",
+      "name": "Greyroot Refuge fishing pond",
+      "position": [
+        374.97,
+        -536.17
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_highmere_market_pond",
+      "name": "Highmere Market fishing pond",
+      "position": [
+        242.97,
+        -800.17
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_wellward_pond",
+      "name": "Sable Well fishing pond",
+      "position": [
+        -149.03,
+        1159.83
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_siltwheel_0",
+      "name": "Blackpick Mine",
+      "position": [
+        -175.0,
+        -204.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_tollward_0",
+      "name": "Silkburrow Caverns",
+      "position": [
+        133.0,
+        -608.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_yewbound_0",
+      "name": "Yewbound Catacombs",
+      "position": [
+        557.0,
+        -424.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_crucible_0",
+      "name": "Deep Crucible",
+      "position": [
+        253.0,
+        680.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_coldhearth_0",
+      "name": "Coldhearth Sanctuary",
+      "position": [
+        293.0,
+        -1420.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_graveshroud_0",
+      "name": "Graveshroud Hollow",
+      "position": [
+        -305,
+        -486
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_unwritten_0",
+      "name": "The Unwritten Court",
+      "position": [
+        697.0,
+        -1316.0
+      ],
+      "radius": 14
+    },
+    {
+      "id": "wm_di_unwritten_1",
+      "name": "The Unwritten Court",
+      "position": [
+        725.0,
+        1320.0
+      ],
+      "radius": 14
+    }
+  ],
+  "npcSpawns": [
+    {
+      "npc": "mara",
+      "position": [
+        -557.4,
+        444.4
+      ],
+      "facing": 110,
+      "anvil": [
+        -558.6,
+        445.4
+      ]
+    },
+    {
+      "npc": "tam",
+      "position": [
+        -856.2,
+        220.6
+      ],
+      "facing": 250
+    },
+    {
+      "npc": "hester",
+      "position": [
+        -606.8,
+        429.6
+      ],
+      "facing": 0
+    },
+    {
+      "npc": "town_board",
+      "position": [
+        -622.6,
+        427
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "agna",
+      "position": [
+        -602.5,
+        444.6
+      ],
+      "facing": 270
+    },
+    {
+      "npc": "edda",
+      "position": [
+        -439,
+        295.5
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "wren",
+      "position": [
+        -435.5,
+        292.5
+      ],
+      "facing": 200,
+      "goneWhen": {
+        "flag": "feud_burned"
+      }
+    },
+    {
+      "npc": "bram",
+      "position": [
+        -439.5,
+        280
+      ],
+      "facing": 0
+    },
+    {
+      "npc": "cal",
+      "position": [
+        -435.5,
+        281.5
+      ],
+      "facing": 20,
+      "goneWhen": {
+        "flag": "feud_burned"
+      }
+    },
+    {
+      "npc": "pell",
+      "position": [
+        -619,
+        427.5
+      ],
+      "facing": 270
+    },
+    {
+      "npc": "orrin",
+      "position": [
+        -598.5,
+        440
+      ],
+      "facing": 200
+    },
+    {
+      "npc": "ysolde",
+      "position": [
+        -619.5,
+        445.5
+      ],
+      "facing": 150
+    },
+    {
+      "npc": "sabeth",
+      "position": [
+        -623.5,
+        448.5
+      ],
+      "facing": 120
+    },
+    {
+      "npc": "wenna",
+      "position": [
+        -611.8,
+        434.6
+      ],
+      "facing": 120
+    },
+    {
+      "npc": "brask",
+      "position": [
+        -619.5,
+        412.5
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "nell",
+      "position": [
+        -650.5,
+        450.5
+      ],
+      "facing": 90
+    },
+    {
+      "npc": "odo",
+      "position": [
+        -586,
+        452.5
+      ],
+      "facing": 250
+    },
+    {
+      "npc": "grue",
+      "position": [
+        -648.5,
+        464
+      ],
+      "facing": 60
+    },
+    {
+      "npc": "aveline",
+      "position": [
+        -631.5,
+        457.5
+      ],
+      "facing": 270
+    },
+    {
+      "npc": "briony",
+      "position": [
+        -596.4,
+        411.5
+      ],
+      "facing": 270
+    }
+  ],
+  "enemySpawns": [
+    {
+      "id": "ghoul_cart",
+      "enemy": "hedge_fox",
+      "position": [
+        -392.35,
+        424
+      ]
+    },
+    {
+      "id": "ghoul_cart_2",
+      "enemy": "hedge_fox",
+      "position": [
+        -398.9,
+        424
+      ]
+    },
+    {
+      "id": "ghoul_graves",
+      "enemy": "ghoul",
+      "position": [
+        -439.5,
+        266
+      ]
+    },
+    {
+      "id": "ghoul_road",
+      "enemy": "ghoul",
+      "position": [
+        -223,
+        -306
+      ]
+    },
+    {
+      "id": "brute_hallow",
+      "enemy": "brute",
+      "position": [
+        -209.5,
+        -304.5
+      ]
+    },
+    {
+      "id": "ghoul_bw_track",
+      "enemy": "ghoul",
+      "position": [
+        -586.5,
+        -60
+      ]
+    },
+    {
+      "id": "hound_den_1",
+      "enemy": "hound",
+      "position": [
+        -732.8,
+        -193.4
+      ]
+    },
+    {
+      "id": "hound_den_2",
+      "enemy": "hound",
+      "position": [
+        -737.2,
+        -196.6
+      ]
+    },
+    {
+      "id": "hound_den_3",
+      "enemy": "hound",
+      "position": [
+        -733.6,
+        -198.2
+      ]
+    },
+    {
+      "id": "archer_camp_1",
+      "enemy": "archer",
+      "position": [
+        -461.8,
+        -217
+      ]
+    },
+    {
+      "id": "archer_camp_2",
+      "enemy": "archer",
+      "position": [
+        -457.6,
+        -212
+      ]
+    },
+    {
+      "id": "ghoul_bw_deep",
+      "enemy": "ghoul",
+      "position": [
+        -692,
+        -282
+      ]
+    },
+    {
+      "id": "archer_stones",
+      "enemy": "archer",
+      "position": [
+        -700,
+        -289
+      ]
+    },
+    {
+      "id": "hound_glade",
+      "enemy": "hound",
+      "position": [
+        -682.6,
+        -295.4
+      ]
+    },
+    {
+      "id": "greyjaw_blackwood",
+      "enemy": "greyjaw",
+      "position": [
+        -695,
+        -281
+      ]
+    },
+    {
+      "id": "seer_glade",
+      "enemy": "seer",
+      "position": [
+        -640.4,
+        -374.6
+      ]
+    },
+    {
+      "id": "dummy_forge",
+      "enemy": "training_dummy",
+      "position": [
+        -566,
+        457
+      ]
+    },
+    {
+      "id": "boar_east_1",
+      "enemy": "wild_boar",
+      "position": [
+        -755,
+        355
+      ]
+    },
+    {
+      "id": "boar_east_2",
+      "enemy": "wild_boar",
+      "position": [
+        -750,
+        348
+      ]
+    },
+    {
+      "id": "boar_east_3",
+      "enemy": "wild_boar",
+      "position": [
+        -746,
+        358
+      ]
+    },
+    {
+      "id": "boar_east_4",
+      "enemy": "wild_boar",
+      "position": [
+        -753,
+        341
+      ]
+    },
+    {
+      "id": "boar_east_5",
+      "enemy": "wild_boar",
+      "position": [
+        -743,
+        344
+      ]
+    },
+    {
+      "id": "boar_ashby",
+      "enemy": "wild_boar",
+      "position": [
+        -433,
+        301
+      ]
+    },
+    {
+      "id": "boar_corrick",
+      "enemy": "wild_boar",
+      "position": [
+        -434,
+        274
+      ]
+    },
+    {
+      "id": "boar_hedge",
+      "enemy": "wild_boar",
+      "position": [
+        -447,
+        288
+      ]
+    },
+    {
+      "id": "wolf_ridge_1",
+      "enemy": "ridge_wolf",
+      "position": [
+        -730,
+        215
+      ]
+    },
+    {
+      "id": "wolf_ridge_2",
+      "enemy": "ridge_wolf",
+      "position": [
+        -727.5,
+        219
+      ]
+    },
+    {
+      "id": "wolf_ridge_3",
+      "enemy": "ridge_wolf",
+      "position": [
+        -732,
+        211
+      ]
+    },
+    {
+      "id": "bristleback_runs",
+      "enemy": "bristleback",
+      "position": [
+        -745,
+        363
+      ]
+    },
+    {
+      "id": "blackhedge_1",
+      "enemy": "blackhedge_cutthroat",
+      "position": [
+        -822,
+        -36.5
+      ]
+    },
+    {
+      "id": "blackhedge_2",
+      "enemy": "blackhedge_cutthroat",
+      "position": [
+        -828.5,
+        -37.5
+      ]
+    },
+    {
+      "id": "blackhedge_3",
+      "enemy": "blackhedge_cutthroat",
+      "position": [
+        -823.5,
+        -44.5
+      ]
+    },
+    {
+      "id": "blackhedge_4",
+      "enemy": "blackhedge_cutthroat",
+      "position": [
+        -829.5,
+        -43
+      ]
+    },
+    {
+      "id": "blackhedge_5",
+      "enemy": "blackhedge_archer",
+      "position": [
+        -820.5,
+        -41
+      ]
+    },
+    {
+      "id": "blackhedge_6",
+      "enemy": "blackhedge_archer",
+      "position": [
+        -827,
+        -34
+      ]
+    },
+    {
+      "id": "blackhedge_harl",
+      "enemy": "blackhedge_captain",
+      "position": [
+        -826.5,
+        -41.5
+      ]
+    },
+    {
+      "id": "watch_ford_1",
+      "enemy": "town_guard",
+      "position": [
+        -623.5,
+        421
+      ]
+    },
+    {
+      "id": "watch_ford_2",
+      "enemy": "town_guard",
+      "position": [
+        -617,
+        441
+      ]
+    },
+    {
+      "id": "watch_ford_3",
+      "enemy": "town_guard",
+      "position": [
+        -630.5,
+        435
+      ]
+    },
+    {
+      "id": "corrick_sow_1",
+      "enemy": "corrick_pig",
+      "position": [
+        -445,
+        274.5
+      ]
+    },
+    {
+      "id": "corrick_sow_2",
+      "enemy": "corrick_pig",
+      "position": [
+        -445.5,
+        281
+      ]
+    },
+    {
+      "id": "corrick_sow_3",
+      "enemy": "corrick_pig",
+      "position": [
+        -448,
+        277.5
+      ]
+    },
+    {
+      "id": "hen_corrick_1",
+      "enemy": "farm_hen",
+      "position": [
+        -441,
+        272
+      ]
+    },
+    {
+      "id": "hen_corrick_2",
+      "enemy": "farm_hen",
+      "position": [
+        -442.5,
+        279
+      ]
+    },
+    {
+      "id": "hen_corrick_3",
+      "enemy": "farm_hen",
+      "position": [
+        -439.5,
+        276.5
+      ]
+    },
+    {
+      "id": "hen_corrick_4",
+      "enemy": "farm_hen",
+      "position": [
+        -443,
+        284
+      ]
+    },
+    {
+      "id": "rat_ashby_1",
+      "enemy": "granary_rat",
+      "position": [
+        -446,
+        300
+      ]
+    },
+    {
+      "id": "rat_ashby_2",
+      "enemy": "granary_rat",
+      "position": [
+        -447.5,
+        302
+      ]
+    },
+    {
+      "id": "rat_ashby_3",
+      "enemy": "granary_rat",
+      "position": [
+        -444.5,
+        302.5
+      ]
+    },
+    {
+      "id": "rat_ashby_4",
+      "enemy": "granary_rat",
+      "position": [
+        -448,
+        298
+      ]
+    },
+    {
+      "id": "rat_corrick_1",
+      "enemy": "granary_rat",
+      "position": [
+        -437,
+        271
+      ]
+    },
+    {
+      "id": "rat_corrick_2",
+      "enemy": "granary_rat",
+      "position": [
+        -438.5,
+        269
+      ]
+    },
+    {
+      "id": "rat_corrick_3",
+      "enemy": "granary_rat",
+      "position": [
+        -435.5,
+        268.5
+      ]
+    },
+    {
+      "id": "rat_corrick_4",
+      "enemy": "granary_rat",
+      "position": [
+        -439,
+        272.5
+      ]
+    },
+    {
+      "id": "rat_drain_1",
+      "enemy": "granary_rat",
+      "position": [
+        -443,
+        292
+      ]
+    },
+    {
+      "id": "rat_drain_2",
+      "enemy": "granary_rat",
+      "position": [
+        -439,
+        293.5
+      ]
+    },
+    {
+      "id": "rat_drain_3",
+      "enemy": "granary_rat",
+      "position": [
+        -442,
+        289.5
+      ]
+    },
+    {
+      "id": "fox_1",
+      "enemy": "hedge_fox",
+      "position": [
+        -869,
+        238
+      ]
+    },
+    {
+      "id": "fox_2",
+      "enemy": "hedge_fox",
+      "position": [
+        -871,
+        229
+      ]
+    },
+    {
+      "id": "fox_3",
+      "enemy": "hedge_fox",
+      "position": [
+        -403,
+        434
+      ]
+    },
+    {
+      "id": "fox_4",
+      "enemy": "hedge_fox",
+      "position": [
+        -745,
+        222
+      ]
+    },
+    {
+      "id": "fox_5",
+      "enemy": "hedge_fox",
+      "position": [
+        -739,
+        227
+      ]
+    },
+    {
+      "id": "boar_far_1",
+      "enemy": "wild_boar",
+      "position": [
+        -738,
+        350
+      ]
+    },
+    {
+      "id": "boar_far_2",
+      "enemy": "wild_boar",
+      "position": [
+        -736,
+        338
+      ]
+    },
+    {
+      "id": "boar_far_3",
+      "enemy": "wild_boar",
+      "position": [
+        -759,
+        347
+      ]
+    },
+    {
+      "id": "wolf_ridge_4",
+      "enemy": "ridge_wolf",
+      "position": [
+        -727,
+        222
+      ]
+    },
+    {
+      "id": "wolf_hollow_1",
+      "enemy": "ridge_wolf",
+      "position": [
+        -781,
+        257
+      ]
+    },
+    {
+      "id": "wolf_hollow_2",
+      "enemy": "ridge_wolf",
+      "position": [
+        -778,
+        255
+      ]
+    },
+    {
+      "id": "wolf_hollow_3",
+      "enemy": "ridge_wolf",
+      "position": [
+        -783,
+        254
+      ]
+    },
+    {
+      "id": "wolf_hollow_4",
+      "enemy": "ridge_wolf",
+      "position": [
+        -780,
+        252
+      ]
+    },
+    {
+      "id": "poacher_mere_1",
+      "enemy": "blackhedge_poacher",
+      "position": [
+        -858,
+        215
+      ]
+    },
+    {
+      "id": "poacher_mere_2",
+      "enemy": "blackhedge_poacher",
+      "position": [
+        -866,
+        223
+      ]
+    },
+    {
+      "id": "poacher_mere_3",
+      "enemy": "blackhedge_poacher",
+      "position": [
+        -865,
+        214
+      ]
+    },
+    {
+      "id": "netman_mere_1",
+      "enemy": "blackhedge_netman",
+      "position": [
+        -857,
+        222
+      ]
+    },
+    {
+      "id": "netman_mere_2",
+      "enemy": "blackhedge_netman",
+      "position": [
+        -868,
+        218
+      ]
+    },
+    {
+      "id": "prowler_east_1",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -516,
+        -178
+      ]
+    },
+    {
+      "id": "prowler_east_2",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -513,
+        -181
+      ]
+    },
+    {
+      "id": "prowler_east_3",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -518,
+        -182
+      ]
+    },
+    {
+      "id": "prowler_east_4",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -514,
+        -185
+      ]
+    },
+    {
+      "id": "prowler_south_1",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -455,
+        -245
+      ]
+    },
+    {
+      "id": "prowler_south_2",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -452,
+        -248
+      ]
+    },
+    {
+      "id": "prowler_south_3",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -457,
+        -250
+      ]
+    },
+    {
+      "id": "prowler_south_4",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -453,
+        -252
+      ]
+    },
+    {
+      "id": "prowler_west_1",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -663,
+        -378
+      ]
+    },
+    {
+      "id": "prowler_west_2",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -666,
+        -381
+      ]
+    },
+    {
+      "id": "prowler_west_3",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -660,
+        -381
+      ]
+    },
+    {
+      "id": "prowler_track_1",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -471,
+        -244
+      ]
+    },
+    {
+      "id": "prowler_track_2",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -468,
+        -241
+      ]
+    },
+    {
+      "id": "prowler_track_3",
+      "enemy": "blackwood_prowler",
+      "position": [
+        -469,
+        -247
+      ]
+    },
+    {
+      "id": "ogre_deadfall",
+      "enemy": "deadfall_ogre",
+      "position": [
+        -575,
+        -49
+      ]
+    }
+  ],
+  "placedLoot": [
+    {
+      "id": "manifest",
+      "model": "manifest",
+      "position": [
+        -394.3,
+        428.4
+      ],
+      "heightOffset": 0.9,
+      "prompt": "Read the manifest",
+      "reward": {
+        "item": "manifest"
+      },
+      "opensDocument": "manifest"
+    },
+    {
+      "id": "grave_iron",
+      "model": "grave_iron",
+      "position": [
+        -397.4,
+        431.6
+      ],
+      "heightOffset": 0.05,
+      "prompt": "Take the grave-iron",
+      "reward": {
+        "item": "grave_iron",
+        "count": 2
+      }
+    },
+    {
+      "id": "purse_graves",
+      "model": "coin_purse",
+      "position": [
+        -444.5,
+        262.5
+      ],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 6
+      }
+    },
+    {
+      "id": "purse_wall",
+      "model": "coin_purse",
+      "position": [
+        -583,
+        472
+      ],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 5
+      }
+    },
+    {
+      "id": "draught_rocks",
+      "model": "draught",
+      "position": [
+        -731.8,
+        225.2
+      ],
+      "prompt": "Take the healing draught",
+      "reward": {
+        "item": "healing_draught"
+      }
+    },
+    {
+      "id": "satchel_ruin",
+      "model": "satchel",
+      "position": [
+        -779,
+        263.4
+      ],
+      "prompt": "Take the traveller's satchel",
+      "reward": {
+        "item": "travellers_satchel"
+      }
+    },
+    {
+      "id": "helm_rocks",
+      "model": "watch_helm",
+      "position": [
+        -201.8,
+        5.4
+      ],
+      "prompt": "Take the dented helm",
+      "reward": {
+        "item": "watch_helm"
+      }
+    },
+    {
+      "id": "purse_den",
+      "model": "coin_purse",
+      "position": [
+        -736.4,
+        -197.8
+      ],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 9
+      }
+    },
+    {
+      "id": "sabatons_camp",
+      "model": "plate_sabatons",
+      "position": [
+        -458.8,
+        -215
+      ],
+      "prompt": "Take the blackened sabatons",
+      "reward": {
+        "item": "plate_sabatons"
+      }
+    },
+    {
+      "id": "draught_glade",
+      "model": "draught",
+      "position": [
+        -644.2,
+        -379
+      ],
+      "prompt": "Take the healing draught",
+      "reward": {
+        "item": "healing_draught"
+      }
+    },
+    {
+      "id": "hollow_chest",
+      "model": "chest",
+      "position": [
+        -971.5,
+        -251.5
+      ],
+      "prompt": "Open the strongbox",
+      "reward": {
+        "item": "old_watch_helm"
+      }
+    },
+    {
+      "id": "hollow_purse",
+      "model": "coin_purse",
+      "position": [
+        -968.4,
+        -248.6
+      ],
+      "prompt": "Take the coin purse",
+      "reward": {
+        "coins": 15
+      }
+    },
+    {
+      "id": "watch_key",
+      "model": "grave_iron",
+      "position": [
+        -442.5,
+        264
+      ],
+      "heightOffset": 0.05,
+      "prompt": "Take the iron key",
+      "reward": {
+        "item": "watch_key"
+      }
+    },
+    {
+      "id": "firewood_1",
+      "quest": "hester_firewood",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [
+        -593,
+        -45
+      ],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_2",
+      "quest": "hester_firewood",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [
+        -584,
+        -49
+      ],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_3",
+      "quest": "hester_firewood",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [
+        -810,
+        -46
+      ],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "firewood_4",
+      "quest": "hester_firewood",
+      "model": "crate_broken",
+      "scale": 0.55,
+      "position": [
+        -581,
+        -57
+      ],
+      "prompt": "Gather firewood",
+      "respawn": 60,
+      "reward": {
+        "item": "firewood"
+      }
+    },
+    {
+      "id": "ore_1",
+      "quest": "mara_ore",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [
+        -205,
+        -302
+      ],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "ore_2",
+      "quest": "mara_ore",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [
+        -213,
+        -309
+      ],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "ore_3",
+      "quest": "mara_ore",
+      "model": "rock1",
+      "scale": 0.4,
+      "position": [
+        -206,
+        -310
+      ],
+      "prompt": "Mine the ore",
+      "respawn": 60,
+      "reward": {
+        "item": "bog_iron_ore"
+      }
+    },
+    {
+      "id": "sorrel_1",
+      "quest": "tam_sorrel",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [
+        -855.6,
+        221.7
+      ],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_2",
+      "quest": "tam_sorrel",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [
+        -862.6,
+        226
+      ],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_3",
+      "quest": "tam_sorrel",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [
+        -868.8,
+        220.6
+      ],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_4",
+      "quest": "tam_sorrel",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [
+        -865.6,
+        213
+      ],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "sorrel_5",
+      "quest": "tam_sorrel",
+      "model": "pine",
+      "scale": 0.09,
+      "position": [
+        -857.4,
+        213.7
+      ],
+      "prompt": "Pick the mere sorrel",
+      "respawn": 45,
+      "reward": {
+        "item": "mere_sorrel"
+      }
+    },
+    {
+      "id": "cals_letter",
+      "quest": "feud_letter",
+      "model": "manifest",
+      "scale": 0.6,
+      "position": [
+        -431.6,
+        287.4
+      ],
+      "heightOffset": 0.05,
+      "prompt": "Take the letter from under the stone",
+      "reward": {
+        "item": "cals_letter"
+      }
+    },
+    {
+      "id": "drain_nails_1",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [
+        -441.6,
+        291.6
+      ],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_2",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [
+        -440,
+        292.4
+      ],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_3",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [
+        -443,
+        292.8
+      ],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "drain_nails_4",
+      "quest": "feud_what_lies_under",
+      "model": "grave_iron",
+      "scale": 0.8,
+      "position": [
+        -439,
+        273
+      ],
+      "prompt": "Pull out the black nails",
+      "respawn": 60,
+      "reward": {
+        "item": "grave_rot_nails"
+      }
+    },
+    {
+      "id": "blackhedge_rag",
+      "quest": "feud_what_lies_under",
+      "model": "clothes",
+      "scale": 0.6,
+      "position": [
+        -438.2,
+        272.6
+      ],
+      "prompt": "Pull the rag off the drain stones",
+      "reward": {
+        "item": "blackhedge_rag"
+      }
+    },
+    {
+      "id": "torn_page",
+      "model": "manifest",
+      "scale": 0.6,
+      "position": [
+        -624.5,
+        454
+      ],
+      "heightOffset": 0.05,
+      "prompt": "Pick up the torn page",
+      "reward": {
+        "item": "torn_page"
+      },
+      "opensDocument": "torn_page"
+    },
+    {
+      "id": "blackhedge_orders",
+      "model": "manifest",
+      "scale": 0.6,
+      "position": [
+        -822.5,
+        -42.5
+      ],
+      "heightOffset": 0.05,
+      "prompt": "Take the folded orders",
+      "reward": {
+        "item": "blackhedge_orders"
+      },
+      "opensDocument": "blackhedge_orders"
+    }
+  ],
+  "dangerZones": [
+    {
+      "position": [
+        -209.5,
+        -304.5
+      ],
+      "radius": 14,
+      "enemySpawn": "brute_hallow"
+    },
+    {
+      "position": [
+        -640.4,
+        -374.6
+      ],
+      "radius": 12,
+      "enemySpawn": "seer_glade"
+    },
+    {
+      "position": [
+        -825,
+        -40
+      ],
+      "radius": 12,
+      "enemySpawn": "blackhedge_harl"
+    }
+  ],
+  "water": [
+    {
+      "id": "stillwater_mere",
+      "name": "Stillwater Mere",
+      "position": [
+        -930,
+        130
+      ],
+      "radius": 120,
+      "fishTable": "mere_fish",
+      "fishLevel": 1,
+      "rx": 120,
+      "rz": 80,
+      "carved": true
+    },
+    {
+      "id": "blackpool",
+      "name": "The Blackpool",
+      "position": [
+        -663.1,
+        -343.6
+      ],
+      "radius": 7,
+      "fishTable": "blackpool_fish",
+      "fishLevel": 8
+    }
+  ],
+  "obscured": [
+    {
+      "id": "barrow_hollow",
+      "name": "The Barrow Hollow",
+      "position": [
+        -970,
+        -250
+      ],
+      "radius": 6,
+      "text": "It is too dark to go further. You will need a light."
+    }
+  ],
+  "chests": [
+    {
+      "id": "roadside_chest",
+      "name": "Traveller's chest",
+      "position": [
+        -398.5,
+        437
+      ],
+      "facing": 30,
+      "coins": 15,
+      "items": [
+        {
+          "id": "healing_draught",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "watch_coffer",
+      "name": "Watch-post coffer",
+      "position": [
+        -203.5,
+        -4.5
+      ],
+      "facing": -90,
+      "coins": 40,
+      "items": [
+        {
+          "id": "iron_gloves",
+          "count": 1
+        }
+      ],
+      "lock": {
+        "key": "watch_key",
+        "pick": 1
+      }
+    },
+    {
+      "id": "blackwood_cache",
+      "name": "Poacher's cache",
+      "position": [
+        -693.5,
+        -291
+      ],
+      "facing": 120,
+      "coins": 120,
+      "items": [
+        {
+          "id": "rusted_falchion",
+          "count": 1
+        }
+      ],
+      "lock": {
+        "pick": 3
+      }
+    }
+  ],
+  "buildings": [
+    {
+      "id": "ford_inn",
+      "name": "The Ford Inn",
+      "position": [
+        -610,
+        433
+      ],
+      "size": [
+        12,
+        9
+      ],
+      "shell": "inn_shell",
+      "front": "inn_front",
+      "roof": "inn_roof",
+      "walls": [
+        [
+          -6,
+          -4.5,
+          6,
+          -4.5
+        ],
+        [
+          6,
+          -4.5,
+          6,
+          4.5
+        ],
+        [
+          -6,
+          4.5,
+          6,
+          4.5
+        ],
+        [
+          -6,
+          -4.5,
+          -6,
+          -0.9
+        ],
+        [
+          -6,
+          0.9,
+          -6,
+          4.5
+        ]
+      ],
+      "furniture": [
+        [
+          -3.8,
+          -3.95,
+          1
+        ],
+        [
+          -3,
+          -3.95,
+          0.6
+        ],
+        [
+          -4.6,
+          -3.95,
+          0.6
+        ],
+        [
+          1.8,
+          -2.9,
+          0.4
+        ],
+        [
+          2.6,
+          -2.9,
+          0.4
+        ],
+        [
+          3.4,
+          -2.9,
+          0.4
+        ],
+        [
+          4.2,
+          -2.9,
+          0.4
+        ],
+        [
+          5,
+          -2.9,
+          0.4
+        ],
+        [
+          -2.2,
+          1.2,
+          0.6
+        ],
+        [
+          1.4,
+          2.4,
+          0.6
+        ],
+        [
+          -1,
+          -1.4,
+          0.6
+        ],
+        [
+          4.7,
+          3.4,
+          0.6
+        ],
+        [
+          5.4,
+          3.4,
+          0.5
+        ],
+        [
+          4.7,
+          1.6,
+          0.6
+        ],
+        [
+          5.4,
+          1.6,
+          0.5
+        ]
+      ],
+      "rest": true,
+      "light": [
+        -3.8,
+        -3.4
+      ]
+    }
+  ],
+  "stations": [
+    {
+      "id": "inn_hearth",
+      "name": "the inn's hearth",
+      "kind": "fire",
+      "position": [
+        -613.8,
+        429.4
+      ],
+      "radius": 2.6
+    },
+    {
+      "id": "mara_forge",
+      "name": "Mara's forge",
+      "kind": "forge",
+      "position": [
+        -558.6,
+        445.4
+      ],
+      "radius": 4.5
+    },
+    {
+      "id": "briony_bench",
+      "name": "Briony's alchemy bench",
+      "kind": "alchemy",
+      "model": "crate",
+      "position": [
+        -604.6,
+        417.8
+      ],
+      "radius": 2.6
+    }
+  ],
+  "pads": [
+    [
+      -610,
+      433,
+      8
+    ],
+    [
+      -640,
+      423,
+      4.5
+    ],
+    [
+      -641,
+      443,
+      4.5
+    ],
+    [
+      -598,
+      449,
+      4.5
+    ],
+    [
+      -445,
+      299,
+      4.5
+    ],
+    [
+      -445,
+      276,
+      4.5
+    ]
+  ],
+  "signposts": [
+    {
+      "id": "sign_brackenford",
+      "position": [
+        -622.6,
+        415
+      ],
+      "points": [
+        {
+          "to": "brackenford"
+        },
+        {
+          "to": "cart",
+          "label": "The Fallen Road"
+        },
+        {
+          "to": "stillwater_mere"
+        }
+      ]
+    },
+    {
+      "id": "sign_mere",
+      "position": [
+        -380.4,
+        419.37
+      ],
+      "points": [
+        {
+          "to": "brackenford"
+        },
+        {
+          "to": "stillwater_mere"
+        },
+        {
+          "to": "watch_post"
+        }
+      ]
+    },
+    {
+      "id": "sign_fork",
+      "position": [
+        -222.4,
+        -307.5
+      ],
+      "points": [
+        {
+          "to": "watch_post"
+        },
+        {
+          "to": "hound_den",
+          "label": "The Blackwood"
+        },
+        {
+          "to": "hallow_cut"
+        },
+        {
+          "to": "brackenford"
+        }
+      ]
+    },
+    {
+      "id": "sign_blackwood",
+      "position": [
+        -581.6,
+        -34
+      ],
+      "points": [
+        {
+          "to": "hound_den"
+        },
+        {
+          "to": "barrow_hollow"
+        },
+        {
+          "to": "watch_post"
+        },
+        {
+          "to": "brackenford"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "brackenford_east_gate",
+      "name": "Brackenford's east gate",
+      "kind": "town_gate",
+      "line": [
+        [
+          -551,
+          446
+        ],
+        [
+          -551,
+          458
+        ]
+      ],
+      "ring": 0,
+      "note": "Always open: the Hollow Lane's only way on."
+    },
+    {
+      "id": "brackenford_north_gate",
+      "name": "Brackenford's north gate",
+      "kind": "town_gate",
+      "line": [
+        [
+          -626,
+          404
+        ],
+        [
+          -614,
+          404
+        ]
+      ],
+      "ring": 1,
+      "opensWhen": [
+        {
+          "quest": "missing_delivery",
+          "status": "done"
+        },
+        {
+          "level": 3
+        }
+      ],
+      "keepsOut": [
+        "hedgecote",
+        "bracken_mill",
+        "gibbet_knoll"
+      ],
+      "closedText": "The north gate is barred. The gate warden won't let a stranger wander off with the smith's business unsettled: take the cart's manifest to Mara Venn.",
+      "openText": "The gate wardens unbar Brackenford's gates. Bracken Vale is open to you."
+    },
+    {
+      "id": "brackenford_south_gate",
+      "name": "Brackenford's south gate",
+      "kind": "town_gate",
+      "line": [
+        [
+          -616,
+          474
+        ],
+        [
+          -604,
+          474
+        ]
+      ],
+      "ring": 1,
+      "opensWhen": [
+        {
+          "quest": "missing_delivery",
+          "status": "done"
+        },
+        {
+          "level": 3
+        }
+      ],
+      "closedText": "The south gate to the ford is barred. Settle the smith's business first: take the cart's manifest to Mara Venn."
+    },
+    {
+      "id": "the_neck_barricade",
+      "name": "The wardens' barricade",
+      "kind": "barricade",
+      "line": [
+        [
+          -574.7,
+          151.2
+        ],
+        [
+          -551.9,
+          158.8
+        ]
+      ],
+      "ring": 2,
+      "opensWhen": [
+        {
+          "level": 5
+        }
+      ],
+      "keepsOut": [
+        "crossways",
+        "staithe",
+        "deadfall",
+        "beacon_bridge"
+      ],
+      "closedText": "A wardens' barricade blocks the Neck. \"The Blackwood eats green lads. Come back when you've a few scars.\" (Opens at level 5.)",
+      "openText": "The wardens drag their barricade off the Neck. The world beyond the vale is open to you."
+    },
+    {
+      "id": "felled_oak",
+      "name": "The felled oak",
+      "kind": "felled_oak",
+      "line": [
+        [
+          -344.6,
+          406.3
+        ],
+        [
+          -339.4,
+          429.7
+        ]
+      ],
+      "shut": true,
+      "closedText": "The oak the ambushers felled across the lane. It would take a team of oxen to shift it."
+    }
+  ],
+  "townWalls": [
+    {
+      "id": "brackenford_palisade",
+      "name": "Brackenford's palisade",
+      "kind": "palisade",
+      "lines": [
+        [
+          [
+            -614,
+            404
+          ],
+          [
+            -590,
+            402
+          ],
+          [
+            -568,
+            408
+          ],
+          [
+            -555,
+            420
+          ],
+          [
+            -551,
+            434
+          ],
+          [
+            -551,
+            446
+          ]
+        ],
+        [
+          [
+            -551,
+            458
+          ],
+          [
+            -556,
+            468
+          ],
+          [
+            -575,
+            476
+          ],
+          [
+            -604,
+            474
+          ]
+        ],
+        [
+          [
+            -616,
+            474
+          ],
+          [
+            -640,
+            472
+          ],
+          [
+            -658,
+            462
+          ],
+          [
+            -666,
+            440
+          ],
+          [
+            -660,
+            418
+          ],
+          [
+            -645,
+            406
+          ],
+          [
+            -626,
+            404
+          ]
+        ]
+      ]
+    }
+  ],
+  "houses": [
+    {
+      "id": "reeves_hall",
+      "name": "Reeve's hall",
+      "position": [
+        -641,
+        423
+      ],
+      "size": [
+        10,
+        7
+      ],
+      "roof": "slate",
+      "walls": "stone",
+      "door": "e",
+      "storeys": 2,
+      "chimney": true
+    },
+    {
+      "id": "west_cottage",
+      "name": "Cottage",
+      "position": [
+        -643,
+        447
+      ],
+      "size": [
+        7,
+        5
+      ],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "e",
+      "chimney": true
+    },
+    {
+      "id": "tannery",
+      "name": "Agna's tannery",
+      "position": [
+        -598,
+        453
+      ],
+      "size": [
+        8,
+        5
+      ],
+      "roof": "thatch",
+      "walls": "timber",
+      "door": "n"
+    },
+    {
+      "id": "smithy",
+      "name": "Mara's smithy",
+      "position": [
+        -566,
+        428
+      ],
+      "size": [
+        8,
+        6
+      ],
+      "roof": "tile",
+      "walls": "stone",
+      "door": "s",
+      "chimney": true
+    },
+    {
+      "id": "north_cottage",
+      "name": "Cottage",
+      "position": [
+        -578,
+        416
+      ],
+      "size": [
+        7,
+        5
+      ],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "s",
+      "chimney": true
+    },
+    {
+      "id": "lane_house",
+      "name": "House",
+      "position": [
+        -570,
+        466
+      ],
+      "size": [
+        7,
+        5
+      ],
+      "roof": "tile",
+      "walls": "plaster",
+      "door": "n",
+      "storeys": 2
+    },
+    {
+      "id": "south_cottage",
+      "name": "Cottage",
+      "position": [
+        -588,
+        466
+      ],
+      "size": [
+        6,
+        5
+      ],
+      "roof": "thatch",
+      "walls": "plaster",
+      "door": "n"
+    },
+    {
+      "id": "chapel",
+      "name": "The ford chapel",
+      "position": [
+        -640,
+        461
+      ],
+      "size": [
+        7,
+        11
+      ],
+      "roof": "slate",
+      "walls": "stone",
+      "door": "e",
+      "tower": true
+    },
+    {
+      "id": "granary",
+      "name": "Town granary",
+      "position": [
+        -604,
+        411
+      ],
+      "size": [
+        8,
+        5
+      ],
+      "roof": "thatch",
+      "walls": "timber",
+      "door": "s"
+    },
+    {
+      "id": "west_house",
+      "name": "House",
+      "position": [
+        -656,
+        435
+      ],
+      "size": [
+        6,
+        5
+      ],
+      "roof": "tile",
+      "walls": "plaster",
+      "door": "e",
+      "chimney": true
+    }
+  ]
+}

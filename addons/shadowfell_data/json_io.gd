@@ -39,6 +39,12 @@ static func to_text(data, compact := false, short_lists := false) -> String:
 	return (_pretty(data, "") if compact else _plain(data, "", short_lists)) + "\n"
 
 
+## JSON parses numbers as floats; nested Variant equality treats 1 and 1.0
+## differently. Compare the representation actually written to disk.
+static func same(a, b) -> bool:
+	return to_text(a) == to_text(b)
+
+
 # ------------------------------------------------------------------ plain
 static func _plain(v, indent: String, short_lists := false) -> String:
 	var inner := indent + "  "

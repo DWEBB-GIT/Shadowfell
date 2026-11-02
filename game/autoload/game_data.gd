@@ -22,27 +22,25 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	Cursors.setup(get_tree())
+	# Game cursors and button hooks belong to the running game, not Godot's editor.
+	if not Engine.is_editor_hint():
+		Cursors.setup(get_tree())
 
 
 func load_all() -> void:
 	files.clear()
 	tables.clear()
 	problems.clear()
-	var dir := DirAccess.open(DATA_DIR)
-	if dir == null:
-		problems.append("cannot open %s" % DATA_DIR)
-		return
-	for file_name in dir.get_files():
-		if not file_name.ends_with(".json"):
-			continue
-		var text := FileAccess.get_file_as_string("%s/%s" % [DATA_DIR, file_name])
+	var registry := DataPaths.entries(DATA_DIR)
+	for key in registry:
+		var text := FileAccess.get_file_as_string(DATA_DIR.path_join(str(registry[key])))
 		var parsed = JSON.parse_string(text)
-		if typeof(parsed) != TYPE_DICTIONARY:
-			problems.append("%s: not valid JSON" % file_name)
+		if not parsed is Dictionary:
+			problems.append("%s: not valid JSON" % registry[key])
 			continue
-		files[file_name.get_basename()] = parsed
-		_index(file_name, parsed)
+		files[key] = parsed
+		_index(str(registry[key]), parsed)
+
 
 
 # Any list of records with ids becomes a table under its key, so a new list in

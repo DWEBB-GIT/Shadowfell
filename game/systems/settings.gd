@@ -6,17 +6,18 @@ extends RefCounted
 
 const KEY := "shadowfall.settings"
 const SETTINGS := [
-	{"id": "names", "label": "Show names over characters", "default": true},
+	{"id": "names", "label": "Show NPC names", "default": true},
 	{"id": "playerName", "label": "Show your own name over your character", "default": true},
+	{"id": "bloodEffects", "label": "Small blood effects on living creatures", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "default": true},
 	{"id": "clickToMove", "label": "Click to move (right click; left click with mouse aim)", "default": false},
 	{"id": "leftInteract", "label": "Interact on left click (talk, attack and use as right click does; right click still works)", "group": "Controls and camera", "default": false},
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "group": "Controls and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "group": "Controls and camera", "default": false},
-	{"id": "classicCamera", "label": "Classic camera (one lower angle at every zoom)", "group": "Controls and camera", "default": false},
+	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "group": "Controls and camera", "default": true},
 	{"id": "volMaster", "label": "Master volume", "group": "Sound", "default": 70, "min": 0, "max": 100},
 	{"id": "volEffects", "label": "Effects", "group": "Sound", "default": 100, "min": 0, "max": 100},
-	{"id": "volAmbience", "label": "Ambience (forest, town, birds, bells)", "group": "Sound", "default": 100, "min": 0, "max": 100},
+	{"id": "volAmbience", "label": "Ambience", "group": "Sound", "default": 100, "min": 0, "max": 100},
 	{"id": "volMusic", "label": "Music", "group": "Sound", "default": 60, "min": 0, "max": 100},
 ]
 

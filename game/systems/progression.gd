@@ -75,6 +75,8 @@ func serialize() -> Dictionary:
 
 func apply(data: Dictionary) -> void:
 	level = clampi(int(data.level), 1, DB.CONFIG.progression.maxLevel)
-	xp = int(data.xp)
+	xp = maxi(0, int(data.xp)) if level < DB.CONFIG.progression.maxLevel else 0
 	var r = data.get("rested", 0)
 	rested = float(r) if (typeof(r) == TYPE_FLOAT or typeof(r) == TYPE_INT) and r > 0 else 0.0
+	if level >= DB.CONFIG.progression.maxLevel:
+		rested = 0.0
