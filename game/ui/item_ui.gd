@@ -481,7 +481,7 @@ func _render_sockets(inv) -> void:
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
 			slot.dim = 1.0 if s else 0.75
-			slot.key = game.keys.label("toolbelt").split(" / ")[0] if not hud.pad_mode else ""
+			slot.key = game.keys.label("toolbelt").split(" / ")[0] if not hud.pad_mode else "↓"
 			slot.lit = hud.belt != null and hud.belt.visible
 			slot.on_hover = func(_s: ISlot, on: bool):
 				if on and drag == null:

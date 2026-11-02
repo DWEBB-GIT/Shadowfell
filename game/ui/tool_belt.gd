@@ -14,6 +14,8 @@ var hud
 var column: VBoxContainer
 var entries: Array = [] ## [{kind: 'ability'|'item', id, tip}]
 var _sig := ""
+var cells: Array = [] ## the belt's slots, top to bottom
+var pick := -1 ## the pad's highlight (-1: none)
 
 
 func _init(g, h) -> void:
@@ -36,7 +38,10 @@ func toggle() -> void:
 
 
 func close() -> void:
+	if visible:
+		hud.items.cursor_tip_off()
 	visible = false
+	pick = -1
 
 
 ## what the belt holds now: the belt abilities you know, then each tool you
@@ -85,6 +90,7 @@ func refresh() -> void:
 	_sig = sig
 	entries = list
 	UI.clear(column)
+	cells = []
 	if entries.is_empty():
 		var l := UI.label(column, "No tools yet", 12, UI.TEXT_DIM)
 		l.custom_minimum_size = Vector2(PX * 2, 0)
@@ -104,6 +110,7 @@ func refresh() -> void:
 			var off = game.inventory.equipment.get("offHand")
 			s.lit = off != null and off.id == e.id # the torch you hold
 		var entry: Dictionary = e
+		cells.append(s)
 		s.on_input = func(_s, ev: InputEventMouseButton):
 			if ev.pressed and (ev.button_index == MOUSE_BUTTON_LEFT or ev.button_index == MOUSE_BUTTON_RIGHT):
 				use(entry)
@@ -114,6 +121,37 @@ func refresh() -> void:
 				hud.items.cursor_tip_off()
 		column.add_child(s)
 	size = Vector2.ZERO
+
+
+## On a pad (D-pad down opens it): up and down move along the belt, A uses
+## the tool, B (or down past the bottom) folds it away.
+func gamepad(pad) -> void:
+	var B := Pad.BUTTONS
+	if cells.is_empty():
+		if pad.pressed(B.B) or pad.pressed(B.DOWN):
+			close()
+		return
+	if pick < 0 or pick >= cells.size():
+		pick = cells.size() - 1 # the tool nearest the tray
+	if pad.pressed(B.UP):
+		pick = maxi(0, pick - 1)
+	elif pad.pressed(B.DOWN):
+		if pick == cells.size() - 1:
+			close()
+			return
+		pick += 1
+	elif pad.pressed(B.B):
+		close()
+		return
+	elif pad.pressed(B.A):
+		use(entries[pick])
+	for i in cells.size():
+		var c: ISlot = cells[i]
+		if is_instance_valid(c) and c.focused != (i == pick):
+			c.focused = i == pick
+			c.queue_redraw()
+	if pick < entries.size():
+		hud.items.cursor_tip(tip(entries[pick]))
 
 
 func tip(e: Dictionary) -> String:

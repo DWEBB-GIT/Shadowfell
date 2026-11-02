@@ -833,12 +833,16 @@ func _handle_input(dt: float):
 			release_spirit()
 		return null
 	if hud.modal == "edit": # moving the HUD about: no walking or casting
+		hud.hud_edit.gamepad(pad, dt)
 		return null
 	if hud.modal == "document":
 		if pad.pressed(B.B) or pad.pressed(B.A):
 			hud.close_modal()
 		return null
-	if keys.pressed("bags") or pad.pressed(B.START):
+	# View + Start (held together, as Select + Start) opens edit mode
+	if pad.held(B.VIEW) and pad.pressed(B.START):
+		hud.hud_edit.open()
+	elif keys.pressed("bags") or pad.pressed(B.START):
 		hud.toggle_panel("bags")
 	if keys.pressed("toolbelt"):
 		hud.belt.toggle()
@@ -854,12 +858,17 @@ func _handle_input(dt: float):
 		hud.toggle_panel("quests")
 	# With a window open the pad drives the window; the world keeps running
 	# and the keyboard and mouse still play, as in WoW.
-	var pad_menu: bool = hud.any_window_open
-	if pad_menu:
+	# the tool belt open on a pad takes the D-pad, A and B as a window does
+	var pad_menu: bool = hud.any_window_open or hud.belt.visible
+	if hud.belt.visible:
+		hud.belt.gamepad(pad)
+	elif pad_menu:
 		hud.window_gamepad(pad, dt)
 	elif pad.pressed(B.UP):
 		hud.toggle_panel("spellbook")
-	if keys.pressed("save") or (not pad_menu and pad.pressed(B.DOWN)):
+	elif pad.pressed(B.DOWN): # D-pad down: the tool belt (the game saves itself)
+		hud.belt.toggle()
+	if keys.pressed("save"):
 		manual_save()
 	if hud.blocks_gameplay:
 		return null

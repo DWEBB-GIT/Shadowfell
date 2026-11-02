@@ -16,6 +16,7 @@ var drag = null ## {id, grab: Vector2 (cursor minus the piece's top left)}
 var hover := ""
 var bar: PanelContainer ## Reset all / Done
 var _loaded_for := "" ## the store key the layout was read from
+var hint_label: Label
 
 
 func _init(g, h) -> void:
@@ -26,7 +27,10 @@ func _init(g, h) -> void:
 	visible = false
 	bar = UI.panel(self, 10, UI.WINDOW)
 	var row := UI.hbox(bar, 8)
-	UI.label(row, "Edit HUD: drag to move, right click to reset", 13, UI.GOLD)
+	var hint := UI.label(row, "Edit HUD: drag to move, right click to reset", 13, UI.GOLD)
+	hint.set_meta("pad", "Edit HUD: LB/RB pick, D-pad moves, X resets it, Y resets all, B done")
+	hint.set_meta("mouse", hint.text)
+	hint_label = hint
 	UI.button(row, "Reset all", func(): reset_all())
 	UI.button(row, "Done", func(): close())
 
@@ -179,9 +183,50 @@ func _move(id: String, at: Vector2) -> void:
 	saved[id] = {"a": a, "o": at + a * sz - a * vp}
 
 
+var pad_pick := 0 ## the piece the pad moves
+var _pad_wait := 0.0
+
+
+## On a pad: LB / RB pick a piece, the D-pad or left stick moves it a grid
+## step at a time, X puts it back, Y resets everything, B or Start is done.
+func gamepad(pad, dt: float) -> void:
+	var B := Pad.BUTTONS
+	var list := pieces()
+	if pad.pressed(B.B) or pad.pressed(B.START):
+		close()
+		return
+	if pad.pressed(B.RB):
+		pad_pick = (pad_pick + 1) % list.size()
+	if pad.pressed(B.LB):
+		pad_pick = (pad_pick - 1 + list.size()) % list.size()
+	var id: String = list[pad_pick][0]
+	hover = id
+	if pad.pressed(B.X) and saved.has(id):
+		saved.erase(id)
+		_save()
+	if pad.pressed(B.Y):
+		reset_all()
+	var d := Vector2(pad.left.x, pad.left.y) if pad.left.z > 0.5 else Vector2.ZERO
+	if pad.held(B.LEFT): d.x = -1
+	if pad.held(B.RIGHT): d.x = 1
+	if pad.held(B.UP): d.y = -1
+	if pad.held(B.DOWN): d.y = 1
+	_pad_wait -= dt
+	if d == Vector2.ZERO:
+		_pad_wait = 0.0
+		return
+	if _pad_wait > 0:
+		return
+	_pad_wait = 0.06
+	var main: Control = list[pad_pick][2][0]
+	_move(id, main.position + Vector2(signf(roundf(d.x)), signf(roundf(d.y))) * GRID)
+	_save()
+
+
 func _process(_dt: float) -> void:
 	if visible:
 		var vp := get_viewport_rect().size
+		hint_label.text = hint_label.get_meta("pad" if hud.pad_mode else "mouse")
 		bar.size = bar.get_combined_minimum_size()
 		bar.position = Vector2(roundf((vp.x - bar.size.x) / 2), roundf(vp.y * 0.32))
 		queue_redraw()
