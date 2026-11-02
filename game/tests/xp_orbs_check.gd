@@ -62,6 +62,17 @@ func _run() -> void:
 		DirAccess.make_dir_recursive_absolute(shot)
 		root.get_texture().get_image().save_png(shot.path_join("xp-orbs.png"))
 		game.events.emit("xpGained", {"target": body, "amount": 60})
+	# a melee kill right beside the player: the orbs still fly and hang a moment
+	orbs.orbs.clear()
+	orbs.spawn(game.player.position + Vector3(0.8, 0, 0), 5)
+	var alive_at := 0.0
+	for i in 120:
+		orbs.update(1.0 / 60.0)
+		if not orbs.orbs.is_empty():
+			alive_at = (i + 1) / 60.0
+	check(alive_at >= orbs.MIN_FLIGHT + orbs.HOLD, "a melee kill's orbs stay visible before landing (%.2f s)" % alive_at)
+	check(orbs.orbs.is_empty(), "and they all land within 2 s")
+	game.events.emit("xpGained", {"target": body, "amount": 60})
 	# the player runs away; every orb still catches up within a few seconds
 	var dt := 1.0 / 60.0
 	var peak_heads := 0

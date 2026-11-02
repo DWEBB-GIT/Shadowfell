@@ -16,6 +16,9 @@ const SIZE := 0.24 ## head size in metres
 const MIN_PER_KILL := 3
 const MAX_PER_KILL := 8
 const CHEST := 1.1 ## where on the player they fly to
+const BURST := 0.42 ## seconds thrown up and out before they turn for the player
+const MIN_FLIGHT := 0.8 ## never land sooner, so a melee kill still shows its orbs
+const HOLD := 0.3 ## seconds an orb clings and shrinks into the player before it is gone
 
 var game
 var heads: MultiMesh
@@ -75,13 +78,13 @@ func spawn(at: Vector3, n: int) -> void:
 		if orbs.size() >= MAX_ORBS:
 			orbs.pop_front()
 		var ang := randf() * TAU
-		var out := randf_range(1.2, 2.6)
+		var out := randf_range(1.8, 3.2)
 		var p := at + Vector3(0, 0.9 + randf() * 0.4, 0)
 		orbs.append({
 			"pos": p,
-			"vel": Vector3(cos(ang) * out, randf_range(2.4, 4.0), sin(ang) * out),
+			"vel": Vector3(cos(ang) * out, randf_range(3.2, 4.6), sin(ang) * out),
 			"age": 0.0, "delay": i * 0.045 + randf() * 0.05,
-			"hist": [p], "tick": 0.0, "size": SIZE * randf_range(0.8, 1.15),
+			"hist": [p], "tick": 0.0, "hold": -1.0, "spin": randf() * TAU, "size": SIZE * randf_range(0.8, 1.15),
 		})
 
 
@@ -100,36 +103,59 @@ func update(dt: float) -> void:
 			keep.append(o)
 			continue
 		var t: float = o.age - o.delay
+		if o.hold >= 0.0:
+			# touched: it clings to the chest, circling and shrinking into the body
+			o.hold += dt
+			if o.hold >= HOLD:
+				flashes.append({"age": 0.0})
+				continue
+			var k: float = o.hold / HOLD
+			o.spin += dt * 9.0
+			o.pos = goal + Vector3(cos(o.spin), 0.15 * (1.0 - k), sin(o.spin)) * 0.32 * (1.0 - k)
+			o.vel = Vector3.ZERO
+			_trail(o, dt)
+			keep.append(o)
+			continue
 		var to: Vector3 = goal - o.pos
 		var dist := to.length()
-		if t > 0.2 and (dist < 0.35 or t > 4.0) or dist > 80.0:
-			if dist < 1.0:
-				flashes.append({"age": 0.0})
+		if dist > 80.0 or t > 4.0:
 			continue
-		if t < 0.22:
+		if t >= MIN_FLIGHT and dist < 0.35:
+			o.hold = 0.0
+			keep.append(o)
+			continue
+		if t < BURST:
 			# the burst: thrown up and out, slowing in the air
 			o.vel += Vector3(0, -6.0, 0) * dt
-			o.vel *= exp(-2.5 * dt)
+			o.vel *= exp(-2.0 * dt)
 		else:
 			# then home in, faster and tighter the longer it flies, so it
 			# always catches a player who runs away
-			var h := t - 0.22
-			var speed := 7.0 + h * 22.0 + maxf(0.0, dist - 6.0) * 0.8
-			var steer := 5.0 + h * 18.0
-			o.vel = o.vel.lerp(to / maxf(dist, 0.001) * speed, 1.0 - exp(-steer * dt))
+			var h := t - BURST
+			var speed := 5.0 + h * 22.0 + maxf(0.0, dist - 6.0) * 0.8
+			var steer := 4.0 + h * 18.0
+			var want: Vector3 = to / maxf(dist, 0.001) * speed
+			if t < MIN_FLIGHT and dist < 1.4:
+				# too soon to land: swing round the player instead of into them
+				want = to.cross(Vector3.UP).normalized() * speed + Vector3(0, 0.6, 0) - to.normalized() * 2.0
+			o.vel = o.vel.lerp(want, 1.0 - exp(-steer * dt))
 			# never overshoot the chest in one frame
-			if o.vel.length() * dt > dist:
+			if t >= MIN_FLIGHT and o.vel.length() * dt > dist:
 				o.vel = to / dt
 		o.pos += o.vel * dt
-		o.tick += dt
-		if o.tick >= TRAIL_STEP:
-			o.tick = 0.0
-			o.hist.push_front(o.pos)
-			if o.hist.size() > TRAIL:
-				o.hist.pop_back()
+		_trail(o, dt)
 		keep.append(o)
 	orbs = keep
 	_draw(goal, dt)
+
+
+func _trail(o: Dictionary, dt: float) -> void:
+	o.tick += dt
+	if o.tick >= TRAIL_STEP:
+		o.tick = 0.0
+		o.hist.push_front(o.pos)
+		if o.hist.size() > TRAIL:
+			o.hist.pop_back()
 
 
 func _draw(goal: Vector3, dt: float) -> void:
@@ -140,6 +166,8 @@ func _draw(goal: Vector3, dt: float) -> void:
 			continue
 		var fade_in := minf(1.0, (o.age - o.delay) / 0.08)
 		var s: float = o.size * (0.6 + 0.4 * fade_in)
+		if o.hold >= 0.0:
+			s *= 1.0 - 0.8 * (o.hold / HOLD) # shrinking into the body
 		heads.set_instance_transform(h, Transform3D(Basis.from_scale(Vector3(s, s, s)), o.pos))
 		heads.set_instance_color(h, Color(GLOW, fade_in))
 		h += 1
