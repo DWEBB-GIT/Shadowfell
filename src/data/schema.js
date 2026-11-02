@@ -79,6 +79,12 @@ export const SPELL_KINDS = {
   channel: { enemy: true, tuning: ['castTime', 'tickInterval', 'damageMin', 'damageMax', 'healPercent'] },
   shield: { enemy: false, tuning: ['duration', 'absorbPercent'] },
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
+  // healing and thorns (Godot only, game/systems/spells.gd): heals scale with healPower
+  heal: { enemy: false, tuning: ['castTime', 'healMin', 'healMax'] }, // castTime 0 = instant; optional consumes (a hot) + consumePercent
+  hot: { enemy: false, tuning: ['duration', 'tickInterval', 'healMin', 'healMax'] },
+  healZone: { enemy: false, ground: true, tuning: ['radius', 'duration', 'tickInterval', 'healMin', 'healMax'] }, // optional damageMin/Max
+  healBurst: { enemy: false, ground: true, tuning: ['radius', 'healMin', 'healMax', 'damageMin', 'damageMax'] },
+  thorns: { enemy: false, tuning: ['duration', 'thornsMin', 'thornsMax'] }, // optional spellPower
 };
 // what an `applies` aura may say, all numbers: `then` is a second aura that follows it
 const AURA_KEYS = ['duration', 'slow', 'stun', 'sleep', 'damageTaken', 'damageDealt'];

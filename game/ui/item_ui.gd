@@ -1593,6 +1593,8 @@ func _scaling_line(ab: Dictionary) -> String:
 	# a weapon ability may also take a share of spell power (the editor's Scaling)
 	if (t.has("damageMultiplier") or not t.has("damageMin")) and t.get("spellPower", 0):
 		parts.append("%d%% spell power" % roundi(t.spellPower * 100))
+	if t.has("healMin") and t.get("healPower", 1.0):
+		parts.append("%d%% spell power healing" % roundi(t.get("healPower", 1.0) * 100))
 	if parts.is_empty():
 		return ""
 	return _l("Scales with %s%s" % [" and ".join(parts), " a tick" if t.has("tickMultiplier") else ""], "#8fbf6a", 12)

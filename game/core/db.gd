@@ -170,6 +170,22 @@ static var enemy_cfg := {}
 static var spells := {}
 
 
+## Who teaches a skill, recipe, rank or class spell: its `trainer`, plus
+## anyone in `trainers` (Dan, 2026-11-02: several trainers may teach the same thing)
+static func teachers_of(entry: Dictionary) -> Array:
+	var out := []
+	if entry.get("trainer"):
+		out.append(entry.trainer)
+	for n in entry.get("trainers", []):
+		if not out.has(n):
+			out.append(n)
+	return out
+
+
+static func taught_by(entry: Dictionary, npc_id) -> bool:
+	return npc_id != null and npc_id != "" and teachers_of(entry).has(npc_id)
+
+
 static func setup(data) -> void:
 	var f: Dictionary = data.files
 	forge = f.get("forge", {})
@@ -248,12 +264,17 @@ static func setup(data) -> void:
 		archetypes = archetypes.duplicate(true)
 		skills = skills.duplicate(true)
 		recipes = recipes.duplicate(true)
-		for a in archetypes.values():
-			for t in a.get("trained", []):
-				t.trainer = teachers.get(t.get("trainer", ""), t.get("trainer", ""))
-		for t in skills.values() + recipes.values():
+		var swap := func(t: Dictionary) -> void:
 			if t.has("trainer"):
 				t.trainer = teachers.get(t.trainer, t.trainer)
+			if t.has("trainers"):
+				t.trainers = t.trainers.map(func(n): return teachers.get(n, n))
+		for a in archetypes.values():
+			for t in a.get("trained", []):
+				t.trainer = t.get("trainer", "")
+				swap.call(t)
+		for t in skills.values() + recipes.values():
+			swap.call(t)
 		# An opening belongs to the map whose giver is actually present.
 		# The legacy cart quest must not auto-start on a different continent.
 		quests = quests.duplicate(true)

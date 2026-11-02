@@ -62,6 +62,18 @@ static func _is_int(v) -> bool:
 	return (v is int or v is float) and v == floorf(v)
 
 
+## `trainers`: more npcs who teach the same thing
+static func _extra_trainers(s: DataStore, entry: Dictionary, bad: Callable) -> void:
+	if not entry.has("trainers"):
+		return
+	if not entry.trainers is Array:
+		bad.call("trainers must be a list of npcs")
+		return
+	for n in entry.trainers:
+		if s.npc(n).is_empty():
+			bad.call("trainer %s is not an npc" % n)
+
+
 static func _is_num(v) -> bool:
 	return v is int or v is float
 
@@ -505,6 +517,12 @@ static func _abilities(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("a control spell needs an applies aura (Other fields)")
 			if a.kind == "purge" and not a.has("spendsAll"):
 				bad.call("a purge needs spendsAll (Other fields)")
+			if a.has("consumes") and (a.kind != "heal" or s.ability(a.consumes).get("kind") != "hot"):
+				bad.call("only a heal can consume, and only a heal over time")
+			var hn: Dictionary = a.get("tuning", {}) if a.get("tuning") is Dictionary else {}
+			for pair in [["healMin", "healMax"], ["thornsMin", "thornsMax"]]:
+				if _is_num(hn.get(pair[0])) and _is_num(hn.get(pair[1])) and hn[pair[1]] < hn[pair[0]]:
+					bad.call("%s is below %s" % [pair[1], pair[0]])
 		for f in ["inShadow", "follow", "spreads"]:
 			if a.has(f) and s.ability(a[f]).is_empty():
 				bad.call("%s names unknown ability %s" % [f, a[f]])
@@ -566,6 +584,7 @@ static func _skills(s: DataStore, out: PackedStringArray) -> void:
 			bad.call("needs a name and a description")
 		if s.npc(sk.get("trainer")).is_empty():
 			bad.call("trainer %s is not an npc" % sk.get("trainer"))
+		_extra_trainers(s, sk, bad)
 		if not (_is_int(sk.get("cost")) and sk.cost >= 0):
 			bad.call("cost must be whole coins")
 		if sk.has("maxRank") and not (_is_int(sk.maxRank) and sk.maxRank >= 1):
@@ -598,6 +617,7 @@ static func _classes(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("%s is on its starting bar, so a trainer cannot teach it" % id)
 			if s.npc(t.get("trainer")).is_empty():
 				bad.call("%s's trainer %s is not an npc" % [id, t.get("trainer")])
+			_extra_trainers(s, t, bad)
 			if t.has("quest") and s.quest(t.quest).is_empty():
 				bad.call("%s waits on unknown quest %s" % [id, t.quest])
 			if not (_is_int(t.get("level")) and t.level >= 1 and _is_int(t.get("cost")) and t.cost >= 0):

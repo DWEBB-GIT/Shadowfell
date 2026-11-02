@@ -154,7 +154,7 @@ func learn_spell(ability: String) -> bool:
 
 ## What a trainer offers that the character has not learned.
 func offered_by(npc_id: String) -> Array:
-	return DB.skills.values().filter(func(s): return s.get("trainer") == npc_id and not has(s.id))
+	return DB.skills.values().filter(func(s): return DB.taught_by(s, npc_id) and not has(s.id))
 
 
 ## Pay the trainer and learn; false (with a word why) if it cannot be done.
