@@ -501,7 +501,7 @@ func trained_by(npc_id) -> Array:
 	var out := []
 	for a in archetypes:
 		for t in a.get("trained", []):
-			if t.get("trainer") == npc_id:
+			if DB.taught_by(t, npc_id):
 				out.append({"class": a, "entry": t})
 	return out
 

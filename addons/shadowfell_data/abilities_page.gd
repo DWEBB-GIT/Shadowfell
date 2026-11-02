@@ -682,6 +682,16 @@ func _classes(a: Dictionary) -> void:
 		gate.tooltip_text = "Locked at the trainer until this quest is handed in"
 		tr.add_child(gate)
 		tr.add_child(UI.button("Open", func(): open_record.emit("npc", entry.trainer), "Open the trainer on the NPCs tab"))
+		var more := UI.hbox(form)
+		var pad2 := Control.new()
+		pad2.custom_minimum_size.x = 24
+		more.add_child(pad2)
+		var al := Label.new()
+		al.text = "also taught by"
+		more.add_child(al)
+		more.add_child(UI.extra_trainers(s, entry, func():
+			s.touch("archetypes")
+			_changed(true)))
 
 
 func _skill(a: Dictionary) -> void:
