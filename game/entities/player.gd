@@ -72,6 +72,7 @@ func _init(g) -> void:
 		Rig.add_sockets(model)
 	group.add_child(model)
 	rig = Rig.new(model, body)
+	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
@@ -439,7 +440,8 @@ func update(dt: float, controls) -> void:
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
-	position = game.collision.resolve(position, radius)
+	# high in a hop you pass over low things (a fence, Collision `h`)
+	position = game.collision.resolve(position, radius, jump_h)
 	_update_jump(dt, controls != null and controls.get("jump", false))
 	# Stationary activities (fishing, eating, gathering and casting) also
 	# see a standing jump as movement, rather than continuing in mid-air.

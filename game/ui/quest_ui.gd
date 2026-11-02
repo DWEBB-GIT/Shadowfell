@@ -77,7 +77,9 @@ func _init(g, h) -> void:
 	trainer = UI.window(self, "", 360, func(): game.dialogue.close())
 	_with_subtitle(trainer)
 	trainer.sub.text = "Trainer"
-	quest_log = UI.window(self, "Quest log", LOG_W, func(): toggle_log(false))
+	quest_log = UI.window(self, "Quest log", LOG_W, func():
+		hud.panel_closed_sound("quests")
+		toggle_log(false))
 	_with_subtitle(quest_log)
 	_build_log()
 	for w in [dialogue, trainer, quest_log]:
@@ -86,7 +88,9 @@ func _init(g, h) -> void:
 	var ev = game.events
 	ev.on("dialogueChanged", func(_e):
 		choice = 0
-		render_dialogue())
+		render_dialogue()
+		if game.dialogue.is_open:
+			hud.raise(self, trainer.panel if trainer.panel.visible else dialogue.panel))
 	ev.on("questsChanged", func(_e): render())
 	ev.on("inventoryChanged", func(_e):
 		if game.dialogue.is_open:
@@ -121,6 +125,8 @@ func toggle_log(on = null) -> void:
 		var order := _ordered()
 		selected = order[0] if not order.is_empty() else null
 	render_log()
+	if log_open:
+		hud.raise(self, quest_log.panel)
 
 
 func select(id) -> void:
