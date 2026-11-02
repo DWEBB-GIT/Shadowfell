@@ -1148,7 +1148,7 @@ func _place_camera(dt := 0.0) -> void:
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
 	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
-	var z := zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
+	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
 	var t := camera_target + Vector3(0, 1.0, 0)
 	var sx := 0.0

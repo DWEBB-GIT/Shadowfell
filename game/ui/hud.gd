@@ -57,9 +57,9 @@ var shown_target = null
 var portrait_of = null
 
 var icons: Icons
-var belt: ToolBelt ## the tool belt, folded up out of the tray
+var belt ## the tool belt, folded up out of the tray
 var menus: HBoxContainer ## the menu buttons, top left
-var hud_edit: HudEdit ## edit mode: the player moves the HUD's pieces
+var hud_edit ## edit mode: the player moves the HUD's pieces
 var keybind_ui: KeybindUI
 var items: ItemUI
 var quests: QuestUI
@@ -459,9 +459,9 @@ func _build() -> void:
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
-	belt = ToolBelt.new(game, self)
+	belt = preload("res://game/ui/tool_belt.gd").new(game, self)
 	root.add_child(belt)
-	hud_edit = HudEdit.new(game, self)
+	hud_edit = preload("res://game/ui/hud_edit.gd").new(game, self)
 	root.add_child(hud_edit)
 	_build_modals()
 	title = TitleScreen.new(game)

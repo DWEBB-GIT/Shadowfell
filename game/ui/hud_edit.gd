@@ -81,9 +81,9 @@ func apply(vp: Vector2) -> void:
 		var s: Dictionary = saved[p[0]]
 		var a: Vector2 = s.a
 		var sz := main.size
-		var at := (a * vp + s.o - a * sz).round()
+		var at: Vector2 = (a * vp + s.o - a * sz).round()
 		at = at.clamp(Vector2.ZERO, (vp - sz).max(Vector2.ZERO))
-		var d := at - main.position
+		var d: Vector2 = at - main.position
 		for n in nodes:
 			if n != null:
 				(n as Control).position += d
