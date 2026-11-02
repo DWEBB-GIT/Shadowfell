@@ -41,7 +41,7 @@ const WINDOW_TOP := EDGE + ORB_R * 2 + 10 ## windows open under the menu row
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
-## 'title' | 'document' | 'death'. Bags, character panel and spellbook are
+## 'title' | 'document' | 'death' | 'confirm'. Bags, character panel and spellbook are
 ## not modal: the world keeps running while they are open, as in WoW.
 var modal = "title"
 var pad_mode := false
@@ -139,6 +139,9 @@ var backdrop: ColorRect
 var death: PanelContainer
 var death_text: Label
 var document: PanelContainer
+var confirm_box: PanelContainer
+var confirm_text: Label
+var confirm_yes := Callable()
 var doc_title: Label
 var doc_body: RichTextLabel
 var sign_card: PanelContainer
@@ -826,6 +829,19 @@ func _build_modals() -> void:
 	doc_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	doc_body.add_theme_color_override("default_color", Color("e2d4b0"))
 	document.visible = false
+	# a yes/no question over everything (confirm())
+	confirm_box = UI.panel(root, 0, UI.WINDOW, UI.BORDER)
+	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "window", 20))
+	confirm_box.mouse_filter = Control.MOUSE_FILTER_STOP
+	var cv := UI.vbox(confirm_box, 12)
+	confirm_text = UI.wrapped(UI.label(cv, "", 16, UI.TEXT))
+	confirm_text.custom_minimum_size = Vector2(320, 0)
+	confirm_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var cb := UI.hbox(cv, 12)
+	cb.alignment = BoxContainer.ALIGNMENT_CENTER
+	UI.button(cb, "Yes", func(): answer_confirm(true), 14)
+	UI.button(cb, "No", func(): answer_confirm(false), 14)
+	confirm_box.visible = false
 
 
 # ------------------------------------------------------------ title screen
@@ -872,7 +888,7 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		for c in [death, document, confirm_box, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -946,7 +962,7 @@ func over_hud(at: Vector2) -> bool:
 ## and the item windows do not.
 var blocks_gameplay: bool:
 	get:
-		return modal == "title" or modal == "document" or modal == "loading"
+		return modal == "title" or modal == "document" or modal == "loading" or modal == "confirm"
 
 ## any of the item, quest or dialogue windows
 var any_window_open: bool:
@@ -968,12 +984,50 @@ func toggle_panel(which: String, sound := "") -> void:
 	if modal:
 		return
 	if sound == "":
-		sound = "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+		sound = _panel_sound(which)
+	# a panel closes with the sound it opened with (Dan, 2026-10-29)
+	if panel_open(which):
+		sound = open_sounds.get(which, sound)
+	else:
+		open_sounds[which] = sound
 	game.audio.sfx(sound, 0.6)
 	if which == "quests":
 		quests.toggle_log()
 	else:
 		items.toggle(which)
+
+
+## the sound each open panel opened with, played again as it closes
+var open_sounds := {}
+
+
+static func _panel_sound(which: String) -> String:
+	return "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+
+
+func panel_open(which: String) -> bool:
+	if which == "quests":
+		return quests.log_open
+	if which == "bags":
+		return items.bags_open
+	return items.open.get(which, false)
+
+
+## a panel's own close button: the sound it opened with
+func panel_closed_sound(which: String) -> void:
+	game.audio.sfx(open_sounds.get(which, _panel_sound(which)), 0.6)
+
+
+## The window opened last sits over the others (Dan, 2026-10-29): first in
+## its own layer (`layer`, the item or quest windows), then that layer over
+## the other one. Both stay under the world map and the modal windows.
+func raise(layer: Control, win: Control) -> void:
+	if win == null or win.get_parent() != layer:
+		return
+	layer.move_child(win, -1)
+	var other: Control = quests if layer == items else items
+	if other != null and layer.get_index() < other.get_index():
+		root.move_child(layer, other.get_index())
 
 
 func toggle_world_map() -> void:
@@ -1038,6 +1092,33 @@ func show_death(_coins_lost: int, destination: String) -> void:
 	death.visible = true
 
 
+## Ask a yes/no question in a box over the game; `on_yes` runs on Yes.
+func confirm(text: String, on_yes: Callable) -> void:
+	if modal != null:
+		return
+	modal = "confirm"
+	confirm_text.text = text
+	confirm_yes = on_yes
+	game.audio.sfx("panel", 0.6)
+	backdrop.visible = true
+	root.move_child(backdrop, -1)
+	root.move_child(confirm_box, -1)
+	confirm_box.visible = true
+
+
+func answer_confirm(yes: bool) -> void:
+	if modal != "confirm":
+		return
+	modal = null
+	confirm_box.visible = false
+	backdrop.visible = false
+	game.audio.sfx("panel", 0.6)
+	var f := confirm_yes
+	confirm_yes = Callable()
+	if yes and f.is_valid():
+		f.call()
+
+
 func hide_death() -> void:
 	death.visible = false
 	backdrop.visible = false
@@ -1058,6 +1139,9 @@ func close_modal(force := false) -> bool:
 		document.visible = false
 		backdrop.visible = false
 		modal = null
+		return true
+	if modal == "confirm":
+		answer_confirm(false)
 		return true
 	if world_map.visible:
 		world_map.visible = false
@@ -1632,7 +1716,7 @@ func layout() -> void:
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)
-	for win in [death, document]:
+	for win in [death, document, confirm_box]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
 

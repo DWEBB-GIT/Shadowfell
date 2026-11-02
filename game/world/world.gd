@@ -18,7 +18,7 @@ var buildings: Array = []
 var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
-var see_through: SeeThrough ## fades houses that hide you
+var see_through: SeeThrough ## houses with the see-through circle
 
 
 func _init(g) -> void:
@@ -34,7 +34,7 @@ func build() -> World:
 		var x: float = p.position[0]
 		var z: float = p.position[1]
 		group.add_child(obj)
-		_add_collider(p, x, z)
+		_add_collider(p, x, z, obj)
 		if p.get("examine"):
 			var off: Array = p.get("examineOffset", [0, 0])
 			var r := deg_to_rad(p.get("rotation", 0))
@@ -50,6 +50,30 @@ func build() -> World:
 	_add_motes()
 	_add_fairy_rings()
 	return self
+
+
+## props low enough to jump over: their height in metres (Collision `h`).
+## Anything else not listed is measured from its model, and counts as low
+## when its top is under JUMPABLE (a crate, a grave, a small rock).
+const LOW_PROPS := {"fence": 1.05}
+const JUMPABLE := 1.25
+
+
+## How high a placed prop stands above the ground under it (its meshes'
+## bounds, in the prop's own placement), or INF when it has no meshes.
+static func prop_height(obj: Node3D, ground: float) -> float:
+	var top := -INF
+	var stack := [[obj, obj.transform]]
+	while stack:
+		var it: Array = stack.pop_back()
+		var n: Node = it[0]
+		var xf: Transform3D = it[1]
+		if n is VisualInstance3D:
+			top = maxf(top, (xf * (n as VisualInstance3D).get_aabb()).end.y)
+		for c in n.get_children():
+			if c is Node3D:
+				stack.append([c, xf * (c as Node3D).transform])
+	return top - ground if top > -INF else INF
 
 
 ## Shared by world construction and authoring round-trip checks.
@@ -71,6 +95,10 @@ static func prop_instance(p: Dictionary) -> Node3D:
 		Assets.tint_instance(obj, Color(p.tint))
 	if str(p.model).get_file().get_basename() in ["lamp_post", "torch"]:
 		mark_light_fixture(obj)
+	# the nature pack: trees, rocks and plants open a see-through circle
+	# around the player instead of hiding them
+	if str(p.model).contains("/environment/nature/"):
+		Assets.use_cutaway(obj)
 	return obj
 
 
@@ -83,15 +111,25 @@ static func mark_light_fixture(root: Node3D) -> void:
 		mesh.layers = LIGHT_FIXTURE_LAYER
 
 
-func _add_collider(p: Dictionary, x: float, z: float) -> void:
+func _add_collider(p: Dictionary, x: float, z: float, obj: Node3D = null) -> void:
 	var col = p.get("collider")
+	# a model with a measured footprint (trees at the trunk, rocks at the
+	# base) uses that, whatever the placement says
+	var measured = model_collider(str(p.model))
+	if measured != null:
+		col = measured
 	if not col:
 		return
 	var s: float = p.get("scale", 1.0)
 	if p.has("scale3"):
 		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
+	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
+	if h == INF and obj != null:
+		var measured := prop_height(obj, Terrain.height_at(x, z))
+		if measured <= JUMPABLE:
+			h = measured
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
-		game.collision.add(x, z, col * s)
+		game.collision.add(x, z, col * s, false, h)
 		return
 	if typeof(col) == TYPE_DICTIONARY and col.has("box"):
 		# a closed box (a cottage): its four walls
@@ -102,7 +140,22 @@ func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	# compound collider: offsets in the prop's local space
 	var r := deg_to_rad(p.get("rotation", 0))
 	for c in col:
-		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s)
+		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s, false, h)
+
+
+static var _model_colliders = null
+
+## the measured footprint of a model, by file name
+## (data/world/model_colliders.json), or null
+static func model_collider(model: String):
+	if _model_colliders == null:
+		_model_colliders = {}
+		var path := DataPaths.path_for("model_colliders")
+		if FileAccess.file_exists(path):
+			var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if d is Dictionary:
+				_model_colliders = d.get("models", {})
+	return _model_colliders.get(model.get_file().get_basename())
 
 
 ## walls as rows of small circles, from [x1, z1, x2, z2] segments in the
@@ -235,7 +288,12 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 	return false
 
 
+## The see-through circle is for when you are outside and something stands
+## between you and the camera. Inside a building (its front and roof already
+## lift away) it is switched off: camera and focus at one point cut nothing.
 func set_cutaway(camera_pos: Vector3, focus: Vector3) -> void:
+	if indoors != null:
+		camera_pos = focus
 	land.set_cutaway(camera_pos, focus)
 
 
@@ -523,7 +581,6 @@ func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
 	town.update(dt)
-	see_through.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3
 		var z: float = m.z + MIST_REPEAT * roundf((focus.z - m.z) / MIST_REPEAT) + cos(time * 0.04 + m.seed) * 2

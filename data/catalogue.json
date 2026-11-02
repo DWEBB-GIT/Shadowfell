@@ -27,6 +27,7 @@
     "world_map": "world/world_map.json",
     "text": "ui/text.json",
     "credits": "meta/credits.json",
-    "enemies": "npcs/enemies.json"
+    "enemies": "npcs/enemies.json",
+    "model_colliders": "world/model_colliders.json"
   }
 }

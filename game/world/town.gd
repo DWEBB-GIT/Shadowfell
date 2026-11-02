@@ -7,8 +7,8 @@ extends RefCounted
 ## ring of the opening (the lane and town, then Bracken Vale) until any of
 ## its `opensWhen` conditions holds (Quests.condition_holds), then opens for
 ## good; `shut` ones never open in this act. Everything is drawn with the
-## woodland's cutaway, so nothing here can hide the player, except houses,
-## which fade as a whole (SeeThrough).
+## woodland's cutaway, so nothing here can hide the player; houses too use
+## the see-through circle around the player (SeeThrough).
 
 const ROOF := {"thatch": Color("8c7748"), "slate": Color("4c5866"), "tile": Color("9a4a30")}
 const WALL := {"plaster": Color("d2c39c"), "timber": Color("9a7a52"), "stone": Color("8f897c")}
@@ -40,7 +40,6 @@ func _init(g, w, parent: Node3D) -> void:
 	_mat = ShaderMaterial.new()
 	_mat.shader = Land.CUTAWAY
 	_mat.set_shader_parameter("albedo", Color.WHITE)
-	w.land.add_cutaway(_mat)
 
 
 func build() -> Town:

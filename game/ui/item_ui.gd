@@ -82,6 +82,20 @@ func _init(g, h) -> void:
 			open_bags.clear()
 		shop_opened_bags = false
 		_after_change(null))
+	# so does talking to anyone who sells (Dan, 2026-10-29), before you
+	# pick Browse goods; walking off or Goodbye closes them again
+	ev.on("dialogueChanged", func(_e):
+		var n = game.dialogue.npc
+		var vendor: bool = n != null and DB.npcs[n.id].get("shop")
+		if vendor and not bags_open:
+			shop_opened_bags = true
+			for i in _sockets():
+				open_bags[i] = true
+			_after_change("bags")
+		elif n == null and shop_opened_bags and game.merchant.current == null:
+			open_bags.clear()
+			shop_opened_bags = false
+			_after_change(null))
 
 
 # ------------------------------------------------------------------ building
@@ -300,6 +314,7 @@ func toggle_bag(i: int) -> void:
 
 
 func close(which: String) -> void:
+	hud.panel_closed_sound(which)
 	if which == "bags":
 		open_bags.clear()
 	else:
@@ -324,9 +339,21 @@ func _after_change(which) -> void:
 		focus = null
 		_hide_tip()
 	render()
+	if which != null:
+		var win := _window_node(which)
+		if win != null and win.visible:
+			hud.raise(self, win)
 	if any_open and (focus == null or not _visible_locs().has(focus)):
 		focus = _default_focus(which)
 	_paint_focus()
+
+
+## a window's outer node, to raise it over the others
+func _window_node(which: String) -> Control:
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}.get(which)
+	if which == "bags":
+		return bags
+	return w.panel if w != null else null
 
 
 # ------------------------------------------------------------------ slots

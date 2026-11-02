@@ -57,7 +57,6 @@ var _grass_mat: ShaderMaterial
 var _cover := {} ## Vector2i -> the chunk's grass (shown only when some of it is in reach)
 var _blade: ArrayMesh
 var _models := {} ## model -> [mesh, cutaway material]
-var _cutaways: Array = []
 static var _clear_cells := {} ## 32 m cell -> [[x, z, r]]: ground kept free of trees
 
 
@@ -445,22 +444,19 @@ func _model(model: String):
 			m.shader = CUTAWAY
 			var base := mi.get_active_material(0)
 			m.set_shader_parameter("albedo", base.albedo_color if base is BaseMaterial3D else Color.WHITE)
-			_cutaways.append(m)
 			out = [mi.mesh, m]
 		src.free()
 	_models[model] = out
 	return out
 
 
-## another material that dissolves between the camera and the player (Town)
-func add_cutaway(m: ShaderMaterial) -> void:
-	_cutaways.append(m)
-
-
-func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:
-	for m in _cutaways:
-		m.set_shader_parameter("uCamPos", camera_pos)
-		m.set_shader_parameter("uFocus", at)
+## the see-through circle follows the player: one pair of global shader
+## values shared by every cutaway material (cutaway.gdshaderinc)
+static var cut_cam := Vector3.ZERO ## last values sent, for checks
+static func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:
+	cut_cam = camera_pos
+	RenderingServer.global_shader_parameter_set("sf_cut_cam", camera_pos)
+	RenderingServer.global_shader_parameter_set("sf_cut_focus", at)
 
 
 # ------------------------------------------------------------- grass

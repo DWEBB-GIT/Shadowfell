@@ -839,6 +839,12 @@ func _handle_input(dt: float):
 		if pad.pressed(B.B) or pad.pressed(B.A):
 			hud.close_modal()
 		return null
+	if hud.modal == "confirm":
+		if input.consume("Enter") or pad.pressed(B.A):
+			hud.answer_confirm(true)
+		elif pad.pressed(B.B):
+			hud.answer_confirm(false)
+		return null
 	# View + Start (held together, as Select + Start) opens edit mode
 	if pad.held(B.VIEW) and pad.pressed(B.START):
 		hud.hud_edit.open()
@@ -1009,6 +1015,7 @@ func step(dt: float) -> void:
 		gathering.update(dt, time)
 		law.update(dt)
 		boons.update(dt)
+		afterlife.update(dt)
 		water_and_dark.update(dt, time)
 		discovery.update(dt)
 		puzzles.update(dt)

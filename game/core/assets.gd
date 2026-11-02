@@ -128,6 +128,45 @@ static func tint_instance(root: Node3D, tint: Color) -> void:
 	root.set_meta("_shadowfell_tint_materials", materials)
 
 
+## The see-through circle for a textured pack model (nature trees, rocks,
+## plants): each surface gets a nature_cutaway material built once per source
+## material, so every copy of a tree shares the same few materials.
+const NATURE_CUTAWAY := preload("res://game/render/nature_cutaway.gdshader")
+static var _cutaway_for := {}
+
+static func use_cutaway(root: Node3D) -> void:
+	var meshes: Array = root.find_children("*", "MeshInstance3D", true, false)
+	if root is MeshInstance3D:
+		meshes.append(root)
+	for mi: MeshInstance3D in meshes:
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var original := mi.get_active_material(i)
+			if original is BaseMaterial3D:
+				mi.set_surface_override_material(i, cutaway_material(original))
+
+
+static func cutaway_material(src: BaseMaterial3D) -> ShaderMaterial:
+	if _cutaway_for.has(src):
+		return _cutaway_for[src]
+	var m := ShaderMaterial.new()
+	m.shader = NATURE_CUTAWAY
+	m.set_shader_parameter("albedo", src.albedo_color)
+	if src.albedo_texture:
+		m.set_shader_parameter("albedo_tex", src.albedo_texture)
+		m.set_shader_parameter("use_albedo_tex", true)
+	if src.normal_enabled and src.normal_texture:
+		m.set_shader_parameter("normal_tex", src.normal_texture)
+		m.set_shader_parameter("use_normal_tex", true)
+		m.set_shader_parameter("normal_scale", src.normal_scale)
+	if src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+		m.set_shader_parameter("alpha_scissor", src.alpha_scissor_threshold)
+	m.set_shader_parameter("roughness", src.roughness)
+	_cutaway_for[src] = m
+	return m
+
+
 static var _paths := {}
 static func _load_paths() -> void:
 	var path := "res://assets/model_library.json"
