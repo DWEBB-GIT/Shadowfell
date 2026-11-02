@@ -1833,7 +1833,7 @@ func _update_target() -> void:
 	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
 	if friend != null:
 		target_name.text = friend.name
-		target_name.add_theme_color_override("font_color", Color("a8e08c"))
+		target_name.add_theme_color_override("font_color", UI.NAME_FRIENDLY)
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
 		target_kind.text = ""
@@ -1845,7 +1845,7 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", Color("ff9c60") if elite else Color("f0d050") if shown.passive else Color("e8c8a0"))
+	target_name.add_theme_color_override("font_color", UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
@@ -1923,7 +1923,7 @@ func _update_enemy_bars() -> void:
 		bar.name_row.visible = elite or targeted or nemesis
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", Color("ff6a50") if nemesis else Color("f0d050") if e.passive else Color("ffb08a") if targeted else Color("d8c7a0"))
+		bar.name.add_theme_color_override("font_color", UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null

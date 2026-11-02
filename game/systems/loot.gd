@@ -22,6 +22,9 @@ var active: Array = [] ## { def, x, z, group, glint, base_y, seed, depleted }
 var regrow: Array = [] ## { entry, at }: gathering nodes waiting to grow back
 var gathering = null ## { entry, t, total, from } or, skinning, { skin, name, t, total, from }
 var unique := {}
+## seconds an item lies on the ground before it is gone (Dan, 2026-11-02);
+## the time left is saved with it, so it counts only while you play
+const GROUND_LIFE := 300.0
 
 
 ## The Skinning rank a beast of this level needs (by level, not by kind).
@@ -216,7 +219,8 @@ func clear() -> void:
 
 func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	var group := Node3D.new()
-	var model := Assets.instance(def.get("model", ""))
+	var coins: int = int(def.get("reward", {}).get("coins", 0))
+	var model: Node3D = _coin_piles(coins) if coins > 0 else Assets.instance(def.get("model", ""))
 	if def.get("scale"):
 		model.scale *= def.scale
 	if def.get("kind") == "weapon":
@@ -239,8 +243,9 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 		if not ["junk", "common", "quest"].has(rarity):
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 			beam = _beam(group, Items.rarity_colour(rarity), rarity)
-	if def.get("reward", {}).get("coins"):
-		glint.material_override.albedo_color = Color(Color("ffd36a"), 0.7) # coins wink gold
+	# coins and plain (junk/common) drops lie bare, no glint (Dan 2026-11-02)
+	var bare: bool = coins > 0 or (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
+	glint.visible = not bare
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
 	group.position = Vector3(x, base_y, z)
@@ -249,6 +254,42 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	var entry := {"def": def, "x": x, "z": z, "group": group, "glint": glint, "beam": beam, "base_y": base_y, "seed": randf() * 6, "depleted": false}
 	active.append(entry)
 	return entry
+
+
+## Coins on the ground: a pile of gold coins and a pile of silver beside
+## it (100 silver to the gold), each bright enough to spot without a glow.
+## Bigger sums stack taller, up to a cap.
+func _coin_piles(coins: int) -> Node3D:
+	var root := Node3D.new()
+	var piles := [[int(coins / 100.0), Color("ffc928"), Vector3(-0.09, 0, 0)], [coins % 100, Color("e8eef5"), Vector3(0.09, 0, 0.04)]]
+	for p in piles:
+		if p[0] <= 0:
+			continue
+		var m := StandardMaterial3D.new()
+		m.albedo_color = p[1]
+		m.metallic = 0.6
+		m.roughness = 0.3
+		m.emission_enabled = true
+		m.emission = p[1]
+		m.emission_energy_multiplier = 0.45 # lit from within a touch so it reads in shade
+		var disc := CylinderMesh.new()
+		disc.top_radius = 0.07
+		disc.bottom_radius = 0.07
+		disc.height = 0.022
+		disc.radial_segments = 10
+		disc.material = m
+		var n: int = clampi(1 + int(sqrt(float(p[0]))), 2, 7)
+		for i in n:
+			var c := MeshInstance3D.new()
+			c.mesh = disc
+			c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			c.position = p[2] + Vector3(sin(i * 2.4) * 0.02, 0.012 + i * 0.022, cos(i * 2.4) * 0.02)
+			root.add_child(c)
+		var loose := MeshInstance3D.new() # one coin fallen flat beside the pile
+		loose.mesh = disc
+		loose.position = p[2] + Vector3(0.0, 0.012, 0.13)
+		root.add_child(loose)
+	return root
 
 
 ## Green and better gear on the ground: a column of its colour rising off
@@ -439,6 +480,21 @@ func collect(entry: Dictionary) -> bool:
 	return true
 
 
+## ground items wear away after GROUND_LIFE seconds
+func _age_ground(dt: float) -> void:
+	for i in range(active.size() - 1, -1, -1):
+		var l: Dictionary = active[i]
+		var g = l.def.get("ground")
+		if g == null:
+			continue
+		g.left = float(g.get("left", GROUND_LIFE)) - dt
+		if g.left > 0:
+			continue
+		game.world_state.ground.erase(g)
+		l.group.queue_free()
+		active.remove_at(i)
+
+
 func update(dt: float, time: float) -> void:
 	for i in range(regrow.size() - 1, -1, -1):
 		var r: Dictionary = regrow[i]
@@ -462,6 +518,7 @@ func update(dt: float, time: float) -> void:
 					skin(g.skin)
 				else:
 					collect(g.entry)
+	_age_ground(dt)
 	for l in active:
 		if l.def.get("quest"):
 			l.glint.visible = available(l)

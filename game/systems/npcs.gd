@@ -37,6 +37,7 @@ class Npc:
 		facing = rest_facing
 		group = Node3D.new()
 		group.name = "Npc_" + id
+		group.add_to_group(World.MOVING_GROUP)
 		model = Assets.instance(d.model)
 		group.add_child(model)
 		if d.get("tool"):
@@ -100,7 +101,9 @@ class Npc:
 				rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
 				if def.has("anvil"):
 					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
-		rig.update(dt, 0)
+		# limbs only move where the camera could see them
+		if U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
+			rig.update(dt, 0)
 		group.position = position
 		group.rotation.y = facing
 

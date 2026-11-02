@@ -72,6 +72,7 @@ func _init(g, spawn: Dictionary) -> void:
 
 	group = Node3D.new()
 	group.name = "Enemy_" + id
+	group.add_to_group(World.MOVING_GROUP)
 	model = Assets.instance(cfg.model)
 	group.add_child(model)
 	rig = Rig.new(model, cfg.model)

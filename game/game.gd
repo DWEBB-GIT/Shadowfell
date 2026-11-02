@@ -110,6 +110,11 @@ var camera: Camera3D
 var camera_target := Vector3.ZERO
 var fog_base = null
 var _bwk := -1.0
+## The colour grade in force now (ZoneGrade), easing towards the one where
+## the player stands; empty until the first region update.
+var grade := {}
+var _ghost := false
+var _grade_check := 0.0
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
 var _region_at := Vector2(INF, INF)
 var _region_from := Vector2.ZERO
@@ -427,6 +432,8 @@ func start_game(resume: bool) -> void:
 	mining.spawn_all()
 	gathering.spawn_all()
 	hud.hide_title()
+	hud.hud_edit.close() # never start in edit mode or with the belt open
+	hud.belt.close()
 	started = true
 	_snap_camera()
 	if resumed:
@@ -464,10 +471,19 @@ func respawn() -> void:
 
 ## The grey of the spirit world, or (off) the normal grade.
 func set_ghost_look(on: bool) -> void:
+	_ghost = on
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 0.15 if on else GRADE.saturation
-	env.adjustment_brightness = 0.85 if on else GRADE.brightness
-	env.adjustment_contrast = 1.1 if on else GRADE.contrast
+	if on:
+		env.adjustment_saturation = 0.15
+		env.adjustment_brightness = 0.85
+		env.adjustment_contrast = 1.1
+		env.adjustment_color_correction = null
+	elif not grade.is_empty():
+		ZoneGrade.apply_colour(env, grade)
+	else:
+		env.adjustment_saturation = GRADE.saturation
+		env.adjustment_brightness = GRADE.brightness
+		env.adjustment_contrast = GRADE.contrast
 
 
 ## Pixels between a world point and the mouse, or INF behind the camera.
@@ -1045,22 +1061,27 @@ func step(dt: float) -> void:
 
 ## Which region and named place the Warden is in, and the air there: the
 ## fog and light shade smoothly into the gloom of the Blackwood and other
-## dark woods. The region is looked up every few metres, and a new one only
-## counts once you are a little way into it, so a border does not flicker.
+## dark woods, and colour zones (ZoneGrade, data/terrain/<map>/grades.json)
+## lay their own tint, fog and light over that, eased in as you walk. The
+## region is looked up every few metres, and a new one only counts once you
+## are a little way into it, so a border does not flicker.
 func _update_region(dt: float) -> void:
 	var p := player.position
-	var k := move_toward(_bwk, Terrain.gloom(p.x, p.z), dt * 0.6) if _bwk >= 0.0 else Terrain.gloom(p.x, p.z)
-	if k != _bwk:
-		_bwk = k
-		var bw: Dictionary = DB.CONFIG.blackwood
-		var fog: Dictionary = DB.CONFIG.fog
-		fog_base = {"near": lerpf(fog.near, bw.fogNear, k), "far": lerpf(fog.far, bw.fogFar, k)}
-		env.fog_light_color = (fog.color as Color).lerp(bw.fogColor, k)
-		env.background_color = env.fog_light_color
-		var light := lerpf(1, bw.light, k)
-		env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * lerpf(1, bw.ambient, k)
-		env.ambient_light_color = AMBIENT.lerp(bw.ambientColor, k)
-		sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * light
+	var snap := _bwk < 0.0
+	var k := move_toward(_bwk, Terrain.gloom(p.x, p.z), dt * 0.6) if not snap else Terrain.gloom(p.x, p.z)
+	_bwk = k
+	_grade_check -= dt
+	if _grade_check <= 0.0:
+		_grade_check = 1.0
+		if ZoneGrade.changed_on_disk():
+			ZoneGrade.reload()
+	var target := ZoneGrade.target_at(p.x, p.z, air(k), ZoneGrade.list())
+	if snap or grade.is_empty():
+		grade = target
+		_apply_grade()
+	elif ZoneGrade.distance(grade, target) > 0.002:
+		grade = ZoneGrade.mix(grade, target, 1.0 - exp(-dt * 1.5))
+		_apply_grade()
 	if region != null and Vector2(p.x - _region_at.x, p.z - _region_at.y).length() < 2.0:
 		return
 	_region_at = Vector2(p.x, p.z)
@@ -1079,6 +1100,32 @@ func _update_region(dt: float) -> void:
 	if sub != subzone:
 		subzone = sub
 		events.emit("subzoneChanged", {"name": sub, "announce": started})
+
+
+## The world's own air at a gloom of `k` (0 open land, 1 deep Blackwood):
+## the grade before any colour zone.
+static func air(k: float) -> Dictionary:
+	var bw: Dictionary = DB.CONFIG.blackwood
+	var fog: Dictionary = DB.CONFIG.fog
+	return {"tint": Color.WHITE, "shadowTint": Color.WHITE, "tintStrength": 0.0,
+		"saturation": GRADE.saturation, "contrast": GRADE.contrast, "brightness": GRADE.brightness,
+		"fogColor": (fog.color as Color).lerp(bw.fogColor, k), "fogNear": lerpf(fog.near, bw.fogNear, k),
+		"fogFar": lerpf(fog.far, bw.fogFar, k), "fogAmount": 1.0, "mist": 1.0,
+		"ambientColor": AMBIENT.lerp(bw.ambientColor, k), "ambient": lerpf(1, bw.ambient, k),
+		"sunlight": lerpf(1, bw.light, k)}
+
+
+func _apply_grade() -> void:
+	var g := grade
+	fog_base = {"near": g.fogNear, "far": maxf(g.fogFar, g.fogNear + 1.0)}
+	env.fog_light_color = g.fogColor
+	env.background_color = g.fogColor
+	env.fog_density = clampf(g.fogAmount, 0.0, 1.0)
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient
+	env.ambient_light_color = g.ambientColor
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight
+	if not _ghost:
+		ZoneGrade.apply_colour(env, g)
 
 
 func _snap_camera() -> void:

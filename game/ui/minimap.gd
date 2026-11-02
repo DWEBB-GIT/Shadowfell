@@ -56,19 +56,20 @@ func _init(g) -> void:
 		var v := Vector2(cos(a), sin(a))
 		_circle.append(Vector2(r, r) + v * (r - 1))
 		_circle_uv.append(Vector2(0.5, 0.5) + v * (r - 1) / SIZE)
-	# where you are: a bar across the foot of the circle
-	location = UI.label(self, "", 11, UI.GOLD)
+	# where you are: a bar above the circle (Dan, 2026-11-02), the map
+	# moved down by NAME_ROOM to make room for it
+	location = UI.label(self, "", 13, UI.GOLD)
 	location.add_theme_stylebox_override("normal", _round_box(4))
 	location.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	location.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	location.clip_text = true
 	location.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	location.size = Vector2(124, 18)
-	location.position = Vector2(SIZE / 2 - 62, SIZE - 9)
+	location.size = Vector2(150, 20)
+	location.position = Vector2(SIZE / 2 - 75, -OUT_TOP)
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 4)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
@@ -107,7 +108,8 @@ const NORTH_R := 9.0
 const ON_RIM := 0.0
 ## room the rim buttons need outside SIZE: right for zoom, top for north
 const OUT_RIGHT := 4.0
-const OUT_TOP := 9.0
+const NAME_ROOM := 22.0 ## the place name's bar above the north badge
+const OUT_TOP := 9.0 + NAME_ROOM
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
