@@ -16,6 +16,11 @@ const CONFIG := {
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
 	"player": {"archetype": "warden", "speed": 6.2, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	## Chasing a fight, an enemy runs at least `share` of the player's run
+	## speed and swings on the run at anything within its reach + `reachGrace` m
+	## (Dan 2026-11-02: running away was too easy). `share` 1 = you cannot
+	## outrun it on the straight, only out-last its leash.
+	"chase": {"share": 1.0, "reachGrace": 0.3},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	"death": {

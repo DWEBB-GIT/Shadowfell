@@ -298,9 +298,13 @@ func on_enemy_defeated(enemy) -> void:
 		game.events.emit("xpGained", {"target": enemy, "amount": game.progression.add_xp(xp, true)})
 	if enemy.cfg.get("reputation"):
 		game.reputation.add_all(enemy.cfg.reputation)
-	# coins stay on the body until looted; a beast's body also waits for a skinner
-	if enemy.cfg.get("coins", 0) > 0 or loot.keep_for_skinning(enemy):
-		loot.add_corpse(enemy, enemy.cfg.get("coins", 0))
+	# coins fall to the ground beside the body as a purse to pick up; a
+	# beast's body still waits for a skinner
+	var coins := int(round(float(enemy.cfg.get("coins", 0))))
+	if coins > 0:
+		loot.drop_coins(enemy, coins)
+	if loot.keep_for_skinning(enemy):
+		loot.add_corpse(enemy, 0)
 	if enemy.cfg.get("uniqueDrop"):
 		loot.drop_unique(enemy)
 	loot.drop_from_enemy(enemy)
