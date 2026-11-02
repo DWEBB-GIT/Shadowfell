@@ -582,6 +582,7 @@
       "portal": "home",
       "target": "self",
       "everyone": true,
+      "bar": false,
       "desc": "Spend 10 seconds thinking of your bed, then step back to the inn you made your home (ask an innkeeper). Not while fighting. Moving interrupts it. Once every 30 minutes.",
       "tuning": {
         "castTime": 10,

@@ -65,6 +65,9 @@ func reset() -> void:
 	bag[1] = {"id": ActionBar.STARTER_FOOD, "count": DB.CONFIG.player.startFood}
 	if arch.get("resources", {}).has("mana"):
 		bag[2] = {"id": ActionBar.STARTER_DRINK, "count": DB.CONFIG.player.startDrinks}
+	# Return Home lives in the backpack as a charm, not on the tool belt
+	# (Dan, 2026-11-02)
+	bag[bag.size() - 1] = {"id": HOME_CHARM, "count": 1}
 	var gear: Dictionary = arch.get("startingGear", {})
 	for slot in gear:
 		if slot == "ammo":
@@ -619,6 +622,10 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
+	# a charm that casts an ability (the Homeward charm: Return Home)
+	if def.get("use", {}).has("ability"):
+		game.action_bar.clicked[def.use.ability] = true
+		return true
 	if def.get("use", {}).has("food") or def.get("use", {}).has("drink"):
 		return game.cooking.eat(loc)
 	if def.kind == "consumable":
@@ -817,6 +824,9 @@ func use_draught(loc = null) -> bool:
 
 
 # ------------------------------------------------------------ saving
+const HOME_CHARM := "homeward_charm" ## the backpack charm that casts Return Home
+
+
 func serialize() -> Dictionary:
 	var sk := []
 	for s in sockets:
@@ -824,7 +834,7 @@ func serialize() -> Dictionary:
 	var eq := {}
 	for k in equipment:
 		eq[k] = clone(equipment[k])
-	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield"], "ammo": ammo_choice}
+	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice}
 
 
 func apply(data: Dictionary) -> void:
@@ -861,5 +871,9 @@ func apply(data: Dictionary) -> void:
 			equipment.offHand = {"id": "kite_shield", "count": 1}
 		else:
 			_insert("kite_shield", 1)
+	# characters made before the charm get one once
+	if not data.get("granted", []).has(HOME_CHARM) and _find(HOME_CHARM) == null:
+		if _insert(HOME_CHARM, 1) > 0:
+			back.append({"id": HOME_CHARM, "count": 1})
 	game.player.show_equipment(equipment)
 	_changed()

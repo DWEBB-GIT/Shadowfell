@@ -25,7 +25,7 @@ func _process(_dt: float) -> bool:
 		var bar: Array = game.action_bar.slots
 		_ok(inv.coins == 0, "a new character has no coins")
 		_ok(inv.count(ActionBar.STARTER_FOOD) == 5 and inv.count(ActionBar.STARTER_DRINK) == 5, "a mana class starts with 5 food and 5 drinks")
-		_ok(bar.slice(6) == ["item:healing_draught", "item:trail_bread", "item:spring_water", null], "the consumable slots hold them (Return Home is on the tool belt): %s" % [bar.slice(6)])
+		_ok(bar.slice(6) == ["item:healing_draught", "item:trail_bread", "item:spring_water", null], "the consumable slots hold them (Return Home is the backpack charm): %s" % [bar.slice(6)])
 		# drinking restores mana while sitting
 		game.resources.mana = 0
 		var loc = null
