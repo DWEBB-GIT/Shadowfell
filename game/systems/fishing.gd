@@ -43,9 +43,10 @@ func _say(text: String, key: String) -> bool:
 func cast(aim) -> bool:
 	var player = game.player
 	if not game.skills.has("fishing"):
-		return _say("You do not know how to fish. Old Tam by the mere can teach you.", "fish-skill")
+		var teacher: String = DB.npcs.get(DB.skills.fishing.trainer, {}).get("name", "the fishing trainer")
+		return _say("You do not know how to fish. %s can teach you." % teacher, "fish-skill")
 	if not has_rod:
-		return _say("You need a fishing rod in your bags.", "fish-rod")
+		return _say("You need a fishing rod on your tool belt.", "fish-rod")
 	if player.casting != null or player.pending != null:
 		return false
 	stop(true)
@@ -86,11 +87,11 @@ func cast(aim) -> bool:
 	return true
 
 
-## any rod carried
+## any rod on the tool belt
 var has_rod: bool:
 	get:
 		for id in DB.items:
-			if DB.items[id].get("rod") and game.inventory.has(id):
+			if DB.items[id].get("rod") and game.inventory.on_belt(id):
 				return true
 		return false
 

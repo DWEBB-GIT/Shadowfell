@@ -1,0 +1,10 @@
+{
+  "_about": "Colour zones (game/world/zone_grade.gd): placed and tuned in the World editor under Colour zones, saved with Ctrl+S.",
+  "zones": [
+    {"name": "Thornford", "position": [-450, -207], "radius": 45, "feather": 35, "tint": "#ffd29a", "shadowTint": "#8c6a58", "tintStrength": 0.28, "saturation": 1.02, "contrast": 1.08, "brightness": 1.02},
+    {"name": "Holt Fields", "position": [-355, -290], "radius": 60, "feather": 40, "tint": "#ffd88f", "shadowTint": "#7d6a4e", "tintStrength": 0.3, "saturation": 1.05, "contrast": 1.08, "brightness": 1.02},
+    {"name": "Briarwood", "position": [-575, -320], "radius": 60, "feather": 40, "tint": "#e8e0a0", "shadowTint": "#4e5f45", "tintStrength": 0.22, "saturation": 1.0, "contrast": 1.1, "brightness": 1.0},
+    {"name": "The Nameless Yard", "position": [-330, -445], "radius": 55, "feather": 40, "tint": "#c9b0ff", "shadowTint": "#4a3070", "tintStrength": 0.45, "saturation": 0.8, "contrast": 1.15, "brightness": 0.95, "fogColor": "#4e4466", "fogNear": 40, "fogFar": 95, "fogAmount": 1.0, "mist": 2.5, "ambientColor": "#6c5c96", "ambient": 0.9, "sunlight": 0.8},
+    {"name": "Paleweald", "position": [570, -500], "radius": 260, "feather": 80, "tint": "#c4a8f0", "shadowTint": "#3e2c60", "tintStrength": 0.4, "saturation": 0.82, "contrast": 1.14, "brightness": 0.95, "fogColor": "#4a4260", "fogNear": 36, "fogFar": 88, "fogAmount": 1.0, "mist": 4.0, "ambientColor": "#675a90", "ambient": 0.95, "sunlight": 0.8}
+  ]
+}

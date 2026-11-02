@@ -31,14 +31,24 @@ func _init(g) -> void:
 	dust_mat = StandardMaterial3D.new()
 	dust_mat.albedo_color = Color("6a5c48")
 	var ev: Events = game.events
-	# a spell with its own look (data/spell_fx.json) skips the generic one
+	# a spell with its own look (data/abilities/spell_fx.json) skips the generic one
 	ev.on("spellFx", func(e): spell_fx(e))
 	ev.on("burst", func(e):
 		if not _has_look(e.get("id", ""), "impact"):
 			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
 	ev.on("enemyHit", func(e):
-		sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8)
-		_blow_lands(e))
+		var land := func():
+			if e.get("damage",0) > 0:
+				contact_impact(e)
+			_blow_lands(e)
+		# The opening auto-attack resolves early but its visible impact waits
+		# for the blade's windup, together with the floating damage number.
+		var delay: float = e.get("show",0.0)
+		if delay > 0:
+			_add(Node3D.new(),delay,func(_it,k,_dt):
+				if k >= 1: land.call())
+		else:
+			land.call())
 	# the weight of a landed blow: the camera kicks (nothing ever pauses)
 	ev.on("hitImpact", func(e):
 		if e.get("heavy") or e.get("crit"):
@@ -56,6 +66,14 @@ func _init(g) -> void:
 		var sh = e.shape
 		var r: float = sh.range * 0.55
 		shockwave(Vector3(sh.x + sin(sh.angle) * r, game.player.position.y, sh.z + cos(sh.angle) * r), sh.range * 0.6))
+	# a light scuff of dust, not a cloud (smaller and fainter, Dan 2026-11-02);
+	# a spirit's hop raises none
+	ev.on("playerJumped", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 3, 0.5))
+	ev.on("playerLanded", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 4, clampf(e.speed / 6.8, 0.5, 0.8)))
 	ev.on("playerLunge", func(_e): dust(game.player.position, 6, 0.3))
 	ev.on("braceBlock", func(_e): sparks(game.player.position, 10))
 	ev.on("anvilStrike", func(e):
@@ -108,6 +126,13 @@ func prewarm(pos: Vector3) -> void:
 	flash(under, Color.WHITE)
 	pillar(under)
 	zone(under.x, under.z, 1, 0.1)
+	ground_puff(under, 1, 1.0)
+	var splat := Tex.ground_quad(Tex.fx_material(Tex.splat(), Color("4e0806"), false))
+	splat.position = under
+	_add(splat, 0.1, func(_it, _k, _dt): pass)
+	var drop := Tex.sprite(Tex.fx_material(Tex.drop(), Color("9a1612"), false, true))
+	drop.position = under
+	_add(drop, 0.1, func(_it, _k, _dt): pass)
 	for name in _look_meshes():
 		_shape({"mesh": name, "life": 0.1}, under, 0.0, null, Color.WHITE, {})
 	var tm := ShaderMaterial.new()
@@ -123,8 +148,9 @@ func prewarm(pos: Vector3) -> void:
 
 ## `update(it, k, dt)`; `it` is the effect's own dictionary, so it can keep state.
 func _add(obj: Node3D, life: float, update: Callable, state := {}) -> Dictionary:
+	var tag := str(obj.name) # its name before the scene makes a twin's unique
 	game.scene.add_child(obj)
-	var it := {"obj": obj, "life": life, "age": 0.0, "update": update}
+	var it := {"obj": obj, "life": life, "age": 0.0, "update": update, "tag": tag}
 	it.merge(state)
 	items.append(it)
 	return it
@@ -169,7 +195,7 @@ func dust(pos: Vector3, n: int, spread := 0.6) -> void:
 ## An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
 ## With `follow` (an enemy), it homes in on it as it moves, and arrives
 ## after `life` seconds. `look` (a spell id) adds that spell's
-## `projectile` shapes (data/spell_fx.json), carried along its flight.
+## `projectile` shapes (data/abilities/spell_fx.json), carried along its flight.
 func projectile(p: Dictionary) -> void:
 	var kind = p.get("kind")
 	var follow = p.get("follow")
@@ -398,7 +424,7 @@ static func _look_meshes() -> Array:
 
 
 ## A spell's own look: every part of its `cast` or `impact` list
-## (data/spell_fx.json), each after its own delay.
+## (data/abilities/spell_fx.json), each after its own delay.
 ## `e`: { id, phase, position, facing, follow (the player or null), tuning }
 func spell_fx(e: Dictionary) -> void:
 	var spell: Dictionary = DB.abilities.get(e.id, {})
@@ -436,6 +462,129 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 ## A melee blow connecting: hit-stop on both bodies, and on an auto attack
 ## a faint slash across the target in the swing's direction (main hand cuts
 ## down to the left, off hand down to the right).
+## A compact contact flash that is visible from the gameplay camera on
+## the first rendered hit frame. It never appears on misses or through walls.
+func contact_impact(e: Dictionary) -> void:
+	var enemy = e.enemy
+	var crit: bool = e.get("crit", false)
+	var high := clampf(enemy.radius * 1.6, 0.5, 1.35)
+	var at: Vector3 = enemy.position + Vector3.UP * high + game.camera.global_basis.z * 0.35
+	# a small, quick white pop where the blow lands: weight, not a light show
+	# (the old cream glint and orange sparks read as a yellow flash, Dan 2026-11-02)
+	var mat := Tex.fx_material(Tex.puff(), Color(1, 1, 1, 0.7), true, true)
+	mat.render_priority = 2
+	var pop := Tex.sprite(mat)
+	pop.name = "HitContact"
+	pop.position = at
+	var size := 0.5 if crit else 0.34
+	pop.scale = Vector3.ONE * size
+	_add(pop, 0.1, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * size * (1.0 + k * 0.6)
+		mat.albedo_color.a = 0.7 * (1.0 - k) * (1.0 - k))
+	# a crit or a weapon ability jolts the body back (the look only)
+	var hard: bool = crit or (e.get("kind", "") == "strike" and not e.get("swing", false))
+	if hard and e.get("hand", "") != "ranged" and enemy.rig:
+		var p = game.player
+		enemy.rig.knock(Vector3(enemy.position.x - p.position.x, 0, enemy.position.z - p.position.z), 0.26 if crit else 0.16)
+	if game.settings.get_value("bloodEffects") and e.get("kind", "") == "strike":
+		spatter(enemy, at, crit)
+
+
+## What a blow knocks out of a foe: "red" blood from anything living, "bone"
+## chips and grave dust from the undead, "straw" from the training dummy.
+## An enemy's data can say (`blood`); otherwise it bleeds.
+const BLOOD := {
+	"red": [Color("9a1612"), Color("4e0806")],
+	"bone": [Color("d8d0bc"), Color("8a8272")],
+	"straw": [Color("d2b464"), Color("8a6c34")],
+}
+
+
+static func blood_of(enemy) -> String:
+	var b = enemy.cfg.get("blood")
+	if b:
+		return str(b)
+	return "straw" if enemy.cfg.get("dummy") else "red"
+
+
+## A spray of drops thrown away from the player, a brief mist where the blow
+## landed and, for blood, a splash on the ground that soaks in over seconds.
+func spatter(enemy, at: Vector3, crit: bool) -> void:
+	var kind := blood_of(enemy)
+	var cols: Array = BLOOD.get(kind, BLOOD.red)
+	var p = game.player
+	var away := Vector3(enemy.position.x - p.position.x, 0, enemy.position.z - p.position.z)
+	away = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
+	var side := Vector3(-away.z, 0, away.x)
+	var floor_y: float = enemy.position.y + 0.04
+	for i in (16 if crit else 10):
+		var c: Color = cols[0].lerp(cols[1], randf())
+		var mat := Tex.fx_material(Tex.drop(), c, false, true)
+		mat.render_priority = 1
+		var d := Tex.sprite(mat)
+		d.name = "BloodDroplet" if kind == "red" else "HitChip"
+		d.position = at
+		var sz := randf_range(0.05, 0.12) * (1.3 if crit else 1.0)
+		d.scale = Vector3.ONE * sz
+		var v := away * randf_range(1.2, 3.8) + side * randf_range(-1.6, 1.6) + Vector3.UP * randf_range(0.4, 2.6)
+		_add(d, randf_range(0.4, 0.6), func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v.y -= 14.0 * dt
+			if it.obj.position.y < it.floor:
+				it.obj.position.y = it.floor
+				it.v = Vector3.ZERO
+			mat.albedo_color.a = 1.0 if k < 0.6 else (1.0 - k) / 0.4, {"v": v, "floor": floor_y})
+	var mist_mat := Tex.fx_material(Tex.puff(), Color(cols[0], 0.5), false, true)
+	mist_mat.render_priority = 1
+	var mist := Tex.sprite(mist_mat)
+	mist.name = "BloodMist"
+	mist.position = at
+	_add(mist, 0.28, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * (0.35 + k * 0.55) * (1.3 if crit else 1.0)
+		mist_mat.albedo_color.a = 0.5 * (1.0 - k))
+	if kind != "red":
+		dust(enemy.position, 4 if crit else 2, 0.3)
+		return
+	for j in (2 if crit else 1):
+		var off := away * randf_range(0.4, 1.2) + side * randf_range(-0.4, 0.4)
+		var gx: float = enemy.position.x + off.x
+		var gz: float = enemy.position.z + off.z
+		var gm := Tex.fx_material(Tex.splat(), Color(cols[1], 0.85), false)
+		var g := Tex.ground_quad(gm)
+		g.name = "BloodSplat"
+		g.position = Vector3(gx, Terrain.height_at(gx, gz) + 0.03, gz)
+		g.rotation.y = randf() * TAU
+		var gs := randf_range(0.55, 0.9) * (1.3 if crit else 1.0)
+		g.scale = Vector3(gs * 0.3, 1, gs * 0.3)
+		_add(g, 6.0, func(it, k, _dt):
+			var grow := minf(1.0, k * 6.0 / 0.2)
+			var sc := gs * (0.3 + 0.7 * grow)
+			it.obj.scale = Vector3(sc, 1, sc)
+			gm.albedo_color.a = 0.85 if k < 0.6 else 0.85 * (1.0 - k) / 0.4)
+
+
+## Dust kicked out from the feet: a small ring as the player leaves the ground,
+## a heavier one on landing (a harder landing throws more).
+func ground_puff(pos: Vector3, n: int, strength: float) -> void:
+	var y := Terrain.height_at(pos.x, pos.z)
+	for i in n:
+		var a := TAU * i / n + randf() * 0.6
+		var dir := Vector3(cos(a), 0, sin(a))
+		var mat := Tex.fx_material(Tex.puff(), Color(Color("a49378"), 0.0), false, true)
+		mat.render_priority = 1
+		var s := Tex.sprite(mat)
+		s.name = "JumpDust"
+		s.position = Vector3(pos.x, y + 0.15, pos.z) + dir * 0.25
+		var sz := randf_range(0.22, 0.34) * strength
+		s.scale = Vector3.ONE * sz
+		var v := dir * randf_range(1.2, 2.4) * strength + Vector3.UP * randf_range(0.2, 0.7)
+		_add(s, randf_range(0.35, 0.5), func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v *= maxf(0.0, 1.0 - 4.0 * dt)
+			it.obj.scale = Vector3.ONE * it.sz * (0.6 + k * 1.4)
+			mat.albedo_color.a = 0.4 * (1.0 - k) * minf(1.0, 0.3 + k * 8.0), {"v": v, "sz": sz})
+
+
 func _blow_lands(e: Dictionary) -> void:
 	var hand: String = e.get("hand", "main")
 	var player = game.player
@@ -452,8 +601,8 @@ func _blow_lands(e: Dictionary) -> void:
 	enemy.rig.hold(t)
 	if e.get("swing"):
 		var facing := atan2(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
-		var slash := {"mesh": "fx_arc", "glow": 0.55 if not e.get("crit") else 0.85, "life": 0.18, "height": 1.25, "forward": -0.2,
-			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.55, 0.7], "spin": 60 if hand == "main" else -60}
+		var slash := {"mesh": "fx_arc", "glow": 0.8 if not e.get("crit") else 1.0, "life": 0.23, "height": 1.1, "forward": -0.2,
+			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.7, 0.95], "spin": 60 if hand == "main" else -60}
 		_shape(slash, enemy.position, facing, null, Color("fff0d8"), {})
 
 
@@ -521,5 +670,6 @@ func update(dt: float) -> void:
 		var k: float = minf(1, it.age / it.life)
 		it.update.call(it, k, dt)
 		if k >= 1:
+			RenderCleanup.detach(it.obj)
 			it.obj.queue_free()
 			items.erase(it)

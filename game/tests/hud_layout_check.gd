@@ -22,8 +22,17 @@ func _process(_dt: float) -> bool:
 	elif frame == 2:
 		var made: Dictionary = game.roster.create("Layout Tester", "warden")
 		game.enter_world(made.character.id)
+	elif frame == 18:
+		game.hud.belt.toggle()
 	elif frame == 20:
 		var hud = game.hud
+		var belt: Rect2 = hud.belt.get_global_rect()
+		_check(hud.belt.visible and hud.belt.column.get_child_count() > 0, "the tool belt opens and lists the starting tools")
+		_check(belt.end.y <= hud.dock.get_global_rect().position.y and belt.position.y >= 0, "the tool belt folds up above the tray, on screen")
+		_check(not belt.intersects(hud.bottom.get_global_rect()), "the tool belt clear of the spell bar")
+		_check(hud.menus.get_global_rect().end.y <= hud.WINDOW_TOP, "windows open under the menu row")
+		_check(not hud.purse.visible, "no money plaque on screen")
+		hud.belt.toggle()
 		var mm = hud.minimap
 		var place: Rect2 = mm.location.get_global_rect()
 		var xy: Rect2 = mm.coords.get_global_rect()
@@ -41,6 +50,12 @@ func _process(_dt: float) -> bool:
 				var o: Rect2 = round_things[j].get_global_rect()
 				var apart := r.get_center().distance_to(o.get_center()) - (r.size.x + o.size.x) / 2
 				_check(apart >= 2, "rim buttons %d and %d clear of each other" % [i, j])
+		var hub: Vector2 = mm.get_global_rect().get_center()
+		for o in mm.zoom_buttons:
+			var r: Rect2 = o.get_global_rect()
+			# N and zoom sit ON the rim, centred on the map's edge (Dan, 2026-11-02)
+			_check(absf(r.get_center().distance_to(hub) - Minimap.SIZE / 2) <= 3, "rim button centred on the map's edge")
+			_check(r.end.x <= root.get_visible_rect().size.x and r.position.y >= 0, "rim button on screen")
 		for o in orbs:
 			var r: Rect2 = o.get_global_rect()
 			_check(not r.intersects(place) and r.position.x >= 0 and r.position.y >= 0, "menu orb on screen and clear of the place name")
@@ -57,6 +72,17 @@ func _process(_dt: float) -> bool:
 		hud.target.visible = false
 		_check(not hud.dock.get_global_rect().intersects(hud.bottom.get_global_rect()), "bag tray clear of the spell bar")
 		_check(absf(hud.dock.get_global_rect().end.y - hud.bottom.get_global_rect().end.y) < 1, "bag tray level with the spell bar")
+		# edit mode: a moved piece lands where it was put, against its anchor
+		var ed = hud.hud_edit
+		ed._loaded_for = ed._key()
+		var vp: Vector2 = root.get_visible_rect().size
+		ed.saved = {"minimap": {"a": Vector2(0, 0), "o": Vector2(96, 104)}, "cast": {"a": Vector2(1, 1), "o": Vector2(-40, -200)}}
+		hud.layout()
+		_check(hud.minimap.position == Vector2(96, 104), "edit mode moves the minimap: %s" % hud.minimap.position)
+		var cr: Rect2 = Rect2(hud.cast.root.position, hud.cast.root.size)
+		_check(cr.end.is_equal_approx(vp + Vector2(-40, -200)), "a piece kept against the bottom right corner: %s" % cr)
+		ed.saved = {}
+		hud.layout()
 		hud.show_window("character")
 	elif frame >= 30 and (frame - 30) % 10 == 0 and (frame - 30) / 10 <= TABS.size():
 		var i: int = (frame - 30) / 10

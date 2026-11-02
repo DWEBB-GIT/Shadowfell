@@ -19,6 +19,25 @@ var flinch := 0.0
 var held := 0.0 ## hit-stop left (hold)
 var death := -1.0 ## -1 alive, otherwise seconds since death
 var pose = null ## a held pose ('fish', 'sit' to eat, 'rest' to sit) when no action plays
+## footfalls: counts up each time a foot comes down in the walk or run (the
+## player's footstep sounds follow it, see AudioSystem._footsteps). Set
+## track_steps to watch an imported skeleton's feet.
+var steps := 0
+var track_steps := false
+var _feet := [] ## { bone, y, dy, low } per foot of an imported skeleton
+var _skel: Skeleton3D
+var _step_gap := 0.0
+## Upper and lower body apart (imported skeletons): moving while an action or
+## a flinch plays, the legs keep the Walk/Run/Jump clip and only the bones
+## from the waist up take the action clip, so the body never slides along in
+## a standing swing pose. { name, t } of the clip on the upper body, its
+## weight (eased in and out) and the bones it moves.
+var _upper = null
+var _upper_w := 0.0
+var _upper_bones = null ## bone index -> true, from the waist up
+var _upper_tracks := {} ## clip name -> [[track, bone], ...]
+## the weight the upper body eases at (per second)
+const UPPER_FADE := 10.0
 
 
 static func ease_(t: float) -> float:
@@ -35,8 +54,8 @@ var airborne := false
 ## how fast each imported model's Walk clip plays at full speed
 const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 2.5, "skeleton": 1.3}
 ## and its Run clip: the battle mage's Mixamo run covers 4.6 m a second, the
-## player runs 5.6 (CONFIG.player speed, runGait)
-const RUN_RATE := {"battle_mage": 0.94}
+## player runs 6.4 (7 yd/s, CONFIG.player speed, runGait; 6.2 earlier on 2026-11-02)
+const RUN_RATE := {"battle_mage": 1.07}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}
@@ -117,9 +136,51 @@ func play_off(duration: float, impact := 0.4) -> void:
 
 func hit() -> void:
 	flinch = 1.0
-	# an imported model with a Hit clip flinches with it (never mid-swing)
+	snap = 0.0 # the head snaps back (models without a Hit clip, the player)
+	# an imported model with a Hit clip flinches with it (never mid-swing);
+	# on the move only the upper body flinches, the legs keep running
 	if anim and anim.has_animation("Hit") and action == null and death < 0:
-		_clip("Hit", 1.0, true)
+		if _moving():
+			_upper = {"name": "Hit", "t": 0.0, "speed": 1.0, "hit": true}
+		else:
+			_clip("Hit", 1.0, true)
+
+
+func _moving() -> bool:
+	return move > 0.12 or airborne
+
+
+## A visual recoil from a heavy blow or a crit: the body jolts away from the
+## attacker along `dir` (world space, flat) and leans back, then settles.
+## Only the model moves; the creature itself stays where it stands (Dan,
+## 2026-11-02: no shoving enemies around).
+func knock(dir: Vector3, amount: float) -> void:
+	if death >= 0 or dir.length_squared() < 0.0001:
+		return
+	var local := dir.normalized().rotated(Vector3.UP, -model.get_parent().rotation.y) if model.get_parent() is Node3D else dir.normalized()
+	recoil_dir = local
+	recoil_amp = amount
+	recoil = 1.0
+	_apply_recoil()
+
+
+var recoil := 0.0 ## 1 at the blow, easing to 0
+var recoil_amp := 0.0
+var recoil_dir := Vector3.ZERO
+var _recoil_pos := Vector3.ZERO
+var _recoil_rot := Vector2.ZERO
+const RECOIL_TILT := 0.9 ## radians of lean per metre of jolt
+
+
+func _apply_recoil() -> void:
+	var k := recoil * recoil
+	var off := recoil_dir * recoil_amp * k
+	var lean := Vector2(recoil_dir.z, -recoil_dir.x) * recoil_amp * RECOIL_TILT * k
+	model.position += off - _recoil_pos
+	model.rotation.x += lean.x - _recoil_rot.x
+	model.rotation.z += lean.y - _recoil_rot.y
+	_recoil_pos = off
+	_recoil_rot = lean
 
 
 ## Hit-stop: hold the whole body still for `t` seconds as a blow lands, so it
@@ -129,6 +190,8 @@ func hold(t: float) -> void:
 
 
 func die() -> void:
+	recoil = 0.0
+	_apply_recoil()
 	death = 0.0
 	action = null
 	off_action = null
@@ -167,6 +230,41 @@ func _clip(name: String, speed: float, restart := false) -> void:
 func _update_anim(dt: float, speed01: float) -> void:
 	_pick_clip(dt, speed01)
 	anim.advance(dt)
+	_apply_upper(dt)
+	_apply_snap(dt)
+	if track_steps:
+		_watch_feet(dt)
+
+
+## A foot that has been coming down and stops, near the ground, is a step.
+func _watch_feet(dt: float) -> void:
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			track_steps = false
+			return
+		_skel = found[0]
+		var hips := _skel.find_bone("mixamorig_Hips")
+		for n in ["mixamorig_LeftFoot", "mixamorig_RightFoot"]:
+			var b := _skel.find_bone(n)
+			if b < 0 or hips < 0:
+				continue
+			var rest := _skel.get_bone_global_rest(b).origin.y
+			var leg := _skel.get_bone_global_rest(hips).origin.y - rest
+			_feet.append({"bone": b, "y": rest, "dy": 0.0, "low": rest + leg * 0.12})
+		if _feet.is_empty():
+			track_steps = false
+			return
+	_step_gap -= dt
+	var walking := clip == "Walk" or clip == "Run"
+	for f in _feet:
+		var y := _skel.get_bone_global_pose(f.bone).origin.y
+		var dy: float = y - f.y
+		if walking and f.dy < 0 and dy >= 0 and y < f.low and _step_gap <= 0:
+			steps += 1
+			_step_gap = 0.15
+		f.y = y
+		f.dy = dy
 
 
 func _pick_clip(dt: float, speed01: float) -> void:
@@ -181,7 +279,7 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		off_action.t += dt
 		if off_action.t >= off_action.duration:
 			off_action = null
-	if clip == "Hit" and action == null and anim.is_playing():
+	if clip == "Hit" and action == null and anim.is_playing() and not _moving():
 		return # the flinch plays out
 	if action != null:
 		var fresh: bool = action.t == 0.0
@@ -190,15 +288,32 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		var name: String = action.type if anim.has_animation(action.type) else ACTION_CLIPS.get(action.type, "Attack")
 		if name != "" and not anim.has_animation(name):
 			name = "Attack" # a creature without a Cast clip bites instead
+		var done: bool = action.t >= action.duration
 		if name == "" or not anim.has_animation(name):
-			_clip("Idle", 1.0)
+			if not _moving():
+				_clip("Idle", 1.0)
+				if done:
+					action = null
+				return
 		else:
 			# the clip's blow (half way through) lands on the action's impact
 			var hit := maxf(0.05, action.impact * action.duration)
-			_clip(name, anim.get_animation(name).length * CLIP_IMPACT / hit, fresh)
-		if action.t >= action.duration:
+			var rate: float = anim.get_animation(name).length * CLIP_IMPACT / hit
+			# once on the move, the action stays on the upper body to its end
+			if action.get("upper", false) or _moving():
+				action.upper = true
+				_upper = {"name": name, "t": action.t * rate, "speed": 0.0}
+			else:
+				_clip(name, rate, fresh)
+				if done:
+					action = null
+				return
+		if done:
 			action = null
-		return
+	if _upper != null and _upper.speed > 0:
+		_upper.t += dt * _upper.speed # a flinch on the move
+		if _upper.t >= anim.get_animation(_upper.name).length:
+			_upper.speed = 0.0
 	if (pose == "sit" or pose == "rest") and anim.has_animation("Sit"):
 		_clip("Sit", 1.0)
 	elif airborne and anim.has_animation("Jump"):
@@ -211,7 +326,128 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		_clip("Idle", 1.0)
 
 
+## Lays the upper body clip over what the AnimationPlayer just posed: the
+## waist up turns to the action's pose, eased in as it starts and out after
+## it ends (or once a flinch has played), the legs keep walking.
+func _apply_upper(dt: float) -> void:
+	if _upper == null:
+		return
+	var live: bool = (action != null and action.get("upper", false)) or (_upper.get("hit", false) and _upper.speed > 0)
+	_upper_w = move_toward(_upper_w, 1.0 if live else 0.0, dt * UPPER_FADE)
+	if not live and _upper_w <= 0.0:
+		_upper = null
+		return
+	if death >= 0 or not _find_upper():
+		_upper = null
+		_upper_w = 0.0
+		return
+	var a := anim.get_animation(_upper.name)
+	var t := minf(float(_upper.t), a.length)
+	for tb in _tracks_of(_upper.name, a):
+		var q := a.rotation_track_interpolate(tb[0], t)
+		var b: int = tb[1]
+		_skel.set_bone_pose_rotation(b, _skel.get_bone_pose_rotation(b).slerp(q, _upper_w))
+
+
+## A blow taken (Dan, 2026-11-02): the head whips back and the chest gives
+## a little, then both settle. Pose only: the body never leaves its spot.
+## Laid over the clip each frame on models without a Hit clip of their own.
+var snap := -1.0 ## seconds since the blow, -1 at rest
+var _snap_bones = null ## [[bone, share], ...]
+const SNAP_IN := 0.06 ## seconds to whip back
+const SNAP_OUT := 0.32 ## seconds to settle
+const SNAP_ANGLE := 0.5 ## radians, head + neck + chest together
+
+
+func _apply_snap(dt: float) -> void:
+	if snap < 0:
+		return
+	snap += dt
+	if snap >= SNAP_IN + SNAP_OUT or death >= 0 or anim.has_animation("Hit"):
+		snap = -1.0
+		return
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			snap = -1.0
+			return
+		_skel = found[0]
+	if _snap_bones == null:
+		_snap_bones = []
+		for pair in [["mixamorig_Spine2", 0.2], ["mixamorig_Neck", 0.3], ["mixamorig_Head", 0.5]]:
+			var b := _skel.find_bone(pair[0])
+			if b >= 0:
+				_snap_bones.append([b, pair[1]])
+	var k := snap / SNAP_IN if snap < SNAP_IN else 1.0 - ease_((snap - SNAP_IN) / SNAP_OUT)
+	# the model faces +Z in its parent, so tipping back is a turn about +X
+	var holder: Node3D = model.get_parent() if model.get_parent() is Node3D else model
+	var axis_skel := (_skel.global_basis.inverse() * holder.global_basis * Vector3.RIGHT).normalized()
+	for pair in _snap_bones:
+		var b: int = pair[0]
+		var parent := _skel.get_bone_parent(b)
+		var pb := _skel.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
+		var axis := (pb.inverse() * axis_skel).normalized()
+		var turn := Quaternion(axis, -SNAP_ANGLE * float(pair[1]) * k)
+		_skel.set_bone_pose_rotation(b, turn * _skel.get_bone_pose_rotation(b))
+
+
+## The bones from the waist up: walking up from the head, every bone that
+## carries no leg (CC and Mixamo rigs alike).
+func _find_upper() -> bool:
+	if _upper_bones != null:
+		return not _upper_bones.is_empty()
+	_upper_bones = {}
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			return false
+		_skel = found[0]
+	var legs := {}
+	var head := -1
+	for b in _skel.get_bone_count():
+		var n := _skel.get_bone_name(b).to_lower()
+		if n.ends_with("head") and head < 0:
+			head = b
+		if n.contains("foot"):
+			var p := b
+			while p >= 0:
+				legs[p] = true
+				p = _skel.get_bone_parent(p)
+	if head < 0:
+		return false
+	var root := head
+	while _skel.get_bone_parent(root) >= 0 and not legs.has(_skel.get_bone_parent(root)):
+		root = _skel.get_bone_parent(root)
+	if legs.has(root):
+		return false
+	var todo := [root]
+	while not todo.is_empty():
+		var b: int = todo.pop_back()
+		_upper_bones[b] = true
+		todo.append_array(_skel.get_bone_children(b))
+	return true
+
+
+func _tracks_of(name: String, a: Animation) -> Array:
+	if _upper_tracks.has(name):
+		return _upper_tracks[name]
+	var list := []
+	for i in a.get_track_count():
+		if a.track_get_type(i) != Animation.TYPE_ROTATION_3D:
+			continue
+		var b := _skel.find_bone(a.track_get_path(i).get_concatenated_subnames())
+		if b >= 0 and _upper_bones.has(b):
+			list.append([i, b])
+	_upper_tracks[name] = list
+	return list
+
+
 func update(dt: float, speed01: float) -> void:
+	if recoil > 0:
+		# held at full jolt through the hit-stop, then it settles
+		if held <= 0:
+			recoil = maxf(0.0, recoil - dt * 4.0)
+		_apply_recoil()
 	# hit-stop: the body holds still for a moment as a blow connects
 	if held > 0:
 		held -= dt
@@ -222,7 +458,11 @@ func update(dt: float, speed01: float) -> void:
 		return
 	move += (speed01 - move) * minf(1, dt * 10)
 	var stride := 6.0 if style == "brute" else 7.0 if style == "ghoul" else 13.0 if style == "hound" else 9.0
+	var was := phase
 	phase += dt * stride * maxf(0.2, move)
+	# a foot is down at each end of the leg swing (sin(phase) at +-1)
+	if move > 0.12 and floori(was / PI + 0.5) != floori(phase / PI + 0.5):
+		steps += 1
 	flinch = maxf(0, flinch - dt * 4)
 	reset()
 
@@ -261,6 +501,12 @@ func update(dt: float, speed01: float) -> void:
 		model.position.y = -0.5
 	elif death < 0:
 		model.position.y = 0
+	if airborne and action == null and death < 0:
+		# Built-in characters without a Jump clip tuck their knees as well.
+		_rot("Leg_L", 0, -0.5)
+		_rot("Leg_R", 0, -0.65)
+		_rot("Arm_L", 0, -0.2)
+		_rot("Arm_R", 0, -0.2)
 	if pose == "fish" and action == null:
 		_rot("Arm_R", 0, -1.0)
 		_rot("Arm_L", 0, -0.35)
@@ -292,7 +538,7 @@ func _apply_off_action(dt: float) -> void:
 		off_action = null
 
 
-## Each spell's own cast pose is data (data/spell_fx.json `poses`, read
+## Each spell's own cast pose is data (data/abilities/spell_fx.json `poses`, read
 ## into DB.spell_poses): [part, axis, windup, blow] keys, and how far into
 ## the windup the strike starts. Axis 0 raises an arm forward when negative;
 ## 1 twists (positive turns left); 2 swings an arm out (negative for the

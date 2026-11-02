@@ -1,6 +1,6 @@
 class_name Spells
 extends RefCounted
-## The spell engine (src/systems/spells.js). Abilities in data/abilities.json
+## The spell engine (src/systems/spells.js). Abilities in data/abilities/abilities.json
 ## with a `kind` are run here from their data alone, so a new spell is a new
 ## record, not new code. The kinds and the keys a record may carry are
 ## documented at the top of src/systems/spells.js; this is a line-by-line
@@ -199,7 +199,7 @@ func tuned(id):
 
 
 # ------------------------------------------------------------ status tags
-## Does `enemy` carry a status (data/builds.json `statuses`)? Damage over
+## Does `enemy` carry a status (data/abilities/builds.json `statuses`)? Damage over
 ## time and auras name theirs (`status`); the rest are read off what an
 ## effect does: a slow is Slowed, a stun or sleep Stunned, more damage taken
 ## Vulnerable, less dealt Weakened, a full stagger bar Staggered.
@@ -246,7 +246,7 @@ var fortify: float:
 
 
 ## what a spell going off does for your key passive: Zeal stacks
-## The spell's own cast pose (data/spell_fx.json `anim`), else the kind's
+## The spell's own cast pose (data/abilities/spell_fx.json `anim`), else the kind's
 ## `type`. `keep_timing`: a blow that lands on its own clock (a sweep, a
 ## burst, a charge) takes only the pose, so blow and pose stay together.
 ## `key` "windupAnim" takes the look's `windupAnim` pose (the held part of a cast)
@@ -264,7 +264,7 @@ func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep
 	game.player.rig.play(a.type, duration, impact)
 
 
-## The spell's own effects (data/spell_fx.json): `windup` on you while a
+## The spell's own effects (data/abilities/spell_fx.json): `windup` on you while a
 ## cast is drawn out, `cast` on you as it goes, `impact` where it lands.
 func _show(spell: Dictionary, phase: String, at: Vector3, facing: float, follow = null) -> void:
 	if DB.spell_fx.has(spell.id):
@@ -297,7 +297,18 @@ func try_cast(id: String) -> bool:
 	var stats = game.stats
 	# Nothing about auto attack blocks an ability: only another cast, a
 	# charge in flight, or the global cooldown does.
-	if not DB.spells.has(id) or player.dead or player.lunge != null or player.casting != null:
+	if not DB.spells.has(id) or player.dead:
+		return false
+	# pressed in the last moments of a cast or a charge, it waits in the
+	# spell queue and goes the instant that ends (Dan, 2026-11-02)
+	var busy = player.casting if player.casting != null else player.lunge
+	if busy != null:
+		var left: float = (busy.get("total", busy.get("duration", 0.0)) - busy.t) if not busy.get("channel", false) else INF
+		# the same spell again queues too (Blight Bolt, Blight Bolt...); it
+		# waits out the rest of the cast and any global cooldown after it
+		if left <= DB.spell_queue_window + 0.02:
+			var after := maxf(player.cooldowns.gcd - left, player.cooldowns.get(id, 0.0) - left)
+			queued = {"id": id, "left": left + maxf(0.0, after) + 0.15}
 		return false
 	if not game.skills.knows_ability(id):
 		return false
@@ -320,8 +331,8 @@ func try_cast(id: String) -> bool:
 	var own: float = player.cooldowns.get(id, 0.0)
 	var wait := maxf(0.0 if off_gcd else player.cooldowns.gcd, own)
 	if wait > 0:
-		if wait <= DB.spell_queue_window:
-			queued = {"id": id, "left": wait + 0.05}
+		if wait <= DB.spell_queue_window + 0.02:
+			queued = {"id": id, "left": wait + 0.15}
 		elif own > 0:
 			game.hud.error("%s is not ready yet" % spell.name)
 		return false
@@ -944,7 +955,13 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 		if hit.amount <= 0:
 			return hit
 	after_hit(hit)
-	enemy.hurt(hit.amount, hurt_opts)
+	# spells never stop an enemy in its tracks (Dan, 2026-11-02: Blight Bolt
+	# halted what it hit) unless the spell's data asks for it: `stagger`
+	# (seconds) and `knockback` in its tuning, as Shield Bash does
+	var opts: Dictionary = hurt_opts.duplicate()
+	opts.stagger = float(t.get("stagger", 0.0))
+	opts.knockback = float(t.get("knockback", 0.0))
+	enemy.hurt(hit.amount, opts)
 	var events: Events = game.events
 	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main"})
 	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell"})
@@ -1097,9 +1114,10 @@ func update(dt: float) -> void:
 		resolve(b.id, b.spell)
 
 	# the spell queue: a spell pressed just before it was ready goes now
+	if queued != null:
+		queued.left -= dt
 	if queued != null and player.casting == null and player.lunge == null:
 		var q: Dictionary = queued
-		q.left -= dt
 		if q.left <= 0:
 			queued = null
 		var wait := maxf(0.0 if DB.spells[q.id].tuning.get("offGlobalCooldown") else player.cooldowns.gcd, player.cooldowns.get(q.id, 0.0))

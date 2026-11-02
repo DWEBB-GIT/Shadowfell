@@ -1,0 +1,63 @@
+[gd_scene load_steps=7 format=3]
+
+[sub_resource type="StandardMaterial3D" id="1"]
+albedo_color = Color(0.26, 0.43, 0.22, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="2"]
+albedo_color = Color(0.77, 0.56, 0.64, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="3"]
+top_radius = 0.24
+bottom_radius = 0.24
+height = 0.018
+radial_segments = 10
+
+[sub_resource type="CylinderMesh" id="4"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 0.018
+radial_segments = 10
+
+[sub_resource type="CylinderMesh" id="5"]
+top_radius = 0.22
+bottom_radius = 0.22
+height = 0.018
+radial_segments = 10
+
+[sub_resource type="SphereMesh" id="6"]
+radius = 0.075
+height = 0.15
+radial_segments = 10
+rings = 5
+
+[node name="WaterLilies" type="Node3D"]
+
+[node name="Leaf0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.25, 0, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("3")
+material_override = SubResource("1")
+
+[node name="Leaf1" type="MeshInstance3D" parent="."]
+position = Vector3(0.16, 0, 0.18)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("4")
+material_override = SubResource("1")
+
+[node name="Leaf2" type="MeshInstance3D" parent="."]
+position = Vector3(0.2, 0, -0.25)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("5")
+material_override = SubResource("1")
+
+[node name="Bloom" type="MeshInstance3D" parent="."]
+position = Vector3(0.16, 0.06, 0.18)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 0.5, 1)
+mesh = SubResource("6")
+material_override = SubResource("2")

@@ -2,7 +2,7 @@ import { freeSlot } from './actionBar.js';
 import { moneyText } from '../ui/money.js';
 import { DB } from '../data/db.js';
 
-// Skills learned from trainers (data/skills.json): camping and fishing. A
+// Skills learned from trainers (data/professions/skills.json): camping and fishing. A
 // skill unlocks the abilities it `teaches` (they appear in the spellbook and
 // can go on the bar). Skills with a `maxRank` rise with use, as WoW's
 // professions do: fishing goes up by one with each catch.

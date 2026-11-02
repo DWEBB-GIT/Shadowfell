@@ -1,0 +1,3259 @@
+{
+  "_about": "What townsfolk say. An npc names its dialogue in npcs.json. `greetings`: the last one whose `when` holds is said on opening. `topics` are extra lines on the first page, shown while their `when` holds; each opens a node. A node says its text and offers replies; a reply opens another node, or with no `node` goes back to the first page. Quests, the shop and Goodbye are added by the game. Conditions: { quest, status } with status not_started, available, active, ready or done; { flag }; { examined }.",
+  "dialogues": [
+    {
+      "id": "mara",
+      "greetings": [
+        {
+          "text": "Mara Venn, smith. If it's iron, I've likely hit it."
+        },
+        {
+          "text": "Any word of my iron? Nine bars, my mark on every one.",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "active"
+          }
+        },
+        {
+          "text": "You've a look about you. Found something on the road?",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Back again, Warden? The forge is hot if you need it.",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "done"
+          }
+        },
+        {
+          "text": "The bells have stopped. First quiet night in a month.",
+          "when": {
+            "quest": "the_glade_seer",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "mara_who"
+        },
+        {
+          "id": "grave_iron",
+          "prompt": "What is grave-iron?",
+          "node": "mara_grave_iron"
+        },
+        {
+          "id": "blackwood",
+          "prompt": "Tell me about the Blackwood.",
+          "node": "mara_blackwood",
+          "when": {
+            "quest": "missing_delivery",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "mara_who",
+          "text": "Mara Venn. I keep the forge for the watch post, or I did, while there was a watch. Now I keep it for whoever pays.",
+          "replies": [
+            {
+              "text": "What happened to the watch?",
+              "node": "mara_watch"
+            },
+            {
+              "text": "I see."
+            }
+          ]
+        },
+        {
+          "id": "mara_watch",
+          "text": "Gone quiet a fortnight back. Doors barred from the inside, and nobody answers. I've stopped knocking.",
+          "replies": [
+            {
+              "text": "I'll keep an eye out."
+            }
+          ]
+        },
+        {
+          "id": "mara_grave_iron",
+          "text": "Iron smelted from old barrow-nails. It holds an edge against things that ought to stay dead. Bring me any you find and I'll pay fair for it.",
+          "replies": [
+            {
+              "text": "I'll remember that."
+            }
+          ]
+        },
+        {
+          "id": "mara_blackwood",
+          "text": "Black pines, older than the road. The track runs through to a glade where the old stones stand. Hunters went in for the wolves' pelts. Fewer come out each year.",
+          "replies": [
+            {
+              "text": "Who set the stones?",
+              "node": "mara_stones"
+            },
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "mara_stones",
+          "text": "Nobody living. My grandmother said they were there before the barrows, and the barrows were there before the road.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tam",
+      "greetings": [
+        {
+          "text": "Mind the edge. The mere's deeper than it looks, and colder than that."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "tam_who"
+        },
+        {
+          "id": "mere",
+          "prompt": "What lives in the mere?",
+          "node": "tam_mere"
+        },
+        {
+          "id": "dark",
+          "prompt": "Where would I need a torch?",
+          "node": "tam_dark"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "tam_who",
+          "text": "Tam. I fished this water before the road fell and I'll fish it after. I can teach you to fish, and to make a camp worth the name, if you've the coin.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "tam_mere",
+          "text": "Perch, dace, and the odd boot. There's an eel down there too, black as a grave. Strike when the bob goes under, not before.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "tam_dark",
+          "text": "West of the wolf den in the Blackwood there's a hollow where the light won't go. Folk say the old watch hid their pay chest in it. Take a torch. Your shield won't help you see.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hester",
+      "greetings": [
+        {
+          "text": "Come in out of it. There's a fire, a bed, and stew if you don't ask what's in it."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "hester_who"
+        },
+        {
+          "id": "cook",
+          "prompt": "Can you teach me to cook?",
+          "node": "hester_cook"
+        },
+        {
+          "id": "rest",
+          "prompt": "Can I rest here?",
+          "node": "hester_rest"
+        },
+        {
+          "id": "farms_mended",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_mended",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "id": "farms_secret",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_secret",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "id": "farms_burned",
+          "prompt": "Any news from the farms?",
+          "node": "hester_farms_burned",
+          "when": {
+            "flag": "feud_burned"
+          }
+        },
+        {
+          "id": "closed_eye",
+          "prompt": "Heard anything about a closed eye?",
+          "node": "hester_closed_eye",
+          "when": {
+            "flag": "closed_eye_seen"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "hester_who",
+          "text": "Hester Vale. I keep the Ford Inn, which mostly means I keep it standing. Brackenford's what's left of the folk who wouldn't leave when the road fell.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_cook",
+          "text": "Anyone can burn a fish. Cooking's knowing when to stop. Learn from me and you'll eat better than the dead do. Bring me perch and dace to start; once you've the knack I'll show you what to do with wolf.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_rest",
+          "text": "Under this roof you're safe to rest. Sit by the fire a while and you'll go out sharper for it. Or take a bed for a while, five silver, and you'll wake mended, wounds and all. Say the word and I'll keep a bed for you always: if the road kills you, you'll wake up here.",
+          "replies": [
+            {
+              "text": "Back."
+            }
+          ]
+        },
+        {
+          "id": "hester_farms_mended",
+          "text": "The Ashbys and the Corricks are digging a drain together. Together! Old Pell says it's the end of the world. And Bram Corrick's hired lad's been seen walking Wren Ashby home in broad daylight. I'll give it till spring before there's a wedding, and I'll be doing the food.",
+          "replies": [
+            {
+              "text": "Good for them."
+            }
+          ]
+        },
+        {
+          "id": "hester_farms_secret",
+          "text": "The Ashby drain's been stopped, they say, and the barley's coming back. Edda's quieter about the Corricks, which is the strangest thing I've heard all year. Mind, Bram Corrick's hired lad still drinks here of an evening, and he still leaves early, and he still goes north.",
+          "replies": [
+            {
+              "text": "Is that so?"
+            }
+          ]
+        },
+        {
+          "id": "hester_farms_burned",
+          "text": "You'll have heard. The Corrick hayrick went up in the night, and come morning Wren Ashby and Cal Fenner were gone. Together, if you believe it. Edda says Bram poisoned her field and Bram says Edda burned his rick, and they're both right about something, and neither will ever say what.",
+          "replies": [
+            {
+              "text": "A bad business."
+            }
+          ]
+        },
+        {
+          "id": "hester_closed_eye",
+          "text": "A closed eye? ...No. But a man in a grey travelling coat took a room here in the spring, paid in new silver, and asked who owned the land north of town. He didn't eat. Who doesn't eat at an inn? I'd remember a man who doesn't eat.",
+          "replies": [
+            {
+              "text": "Thank you, Hester."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "town_board",
+      "greetings": [
+        {
+          "text": "Notices in a dozen hands are nailed over one another. Some are weeks old. A few look fresh."
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "agna",
+      "greetings": [
+        {
+          "text": "Mind the vats. What's in them won't wash off, and neither will the smell."
+        },
+        {
+          "text": "Back with something for me? Let's see if you've learned to keep a knife steady.",
+          "when": {
+            "quest": "agna_first_hides",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "agna_who"
+        },
+        {
+          "id": "skin",
+          "prompt": "How does skinning work?",
+          "node": "agna_skin"
+        },
+        {
+          "id": "where",
+          "prompt": "Where are the best hides?",
+          "node": "agna_where"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "agna_who",
+          "text": "Agna Holt. I tan. Hides come in stiff and stinking and go out soft and stinking a little less. Everyone in Brackenford wears something I've had my hands in, whether they like to think about it or not.",
+          "replies": [
+            {
+              "text": "Can you teach me?",
+              "node": "agna_skin"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "agna_skin",
+          "text": "Kill the beast. Take what's on it. Then, if you've the skill and a knife, you skin what's left before it goes off. The older and meaner the beast, the more skill its hide takes: a young boar, anyone can manage; a barrow wolf wants a bit of practice; the ridge wolves, more again. I sell knives. I teach the rest, for a few coins.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "agna_where",
+          "text": "Boar, east of the road and round the two farms north of town. Wolves on the ridge east of the road, south of Hallow Cut, and they run in packs. Barrow wolves in the Blackwood, if you're tired of living. And there's an old boar out on the runs, big as a cart. Nobody's had his hide yet. One day I'll tell you about the things I'd really like to skin. Scales, mostly.",
+          "replies": [
+            {
+              "text": "I'll keep an eye out."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edda",
+      "greetings": [
+        {
+          "text": "If you've come from the Corrick side, you can go back there."
+        },
+        {
+          "text": "You've seen it now. Tell me that's not Corrick's work.",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Well? Did he deny it? Of course he did.",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "done"
+          }
+        },
+        {
+          "text": "We're digging the new drain on Tuesday. With the Corricks. Don't make me say it twice.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "The barley's coming back, now the drain's stopped. I still won't speak to Corrick. Some things don't grow back.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "text": "They say I lit the Corrick hayrick. Let them prove it. My girl's gone, and the field's still black.",
+          "when": {
+            "flag": "feud_burned"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "edda_who"
+        },
+        {
+          "id": "feud",
+          "prompt": "Why do you hate the Corricks?",
+          "node": "edda_feud",
+          "when": {
+            "quest": "feud_black_barley",
+            "status": "done"
+          }
+        },
+        {
+          "id": "wren",
+          "prompt": "What happened to Wren?",
+          "node": "edda_wren",
+          "when": {
+            "flag": "feud_burned"
+          }
+        },
+        {
+          "id": "bandits",
+          "prompt": "What do you know of the Blackhedge bandits?",
+          "node": "edda_bandits",
+          "when": {
+            "quest": "feud_what_lies_under",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "edda_who",
+          "text": "Edda Ashby. This is Ashby land, north of the hedge, and has been since before there was a road to sell anything on. My husband's in the churchyard. My daughter's in the house, if she knows what's good for her.",
+          "replies": [
+            {
+              "text": "Good day to you."
+            }
+          ]
+        },
+        {
+          "id": "edda_feud",
+          "text": "Bram Corrick's father moved the boundary stone a yard north the year I was born. A yard! My father moved it back. His moved it again. I've stopped counting. Nobody knows where it should stand any more, but I know where it shouldn't.",
+          "replies": [
+            {
+              "text": "A yard, over thirty years?",
+              "node": "edda_yard"
+            },
+            {
+              "text": "I see."
+            }
+          ]
+        },
+        {
+          "id": "edda_yard",
+          "text": "A yard is a yard. You give a Corrick a yard and he'll have your house.",
+          "replies": [
+            {
+              "text": "Of course."
+            }
+          ]
+        },
+        {
+          "id": "edda_wren",
+          "text": "Gone. The same night as the fire. With him. With Bram Corrick's hired boy, who hasn't a field to his name. You'll have known, I expect. Everyone knew but me.",
+          "replies": [
+            {
+              "text": "I'm sorry."
+            }
+          ]
+        },
+        {
+          "id": "edda_bandits",
+          "text": "Rabble from the woods. They took my husband's cart once and left him walking. If they've been in my ground, it's because somebody let them in. That's all I'll say.",
+          "replies": [
+            {
+              "text": "I see."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wren",
+      "greetings": [
+        {
+          "text": "Don't mind Mother. She shouts at the crows too."
+        },
+        {
+          "text": "You've got it? Quickly, before she comes round the barn.",
+          "when": {
+            "quest": "feud_letter",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "You know, then. About me and Cal. Please don't tell her. Not yet.",
+          "when": {
+            "quest": "feud_letter",
+            "status": "done"
+          }
+        },
+        {
+          "text": "Cal's coming to supper. Mother's set him a place. She set it as far from hers as the table goes, but she set it.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Still our stone. Still our secret. Thank you.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "wren_who"
+        },
+        {
+          "id": "cal",
+          "prompt": "How did you and Cal meet?",
+          "node": "wren_cal",
+          "when": {
+            "quest": "feud_letter",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "wren_who",
+          "text": "Wren. Edda's daughter, for my sins. I keep the hens and the books and Mother's temper, which is the hardest of the three.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "wren_cal",
+          "text": "He came to work for Bram three harvests ago. I saw him over the hedge, mending the side Bram's too proud to mend, and I said something rude, and he said something ruder back. That was that. We use the stone because it's the one place on the hedge both farms keep away from: each is sure it's in the wrong place.",
+          "replies": [
+            {
+              "text": "That's almost funny."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bram",
+      "greetings": [
+        {
+          "text": "If it's about the boar, I know. If it's about Ashby, I don't care."
+        },
+        {
+          "text": "Six dead? Let's hear it, then.",
+          "when": {
+            "quest": "feud_tusks",
+            "status": "ready"
+          }
+        },
+        {
+          "text": "Got my pigs back. Two of them, anyway. The third, I'm told, was supper.",
+          "when": {
+            "quest": "bandit_captain",
+            "status": "done"
+          }
+        },
+        {
+          "text": "Ashby and I are digging a drain. Together. If I'm found face down in it, ask her first.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Ashby's stopped calling me a poisoner. Calls me nothing at all now. It's an improvement.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        },
+        {
+          "text": "My hayrick's ash and my hired lad's gone. Ran off with the Ashby girl, they say. Did you know? ...Get off my land.",
+          "when": {
+            "flag": "feud_burned"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "bram_who"
+        },
+        {
+          "id": "boar",
+          "prompt": "Tell me about the boar.",
+          "node": "bram_boar"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "bram_who",
+          "text": "Bram Corrick. Corrick land is everything south of that hedge to the old graves. I grow turnips, barley and resentment, and lately the boar have been getting the first two.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "bram_boar",
+          "text": "A whole sounder of them, east of the road, and they come over to my side whenever they've had enough of everybody else's. They come back as fast as you kill them, too. Then there's Old Bristleback. Big as a cart and twice as mean. I've put a bounty on him at the town board. And something's been taking my pigs, and it isn't boar. Boar don't lift gate latches.",
+          "replies": [
+            {
+              "text": "I'll thin them out."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cal",
+      "greetings": [
+        {
+          "text": "Afternoon. If Mister Corrick asks, I've been mending the fence all day."
+        },
+        {
+          "text": "Did you give it to her? Only her?",
+          "when": {
+            "quest": "feud_letter",
+            "status": "active"
+          }
+        },
+        {
+          "text": "I can't look at her. I keep counting the money and it's all nails.",
+          "when": {
+            "quest": "feud_cals_coin",
+            "status": "done"
+          }
+        },
+        {
+          "text": "Mister Corrick shook Edda Ashby's hand. And she's letting me dig her drain, which is how she says sorry. I've still the money. It'll be a ring yet. A proper one.",
+          "when": {
+            "flag": "feud_mended"
+          }
+        },
+        {
+          "text": "Not a word, eh? Not about the stone, not about the sacks. I'll pay it back somehow. Then I'll buy the ring.",
+          "when": {
+            "flag": "feud_secret"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "cal_who"
+        },
+        {
+          "id": "ring",
+          "prompt": "Tell me about the ring.",
+          "node": "cal_ring",
+          "when": {
+            "quest": "feud_cals_coin",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "cal_who",
+          "text": "Cal Fenner. I work for Mister Corrick: board, bed and a shilling at harvest. No land, no name worth having. Which is the whole trouble, if you must know.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "cal_ring",
+          "text": "There's a silversmith passes through Brackenford at midsummer. A plain band, nothing fancy, eleven shillings. I had nine. Nine shillings of grave-nails.",
+          "replies": [
+            {
+              "text": "You didn't know."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pell",
+      "greetings": [
+        {
+          "text": "Aldous Pell, reeve. If it's a complaint, there's a queue. The queue is Edda Ashby."
+        },
+        {
+          "text": "Blackhedge is quieter. Not gone. Quieter.",
+          "when": {
+            "quest": "bandit_thin",
+            "status": "done"
+          }
+        },
+        {
+          "text": "A closed eye. I keep thinking about it. You should too.",
+          "when": {
+            "flag": "closed_eye_seen"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "What does a reeve do?",
+          "node": "pell_who"
+        },
+        {
+          "id": "blackhedge",
+          "prompt": "Who are the Blackhedge?",
+          "node": "pell_blackhedge",
+          "when": {
+            "quest": "bandit_rag",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "pell_who",
+          "text": "Keeps the peace, collects the dues, and listens to Edda Ashby. The first two are easy.",
+          "replies": [
+            {
+              "text": "I see."
+            }
+          ]
+        },
+        {
+          "id": "pell_blackhedge",
+          "text": "Local boys gone bad, and a few who were bad before they got here. They take the odd cart on the road and drink the takings. Small time, for all their swagger. You're not ready for them yet, mind. Small time with sharp knives is still sharp knives.",
+          "replies": [
+            {
+              "text": "I'll be careful."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "orrin",
+      "greetings": [
+        {
+          "text": "Mind your feet. Half the rock round here's loose and the other half's waiting to be."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "orrin_who"
+        },
+        {
+          "id": "veins",
+          "prompt": "Where do I find ore?",
+          "node": "orrin_veins"
+        },
+        {
+          "id": "smelt",
+          "prompt": "What do I do with ore?",
+          "node": "orrin_smelt"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "orrin_who",
+          "text": "Orrin Flint. I dug the Hallow Cut for thirty years, until they started burying folk in it. Now I sell picks and teach the young ones which end to hold.",
+          "replies": [
+            {
+              "text": "Teach me, then.",
+              "node": "orrin_veins"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "orrin_veins",
+          "text": "Rock moves, near enough. You'll find a ridge with eight outcrops and only three holding ore. Strip one and it goes bare, and a day later another on that same ridge starts to glint. So learn the ridges, not the stones. The fields east of town are soft; the Hallow Cut and the wolf ridge give copper and tin; the bogs in the Blackwood give iron, and there's granite and coal below the barrows, for them as can reach it. Now and then a vein runs rich. Swing till it's bare.",
+          "replies": [
+            {
+              "text": "And gems?",
+              "node": "orrin_gems"
+            },
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "orrin_gems",
+          "text": "Every swing there's a chance of a shard. Red ones, gold ones, black ones from the granite. Take them to Ysolde, by the well. Five shards make a stone; she'll set it in your gear if it has a socket.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "orrin_smelt",
+          "text": "Take it to a forge. Mara's, up at the watch post, is the only one this side of the Blackwood. Copper smelts on its own; copper and tin together make bronze, two bars for the pair. Grind your rough stone into whetstones while you're there; smiths and soldiers buy them.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ysolde",
+      "greetings": [
+        {
+          "text": "Don't touch the tray. Look all you like, but don't touch."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "ysolde_who"
+        },
+        {
+          "id": "gems",
+          "prompt": "How do gems work?",
+          "node": "ysolde_gems"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ysolde_who",
+          "text": "Ysolde Marrow. I cut stones for people who can't afford good ones and set them for people who think they can. Mostly I wait for the miners to bring me shards.",
+          "replies": [
+            {
+              "text": "How do gems work?",
+              "node": "ysolde_gems"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "ysolde_gems",
+          "text": "Five shards of a kind make a chipped stone. Three chipped make a flawed one, three flawed a clear, and so on up. A stone sits in a socket: some gear comes with one, and a smith can punch one more with skyiron. A socket costs the piece a little of its strength, and a stone of the piece's own quality gives it back. A better stone, and you're ahead. I take them out free, whenever you like. I never break a stone.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sabeth",
+      "greetings": [
+        {
+          "text": "Mind the candles. Not for the fire. They're listening."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "sabeth_who"
+        },
+        {
+          "id": "enchanting",
+          "prompt": "How does enchanting work?",
+          "node": "sabeth_enchanting"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "sabeth_who",
+          "text": "Sabeth Gall. I wake what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
+          "replies": [
+            {
+              "text": "How does enchanting work?",
+              "node": "sabeth_enchanting"
+            },
+            {
+              "text": "Good day."
+            }
+          ]
+        },
+        {
+          "id": "sabeth_enchanting",
+          "text": "Anything with a little magic in it, green or better, can take more. Each rank is worth a level, no more, and a finer piece holds more ranks. I pay for it in dust: bring me gear you've no use for and I'll scrap it, and what's left is dust and its stones, and the seers in the Blackwood carry it too. The very last rank on the finest gear wants a soulshard, and those only come from great beasts and the things that lead men. Plain gear I can't touch.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wenna",
+      "greetings": [
+        {
+          "text": "A coin for a tale? No? I'll tell it to the fire, then. It's a better listener."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "wenna_who"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "wenna_who",
+          "text": "Wenna Tallow. I sing for my supper, and when Hester's feeling mean, for my bed as well. I know every story told on this road, and a few nobody's meant to tell. A tale a day, for five coins. They stir the blood: you'll learn faster for a while after.",
+          "replies": [
+            {
+              "text": "Good day."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brask",
+      "greetings": [
+        {
+          "text": "You've the look of someone who's been knocked down lately. Good. Now learn to get up swinging."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "brask_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "brask_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "brask_who",
+          "text": "Brask. I keep the wardens, such as they are: six farmers with spears and me. Most mornings I'm at the north gate. If you carry a blade for a living, I'll teach you to use it better than you do now. Not for free. Steel costs, and so does my patience.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "brask_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "brask_teach",
+          "text": "I teach what a sword arm needs first: a blow that lands hard, how to set yourself against a hit, and a swing wide enough for more than one fool. The rest you'll learn from better men than me, in the cities, if you live that long.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nell",
+      "greetings": [
+        {
+          "text": "Keep your voice down. And your hands where I can see them."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "nell_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "nell_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nell_who",
+          "text": "Nell Tallow. Wenna's cousin, and the one the family doesn't talk about. I buy what people would rather not sell in the open, and I teach the quiet work to those who've the wrists for it.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "nell_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "nell_teach",
+          "text": "A little at a time. How to finish a man you've worn down, how not to be where his blade lands, and a dab of something nasty on your edge. Shadows and sleep-draughts come later, from people I'd not name to your face.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "odo",
+      "greetings": [
+        {
+          "text": "Mind where you step. Half this town walks like a cart with a wheel off."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "odo_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "odo_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "odo_who",
+          "text": "Odo Fell. I hunt the vale for the reeve, and for whoever pays. I came in for salt and stayed for the ale. While I'm here I'll teach a bow hand a thing or two.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "odo_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "odo_teach",
+          "text": "Fire on an arrow, a quick jump back when the brute gets close, and a pot of tar at your feet for whatever follows. The fancy shooting is for the lodge-masters in the cities.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grue",
+      "greetings": [
+        {
+          "text": "Sit if you like. The chair won't bite. I can't promise the same."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "grue_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "grue_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "grue_who",
+          "text": "Mother Grue. I lay out the dead for the chapel, and I listen to what's left in them. Folk come to me for warts and worse. Some come to learn. You've that look.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "grue_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "grue_teach",
+          "text": "Rot first: it does the work while you wait. Then how to drink a little of their life to mend your own, and a bed of grave-flowers for when they come in a crowd. The deeper hexes are kept by others, far from here.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aveline",
+      "greetings": [
+        {
+          "text": "The road was lit once, all the way to the sea. It will be again."
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "aveline_who"
+        },
+        {
+          "id": "teach",
+          "prompt": "What can you teach me?",
+          "node": "aveline_teach"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "aveline_who",
+          "text": "Aveline. Last of the knights who kept the old road. The order is gone and the chantry roof with it, so I keep my vigil here by the chapel, and teach any who would carry the light.",
+          "replies": [
+            {
+              "text": "What can you teach me?",
+              "node": "aveline_teach"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "aveline_teach",
+          "text": "A hammer of light for the one who runs, a shield of it for when the blows come thick, and a storm of it when they surround you. The order's deeper rites were kept in the great houses. Seek them there, when you are ready.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "briony",
+      "greetings": [
+        {
+          "text": "Mind your boots. That's not a weed, that's tomorrow's draught."
+        },
+        {
+          "text": "Back from the Blackwood with all your fingers? Good. Let's see what you've brought.",
+          "when": {
+            "quest": "briony_bloodroot",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "who",
+          "prompt": "Who are you?",
+          "node": "briony_who"
+        },
+        {
+          "id": "herbs",
+          "prompt": "How does herb-picking work?",
+          "node": "briony_herbs"
+        },
+        {
+          "id": "brew",
+          "prompt": "What can you brew?",
+          "node": "briony_brew"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "briony_who",
+          "text": "Briony Marsh. Herbwife, they call me, when they're being polite. When the fever came through the mill last winter they called me a great deal of things, most of them 'please'. I pick, I dry, I brew. I teach, if you've the patience.",
+          "replies": [
+            {
+              "text": "Teach me to pick herbs.",
+              "node": "briony_herbs"
+            },
+            {
+              "text": "I'll leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "briony_herbs",
+          "text": "Everything that grows has its own temper. Ditchbell anyone can pull. Woundwort wants a bit of practice. Bloodroot grows in the Blackwood, among things that bite, and gravemoss only on the barrows, which is a place I'd not send my worst enemy. Patches come and go: pick one bare and another springs up somewhere near. A good knife makes you quicker. I sell those too.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        },
+        {
+          "id": "briony_brew",
+          "text": "Draughts that close a wound, tonics that put iron in your legs. Ditchbell and a little water makes a healing draught; the rest I'll teach you as your hands learn. Only one elixir at a time, mind. Two fight each other, and you lose.",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tf_rowan",
+      "greetings": [
+        {
+          "text": "“Captain Rowan. If this is about the north road, I have time. If it is about Osric’s wheelbarrow, I have already heard both versions.”"
+        },
+        {
+          "text": "Their families have word. Thank you for letting me give them something definite.",
+          "when": {
+            "quest": "nr_overtime",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "nr_rook_chits",
+          "prompt": "Who are Rook & Sons?",
+          "node": "nr_rook_chits",
+          "when": {
+            "quest": "tf_lanterns",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nr_rook_chits",
+          "text": "“Grain factors, debt buyers, whoever bought the sign after the last Rook died. They offered relief when the road froze. Their clerk wore clean gloves to inspect a hungry village. I remember that more clearly than I should.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tf_elsie",
+      "greetings": [
+        {
+          "text": "“Elsie Reed. Hot food, dry beds. If you start a fight, take it outside and settle your tab first.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "nr_regulars",
+          "prompt": "How is the village holding up?",
+          "node": "nr_regulars"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nr_regulars",
+          "text": "“People mend things. They argue. They eat a meal they can afford and pretend not to notice when a neighbour cannot.” Elsie wipes the same patch of counter. “The stew gets thinner. It still goes round.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tf_iren",
+      "greetings": [
+        {
+          "text": "“Iren Holt. Tools, repairs, and an honest opinion. Two of those cost money.”"
+        },
+        {
+          "text": "The good measure is back on its hook. I am still short with customers, but the axes are the right length.",
+          "when": {
+            "quest": "nr_gauge",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "tf_scout",
+      "greetings": [
+        {
+          "text": "“Fen. The camp is safe. The woods are woods. I can help with the difference.”"
+        },
+        {
+          "text": "The shelter is for people who need it. We have enough real enemies without inventing poor ones.",
+          "when": {
+            "quest": "nr_shelter_tracks",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "vr_mayor",
+      "greetings": [
+        {
+          "text": "Alder moves a stack of complaints off the visitor’s chair. “Sit, if it helps. It has made no difference to the complaints.”"
+        },
+        {
+          "text": "The corrected roll is open for anyone to inspect. Alder’s written account sits beside it, bearing his signature.",
+          "when": {
+            "quest": "vr_crypt",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "nr_grain_terms",
+          "prompt": "Why did you sign Rook’s contract?",
+          "node": "nr_grain_terms"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nr_grain_terms",
+          "text": "“Three grain carts before the hard frost. The council spent a week debating whether to be grateful.” Alder keeps his hand flat on the ledger. “I read the price. I trusted the clerk about the rest. People who had no say in it are paying for that trust. They deserve better than an account of my intentions.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vr_tobin",
+      "greetings": [
+        {
+          "text": "“Tobin Reed. Rods, lessons, and silence by arrangement. The silence costs extra if you keep asking about it.”"
+        },
+        {
+          "text": "Both ponds are in the notebook. The trout in the margin remains a work of fiction.",
+          "when": {
+            "quest": "nr_water_notes",
+            "status": "done"
+          }
+        },
+        {
+          "text": "The shares are balanced. If Osric asks, I have not invented a fourth setting called “all of it”.",
+          "when": {
+            "quest": "nr_water_rights",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "vr_rogue",
+      "greetings": [
+        {
+          "text": "“Mira Vale. Find the exit before you need it. That applies to rooms, contracts and most family dinners.”"
+        },
+        {
+          "text": "You check the way back. A rare habit. Keep it.",
+          "when": {
+            "quest": "nr_reverse_route",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "vr_lyra",
+      "greetings": [
+        {
+          "text": "“Sister Lyra. Come in out of the weather. Belief is optional; wiping your boots is not.”"
+        },
+        {
+          "text": "The travellers slept dry. Small mercies still count when large ones are running late.",
+          "when": {
+            "quest": "nr_bedding",
+            "status": "done"
+          }
+        },
+        {
+          "text": "The names were read. The washing up was done. Alder broke one cup and tried to declare it a municipal expense.",
+          "when": {
+            "quest": "nr_last_word",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "nr_after_levy",
+          "prompt": "What happens after the names return?",
+          "node": "nr_after_levy",
+          "when": {
+            "quest": "vr_crypt",
+            "status": "done"
+          }
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nr_after_levy",
+          "text": "“A meal. The names read aloud. Someone checks on the people who go home alone. A victory is a fine thing, but it still leaves a village to get through Tuesday.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vr_morrow",
+      "greetings": [
+        {
+          "text": "“Morrow Finch. Tell me what hurts before you tell me what your neighbour thinks caused it.”"
+        },
+        {
+          "text": "Every bottle is labelled. I am enjoying this brief historical moment.",
+          "when": {
+            "quest": "nr_bottle_labels",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "nr_hollow_life",
+          "prompt": "Why stay in Mourning Hollow?",
+          "node": "nr_hollow_life"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "nr_hollow_life",
+          "text": "“Mrs Della will not leave her house. Benn needs his knee poultice. Someone has to deliver it. Besides, my rent is excellent. The landlord has been dead since autumn and remains, unusually, quite reasonable.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vr_heda",
+      "greetings": [
+        {
+          "text": "“Heda Holt. Mind the gate. That is a greeting and a serious request.”"
+        },
+        {
+          "text": "Still three pigs this morning. The orchard is quieter with Briarjaw gone. Now if only the fence would mend itself.",
+          "when": {
+            "flag": "vr_pigs_safe"
+          }
+        },
+        {
+          "text": "I have the little roof repair on my list. It is a long list. Thank you for finding the cause before I blamed the weather again.",
+          "when": {
+            "quest": "nr_pollinator_notes",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "vr_osric",
+      "greetings": [
+        {
+          "text": "“Seasoned timber. Straight grain. Opinions available while you wait.”"
+        },
+        {
+          "text": "Three paces. I moved it back. Heda has her hedge, I have the timber trail, and perhaps we can all get on with our work.",
+          "when": {
+            "flag": "vr_boundary_settled"
+          }
+        },
+        {
+          "text": "Iren has the dry handles. Good. A tool should outlive a bad mood.",
+          "when": {
+            "quest": "nr_timber",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_crossing_lead",
+      "greetings": [
+        {
+          "text": "Merrit Vale has work waiting. Get relief wagons across a damaged crossing."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_crossing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_crossing_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_crossing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_crossing_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_crossing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_mossreed_landing_lead",
+      "greetings": [
+        {
+          "text": "Nessa Pike has work waiting. Clear the raised footpath for deliveries."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_mossreed_landing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_mossreed_landing_worker",
+      "greetings": [
+        {
+          "text": "The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_mossreed_landing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_mossreed_landing_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_mossreed_landing_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_rillbank_quays_lead",
+      "greetings": [
+        {
+          "text": "Orlen Moss has work waiting. A ferry manifest disagrees with the waterline."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_rillbank_quays_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_rillbank_quays_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_rillbank_quays_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_rillbank_quays_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_rillbank_quays_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_millward_lead",
+      "greetings": [
+        {
+          "text": "Della Wick has work waiting. Authenticate a seal against a dated mill receipt."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_millward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_millward_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_millward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_millward_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_millward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_reedward_lead",
+      "greetings": [
+        {
+          "text": "Bram Tallow has work waiting. Reopen an ordinary drainage cut."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_reedward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_reedward_worker",
+      "greetings": [
+        {
+          "text": "A keepsake was lost while its owner fled the road. Retrieve the wrapped parcel from the marked shelter."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_reedward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_reedward_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_reedward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_pumpstead_lead",
+      "greetings": [
+        {
+          "text": "Edda Reed has work waiting. Compare salvaged relief receipts with the cooperative’s public record."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_pumpstead_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_pumpstead_worker",
+      "greetings": [
+        {
+          "text": "A tired worker wants a safe route to visit three local memorials. Inspect the marked shelter and its approach, then report what you found."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_pumpstead_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_pumpstead_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_pumpstead_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ferry_lead",
+      "greetings": [
+        {
+          "text": "Cora Fen has work waiting. Negotiate a safe cargo load for the next crossing."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ferry_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ferry_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ferry_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ferry_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ferry_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_tollhouse_rise_lead",
+      "greetings": [
+        {
+          "text": "Perrin Holt has work waiting. Expose duplicate collection orders."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_tollhouse_rise_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_tollhouse_rise_worker",
+      "greetings": [
+        {
+          "text": "The local roadside cutpurse are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_tollhouse_rise_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_tollhouse_rise_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_tollhouse_rise_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_stiltmarket_lead",
+      "greetings": [
+        {
+          "text": "Marda Sedge has work waiting. Restore a working delivery circuit between raised homes."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_stiltmarket_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_stiltmarket_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_stiltmarket_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_stiltmarket_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_stiltmarket_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_causeway_watch_lead",
+      "greetings": [
+        {
+          "text": "Hollis Rooke has work waiting. Survey the safe dry approaches."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_causeway_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_causeway_watch_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_causeway_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_causeway_watch_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_causeway_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_greyroot_lead",
+      "greetings": [
+        {
+          "text": "Anwen Grey has work waiting. Read the route evidence left by missing gatherers."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_greyroot_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_greyroot_worker",
+      "greetings": [
+        {
+          "text": "A keepsake was lost while its owner fled the road. Retrieve the wrapped parcel from the marked shelter."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_greyroot_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_greyroot_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_greyroot_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_scribes_rest_lead",
+      "greetings": [
+        {
+          "text": "Seth Quill has work waiting. Protect a surviving public copy."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_scribes_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_scribes_rest_worker",
+      "greetings": [
+        {
+          "text": "A tired worker wants a safe route to visit three local memorials. Inspect the marked shelter and its approach, then report what you found."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_scribes_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_scribes_rest_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_scribes_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_brinewatch_docks_lead",
+      "greetings": [
+        {
+          "text": "Miri Salt has work waiting. Trace records through harbor copies instead of the woodland archive."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_brinewatch_docks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_brinewatch_docks_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_brinewatch_docks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_brinewatch_docks_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_brinewatch_docks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltmere_lead",
+      "greetings": [
+        {
+          "text": "Jory Keel has work waiting. Check storm damage before a work crew departs."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltmere_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltmere_worker",
+      "greetings": [
+        {
+          "text": "The local wreckshore raider are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltmere_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltmere_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltmere_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_highmere_market_lead",
+      "greetings": [
+        {
+          "text": "Tamsin Heath has work waiting. A horse inspector is afraid of the stock."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_highmere_market_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_highmere_market_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_highmere_market_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_highmere_market_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_highmere_market_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_quarryend_lead",
+      "greetings": [
+        {
+          "text": "Garron Flint has work waiting. Retrieve tools from abandoned work shelters."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_quarryend_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_quarryend_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_quarryend_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_quarryend_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_quarryend_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_cinder_gate_lead",
+      "greetings": [
+        {
+          "text": "Nell Ash has work waiting. Survey safe work pockets."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_cinder_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_cinder_gate_worker",
+      "greetings": [
+        {
+          "text": "A keepsake was lost while its owner fled the road. Retrieve the wrapped parcel from the marked shelter."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_cinder_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_cinder_gate_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_cinder_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ashworks_lead",
+      "greetings": [
+        {
+          "text": "Oren Ember has work waiting. Inspect the wage and furnace records."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ashworks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ashworks_worker",
+      "greetings": [
+        {
+          "text": "A tired worker wants a safe route to visit three local memorials. Inspect the marked shelter and its approach, then report what you found."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ashworks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ashworks_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ashworks_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_windscar_lead",
+      "greetings": [
+        {
+          "text": "Tova Kiln has work waiting. Break a raider supply route."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_windscar_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_windscar_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_windscar_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_windscar_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_windscar_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_high_pass_lead",
+      "greetings": [
+        {
+          "text": "Cale Cinder has work waiting. Trace the network’s onward orders."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_high_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_high_pass_worker",
+      "greetings": [
+        {
+          "text": "The local heatherland wolf are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_high_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_high_pass_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_high_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_furnace_camp_lead",
+      "greetings": [
+        {
+          "text": "Fenna Rime has work waiting. Rescue work and safe tool recovery."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_furnace_camp_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_furnace_camp_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_furnace_camp_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_furnace_camp_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_furnace_camp_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ember_relay_lead",
+      "greetings": [
+        {
+          "text": "Haldor Pike has work waiting. Carry verified evidence to the onward guide."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ember_relay_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ember_relay_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ember_relay_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_ember_relay_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_ember_relay_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_frostgate_lead",
+      "greetings": [
+        {
+          "text": "Eris Coal has work waiting. Keep the outer supply road usable."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_frostgate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_frostgate_worker",
+      "greetings": [
+        {
+          "text": "A keepsake was lost while its owner fled the road. Retrieve the wrapped parcel from the marked shelter."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_frostgate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_frostgate_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_frostgate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_pass_lead",
+      "greetings": [
+        {
+          "text": "Mina Whitebough has work waiting. Track a lost patrol’s actual route."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_pass_worker",
+      "greetings": [
+        {
+          "text": "A tired worker wants a safe route to visit three local memorials. Inspect the marked shelter and its approach, then report what you found."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_lantern_pass_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_lantern_pass_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_hearthwatch_lead",
+      "greetings": [
+        {
+          "text": "Soren Beacon has work waiting. Allocate scarce heat after gathering evidence."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_hearthwatch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_hearthwatch_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_hearthwatch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_hearthwatch_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_hearthwatch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_wellward_lead",
+      "greetings": [
+        {
+          "text": "Ada North has work waiting. Check the caravan water records."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_wellward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_wellward_worker",
+      "greetings": [
+        {
+          "text": "The local saltroad marauder are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_wellward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_wellward_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_wellward_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_caravan_rest_lead",
+      "greetings": [
+        {
+          "text": "Samira Well has work waiting. Find a missing route worker."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_caravan_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_caravan_rest_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_caravan_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_caravan_rest_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_caravan_rest_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_dune_watch_lead",
+      "greetings": [
+        {
+          "text": "Daro Shade has work waiting. Audit a water charter against actual use."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_dune_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_dune_watch_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_dune_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_dune_watch_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_dune_watch_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_whitebough_lead",
+      "greetings": [
+        {
+          "text": "Leena Dune has work waiting. Help stranded travellers without repeating the frontier introduction."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_whitebough_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_whitebough_worker",
+      "greetings": [
+        {
+          "text": "A keepsake was lost while its owner fled the road. Retrieve the wrapped parcel from the marked shelter."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_whitebough_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_whitebough_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_whitebough_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_last_beacon_lead",
+      "greetings": [
+        {
+          "text": "Kavi Saltroad has work waiting. Verify the last northern evidence."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_last_beacon_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_last_beacon_worker",
+      "greetings": [
+        {
+          "text": "A tired worker wants a safe route to visit three local memorials. Inspect the marked shelter and its approach, then report what you found."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_last_beacon_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_last_beacon_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_last_beacon_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltroad_lead",
+      "greetings": [
+        {
+          "text": "Nadia Glass has work waiting. A shade agreement has made a small job everybody’s problem."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltroad_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltroad_worker",
+      "greetings": [
+        {
+          "text": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltroad_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_saltroad_inn",
+      "greetings": [
+        {
+          "text": "A warm hearth, a bed and supplies. The room costs less than replacing your boots after sleeping in the ditch."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_saltroad_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_glass_road_lead",
+      "greetings": [
+        {
+          "text": "Rafi Sunseal has work waiting. Verify the last southern evidence."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_glass_road_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_glass_road_worker",
+      "greetings": [
+        {
+          "text": "The local saltroad marauder are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_glass_road_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_glass_road_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_glass_road_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ledger_gate_lead",
+      "greetings": [
+        {
+          "text": "Ronan Ferry has work waiting. Break the northern collection ward."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ledger_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ledger_gate_worker",
+      "greetings": [
+        {
+          "text": "An undelivered family letter has spent a week beneath a sorting crate. Bring back the sealed pouch before anyone writes a second one."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ledger_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_north_ledger_gate_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_north_ledger_gate_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_sunseal_court_lead",
+      "greetings": [
+        {
+          "text": "Bess Toll has work waiting. Break the southern collection ward."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_sunseal_court_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_sunseal_court_worker",
+      "greetings": [
+        {
+          "text": "Two neighbours dispute the common supply. Read the allocation board by the three handles south of the hearth. Set Homes half, Work full and Reserve half, then test the float."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_sunseal_court_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "wm_sunseal_court_inn",
+      "greetings": [
+        {
+          "text": "Supplies and a fire. Dry socks if you arrive before the next patrol. Beds are at the nearest rest house."
+        },
+        {
+          "text": "The surviving copy is lodged. We can discuss the next job without signing away the dead.",
+          "when": {
+            "quest": "wm_sunseal_court_record",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    }
+  ]
+}

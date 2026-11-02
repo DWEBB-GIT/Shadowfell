@@ -61,7 +61,7 @@ const SFX := {
 ## region id -> ambience loop (anywhere else keeps the forest)
 const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
 const MUSIC := "music_loop.ogg" ## Dan's background track, looped under everything
-const STEP_GAP := 0.42 ## seconds between footsteps at a walk
+const DEATH_LOOP := "death_wind.mp3" ## Dan's wind, looped from death until you live again
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
 var game
@@ -85,7 +85,8 @@ var sfx_cache := {} ## file -> AudioStream
 var amb_loop: AudioStreamPlayer
 var amb_file := ""
 var music: AudioStreamPlayer
-var step_t := 0.0
+var death_loop: AudioStreamPlayer ## the wind while dead; music and ambience wait
+var step_seen := 0 ## the player rig's footfall count last heard
 
 
 ## Every sound the game can play is made ahead, a little each frame from
@@ -149,9 +150,13 @@ func start() -> void:
 		add_child(p)
 		voices.append(p)
 	apply_volumes()
+	apply_device()
 	game.events.on("settingsChanged", func(e):
-		if str(e.get("id", "")).begins_with("vol"):
-			apply_volumes())
+		var id := str(e.get("id", ""))
+		if id.begins_with("vol") or id == "soundOn":
+			apply_volumes()
+		elif id == "outputDevice":
+			apply_device())
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
 	amb_loop = AudioStreamPlayer.new()
@@ -189,8 +194,20 @@ func apply_volumes() -> void:
 	for b in [["Master", "volMaster"], ["Effects", "volEffects"], ["Ambience", "volAmbience"], ["Music", "volMusic"]]:
 		var v: float = pow(float(st.get_value(b[1])) / 100.0, 2)
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b[0]), linear_to_db(maxf(v, 0.00001)))
+	var off: bool = not st.get_value("soundOn")
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), off)
 	if game.hud:
-		game.hud.set_muted(float(st.get_value("volMaster")) == 0)
+		game.hud.set_muted(off or float(st.get_value("volMaster")) == 0)
+
+
+## the speakers to play through (Settings, Audio); browsers offer only Default
+func output_devices() -> PackedStringArray:
+	return AudioServer.get_output_device_list()
+
+
+func apply_device() -> void:
+	var want: String = game.settings.get_value("outputDevice")
+	AudioServer.output_device = want if output_devices().has(want) else "Default"
 
 
 func _bind() -> void:
@@ -222,6 +239,8 @@ func _bind() -> void:
 	ev.on("playerHurt", func(_e): thud(110, 0.25))
 	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
 	ev.on("lootCollected", func(e):
+		if coin_frame == Engine.get_process_frames():
+			return # a purse: its coins already chimed
 		var def: Dictionary = Items.get_def(str(e.get("item", ""))) if e.get("item") else {}
 		if e.get("node"):
 			sfx("harvest", 0.8) # a gathering node, picked
@@ -255,7 +274,10 @@ func _bind() -> void:
 	ev.on("mined", func(_e): sfx("mine"))
 	ev.on("skinned", func(_e): sfx("skin"))
 	ev.on("campPitched", func(_e): sfx("campfire", 0.6))
-	ev.on("playerDied", func(_e): growl(55, 1.4))
+	ev.on("playerDied", func(_e):
+		growl(55, 1.4)
+		set_dead(true))
+	ev.on("playerRevived", func(_e): set_dead(false))
 	ev.on("playerLunge", func(_e): sfx("lunge"))
 	ev.on("graveSlam", func(_e):
 		thud(60, 0.6)
@@ -275,8 +297,16 @@ func _bind() -> void:
 
 
 # ------------------------------------------------------------- playback
+## Sounds turned down from what their callers ask, in one place: running
+## footsteps, panels and bags opening, drawing and sheathing (Dan
+## 2026-11-02: too loud).
+const TRIM := {"step_dirt": 0.55, "step_stone": 0.55, "step_wood": 0.55,
+	"panel": 0.55, "bag": 0.55, "quest_log": 0.55, "sheathe": 0.5, "unsheathe": 0.5}
+
+
 ## Plays one of Dan's recorded sounds by its SFX name.
 func sfx(id: String, level := 1.0, pitch := 1.0) -> void:
+	level *= TRIM.get(id, 1.0)
 	if not started or level <= 0 or not SFX.has(id):
 		return
 	var files: Array = SFX[id]
@@ -319,6 +349,31 @@ func _stream(file: String) -> AudioStream:
 	return sfx_cache[file]
 
 
+## Dead (and a spirit): only the wind plays, on loop; the music and the
+## region's ambience pause until you live again, then carry on.
+func set_dead(on: bool) -> void:
+	if not started:
+		return
+	if on:
+		if death_loop == null:
+			death_loop = AudioStreamPlayer.new()
+			death_loop.bus = "Ambience"
+			death_loop.volume_db = -4.0
+			add_child(death_loop)
+			var s = _stream(DEATH_LOOP)
+			if s != null:
+				s = s.duplicate()
+				s.loop = true
+				death_loop.stream = s
+		if not death_loop.playing and death_loop.stream != null:
+			death_loop.play()
+	elif death_loop != null:
+		death_loop.stop()
+	music.stream_paused = on
+	amb_loop.stream_paused = on
+	rumble.stream_paused = on
+
+
 ## the region's ambience loop; the same file carries on across a border
 func _ambience(region_id: String) -> void:
 	var file: String = AMB_LOOPS.get(region_id, "amb_forest.mp3")
@@ -334,16 +389,19 @@ func _ambience(region_id: String) -> void:
 	amb_loop.play()
 
 
-## footsteps while the player moves: wood indoors, stone in town, dirt elsewhere
-func _footsteps(dt: float) -> void:
+## footsteps as the player's feet come down in the walk and run (Rig.steps):
+## wood indoors, stone in town, dirt elsewhere
+func _footsteps(_dt: float) -> void:
 	var pl = game.player
-	if pl == null or not pl.moving:
-		step_t = 0.0
+	if pl == null or pl.rig == null:
 		return
-	step_t -= dt
-	if step_t > 0:
+	var n: int = pl.rig.steps
+	if n == step_seen:
 		return
-	step_t = STEP_GAP
+	var fresh := n < step_seen # a new rig counts from 0
+	step_seen = n
+	if fresh or pl.rig.airborne:
+		return
 	var surface := "step_dirt"
 	if game.world.indoors != null:
 		surface = "step_wood"

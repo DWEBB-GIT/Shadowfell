@@ -72,6 +72,7 @@ func _init(g, spawn: Dictionary) -> void:
 
 	group = Node3D.new()
 	group.name = "Enemy_" + id
+	group.add_to_group(World.MOVING_GROUP)
 	model = Assets.instance(cfg.model)
 	group.add_child(model)
 	rig = Rig.new(model, cfg.model)
@@ -132,6 +133,20 @@ var is_elite: bool:
 var move_speed: float:
 	get:
 		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
+
+## running after the player in a fight: a percent of the player's base move
+## speed (CONFIG.chase: the enemy's `runSpeed`, else its type's), still
+## slowed by snares
+var chase_speed: float:
+	get:
+		if cfg.speed <= 0:
+			return 0.0
+		return DB.CONFIG.player.speed * run_percent / 100.0 * (1 - minf(90, mods.slow) / 100.0)
+
+var run_percent: float:
+	get:
+		var c: Dictionary = DB.CONFIG.chase
+		return float(cfg.get("runSpeed", c.byType.get(cfg.get("type", ""), c.default)))
 
 var damage_taken_scale: float:
 	get:
@@ -239,6 +254,13 @@ func hurt(amount: float, opts := {}) -> float:
 		rig.hit()
 	if not asleep:
 		stagger = maxf(stagger, stag)
+	# a direct blow on a spellcaster pushes its cast back (WoW pushback,
+	# Dan 2026-11-02): a weapon swing jolts the body but never stops it
+	if amount > 0 and not opts.get("periodic", false) and casting != null and (casting.kind == "shot" or casting.kind == "circle") and casting.interruptible:
+		var tg = casting.telegraph
+		if tg is Dictionary and casting.get("pushbacks", 0) < DB.max_pushbacks:
+			casting.pushbacks = casting.get("pushbacks", 0) + 1
+			tg.t = maxf(0.0, float(tg.t) - DB.cast_pushback)
 	if heavy and not (casting != null and not casting.interruptible):
 		# a heavy blow interrupts an ordinary swing or an interruptible cast;
 		# casts marked `interruptible: false` in the data (Grave Slam) go on
@@ -522,10 +544,13 @@ func update(dt: float, player) -> void:
 			elif attack_timer <= 0:
 				_start_shot(player)
 		elif state == "chase":
-			_steer_towards(player.position.x, player.position.z, move_speed, dt, reach * 0.85)
+			_steer_towards(player.position.x, player.position.z, chase_speed, dt, reach * 0.85)
 			speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
+			# a fleeing player still within a stride gets hit on the run
+			if dist <= reach + DB.CONFIG.chase.reachGrace and attack_timer <= 0 and not cfg.get("telegraph"):
+				_melee_swing()
 		elif state == "attack" and cfg.get("telegraph"):
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
@@ -533,13 +558,7 @@ func update(dt: float, player) -> void:
 		elif state == "attack":
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
-				# as in WoW, the blow lands the moment its swing timer is ready
-				# (no wind-up to step out of); telegraphed attacks are the
-				# `telegraph` and `special` casts above
-				attack_timer = cfg.attackInterval
-				rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
-				game.events.emit("enemyWindup", {"enemy": self})
-				game.combat.resolve_enemy_strike(self)
+				_melee_swing()
 	if casting != null:
 		pass # nothing else moves while committed to a telegraphed attack
 	elif state == "return" and stagger <= 0:
@@ -566,6 +585,15 @@ func update(dt: float, player) -> void:
 ## Go to x/z the way a person would: straight when nothing is in the way,
 ## else round the fence, wall or rock by a path (Collision.find_path),
 ## looked for again every so often or when the goal moves.
+## the blow lands the moment its swing timer is ready (no wind-up to step
+## out of); telegraphed attacks are the `telegraph` and `special` casts
+func _melee_swing() -> void:
+	attack_timer = cfg.attackInterval
+	rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
+	game.events.emit("enemyWindup", {"enemy": self})
+	game.combat.resolve_enemy_strike(self)
+
+
 func _steer_towards(x: float, z: float, speed: float, dt: float, stop_at: float) -> void:
 	var col = game.collision
 	path_timer -= dt

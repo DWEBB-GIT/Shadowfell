@@ -30,6 +30,7 @@ var focus = null ## gamepad highlight: a location string
 var carry = null ## gamepad: location of the item being carried
 var shop_opened_bags := false
 var char_tab := "main"
+var settings_tab := "controls"
 var slots := {} ## loc -> ISlot for everything on screen (the bar's are added by the HUD)
 var bar_slots := {} ## 'a:<n>' -> ISlot, made once by the HUD
 var tip_from = null ## 'ui' | 'world' | null
@@ -82,6 +83,20 @@ func _init(g, h) -> void:
 			open_bags.clear()
 		shop_opened_bags = false
 		_after_change(null))
+	# so does talking to anyone who sells (Dan, 2026-10-29), before you
+	# pick Browse goods; walking off or Goodbye closes them again
+	ev.on("dialogueChanged", func(_e):
+		var n = game.dialogue.npc
+		var vendor: bool = n != null and DB.npcs[n.id].get("shop")
+		if vendor and not bags_open:
+			shop_opened_bags = true
+			for i in _sockets():
+				open_bags[i] = true
+			_after_change("bags")
+		elif n == null and shop_opened_bags and game.merchant.current == null:
+			open_bags.clear()
+			shop_opened_bags = false
+			_after_change(null))
 
 
 # ------------------------------------------------------------------ building
@@ -114,6 +129,8 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character.tabs[id] = b
 	preview = CharPreview.new(game)
+	# Own the preview even if this character panel is never opened.
+	character.main.add_child(preview)
 	spellbook = UI.window(self, "Spells", 500, func(): close("spellbook"))
 	skills_win = UI.window(self, "Professions", 420, func(): close("skills"))
 	# both scroll once they outgrow the screen, with a line of help under
@@ -130,7 +147,7 @@ func _build() -> void:
 		w.inner = UI.vbox(sc, 6)
 		w.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		w.foot = UI.hint(w.body)
-	settings_win = UI.window(self, "Settings", 320, func(): close("settings"))
+	settings_win = UI.window(self, "Settings", 400, func(): close("settings"))
 	talents = UI.window(self, "Talents", 470, func(): close("talents"))
 	talents.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	talents.head.add_child(talents.sub)
@@ -149,6 +166,15 @@ func _build() -> void:
 	_build_settings()
 	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
 		w.panel.visible = false
+	# drag any window by its title bar; it stays where you leave it
+	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}
+	for id in named:
+		_draggable(id, named[id])
+	var saved_at = Store.get_item(WINDOWS_KEY)
+	if saved_at is String and saved_at != "":
+		var d = str_to_var(saved_at)
+		if d is Dictionary:
+			moved = d
 	tooltip = HBoxContainer.new()
 	tooltip.add_theme_constant_override("separation", 6)
 	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -165,9 +191,11 @@ func _build() -> void:
 	add_child(ghost)
 
 
-## Settings: one checkbox (or slider) each, then the key bindings, made once
+## Settings: a page per category (Settings.TABS), each setting a checkbox,
+## slider or drop-down; the key bindings have their own page. Made once.
 func _build_settings() -> void:
 	var body: VBoxContainer = settings_win.body
+	var tabs := UI.hbox(body, 4)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	body.add_child(scroll)
@@ -176,14 +204,39 @@ func _build_settings() -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_win.inner = v
 	settings_win.inputs = {}
+	settings_win.tabs = {}
+	settings_win.pages = {}
+	for t in Settings.TABS:
+		var id: String = t[0]
+		var b := UI.button(tabs, t[1], func():
+			settings_tab = id
+			_show_settings_tab())
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		settings_win.tabs[id] = b
+		settings_win.pages[id] = UI.vbox(v, 2)
 	var group := ""
 	for s in Settings.SETTINGS:
-		if s.get("group") and s.group != group:
-			group = s.group
-			UI.label(v, group, 13, UI.GOLD)
+		var page: VBoxContainer = settings_win.pages[s.tab]
+		if s.get("group", "") != group:
+			group = s.get("group", "")
+			if group != "":
+				UI.gap(page, 4)
+				UI.label(page, group, 13, UI.GOLD)
 		var id: String = s.id
-		if s.has("min"):
-			var row := UI.hbox(v, 8)
+		if s.get("choice"):
+			var row := UI.hbox(page, 8)
+			var l := UI.label(row, s.label, 14)
+			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var ob := OptionButton.new()
+			ob.focus_mode = Control.FOCUS_NONE
+			ob.custom_minimum_size = Vector2(170, 0)
+			ob.clip_text = true
+			ob.add_theme_font_size_override("font_size", 12)
+			row.add_child(ob)
+			ob.item_selected.connect(func(i): game.settings.set_value(id, ob.get_item_text(i)))
+			settings_win.inputs[id] = [ob]
+		elif s.has("min"):
+			var row := UI.hbox(page, 8)
 			var l := UI.label(row, s.label, 14)
 			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var sl := HSlider.new()
@@ -197,29 +250,65 @@ func _build_settings() -> void:
 			val.custom_minimum_size = Vector2(38, 0)
 			val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			# sliders as they move, so the sound follows the hand
+			var names: Array = s.get("names", [])
+			if not names.is_empty():
+				val.custom_minimum_size = Vector2(70, 0)
 			sl.value_changed.connect(func(x):
 				game.settings.set_value(id, int(x))
-				val.text = "%d%%" % int(x))
+				val.text = names[int(x)] if not names.is_empty() else "%d%%" % int(x))
 			settings_win.inputs[id] = [sl, val]
 		else:
 			var cb := CheckBox.new()
 			cb.text = s.label
 			cb.focus_mode = Control.FOCUS_NONE
+			cb.autowrap_mode = TextServer.AUTOWRAP_WORD
 			cb.add_theme_font_size_override("font_size", 14)
 			cb.add_theme_color_override("font_color", UI.TEXT)
 			cb.add_theme_color_override("font_hover_color", Color("f2e6c6"))
 			cb.add_theme_color_override("font_pressed_color", UI.TEXT)
+			# a plain tick box and its words, not a button frame round each line
+			for st in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+				cb.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+			cb.add_theme_icon_override("unchecked", _empty_tick())
 			cb.toggled.connect(func(on): game.settings.set_value(id, on))
-			v.add_child(cb)
+			page.add_child(cb)
 			settings_win.inputs[id] = [cb]
-	UI.label(v, "Key bindings", 13, UI.GOLD)
-	var btns := UI.hbox(v, 6)
+	var keys: VBoxContainer = settings_win.pages.keys
+	UI.wrapped(UI.label(keys, "Click a key to change it, then press the new key. Backspace unbinds it, Escape keeps it.", 12, UI.TEXT_DIM))
+	var btns := UI.hbox(keys, 6)
 	hud.keybind_ui.quick_button = UI.button(btns, "Quick bind", func(): hud.keybind_ui.set_quick(not hud.keybind_ui.quick))
 	UI.button(btns, "Reset to defaults", func(): game.keys.reset_all())
-	hud.keybind_ui.list = UI.vbox(v, 1)
-	var foot := UI.hbox(v, 6)
+	hud.keybind_ui.list = UI.vbox(keys, 1)
+	var ui_page: VBoxContainer = settings_win.pages.interface
+	UI.gap(ui_page, 4)
+	UI.button(ui_page, "Edit HUD", func():
+		close("settings")
+		hud.hud_edit.open())
+	var foot := UI.hbox(body, 6)
 	UI.button(foot, "Save the game", func(): game.manual_save())
-	UI.button(foot, "Logout", func(): game.log_out())
+	_show_settings_tab()
+
+
+## an empty tick box that reads on the dark window (the default is too dark)
+static var _tick_box: ImageTexture
+static func _empty_tick() -> ImageTexture:
+	if _tick_box == null:
+		var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		img.fill_rect(Rect2i(1, 1, 14, 14), Color(201 / 255.0, 162 / 255.0, 83 / 255.0, 0.7))
+		img.fill_rect(Rect2i(2, 2, 12, 12), Color("15110c"))
+		_tick_box = ImageTexture.create_from_image(img)
+	return _tick_box
+
+
+func _show_settings_tab() -> void:
+	var w := settings_win
+	for id in w.tabs:
+		var b: Button = w.tabs[id]
+		b.add_theme_color_override("font_color", UI.GOLD if id == settings_tab else UI.TEXT_DIM)
+		b.add_theme_stylebox_override("normal", UI.box(Color(20 / 255.0, 16 / 255.0, 12 / 255.0, 0.8), UI.GOLD if id == settings_tab else Color(201 / 255.0, 162 / 255.0, 83 / 255.0, 0.3), 0, 1, Vector4(4, 4, 4, 4)))
+		w.pages[id].visible = id == settings_tab
+	w.scroll.scroll_vertical = 0
 
 
 # ------------------------------------------------------------------ state
@@ -295,6 +384,7 @@ func toggle_bag(i: int) -> void:
 
 
 func close(which: String) -> void:
+	hud.panel_closed_sound(which)
 	if which == "bags":
 		open_bags.clear()
 	else:
@@ -319,9 +409,21 @@ func _after_change(which) -> void:
 		focus = null
 		_hide_tip()
 	render()
+	if which != null:
+		var win := _window_node(which)
+		if win != null and win.visible:
+			hud.raise(self, win)
 	if any_open and (focus == null or not _visible_locs().has(focus)):
 		focus = _default_focus(which)
 	_paint_focus()
+
+
+## a window's outer node, to raise it over the others
+func _window_node(which: String) -> Control:
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}.get(which)
+	if which == "bags":
+		return bags
+	return w.panel if w != null else null
 
 
 # ------------------------------------------------------------------ slots
@@ -475,9 +577,18 @@ func _render_sockets(inv) -> void:
 		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
-			slot.dim = 1.0 if s else 0.6
-			if not s:
-				tip_on(slot, "Tool pack slot: earned from Mara Venn's first errand")
+			slot.dim = 1.0 if s else 0.75
+			slot.key = game.keys.label("toolbelt").split(" / ")[0] if not hud.pad_mode else "↓"
+			slot.lit = hud.belt != null and hud.belt.visible
+			slot.on_hover = func(_s: ISlot, on: bool):
+				if on and drag == null:
+					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
+				elif not on:
+					cursor_tip_off()
+			# the tool belt is its own system: a divider and a gap keep it
+			# apart from the bags (Dan, 2026-11-02)
+			sockets.add_child(hud._divider(8))
+			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
 		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
@@ -485,20 +596,27 @@ func _render_sockets(inv) -> void:
 			slot.count = str(n)
 			slot.count_centre = true
 			slot.count_size = 13
-			slot.count_colour = Color("f0e4c8") if n else Color("ff6a50")
+			slot.count_colour = ISlot.LABEL if n else Color("ff6a50")
 		slot.lit = open_bags.has(i)
 	# the free space in all bags shows on the backpack, as in WoW
 	var free: int = inv.free_slots()
-	var bp := _slot(sockets, "s:0", null, 40)
+	# the backpack stands as tall as a spell slot, the main bag of the tray
+	var bp := _slot(sockets, "s:0", null, hud.SLOT)
 	bp.border = UI.BORDER
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
 	bp.count = str(free)
-	bp.count_colour = Color("ff6a50") if free == 0 else Color("f0e4c8")
+	bp.count_size = 18 # big enough to read at a glance (Dan, 2026-11-02)
+	bp.count_colour = Color("ff6a50") if free == 0 else ISlot.LABEL
 	# Dan's painted backpack; the drawn one stays as the fallback
 	bp.icon = Icons.art("ui", "primary_bag")
 	bp.painter = Callable(self, "_paint_backpack")
-	tip_on(bp, "Backpack (B): %d free slot%s" % [free, "" if free == 1 else "s"])
+	# your money lives in the backpack: in its tip and the bag window's foot
+	bp.on_hover = func(s: ISlot, on: bool):
+		if on and drag == null:
+			cursor_tip("Backpack (%s): %d free slot%s\n%s" % [bp.key, free, "" if free == 1 else "s", U.money(inv.coins)])
+		elif not on:
+			cursor_tip_off()
 
 
 ## the backpack's little picture (style.css .bp-icon)
@@ -630,7 +748,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	a.placeholder_size = 9
 	a.count = str(ammo.count) if ammo else ""
 	a.count_size = 13
-	a.count_colour = Color("f0e4c8") if ammo and ammo.count else Color("ff6a50")
+	a.count_colour = ISlot.LABEL if ammo and ammo.count else Color("ff6a50")
 	# the numbers
 	var p = game.player
 	var prog = game.progression
@@ -695,7 +813,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	]
 	rows.append("General")
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
-	rows.append(["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"])
+	rows.append(["Speed", "%s yd/s" % U.fixed(DB.CONFIG.player.speed / 0.9144, 1), "Movement speed"])
 	for r in rows:
 		if r == null:
 			continue
@@ -972,9 +1090,17 @@ func _render_settings() -> void:
 	for id in w.inputs:
 		var v = game.settings.get_value(id)
 		var parts: Array = w.inputs[id]
-		if parts[0] is HSlider:
+		if parts[0] is OptionButton:
+			var ob: OptionButton = parts[0]
+			ob.clear()
+			for d in game.audio.output_devices():
+				ob.add_item(d)
+				if d == v:
+					ob.select(ob.item_count - 1)
+		elif parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
-			parts[1].text = "%d%%" % int(v)
+			var names: Array = Settings._def(id).get("names", [])
+			parts[1].text = names[int(v)] if not names.is_empty() else "%d%%" % int(v)
 		else:
 			parts[0].set_pressed_no_signal(v)
 	hud.keybind_ui.render()
@@ -1139,7 +1265,7 @@ func _upgrade_lines(id: String) -> Array:
 
 # ------------------------------------------------------------------ talents
 ## Path points buy each spell's Enhanced rank, then one of its two forks;
-## one key passive per character (builds.gd, data/builds.json).
+## one key passive per character (builds.gd, data/abilities/builds.json).
 func _render_talents() -> void:
 	var w := talents
 	w.panel.visible = open.talents
@@ -1241,9 +1367,9 @@ func layout() -> void:
 		# not the render: a new label measures its height only once laid out)
 		if character.main.visible:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
-		_fit(character.panel, Vector2(12, 12))
+		_fit(character.panel, Vector2(12, hud.WINDOW_TOP))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, 12))
+		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
@@ -1254,7 +1380,7 @@ func layout() -> void:
 			w.panel.position = Vector2(roundf((vp.x - s.x) / 2), maxf(12, vp.y - 140 - s.y))
 	if settings_win.panel.visible:
 		var inner: Control = settings_win.inner
-		settings_win.scroll.custom_minimum_size = Vector2(296, minf(inner.get_combined_minimum_size().y, vp.y - 290))
+		settings_win.scroll.custom_minimum_size = Vector2(362, minf(inner.get_combined_minimum_size().y, vp.y - 290))
 		var s := _fit(settings_win.panel, Vector2.ZERO)
 		settings_win.panel.position = Vector2(roundf((vp.x - s.x) / 2), 70)
 	if talents.panel.visible:
@@ -1263,7 +1389,58 @@ func layout() -> void:
 	if cooking.panel.visible:
 		var s := _fit(cooking.panel, Vector2.ZERO)
 		cooking.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(vp.y * 0.22))
+	_place_moved()
 	_layout_bags(vp)
+
+
+# ------------------------------------------------------------------ moving
+const WINDOWS_KEY := "shadowfell.window_positions"
+var moved := {} ## window id -> where the player dragged it (Dan, 2026-11-02)
+var _win_drag := "" ## the window being dragged by its title bar
+var _win_panels := {} ## window id -> its panel
+
+
+## The title bar moves the window, as in WoW: press, drag, let go.
+func _draggable(id: String, w: Dictionary) -> void:
+	var head: Control = w.head
+	_win_panels[id] = w.panel
+	head.mouse_filter = Control.MOUSE_FILTER_STOP
+	head.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	head.tooltip_text = ""
+	head.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			if e.pressed:
+				_win_drag = id
+				hud.raise(self, w.panel)
+			elif _win_drag == id:
+				_win_drag = ""
+				Store.set_item(WINDOWS_KEY, var_to_str(moved))
+			head.accept_event()
+		elif e is InputEventMouseMotion and _win_drag == id:
+			moved[id] = _clamp_window(w.panel, w.panel.position + e.relative)
+			w.panel.position = moved[id]
+			head.accept_event())
+
+
+## keep a window's title bar on screen
+func _clamp_window(p: Control, at: Vector2) -> Vector2:
+	var vp := get_viewport_rect().size
+	return Vector2(clampf(at.x, 40 - p.size.x, vp.x - 40), clampf(at.y, 0, vp.y - 40)).round()
+
+
+## put back every window the player moved (layout() places them first)
+func _place_moved() -> void:
+	for id in moved:
+		var p: Control = _win_panels.get(id)
+		if p != null and p.visible and moved[id] is Vector2:
+			p.position = _clamp_window(p, moved[id])
+
+
+## forget where the windows were dragged (HUD edit mode's reset)
+func reset_windows() -> void:
+	moved = {}
+	Store.set_item(WINDOWS_KEY, "")
+	layout()
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
@@ -1641,7 +1818,7 @@ func world_tip(pick) -> void:
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
 	elif pick.kind == "enemy":
-		text = _name_line(key.cfg.name, "#f0d050" if key.passive else "#ff8a6a") + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
+		text = _name_line(key.cfg.name, "#" + (UI.NAME_PASSIVE if key.passive else UI.NAME_HOSTILE).to_html(false)) + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
 	else:
 		text = _name_line(key.name, "#a8e08c") + (_l("<%s>" % _esc(key.def.title), "#9a8f78", 12) if key.def.get("title") else "") + _l("Level %s" % U.n(key.def.get("level", 1)))
 	if not is_same(tip_key, key) or tip_text != text:
@@ -1672,6 +1849,10 @@ func _down(loc: String, at: Vector2) -> void:
 		return
 	if loc == "s:0":
 		toggle_bag(0)
+		return
+	# the tool pack's slot is the tool belt's button (right click opens the pack)
+	if loc == "s:%d" % Items.TOOL_SOCKET:
+		hud.belt.toggle()
 		return
 	if loc.begins_with("m:") or loc.begins_with("y:"):
 		_shop_click(loc)

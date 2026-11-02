@@ -11,14 +11,14 @@ const Checks := preload("res://addons/shadowfell_data/checks.gd")
 const DataStore := preload("res://addons/shadowfell_data/store.gd")
 const Chains := preload("res://addons/shadowfell_data/chains_page.gd")
 
-const COPY := "user://quest_npc_editor_check"
+var COPY := "user://quest_npc_editor_check_%d" % Time.get_ticks_usec()
 var failed := 0
 
 
 func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(COPY)
-	for f in DirAccess.get_files_at("res://data"):
-		DirAccess.copy_absolute(ProjectSettings.globalize_path("res://data/" + f), ProjectSettings.globalize_path(COPY + "/" + f))
+	for f in DataPaths.entries():
+		DirAccess.copy_absolute(ProjectSettings.globalize_path(DataPaths.path_for(f)), ProjectSettings.globalize_path(COPY + "/" + f + ".json"))
 	var main = Main.new(COPY)
 	root.add_child(main)
 	var s = main.s
@@ -184,8 +184,8 @@ func _initialize() -> void:
 	_ok(back.shops.any(func(x): return x.id == "osric_dunn_shop" and x.stock == ["arming_sword"]), "the shop and its stock are in shops.json")
 	# the files the editor writes read back byte for byte when unchanged
 	for f in ["shops", "npcs", "dialogue", "skills"]:
-		var text := FileAccess.get_file_as_string("res://data/%s.json" % f)
-		_ok(IO.to_text(IO.load_file("res://data/%s.json" % f), false, f in ["shops", "skills"]) == text, "%s.json reads back byte for byte" % f)
+		var text := FileAccess.get_file_as_string(COPY + "/" + f + ".json")
+		_ok(IO.to_text(IO.load_file(COPY + "/" + f + ".json"), false, f in ["shops", "skills"]) == text, "%s.json reads back byte for byte" % f)
 	# the game reads the new data
 	main.s.load_all()
 	_ok(Checks.run(main.s).is_empty(), "the saved data passes the checks: %s" % "\n".join(Checks.run(main.s)))

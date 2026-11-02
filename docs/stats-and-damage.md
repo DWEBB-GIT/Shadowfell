@@ -6,7 +6,7 @@ Where the numbers live:
 
 - `src/config.js` (`stats`): the constants that do not grow with level, such as health per Stamina, power per Strength, the crit multiplier, the caps and the block reduction.
 - `src/data/scaling.js` (`SCALING`, also `CONFIG.scaling`): everything that grows with level, and the formulas that turn an item's level, slot and rarity into its numbers, and an enemy's level and type into its.
-- `data/items.json`: each piece of gear states its item level, slot, armour type, rarity and stat split. `data/enemies.json`: each enemy states its level and type. The game works out the rest.
+- `data/items/items.json`: each piece of gear states its item level, slot, armour type, rarity and stat split. `data/npcs/enemies.json`: each enemy states its level and type. The game works out the rest.
 
 A balance pass changes a constant, not every item and enemy.
 
@@ -125,7 +125,7 @@ H  haste as a fraction (20% = 0.20), gear only, capped at 0.30
 
 Auto attack is three separate parts, timed the way WoW times them: the swing timer bar fills at the moment the blow lands.
 
-1. **The swing clock** (`player.cooldowns.attack`) counts down, on delta time, to the moment of the next blow, so the rhythm is the same at 30, 60 or 144 fps. When a blow lands the clock restarts at T. If it ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst.
+1. **The swing clock** (`player.cooldowns.attack`) counts down, on delta time, to the moment of the next blow, so the rhythm is the same at 30, 60 or 144 fps. When a blow lands the clock restarts at T. If it ran out partway through a frame, the overshoot (up to 0.25 s, `catchUp` on Attack in `data/abilities/abilities.json`) comes off the next interval, so a slow frame keeps the beat without a burst.
 2. **The animation** (0.8 s, impact frame 0.32 s in) starts 0.32 s *before* the clock runs out, so its impact frame and the hit are the same moment. It only starts if the target is in reach and in front of you. Haste does not speed it up.
 3. **The damage** resolves at the impact frame, when the clock runs out. Reach and target are checked then: if the target has stepped out of reach there is no blow, the swing is called off, and the clock waits at zero. You swing the moment you are back in reach (a short 0.12 s windup, `readyWindup`), then every T. Moving does not cancel a swing.
 
@@ -135,7 +135,7 @@ When the clock starts: as in WoW, a fresh fight opens the moment you reach the t
 
 - **No animation lock.** Swings, shots and abilities play on the upper body; you move at full speed through all of them. Only a charge (Lunge) carries you, and moving breaks a cast.
 - **Nothing eats a key press.** A swing or shot on its way never blocks an ability; only another cast, a charge in flight or the global cooldown does. Instant abilities do not touch the swing timer. Cleave and Shield Break land at their own impact frame without delaying your next swing.
-- **Spell queue.** An ability pressed in the last 0.4 s of the global cooldown (or of its own cooldown) goes off the moment it can, with no error (`spellQueueWindow` in `data/abilities.json`).
+- **Spell queue.** An ability pressed in the last 0.4 s of the global cooldown (or of its own cooldown) goes off the moment it can, with no error (`spellQueueWindow` in `data/abilities/abilities.json`).
 - **Facing.** Swings and shots need the target within the front 180° (`coneDegrees`). While you fight, you keep the target in front of you as you move (strafing), so attacks carry on; standing still you turn to it.
 - **Melee leeway.** While you and the target are both moving, melee reach stretches by 1 m (`movingLeeway`), so a chase does not drop swings.
 - **Casts.** A cast bar, broken by moving. Each hit taken while casting sets it back 0.5 s, at most twice (Classic pushback: `castPushback`, `maxPushbacks`). Bolts home in on the target and hit on arrival.
@@ -150,7 +150,7 @@ A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bo
 
 ### Dual wielding
 
-A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/archetypes.json` (the Warden can). As in modern WoW:
+A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/abilities/archetypes.json` (the Warden can). As in modern WoW:
 
 - **Each hand has its own swing clock** (`cooldowns.attack` and `cooldowns.attackOff`), at its own weapon's speed and the same T = W ÷ (1 + H), its own animation (the left arm) and its own impact frame. A sword at 2.4 s and a dirk at 1.6 s swing 25 and 37.5 times a minute.
 - **Staggered:** when a fight opens, the off hand's first blow comes half a main-hand swing after the main hand's. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, its clock is pushed back to just after that blow. The main hand is never held.
@@ -200,7 +200,7 @@ effective health = health × (1 + armour ÷ K)
 
 ## Items
 
-Each piece of gear in `data/items.json` states:
+Each piece of gear in `data/items/items.json` states:
 
 - `itemLevel`: the level of the place or enemy it comes from (rarer items may sit a level or two above);
 - `slot`, `armourType` and `rarity`;
@@ -368,7 +368,7 @@ Hits are before the player's armour.
 
 ### Enemy types
 
-Each enemy in `data/enemies.json` has a `type`, which multiplies its level's normal enemy (`scaledEnemy` in `src/data/scaling.js`). Each spawn point's enemy has its own health within ±10% of its type's (fixed per spawn point, so a lean hound stays lean), on top of the ±15% every blow varies by. Any number stated in the record wins: the seer keeps its caster's staff and its own spells.
+Each enemy in `data/npcs/enemies.json` has a `type`, which multiplies its level's normal enemy (`scaledEnemy` in `src/data/scaling.js`). Each spawn point's enemy has its own health within ±10% of its type's (fixed per spawn point, so a lean hound stays lean), on top of the ±15% every blow varies by. Any number stated in the record wins: the seer keeps its caster's staff and its own spells.
 
 | Type (`type`) | Health | Hit | A blow every | Armour | Danger | In the game |
 |---|---|---|---|---|---|---|

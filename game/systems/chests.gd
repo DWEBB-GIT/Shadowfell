@@ -1,6 +1,6 @@
 class_name Chests
 extends RefCounted
-## Chests in the world (data/world.json `chests`; src/systems/chests.js).
+## Chests in the world (data/world/world.json `chests`; src/systems/chests.js).
 ## Walk up and open one (E, or click it): what it holds goes into your bags
 ## (onto the ground beside it if they are full) and its silver into your
 ## purse. A chest with a `lock` needs its key in your bags, or Lockpicking
@@ -54,7 +54,7 @@ func _lock_state(c: Dictionary) -> String:
 	var skills = game.skills
 	if lock.get("key") and inventory.count(lock.key) > 0:
 		return ""
-	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.count("lockpicks") > 0:
+	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.on_belt("lockpicks"):
 		return ""
 	var ways := []
 	if lock.get("key"):

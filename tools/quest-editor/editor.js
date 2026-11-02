@@ -1,8 +1,8 @@
-// Quest editor: lists every quest in data/quests.json, edits one at a time
+// Quest editor: lists every quest in data/quests/quests.json, edits one at a time
 // with dropdowns built from the other data files (npcs, enemies, items,
 // examine points, locations, factions), draws the quest chains, and runs the
 // same checks as `npm run validate` on every change. Save writes
-// data/quests.json through tools/server.mjs; without the server it downloads
+// data/quests/quests.json through tools/server.mjs; without the server it downloads
 // the file instead.
 import { validateGameData } from '../../src/data/schema.js';
 
@@ -43,7 +43,8 @@ async function load() {
     canSave = false;
     const names = ['abilities', 'archetypes', 'dialogue', 'enemies', 'factions', 'items', 'loot_tables', 'npcs', 'quests', 'rarities', 'recipes', 'scenery', 'shops', 'skills', 'text', 'world'];
     texts = {};
-    await Promise.all(names.map(async (n) => (texts[`${n}.json`] = await (await fetch(`../../data/${n}.json`)).text())));
+    const catalogue = await (await fetch('../../data/catalogue.json')).json();
+    await Promise.all(names.map(async (n) => (texts[`${n}.json`] = await (await fetch(`../../data/${catalogue.files[n] || n + ".json"}`)).text())));
   }
   raw = Object.fromEntries(Object.entries(texts).map(([f, t]) => [f, JSON.parse(t)]));
   quests = raw['quests.json'].quests;
@@ -470,14 +471,14 @@ async function save() {
   if (bad && !confirm(`${bad} check(s) fail. The game build will refuse this data until they are fixed. Save anyway?`)) return;
   const text = pretty(raw['quests.json']) + '\n';
   if (canSave) {
-    const res = await fetch('/api/data/quests.json', { method: 'PUT', body: text }).catch(() => null);
+    const res = await fetch('/api/data/quests/quests.json', { method: 'PUT', body: text }).catch(() => null);
     if (res?.ok) {
       unsaved.clear();
       dirty = false;
       $('#dirty').textContent = '';
       renderList();
       if (current()) renderEdit();
-      return toast('Saved data/quests.json');
+      return toast('Saved data/quests/quests.json');
     }
     toast('Could not reach the editor server, downloading instead');
   }

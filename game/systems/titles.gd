@@ -1,6 +1,6 @@
 class_name Titles
 extends RefCounted
-## Titles, Fable style (data/titles.json; src/systems/titles.js). You start
+## Titles, Fable style (data/npcs/titles.json; src/systems/titles.js). You start
 ## a nobody, and townsfolk greet you with "Hello there." or "Hey you!".
 ## Once renown (and a title's own conditions) allows it, you may choose a
 ## title in the character window, and NPCs then call you by it, now and

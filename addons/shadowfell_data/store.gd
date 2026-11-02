@@ -8,6 +8,10 @@ const IO := preload("json_io.gd")
 
 ## where the data files are (a test points this at a copy)
 var data_dir := "res://data"
+var map_id := "act1"
+var _disk_text := {}
+var _world_disk := {}
+var _world_baseline := {}
 const MODELS_DIR := "res://assets/models"
 const SPRITES_DIR := "res://assets/icons"
 
@@ -120,11 +124,21 @@ signal changed
 func load_all() -> void:
 	files.clear()
 	dirty.clear()
+	_disk_text.clear()
+	map_id = Terrain.chosen_map() if data_dir == "res://data" else "act1"
 	for f in ["items", "rarities", "loot_tables", "enemies", "quests", "world", "npcs", "shops", "dialogue", "factions", "text", "skills", "abilities", "archetypes", "recipes", "builds"]:
-		files[f] = IO.load_file(_path(f))
+		var file_path := _path(f)
+		_disk_text[f] = FileAccess.get_file_as_string(file_path) if FileAccess.file_exists(file_path) else ""
+		files[f] = IO.load_file(file_path) if _disk_text[f] != "" else {}
 		if files[f] == null:
 			files[f] = {}
 			push_error("Game Data: cannot read " + _path(f))
+	if map_id == "new":
+		_world_disk = files.world.duplicate(true)
+		DB.ready = false
+		DB.ensure()
+		files.world = DB.world.duplicate(true)
+	_world_baseline = files.world.duplicate(true)
 	items = files.items.get("items", [])
 	armour_types = files.items.get("armourTypes", [])
 	rarities = files.rarities.get("rarities", [])
@@ -151,6 +165,10 @@ func load_all() -> void:
 	dialogues = files.dialogue.dialogues
 	factions = files.factions.get("factions", [])
 	examine_points = PackedStringArray(files.text.get("examine", {}).keys())
+	for poi in files.world.get("pois", []):
+		var point_id: String = "poi:" + str(poi.id)
+		if not examine_points.has(point_id):
+			examine_points.append(point_id)
 	if not files.skills.has("skills"):
 		files.skills.skills = []
 	skills = files.skills.skills
@@ -161,11 +179,13 @@ func load_all() -> void:
 
 
 func _path(file: String) -> String:
-	return "%s/%s.json" % [data_dir, file]
+	if file == "world" and map_id == "new":
+		return data_dir + "/terrain/new_map/spawns.json"
+	return DataPaths.path_for(file, data_dir)
 
 
 func scan_art() -> void:
-	models = _names(MODELS_DIR, ".glb")
+	models = PackedStringArray(Assets.model_ids())
 	sprites = _names(SPRITES_DIR, ".png")
 
 
@@ -185,13 +205,28 @@ func touch(file: String) -> void:
 
 func save_all() -> PackedStringArray:
 	var saved := PackedStringArray()
-	for f in dirty:
-		var err := IO.save_file(_path(f), files[f])
+	for f in dirty.keys():
+		var path := _path(f)
+		var disk := FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else ""
+		if disk != _disk_text.get(f, ""):
+			push_error("Game Data: %s changed on disk. Revert/reopen before saving; your edits are still in this screen." % path)
+			continue
+		var output: Dictionary = files[f]
+		if f == "world" and map_id == "new":
+			output = _world_disk.duplicate(true)
+			for key in files.world:
+				if files.world[key] != _world_baseline.get(key):
+					output[key] = files.world[key]
+		var err := IO.save_file(path, output)
 		if err != OK:
 			push_error("Game Data: cannot write %s (%s)" % [_path(f), error_string(err)])
 			continue
 		saved.append(f + ".json")
-	dirty.clear()
+		dirty.erase(f)
+		_disk_text[f] = FileAccess.get_file_as_string(path)
+		if f == "world":
+			_world_disk = output.duplicate(true)
+			_world_baseline = files.world.duplicate(true)
 	changed.emit()
 	return saved
 

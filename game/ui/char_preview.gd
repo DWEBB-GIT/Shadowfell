@@ -88,7 +88,8 @@ func render() -> void:
 	if _anim:
 		_anim.advance(get_process_delta_time())
 	_sync(model, copy)
-	copy.transform = Transform3D(Basis.from_scale(model.transform.basis.get_scale()), Vector3.ZERO)
+	# The in-world readability scale must not crop the paper doll.
+	copy.transform = Transform3D(Basis.from_scale(model.transform.basis.get_scale() / DB.CONFIG.player.visualScale), Vector3.ZERO)
 	# from the front: the model's own facing is on its parent, then the viewer's turn
 	pivot.rotation.y = turn
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE

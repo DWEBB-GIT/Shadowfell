@@ -1,6 +1,6 @@
 import { DB } from '../data/db.js';
 
-// Reputation, WoW style: points with each faction (data/factions.json),
+// Reputation, WoW style: points with each faction (data/npcs/factions.json),
 // earned from quests and from what the Warden does in a faction's area
 // (killing the dead on the road earns the Road Wardens' thanks). Standings
 // are named tiers; a faction's vendors give a discount from Friendly up.

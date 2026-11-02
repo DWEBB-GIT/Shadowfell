@@ -42,7 +42,7 @@ func _init() -> void:
 func show_model(model_name: String) -> void:
 	for c in _pivot.get_children():
 		c.queue_free()
-	var path := MODELS % model_name
+	var path := Assets.model_path(model_name)
 	if model_name == "" or not ResourceLoader.exists(path):
 		return
 	var scene = load(path)
@@ -61,6 +61,7 @@ func show_model(model_name: String) -> void:
 
 
 func _process(delta: float) -> void:
+	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS if is_visible_in_tree() else SubViewport.UPDATE_DISABLED
 	if is_visible_in_tree():
 		_pivot.rotation.y += delta * 0.7
 
@@ -75,3 +76,7 @@ static func _bounds(n: Node, parent_xf: Transform3D, box):
 	for c in n.get_children():
 		box = _bounds(c, xf, box)
 	return box
+
+
+func _exit_tree() -> void:
+	RenderCleanup.detach(self)

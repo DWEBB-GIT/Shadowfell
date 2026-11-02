@@ -44,6 +44,11 @@ func _process(_dt: float) -> bool:
 		for gr in ui.groups():
 			print("group ", gr.name, " dungeon=", gr.dungeon, " ", gr.ids)
 		ui.toggle_log(true)
+		var gk: String = ui.groups()[0].key
+		ui.toggle_group(gk)
+		assert(ui.log_folded.has(gk))
+		ui.toggle_group(gk)
+		assert(not ui.log_folded.has(gk))
 		ui.tracker_collapsed = true
 		ui.render_tracker()
 		ui.tracker_collapsed = false
