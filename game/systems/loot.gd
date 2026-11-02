@@ -219,7 +219,7 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 			glint.scale = Vector3.ONE * 1.1
 		if not ["junk", "common", "quest"].has(rarity):
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
-			beam = _beam(group, Items.rarity_colour(rarity), ["junk", "common", "quest", "enhanced", "rare"].find(rarity))
+			beam = _beam(group, Items.rarity_colour(rarity), rarity)
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
 	group.position = Vector3(x, base_y, z)
@@ -231,13 +231,15 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 
 
 ## Green and better gear on the ground: a column of its colour rising off
-## it and motes drifting up it, as Diablo marks a good drop. `tier` (-1 for
-## epic and up) makes it taller and brighter.
-func _beam(group: Node3D, colour: Color, tier: int) -> MeshInstance3D:
-	var big := tier < 0 or tier > 3
+## it and motes drifting up it, as Diablo marks a good drop. The better the
+## rarity, the taller and wider the column.
+const BEAM_HEIGHT := {"enhanced": 3.0, "rare": 5.5, "epic": 8.5, "legendary": 12.0}
+
+func _beam(group: Node3D, colour: Color, rarity: String) -> MeshInstance3D:
+	var h: float = BEAM_HEIGHT.get(rarity, 3.0)
 	var beam := MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2(0.5 if not big else 0.7, 2.6 if tier == 3 else (3.4 if tier == 4 else 4.4))
+	q.size = Vector2(0.4 + h * 0.04, h)
 	beam.mesh = q
 	var m := Tex.fx_material(Tex.beam(), Color(colour, 0.85))
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
@@ -252,8 +254,8 @@ func _beam(group: Node3D, colour: Color, tier: int) -> MeshInstance3D:
 	var dm := Tex.fx_material(Tex.glint(), Color(colour.lightened(0.3), 0.9))
 	dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	motes.material_override = dm
-	motes.amount = 10 if big else 6
-	motes.lifetime = 1.8
+	motes.amount = int(4 + h)
+	motes.lifetime = 1.0 + h * 0.25
 	motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	motes.emission_sphere_radius = 0.18
 	motes.direction = Vector3.UP
