@@ -852,8 +852,16 @@ func _charge_hit(spell: Dictionary) -> Array:
 	return [best]
 
 
+## A spell's hit before multipliers: its base roll, plus a share of your
+## spell power (`spellPower`, 1 = all of it) and of a weapon roll
+## (`weaponDamage`), as WoW coefficients (Dan, 2026-11-02): every spell grows
+## with gear, so weapons and caster weapons matter to every class
 func _spell_base(t: Dictionary) -> float:
-	return (t.damageMin + (t.damageMax - t.damageMin) * game.random.call()) * game.stats.spell_scale + game.stats.spell_power
+	var base: float = (t.damageMin + (t.damageMax - t.damageMin) * game.random.call()) * game.stats.spell_scale
+	base += t.get("spellPower", 1.0) * game.stats.spell_power
+	if t.get("weaponDamage", 0):
+		base += t.weaponDamage * Stats.weapon_roll(game.random, game.stats)
+	return base
 
 
 # ------------------------------------------------------- your hits, any source

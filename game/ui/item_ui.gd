@@ -1398,6 +1398,26 @@ func _cost_line(a: Dictionary) -> String:
 	return _l(" · ".join(parts), "#8fb4f0", 12) if not parts.is_empty() else ""
 
 
+## What gear an ability grows with, as WoW tooltips say it: a share of a
+## weapon roll and of spell power, for each tick of a damage over time
+func _scaling_line(ab: Dictionary) -> String:
+	var t: Dictionary = ab.get("tuning", {})
+	var tick: float = t.get("tickMultiplier", 1.0)
+	var parts := []
+	if t.has("damageMultiplier"):
+		parts.append("%d%% weapon damage" % roundi(t.damageMultiplier * 100))
+	elif t.has("damageMin"):
+		if t.get("weaponDamage", 0):
+			parts.append("%d%% weapon damage" % roundi(t.weaponDamage * tick * 100))
+		if t.get("spellPower", 1.0):
+			parts.append("%d%% spell power" % roundi(t.get("spellPower", 1.0) * tick * 100))
+	elif t.has("tickMultiplier"):
+		parts.append("%d%% weapon damage" % roundi(tick * 100))
+	if parts.is_empty():
+		return ""
+	return _l("Scales with %s%s" % [" and ".join(parts), " a tick" if t.has("tickMultiplier") else ""], "#8fbf6a", 12)
+
+
 ## What an empty character panel slot takes, named as players know them
 const SLOT_TIP := {"head": "Helmet", "shoulders": "Shoulders", "back": "Cloak", "chest": "Chest", "wrists": "Bracers", "hands": "Gloves", "waist": "Belt", "legs": "Legs", "feet": "Boots", "neck": "Necklace", "finger1": "Ring", "finger2": "Ring", "mainHand": "Main Hand Weapon", "offHand": "Off Hand", "ranged": "Bow", "ammo": "Ammo"}
 
@@ -1419,6 +1439,9 @@ func _tooltip(loc: String) -> void:
 		if req != "":
 			lines.append(_l(_esc(req), "#ff4a3a" if Spells.missing_gear(game, ab) != "" else UI.hex(UI.TEXT), 12))
 		lines.append(_l("[i]%s[/i]" % _esc(ab.get("desc", "")), "#d0b878"))
+		var scales := _scaling_line(ab)
+		if scales != "":
+			lines.append(scales)
 		lines.append_array(_upgrade_lines(id))
 		_set_tip(lines, [])
 		return

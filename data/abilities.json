@@ -242,8 +242,10 @@
       "tuning": {
         "castTime": 1.6,
         "cooldown": 0,
-        "damageMin": 3,
-        "damageMax": 4,
+        "damageMin": 1,
+        "damageMax": 2,
+        "spellPower": 0.9,
+        "weaponDamage": 0.35,
         "projectileSpeed": 22
       },
       "cost": {
@@ -388,7 +390,9 @@
       "tuning": {
         "cooldown": 6,
         "damageMin": 1,
-        "damageMax": 3
+        "damageMax": 1,
+        "spellPower": 0.6,
+        "weaponDamage": 0.2
       },
       "cost": {
         "mana": 15
@@ -406,8 +410,10 @@
         "radius": 4,
         "duration": 8,
         "tickInterval": 1,
-        "damageMin": 1,
-        "damageMax": 2,
+        "damageMin": 0,
+        "damageMax": 1,
+        "spellPower": 0.3,
+        "weaponDamage": 0.15,
         "healPercent": 2
       },
       "cost": {
@@ -435,7 +441,9 @@
             "text": "Burns enemies for 50% more.",
             "scale": {
               "damageMin": 1.5,
-              "damageMax": 1.5
+              "damageMax": 1.5,
+              "spellPower": 1.5,
+              "weaponDamage": 1.5
             }
           }
         ]
@@ -610,8 +618,10 @@
       "tuning": {
         "cooldown": 10,
         "lockout": 3,
-        "damageMin": 1,
+        "damageMin": 0,
         "damageMax": 1,
+        "spellPower": 0.3,
+        "weaponDamage": 0.1,
         "offGlobalCooldown": 1
       },
       "cost": {
@@ -1158,6 +1168,7 @@
         "cooldown": 0,
         "damageMin": 4,
         "damageMax": 5,
+        "spellPower": 1.0,
         "projectileSpeed": 20
       },
       "cost": {
@@ -1200,6 +1211,7 @@
         "tickInterval": 1,
         "damageMin": 1,
         "damageMax": 2,
+        "spellPower": 1.0,
         "tickMultiplier": 0.3333
       },
       "cost": {
@@ -1246,7 +1258,8 @@
         "duration": 5,
         "tickInterval": 1,
         "damageMin": 0,
-        "damageMax": 0
+        "damageMax": 0,
+        "spellPower": 1.0
       },
       "cost": {
         "mana": 35
@@ -1390,6 +1403,7 @@
         "tickInterval": 0.5,
         "damageMin": 1,
         "damageMax": 1,
+        "spellPower": 1.0,
         "healPercent": 100
       },
       "cost": {
@@ -1400,7 +1414,8 @@
           "text": "Drains 25% more.",
           "scale": {
             "damageMin": 1.25,
-            "damageMax": 1.25
+            "damageMax": 1.25,
+            "spellPower": 1.25
           }
         },
         "forks": [
@@ -1486,8 +1501,10 @@
       "desc": "A hammer of light falls on your target from the sky, then it burns for 6 seconds. The Paladin's only reach. Triggers the global cooldown. 8 second cooldown.",
       "tuning": {
         "cooldown": 8,
-        "damageMin": 3,
-        "damageMax": 4
+        "damageMin": 1,
+        "damageMax": 2,
+        "spellPower": 0.8,
+        "weaponDamage": 0.35
       },
       "cost": {
         "mana": 25
@@ -1536,8 +1553,10 @@
         "cooldown": 0,
         "duration": 6,
         "tickInterval": 2,
-        "damageMin": 1,
-        "damageMax": 1,
+        "damageMin": 0,
+        "damageMax": 0,
+        "spellPower": 0.5,
+        "weaponDamage": 0.25,
         "tickMultiplier": 0.6
       },
       "status": "burning"
