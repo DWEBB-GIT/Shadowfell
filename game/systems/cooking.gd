@@ -149,6 +149,8 @@ func blocked(r: Dictionary) -> String:
 		return "Requires %s %d." % [DB.skills[r.skill].name, r.rank]
 	if can_make(r) < 1:
 		return "You are missing ingredients."
+	if game.inventory.room_for(r.output.item) < r.output.count:
+		return "Your bags are full."
 	if near_station(r.get("station", "fire")) == "":
 		return "Requires %s." % ("a cooking fire" if r.get("station", "fire") == "fire" else craft_of(r.skill).get("station", "a " + r.station))
 	if player.dead or player.casting != null or player.lunge != null:

@@ -374,6 +374,8 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 		return true
 	if room_for(id) < n:
 		game.events.emit("log", {"text": "Your bags are full.", "kind": "muted", "throttle": "bags-full"})
+		if game.hud:
+			game.hud.error("Your bags are full.")
 		return false
 	_insert(id, n, rolls)
 	if not quiet:

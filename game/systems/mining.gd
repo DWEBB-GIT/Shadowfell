@@ -183,7 +183,7 @@ func start(o: Dictionary) -> bool:
 		game.hud.error("That vein %s." % why)
 		return false
 	if bags_full(o):
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)
@@ -255,7 +255,7 @@ func update(dt: float, time: float) -> void:
 		game.events.emit("log", {"text": "The vein is mined out. Another will glint somewhere along %s before long." % o.group.get("name", "the rock"), "kind": "muted"})
 	elif bags_full(o):
 		mining = null
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 	elif block({"rank": int(rock_def(o.rock).get("rank", 1))}) == "":
 		_swing(o) # keep swinging until it is bare, as long as you stand there
 	else:

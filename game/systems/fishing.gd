@@ -158,6 +158,7 @@ func strike() -> bool:
 	for c in caught:
 		if inventory.room_for(c.id) < c.count:
 			events.emit("log", {"text": "Your bags are full. You let it go.", "kind": "muted"})
+			game.hud.error("Your bags are full.")
 			continue
 		inventory.add_item(c.id, c.count)
 		var name: String = Items.get_def(c.id).name
