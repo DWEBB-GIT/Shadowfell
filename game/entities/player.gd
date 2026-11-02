@@ -296,6 +296,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
+		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
 			rig.clip = ""
@@ -307,6 +308,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 		jump_v -= JUMP_GRAVITY * dt
 		if position.y <= ground:
 			position.y = ground
+			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
 			jump_v = 0.0
 			jump_h = 0.0
 		else:

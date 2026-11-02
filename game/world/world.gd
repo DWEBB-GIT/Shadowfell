@@ -34,7 +34,7 @@ func build() -> World:
 		var x: float = p.position[0]
 		var z: float = p.position[1]
 		group.add_child(obj)
-		_add_collider(p, x, z)
+		_add_collider(p, x, z, obj)
 		if p.get("examine"):
 			var off: Array = p.get("examineOffset", [0, 0])
 			var r := deg_to_rad(p.get("rotation", 0))
@@ -52,8 +52,28 @@ func build() -> World:
 	return self
 
 
-## props low enough to jump over: their height in metres (Collision `h`)
+## props low enough to jump over: their height in metres (Collision `h`).
+## Anything else not listed is measured from its model, and counts as low
+## when its top is under JUMPABLE (a crate, a grave, a small rock).
 const LOW_PROPS := {"fence": 1.05}
+const JUMPABLE := 1.25
+
+
+## How high a placed prop stands above the ground under it (its meshes'
+## bounds, in the prop's own placement), or INF when it has no meshes.
+static func prop_height(obj: Node3D, ground: float) -> float:
+	var top := -INF
+	var stack := [[obj, obj.transform]]
+	while stack:
+		var it: Array = stack.pop_back()
+		var n: Node = it[0]
+		var xf: Transform3D = it[1]
+		if n is VisualInstance3D:
+			top = maxf(top, (xf * (n as VisualInstance3D).get_aabb()).end.y)
+		for c in n.get_children():
+			if c is Node3D:
+				stack.append([c, xf * (c as Node3D).transform])
+	return top - ground if top > -INF else INF
 
 
 ## Shared by world construction and authoring round-trip checks.
@@ -87,7 +107,7 @@ static func mark_light_fixture(root: Node3D) -> void:
 		mesh.layers = LIGHT_FIXTURE_LAYER
 
 
-func _add_collider(p: Dictionary, x: float, z: float) -> void:
+func _add_collider(p: Dictionary, x: float, z: float, obj: Node3D = null) -> void:
 	var col = p.get("collider")
 	if not col:
 		return
@@ -95,6 +115,10 @@ func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	if p.has("scale3"):
 		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
 	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
+	if h == INF and obj != null:
+		var measured := prop_height(obj, Terrain.height_at(x, z))
+		if measured <= JUMPABLE:
+			h = measured
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
 		game.collision.add(x, z, col * s, false, h)
 		return

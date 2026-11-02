@@ -4,6 +4,7 @@
   "enemies": [
     {
       "id": "ghoul",
+      "blood": "bone",
       "name": "Ashen Ghoul",
       "attitude": "aggressive",
       "model": "ghoul",
@@ -29,6 +30,7 @@
     },
     {
       "id": "brute",
+      "blood": "bone",
       "name": "Gravebound Brute",
       "attitude": "aggressive",
       "model": "brute",
