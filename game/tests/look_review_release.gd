@@ -92,7 +92,6 @@ func _pose(legacy:bool)->void:
 		game.camera.position=at+o
 		game.camera.look_at(at)
 	game.world.set_cutaway(game.camera.position,game.player.position+Vector3(0,1.2,0))
-	game.world.see_through.update(3)
 	game.hud.zone_left=0
 	game.hud.banner_time=0
 	game.hud.banner.visible=false
