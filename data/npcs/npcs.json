@@ -1334,6 +1334,18 @@
       "shop": "wm_sunseal_court_supplies",
       "innkeeper": false,
       "bedPrice": 12
+    },
+    {
+      "id": "test_pell",
+      "name": "Pell",
+      "title": "Curios (test)",
+      "mapIcon": "blacksmith",
+      "level": 8,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#8f7bc9",
+      "shop": "test_curios",
+      "dialogue": "test_pell"
     }
   ]
 }

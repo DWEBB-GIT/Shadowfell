@@ -205,7 +205,7 @@ func spend(ability: Dictionary, gain = null) -> float:
 
 
 const HEALTH_REGEN_DELAY := 5.0 ## seconds out of combat before health returns
-const HEALTH_REGEN_PERCENT := 2.0 ## of max health a second
+const HEALTH_REGEN_PERCENT := 0.8 ## of max health a second (slow: eat to heal fast)
 const HEALTH_REGEN_STILL := 1.5 ## times faster when not moving
 
 func update(dt: float) -> void:
@@ -236,7 +236,7 @@ func update(dt: float) -> void:
 		var regen: float = b.get("regenPerSecond", 0) if fighting else b.get("regenOutOfCombat", b.get("regenPerSecond", 0))
 		if regen:
 			v += regen * (b.get("shadowMultiplier", 1) if hidden else 1) * (1.0 if player.moving else 1 + b.get("stillBonus", 0)) * dt
-		if b.get("decayPerSecond") and not fighting:
+		if b.get("decayPerSecond") and not fighting and since_combat > b.get("decayAfter", 0):
 			v -= b.decayPerSecond * dt
 		if b.get("points") and b.get("fadeAfter") and since_hit > b.fadeAfter and not hidden:
 			v = 0

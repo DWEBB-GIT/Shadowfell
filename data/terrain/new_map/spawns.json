@@ -2131,6 +2131,14 @@
 	  "facing": 180
 	},
 	{
+	  "npc": "test_pell",
+	  "position": [
+		-446,
+		-198
+	  ],
+	  "facing": 180
+	},
+	{
 	  "npc": "tf_iren",
 	  "position": [
 		-435,

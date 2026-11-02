@@ -33,8 +33,8 @@
             "perSwing": 12,
             "perHitTaken": 6,
             "perBlock": 10,
-            "decayAfter": 6,
-            "decayPerSecond": 8,
+            "decayAfter": 10,
+            "decayPerSecond": 3,
             "healPerSpent": 0.2
           }
         ]
@@ -209,7 +209,7 @@
           "base": 100,
           "perIntellect": 10,
           "regenPerSecond": 0,
-          "regenOutOfCombat": 12
+          "regenOutOfCombat": 5
         },
         "bars": [
           {
@@ -276,7 +276,7 @@
           "base": 120,
           "perIntellect": 10,
           "regenPerSecond": 0,
-          "regenOutOfCombat": 12
+          "regenOutOfCombat": 5
         },
         "bars": []
       },
