@@ -103,6 +103,9 @@ func place_at(x: float, z: float, f = null) -> void:
 
 func _sync() -> void:
 	group.position = position
+	if ghost:
+		# a spirit floats a hand above the ground, bobbing
+		group.position.y += 0.15 + sin(game.time * 2) * 0.06
 	group.rotation.y = facing
 	# The contact shadow stays on the ground while the body leaves it.
 	ground_shadow.position.y = 0.03 - jump_h
@@ -120,6 +123,13 @@ func _free(n: Node) -> void:
 
 ## Show what is equipped: the blade in hand, a helm, the off hand.
 func show_equipment(equipment: Dictionary) -> void:
+	_show_equipment(equipment)
+	# gear changed on a spirit casts no shadow either
+	if ghost:
+		_set_casts_shadow(false)
+
+
+func _show_equipment(equipment: Dictionary) -> void:
 	var arm := _part("Arm_R")
 	var head := _part("Head")
 	if arm and default_weapon_mesh:
@@ -334,9 +344,9 @@ func update(dt: float, controls) -> void:
 			position.x += mv.x * sp * dt
 			position.z += mv.z * sp * dt
 			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
-		position = game.collision.resolve(position, radius)
-		position.y = Terrain.height_at(position.x, position.z) + 0.15 + sin(game.time * 2) * 0.06
-		moving = mag > 0
+		position = game.collision.resolve(position, radius, jump_h)
+		_update_jump(dt, controls != null and controls.get("jump", false))
+		moving = mag > 0 or rig.airborne
 		rig.update(dt, mag)
 		_sync()
 		return
@@ -703,6 +713,46 @@ func become_ghost(x: float, z: float) -> void:
 	place_at(x, z, PI)
 	Rig.set_alpha(materials, 0.45)
 	Rig.set_emissive(materials, Color(0.35, 0.55, 0.8), 1)
+	_set_casts_shadow(false)
+
+
+## A spirit casts no shadow and fades whole: the body and everything hung
+## on it (gear, weapons, shields; the blob under the feet goes). Gear put on
+## while a spirit is caught by show_equipment; all comes back on revive.
+var _shadow_off: Array = [] ## [instance, its cast_shadow]
+var _gear_faded: Array = [] ## [mesh, surface, its own override before]
+func _set_casts_shadow(on: bool) -> void:
+	if on:
+		for pair in _shadow_off:
+			if is_instance_valid(pair[0]):
+				pair[0].cast_shadow = pair[1]
+		_shadow_off.clear()
+		for g in _gear_faded:
+			if is_instance_valid(g[0]):
+				g[0].set_surface_override_material(g[1], g[2])
+		_gear_faded.clear()
+		ground_shadow.visible = true
+		return
+	for gi: GeometryInstance3D in model.find_children("*", "GeometryInstance3D", true, false):
+		if gi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			_shadow_off.append([gi, gi.cast_shadow])
+			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# gear meshes share their materials with the item models: fade copies
+	var copies := []
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(i)
+			if m == null or m in materials or copies.has(m):
+				continue
+			var c := m.duplicate()
+			_gear_faded.append([mi, i, mi.get_surface_override_material(i)])
+			mi.set_surface_override_material(i, c)
+			copies.append(c)
+	Rig.set_alpha(copies, 0.45)
+	Rig.set_emissive(copies, Color(0.35, 0.55, 0.8), 1)
+	ground_shadow.visible = false
 
 
 func revive(x: float, z: float, health_fraction := 1.0) -> void:
@@ -711,6 +761,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 		ghost = false
 		Rig.set_alpha(materials, 1.0)
 		Rig.set_emissive(materials, Color.BLACK, 0)
+		_set_casts_shadow(true)
 	health = maxf(1, U.jround(max_health * health_fraction))
 	rig.revive()
 	cooldowns = fresh_cooldowns()
@@ -719,6 +770,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 	if game.resources:
 		game.resources.reset()
 	place_at(x, z, PI)
+	game.events.emit("playerRevived", {})
 
 
 static func fresh_cooldowns() -> Dictionary:

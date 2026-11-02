@@ -46,6 +46,7 @@ const WOODS := {
 const ROCKS := {Terrain.ROCK: 0.16, Terrain.SNOW: 0.1, Terrain.MOOR: 0.06, Terrain.ASH: 0.12, Terrain.DOWNS: 0.03, Terrain.DESERT: 0.06}
 const GRASSY := [Terrain.MEADOW, Terrain.FARMLAND, Terrain.DOWNS, Terrain.FOREST, Terrain.BLACKWOOD, Terrain.MARSH, Terrain.MOOR, Terrain.JUNGLE, Terrain.SWAMP]
 
+var gentle := false ## a loading screen covers an arrival: no build-it-all stall
 var game
 var group: Node3D
 var chunks := {} ## Vector2i -> Node3D
@@ -132,11 +133,12 @@ static func ground_normal(x: float, z: float, cache: Dictionary = {}) -> Vector3
 # ------------------------------------------------------------- streaming
 ## Build the chunks around `at` that are missing (nearest first, within a
 ## time budget unless `all`) and free the far ones.
-func update(at: Vector3, all := false) -> void:
+func update(at: Vector3, all := false, budget_ms := BUDGET_MS) -> void:
 	focus = at
 	var c := Vector2i(floori(at.x / CHUNK), floori(at.z / CHUNK))
-	# arriving somewhere new (loading in, a portal, a boat): build it all now
-	all = all or not chunks.has(c)
+	# arriving somewhere new (loading in, a portal, a boat): build it all now,
+	# unless a loading screen is up and builds it a little each frame (gentle)
+	all = all or (not gentle and not chunks.has(c))
 	var reach := int(ceil(RADIUS / CHUNK)) + 1
 	var want := []
 	for i in range(c.x - reach, c.x + reach + 1):
@@ -151,7 +153,7 @@ func update(at: Vector3, all := false) -> void:
 	var t0 := Time.get_ticks_usec()
 	for w in want:
 		chunks[w[1]] = _build_chunk(w[1])
-		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > BUDGET_MS:
+		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > budget_ms:
 			break
 	for k in chunks.keys():
 		var d := _chunk_distance(k, at)
@@ -162,6 +164,19 @@ func update(at: Vector3, all := false) -> void:
 		elif _cover.has(k):
 			_cover[k].visible = d < GRASS_FAR + 4.0
 	_grass_mat.set_shader_parameter("uFocus", at)
+
+
+## chunks within reach of `at` not built yet
+func missing(at: Vector3) -> int:
+	var c := Vector2i(floori(at.x / CHUNK), floori(at.z / CHUNK))
+	var reach := int(ceil(RADIUS / CHUNK)) + 1
+	var n := 0
+	for i in range(c.x - reach, c.x + reach + 1):
+		for j in range(c.y - reach, c.y + reach + 1):
+			var k := Vector2i(i, j)
+			if not chunks.has(k) and _chunk_distance(k, at) <= RADIUS:
+				n += 1
+	return n
 
 
 static func _chunk_distance(k: Vector2i, at: Vector3) -> float:
@@ -467,6 +482,7 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 	rand.seed = hash(Vector3i(k.x, k.y, 3))
 	var xfs := []
 	var cols := []
+	var near := World._town_near(k.x * CHUNK, k.y * CHUNK, (k.x + 1) * CHUNK, (k.y + 1) * CHUNK)
 	for i in 1200:
 		var x := k.x * CHUNK + rand.randf() * CHUNK
 		var z := k.y * CHUNK + rand.randf() * CHUNK
@@ -481,7 +497,7 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 			continue
 		if Terrain.road_edge(x, z) < 0.8:
 			continue # keep road centres and their walking shoulders readable
-		if not World._clear_of_town(x, z) or Terrain.water_at(x, z, -0.7) != null:
+		if not World._clear_of(near, x, z) or Terrain.water_at(x, z, -0.7) != null:
 			continue
 		if game.world != null and game.world.on_floor(x, z):
 			continue

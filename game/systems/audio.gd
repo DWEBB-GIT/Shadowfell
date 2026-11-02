@@ -61,6 +61,7 @@ const SFX := {
 ## region id -> ambience loop (anywhere else keeps the forest)
 const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
 const MUSIC := "music_loop.ogg" ## Dan's background track, looped under everything
+const DEATH_LOOP := "death_wind.mp3" ## Dan's wind, looped from death until you live again
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
 var game
@@ -84,6 +85,7 @@ var sfx_cache := {} ## file -> AudioStream
 var amb_loop: AudioStreamPlayer
 var amb_file := ""
 var music: AudioStreamPlayer
+var death_loop: AudioStreamPlayer ## the wind while dead; music and ambience wait
 var step_seen := 0 ## the player rig's footfall count last heard
 
 
@@ -256,7 +258,10 @@ func _bind() -> void:
 	ev.on("mined", func(_e): sfx("mine"))
 	ev.on("skinned", func(_e): sfx("skin"))
 	ev.on("campPitched", func(_e): sfx("campfire", 0.6))
-	ev.on("playerDied", func(_e): growl(55, 1.4))
+	ev.on("playerDied", func(_e):
+		growl(55, 1.4)
+		set_dead(true))
+	ev.on("playerRevived", func(_e): set_dead(false))
 	ev.on("playerLunge", func(_e): sfx("lunge"))
 	ev.on("graveSlam", func(_e):
 		thud(60, 0.6)
@@ -326,6 +331,31 @@ func _stream(file: String) -> AudioStream:
 	if not sfx_cache.has(file):
 		sfx_cache[file] = load(SFX_DIR + file)
 	return sfx_cache[file]
+
+
+## Dead (and a spirit): only the wind plays, on loop; the music and the
+## region's ambience pause until you live again, then carry on.
+func set_dead(on: bool) -> void:
+	if not started:
+		return
+	if on:
+		if death_loop == null:
+			death_loop = AudioStreamPlayer.new()
+			death_loop.bus = "Ambience"
+			death_loop.volume_db = -4.0
+			add_child(death_loop)
+			var s = _stream(DEATH_LOOP)
+			if s != null:
+				s = s.duplicate()
+				s.loop = true
+				death_loop.stream = s
+		if not death_loop.playing and death_loop.stream != null:
+			death_loop.play()
+	elif death_loop != null:
+		death_loop.stop()
+	music.stream_paused = on
+	amb_loop.stream_paused = on
+	rumble.stream_paused = on
 
 
 ## the region's ambience loop; the same file carries on across a border

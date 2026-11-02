@@ -66,9 +66,14 @@ func _init(g) -> void:
 		var sh = e.shape
 		var r: float = sh.range * 0.55
 		shockwave(Vector3(sh.x + sin(sh.angle) * r, game.player.position.y, sh.z + cos(sh.angle) * r), sh.range * 0.6))
-	# a light scuff of dust, not a cloud (smaller and fainter, Dan 2026-11-02)
-	ev.on("playerJumped", func(e): ground_puff(e.position, 3, 0.5))
-	ev.on("playerLanded", func(e): ground_puff(e.position, 4, clampf(e.speed / 6.8, 0.5, 0.8)))
+	# a light scuff of dust, not a cloud (smaller and fainter, Dan 2026-11-02);
+	# a spirit's hop raises none
+	ev.on("playerJumped", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 3, 0.5))
+	ev.on("playerLanded", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 4, clampf(e.speed / 6.8, 0.5, 0.8)))
 	ev.on("playerLunge", func(_e): dust(game.player.position, 6, 0.3))
 	ev.on("braceBlock", func(_e): sparks(game.player.position, 10))
 	ev.on("anvilStrike", func(e):
