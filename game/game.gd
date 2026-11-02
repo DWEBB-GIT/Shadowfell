@@ -445,6 +445,8 @@ func start_game(resume: bool) -> void:
 	mining.spawn_all()
 	gathering.spawn_all()
 	hud.hide_title()
+	hud.hud_edit.close() # never start in edit mode or with the belt open
+	hud.belt.close()
 	started = true
 	_snap_camera()
 	if resumed:

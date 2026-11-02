@@ -133,6 +133,13 @@ var move_speed: float:
 	get:
 		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
 
+## running after the player in a fight: never slower than the player's run
+## share (CONFIG.chase), still slowed by snares
+var chase_speed: float:
+	get:
+		var floor_: float = DB.CONFIG.player.speed * DB.CONFIG.chase.share
+		return maxf(cfg.speed, floor_) * (1 - minf(90, mods.slow) / 100.0) if cfg.speed > 0 else 0.0
+
 var damage_taken_scale: float:
 	get:
 		return mods.taken * (1 + DB.CONFIG.control.staggeredDamageTaken / 100.0 if staggered > 0 else 1.0)
@@ -522,10 +529,13 @@ func update(dt: float, player) -> void:
 			elif attack_timer <= 0:
 				_start_shot(player)
 		elif state == "chase":
-			_steer_towards(player.position.x, player.position.z, move_speed, dt, reach * 0.85)
+			_steer_towards(player.position.x, player.position.z, chase_speed, dt, reach * 0.85)
 			speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
+			# a fleeing player still within a stride gets hit on the run
+			if dist <= reach + DB.CONFIG.chase.reachGrace and attack_timer <= 0 and not cfg.get("telegraph"):
+				_melee_swing()
 		elif state == "attack" and cfg.get("telegraph"):
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
@@ -533,13 +543,7 @@ func update(dt: float, player) -> void:
 		elif state == "attack":
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
-				# the blow lands the moment its swing timer is ready
-				# (no wind-up to step out of); telegraphed attacks are the
-				# `telegraph` and `special` casts above
-				attack_timer = cfg.attackInterval
-				rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
-				game.events.emit("enemyWindup", {"enemy": self})
-				game.combat.resolve_enemy_strike(self)
+				_melee_swing()
 	if casting != null:
 		pass # nothing else moves while committed to a telegraphed attack
 	elif state == "return" and stagger <= 0:
@@ -566,6 +570,15 @@ func update(dt: float, player) -> void:
 ## Go to x/z the way a person would: straight when nothing is in the way,
 ## else round the fence, wall or rock by a path (Collision.find_path),
 ## looked for again every so often or when the goal moves.
+## the blow lands the moment its swing timer is ready (no wind-up to step
+## out of); telegraphed attacks are the `telegraph` and `special` casts
+func _melee_swing() -> void:
+	attack_timer = cfg.attackInterval
+	rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
+	game.events.emit("enemyWindup", {"enemy": self})
+	game.combat.resolve_enemy_strike(self)
+
+
 func _steer_towards(x: float, z: float, speed: float, dt: float, stop_at: float) -> void:
 	var col = game.collision
 	path_timer -= dt

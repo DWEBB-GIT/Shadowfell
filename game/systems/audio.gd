@@ -237,6 +237,8 @@ func _bind() -> void:
 	ev.on("playerHurt", func(_e): thud(110, 0.25))
 	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
 	ev.on("lootCollected", func(e):
+		if coin_frame == Engine.get_process_frames():
+			return # a purse: its coins already chimed
 		var def: Dictionary = Items.get_def(str(e.get("item", ""))) if e.get("item") else {}
 		if e.get("node"):
 			sfx("harvest", 0.8) # a gathering node, picked
@@ -290,8 +292,16 @@ func _bind() -> void:
 
 
 # ------------------------------------------------------------- playback
+## Sounds turned down from what their callers ask, in one place: running
+## footsteps, panels and bags opening, drawing and sheathing (Dan
+## 2026-11-02: too loud).
+const TRIM := {"step_dirt": 0.55, "step_stone": 0.55, "step_wood": 0.55,
+	"panel": 0.55, "bag": 0.55, "quest_log": 0.55, "sheathe": 0.5, "unsheathe": 0.5}
+
+
 ## Plays one of Dan's recorded sounds by its SFX name.
 func sfx(id: String, level := 1.0, pitch := 1.0) -> void:
+	level *= TRIM.get(id, 1.0)
 	if not started or level <= 0 or not SFX.has(id):
 		return
 	var files: Array = SFX[id]

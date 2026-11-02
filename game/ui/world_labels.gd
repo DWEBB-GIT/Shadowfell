@@ -34,7 +34,7 @@ func _names() -> Array:
 	for n in game.npcs.list:
 		if Vector2(n.position.x-player.position.x,n.position.z-player.position.z).length_squared() > RANGE * RANGE:
 			continue
-		out.append({"text": n.name, "sub": "<%s>" % n.def.title if n.def.get("title") else "", "colour": Color("9ee070"), "at": n.position + Vector3(0, 2.15, 0)})
+		out.append({"text": n.name, "sub": "<%s>" % n.def.title if n.def.get("title") else "", "colour": UI.NAME_FRIENDLY, "at": n.position + Vector3(0, 2.15, 0)})
 	for e in game.enemies.list:
 		if Vector2(e.position.x-player.position.x,e.position.z-player.position.z).length_squared() > RANGE * RANGE:
 			continue
@@ -42,7 +42,7 @@ func _names() -> Array:
 			continue
 		var h: float = e.cfg.get("barHeight", 3.0 if e.cfg.get("elite") else 2.1)
 		var lawful: bool = e.cfg.get("lawful", "") != "" and e.protected
-		out.append({"text": e.cfg.name, "colour": Color("9ee070") if lawful else Color("f0d050") if e.passive else Color("ff8a50") if e.cfg.get("elite") else Color("e8604a"), "at": e.position + Vector3(0, h, 0)})
+		out.append({"text": e.cfg.name, "colour": UI.NAME_FRIENDLY if lawful else UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE, "at": e.position + Vector3(0, h, 0)})
 	return out
 
 

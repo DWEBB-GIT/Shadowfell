@@ -56,22 +56,23 @@ func _init(g) -> void:
 		var v := Vector2(cos(a), sin(a))
 		_circle.append(Vector2(r, r) + v * (r - 1))
 		_circle_uv.append(Vector2(0.5, 0.5) + v * (r - 1) / SIZE)
-	# where you are: a bar across the foot of the circle
-	location = UI.label(self, "", 11, UI.GOLD)
+	# where you are: a bar above the circle (Dan, 2026-11-02), the map
+	# moved down by NAME_ROOM to make room for it
+	location = UI.label(self, "", 13, UI.GOLD)
 	location.add_theme_stylebox_override("normal", _round_box(4))
 	location.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	location.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	location.clip_text = true
 	location.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	location.size = Vector2(124, 18)
-	location.position = Vector2(SIZE / 2 - 62, SIZE - 9)
+	location.size = Vector2(150, 20)
+	location.position = Vector2(SIZE / 2 - 75, -OUT_TOP)
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 4)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
-	var north := orb(270.0, NORTH_R)
+	var north := orb(270.0, NORTH_R, ON_RIM)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var north_art := Icons.art("ui", "minimap_north")
 	if north_art:
@@ -85,7 +86,7 @@ func _init(g) -> void:
 	# zoom: two small round buttons on the rim, right side, clear of the place
 	# bar (the HUD sets its menu orbs round the left side the same way)
 	for z in [[1, 22.0], [-1, 48.0]]:
-		var b := orb(z[1], ZOOM_R)
+		var b := orb(z[1], ZOOM_R, ON_RIM)
 		var step: int = z[0]
 		b.pressed.connect(func():
 			game.audio.sfx("quest_log", 0.6)
@@ -102,9 +103,13 @@ func _init(g) -> void:
 
 const ZOOM_R := 11.0
 const NORTH_R := 9.0
+## the N and the zoom buttons sit ON the map's rim, centred on its edge
+## (Dan, 2026-11-02), not outside it as the menu orbs once did
+const ON_RIM := 0.0
 ## room the rim buttons need outside SIZE: right for zoom, top for north
-const OUT_RIGHT := 8.0
-const OUT_TOP := 10.0
+const OUT_RIGHT := 4.0
+const NAME_ROOM := 22.0 ## the place name's bar above the north badge
+const OUT_TOP := 9.0 + NAME_ROOM
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
@@ -112,7 +117,9 @@ const OUT_TOP := 10.0
 ## It sits just outside the map, its inner edge on the dark frame, so it
 ## never hides the quest arrows drawn round the inside of the rim (Dan,
 ## 2026-11-02: the orbs covered the waypoint arrows).
-func orb(angle: float, radius: float) -> Button:
+## `out` is how far the orb's centre stands out from the rim (-1: just
+## outside, its inner edge on the frame).
+func orb(angle: float, radius: float, out := -1.0) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
@@ -121,7 +128,8 @@ func orb(angle: float, radius: float) -> Button:
 	b.size = b.custom_minimum_size
 	var a := deg_to_rad(angle)
 	var r := SIZE / 2
-	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + radius - 1) - Vector2(radius, radius)
+	var dist := r + radius - 1 if out < 0 else r + out
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * dist - Vector2(radius, radius)
 	b.draw.connect(func(): _draw_orb(b, radius))
 	add_child(b)
 	return b
