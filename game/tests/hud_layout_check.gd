@@ -51,9 +51,10 @@ func _process(_dt: float) -> bool:
 				var apart := r.get_center().distance_to(o.get_center()) - (r.size.x + o.size.x) / 2
 				_check(apart >= 2, "rim buttons %d and %d clear of each other" % [i, j])
 		var hub: Vector2 = mm.get_global_rect().get_center()
-		for o in round_things:
+		for o in mm.zoom_buttons:
 			var r: Rect2 = o.get_global_rect()
-			_check(r.get_center().distance_to(hub) - r.size.x / 2 >= Minimap.SIZE / 2 - 2, "rim button outside the quest arrows round the rim")
+			# N and zoom sit ON the rim, centred on the map's edge (Dan, 2026-11-02)
+			_check(absf(r.get_center().distance_to(hub) - Minimap.SIZE / 2) <= 3, "rim button centred on the map's edge")
 			_check(r.end.x <= root.get_visible_rect().size.x and r.position.y >= 0, "rim button on screen")
 		for o in orbs:
 			var r: Rect2 = o.get_global_rect()

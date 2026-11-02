@@ -91,7 +91,26 @@ func spawn_all() -> void:
 		_spawn_ground(g)
 
 
+## Coins a foe carried fall to the ground as a purse, picked up like any
+## other drop (Dan 2026-11-02), not left on the body.
+const COINS := "coins"
+
+
+static func is_coins(g) -> bool:
+	return typeof(g) == TYPE_DICTIONARY and g.get("id") == COINS and typeof(g.get("count")) in [TYPE_INT, TYPE_FLOAT] and int(g.count) == g.count and g.count >= 1
+
+
+func drop_coins(enemy, amount: int) -> Dictionary:
+	var a: float = enemy.facing + PI
+	var pos: Vector3 = game.collision.resolve(Vector3(enemy.position.x + sin(a) * 0.6, 0, enemy.position.z + cos(a) * 0.6), 0.2)
+	var g := _add_ground({"id": COINS, "count": amount}, pos)
+	_spawn_ground(g)
+	return g
+
+
 func _ground_def(g: Dictionary) -> Dictionary:
+	if g.id == COINS:
+		return {"id": "ground:%d" % int(g.uid), "ground": g, "model": "coin_purse", "prompt": "Pick up %s" % U.money(g.count), "reward": {"coins": int(g.count)}}
 	var item := Items.get_def(g.id)
 	return {
 		"id": "ground:%d" % int(g.uid),
@@ -220,6 +239,8 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 		if not ["junk", "common", "quest"].has(rarity):
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 			beam = _beam(group, Items.rarity_colour(rarity), rarity)
+	if def.get("reward", {}).get("coins"):
+		glint.material_override.albedo_color = Color(Color("ffd36a"), 0.7) # coins wink gold
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
 	group.position = Vector3(x, base_y, z)
@@ -394,7 +415,7 @@ func collect(entry: Dictionary) -> bool:
 	if r.get("item") and not inventory.add_item(r.item, r.get("count", 1), false, r.get("rolls")):
 		return false
 	if r.get("coins"):
-		inventory.add_coins(r.coins, "in a purse")
+		inventory.add_coins(r.coins, "" if def.has("ground") else "in a purse")
 	if def.has("ground"):
 		ws.ground.erase(def.ground)
 	elif def.get("respawn"):

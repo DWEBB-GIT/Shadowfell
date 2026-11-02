@@ -66,13 +66,14 @@ func _init(g) -> void:
 		var sh = e.shape
 		var r: float = sh.range * 0.55
 		shockwave(Vector3(sh.x + sin(sh.angle) * r, game.player.position.y, sh.z + cos(sh.angle) * r), sh.range * 0.6))
-	# a spirit's hop raises no dust
+	# a light scuff of dust, not a cloud (smaller and fainter, Dan 2026-11-02);
+	# a spirit's hop raises none
 	ev.on("playerJumped", func(e):
 		if not game.player.ghost:
-			ground_puff(e.position, 5, 0.7))
+			ground_puff(e.position, 3, 0.5))
 	ev.on("playerLanded", func(e):
 		if not game.player.ghost:
-			ground_puff(e.position, 8, clampf(e.speed / 6.8, 0.7, 1.3)))
+			ground_puff(e.position, 4, clampf(e.speed / 6.8, 0.5, 0.8)))
 	ev.on("playerLunge", func(_e): dust(game.player.position, 6, 0.3))
 	ev.on("braceBlock", func(_e): sparks(game.player.position, 10))
 	ev.on("anvilStrike", func(e):
@@ -574,14 +575,14 @@ func ground_puff(pos: Vector3, n: int, strength: float) -> void:
 		var s := Tex.sprite(mat)
 		s.name = "JumpDust"
 		s.position = Vector3(pos.x, y + 0.15, pos.z) + dir * 0.25
-		var sz := randf_range(0.3, 0.5) * strength
+		var sz := randf_range(0.22, 0.34) * strength
 		s.scale = Vector3.ONE * sz
 		var v := dir * randf_range(1.2, 2.4) * strength + Vector3.UP * randf_range(0.2, 0.7)
-		_add(s, randf_range(0.45, 0.7), func(it, k, dt):
+		_add(s, randf_range(0.35, 0.5), func(it, k, dt):
 			it.obj.position += it.v * dt
 			it.v *= maxf(0.0, 1.0 - 4.0 * dt)
 			it.obj.scale = Vector3.ONE * it.sz * (0.6 + k * 1.4)
-			mat.albedo_color.a = 0.6 * (1.0 - k) * minf(1.0, 0.3 + k * 8.0), {"v": v, "sz": sz})
+			mat.albedo_color.a = 0.4 * (1.0 - k) * minf(1.0, 0.3 + k * 8.0), {"v": v, "sz": sz})
 
 
 func _blow_lands(e: Dictionary) -> void:

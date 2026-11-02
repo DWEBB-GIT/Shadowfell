@@ -165,6 +165,15 @@ func _build() -> void:
 	_build_settings()
 	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
 		w.panel.visible = false
+	# drag any window by its title bar; it stays where you leave it
+	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}
+	for id in named:
+		_draggable(id, named[id])
+	var saved_at = Store.get_item(WINDOWS_KEY)
+	if saved_at is String and saved_at != "":
+		var d = str_to_var(saved_at)
+		if d is Dictionary:
+			moved = d
 	tooltip = HBoxContainer.new()
 	tooltip.add_theme_constant_override("separation", 6)
 	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -515,6 +524,9 @@ func _render_sockets(inv) -> void:
 					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
 				elif not on:
 					cursor_tip_off()
+			# the tool belt is its own system: a divider and a gap keep it
+			# apart from the bags (Dan, 2026-11-02)
+			sockets.add_child(hud._divider(8))
 			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
@@ -523,7 +535,7 @@ func _render_sockets(inv) -> void:
 			slot.count = str(n)
 			slot.count_centre = true
 			slot.count_size = 13
-			slot.count_colour = Color("f0e4c8") if n else Color("ff6a50")
+			slot.count_colour = ISlot.LABEL if n else Color("ff6a50")
 		slot.lit = open_bags.has(i)
 	# the free space in all bags shows on the backpack, as in WoW
 	var free: int = inv.free_slots()
@@ -533,7 +545,7 @@ func _render_sockets(inv) -> void:
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
 	bp.count = str(free)
-	bp.count_colour = Color("ff6a50") if free == 0 else Color("f0e4c8")
+	bp.count_colour = Color("ff6a50") if free == 0 else ISlot.LABEL
 	# Dan's painted backpack; the drawn one stays as the fallback
 	bp.icon = Icons.art("ui", "primary_bag")
 	bp.painter = Callable(self, "_paint_backpack")
@@ -674,7 +686,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	a.placeholder_size = 9
 	a.count = str(ammo.count) if ammo else ""
 	a.count_size = 13
-	a.count_colour = Color("f0e4c8") if ammo and ammo.count else Color("ff6a50")
+	a.count_colour = ISlot.LABEL if ammo and ammo.count else Color("ff6a50")
 	# the numbers
 	var p = game.player
 	var prog = game.progression
@@ -1307,7 +1319,58 @@ func layout() -> void:
 	if cooking.panel.visible:
 		var s := _fit(cooking.panel, Vector2.ZERO)
 		cooking.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(vp.y * 0.22))
+	_place_moved()
 	_layout_bags(vp)
+
+
+# ------------------------------------------------------------------ moving
+const WINDOWS_KEY := "shadowfell.window_positions"
+var moved := {} ## window id -> where the player dragged it (Dan, 2026-11-02)
+var _win_drag := "" ## the window being dragged by its title bar
+var _win_panels := {} ## window id -> its panel
+
+
+## The title bar moves the window, as in WoW: press, drag, let go.
+func _draggable(id: String, w: Dictionary) -> void:
+	var head: Control = w.head
+	_win_panels[id] = w.panel
+	head.mouse_filter = Control.MOUSE_FILTER_STOP
+	head.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	head.tooltip_text = ""
+	head.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			if e.pressed:
+				_win_drag = id
+				hud.raise(self, w.panel)
+			elif _win_drag == id:
+				_win_drag = ""
+				Store.set_item(WINDOWS_KEY, var_to_str(moved))
+			head.accept_event()
+		elif e is InputEventMouseMotion and _win_drag == id:
+			moved[id] = _clamp_window(w.panel, w.panel.position + e.relative)
+			w.panel.position = moved[id]
+			head.accept_event())
+
+
+## keep a window's title bar on screen
+func _clamp_window(p: Control, at: Vector2) -> Vector2:
+	var vp := get_viewport_rect().size
+	return Vector2(clampf(at.x, 40 - p.size.x, vp.x - 40), clampf(at.y, 0, vp.y - 40)).round()
+
+
+## put back every window the player moved (layout() places them first)
+func _place_moved() -> void:
+	for id in moved:
+		var p: Control = _win_panels.get(id)
+		if p != null and p.visible and moved[id] is Vector2:
+			p.position = _clamp_window(p, moved[id])
+
+
+## forget where the windows were dragged (HUD edit mode's reset)
+func reset_windows() -> void:
+	moved = {}
+	Store.set_item(WINDOWS_KEY, "")
+	layout()
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
