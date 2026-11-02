@@ -23,6 +23,7 @@ var _slot: Array = []
 ## shadow map for a full re-render, which was costing frames whenever the
 ## player, an enemy or an idling NPC stood near a lamp.
 var _twins: Array[OmniLight3D] = []
+var _everyone := false
 var volumes: Array[FogVolume] = []
 var wisps: Array = []
 var _wait := 0.0
@@ -235,6 +236,7 @@ func _process(dt: float) -> void:
 		for house in game.world.see_through.houses:
 			for window in _window_groups.get(str(house.mi.name), []):
 				window.visible = house.fade > 0.98
+		_apply_shadow_level()
 		_assign_lamps(focus)
 		if _volumetric:
 			var deep := Terrain.gloom(focus.x, focus.z)
@@ -289,7 +291,24 @@ func _assign_lamps(focus: Vector3) -> void:
 
 
 func _shadows_wanted() -> bool:
-	return game.settings == null or game.settings.get_value("lampShadows") != false
+	return _shadow_level() > 0
+
+
+## Settings "lampShadows": 0 off, 1 the player only, 2 everyone.
+func _shadow_level() -> int:
+	return 1 if game.settings == null else int(game.settings.get_value("lampShadows"))
+
+
+## On "Everyone" the shadow lamps light (and are shadowed by) moving bodies
+## themselves and the twins rest. Written only when the setting changes.
+func _apply_shadow_level() -> void:
+	var everyone := _shadow_level() >= 2
+	if everyone == _everyone:
+		return
+	_everyone = everyone
+	for i in _twins.size():
+		lamps[i].light_cull_mask = 0xFFFFF if everyone else 0xFFFFF ^ World.MOVING_LAYER
+		_twins[i].visible = not everyone and _slot[i] != null
 
 
 func _fill(slots: Array, wanted: Array) -> void:
@@ -320,7 +339,7 @@ func _fill(slots: Array, wanted: Array) -> void:
 			twin.omni_range = s.radius
 			twin.omni_attenuation = s.attenuation
 			twin.light_energy = s.energy
-			twin.visible = true
+			twin.visible = not _everyone
 	for i in free:
 		_slot[i] = null
 		lamps[i].visible = false
