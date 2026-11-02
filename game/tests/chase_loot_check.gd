@@ -84,7 +84,9 @@ func _run() -> void:
 			break
 	check(foe != null, "found a slow melee foe")
 	if foe:
-		check(foe.chase_speed >= DB.CONFIG.player.speed, "chasing, it runs as fast as the player (%.1f vs %.1f)" % [foe.chase_speed, DB.CONFIG.player.speed])
+		check(absf(foe.chase_speed - DB.CONFIG.player.speed * foe.run_percent / 100.0) < 0.01, "chasing, it runs at its share of the player's base speed (%.1f, %d%%)" % [foe.chase_speed, foe.run_percent])
+		var typical: float = DB.CONFIG.chase.byType.normal
+		check(typical >= 110 and typical <= 120, "an ordinary mob runs a little faster than the player (%d%%)" % typical)
 		check(foe.move_speed < DB.CONFIG.player.speed, "but wanders at its own pace (%.1f)" % foe.move_speed)
 		# the player 0.2 m beyond its standing reach, running away
 		var reach: float = foe.cfg.meleeRange + pl.radius + foe.radius * 0.5

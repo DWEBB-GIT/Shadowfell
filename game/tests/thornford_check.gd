@@ -73,7 +73,7 @@ func _run() -> void:
 		check(game.camera.rotation.distance_to(rotation) < 0.001, "fixed camera pitch at zoom %.2f" % z)
 		check(game.env.fog_depth_begin > game.camera.position.distance_to(game.camera_target), "player remains in clear air at zoom %.2f" % z)
 	check(game.get_viewport().scaling_3d_scale == 1.0 and game.get_viewport().msaa_3d == Viewport.MSAA_4X, "native resolution with edge smoothing")
-	check(DB.CONFIG.player.speed == 6.2, "movement retains readable 6.2 metres/second pacing")
+	check(DB.CONFIG.player.speed == 6.4, "movement keeps the 7 yards (6.4 m) a second base speed")
 	game.zoom = DB.CONFIG.camera.zoomDefault
 	var args := OS.get_cmdline_user_args()
 	if DisplayServer.get_name() != "headless" and not args.is_empty():

@@ -123,8 +123,80 @@ func _run() -> void:
 	sp.queued = null
 	sp.try_cast("cleave")
 	check(sp.queued == null, "but not one pressed early in the cast")
+	# the same spell again, pressed at 0.4 s left of its own cast, queues and
+	# goes the moment the cast ends (Dan, 2026-11-02)
+	pl.casting = {"id": "cleave", "t": 0.6, "total": 1.0, "channel": false}
+	sp.queued = null
+	sp.try_cast("cleave")
+	check(sp.queued != null and sp.queued.id == "cleave", "the same spell pressed 0.4 s before its cast ends is queued")
+	# pressed with 0.4 s of the global cooldown left, it survives to go off
 	pl.casting = null
-	check(DB.CONFIG.player.speed == 6.2, "the player runs at 6.2 m/s")
+	sp.queued = null
+	pl.cooldowns.gcd = 0.4
+	var known := ""
+	for sid in DB.spells:
+		if game.skills.knows_ability(sid) and not DB.spells[sid].tuning.get("offGlobalCooldown", false):
+			known = sid
+			break
+	pl.cooldowns.erase(known)
+	sp.try_cast(known)
+	var q_left: float = sp.queued.left if sp.queued != null else 0.0
+	check(sp.queued != null and q_left > 0.4, "a key 0.4 s before the global cooldown ends is queued past it (%.2f s)" % q_left)
+	sp.queued = null
+	pl.cooldowns.gcd = 0.0
+	check(DB.CONFIG.player.speed == 6.4, "the player runs at 7 yards (6.4 m) a second")
+
+	# a spell with no stagger in its data never stops the enemy (Blight Bolt)
+	var foe2 = null
+	for e in game.enemies.list:
+		if not e.dead and not e.cfg.get("dummy"):
+			foe2 = e
+			break
+	if foe2:
+		foe2.stagger = 0.0
+		var at2: Vector3 = foe2.position
+		var bolt: Dictionary = {"id": "testBolt", "kind": "cast", "school": "shadow", "name": "Test Bolt", "tuning": {"damageMin": 1, "damageMax": 1}}
+		sp._damage(bolt, foe2, 1.0, "", 1.0, {"stagger": 0.12, "knockFrom": pl.position, "knockback": 0.3, "periodic": true})
+		check(foe2.stagger == 0.0, "a spell without stagger in its data does not stagger (%.2f)" % foe2.stagger)
+		for i in 10:
+			foe2.update(dt, pl)
+		check(foe2.knock.length() < 0.001, "nor shoves it")
+
+	# a weapon swing never staggers; it pushes back a spell being cast
+	if foe2:
+		foe2.stagger = 0.0
+		game.combat._player_hit(foe2, 1.0, {"stagger": 0.0, "knockFrom": pl.position, "knockback": 0.0}, {"swing": true, "hand": "main"})
+		check(foe2.stagger == 0.0, "a weapon swing does not stagger")
+		var tg := {"t": 1.0, "duration": 2.0}
+		foe2.casting = {"kind": "circle", "telegraph": tg, "label": "Test", "interruptible": true}
+		foe2.dead = false
+		foe2.health = foe2.max_health
+		foe2.hurt(5, {"stagger": 0.0})
+		check(absf(tg.t - (1.0 - DB.cast_pushback)) < 0.001, "a blow pushes back a spell being cast (%.2f)" % tg.t)
+		foe2.hurt(5, {"stagger": 0.0})
+		foe2.hurt(5, {"stagger": 0.0})
+		check(tg.t >= 0.0 and foe2.casting.pushbacks == DB.max_pushbacks, "up to %d times a cast" % DB.max_pushbacks)
+		foe2.casting = null
+
+	# taken a blow, the player's head snaps back; the body stays put
+	var prig: Rig = pl.rig
+	if prig.anim and not prig.anim.has_animation("Hit"):
+		var head: int = prig._skel.find_bone("mixamorig_Head") if prig._skel else -1
+		for i in 20:
+			prig.update(dt, 0.0)
+		if head < 0 and prig._skel:
+			head = prig._skel.find_bone("mixamorig_Head")
+		var before: Quaternion = prig._skel.get_bone_pose_rotation(head) if head >= 0 else Quaternion()
+		var pos_before: Vector3 = pl.position
+		prig.hit()
+		for i in 4:
+			prig.update(dt, 0.0)
+		var during: Quaternion = prig._skel.get_bone_pose_rotation(head) if head >= 0 else Quaternion()
+		check(head >= 0 and before.angle_to(during) > 0.1, "a blow snaps the head back (%.2f rad)" % before.angle_to(during))
+		check(pl.position == pos_before, "and the player is not moved")
+		for i in 40:
+			prig.update(dt, 0.0)
+		check(prig.snap < 0, "then it settles")
 
 	for i in 400:
 		game.fx.update(dt)
