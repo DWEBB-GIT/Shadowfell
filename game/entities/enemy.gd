@@ -253,6 +253,13 @@ func hurt(amount: float, opts := {}) -> float:
 		rig.hit()
 	if not asleep:
 		stagger = maxf(stagger, stag)
+	# a direct blow on a spellcaster pushes its cast back (WoW pushback,
+	# Dan 2026-11-02): a weapon swing jolts the body but never stops it
+	if amount > 0 and not opts.get("periodic", false) and casting != null and (casting.kind == "shot" or casting.kind == "circle") and casting.interruptible:
+		var tg = casting.telegraph
+		if tg is Dictionary and casting.get("pushbacks", 0) < DB.max_pushbacks:
+			casting.pushbacks = casting.get("pushbacks", 0) + 1
+			tg.t = maxf(0.0, float(tg.t) - DB.cast_pushback)
 	if heavy and not (casting != null and not casting.interruptible):
 		# a heavy blow interrupts an ordinary swing or an interruptible cast;
 		# casts marked `interruptible: false` in the data (Grave Slam) go on

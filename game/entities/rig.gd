@@ -54,8 +54,8 @@ var airborne := false
 ## how fast each imported model's Walk clip plays at full speed
 const WALK_RATE := {"rat": 2.4, "chicken": 1.8, "base_male": 1.0, "battle_mage": 2.5, "skeleton": 1.3}
 ## and its Run clip: the battle mage's Mixamo run covers 4.6 m a second, the
-## player runs 6.2 (CONFIG.player speed, runGait; 5.6 until 2026-11-02)
-const RUN_RATE := {"battle_mage": 1.04}
+## player runs 6.4 (7 yd/s, CONFIG.player speed, runGait; 6.2 earlier on 2026-11-02)
+const RUN_RATE := {"battle_mage": 1.07}
 ## which clip an action plays; any other action plays Attack, and these
 ## hold still (gathering, crafting, looting: the bar shows the progress)
 const ACTION_CLIPS := {"cast": "Cast", "shoot": "Cast", "castLine": "Cast", "reel": "Cast", "drink": "Cast", "brace": ""}

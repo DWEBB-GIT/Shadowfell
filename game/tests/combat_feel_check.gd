@@ -144,7 +144,7 @@ func _run() -> void:
 	check(sp.queued != null and q_left > 0.4, "a key 0.4 s before the global cooldown ends is queued past it (%.2f s)" % q_left)
 	sp.queued = null
 	pl.cooldowns.gcd = 0.0
-	check(DB.CONFIG.player.speed == 6.2, "the player runs at 6.2 m/s")
+	check(DB.CONFIG.player.speed == 6.4, "the player runs at 7 yards (6.4 m) a second")
 
 	# a spell with no stagger in its data never stops the enemy (Blight Bolt)
 	var foe2 = null
@@ -161,6 +161,22 @@ func _run() -> void:
 		for i in 10:
 			foe2.update(dt, pl)
 		check(foe2.knock.length() < 0.001, "nor shoves it")
+
+	# a weapon swing never staggers; it pushes back a spell being cast
+	if foe2:
+		foe2.stagger = 0.0
+		game.combat._player_hit(foe2, 1.0, {"stagger": 0.0, "knockFrom": pl.position, "knockback": 0.0}, {"swing": true, "hand": "main"})
+		check(foe2.stagger == 0.0, "a weapon swing does not stagger")
+		var tg := {"t": 1.0, "duration": 2.0}
+		foe2.casting = {"kind": "circle", "telegraph": tg, "label": "Test", "interruptible": true}
+		foe2.dead = false
+		foe2.health = foe2.max_health
+		foe2.hurt(5, {"stagger": 0.0})
+		check(absf(tg.t - (1.0 - DB.cast_pushback)) < 0.001, "a blow pushes back a spell being cast (%.2f)" % tg.t)
+		foe2.hurt(5, {"stagger": 0.0})
+		foe2.hurt(5, {"stagger": 0.0})
+		check(tg.t >= 0.0 and foe2.casting.pushbacks == DB.max_pushbacks, "up to %d times a cast" % DB.max_pushbacks)
+		foe2.casting = null
 
 	# taken a blow, the player's head snaps back; the body stays put
 	var prig: Rig = pl.rig
