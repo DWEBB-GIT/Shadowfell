@@ -107,6 +107,12 @@ func _process(dt: float) -> bool:
 			game.settings.set_value("soundOn", false)
 			_check(AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "Enable sound off mutes")
 			game.settings.set_value("soundOn", true)
+			# the menu orb by the minimap opens the Main Menu, not Settings
+			var orb: Button = hud.micro_buttons["settings"][0]
+			orb.pressed.emit()
+			_check(hud.main_menu.is_open and not hud.items.open.settings, "the menu button opens the Main Menu")
+			orb.pressed.emit()
+			_check(not hud.main_menu.is_open and hud.modal == null, "pressing it again closes it")
 			print("main menu: %d failed" % bad)
 			quit(1 if bad else 0)
 	return false

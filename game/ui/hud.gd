@@ -31,7 +31,8 @@ const MICRO := [
 	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
 	["talents", "❀", "Talents", "talents", "", "menu_talents"],
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
-	["settings", "☰", "Settings", "settings", "", "menu_settings"],
+	# opens the Main Menu, as Escape does (Dan, 2026-11-02); O still opens Settings
+	["menu", "☰", "Main Menu", "settings", "", "menu_settings"],
 ]
 const UNIT_GAP := 124.0 ## from the middle of the screen to each unit frame
 const UNIT_W := 196.0 ## the width of your frame and your target's
@@ -767,7 +768,11 @@ func _build_orbs() -> void:
 		var pad_label: String = m[4]
 		var tip: String = m[2]
 		# every menu button sounds as the quest log does (Dan, 2026-10-28)
-		b.pressed.connect(func(): toggle_panel(which, "quest_log"))
+		b.pressed.connect(func():
+			if which == "menu":
+				toggle_main_menu()
+			else:
+				toggle_panel(which, "quest_log"))
 		var art := Icons.art("ui", m[5])
 		if art:
 			b.draw.connect(func():
@@ -779,7 +784,7 @@ func _build_orbs() -> void:
 		glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.mouse_entered.connect(func():
-			var k: String = pad_label if pad_mode else game.keys.label(action)
+			var k: String = pad_label if pad_mode else "Esc" if which == "menu" else game.keys.label(action)
 			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
 		b.mouse_exited.connect(func(): items.cursor_tip_off())
 		micro_buttons[action] = [b, tip]
@@ -1041,6 +1046,18 @@ func raise(layer: Control, win: Control) -> void:
 	var other: Control = quests if layer == items else items
 	if other != null and layer.get_index() < other.get_index():
 		root.move_child(layer, other.get_index())
+
+
+## the Main Menu button: opens it over whatever is open, or closes it
+func toggle_main_menu() -> void:
+	if main_menu.is_open:
+		main_menu.close()
+		return
+	if modal:
+		return
+	items.close_all()
+	quests.close_all()
+	main_menu.open()
 
 
 func toggle_world_map() -> void:
