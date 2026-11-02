@@ -81,6 +81,7 @@ func _enter_tree() -> void:
 	map_pick.item_selected.connect(_on_map)
 	mrow.add_child(map_pick)
 	bar.add_child(mrow)
+	bar.add_child(_button("New colour zone at the view centre", _new_colour_zone))
 	var help := Label.new()
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size.x = 200
@@ -336,6 +337,31 @@ static func _new_record(kind: String, id: String) -> Array:
 		"Shrine":
 			return ["Shrines", {"id": "shrine", "position": [0, 0], "rotation": 0, "label": "at a shrine"}]
 	return ["Signposts", {"id": "sign", "position": [0, 0], "points": []}]
+
+
+## A colour zone (warm fields, violet graves...) where the 3D view looks,
+## selected so its colours, fog and light are in the Inspector.
+func _new_colour_zone() -> void:
+	if editor == null:
+		push_warning("Open the world first (the button above), then add a colour zone.")
+		return
+	var cam := EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+	var at := cam.global_position
+	var dir := -cam.global_transform.basis.z
+	if dir.y < -0.05:
+		at += dir * ((at.y - Terrain.height_at(at.x, at.z)) / -dir.y)
+	var holder: Node = editor.get_node_or_null("Colour zones")
+	var node: Node3D = editor.new_grade_zone(at)
+	if node == null or holder == null:
+		return
+	var ur := get_undo_redo()
+	ur.create_action("New colour zone", UndoRedo.MERGE_DISABLE, editor)
+	ur.add_do_method(editor, "attach", node, holder)
+	ur.add_do_reference(node)
+	ur.add_undo_method(holder, "remove_child", node)
+	ur.commit_action()
+	EditorInterface.get_selection().clear()
+	EditorInterface.get_selection().add_node(node)
 
 
 func _place() -> void:

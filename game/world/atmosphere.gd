@@ -5,6 +5,8 @@ const LIGHT_BUDGET := 16
 const VOLUME_BUDGET := 8
 const SHADOW_BUDGET := 2
 const SHADOW_REACH := 16.0
+## Desktop volumetric mist, before a colour zone's `mist` multiplier.
+const MIST_DENSITY := 0.004
 ## A shadowed source keeps its shadow until this much further away, so
 ## walking along a boundary doesn't hand shadows back and forth.
 const SHADOW_HOLD := 4.0
@@ -92,7 +94,7 @@ func _init(g) -> void:
 		_slot.append(null)
 	if _volumetric:
 		game.env.volumetric_fog_enabled = true
-		game.env.volumetric_fog_density = 0.004
+		game.env.volumetric_fog_density = MIST_DENSITY
 		game.env.volumetric_fog_albedo = Color("8c9da5")
 		game.env.volumetric_fog_length = 100.0
 		game.env.volumetric_fog_detail_spread = 2.0
@@ -192,7 +194,7 @@ func _process(dt: float) -> void:
 		if _volumetric:
 			var deep := Terrain.gloom(focus.x, focus.z)
 			var colour := Color("8c9da5").lerp(Color("72938f"), deep)
-			game.env.volumetric_fog_density = lerpf(0.004, 0.007, deep)
+			game.env.volumetric_fog_density = lerpf(MIST_DENSITY, 0.007, deep) * float(game.grade.get("mist", 1.0))
 			game.env.volumetric_fog_albedo = colour
 			for i in volumes.size():
 				var a := float(i) * TAU / VOLUME_BUDGET

@@ -14,6 +14,8 @@ extends Node3D
 ## also saves the sculpted ground.
 
 const IO := preload("json_io.gd")
+const GradeZoneNode := preload("grade_zone.gd")
+const ZONES := "Colour zones"
 
 const WORLD := "res://data/world/world.json"
 const SCENERY := "res://data/world/scenery.json"
@@ -44,6 +46,13 @@ var sculpt: RefCounted ## addons/shadowfell_world/sculpt.gd, made by the World t
 var _paths := {}
 var _baseline := {}
 var _map := ""
+var _grades_baseline = null ## the zones as grades.json had them when opened or saved
+var _grades_file := {}
+var _preview: WorldEnvironment
+var _preview_wait := 0.0
+## Tint the editor view as the game would where the view is centred (or as
+## the selected colour zone, at full strength).
+@export var colour_preview := true
 
 
 func _ready() -> void:
@@ -89,8 +98,118 @@ func rebuild() -> void:
 			holder.add_child(_marker(g, list[i], i))
 			_own(holder.get_child(-1))
 			ensure_ground(holder.get_child(-1).position, 32.0)
+	_add_grade_zones()
 	if Terrain.is_new_map():
 		_add_sea()
+
+
+## The map's colour zones (grades.json), one node each under "Colour zones".
+func _add_grade_zones() -> void:
+	var path := ZoneGrade.path()
+	_grades_file = IO.load_file(path) if FileAccess.file_exists(path) else {}
+	if not _grades_file is Dictionary:
+		_grades_file = {}
+	if not _grades_file.has("_about"):
+		_grades_file = {"_about": "Colour zones (game/world/zone_grade.gd): placed and tuned in the World editor under Colour zones, saved with Ctrl+S.", "zones": _grades_file.get("zones", [])}
+	var holder := Node3D.new()
+	holder.name = ZONES
+	add_child(holder)
+	_own(holder)
+	for r in _grades_file.get("zones", []):
+		holder.add_child(_grade_zone(r))
+		_own(holder.get_child(-1))
+	_grades_baseline = _zone_records()
+	_preview = WorldEnvironment.new()
+	_preview.name = "ColourPreview"
+	_preview.environment = Environment.new()
+	add_child(_preview) # not owned
+	set_process(Engine.is_editor_hint())
+
+
+func _grade_zone(r: Dictionary) -> Node3D:
+	var n := GradeZoneNode.new()
+	n.name = str(r.get("name", "Zone")).validate_node_name()
+	n.position = Vector3(r.position[0], Terrain.height_at(r.position[0], r.position[1]), r.position[1])
+	n.load_record(r)
+	return n
+
+
+## A new colour zone at `at`, not yet in the scene (the World dock's button
+## adds it under "Colour zones" with attach, so it can be undone).
+func new_grade_zone(at: Vector3) -> Node3D:
+	return _grade_zone({"name": "New zone", "position": [snappedf(at.x, 1), snappedf(at.z, 1)]})
+
+
+func _zone_records() -> Array:
+	var out := []
+	var holder := get_node_or_null(ZONES)
+	if holder:
+		for n in holder.get_children():
+			if n.get_script() == GradeZoneNode:
+				out.append(n.record())
+	return out
+
+
+func _save_grades(saved: PackedStringArray) -> void:
+	if _grades_baseline == null:
+		return
+	var records := _zone_records()
+	if IO.same(records, _grades_baseline):
+		return
+	var data: Dictionary = _grades_file.duplicate(true)
+	data.zones = records
+	var err := IO.save_file(ZoneGrade.path(), data)
+	if err != OK:
+		_save_error("cannot write %s (%s)" % [ZoneGrade.path(), error_string(err)])
+		return
+	_grades_file = data
+	_grades_baseline = records
+	ZoneGrade.reload()
+	saved.append(ZoneGrade.FILE)
+
+
+## The editor view, graded: every few frames, the grade at the ground the
+## view looks at (or the selected zone's own), on the preview environment.
+func _process(dt: float) -> void:
+	if not Engine.is_editor_hint() or _preview == null:
+		return
+	_preview_wait -= dt
+	if _preview_wait > 0.0:
+		return
+	_preview_wait = 0.2
+	var env := _preview.environment
+	if not colour_preview:
+		env.adjustment_enabled = false
+		env.adjustment_color_correction = null
+		return
+	var base := Game.air(0.0)
+	var g := {}
+	for n in EditorInterface.get_selection().get_selected_nodes():
+		if n.get_script() == GradeZoneNode:
+			g = ZoneGrade.mix(base, ZoneGrade.parse(n.record()).grade, 1.0)
+			break
+	if g.is_empty():
+		var cam := EditorInterface.get_editor_viewport_3d(0).get_camera_3d()
+		if cam == null:
+			return
+		var at := cam.global_position
+		var dir := -cam.global_transform.basis.z
+		var ground := Terrain.height_at(at.x, at.z)
+		if dir.y < -0.05:
+			at += dir * ((at.y - ground) / -dir.y)
+		var zones := []
+		for r in _zone_records():
+			zones.append(ZoneGrade.parse(r))
+		g = ZoneGrade.target_at(at.x, at.z, base, zones)
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = g.fogColor
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = g.ambientColor
+	env.ambient_light_energy = Game.HEMI * Tex.LIGHT_SCALE * Game.AMBIENT_K * g.ambient
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = Game.EXPOSURE
+	env.tonemap_white = 1.6
+	ZoneGrade.apply_colour(env, g)
 
 
 ## The new map (Dan, 2026-10-28): just its ground, all of it, to sculpt.
@@ -382,6 +501,7 @@ func save_world() -> PackedStringArray:
 					if child.has_meta("record") and index < records.size():
 						child.set_meta("record", records[index].duplicate(true))
 						index += 1
+	_save_grades(saved)
 	if saved.size():
 		print("World editor: saved ", ", ".join(saved))
 		DB.ready = false
@@ -400,6 +520,8 @@ func _mark_unsaved() -> void:
 
 func has_unsaved_changes() -> bool:
 	if sculpt and sculpt.dirty:
+		return true
+	if _grades_baseline != null and not IO.same(_zone_records(), _grades_baseline):
 		return true
 	for g in GROUPS:
 		var holder := get_node_or_null(NodePath(g.name))
