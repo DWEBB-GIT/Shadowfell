@@ -23,6 +23,7 @@ func _process(_dt: float) -> bool:
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_scrolls()
+		_drag()
 		_glow()
 		_procs()
 		if OS.get_environment("SHOT") == "":
@@ -81,6 +82,31 @@ func _scrolls() -> void:
 	_ok(game.runes.apply(inv._find("rune_rime"), "rime") and Runes.of(inv.equipment.mainHand) == "rime", "saying yes replaces it with Rime")
 
 
+## Drag a scroll onto any weapon: one in the bags, the off hand.
+func _drag() -> void:
+	var inv = game.inventory
+	game.hud.modal = null
+	var n = game.npcs.by_id("test_vendor")
+	game.merchant.open("test_curios", n)
+	game.merchant.buy("rune_venom")
+	game.merchant.buy("rune_storm")
+	game.merchant.buy("test_frostbite")
+	game.merchant.close()
+	var wl = inv._find("test_frostbite")
+	_ok(wl != null, "a spare weapon in the bags")
+	inv.move(inv._find("rune_venom"), wl)
+	_ok(Runes.of(inv.get_at(wl)) == "venom" and inv.count("rune_venom") == 0, "dropping a rune on a bagged weapon enchants it")
+	var off = inv.equipment.get("offHand")
+	if off != null and Items.get_def(off.id).get("kind") == "weapon":
+		inv.move(inv._find("rune_storm"), "e:offHand")
+		_ok(Runes.of(inv.equipment.offHand) == "storm", "dropping one on the off-hand weapon enchants it")
+	var before: int = inv.count("rune_storm")
+	var food = inv._find(ActionBar.STARTER_FOOD)
+	if food != null and inv.count("rune_storm") > 0:
+		inv.move(inv._find("rune_storm"), food)
+		_ok(inv.count("rune_storm") == before, "a rune dropped on something else is not used up")
+
+
 func _glow() -> void:
 	var inv = game.inventory
 	var pl = game.player
@@ -110,6 +136,8 @@ func _procs() -> void:
 	foe.position = p + Vector3(1.5, 0, 0)
 	_ok(is_equal_approx(Runes.proc_chance(4, 3.0), 0.2), "procs per minute: 4 ppm on a 3 s weapon is 20%")
 	var st = inv.equipment.mainHand
+	st.rolls.rune = "dread"
+	_ok(game.runes.on_spell_hit(foe, 40, false, true) and game.spells.has_status(foe, "vulnerable"), "a spell hit draws on the main-hand rune (casters)")
 	for rid in ["embers", "rime", "venom", "storm", "dawn", "dread"]:
 		st.rolls.rune = rid
 		foe.health = foe.max_health

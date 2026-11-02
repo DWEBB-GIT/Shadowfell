@@ -70,36 +70,49 @@ static func proc_chance(ppm: float, speed: float) -> float:
 
 
 # ------------------------------------------------------------ the scroll
-## Use a rune scroll from the bags: its rune goes on the main-hand weapon.
-## A weapon that already has a different rune asks first.
+## Use a rune scroll from the bags (right-click): its rune goes on the
+## main-hand weapon, or the bow when there is no main-hand weapon. Dragging
+## the scroll onto any weapon, worn or in the bags, goes through drop_on.
 func use_scroll(loc: String) -> bool:
 	var inv = game.inventory
+	for slot in ["mainHand", "ranged"]:
+		var w = inv.equipment.get(slot)
+		if w != null and Items.get_def(w.id).get("kind") == "weapon":
+			return drop_on(loc, "e:" + slot)
+	inv._refuse("Drag the rune onto a weapon.")
+	return false
+
+
+## A rune scroll at `loc` dropped on the weapon at `target` (any worn or
+## bagged weapon). A weapon that already has a different rune asks first.
+func drop_on(loc: String, target: String) -> bool:
+	var inv = game.inventory
 	var st = inv.get_at(loc)
-	if st == null:
+	var weapon = inv.get_at(target)
+	if st == null or weapon == null:
 		return false
 	var rid: String = Items.get_def(st.id).get("rune", "")
-	var weapon = inv.equipment.get("mainHand")
 	if def(rid).is_empty():
 		return false
-	if weapon == null or Items.get_def(weapon.id).get("kind") != "weapon":
-		inv._refuse("You need a weapon in your main hand.")
+	if Items.get_def(weapon.id).get("kind") != "weapon":
+		inv._refuse("Runes go on weapons.")
 		return false
 	var had := of(weapon)
 	if had == rid:
-		inv._refuse("Your weapon already bears that rune.")
+		inv._refuse("That weapon already bears the %s rune." % def(rid).name)
 		return false
 	if had != "" and game.hud and game.hud.has_method("confirm"):
-		game.hud.confirm("Replace the %s rune on your %s with %s?" % [def(had).name, Items.view(weapon).name, def(rid).name], func(): apply(loc, rid))
+		game.hud.confirm("Replace the %s rune on your %s with %s?" % [def(had).name, Items.view(weapon).name, def(rid).name], func(): apply(loc, rid, target))
 		return true
-	return apply(loc, rid)
+	return apply(loc, rid, target)
 
 
-## Put rune `rid` on the main-hand weapon, using up the scroll at `loc`
-## (if any). Returns whether it took.
-func apply(loc, rid: String) -> bool:
+## Put rune `rid` on the weapon at `target`, using up one scroll from
+## `loc` (if any). Returns whether it took.
+func apply(loc, rid: String, target := "e:mainHand") -> bool:
 	var inv = game.inventory
-	var weapon = inv.equipment.get("mainHand")
-	if weapon == null or def(rid).is_empty():
+	var weapon = inv.get_at(target)
+	if weapon == null or def(rid).is_empty() or Items.get_def(weapon.id).get("kind") != "weapon":
 		return false
 	if loc != null:
 		var st = inv.get_at(loc)
@@ -110,9 +123,10 @@ func apply(loc, rid: String) -> bool:
 	r = r.duplicate(true) if typeof(r) == TYPE_DICTIONARY else {}
 	r.rune = rid
 	weapon.rolls = r
-	inv._equipment_changed()
+	if target.begins_with("e:"):
+		inv._equipment_changed()
 	inv._changed()
-	game.events.emit("itemEnchanted", {"loc": "e:mainHand", "rune": rid})
+	game.events.emit("itemEnchanted", {"loc": target, "rune": rid})
 	game.events.emit("spellFlash", {"position": game.player.position, "colour": def(rid).glow.colour})
 	game.events.emit("log", {"text": "The %s rune sinks into your %s." % [def(rid).name, Items.view(weapon).name], "kind": "level"})
 	return true
@@ -128,6 +142,21 @@ func on_weapon_hit(enemy, hand: String, amount: float, force := false) -> bool:
 	if d.is_empty() or amount <= 0 or enemy == null or not enemy.alive:
 		return false
 	if not force and game.random.call() >= proc_chance(float(d.ppm), game.stats.hand_speed(hand)):
+		return false
+	_proc(d, enemy, amount)
+	return true
+
+
+## Called for each damaging spell or ability hit that landed (not its
+## ticks). Bow abilities draw on the bow's rune; every other spell, a
+## caster's included, on the main-hand weapon's. Spells have no swing
+## speed, so they count as `spellSpeed` seconds (runes.json) each.
+func on_spell_hit(enemy, amount: float, ranged := false, force := false) -> bool:
+	var stack = game.inventory.equipment.get("ranged" if ranged else "mainHand")
+	var d := def(of(stack))
+	if d.is_empty() or amount <= 0 or enemy == null or not enemy.alive:
+		return false
+	if not force and game.random.call() >= proc_chance(float(d.ppm), float(file().get("spellSpeed", 2.5))):
 		return false
 	_proc(d, enemy, amount)
 	return true

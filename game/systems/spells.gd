@@ -972,6 +972,9 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":
 		events.emit("log", {"text": line.replace("{name}", enemy.cfg.name).replace("{n}", str(hit.amount)) + (" A critical blow!" if hit.crit else ""), "kind": "hit"})
+	# a rune answers the spell (a bow's for bow abilities, else the main hand's)
+	if game.runes and not hurt_opts.get("periodic", false) and spell.kind != "dot":
+		game.runes.on_spell_hit(enemy, hit.amount, spell.get("ranged", false))
 	if enemy.dead:
 		game.combat.on_enemy_defeated(enemy)
 	# hitting an enemy with nothing engaged starts auto attack on it

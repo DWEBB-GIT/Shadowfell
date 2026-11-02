@@ -670,12 +670,15 @@ func hold_bow(in_hand: bool) -> void:
 	var larm := _part("Arm_L")
 	var r = game.inventory.equipment.get("ranged") if game.inventory else null
 	var want = r.id if r and Items.get_def(r.id).get("kind") == "weapon" else null
-	if bow and (bow_id != want or bow_in_hand != in_hand):
+	# the key carries the rune too, so a new rune rebuilds the bow's glow
+	var key = "%s:%s" % [want, Runes.of(r)] if want else null
+	if bow and (bow_id != key or bow_in_hand != in_hand):
 		_free(bow)
 		bow = null
 	if want and not bow:
 		bow = Assets.instance(Items.get_def(want).model)
-		bow_id = want
+		bow_id = key
+		FancyGear.apply(bow, Runes.glow_for(r))
 		bow_in_hand = in_hand
 		if in_hand and larm:
 			bow.position = Vector3(0, -0.62, 0.02)

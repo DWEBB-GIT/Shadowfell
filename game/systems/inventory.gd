@@ -514,6 +514,9 @@ func move(from: String, to: String) -> Dictionary:
 	var b = get_at(to)
 	if a == null:
 		return {"ok": false, "reason": ""}
+	# a rune scroll dropped on a weapon (worn or bagged) enchants it
+	if b != null and Items.get_def(a.id).get("rune") and Items.get_def(b.id).get("kind") == "weapon":
+		return {"ok": game.runes.drop_on(from, to), "reason": ""}
 	var pf := parse_loc(from)
 	var pt := parse_loc(to)
 	# a bag moves between bag sockets with its contents
