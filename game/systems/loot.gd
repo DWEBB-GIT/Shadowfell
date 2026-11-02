@@ -22,6 +22,9 @@ var active: Array = [] ## { def, x, z, group, glint, base_y, seed, depleted }
 var regrow: Array = [] ## { entry, at }: gathering nodes waiting to grow back
 var gathering = null ## { entry, t, total, from } or, skinning, { skin, name, t, total, from }
 var unique := {}
+## seconds an item lies on the ground before it is gone (Dan, 2026-11-02);
+## the time left is saved with it, so it counts only while you play
+const GROUND_LIFE := 300.0
 
 
 ## The Skinning rank a beast of this level needs (by level, not by kind).
@@ -439,6 +442,21 @@ func collect(entry: Dictionary) -> bool:
 	return true
 
 
+## ground items wear away after GROUND_LIFE seconds
+func _age_ground(dt: float) -> void:
+	for i in range(active.size() - 1, -1, -1):
+		var l: Dictionary = active[i]
+		var g = l.def.get("ground")
+		if g == null:
+			continue
+		g.left = float(g.get("left", GROUND_LIFE)) - dt
+		if g.left > 0:
+			continue
+		game.world_state.ground.erase(g)
+		l.group.queue_free()
+		active.remove_at(i)
+
+
 func update(dt: float, time: float) -> void:
 	for i in range(regrow.size() - 1, -1, -1):
 		var r: Dictionary = regrow[i]
@@ -462,6 +480,7 @@ func update(dt: float, time: float) -> void:
 					skin(g.skin)
 				else:
 					collect(g.entry)
+	_age_ground(dt)
 	for l in active:
 		if l.def.get("quest"):
 			l.glint.visible = available(l)
