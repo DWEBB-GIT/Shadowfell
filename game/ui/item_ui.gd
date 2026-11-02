@@ -30,6 +30,7 @@ var focus = null ## gamepad highlight: a location string
 var carry = null ## gamepad: location of the item being carried
 var shop_opened_bags := false
 var char_tab := "main"
+var settings_tab := "controls"
 var slots := {} ## loc -> ISlot for everything on screen (the bar's are added by the HUD)
 var bar_slots := {} ## 'a:<n>' -> ISlot, made once by the HUD
 var tip_from = null ## 'ui' | 'world' | null
@@ -130,7 +131,7 @@ func _build() -> void:
 		w.inner = UI.vbox(sc, 6)
 		w.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		w.foot = UI.hint(w.body)
-	settings_win = UI.window(self, "Settings", 320, func(): close("settings"))
+	settings_win = UI.window(self, "Settings", 400, func(): close("settings"))
 	talents = UI.window(self, "Talents", 470, func(): close("talents"))
 	talents.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	talents.head.add_child(talents.sub)
@@ -165,9 +166,11 @@ func _build() -> void:
 	add_child(ghost)
 
 
-## Settings: one checkbox (or slider) each, then the key bindings, made once
+## Settings: a page per category (Settings.TABS), each setting a checkbox,
+## slider or drop-down; the key bindings have their own page. Made once.
 func _build_settings() -> void:
 	var body: VBoxContainer = settings_win.body
+	var tabs := UI.hbox(body, 4)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	body.add_child(scroll)
@@ -176,14 +179,39 @@ func _build_settings() -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_win.inner = v
 	settings_win.inputs = {}
+	settings_win.tabs = {}
+	settings_win.pages = {}
+	for t in Settings.TABS:
+		var id: String = t[0]
+		var b := UI.button(tabs, t[1], func():
+			settings_tab = id
+			_show_settings_tab())
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		settings_win.tabs[id] = b
+		settings_win.pages[id] = UI.vbox(v, 2)
 	var group := ""
 	for s in Settings.SETTINGS:
-		if s.get("group") and s.group != group:
-			group = s.group
-			UI.label(v, group, 13, UI.GOLD)
+		var page: VBoxContainer = settings_win.pages[s.tab]
+		if s.get("group", "") != group:
+			group = s.get("group", "")
+			if group != "":
+				UI.gap(page, 4)
+				UI.label(page, group, 13, UI.GOLD)
 		var id: String = s.id
-		if s.has("min"):
-			var row := UI.hbox(v, 8)
+		if s.get("choice"):
+			var row := UI.hbox(page, 8)
+			var l := UI.label(row, s.label, 14)
+			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var ob := OptionButton.new()
+			ob.focus_mode = Control.FOCUS_NONE
+			ob.custom_minimum_size = Vector2(170, 0)
+			ob.clip_text = true
+			ob.add_theme_font_size_override("font_size", 12)
+			row.add_child(ob)
+			ob.item_selected.connect(func(i): game.settings.set_value(id, ob.get_item_text(i)))
+			settings_win.inputs[id] = [ob]
+		elif s.has("min"):
+			var row := UI.hbox(page, 8)
 			var l := UI.label(row, s.label, 14)
 			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			var sl := HSlider.new()
@@ -205,21 +233,49 @@ func _build_settings() -> void:
 			var cb := CheckBox.new()
 			cb.text = s.label
 			cb.focus_mode = Control.FOCUS_NONE
+			cb.autowrap_mode = TextServer.AUTOWRAP_WORD
 			cb.add_theme_font_size_override("font_size", 14)
 			cb.add_theme_color_override("font_color", UI.TEXT)
 			cb.add_theme_color_override("font_hover_color", Color("f2e6c6"))
 			cb.add_theme_color_override("font_pressed_color", UI.TEXT)
+			# a plain tick box and its words, not a button frame round each line
+			for st in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+				cb.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+			cb.add_theme_icon_override("unchecked", _empty_tick())
 			cb.toggled.connect(func(on): game.settings.set_value(id, on))
-			v.add_child(cb)
+			page.add_child(cb)
 			settings_win.inputs[id] = [cb]
-	UI.label(v, "Key bindings", 13, UI.GOLD)
-	var btns := UI.hbox(v, 6)
+	var keys: VBoxContainer = settings_win.pages.keys
+	UI.wrapped(UI.label(keys, "Click a key to change it, then press the new key. Backspace unbinds it, Escape keeps it.", 12, UI.TEXT_DIM))
+	var btns := UI.hbox(keys, 6)
 	hud.keybind_ui.quick_button = UI.button(btns, "Quick bind", func(): hud.keybind_ui.set_quick(not hud.keybind_ui.quick))
 	UI.button(btns, "Reset to defaults", func(): game.keys.reset_all())
-	hud.keybind_ui.list = UI.vbox(v, 1)
-	var foot := UI.hbox(v, 6)
+	hud.keybind_ui.list = UI.vbox(keys, 1)
+	var foot := UI.hbox(body, 6)
 	UI.button(foot, "Save the game", func(): game.manual_save())
-	UI.button(foot, "Logout", func(): game.log_out())
+	_show_settings_tab()
+
+
+## an empty tick box that reads on the dark window (the default is too dark)
+static var _tick_box: ImageTexture
+static func _empty_tick() -> ImageTexture:
+	if _tick_box == null:
+		var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		img.fill_rect(Rect2i(1, 1, 14, 14), Color(201 / 255.0, 162 / 255.0, 83 / 255.0, 0.7))
+		img.fill_rect(Rect2i(2, 2, 12, 12), Color("15110c"))
+		_tick_box = ImageTexture.create_from_image(img)
+	return _tick_box
+
+
+func _show_settings_tab() -> void:
+	var w := settings_win
+	for id in w.tabs:
+		var b: Button = w.tabs[id]
+		b.add_theme_color_override("font_color", UI.GOLD if id == settings_tab else UI.TEXT_DIM)
+		b.add_theme_stylebox_override("normal", UI.box(Color(20 / 255.0, 16 / 255.0, 12 / 255.0, 0.8), UI.GOLD if id == settings_tab else Color(201 / 255.0, 162 / 255.0, 83 / 255.0, 0.3), 0, 1, Vector4(4, 4, 4, 4)))
+		w.pages[id].visible = id == settings_tab
+	w.scroll.scroll_vertical = 0
 
 
 # ------------------------------------------------------------------ state
@@ -972,7 +1028,14 @@ func _render_settings() -> void:
 	for id in w.inputs:
 		var v = game.settings.get_value(id)
 		var parts: Array = w.inputs[id]
-		if parts[0] is HSlider:
+		if parts[0] is OptionButton:
+			var ob: OptionButton = parts[0]
+			ob.clear()
+			for d in game.audio.output_devices():
+				ob.add_item(d)
+				if d == v:
+					ob.select(ob.item_count - 1)
+		elif parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
 			parts[1].text = "%d%%" % int(v)
 		else:
@@ -1254,7 +1317,7 @@ func layout() -> void:
 			w.panel.position = Vector2(roundf((vp.x - s.x) / 2), maxf(12, vp.y - 140 - s.y))
 	if settings_win.panel.visible:
 		var inner: Control = settings_win.inner
-		settings_win.scroll.custom_minimum_size = Vector2(296, minf(inner.get_combined_minimum_size().y, vp.y - 290))
+		settings_win.scroll.custom_minimum_size = Vector2(362, minf(inner.get_combined_minimum_size().y, vp.y - 290))
 		var s := _fit(settings_win.panel, Vector2.ZERO)
 		settings_win.panel.position = Vector2(roundf((vp.x - s.x) / 2), 70)
 	if talents.panel.visible:

@@ -41,7 +41,7 @@ const ORB_STEP := 22.4
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
-## 'title' | 'document' | 'death'. Bags, character panel and spellbook are
+## 'title' | 'document' | 'death' | 'menu' | 'loading'. Bags, character panel and spellbook are
 ## not modal: the world keeps running while they are open, as in WoW.
 var modal = "title"
 var pad_mode := false
@@ -133,6 +133,7 @@ var log_tab := "general"
 var log_entries: Array = [] ## [text, kind, rarity, born], newest last
 var party: PartyFrames
 var backdrop: ColorRect
+var main_menu: MainMenu
 var death: PanelContainer
 var death_text: Label
 var document: PanelContainer
@@ -429,7 +430,7 @@ func _build() -> void:
 	quick_bind_banner.add_theme_stylebox_override("panel", UI.box(UI.WINDOW, UI.GOLD, 0, 1, Vector4(14, 8, 14, 8)))
 	UI.label(quick_bind_banner, "Quick bind: hover a spell or utility bar slot and press a key. Esc when done.", 14, UI.GOLD)
 	quick_bind_banner.visible = false
-	mute = UI.label(root, "Sound off (Settings, O)", 12, UI.TEXT_DIM, 3)
+	mute = UI.label(root, "Sound off (Settings, O: Audio)", 12, UI.TEXT_DIM, 3)
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
@@ -807,6 +808,7 @@ func _build_modals() -> void:
 	doc_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	doc_body.add_theme_color_override("default_color", Color("e2d4b0"))
 	document.visible = false
+	main_menu = MainMenu.new(game, self)
 
 
 # ------------------------------------------------------------ title screen
@@ -853,7 +855,8 @@ func _set_world_ui(on: bool) -> void:
 		if c != title and c != loading:
 			c.visible = on
 	if on:
-		for c in [death, document, backdrop, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		main_menu.cancel()
+		for c in [death, document, backdrop, main_menu.panel, main_menu.wait_panel, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -1031,6 +1034,8 @@ func close_modal(force := false) -> bool:
 		return false
 	if keybind_ui.quick:
 		keybind_ui.set_quick(false)
+		return true
+	if main_menu.close():
 		return true
 	if modal == "document":
 		document.visible = false
@@ -1605,10 +1610,12 @@ func layout() -> void:
 	for win in [death, document]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
+	main_menu.layout(vp)
 
 
 func update(dt := 0.0) -> void:
 	numbers.update(dt)
+	main_menu.update(dt)
 	# fading messages
 	toast_left = maxf(0, toast_left - dt)
 	toast_label.modulate.a = minf(1, toast_left / 0.4)
