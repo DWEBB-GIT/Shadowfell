@@ -70,9 +70,9 @@ func _process(_dt: float) -> bool:
 		check(not game.player.can_hit_while_moving(foe.position.x, foe.position.z), "running away, a foe behind you cannot be hit")
 		game.input.held.erase("KeyD")
 		game.settings.set_value("classicControls", true)
-	elif f == 44:
+	elif f == 50:
 		var to_foe := atan2(foe.position.x - game.player.position.x, foe.position.z - game.player.position.z)
-		check(absf(angle_difference(game.player.facing, to_foe)) > 0.5, "classic: walking away turns you from your target, not towards it")
+		check(absf(angle_difference(game.player.facing, to_foe)) > 0.5, "classic: walking away turns you from your target, not towards it (%.2f)" % game.player.facing)
 		game.settings.set_value("classicControls", false)
 		# keyboard turning: D turns on the spot, W walks the way you face
 		game.targeting.stop_attack()
@@ -81,15 +81,15 @@ func _process(_dt: float) -> bool:
 		start = game.player.position
 		game.player.facing = 0.0
 		game.input.held["KeyD"] = true
-	elif f == 45:
+	elif f == 51:
 		check(not game.player.moving, "keyboard turning: turning is not moving")
-	elif f == 54:
+	elif f == 60:
 		var at: Vector3 = game.player.position - start
 		check(Vector2(at.x, at.z).length() < 0.05, "keyboard turning: D turns without walking (%s)" % at)
 		check(game.player.facing < -0.2, "keyboard turning: D turns you clockwise (%.2f)" % game.player.facing)
 		game.input.held.erase("KeyD")
 		game.input.held["KeyW"] = true
-	elif f == 64:
+	elif f == 70:
 		var p0: Vector3 = game.player.position
 		game.input.held.erase("KeyW")
 		var fwd := Vector2(sin(game.player.facing), cos(game.player.facing))

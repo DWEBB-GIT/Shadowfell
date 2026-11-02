@@ -28,7 +28,9 @@ const SETTINGS := [
 	{"id": "playerName", "label": "Show your own name over your character", "tab": "interface", "default": true},
 	{"id": "bloodEffects", "label": "Small blood effects on living creatures", "tab": "interface", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
-	{"id": "lampShadows", "label": "Shadows from lamps and torches (turn off if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": true},
+	# 0 off, 1 the player only, 2 the player, enemies and NPCs. Each step
+	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).
+	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": 1, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
 ]
 
 var game
@@ -47,6 +49,8 @@ static func _clean(s: Dictionary, v):
 	if s.get("choice"):
 		return v if typeof(v) == TYPE_STRING and v != "" else s.default
 	if s.has("min"):
+		if typeof(v) == TYPE_BOOL and s.has("names"):
+			return 1 if v else 0
 		return clampi(U.jround(v), s.min, s.max) if (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and is_finite(v) else s.default
 	return v if typeof(v) == TYPE_BOOL else s.default
 

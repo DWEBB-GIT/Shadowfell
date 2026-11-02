@@ -382,6 +382,12 @@ func update(dt: float, controls) -> void:
 			pending = {"type": "spell", "id": d.id, "t": 0.0}
 			lunge = null
 		speed01 = 1.0
+		# a key pressed near the end of a charge waits in the spell queue
+		if controls:
+			var lacts: Dictionary = controls.get("actions", {})
+			for id in lacts:
+				if lacts[id] and DB.spells.has(id):
+					game.spells.try_cast(id)
 	elif controls:
 		var mv: Dictionary = controls.move
 		var acts: Dictionary = controls.get("actions", {})

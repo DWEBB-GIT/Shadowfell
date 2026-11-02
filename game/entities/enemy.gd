@@ -72,6 +72,7 @@ func _init(g, spawn: Dictionary) -> void:
 
 	group = Node3D.new()
 	group.name = "Enemy_" + id
+	group.add_to_group(World.MOVING_GROUP)
 	model = Assets.instance(cfg.model)
 	group.add_child(model)
 	rig = Rig.new(model, cfg.model)
@@ -133,12 +134,19 @@ var move_speed: float:
 	get:
 		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
 
-## running after the player in a fight: never slower than the player's run
-## share (CONFIG.chase), still slowed by snares
+## running after the player in a fight: a percent of the player's base move
+## speed (CONFIG.chase: the enemy's `runSpeed`, else its type's), still
+## slowed by snares
 var chase_speed: float:
 	get:
-		var floor_: float = DB.CONFIG.player.speed * DB.CONFIG.chase.share
-		return maxf(cfg.speed, floor_) * (1 - minf(90, mods.slow) / 100.0) if cfg.speed > 0 else 0.0
+		if cfg.speed <= 0:
+			return 0.0
+		return DB.CONFIG.player.speed * run_percent / 100.0 * (1 - minf(90, mods.slow) / 100.0)
+
+var run_percent: float:
+	get:
+		var c: Dictionary = DB.CONFIG.chase
+		return float(cfg.get("runSpeed", c.byType.get(cfg.get("type", ""), c.default)))
 
 var damage_taken_scale: float:
 	get:
@@ -246,6 +254,13 @@ func hurt(amount: float, opts := {}) -> float:
 		rig.hit()
 	if not asleep:
 		stagger = maxf(stagger, stag)
+	# a direct blow on a spellcaster pushes its cast back (WoW pushback,
+	# Dan 2026-11-02): a weapon swing jolts the body but never stops it
+	if amount > 0 and not opts.get("periodic", false) and casting != null and (casting.kind == "shot" or casting.kind == "circle") and casting.interruptible:
+		var tg = casting.telegraph
+		if tg is Dictionary and casting.get("pushbacks", 0) < DB.max_pushbacks:
+			casting.pushbacks = casting.get("pushbacks", 0) + 1
+			tg.t = maxf(0.0, float(tg.t) - DB.cast_pushback)
 	if heavy and not (casting != null and not casting.interruptible):
 		# a heavy blow interrupts an ordinary swing or an interruptible cast;
 		# casts marked `interruptible: false` in the data (Grave Slam) go on

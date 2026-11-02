@@ -58,11 +58,13 @@ const S := {
 	"earlyHit": [0.75, 0.82, 0.9], ## blows of level 1, 2, 3 foes against the share above; 4+ full
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
-		"fodder": {"health": 0.5, "hit": 0.5, "interval": 1.35, "armour": "none"},
+		## Dan 2026-11-02: an ordinary mob swings every 2.0 s (was 1.35); its
+		## blow grows to match (x2.0/1.35), so the danger per second holds
+		"fodder": {"health": 0.5, "hit": 0.74, "interval": 2.0, "armour": "none"},
 		"pack_beast": {"health": 0.6, "hit": 0.6, "interval": 0.95, "armour": "none"},
-		"normal": {"health": 1.0, "hit": 1.0, "interval": 1.35, "armour": "none"},
+		"normal": {"health": 1.0, "hit": 1.48, "interval": 2.0, "armour": "none"},
 		"skirmisher": {"health": 0.6, "hit": 1.75, "interval": 2.5, "armour": "light"},
-		"armoured": {"health": 1.25, "hit": 1.0, "interval": 1.35, "armour": "heavy"},
+		"armoured": {"health": 1.25, "hit": 1.48, "interval": 2.0, "armour": "heavy"},
 		"elite": {"health": 1.7, "hit": 1.375, "interval": 1.2, "armour": "armoured", "special": 0.25},
 		"heavy": {"health": 4.0, "hit": 3.0, "interval": 2.2, "armour": "armoured", "special": 0.5},
 		"boss": {"health": 15.0, "armour": "armoured", "special": 0.5},

@@ -7,6 +7,13 @@ extends RefCounted
 
 const Entrance := preload("res://game/world/building_entrance.gd")
 const LIGHT_FIXTURE_LAYER := 1 << 19
+## Other bodies that move or animate every frame (enemies, NPCs). The
+## shadow-casting lamps leave this layer out, so an idling or fighting body
+## near a lamp does not make it re-render its shadow map every frame; a
+## shadowless twin light lights this layer instead. The player stays off it
+## on purpose and keeps a lamp shadow. See Atmosphere.
+const MOVING_LAYER := 1 << 18
+const MOVING_GROUP := &"moving_body"
 
 var game
 var group: Node3D

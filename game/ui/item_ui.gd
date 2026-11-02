@@ -250,9 +250,12 @@ func _build_settings() -> void:
 			val.custom_minimum_size = Vector2(38, 0)
 			val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			# sliders as they move, so the sound follows the hand
+			var names: Array = s.get("names", [])
+			if not names.is_empty():
+				val.custom_minimum_size = Vector2(70, 0)
 			sl.value_changed.connect(func(x):
 				game.settings.set_value(id, int(x))
-				val.text = "%d%%" % int(x))
+				val.text = names[int(x)] if not names.is_empty() else "%d%%" % int(x))
 			settings_win.inputs[id] = [sl, val]
 		else:
 			var cb := CheckBox.new()
@@ -810,7 +813,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	]
 	rows.append("General")
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
-	rows.append(["Speed", "%s m/s" % U.fixed(DB.CONFIG.player.speed, 1), "Movement speed"])
+	rows.append(["Speed", "%s yd/s" % U.fixed(DB.CONFIG.player.speed / 0.9144, 1), "Movement speed"])
 	for r in rows:
 		if r == null:
 			continue
@@ -1096,7 +1099,8 @@ func _render_settings() -> void:
 					ob.select(ob.item_count - 1)
 		elif parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
-			parts[1].text = "%d%%" % int(v)
+			var names: Array = Settings._def(id).get("names", [])
+			parts[1].text = names[int(v)] if not names.is_empty() else "%d%%" % int(v)
 		else:
 			parts[0].set_pressed_no_signal(v)
 	hud.keybind_ui.render()
