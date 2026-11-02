@@ -662,7 +662,7 @@ func layout() -> void:
 	for w in [dialogue, trainer]:
 		if w.panel.visible:
 			UI.fit_steady(w.panel)
-			w.panel.position = Vector2(12, 12)
+			w.panel.position = Vector2(12, hud.WINDOW_TOP)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
 		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)

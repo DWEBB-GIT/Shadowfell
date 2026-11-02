@@ -39,16 +39,16 @@ func rank(id: String) -> int:
 	return ranks.get(id, 0)
 
 
-## What the best tool carried adds to a skill: an item's `<skill>Skill`
-## (fishingSkill, skinningSkill) counts while it is in the bags, the tool
-## pack or equipped. Only the best one counts, as in WoW. A tool with a
+## What the best tool on the belt adds to a skill: an item's `<skill>Skill`
+## (fishingSkill, skinningSkill) counts only while it is on the tool belt
+## (Inventory.on_belt), not in the bags. Only the best one counts, as in WoW. A tool with a
 ## `reqSkill` counts only once your skill is that high.
 func tool_bonus(id: String) -> int:
 	var key := id + "Skill"
 	var best := 0
 	for item in DB.items:
 		var d: Dictionary = DB.items[item]
-		if d.has(key) and int(d[key]) > best and rank(id) >= int(d.get("reqSkill", 0)) and game.inventory.has(item):
+		if d.has(key) and int(d[key]) > best and rank(id) >= int(d.get("reqSkill", 0)) and game.inventory.on_belt(item):
 			best = int(d[key])
 	return best
 

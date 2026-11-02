@@ -235,6 +235,9 @@ func _build_settings() -> void:
 	hud.keybind_ui.list = UI.vbox(v, 1)
 	var foot := UI.hbox(v, 6)
 	UI.button(foot, "Save the game", func(): game.manual_save())
+	UI.button(foot, "Edit HUD", func():
+		close("settings")
+		hud.hud_edit.open())
 	UI.button(foot, "Logout", func(): game.log_out())
 
 
@@ -504,9 +507,15 @@ func _render_sockets(inv) -> void:
 		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
-			slot.dim = 1.0 if s else 0.6
-			if not s:
-				tip_on(slot, "Tool pack slot: earned from Mara Venn's first errand")
+			slot.dim = 1.0 if s else 0.75
+			slot.key = game.keys.label("toolbelt").split(" / ")[0] if not hud.pad_mode else "↓"
+			slot.lit = hud.belt != null and hud.belt.visible
+			slot.on_hover = func(_s: ISlot, on: bool):
+				if on and drag == null:
+					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
+				elif not on:
+					cursor_tip_off()
+			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
 		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
@@ -518,7 +527,8 @@ func _render_sockets(inv) -> void:
 		slot.lit = open_bags.has(i)
 	# the free space in all bags shows on the backpack, as in WoW
 	var free: int = inv.free_slots()
-	var bp := _slot(sockets, "s:0", null, 40)
+	# the backpack stands as tall as a spell slot, the main bag of the tray
+	var bp := _slot(sockets, "s:0", null, hud.SLOT)
 	bp.border = UI.BORDER
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
@@ -527,7 +537,12 @@ func _render_sockets(inv) -> void:
 	# Dan's painted backpack; the drawn one stays as the fallback
 	bp.icon = Icons.art("ui", "primary_bag")
 	bp.painter = Callable(self, "_paint_backpack")
-	tip_on(bp, "Backpack (B): %d free slot%s" % [free, "" if free == 1 else "s"])
+	# your money lives in the backpack: in its tip and the bag window's foot
+	bp.on_hover = func(s: ISlot, on: bool):
+		if on and drag == null:
+			cursor_tip("Backpack (%s): %d free slot%s\n%s" % [bp.key, free, "" if free == 1 else "s", U.money(inv.coins)])
+		elif not on:
+			cursor_tip_off()
 
 
 ## the backpack's little picture (style.css .bp-icon)
@@ -1270,9 +1285,9 @@ func layout() -> void:
 		# not the render: a new label measures its height only once laid out)
 		if character.main.visible:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
-		_fit(character.panel, Vector2(12, 12))
+		_fit(character.panel, Vector2(12, hud.WINDOW_TOP))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, 12))
+		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
@@ -1675,6 +1690,10 @@ func _down(loc: String, at: Vector2) -> void:
 		return
 	if loc == "s:0":
 		toggle_bag(0)
+		return
+	# the tool pack's slot is the tool belt's button (right click opens the pack)
+	if loc == "s:%d" % Items.TOOL_SOCKET:
+		hud.belt.toggle()
 		return
 	if loc.begins_with("m:") or loc.begins_with("y:"):
 		_shop_click(loc)

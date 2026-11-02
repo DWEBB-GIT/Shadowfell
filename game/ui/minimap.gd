@@ -71,7 +71,7 @@ func _init(g) -> void:
 	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
-	var north := orb(270.0, 10.0)
+	var north := orb(270.0, NORTH_R)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var north_art := Icons.art("ui", "minimap_north")
 	if north_art:
@@ -101,10 +101,17 @@ func _init(g) -> void:
 
 
 const ZOOM_R := 11.0
+const NORTH_R := 9.0
+## room the rim buttons need outside SIZE: right for zoom, top for north
+const OUT_RIGHT := 8.0
+const OUT_TOP := 10.0
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
-## RuneScape style: drawn as a true circle, a bronze ring on dark stone
+## RuneScape style: drawn as a true circle, a bronze ring on dark stone.
+## It sits just outside the map, its inner edge on the dark frame, so it
+## never hides the quest arrows drawn round the inside of the rim (Dan,
+## 2026-11-02: the orbs covered the waypoint arrows).
 func orb(angle: float, radius: float) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
@@ -114,7 +121,7 @@ func orb(angle: float, radius: float) -> Button:
 	b.size = b.custom_minimum_size
 	var a := deg_to_rad(angle)
 	var r := SIZE / 2
-	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(radius, radius)
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + radius - 1) - Vector2(radius, radius)
 	b.draw.connect(func(): _draw_orb(b, radius))
 	add_child(b)
 	return b

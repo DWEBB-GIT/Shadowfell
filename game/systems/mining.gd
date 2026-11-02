@@ -146,7 +146,7 @@ var pick:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("miningPick") and inv.has(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
+			if d.get("miningPick") and inv.on_belt(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
 				best = d
 		return best
 

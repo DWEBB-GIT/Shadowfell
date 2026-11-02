@@ -9,6 +9,10 @@ extends Node
 ## Each is drawn once by its own small viewport and then kept as a texture.
 
 const ITEM_SIZE := 64
+const LONG_TOOLS := ["fishing_rod"] ## tools drawn corner to corner, as weapons are
+const POP_MAX_GAIN := 2.2 ## how far a dark picture may be brightened
+const POP_SATURATION := 1.35
+const POP_EDGE := Color(1.0, 0.9, 0.62, 0.55) ## the warm rim round each item
 const GLYPH_SIZE := 64
 const PORTRAIT_SIZE := 96
 
@@ -60,8 +64,9 @@ func _item_icons() -> void:
 	for m in models:
 		var obj := Assets.instance(m)
 		obj.rotation_order = EULER_ORDER_XYZ
-		# long items (swords) are shown diagonally, the classic RPG way
-		if weapons.has(m):
+		# long items (swords, rods) are shown diagonally, the classic RPG way,
+		# which makes a thin rod twice as big in its tile
+		if weapons.has(m) or LONG_TOOLS.has(m):
 			obj.rotation = Vector3(0, 0, -PI / 4)
 		elif m == "kite_shield" or m == "iron_shield":
 			obj.rotation = Vector3(0.15, 0.35, 0)
@@ -105,7 +110,7 @@ func _snapshot(obj: Node3D, size: int, ambient: Color, ambient_k: float, key: Co
 	vp.add_child(cam)
 	frame.call(cam, bounds(obj))
 	add_child(vp)
-	return _bake(vp)
+	return _bake(vp, size == ITEM_SIZE)
 
 
 ## The box around a model's meshes, in the model's parent space.
@@ -277,11 +282,61 @@ func _exit_tree() -> void:
 
 
 var _bakes: Array = []
-func _bake(vp: SubViewport) -> ImageTexture:
+func _bake(vp: SubViewport, pop := false) -> ImageTexture:
 	var image := Image.create(vp.size.x, vp.size.y, false, Image.FORMAT_RGBA8)
 	var texture := ImageTexture.create_from_image(image)
-	_bakes.append({"vp":vp, "texture":texture})
+	_bakes.append({"vp":vp, "texture":texture, "pop": pop})
 	return texture
+
+## Item pictures read in a dark bag slot (Dan, 2026-11-02: the rod and pick
+## could hardly be seen): lift each picture so its brightest part is near
+## white, add colour, and ring the shape with a warm light edge so even a
+## thin rod stands out.
+static func pop(src: Image) -> Image:
+	var img := src.duplicate() as Image
+	img.convert(Image.FORMAT_RGBA8)
+	var w := img.get_width()
+	var h := img.get_height()
+	var top := 0.0
+	for y in h:
+		for x in w:
+			var c := img.get_pixel(x, y)
+			if c.a > 0.5:
+				top = maxf(top, maxf(c.r, maxf(c.g, c.b)))
+	var gain := clampf(0.95 / maxf(top, 0.05), 1.0, POP_MAX_GAIN)
+	var alpha := PackedFloat32Array()
+	alpha.resize(w * h)
+	for y in h:
+		for x in w:
+			var c := img.get_pixel(x, y)
+			alpha[y * w + x] = c.a
+			if c.a <= 0.0:
+				continue
+			var lum := c.r * 0.3 + c.g * 0.59 + c.b * 0.11
+			var r := lerpf(lum, c.r, POP_SATURATION) * gain
+			var g := lerpf(lum, c.g, POP_SATURATION) * gain
+			var b := lerpf(lum, c.b, POP_SATURATION) * gain
+			img.set_pixel(x, y, Color(clampf(r, 0, 1), clampf(g, 0, 1), clampf(b, 0, 1), c.a))
+	# the light edge: empty pixels next to the shape (two pixels out, fading)
+	for y in h:
+		for x in w:
+			if alpha[y * w + x] > 0.3:
+				continue
+			var near := 0.0
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					var nx := x + dx
+					var ny := y + dy
+					if nx < 0 or ny < 0 or nx >= w or ny >= h or alpha[ny * w + nx] <= 0.3:
+						continue
+					near = maxf(near, 1.0 if absi(dx) <= 1 and absi(dy) <= 1 else 0.45)
+			if near > 0.0:
+				var edge := POP_EDGE
+				edge.a *= near
+				var under := img.get_pixel(x, y)
+				img.set_pixel(x, y, under.blend(edge) if under.a > 0 else edge)
+	return img
+
 
 func _ready() -> void:
 	RenderingServer.frame_post_draw.connect(_finish_bakes)
@@ -294,6 +349,8 @@ func _finish_bakes() -> void:
 		if DisplayServer.get_name() != "headless":
 			var image := vp.get_texture().get_image()
 			if image and not image.is_empty():
+				if job.get("pop", false):
+					image = pop(image)
 				job.texture.set_image(image)
 		RenderCleanup.detach(vp)
 		vp.queue_free()
