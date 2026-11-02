@@ -5,8 +5,9 @@ extends RefCounted
 ## press a face button), each with a fixed key. The player decides which
 ## ability sits in which slot, Diablo style. The utility slots are the
 ## consumable slots: items only (draughts, food, drink, bandages), as
-## 'item:<id>'. Fishing, Set Camp, Cooking and Return Home live on the tool
-## belt (game/ui/tool_belt.gd), never on the bar (Dan, 2026-11-02).
+## 'item:<id>'. Fishing, Set Camp and Cooking live on the tool belt
+## (game/ui/tool_belt.gd), never on the bar (Dan, 2026-11-02); Return Home is
+## the Homeward charm in the backpack.
 
 const BAR_SLOTS := [
 	{"kbm": "1", "pad": "X"},
@@ -23,7 +24,7 @@ const BAR_SLOTS := [
 ## the bow abilities go onto free spell slots the first time a bow is equipped
 const BOW_ABILITIES := ["quickShot", "venomArrow"]
 ## the abilities that live on the tool belt instead of the bar
-const BELT_ABILITIES := ["fish", "setCamp", "cook", "returnHome"]
+const BELT_ABILITIES := ["fish", "setCamp", "cook"]
 ## what every new character carries (inventory.gd) and has on the utility bar
 const STARTER_FOOD := "trail_bread"
 const STARTER_DRINK := "spring_water"

@@ -129,6 +129,17 @@ func refresh() -> void:
 ## the tool, B (or down past the bottom) folds it away.
 func gamepad(pad) -> void:
 	var B := Pad.BUTTONS
+	# this runs every frame the belt is open: off the pad it must leave the
+	# highlight and the tooltip alone, or the last tool's tip (Return Home)
+	# stuck over every other button (Dan, 2026-11-02)
+	if not hud.pad_mode:
+		if pick >= 0:
+			pick = -1
+			for c in cells:
+				if is_instance_valid(c) and c.focused:
+					c.focused = false
+					c.queue_redraw()
+		return
 	if cells.is_empty():
 		if pad.pressed(B.B) or pad.pressed(B.DOWN):
 			close()

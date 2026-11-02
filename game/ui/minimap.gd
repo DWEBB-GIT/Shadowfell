@@ -71,7 +71,7 @@ func _init(g) -> void:
 	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
-	var north := orb(270.0, NORTH_R)
+	var north := orb(270.0, NORTH_R, ON_RIM)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var north_art := Icons.art("ui", "minimap_north")
 	if north_art:
@@ -85,7 +85,7 @@ func _init(g) -> void:
 	# zoom: two small round buttons on the rim, right side, clear of the place
 	# bar (the HUD sets its menu orbs round the left side the same way)
 	for z in [[1, 22.0], [-1, 48.0]]:
-		var b := orb(z[1], ZOOM_R)
+		var b := orb(z[1], ZOOM_R, ON_RIM)
 		var step: int = z[0]
 		b.pressed.connect(func():
 			game.audio.sfx("quest_log", 0.6)
@@ -102,9 +102,12 @@ func _init(g) -> void:
 
 const ZOOM_R := 11.0
 const NORTH_R := 9.0
+## the N and the zoom buttons sit ON the map's rim, centred on its edge
+## (Dan, 2026-11-02), not outside it as the menu orbs once did
+const ON_RIM := 0.0
 ## room the rim buttons need outside SIZE: right for zoom, top for north
-const OUT_RIGHT := 8.0
-const OUT_TOP := 10.0
+const OUT_RIGHT := 4.0
+const OUT_TOP := 9.0
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
@@ -112,7 +115,9 @@ const OUT_TOP := 10.0
 ## It sits just outside the map, its inner edge on the dark frame, so it
 ## never hides the quest arrows drawn round the inside of the rim (Dan,
 ## 2026-11-02: the orbs covered the waypoint arrows).
-func orb(angle: float, radius: float) -> Button:
+## `out` is how far the orb's centre stands out from the rim (-1: just
+## outside, its inner edge on the frame).
+func orb(angle: float, radius: float, out := -1.0) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
@@ -121,7 +126,8 @@ func orb(angle: float, radius: float) -> Button:
 	b.size = b.custom_minimum_size
 	var a := deg_to_rad(angle)
 	var r := SIZE / 2
-	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + radius - 1) - Vector2(radius, radius)
+	var dist := r + radius - 1 if out < 0 else r + out
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * dist - Vector2(radius, radius)
 	b.draw.connect(func(): _draw_orb(b, radius))
 	add_child(b)
 	return b

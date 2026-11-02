@@ -111,6 +111,7 @@ func close() -> void:
 func reset_all() -> void:
 	saved = {}
 	_save()
+	hud.items.reset_windows()
 
 
 func _rect(nodes: Array) -> Rect2:
