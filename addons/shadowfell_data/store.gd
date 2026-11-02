@@ -85,6 +85,11 @@ const SPELL_KINDS := {
 	"shield": {"enemy": false, "tuning": ["duration", "absorbPercent"], "about": "A shield that soaks damage."},
 	"portal": {"enemy": false, "tuning": ["castTime", "cooldown"], "about": "A long cast that takes you to your camp or your home inn (Return Home). Not while fighting."},
 	"camp": {"enemy": false, "tuning": ["castTime"], "about": "Set Camp."},
+	"heal": {"enemy": false, "tuning": ["castTime", "healMin", "healMax"], "about": "Heal yourself. Cast time 0 = instant; above 0 it is a cast that moving interrupts. Can consume a heal over time for a bigger heal."},
+	"hot": {"enemy": false, "tuning": ["duration", "tickInterval", "healMin", "healMax"], "about": "A heal over time on you: heals every tick while it lasts."},
+	"healZone": {"enemy": false, "ground": true, "tuning": ["radius", "duration", "tickInterval", "healMin", "healMax"], "about": "A healing circle around you or on the ground that heals you every tick while you stand in it. Give it base damage to burn enemies in it too."},
+	"healBurst": {"enemy": false, "ground": true, "tuning": ["radius", "healMin", "healMax", "damageMin", "damageMax"], "about": "An instant burst around you or on the ground: heals you if you are in it, and damages every enemy in it (base damage 0 = heal only)."},
+	"thorns": {"enemy": false, "tuning": ["duration", "thornsMin", "thornsMax"], "about": "Thorns on you for a while: every enemy that lands a blow on you takes damage back."},
 }
 const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire"]
 const TARGETS := ["enemy", "ground", "self"]

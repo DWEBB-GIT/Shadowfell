@@ -296,7 +296,14 @@
         "lightShield",
         "smite",
         "rebuke",
-        "hallowedBolt"
+        "hallowedBolt",
+        "mendingPrayer",
+        "quickMend",
+        "renewingLight",
+        "swiftRenewal",
+        "circleOfMending",
+        "radiantNova",
+        "thornedVow"
       ],
       "bar": ["holyStrike", null, null, null, null, null],
       "trained": [

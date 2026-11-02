@@ -505,6 +505,12 @@ static func _abilities(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("a control spell needs an applies aura (Other fields)")
 			if a.kind == "purge" and not a.has("spendsAll"):
 				bad.call("a purge needs spendsAll (Other fields)")
+			if a.has("consumes") and (a.kind != "heal" or s.ability(a.consumes).get("kind") != "hot"):
+				bad.call("only a heal can consume, and only a heal over time")
+			var hn: Dictionary = a.get("tuning", {}) if a.get("tuning") is Dictionary else {}
+			for pair in [["healMin", "healMax"], ["thornsMin", "thornsMax"]]:
+				if _is_num(hn.get(pair[0])) and _is_num(hn.get(pair[1])) and hn[pair[1]] < hn[pair[0]]:
+					bad.call("%s is below %s" % [pair[1], pair[0]])
 		for f in ["inShadow", "follow", "spreads"]:
 			if a.has(f) and s.ability(a[f]).is_empty():
 				bad.call("%s names unknown ability %s" % [f, a[f]])
