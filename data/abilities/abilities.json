@@ -14,13 +14,13 @@
       "tuning": {
         "range": 2.1,
         "coneDegrees": 180,
-        "windup": 0.32,
+        "windup": 0.26,
         "swingAnimation": 0.8,
         "abilityWeaponSeconds": 2.4,
         "turnRate": 6,
         "catchUp": 0.25,
-        "readyWindup": 0.12,
-        "openerWindup": 0.3,
+        "readyWindup": 0.08,
+        "openerWindup": 0.2,
         "staggerGap": 0.2,
         "movingLeeway": 1
       },
@@ -115,7 +115,7 @@
         "cooldown": 4,
         "damageMultiplier": 2,
         "radius": 2.8,
-        "windup": 0.28,
+        "windup": 0.2,
         "stagger": 0.7,
         "knockback": 1.6,
         "interrupts": 1
@@ -455,7 +455,7 @@
         "coneDegrees": 130,
         "range": 2.8,
         "maxTargets": 4,
-        "windup": 0.22
+        "windup": 0.16
       },
       "cost": {
         "resolve": 30
@@ -594,7 +594,7 @@
       "target": "ground",
       "range": 9,
       "skill": "fishing",
-      "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod in your bags.",
+      "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod on your tool belt.",
       "tuning": {
         "cooldown": 1
       }
@@ -1554,7 +1554,7 @@
         "cooldown": 10,
         "damageMultiplier": 1.5,
         "radius": 3.5,
-        "windup": 0.3,
+        "windup": 0.22,
         "stagger": 0.2,
         "knockback": 0
       },

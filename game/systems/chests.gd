@@ -54,7 +54,7 @@ func _lock_state(c: Dictionary) -> String:
 	var skills = game.skills
 	if lock.get("key") and inventory.count(lock.key) > 0:
 		return ""
-	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.count("lockpicks") > 0:
+	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.on_belt("lockpicks"):
 		return ""
 	var ways := []
 	if lock.get("key"):

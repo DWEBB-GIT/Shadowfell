@@ -1,12 +1,11 @@
-// Woodland with a cutaway (src/world/world.js `_cutawayMaterial`): trees
-// between the camera and the player dissolve in a dither pattern so the
-// character is never hidden behind foliage. Flat shaded, vertex coloured.
+// Flat shaded, vertex coloured, with the see-through circle around the
+// player (cutaway.gdshaderinc): woodland trees, town walls and houses.
 shader_type spatial;
 // (diffuse_lambert and specular_disabled render black in GL Compatibility)
 
+#include "res://game/render/cutaway.gdshaderinc"
+
 uniform vec4 albedo : source_color = vec4(1.0);
-uniform vec3 uCamPos;
-uniform vec3 uFocus;
 
 varying vec3 v_world;
 
@@ -15,12 +14,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec3 seg = uFocus - uCamPos;
-	float t = clamp(dot(v_world - uCamPos, seg) / max(dot(seg, seg), 1e-4), 0.0, 1.0);
-	float d = length(v_world - (uCamPos + seg * t));
-	float fade = smoothstep(2.2, 4.2, d) + step(0.93, t);
-	float dither = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453);
-	if (fade < dither) {
+	if (sf_cut_keep(v_world, FRAGCOORD.xy) < 0.5) {
 		discard;
 	}
 	NORMAL = normalize(cross(dFdy(VERTEX), dFdx(VERTEX)));

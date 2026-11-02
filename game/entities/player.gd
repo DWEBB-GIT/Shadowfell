@@ -72,6 +72,7 @@ func _init(g) -> void:
 		Rig.add_sockets(model)
 	group.add_child(model)
 	rig = Rig.new(model, body)
+	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
@@ -295,6 +296,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
+		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
 			rig.clip = ""
@@ -306,6 +308,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 		jump_v -= JUMP_GRAVITY * dt
 		if position.y <= ground:
 			position.y = ground
+			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
 			jump_v = 0.0
 			jump_h = 0.0
 		else:
@@ -439,7 +442,8 @@ func update(dt: float, controls) -> void:
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
-	position = game.collision.resolve(position, radius)
+	# high in a hop you pass over low things (a fence, Collision `h`)
+	position = game.collision.resolve(position, radius, jump_h)
 	_update_jump(dt, controls != null and controls.get("jump", false))
 	# Stationary activities (fishing, eating, gathering and casting) also
 	# see a standing jump as movement, rather than continuing in mid-air.

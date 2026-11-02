@@ -24,6 +24,10 @@ var coords: Label ## X / Y in world metres, under the map
 var _circle := PackedVector2Array()
 var _circle_uv := PackedVector2Array()
 var zoom_buttons: Array = [] ## + and −, for the HUD to give them tips
+var _tip: Label ## a quest mark's name and how far off it is, at the cursor
+var _marks: Array = [] ## the markers last drawn, for the hover tip
+## marker kinds that are not quest places (no distance tip)
+const NOT_QUEST := ["shrine", "npc", "vein", "herb", "foe", "nemesis", "corpse", "camp"]
 
 
 func _init(g) -> void:
@@ -67,7 +71,7 @@ func _init(g) -> void:
 	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
-	var north := orb(270.0, 10.0)
+	var north := orb(270.0, NORTH_R)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var north_art := Icons.art("ui", "minimap_north")
 	if north_art:
@@ -88,13 +92,26 @@ func _init(g) -> void:
 			set_zoom(zoom + step))
 		b.draw.connect(func(): _draw_zoom(b, step))
 		zoom_buttons.append(b)
+	_tip = UI.label(self, "", 12, UI.TEXT)
+	_tip.add_theme_stylebox_override("normal", UI.frame(Vector4(8, 4, 8, 4)))
+	_tip.top_level = true
+	_tip.z_index = 30
+	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.visible = false
 
 
 const ZOOM_R := 11.0
+const NORTH_R := 9.0
+## room the rim buttons need outside SIZE: right for zoom, top for north
+const OUT_RIGHT := 8.0
+const OUT_TOP := 10.0
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
-## RuneScape style: drawn as a true circle, a bronze ring on dark stone
+## RuneScape style: drawn as a true circle, a bronze ring on dark stone.
+## It sits just outside the map, its inner edge on the dark frame, so it
+## never hides the quest arrows drawn round the inside of the rim (Dan,
+## 2026-11-02: the orbs covered the waypoint arrows).
 func orb(angle: float, radius: float) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
@@ -104,7 +121,7 @@ func orb(angle: float, radius: float) -> Button:
 	b.size = b.custom_minimum_size
 	var a := deg_to_rad(angle)
 	var r := SIZE / 2
-	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(radius, radius)
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + radius - 1) - Vector2(radius, radius)
 	b.draw.connect(func(): _draw_orb(b, radius))
 	add_child(b)
 	return b
@@ -319,6 +336,7 @@ func _process(dt: float) -> void:
 		return
 	_capture_age += dt
 	_refresh_overhead()
+	_hover_tip()
 	_since += dt
 	var p: Vector3 = game.player.position
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
@@ -332,6 +350,45 @@ func _process(dt: float) -> void:
 			coords.text = xy
 		_drawn_at = now
 		map.queue_redraw()
+
+
+## Over a quest mark (an objective's area, a tracked goal, a quest giver):
+## its name and how far off it is, in metres, at the cursor (Dan, 2026-10-29).
+## Marks past the rim are found on the rim, where they are drawn.
+func _hover_tip() -> void:
+	var R := SIZE / 2
+	var c := Vector2(R, R)
+	var mp := get_local_mouse_position()
+	var best = null
+	if game.started and mp.distance_to(c) <= R:
+		var scale: float = ZOOMS[zoom]
+		var p: Vector3 = game.player.position
+		var near := 8.0
+		for m in _marks:
+			if m.kind in NOT_QUEST:
+				continue
+			var s := Vector2(R + (m.x - p.x) * scale, R + (m.z - p.z) * scale)
+			var reach: float = m.get("r", 0.0) * scale
+			if s.distance_to(c) - reach > R - 4:
+				s = c + (s - c).normalized() * (R - 9)
+				reach = 0.0
+			var d := maxf(0.0, mp.distance_to(s) - reach)
+			if d <= near:
+				near = d
+				best = m
+	if best == null:
+		_tip.visible = false
+		return
+	var pl: Vector3 = game.player.position
+	var metres := maxi(0, roundi(U.hyp(best.x - pl.x, best.z - pl.z) - best.get("r", 0.0)))
+	var label: String = best.get("label", "")
+	_tip.text = ("%s\n%d m" % [label, metres]) if label != "" else "%d m" % metres
+	_tip.size = _tip.get_combined_minimum_size()
+	var at := get_global_mouse_position() + Vector2(14, 10)
+	if at.x + _tip.size.x > get_viewport_rect().size.x - 4:
+		at.x -= _tip.size.x + 24 # the map sits at the right edge
+	_tip.global_position = at
+	_tip.visible = true
 
 
 ## The name of where you stand: the building you are in, else the region.
@@ -366,6 +423,7 @@ func _draw_map() -> void:
 		g.draw_image(picture, offset.x, offset.y, edge, edge)
 	var to_map := func(x: float, z: float) -> Vector2: return world_to_map(Vector2(x, z))
 	var all := markers()
+	_marks = all
 	# objective areas first, under everything else
 	for m in all:
 		if m.kind != "area":
