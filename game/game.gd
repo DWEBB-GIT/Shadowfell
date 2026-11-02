@@ -453,7 +453,32 @@ func release_spirit() -> bool:
 	hud.hide_death()
 	afterlife.release()
 	_snap_camera()
+	_arrive("Your spirit drifts…")
 	return true
+
+
+## Arriving far away (the spirit rising at its rest point): the loading
+## screen covers the ground being built around you, a slice each frame,
+## instead of a long stall in plain view (Dan, 2026-11-02).
+func _arrive(text: String) -> void:
+	var land = world.land
+	if land == null or land.missing(camera_target) == 0:
+		return
+	land.gentle = true
+	hud.show_loading()
+	var tree := get_tree()
+	var total := maxi(1, land.missing(camera_target))
+	while true:
+		var left: int = land.missing(camera_target)
+		hud.loading.show_progress(text, 1.0 - float(left) / total)
+		if left == 0:
+			break
+		land.update(camera_target, false, 30.0)
+		await tree.process_frame
+	land.gentle = false
+	# one more frame so the new ground is drawn before the screen lifts
+	await tree.process_frame
+	hud.hide_loading()
 
 
 ## Release and return to life at once at the rest point, wounded.
@@ -906,7 +931,9 @@ func _handle_input(dt: float):
 		var gm := input.move_axis()
 		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)
 		var gcm = _click_move(gkeys, dt)
-		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}}
+		# a spirit can still hop (Dan, 2026-11-02)
+		var ghop: bool = keys.pressed("jump") or (pad_on and pad.pressed(B.LS))
+		return {"move": gcm if gcm != null else gkeys, "aim": null, "actions": {}, "jump": ghop}
 	if player.dead:
 		return null
 	if keys.pressed("sheathe"):

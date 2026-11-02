@@ -274,6 +274,41 @@ static func _clear_of_town(x: float, z: float) -> bool:
 	return true
 
 
+## The town shapes (buildings, houses, pads, boxed props) that reach into a
+## rectangle, so a chunk's many samples test a few of them instead of every
+## shape in the world (_clear_of_town scans them all).
+static func _town_near(x0: float, z0: float, x1: float, z1: float) -> Array:
+	var out := [] # [centre x, centre z, half x, half z] or [x, z, radius]
+	for list in [Layout.buildings, Layout.houses]:
+		for b in list:
+			_box_near(out, b.position[0], b.position[1], b.size[0] / 2.0 + 3, b.size[1] / 2.0 + 3, x0, z0, x1, z1)
+	for p in Layout.pads:
+		var r: float = p[2] + 2
+		if p[0] + r > x0 and p[0] - r < x1 and p[1] + r > z0 and p[1] - r < z1:
+			out.append([p[0], p[1], r])
+	for p in Layout.props:
+		var col = p.get("collider")
+		if typeof(col) == TYPE_DICTIONARY and col.has("box"):
+			_box_near(out, p.position[0], p.position[1], col.box[0] / 2.0 + 3, col.box[1] / 2.0 + 3, x0, z0, x1, z1)
+	return out
+
+
+static func _box_near(out: Array, cx: float, cz: float, hx: float, hz: float, x0: float, z0: float, x1: float, z1: float) -> void:
+	if cx + hx > x0 and cx - hx < x1 and cz + hz > z0 and cz - hz < z1:
+		out.append([cx, cz, hx, hz])
+
+
+## _clear_of_town against the shapes _town_near found
+static func _clear_of(near: Array, x: float, z: float) -> bool:
+	for s in near:
+		if s.size() == 4:
+			if absf(x - s[0]) < s[2] and absf(z - s[1]) < s[3]:
+				return false
+		elif U.hyp(x - s[0], z - s[1]) < s[2]:
+			return false
+	return true
+
+
 static func _clear(x: float, z: float, margin := 0.0) -> bool:
 	for c in Layout.clearings:
 		if U.hyp(x - c[0], z - c[1]) < c[2] + margin:
