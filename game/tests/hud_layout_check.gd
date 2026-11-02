@@ -71,6 +71,17 @@ func _process(_dt: float) -> bool:
 		hud.target.visible = false
 		_check(not hud.dock.get_global_rect().intersects(hud.bottom.get_global_rect()), "bag tray clear of the spell bar")
 		_check(absf(hud.dock.get_global_rect().end.y - hud.bottom.get_global_rect().end.y) < 1, "bag tray level with the spell bar")
+		# edit mode: a moved piece lands where it was put, against its anchor
+		var ed = hud.hud_edit
+		ed._loaded_for = ed._key()
+		var vp: Vector2 = root.get_visible_rect().size
+		ed.saved = {"minimap": {"a": Vector2(0, 0), "o": Vector2(96, 104)}, "cast": {"a": Vector2(1, 1), "o": Vector2(-40, -200)}}
+		hud.layout()
+		_check(hud.minimap.position == Vector2(96, 104), "edit mode moves the minimap: %s" % hud.minimap.position)
+		var cr: Rect2 = Rect2(hud.cast.root.position, hud.cast.root.size)
+		_check(cr.end.is_equal_approx(vp + Vector2(-40, -200)), "a piece kept against the bottom right corner: %s" % cr)
+		ed.saved = {}
+		hud.layout()
 		hud.show_window("character")
 	elif frame >= 30 and (frame - 30) % 10 == 0 and (frame - 30) / 10 <= TABS.size():
 		var i: int = (frame - 30) / 10

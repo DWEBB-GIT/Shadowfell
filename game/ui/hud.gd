@@ -59,6 +59,7 @@ var portrait_of = null
 var icons: Icons
 var belt: ToolBelt ## the tool belt, folded up out of the tray
 var menus: HBoxContainer ## the menu buttons, top left
+var hud_edit: HudEdit ## edit mode: the player moves the HUD's pieces
 var keybind_ui: KeybindUI
 var items: ItemUI
 var quests: QuestUI
@@ -457,6 +458,8 @@ func _build() -> void:
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
 	belt = ToolBelt.new(game, self)
 	root.add_child(belt)
+	hud_edit = HudEdit.new(game, self)
+	root.add_child(hud_edit)
 	_build_modals()
 	title = TitleScreen.new(game)
 	root.add_child(title)
@@ -1048,6 +1051,9 @@ func close_modal(force := false) -> bool:
 	if keybind_ui.quick:
 		keybind_ui.set_quick(false)
 		return true
+	if modal == "edit":
+		hud_edit.close()
+		return true
 	if modal == "document":
 		document.visible = false
 		backdrop.visible = false
@@ -1566,9 +1572,6 @@ func layout() -> void:
 	purse.position = Vector2(dock.position.x + dock.size.x, dock.position.y)
 	menus.size = menus.get_combined_minimum_size()
 	menus.position = Vector2(m, m)
-	var tool_slot = items.slots.get("s:%d" % Items.TOOL_SOCKET)
-	if tool_slot != null and is_instance_valid(tool_slot) and tool_slot.is_inside_tree():
-		belt.place(tool_slot.get_global_rect())
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
@@ -1621,6 +1624,11 @@ func layout() -> void:
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
+	# then the pieces the player moved in edit mode
+	hud_edit.apply(vp)
+	var tool_slot = items.slots.get("s:%d" % Items.TOOL_SOCKET)
+	if tool_slot != null and is_instance_valid(tool_slot) and tool_slot.is_inside_tree():
+		belt.place(Rect2(tool_slot.global_position - root.global_position, tool_slot.size))
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)

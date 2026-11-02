@@ -832,6 +832,8 @@ func _handle_input(dt: float):
 		if input.consume("Enter") or keys.pressed("interact") or pad.pressed(B.A):
 			release_spirit()
 		return null
+	if hud.modal == "edit": # moving the HUD about: no walking or casting
+		return null
 	if hud.modal == "document":
 		if pad.pressed(B.B) or pad.pressed(B.A):
 			hud.close_modal()
