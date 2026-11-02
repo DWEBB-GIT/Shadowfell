@@ -31,7 +31,8 @@ const MICRO := [
 	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
 	["talents", "❀", "Talents", "talents", "", "menu_talents"],
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
-	["settings", "☰", "Settings", "settings", "", "menu_settings"],
+	# opens the Main Menu, as Escape and O do (Dan, 2026-11-02)
+	["menu", "☰", "Main Menu", "settings", "", "menu_settings"],
 ]
 const UNIT_GAP := 124.0 ## from the middle of the screen to each unit frame
 const UNIT_W := 196.0 ## the width of your frame and your target's
@@ -439,7 +440,7 @@ func _build() -> void:
 	quick_bind_banner.add_theme_stylebox_override("panel", UI.box(UI.WINDOW, UI.GOLD, 0, 1, Vector4(14, 8, 14, 8)))
 	UI.label(quick_bind_banner, "Quick bind: hover a spell or utility bar slot and press a key. Esc when done.", 14, UI.GOLD)
 	quick_bind_banner.visible = false
-	mute = UI.label(root, "Sound off (Settings, O: Audio)", 12, UI.TEXT_DIM, 3)
+	mute = UI.label(root, "Sound off (Main Menu, Settings, Audio)", 12, UI.TEXT_DIM, 3)
 	mute.visible = false
 
 	# the dark edge of the screen, and the red flash when you are hurt
@@ -767,7 +768,11 @@ func _build_orbs() -> void:
 		var pad_label: String = m[4]
 		var tip: String = m[2]
 		# every menu button sounds as the quest log does (Dan, 2026-10-28)
-		b.pressed.connect(func(): toggle_panel(which, "quest_log"))
+		b.pressed.connect(func():
+			if which == "menu":
+				toggle_main_menu()
+			else:
+				toggle_panel(which, "quest_log"))
 		var art := Icons.art("ui", m[5])
 		if art:
 			b.draw.connect(func():
@@ -1041,6 +1046,18 @@ func raise(layer: Control, win: Control) -> void:
 	var other: Control = quests if layer == items else items
 	if other != null and layer.get_index() < other.get_index():
 		root.move_child(layer, other.get_index())
+
+
+## the Main Menu button: opens it over whatever is open, or closes it
+func toggle_main_menu() -> void:
+	if main_menu.is_open:
+		main_menu.close()
+		return
+	if modal:
+		return
+	items.close_all()
+	quests.close_all()
+	main_menu.open()
 
 
 func toggle_world_map() -> void:
