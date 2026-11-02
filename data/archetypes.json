@@ -208,7 +208,7 @@
         "mana": {
           "base": 100,
           "perIntellect": 10,
-          "regenPerSecond": 2,
+          "regenPerSecond": 0,
           "regenOutOfCombat": 12
         },
         "bars": [
@@ -275,7 +275,7 @@
         "mana": {
           "base": 120,
           "perIntellect": 10,
-          "regenPerSecond": 1.5,
+          "regenPerSecond": 0,
           "regenOutOfCombat": 12
         },
         "bars": []

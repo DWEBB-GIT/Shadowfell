@@ -87,9 +87,14 @@ var max_mana: float:
 	get:
 		return game.stats.max_mana
 
+## In combat while any enemy is chasing or striking you; once the last one
+## is dead (or gone home) you leave a second after your last blow (Dan,
+## 2026-10-29). `engaged` is counted once a frame in update().
 var in_combat: bool:
 	get:
-		return since_combat < (gauge_cfg.get("decayAfter", 6.0) if gauge_cfg else 6.0)
+		return engaged or since_combat < LEAVE_COMBAT_AFTER
+var engaged := false
+const LEAVE_COMBAT_AFTER := 1.0 ## seconds after the last blow with nobody fighting you
 
 ## a bar at its max with an `overload` (Overcorrupted), or null
 var overload:
@@ -209,13 +214,19 @@ func update(dt: float) -> void:
 		return
 	since_combat += dt
 	since_hit += dt
+	engaged = false
+	if game.enemies:
+		for e in game.enemies.list:
+			if Targeting.in_combat_with_player(e):
+				engaged = true
+				break
 	var fighting := in_combat
 	# WoW-style notice when combat starts and fades, so you know when you
-	# can eat or rest (Dan, 2026-10-29)
+	# can eat or rest: plain red words on screen (Dan, 2026-10-29)
 	if fighting != was_fighting:
 		was_fighting = fighting
 		if game.hud:
-			game.hud.toast("Entering combat" if fighting else "Leaving combat", "bad" if fighting else "")
+			game.hud.error("Entering combat" if fighting else "Leaving combat")
 	var hidden: bool = game.spells != null and game.spells.hidden
 	var m = cfg.get("mana")
 	if m:

@@ -68,6 +68,7 @@ func _init(g) -> void:
 		Rig.add_sockets(model)
 	group.add_child(model)
 	rig = Rig.new(model, body)
+	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
@@ -261,8 +262,8 @@ func face_towards(x: float, z: float) -> void:
 		aim_hold = AIM_HOLD
 
 
-const JUMP_SPEED := 5.0
-const JUMP_GRAVITY := 18.0
+const JUMP_SPEED := 7.0 ## a 1.2 m hop: clears a fence (Collision `h`)
+const JUMP_GRAVITY := 20.0
 var jump_v := 0.0
 var jump_h := 0.0
 
@@ -390,8 +391,9 @@ func update(dt: float, controls) -> void:
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
-	position = game.collision.resolve(position, radius)
-	# Jump is cosmetic: a hop with no effect on combat or collision
+	# high in a hop you pass over low things (a fence)
+	position = game.collision.resolve(position, radius, jump_h)
+	# Jump is a hop with no effect on combat
 	if controls and controls.get("jump") and jump_h == 0 and not sitting:
 		jump_v = JUMP_SPEED
 	if jump_v != 0 or jump_h > 0:

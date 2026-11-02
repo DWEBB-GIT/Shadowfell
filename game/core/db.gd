@@ -22,8 +22,9 @@ const CONFIG := {
 		# your bags and coins wait in a grave for graveSeconds of play, then
 		# `scavengers` carry them off; each revival leaves a wound (-woundHealth%
 		# max health, up to maxWounds) until you rest woundRestSeconds at an inn
-		# or pay a healer healPrice a wound (Dan, 2026-10-27)
-		"graveSeconds": 900.0, "scavengers": 2, "woundHealth": 15.0, "maxWounds": 3, "woundRestSeconds": 20.0,
+		# or pay a healer healPrice a wound (Dan, 2026-10-27); they close on
+		# their own after woundSeconds of play (Dan, 2026-10-29)
+		"graveSeconds": 900.0, "scavengers": 2, "woundHealth": 15.0, "maxWounds": 3, "woundRestSeconds": 20.0, "woundSeconds": 900.0,
 		"healers": ["grue", "aveline"], "healPrice": 5,
 		"screenDelay": 1.3, "ghostSpeed": 1.5, "corpseReach": 3.5, "restReach": 4.0, "corpseHealth": 0.5, "revengeBonus": 0.0, "revengeXp": 0.0},
 	"fishing": {"castTime": 0.6, "duration": 12.0, "biteMin": 2.0, "biteMax": 8.0, "biteWindow": 1.4, "biteBase": 85.0, "bitePerSkill": 0.5, "biteCap": 97.0, "noBiteAfter": 6.0, "reelTime": 0.45, "baseChance": 75.0, "chancePerRank": 0.6, "clickRadius": 60.0},

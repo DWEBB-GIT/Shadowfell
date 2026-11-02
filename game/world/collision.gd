@@ -20,9 +20,10 @@ func _init() -> void:
 	bounds = DB.world.bounds
 
 
-## `wall`: part of a building's walls, which block line of sight.
-func add(x: float, z: float, r: float, wall := false) -> Dictionary:
-	var c := {"x": x, "z": z, "r": r, "wall": wall, "off": false, "i": circles.size()}
+## `wall`: part of a building's walls, which block line of sight. `h`: how
+## tall it is; a mover lifted higher than that (the player's jump) passes over.
+func add(x: float, z: float, r: float, wall := false, h := INF) -> Dictionary:
+	var c := {"x": x, "z": z, "r": r, "wall": wall, "off": false, "i": circles.size(), "h": h}
 	circles.append(c)
 	for i in range(floori((x - r) / cell_size), floori((x + r) / cell_size) + 1):
 		for j in range(floori((z - r) / cell_size), floori((z + r) / cell_size) + 1):
@@ -78,9 +79,11 @@ func off_blocked_ground(pos: Vector3) -> Vector3:
 
 ## Push a moving circle (a Vector3, x/z used) out of obstacles and off
 ## blocked ground, and keep it in the world. Returns the corrected position.
-func resolve(pos: Vector3, radius: float) -> Vector3:
+func resolve(pos: Vector3, radius: float, lift := 0.0) -> Vector3:
 	for pass_ in 2:
 		for c in _nearby(pos.x, pos.z, radius + 2):
+			if lift > c.h:
+				continue
 			var dx: float = pos.x - c.x
 			var dz: float = pos.z - c.z
 			var mn: float = c.r + radius

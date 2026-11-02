@@ -55,13 +55,18 @@ func build() -> World:
 	return self
 
 
+## props low enough to jump over: their height in metres (Collision `h`)
+const LOW_PROPS := {"fence": 1.05}
+
+
 func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	var col = p.get("collider")
 	if not col:
 		return
 	var s: float = p.get("scale", 1.0)
+	var h: float = LOW_PROPS.get(p.get("model", ""), INF) * s
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
-		game.collision.add(x, z, col * s)
+		game.collision.add(x, z, col * s, false, h)
 		return
 	if typeof(col) == TYPE_DICTIONARY and col.has("box"):
 		# a closed box (a cottage): its four walls
@@ -72,7 +77,7 @@ func _add_collider(p: Dictionary, x: float, z: float) -> void:
 	# compound collider: offsets in the prop's local space
 	var r := deg_to_rad(p.get("rotation", 0))
 	for c in col:
-		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s)
+		game.collision.add(x + (c[0] * cos(r) + c[1] * sin(r)) * s, z + (-c[0] * sin(r) + c[1] * cos(r)) * s, c[2] * s, false, h)
 
 
 ## walls as rows of small circles, from [x1, z1, x2, z2] segments in the

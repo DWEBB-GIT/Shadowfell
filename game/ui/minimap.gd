@@ -45,6 +45,10 @@ var coords: Label ## X / Y in world metres, under the map
 var _circle := PackedVector2Array()
 var _circle_uv := PackedVector2Array()
 var zoom_buttons: Array = [] ## + and −, for the HUD to give them tips
+var _tip: Label ## a quest mark's name and how far off it is, at the cursor
+var _marks: Array = [] ## the markers last drawn, for the hover tip
+## marker kinds that are not quest places (no distance tip)
+const NOT_QUEST := ["shrine", "npc", "vein", "herb", "foe", "nemesis", "corpse", "camp"]
 
 
 func _init(g) -> void:
@@ -109,6 +113,12 @@ func _init(g) -> void:
 			set_zoom(zoom + step))
 		b.draw.connect(func(): _draw_zoom(b, step))
 		zoom_buttons.append(b)
+	_tip = UI.label(self, "", 12, UI.TEXT)
+	_tip.add_theme_stylebox_override("normal", UI.frame(Vector4(8, 4, 8, 4)))
+	_tip.top_level = true
+	_tip.z_index = 30
+	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.visible = false
 
 
 const ZOOM_R := 11.0
@@ -420,6 +430,7 @@ var _since := 0.0
 func _process(dt: float) -> void:
 	if not is_visible_in_tree() or game.player == null:
 		return
+	_hover_tip()
 	_since += dt
 	var p: Vector3 = game.player.position
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
@@ -433,6 +444,45 @@ func _process(dt: float) -> void:
 			coords.text = xy
 		_drawn_at = now
 		map.queue_redraw()
+
+
+## Over a quest mark (an objective's area, a tracked goal, a quest giver):
+## its name and how far off it is, in metres, at the cursor (Dan, 2026-10-29).
+## Marks past the rim are found on the rim, where they are drawn.
+func _hover_tip() -> void:
+	var R := SIZE / 2
+	var c := Vector2(R, R)
+	var mp := get_local_mouse_position()
+	var best = null
+	if game.started and mp.distance_to(c) <= R:
+		var scale: float = (ZOOMS if Terrain.map_picture() == null else PAINTING_ZOOMS)[zoom]
+		var p: Vector3 = game.player.position
+		var near := 8.0
+		for m in _marks:
+			if m.kind in NOT_QUEST:
+				continue
+			var s := Vector2(R + (m.x - p.x) * scale, R + (m.z - p.z) * scale)
+			var reach: float = m.get("r", 0.0) * scale
+			if s.distance_to(c) - reach > R - 4:
+				s = c + (s - c).normalized() * (R - 9)
+				reach = 0.0
+			var d := maxf(0.0, mp.distance_to(s) - reach)
+			if d <= near:
+				near = d
+				best = m
+	if best == null:
+		_tip.visible = false
+		return
+	var pl: Vector3 = game.player.position
+	var metres := maxi(0, roundi(U.hyp(best.x - pl.x, best.z - pl.z) - best.get("r", 0.0)))
+	var label: String = best.get("label", "")
+	_tip.text = ("%s\n%d m" % [label, metres]) if label != "" else "%d m" % metres
+	_tip.size = _tip.get_combined_minimum_size()
+	var at := get_global_mouse_position() + Vector2(14, 10)
+	if at.x + _tip.size.x > get_viewport_rect().size.x - 4:
+		at.x -= _tip.size.x + 24 # the map sits at the right edge
+	_tip.global_position = at
+	_tip.visible = true
 
 
 ## The name of where you stand: the building you are in, else the region.
@@ -472,6 +522,7 @@ func _draw_map() -> void:
 		g.draw_image(picture, R - (p.x - origin.x) * scale, R - (p.z - origin.y) * scale, ps.x * k, ps.y * k)
 	var to_map := func(x: float, z: float) -> Vector2: return Vector2(R + (x - p.x) * scale, R + (z - p.z) * scale)
 	var all := markers()
+	_marks = all
 	# objective areas first, under everything else
 	for m in all:
 		if m.kind != "area":

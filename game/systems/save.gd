@@ -245,6 +245,7 @@ func serialize() -> Dictionary:
 			"health": player.health,
 			"maxHealth": player.max_health,
 			"wounds": game.afterlife.wounds,
+			"woundLeft": game.afterlife.wound_left,
 		},
 		"progression": game.progression.serialize(),
 		"inventory": game.inventory.serialize(),
@@ -346,6 +347,7 @@ func apply(data: Dictionary) -> void:
 			if Items.get_def(g.item).get("toolPack") and inventory.tool_pack == null:
 				inventory.add_item(g.item, 1)
 	game.afterlife.wounds = clampi(int(data.player.get("wounds", 0)), 0, int(DB.CONFIG.death.maxWounds))
+	game.afterlife.wound_left = float(data.player.get("woundLeft", DB.CONFIG.death.woundSeconds))
 	game.recompute_max_health()
 	player.health = minf(data.player.health, player.max_health)
 	game.resources.reset()

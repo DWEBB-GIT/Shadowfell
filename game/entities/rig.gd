@@ -19,6 +19,14 @@ var flinch := 0.0
 var held := 0.0 ## hit-stop left (hold)
 var death := -1.0 ## -1 alive, otherwise seconds since death
 var pose = null ## a held pose ('fish', 'sit' to eat, 'rest' to sit) when no action plays
+## footfalls: counts up each time a foot comes down in the walk or run (the
+## player's footstep sounds follow it, see AudioSystem._footsteps). Set
+## track_steps to watch an imported skeleton's feet.
+var steps := 0
+var track_steps := false
+var _feet := [] ## { bone, y, dy, low } per foot of an imported skeleton
+var _skel: Skeleton3D
+var _step_gap := 0.0
 
 
 static func ease_(t: float) -> float:
@@ -167,6 +175,39 @@ func _clip(name: String, speed: float, restart := false) -> void:
 func _update_anim(dt: float, speed01: float) -> void:
 	_pick_clip(dt, speed01)
 	anim.advance(dt)
+	if track_steps:
+		_watch_feet(dt)
+
+
+## A foot that has been coming down and stops, near the ground, is a step.
+func _watch_feet(dt: float) -> void:
+	if _skel == null:
+		var found := model.find_children("*", "Skeleton3D", true, false)
+		if found.is_empty():
+			track_steps = false
+			return
+		_skel = found[0]
+		var hips := _skel.find_bone("mixamorig_Hips")
+		for n in ["mixamorig_LeftFoot", "mixamorig_RightFoot"]:
+			var b := _skel.find_bone(n)
+			if b < 0 or hips < 0:
+				continue
+			var rest := _skel.get_bone_global_rest(b).origin.y
+			var leg := _skel.get_bone_global_rest(hips).origin.y - rest
+			_feet.append({"bone": b, "y": rest, "dy": 0.0, "low": rest + leg * 0.12})
+		if _feet.is_empty():
+			track_steps = false
+			return
+	_step_gap -= dt
+	var walking := clip == "Walk" or clip == "Run"
+	for f in _feet:
+		var y := _skel.get_bone_global_pose(f.bone).origin.y
+		var dy: float = y - f.y
+		if walking and f.dy < 0 and dy >= 0 and y < f.low and _step_gap <= 0:
+			steps += 1
+			_step_gap = 0.15
+		f.y = y
+		f.dy = dy
 
 
 func _pick_clip(dt: float, speed01: float) -> void:
@@ -222,7 +263,11 @@ func update(dt: float, speed01: float) -> void:
 		return
 	move += (speed01 - move) * minf(1, dt * 10)
 	var stride := 6.0 if style == "brute" else 7.0 if style == "ghoul" else 13.0 if style == "hound" else 9.0
+	var was := phase
 	phase += dt * stride * maxf(0.2, move)
+	# a foot is down at each end of the leg swing (sin(phase) at +-1)
+	if move > 0.12 and floori(was / PI + 0.5) != floori(phase / PI + 0.5):
+		steps += 1
 	flinch = maxf(0, flinch - dt * 4)
 	reset()
 
