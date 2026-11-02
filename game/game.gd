@@ -82,6 +82,7 @@ var forge: Forge
 var law: Law
 var boons: Boons
 var sparkles: Sparkles
+var xp_orbs ## render/xp_orbs.gd
 var interaction: Interaction
 var puzzles: WorldPuzzles
 var action_bar: ActionBar
@@ -173,6 +174,7 @@ func _ready() -> void:
 	law = Law.new(self)
 	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
+	xp_orbs = preload("res://game/render/xp_orbs.gd").new(self)
 	interaction = Interaction.new(self)
 	action_bar = ActionBar.new(self)
 	# every button in every menu clicks
@@ -1045,6 +1047,7 @@ func step(dt: float) -> void:
 		interaction.update()
 		loot.update(dt, time)
 		sparkles.update(dt)
+		xp_orbs.update(dt)
 		fx.update(dt)
 		audio.update(dt)
 		if pending_death != null and hud.modal != "death":
