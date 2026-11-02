@@ -482,7 +482,7 @@ var knife:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("skinningKnife") and inv.has(id) and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
+			if d.get("skinningKnife") and inv.on_belt(id) and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
 				best = d
 		return best
 

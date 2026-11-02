@@ -709,7 +709,7 @@
       "price": 10,
       "model": "fishing_rod",
       "icon": "fishing_rod",
-      "description": "Ash and horsehair line. Keep it in your bags to fish, once someone has shown you how. Better rods and bait raise your Fishing skill."
+      "description": "Ash and horsehair line. Keep it on your tool belt to fish, once someone has shown you how. Better rods and bait raise your Fishing skill."
     },
     {
       "id": "yew_fishing_rod",
@@ -723,7 +723,7 @@
       "price": 60,
       "model": "fishing_rod",
       "icon": "fishing_rod",
-      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is in your bags, so fish bite more often and are landed more often. Needs Fishing 5 to use well."
+      "description": "Tam's own make: springy yew and a waxed silk line. +10 Fishing skill while it is on your tool belt, so fish bite more often and are landed more often. Needs Fishing 5 to use well."
     },
     {
       "id": "cut_bait",
@@ -1811,7 +1811,7 @@
       "price": 150,
       "model": "fishing_rod",
       "icon": "fishing_rod",
-      "description": "Seasoned ash and a braided line. +15 Fishing skill while it is in your bags. Needs Fishing 12 to use well."
+      "description": "Seasoned ash and a braided line. +15 Fishing skill while it is on your tool belt. Needs Fishing 12 to use well."
     },
     {
       "id": "herb_knife",
@@ -1823,7 +1823,7 @@
       "price": 8,
       "model": "dirk",
       "icon": "dirk",
-      "description": "A small hooked knife for cutting stems clean. +5 Herbalism while it is in your bags: you pick faster."
+      "description": "A small hooked knife for cutting stems clean. +5 Herbalism while it is on your tool belt: you pick faster."
     },
     {
       "id": "brass_sickle",
@@ -1836,7 +1836,7 @@
       "price": 90,
       "model": "dirk",
       "icon": "dirk",
-      "description": "A herbwife's sickle, bright and keen. +15 Herbalism while it is in your bags: you pick much faster. Needs Herbalism 10 to use well."
+      "description": "A herbwife's sickle, bright and keen. +15 Herbalism while it is on your tool belt: you pick much faster. Needs Herbalism 10 to use well."
     },
     {
       "id": "vr_brooch_pouch",

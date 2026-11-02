@@ -294,6 +294,23 @@ var tool_pack:
 		return sockets[Items.TOOL_SOCKET]
 
 
+## Is this tool on your tool belt? (Dan, 2026-11-02) Tools work only from
+## the belt (the tool pack), never from the bags, so a better pick in your
+## bags does nothing until you swap it in. A torch in your hand counts.
+## Before the tool pack is earned, the bags are your belt.
+func on_belt(id: String) -> bool:
+	var off = equipment.get("offHand")
+	if off and off.id == id:
+		return true
+	var pack = tool_pack
+	if not pack:
+		return count(id) > 0
+	for s in pack.slots:
+		if s and s.id == id:
+			return true
+	return false
+
+
 func _fit_tool_pack(id: String) -> void:
 	_put("s:%d" % Items.TOOL_SOCKET, {"id": id, "count": 1})
 	_stow_tools()

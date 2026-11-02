@@ -50,9 +50,11 @@ static func collect(g) -> Array:
 	var out: Array = []
 	var owned := {}
 	var rod = null
+	# only the tool pack's tools (the bags', before it is earned): a tool
+	# works only from the belt
 	for i in g.inventory.sockets.size():
 		var bag = g.inventory.sockets[i]
-		if not bag:
+		if not bag or (g.inventory.tool_pack and i != Items.TOOL_SOCKET):
 			continue
 		for st in bag.slots:
 			if not st:
