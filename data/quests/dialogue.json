@@ -3254,6 +3254,16 @@
       ],
       "topics": [],
       "nodes": []
+    },
+    {
+      "id": "test_vendor",
+      "greetings": [
+        {
+          "text": "Glowing blades, wings, a halo, horns. None of it is real yet, so it is all free. Try it on and see how it looks."
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

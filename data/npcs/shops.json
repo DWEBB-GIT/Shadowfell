@@ -67,6 +67,15 @@
         "consumable"
       ],
       "description": "Herbs, knives, draughts. Buys anything that grows."
+    },
+    {
+      "id": "curio",
+      "name": "Curios (test)",
+      "sells": [
+        "weapon",
+        "armor"
+      ],
+      "description": "Test vendor: free fancy gear to preview glows and cosmetics."
     }
   ],
   "shops": [
@@ -814,6 +823,22 @@
         "wm_sunseal_court_travelling_clothes",
         "wm_sunseal_court_frayed_robe",
         "wm_sunseal_court_warden_hauberk"
+      ]
+    },
+    {
+      "id": "test_curios",
+      "name": "Fancy gear (test)",
+      "vendorType": "curio",
+      "stock": [
+        "test_emberbrand",
+        "test_frostbite",
+        "test_voidfang",
+        "test_dawnblade",
+        "test_venomtooth",
+        "test_bloodreaver",
+        "test_glow_wings",
+        "test_halo",
+        "test_horns"
       ]
     }
   ]

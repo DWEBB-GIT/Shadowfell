@@ -14,6 +14,7 @@ var default_weapon_mesh: Node3D
 var ground_shadow: MeshInstance3D
 var torch_light := OmniLight3D.new()
 var helm: Node3D
+var cloak: Node3D ## a built back piece (FancyGear wings)
 var shield: Node3D
 var shield_id = null
 var bow: Node3D
@@ -146,14 +147,27 @@ func _show_equipment(equipment: Dictionary) -> void:
 			blade.transform = default_weapon_mesh.transform
 			arm.add_child(blade)
 			weapon_part = blade
+			FancyGear.apply(blade, Items.get_def(id).get("glow", {}))
 	if head:
 		_free(helm)
 		helm = null
-		if equipment.get("head") and equipment.head.id == "watch_helm":
+		var hdef := Items.get_def(equipment.head.id) if equipment.get("head") else {}
+		if hdef.get("cosmetic"):
+			helm = FancyGear.build(hdef.cosmetic, hdef.get("glow", {}))
+			head.add_child(helm)
+		elif equipment.get("head") and equipment.head.id == "watch_helm":
 			helm = Assets.instance("watch_helm")
 			helm.position = Vector3(0, 0.2, 0.02)
 			helm.scale = Vector3.ONE * 1.15
 			head.add_child(helm)
+	var torso := _part("Torso")
+	if torso:
+		_free(cloak)
+		cloak = null
+		var bdef := Items.get_def(equipment.back.id) if equipment.get("back") else {}
+		if bdef.get("cosmetic"):
+			cloak = FancyGear.build(bdef.cosmetic, bdef.get("glow", {}))
+			torso.add_child(cloak)
 	var larm := _part("Arm_L")
 	if larm:
 		_free(shield)
@@ -174,6 +188,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 			shield.transform = default_weapon_mesh.transform
 			shield.position.x *= -1
 			larm.add_child(shield)
+			FancyGear.apply(shield, off.get("glow", {}))
 		elif off.get("kind") == "shield":
 			shield = Assets.instance(off.model)
 			shield.position = Vector3(0.11, -0.42, 0.04)
