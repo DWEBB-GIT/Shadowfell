@@ -202,7 +202,7 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.12 if off else 0.22, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show, "echo": true})
 	if hit.get("miss"):
 		return target
-	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand})
+	events.emit("enemyHit", {"enemy": target, "damage": hit.amount, "crit": hit.crit, "kind": "strike", "swing": true, "hand": hand, "show": show})
 	events.emit("log", {"text": "%s the %s for %d%s.%s" % ["Your off hand strikes" if off else "You strike", target.cfg.name, hit.amount, " (%d holy)" % hit.holy if hit.get("holy") else "", _crit_text(hit)], "kind": "hit"})
 	if target.dead:
 		on_enemy_defeated(target)

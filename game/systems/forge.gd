@@ -1,7 +1,7 @@
 class_name Forge
 extends RefCounted
-## Forge, enchanter and jeweller services (data/forge.json,
-## data/enchanting.json, data/gems.json), offered by any npc with
+## Forge, enchanter and jeweller services (data/professions/forge.json,
+## data/professions/enchanting.json, data/professions/gems.json), offered by any npc with
 ## `forge: true` (a smith), `enchanter: true` or `jeweller: true`, so every
 ## town's smith (or enchanter) does the same work. The rule that holds it together: an upgrade
 ## makes a loved item last a few more levels, never forever, and what you
@@ -61,7 +61,7 @@ static func _band(list: Array, level: float) -> String:
 
 
 # ------------------------------------------------------------ enchanting
-## Enchanting rules (data/enchanting.json).
+## Enchanting rules (data/professions/enchanting.json).
 static func enchant_rules() -> Dictionary:
 	return DB.enchanting
 

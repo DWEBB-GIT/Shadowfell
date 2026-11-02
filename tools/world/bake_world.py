@@ -1,4 +1,4 @@
-"""Bake the whole world's ground from data/world_map.json.
+"""Bake the whole world's ground from data/world/world_map.json.
 
 Writes data/terrain/world.bin: heights, walkable ground and surface/zone codes
 on a 4 m grid, cut into 128 m tiles (33 x 33 samples, edges shared), each
@@ -35,7 +35,7 @@ ground between, joined by a few set routes; Act 1 is enclosed and confined):
   roads and pockets; `flats` level a town; high ground stands on a sharp
   edge, and is kept low just south of open ground so the camera (looking
   north) always sees over it. Each ring of the opening is checked: with the
-  data/world.json gates out of it shut, it prints what the Last Cart reaches.
+  data/world/world.json gates out of it shut, it prints what the Last Cart reaches.
 """
 import base64
 import json
@@ -397,7 +397,7 @@ def bake_act1(M, g, height, block, surf, box):
     blk = np.maximum(np.maximum.reduce([b_border, b_wall, b_edge]) * (1 - gaps), np.maximum(b_valley, b_out) * (1 - walk))
     # a `sealed` region (the starter vale) is walled all round its border,
     # pockets and POIs included; only its `ways` (roads, each gated in
-    # data/world.json) go through
+    # data/world/world.json) go through
     for k, r in enumerate(regions):
         if not r.get("sealed"):
             continue
@@ -536,7 +536,7 @@ def apply_sculpt(g, height, block, surf, path=None):
 
 def rings(M, g, walk, start):
     """The opening widens in rings (Dan: start small, then the world opens):
-    with the gates out of a ring shut (data/world.json `gates`), list what can
+    with the gates out of a ring shut (data/world/world.json `gates`), list what can
     be reached from the Last Cart, and warn if a place a gate `keepsOut` can be."""
     with open(os.path.join(ROOT, "data", "world.json")) as f:
         wj = json.load(f)

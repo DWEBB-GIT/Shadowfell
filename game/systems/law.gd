@@ -1,6 +1,6 @@
 class_name Law
 extends RefCounted
-## Crime, Bounty and Infamy, after Fable (data/infamy.json).
+## Crime, Bounty and Infamy, after Fable (data/npcs/infamy.json).
 ##
 ## A crime only counts if someone sees it. A seen crime puts a Bounty on you
 ## with that place's reeve (local, and it clears: pay it, or serve your

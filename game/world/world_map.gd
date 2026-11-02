@@ -1,6 +1,6 @@
 class_name WorldMap
 extends RefCounted
-## The world's design map (data/world_map.json) as the game uses it: which
+## The world's design map (data/world/world_map.json) as the game uses it: which
 ## region and subzone a place is in, and every point of interest (Act 1's
 ## POIs, the world's settlements and landmarks) with its story note. World
 ## positions throughout; Act 1's layout is shifted by world.act1Offset.
@@ -22,6 +22,11 @@ static func setup() -> void:
 	pois = []
 	boats = []
 	_by_id.clear()
+	zones = []
+	act1_box = Rect2()
+	# Authored places on the new terrain use its actual world coordinates.
+	for p in DB.world.get("pois", []):
+		_add(p.duplicate(true))
 	if m.is_empty():
 		return
 	var w: Dictionary = m.world
@@ -82,7 +87,10 @@ static func region_at(x: float, z: float) -> Dictionary:
 	if regions.is_empty():
 		return {}
 	if Terrain.is_new_map():
-		return regions[0]
+		for r in regions:
+			if r.has("rect") and Rect2(r.rect[0], r.rect[1], r.rect[2], r.rect[3]).has_point(Vector2(x, z)):
+				return r
+		return regions[-1]
 	var id := ""
 	for r in regions:
 		if r.has("town") and Vector2(x - r.town[0], z - r.town[1]).length() <= r.town[2]:
@@ -113,6 +121,9 @@ static func region_at(x: float, z: float) -> Dictionary:
 ## The named valley or place you stand in, or "" between them.
 static func subzone_at(x: float, z: float) -> String:
 	var p := Vector2(x, z)
+	for q in DB.world.get("subzones", []):
+		if p.distance_to(Vector2(q.at[0], q.at[1])) <= q.radius:
+			return q.name
 	if act1_box.has_point(p):
 		for q in pockets:
 			if q.has("poly"):

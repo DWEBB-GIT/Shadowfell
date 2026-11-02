@@ -1,0 +1,554 @@
+{
+  "schema_version": 1,
+  "revision_date": "2026-11-01",
+  "purpose": "Unscheduled reference ideas, not approved additional layouts or required campaign content.",
+  "dungeons": [
+    {
+      "id": "di_keelvaults",
+      "name": "The Keelvaults",
+      "region": "brinewatch",
+      "entrance_hub": "saltmere",
+      "entrance_pocket": null,
+      "local_area_band": [
+        22,
+        28
+      ],
+      "entry_level": 25,
+      "recommended_level": [
+        26,
+        28
+      ],
+      "enemy_levels": [
+        26,
+        28
+      ],
+      "boss_level": 28,
+      "minutes": [
+        25,
+        35
+      ],
+      "bosses": [
+        "Bilge Mother",
+        "The Chain Pilot",
+        "Captain Vey’s Echo"
+      ],
+      "local_story": "A wreck has been built into the harbor vaults. Its failing pumps threaten the shore workers above.",
+      "wider_story_link": "Duplicate harbor copies carry the same false registry trail as the woodland archive, giving the coast a complete alternative story route.",
+      "loot_examples": [
+        "Pilot’s Dryboots — feet",
+        "Stormthread Cape — back",
+        "Keelvault Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Bilge levels change the available fighting space.",
+        "Anchor-chain cover counters a broadside with a visual warning.",
+        "A short signal sequence reopens the route to shore; sound always has a visual equivalent."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "brinewatch"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Parallel 26–28 instance; keep the woodland archive first and use coastal outdoor rewards/story alternatives."
+    },
+    {
+      "id": "di_buriedcourt",
+      "name": "The Buried Court",
+      "region": "sable",
+      "entrance_hub": "dune_watch",
+      "entrance_pocket": null,
+      "local_area_band": [
+        40,
+        46
+      ],
+      "entry_level": 43,
+      "recommended_level": [
+        44,
+        46
+      ],
+      "enemy_levels": [
+        44,
+        46
+      ],
+      "boss_level": 46,
+      "minutes": [
+        35,
+        45
+      ],
+      "bosses": [
+        "The Measure of Dust",
+        "The Thirstbound Judge",
+        "The Sand Notary"
+      ],
+      "local_story": "An older water court lies beneath the dunes. Its corrupted judgments still divert water from the living oasis.",
+      "wider_story_link": "The original charter exposes the southern register, providing the desert route’s equivalent final-act evidence.",
+      "loot_examples": [
+        "Sunward Circlet — head",
+        "Wellkeeper’s Sash — waist",
+        "Duneglass Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Redirect shallow water to reveal the real court marks.",
+        "Wind and shade create safe movement windows with clear visual cues.",
+        "The last verdict is broken through world evidence and a combat mechanic, not a random dialogue guess."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "sable"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Parallel 44–46 instance; keep the snow dungeon first and use desert outdoor rewards/story alternatives."
+    },
+    {
+      "id": "di_audit",
+      "name": "Rook Audit House",
+      "region": "rillbank",
+      "entrance_hub": "millward",
+      "entrance_pocket": "rook_audit_house",
+      "local_area_band": [
+        50,
+        50
+      ],
+      "entry_level": 50,
+      "recommended_level": [
+        50,
+        50
+      ],
+      "enemy_levels": [
+        50,
+        50
+      ],
+      "boss_level": 50,
+      "minutes": [
+        30,
+        40
+      ],
+      "bosses": [
+        "The Keeper of Attachments",
+        "The Counterfeit Heir",
+        "The Afterhours Factor"
+      ],
+      "local_story": "Returning port residents want impounded goods and missing relatives accounted for after the campaign.",
+      "wider_story_link": "A surviving office shows how local collaborators continue to profit after the main network has been broken. It does not undo the campaign victory.",
+      "loot_examples": [
+        "Freeholder’s Kit — level-50 role gear",
+        "Sealhouse Patterns — crafting materials",
+        "Unpaid Overtime — optional cosmetic title"
+      ],
+      "encounter_features": [
+        "Seizure rooms offer optional rescue and loot branches.",
+        "Fight the office’s surviving ward system without reopening the main plot.",
+        "All normal enemies, bosses and elites are level 50."
+      ],
+      "main_finale": false,
+      "endgame": true,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Post-cap return content",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": 0,
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "rillbank"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Additional post-cap layout; defer while the shared finale supplies the first reusable level-50 run."
+    },
+    {
+      "id": "di_whitefall",
+      "name": "Whitefall Vaults",
+      "region": "frostward",
+      "entrance_hub": "hearthwatch",
+      "entrance_pocket": "whitefall_vaults",
+      "local_area_band": [
+        50,
+        50
+      ],
+      "entry_level": 50,
+      "recommended_level": [
+        50,
+        50
+      ],
+      "enemy_levels": [
+        50,
+        50
+      ],
+      "boss_level": 50,
+      "minutes": [
+        35,
+        45
+      ],
+      "bosses": [
+        "The Glass Sentinel",
+        "The Snowblind Host",
+        "The Last Hoardkeeper"
+      ],
+      "local_story": "The northern settlement needs control of an old reserve before another winter.",
+      "wider_story_link": "The vault explains older uses of the binding craft and gives the region a continuing story independent of repeating the Collector.",
+      "loot_examples": [
+        "Whitefall Kit — level-50 role gear",
+        "Frostglass Components — crafting materials",
+        "Hoardkeeper’s Lantern — optional cosmetic"
+      ],
+      "encounter_features": [
+        "Reflecting ice lanes and limited shelter change positioning.",
+        "The final reserve mechanism is a physical team/solo puzzle.",
+        "All normal enemies, bosses and elites are level 50."
+      ],
+      "main_finale": false,
+      "endgame": true,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Post-cap regional dungeon",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": 0,
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "frostward"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Additional post-cap layout; defer until the first eight are built and tested."
+    },
+    {
+      "id": "di_cistern",
+      "name": "The Sunken Cistern",
+      "region": "sable",
+      "entrance_hub": "dune_watch",
+      "entrance_pocket": "sunken_cistern",
+      "local_area_band": [
+        50,
+        50
+      ],
+      "entry_level": 50,
+      "recommended_level": [
+        50,
+        50
+      ],
+      "enemy_levels": [
+        50,
+        50
+      ],
+      "boss_level": 50,
+      "minutes": [
+        35,
+        45
+      ],
+      "bosses": [
+        "The Salt Custodian",
+        "The Drowned Surveyor",
+        "The Keeper Below"
+      ],
+      "local_story": "Water has returned to the oasis, but the old storage network remains occupied and unstable.",
+      "wider_story_link": "This closes an older local water story and reveals a residual branch of the charter system without forcing a second campaign ending.",
+      "loot_examples": [
+        "Cisternwarden’s Kit — level-50 role gear",
+        "Saltglass Components — crafting materials",
+        "A Copper Measure — optional cosmetic"
+      ],
+      "encounter_features": [
+        "Readable rising-water stages and dry ledges.",
+        "A route choice changes the optional boss and material pool.",
+        "All normal enemies, bosses and elites are level 50."
+      ],
+      "main_finale": false,
+      "endgame": true,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Post-cap regional dungeon",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": 0,
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "sable"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Additional post-cap layout; defer until the first eight are built and tested."
+    },
+    {
+      "id": "di_rootlock",
+      "name": "Rootlock Sluice",
+      "region": "mirefen",
+      "entrance_hub": "pumpstead",
+      "entrance_pocket": null,
+      "local_area_band": [
+        10,
+        16
+      ],
+      "entry_level": 13,
+      "recommended_level": [
+        14,
+        16
+      ],
+      "enemy_levels": [
+        14,
+        16
+      ],
+      "boss_level": 16,
+      "minutes": [
+        25,
+        30
+      ],
+      "bosses": [
+        "The Siltjaw Nest",
+        "Rootbound Surveyor",
+        "The Pump Warden"
+      ],
+      "local_story": "Raised homes are flooding because the old sluice is being held shut. Workers need it open, not replaced with another public promise.",
+      "wider_story_link": "Confiscated maintenance plates carry the same collection seal found in the relief records. The warden has been enforcing an altered instruction.",
+      "loot_examples": [
+        "Reedwarden’s Mantle — back",
+        "Pumpkeeper’s Signet — ring",
+        "Rootlock Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Changing water levels opens short routes with safe retreat points.",
+        "A maintenance diagram gives an actual valve solution.",
+        "The final boss can be interrupted or countered using a universal release lever."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Second instance; wetland systems pilot",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "mirefen"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Separate waterworks layout removed. Preserve the cooperative, flooding and sluice story as outdoor Mirefen content."
+    },
+    {
+      "id": "di_crown_quarry",
+      "name": "Broken Crown Quarry",
+      "region": "highmere",
+      "entrance_hub": "quarryend",
+      "entrance_pocket": null,
+      "local_area_band": [
+        28,
+        35
+      ],
+      "entry_level": 32,
+      "recommended_level": [
+        33,
+        35
+      ],
+      "enemy_levels": [
+        33,
+        35
+      ],
+      "boss_level": 35,
+      "minutes": [
+        30,
+        40
+      ],
+      "bosses": [
+        "The Cracked Hauler",
+        "Garn the Overman",
+        "The Stonebound Steward"
+      ],
+      "local_story": "A lease dispute has become an armed occupation of the quarry. Workers are trapped behind their own equipment.",
+      "wider_story_link": "Wage and lease records reveal the frontier’s branch of the collection network. The local rescue remains meaningful on its own.",
+      "loot_examples": [
+        "Quarrywright’s Gauntlets — hands",
+        "Droveguard Hauberk — chest",
+        "Crownstone Armament — class weapon choices"
+      ],
+      "encounter_features": [
+        "Operate a real hoist to open a safe route for rescued workers.",
+        "Falling stone has readable ground shadows and safe edges.",
+        "The steward’s barriers can be repositioned with winches rather than burned through by one class."
+      ],
+      "main_finale": false,
+      "endgame": false,
+      "instance_scope": "Private solo/party copy; not the outdoor approach",
+      "modes": {
+        "story": {
+          "players": 1,
+          "purpose": "Readable story and usable current-tier gear"
+        },
+        "party": {
+          "players": 3,
+          "purpose": "Small-group mechanics, additional loot choice and materials"
+        }
+      },
+      "readiness": "Design blueprint only; instance manager, scene, encounters and loot need implementation",
+      "scene": null,
+      "entrance_position": null,
+      "production_phase": "Later regional build",
+      "rewards": {
+        "equipment_tier": "Level-appropriate named gear; actual numeric stats and drop weights unbudgeted",
+        "class_coverage": [
+          "warden",
+          "rogue",
+          "ranger",
+          "paladin",
+          "occultist"
+        ],
+        "first_clear": "One class-appropriate equipment choice, paid once per dungeon per character; no repeated chapter/capstone payout",
+        "repeat_clear": "Boss equipment pool, crafting materials and optional cosmetics; no first-clear quest XP repeated",
+        "character_xp": "Assign encounter XP plus a separately budgeted first-clear award inside this interval’s existing XP allocation",
+        "story_power_floor": "Solo story completion supplies usable gear and the same story outcome; group queues are not required to finish the main plot"
+      },
+      "regions": [
+        "highmere"
+      ],
+      "scope_status": "Unscheduled reference only; outside the approved seven-layout roster",
+      "deferred_reason": "Separate quarry instance removed. Preserve tools, wages, rescues and hoist investigations as outdoor Highmere content."
+    }
+  ],
+  "scope_policy": "Seven active layouts. Absolute maximum eight. No backlog entry is an approved eighth dungeon. A future roster revision must stay within eight; variants reuse existing rooms and bosses."
+}

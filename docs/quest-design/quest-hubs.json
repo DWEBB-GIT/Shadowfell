@@ -1,0 +1,2108 @@
+{
+  "schema_version": 1,
+  "revision_date": "2026-11-01",
+  "purpose": "Authoring plan only; not runtime placements or added quests.",
+  "level_cap": 50,
+  "hubs": [
+    {
+      "id": "thornford",
+      "name": "Thornford village",
+      "region": "thornford",
+      "level_band": [
+        1,
+        5
+      ],
+      "role": "Opening village",
+      "quest_leads": [
+        "Young boars and damaged orchard fencing.",
+        "Village supplies, boundary evidence and personal belongings.",
+        "The Quiet Levy: the missing watch and stolen burial names."
+      ],
+      "staff": [
+        "Mayor Alder",
+        "Captain Rowan",
+        "Elsie Reed",
+        "Iren Holt",
+        "Sister Lyra"
+      ],
+      "services": "Existing inn, smith, chapel and local class/profession services",
+      "build_status": "Existing playable opening; future sealed late-dungeon approach added",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "reference_position": [
+        -450,
+        -203
+      ],
+      "dungeon_entrances": [
+        "di_graveshroud"
+      ],
+      "position": [
+        -450,
+        -207
+      ]
+    },
+    {
+      "id": "lantern_crossing",
+      "name": "Lantern Crossing",
+      "region": "rillbank",
+      "level_band": [
+        5,
+        10
+      ],
+      "role": "First onward settlement",
+      "quest_leads": [
+        "Get relief wagons across a damaged crossing.",
+        "Track road predators near working farms.",
+        "Recover a missing toll packet without making every job part of the collector plot.",
+        "Recover the mine payroll, rescue the shift crew and practise basic telegraphs before Blackpick Mine."
+      ],
+      "staff": [
+        "Bridge reeve",
+        "Carter",
+        "Innkeeper",
+        "Watch sergeant"
+      ],
+      "services": "Small inn, repairs, supplies and route handover",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_siltwheel"
+      ],
+      "position": [
+        -208.0,
+        -176.0
+      ],
+      "runtime_npc_ids": [
+        "wm_lantern_crossing_lead",
+        "wm_lantern_crossing_worker",
+        "wm_lantern_crossing_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_lantern_crossing_work",
+        "wm_lantern_crossing_record",
+        "wm_lantern_crossing_local"
+      ],
+      "worksite_position": [
+        -248.0,
+        -140.0
+      ]
+    },
+    {
+      "id": "mossreed_landing",
+      "name": "Mossreed Landing",
+      "region": "mirefen",
+      "level_band": [
+        5,
+        10
+      ],
+      "role": "Alternative onward settlement",
+      "quest_leads": [
+        "Clear the raised footpath for deliveries.",
+        "Find a missing reed-cutter’s tools.",
+        "Separate an exaggerated monster report from a real marsh predator."
+      ],
+      "staff": [
+        "Landing keeper",
+        "Reed cutter",
+        "Fisher",
+        "Warden"
+      ],
+      "services": "Rest house, repairs, fishing supplies and route handover",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -540.0,
+        -60.0
+      ],
+      "runtime_npc_ids": [
+        "wm_mossreed_landing_lead",
+        "wm_mossreed_landing_worker",
+        "wm_mossreed_landing_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_mossreed_landing_work",
+        "wm_mossreed_landing_record",
+        "wm_mossreed_landing_local"
+      ],
+      "worksite_position": [
+        -536.0,
+        -116.0
+      ]
+    },
+    {
+      "id": "rillbank_quays",
+      "name": "Rillbank Quays",
+      "region": "rillbank",
+      "level_band": [
+        10,
+        13
+      ],
+      "role": "River town",
+      "quest_leads": [
+        "A ferry manifest disagrees with the waterline.",
+        "Help dockworkers recover tools from a flooded shed.",
+        "Follow the winter-grain provenance through local freight."
+      ],
+      "staff": [
+        "Ferry operator",
+        "Dock foreman",
+        "Records clerk"
+      ],
+      "services": "Inn, trainers, repairs, bank/trade service planned",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -80.0,
+        -240.0
+      ],
+      "runtime_npc_ids": [
+        "wm_rillbank_quays_lead",
+        "wm_rillbank_quays_worker",
+        "wm_rillbank_quays_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_rillbank_quays_work",
+        "wm_rillbank_quays_record",
+        "wm_rillbank_quays_local"
+      ],
+      "worksite_position": [
+        -48.0,
+        -196.0
+      ]
+    },
+    {
+      "id": "millward",
+      "name": "Millward",
+      "region": "rillbank",
+      "level_band": [
+        13,
+        16
+      ],
+      "role": "Second river-town hub",
+      "quest_leads": [
+        "Authenticate a seal against a dated mill receipt.",
+        "Protect flour deliveries from raiders.",
+        "Settle who borrowed the mill’s only good measure."
+      ],
+      "staff": [
+        "Millwright",
+        "Freight clerk",
+        "Miller"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "deferred_dungeon_entrances": [
+        "di_audit"
+      ],
+      "position": [
+        -92.0,
+        -380.0
+      ],
+      "runtime_npc_ids": [
+        "wm_millward_lead",
+        "wm_millward_worker",
+        "wm_millward_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_millward_work",
+        "wm_millward_record",
+        "wm_millward_local"
+      ],
+      "worksite_position": [
+        -148.0,
+        -388.0
+      ]
+    },
+    {
+      "id": "reedward",
+      "name": "Reedward Cooperative",
+      "region": "mirefen",
+      "level_band": [
+        10,
+        13
+      ],
+      "role": "Working marsh hamlet",
+      "quest_leads": [
+        "Reopen an ordinary drainage cut.",
+        "Collect water samples without pretending the pickup is an experiment.",
+        "Investigate eel traps that keep appearing on the wrong side of a boundary."
+      ],
+      "staff": [
+        "Drainage forewoman",
+        "Angler",
+        "Herbalist"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -612.0,
+        128.0
+      ],
+      "runtime_npc_ids": [
+        "wm_reedward_lead",
+        "wm_reedward_worker",
+        "wm_reedward_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_reedward_work",
+        "wm_reedward_record",
+        "wm_reedward_local"
+      ],
+      "worksite_position": [
+        -564.0,
+        132.0
+      ]
+    },
+    {
+      "id": "pumpstead",
+      "name": "Pumpstead",
+      "region": "mirefen",
+      "level_band": [
+        13,
+        16
+      ],
+      "role": "Raised farmstead",
+      "quest_leads": [
+        "Compare salvaged relief receipts with the cooperative’s public record.",
+        "Hunt the beast taking animals from raised pens.",
+        "A lost household register has been sold as salvage paper."
+      ],
+      "staff": [
+        "Pump keeper",
+        "Cooperative clerk",
+        "Smallholder"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "deferred_dungeon_entrances": [
+        "di_rootlock"
+      ],
+      "dungeon_scope_note": "Flooding, cooperative records and sluice repairs remain outdoor stories. No separate Rootlock instance is approved.",
+      "position": [
+        -512.0,
+        224.0
+      ],
+      "runtime_npc_ids": [
+        "wm_pumpstead_lead",
+        "wm_pumpstead_worker",
+        "wm_pumpstead_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_pumpstead_work",
+        "wm_pumpstead_record",
+        "wm_pumpstead_local"
+      ],
+      "worksite_position": [
+        -548.0,
+        296.0
+      ]
+    },
+    {
+      "id": "north_ferry",
+      "name": "Willow Ferry",
+      "region": "rillbank",
+      "level_band": [
+        16,
+        19
+      ],
+      "role": "Upstream departure hub",
+      "quest_leads": [
+        "Negotiate a safe cargo load for the next crossing.",
+        "Recover missing route markers.",
+        "Escort design: a future real actor crossing, not an examine substitute."
+      ],
+      "staff": [
+        "Ferry master",
+        "Route scout",
+        "Merchant"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        20.0,
+        -476.0
+      ],
+      "runtime_npc_ids": [
+        "wm_north_ferry_lead",
+        "wm_north_ferry_worker",
+        "wm_north_ferry_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_north_ferry_work",
+        "wm_north_ferry_record",
+        "wm_north_ferry_local"
+      ],
+      "worksite_position": [
+        -4.0,
+        -524.0
+      ]
+    },
+    {
+      "id": "tollhouse_rise",
+      "name": "Tollhouse Rise",
+      "region": "rillbank",
+      "level_band": [
+        19,
+        22
+      ],
+      "role": "Border watch post",
+      "quest_leads": [
+        "Expose duplicate collection orders.",
+        "Clear road sentries for civilian passage.",
+        "Find why a messenger keeps returning with the same unsigned form.",
+        "Find missing couriers in Silkburrow Caverns and practise cutting victims free of webs."
+      ],
+      "staff": [
+        "Watch lieutenant",
+        "Courier",
+        "Toll clerk"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_tollward"
+      ],
+      "position": [
+        100.0,
+        -580.0
+      ],
+      "runtime_npc_ids": [
+        "wm_tollhouse_rise_lead",
+        "wm_tollhouse_rise_worker",
+        "wm_tollhouse_rise_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_tollhouse_rise_work",
+        "wm_tollhouse_rise_record",
+        "wm_tollhouse_rise_local"
+      ],
+      "worksite_position": [
+        152.0,
+        -560.0
+      ]
+    },
+    {
+      "id": "stiltmarket",
+      "name": "Stiltmarket",
+      "region": "mirefen",
+      "level_band": [
+        16,
+        19
+      ],
+      "role": "Marsh trade hub",
+      "quest_leads": [
+        "Restore a working delivery circuit between raised homes.",
+        "Investigate a stalled fish trade.",
+        "Retrieve a family document from a collector of interesting rubbish."
+      ],
+      "staff": [
+        "Market steward",
+        "Fish seller",
+        "Courier"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -380.0,
+        44.0
+      ],
+      "runtime_npc_ids": [
+        "wm_stiltmarket_lead",
+        "wm_stiltmarket_worker",
+        "wm_stiltmarket_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_stiltmarket_work",
+        "wm_stiltmarket_record",
+        "wm_stiltmarket_local"
+      ],
+      "worksite_position": [
+        -464.0,
+        40.0
+      ]
+    },
+    {
+      "id": "causeway_watch",
+      "name": "Causeway Watch",
+      "region": "mirefen",
+      "level_band": [
+        19,
+        22
+      ],
+      "role": "Marsh-edge outpost",
+      "quest_leads": [
+        "Survey the safe dry approaches.",
+        "Defeat predators around the outbound causeway.",
+        "Finish the marsh version of the relief-account chapter."
+      ],
+      "staff": [
+        "Causeway warden",
+        "Cooperative witness",
+        "Scout"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -292.0,
+        28.0
+      ],
+      "runtime_npc_ids": [
+        "wm_causeway_watch_lead",
+        "wm_causeway_watch_worker",
+        "wm_causeway_watch_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_causeway_watch_work",
+        "wm_causeway_watch_record",
+        "wm_causeway_watch_local"
+      ],
+      "worksite_position": [
+        -268.0,
+        -24.0
+      ]
+    },
+    {
+      "id": "greyroot",
+      "name": "Greyroot Refuge",
+      "region": "paleweald",
+      "level_band": [
+        22,
+        25
+      ],
+      "role": "Woodland refuge",
+      "quest_leads": [
+        "Read the route evidence left by missing gatherers.",
+        "A household needs medicine rather than another warning.",
+        "Track a real woodland threat beyond the refuge."
+      ],
+      "staff": [
+        "Forester",
+        "Apothecary",
+        "Watch volunteer"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        412.0,
+        -556.0
+      ],
+      "runtime_npc_ids": [
+        "wm_greyroot_lead",
+        "wm_greyroot_worker",
+        "wm_greyroot_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_greyroot_work",
+        "wm_greyroot_record",
+        "wm_greyroot_local"
+      ],
+      "worksite_position": [
+        444.0,
+        -472.0
+      ]
+    },
+    {
+      "id": "scribes_rest",
+      "name": "Scribes’ Hollow",
+      "region": "paleweald",
+      "level_band": [
+        25,
+        28
+      ],
+      "role": "Archive settlement",
+      "quest_leads": [
+        "Protect a surviving public copy.",
+        "Reconstruct the registry’s origin.",
+        "A copyist’s perfectly ordinary error has caused an extraordinary dispute."
+      ],
+      "staff": [
+        "Archivist",
+        "Bookbinder",
+        "Caretaker"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_yewbound"
+      ],
+      "position": [
+        524.0,
+        -396.0
+      ],
+      "runtime_npc_ids": [
+        "wm_scribes_rest_lead",
+        "wm_scribes_rest_worker",
+        "wm_scribes_rest_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_scribes_rest_work",
+        "wm_scribes_rest_record",
+        "wm_scribes_rest_local"
+      ],
+      "worksite_position": [
+        484.0,
+        -408.0
+      ]
+    },
+    {
+      "id": "brinewatch_docks",
+      "name": "Brinewatch Docks",
+      "region": "brinewatch",
+      "level_band": [
+        22,
+        25
+      ],
+      "role": "Coastal alternative",
+      "quest_leads": [
+        "Trace records through harbor copies instead of the woodland archive.",
+        "Fight wreck scavengers threatening workers.",
+        "Recover a pilot’s missing charts."
+      ],
+      "staff": [
+        "Harbormaster",
+        "Pilot",
+        "Dock healer"
+      ],
+      "services": "Inn, repairs, trainers and harbor travel",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -692.0,
+        68.0
+      ],
+      "runtime_npc_ids": [
+        "wm_brinewatch_docks_lead",
+        "wm_brinewatch_docks_worker",
+        "wm_brinewatch_docks_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_brinewatch_docks_work",
+        "wm_brinewatch_docks_record",
+        "wm_brinewatch_docks_local"
+      ],
+      "worksite_position": [
+        -628.0,
+        20.0
+      ]
+    },
+    {
+      "id": "saltmere",
+      "name": "Saltmere Outpost",
+      "region": "brinewatch",
+      "level_band": [
+        25,
+        28
+      ],
+      "role": "Outer coastal hub",
+      "quest_leads": [
+        "Check storm damage before a work crew departs.",
+        "Help a netmaker prove whose repair failed.",
+        "Discover a safer route around the cliffs."
+      ],
+      "staff": [
+        "Coastguard",
+        "Netmaker",
+        "Surveyor"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "deferred_dungeon_entrances": [
+        "di_keelvaults"
+      ],
+      "position": [
+        -580.0,
+        296.0
+      ],
+      "runtime_npc_ids": [
+        "wm_saltmere_lead",
+        "wm_saltmere_worker",
+        "wm_saltmere_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_saltmere_work",
+        "wm_saltmere_record",
+        "wm_saltmere_local"
+      ],
+      "worksite_position": [
+        -608.0,
+        328.0
+      ]
+    },
+    {
+      "id": "highmere_market",
+      "name": "Highmere Market",
+      "region": "highmere",
+      "level_band": [
+        28,
+        31
+      ],
+      "role": "Upland market town",
+      "quest_leads": [
+        "A horse inspector is afraid of the stock.",
+        "Hunt raiders near the drove road.",
+        "Compare grazing rights with an old village map."
+      ],
+      "staff": [
+        "Grazier",
+        "Market reeve",
+        "Horse breeder"
+      ],
+      "services": "Inn, repairs, trainers and mount services planned",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        280.0,
+        -820.0
+      ],
+      "runtime_npc_ids": [
+        "wm_highmere_market_lead",
+        "wm_highmere_market_worker",
+        "wm_highmere_market_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_highmere_market_work",
+        "wm_highmere_market_record",
+        "wm_highmere_market_local"
+      ],
+      "worksite_position": [
+        292.0,
+        -908.0
+      ]
+    },
+    {
+      "id": "quarryend",
+      "name": "Quarryend",
+      "region": "highmere",
+      "level_band": [
+        31,
+        35
+      ],
+      "role": "Quarry work settlement",
+      "quest_leads": [
+        "Retrieve tools from abandoned work shelters.",
+        "Find the missing wage ledger.",
+        "Resolve which village owes the drove-bridge timber."
+      ],
+      "staff": [
+        "Quarry forewoman",
+        "Wage clerk",
+        "Bridge carpenter"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "deferred_dungeon_entrances": [
+        "di_crown_quarry"
+      ],
+      "dungeon_scope_note": "Quarry rescues, wage records, hoists and control practice remain outdoor content. No separate quarry instance is approved.",
+      "position": [
+        48.0,
+        -940.0
+      ],
+      "runtime_npc_ids": [
+        "wm_quarryend_lead",
+        "wm_quarryend_worker",
+        "wm_quarryend_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_quarryend_work",
+        "wm_quarryend_record",
+        "wm_quarryend_local"
+      ],
+      "worksite_position": [
+        92.0,
+        -904.0
+      ]
+    },
+    {
+      "id": "cinder_gate",
+      "name": "Cinder Gate",
+      "region": "cinder",
+      "level_band": [
+        28,
+        31
+      ],
+      "role": "Volcanic frontier entry",
+      "quest_leads": [
+        "Survey safe work pockets.",
+        "Recover a missing supply runner’s cache.",
+        "Clear threats at the outer works."
+      ],
+      "staff": [
+        "Survey chief",
+        "Supply runner",
+        "Medic"
+      ],
+      "services": "Rest point, repairs, hazard warnings and supplies",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -380.0,
+        248.0
+      ],
+      "runtime_npc_ids": [
+        "wm_cinder_gate_lead",
+        "wm_cinder_gate_worker",
+        "wm_cinder_gate_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_cinder_gate_work",
+        "wm_cinder_gate_record",
+        "wm_cinder_gate_local"
+      ],
+      "worksite_position": [
+        -424.0,
+        236.0
+      ]
+    },
+    {
+      "id": "ashworks",
+      "name": "Ashworks",
+      "region": "cinder",
+      "level_band": [
+        31,
+        35
+      ],
+      "role": "Industrial work camp",
+      "quest_leads": [
+        "Inspect the wage and furnace records.",
+        "Help workers recover stranded equipment.",
+        "A foreman’s production promise exceeds the available shifts."
+      ],
+      "staff": [
+        "Shift forewoman",
+        "Engineer",
+        "Union witness"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -128.0,
+        420.0
+      ],
+      "runtime_npc_ids": [
+        "wm_ashworks_lead",
+        "wm_ashworks_worker",
+        "wm_ashworks_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_ashworks_work",
+        "wm_ashworks_record",
+        "wm_ashworks_local"
+      ],
+      "worksite_position": [
+        -80.0,
+        384.0
+      ]
+    },
+    {
+      "id": "windscar",
+      "name": "Windscar Redoubt",
+      "region": "highmere",
+      "level_band": [
+        35,
+        38
+      ],
+      "role": "Upper upland outpost",
+      "quest_leads": [
+        "Break a raider supply route.",
+        "Authenticate a confiscation order.",
+        "Restore a useful local crossing with a real repair system when built."
+      ],
+      "staff": [
+        "Watch captain",
+        "Lease clerk",
+        "Mason"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -160.0,
+        -1132.0
+      ],
+      "runtime_npc_ids": [
+        "wm_windscar_lead",
+        "wm_windscar_worker",
+        "wm_windscar_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_windscar_work",
+        "wm_windscar_record",
+        "wm_windscar_local"
+      ],
+      "worksite_position": [
+        -168.0,
+        -1076.0
+      ]
+    },
+    {
+      "id": "high_pass",
+      "name": "Heatherpass Relay",
+      "region": "highmere",
+      "level_band": [
+        38,
+        40
+      ],
+      "role": "Late frontier handover",
+      "quest_leads": [
+        "Trace the network’s onward orders.",
+        "Find the courier who refused a dangerous shortcut.",
+        "Prepare passage to either end-level region."
+      ],
+      "staff": [
+        "Relay keeper",
+        "Courier",
+        "Guide"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        152.0,
+        -1112.0
+      ],
+      "runtime_npc_ids": [
+        "wm_high_pass_lead",
+        "wm_high_pass_worker",
+        "wm_high_pass_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_high_pass_work",
+        "wm_high_pass_record",
+        "wm_high_pass_local"
+      ],
+      "worksite_position": [
+        116.0,
+        -1152.0
+      ]
+    },
+    {
+      "id": "furnace_camp",
+      "name": "Redkiln Camp",
+      "region": "cinder",
+      "level_band": [
+        35,
+        38
+      ],
+      "role": "Inner works outpost",
+      "quest_leads": [
+        "Rescue work and safe tool recovery.",
+        "Defeat threats around the active plant.",
+        "Expose the collection network through industrial records."
+      ],
+      "staff": [
+        "Rescue leader",
+        "Foundry clerk",
+        "Healer"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        104.0,
+        492.0
+      ],
+      "runtime_npc_ids": [
+        "wm_furnace_camp_lead",
+        "wm_furnace_camp_worker",
+        "wm_furnace_camp_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_furnace_camp_work",
+        "wm_furnace_camp_record",
+        "wm_furnace_camp_local"
+      ],
+      "worksite_position": [
+        160.0,
+        500.0
+      ]
+    },
+    {
+      "id": "ember_relay",
+      "name": "Ember Relay",
+      "region": "cinder",
+      "level_band": [
+        38,
+        40
+      ],
+      "role": "Volcanic exit hub",
+      "quest_leads": [
+        "Carry verified evidence to the onward guide.",
+        "Discover a safe exit from the hazard field.",
+        "An exhausted crew needs replacement supplies, not another speech."
+      ],
+      "staff": [
+        "Guide",
+        "Shift medic",
+        "Quartermaster"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_crucible"
+      ],
+      "position": [
+        220.0,
+        708.0
+      ],
+      "runtime_npc_ids": [
+        "wm_ember_relay_lead",
+        "wm_ember_relay_worker",
+        "wm_ember_relay_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_ember_relay_work",
+        "wm_ember_relay_record",
+        "wm_ember_relay_local"
+      ],
+      "worksite_position": [
+        176.0,
+        740.0
+      ]
+    },
+    {
+      "id": "frostgate",
+      "name": "Frostgate",
+      "region": "frostward",
+      "level_band": [
+        40,
+        42
+      ],
+      "role": "Snow frontier arrival",
+      "quest_leads": [
+        "Keep the outer supply road usable.",
+        "Find a stranded fuel cart.",
+        "Introduce the northern approach to the final act."
+      ],
+      "staff": [
+        "Gate captain",
+        "Fuel factor",
+        "Healer"
+      ],
+      "services": "Inn, repairs, trainers, winter supplies",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -172.0,
+        -1388.0
+      ],
+      "runtime_npc_ids": [
+        "wm_frostgate_lead",
+        "wm_frostgate_worker",
+        "wm_frostgate_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_frostgate_work",
+        "wm_frostgate_record",
+        "wm_frostgate_local"
+      ],
+      "worksite_position": [
+        -176.0,
+        -1428.0
+      ]
+    },
+    {
+      "id": "lantern_pass",
+      "name": "Rimepass",
+      "region": "frostward",
+      "level_band": [
+        42,
+        44
+      ],
+      "role": "Snow relay camp",
+      "quest_leads": [
+        "Track a lost patrol’s actual route.",
+        "A lamp allotment does not match the occupied homes.",
+        "Protect supplies around a pass relay."
+      ],
+      "staff": [
+        "Patrol leader",
+        "Lamp keeper",
+        "Courier"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        96.0,
+        -1404.0
+      ],
+      "runtime_npc_ids": [
+        "wm_lantern_pass_lead",
+        "wm_lantern_pass_worker",
+        "wm_lantern_pass_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_lantern_pass_work",
+        "wm_lantern_pass_record",
+        "wm_lantern_pass_local"
+      ],
+      "worksite_position": [
+        112.0,
+        -1332.0
+      ]
+    },
+    {
+      "id": "hearthwatch",
+      "name": "Hearthwatch",
+      "region": "frostward",
+      "level_band": [
+        44,
+        46
+      ],
+      "role": "Snow settlement",
+      "quest_leads": [
+        "Allocate scarce heat after gathering evidence.",
+        "Repair a bounded public shelter when mechanics exist.",
+        "Expose the northern register without demanding that every resident join the plot."
+      ],
+      "staff": [
+        "Fuel steward",
+        "Carpenter",
+        "Record keeper"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_coldhearth"
+      ],
+      "deferred_dungeon_entrances": [
+        "di_whitefall"
+      ],
+      "position": [
+        260.0,
+        -1392.0
+      ],
+      "runtime_npc_ids": [
+        "wm_hearthwatch_lead",
+        "wm_hearthwatch_worker",
+        "wm_hearthwatch_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_hearthwatch_work",
+        "wm_hearthwatch_record",
+        "wm_hearthwatch_local"
+      ],
+      "worksite_position": [
+        208.0,
+        -1408.0
+      ]
+    },
+    {
+      "id": "wellward",
+      "name": "Sable Well",
+      "region": "sable",
+      "level_band": [
+        40,
+        42
+      ],
+      "role": "Desert alternative arrival",
+      "quest_leads": [
+        "Check the caravan water records.",
+        "Defeat threats around the safe approaches.",
+        "Introduce the southern approach to the final act."
+      ],
+      "staff": [
+        "Well keeper",
+        "Caravan master",
+        "Medic"
+      ],
+      "services": "Inn, repairs, trainers, water and caravan supplies",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -112.0,
+        1140.0
+      ],
+      "runtime_npc_ids": [
+        "wm_wellward_lead",
+        "wm_wellward_worker",
+        "wm_wellward_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_wellward_work",
+        "wm_wellward_record",
+        "wm_wellward_local"
+      ],
+      "worksite_position": [
+        -64.0,
+        1116.0
+      ]
+    },
+    {
+      "id": "caravan_rest",
+      "name": "Duneshade Rest",
+      "region": "sable",
+      "level_band": [
+        42,
+        44
+      ],
+      "role": "Desert relay settlement",
+      "quest_leads": [
+        "Find a missing route worker.",
+        "A scale weights problem threatens a perfectly legitimate trade.",
+        "Recover supplies from a stranded convoy."
+      ],
+      "staff": [
+        "Route steward",
+        "Weigher",
+        "Scout"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        -292.0,
+        968.0
+      ],
+      "runtime_npc_ids": [
+        "wm_caravan_rest_lead",
+        "wm_caravan_rest_worker",
+        "wm_caravan_rest_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_caravan_rest_work",
+        "wm_caravan_rest_record",
+        "wm_caravan_rest_local"
+      ],
+      "worksite_position": [
+        -312.0,
+        1024.0
+      ]
+    },
+    {
+      "id": "dune_watch",
+      "name": "Dune Watch",
+      "region": "sable",
+      "level_band": [
+        44,
+        46
+      ],
+      "role": "Desert frontier outpost",
+      "quest_leads": [
+        "Audit a water charter against actual use.",
+        "Defend work with a real encounter controller when built.",
+        "Trace the southern register."
+      ],
+      "staff": [
+        "Water clerk",
+        "Watch captain",
+        "Engineer"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "deferred_dungeon_entrances": [
+        "di_buriedcourt",
+        "di_cistern"
+      ],
+      "position": [
+        60.0,
+        908.0
+      ],
+      "runtime_npc_ids": [
+        "wm_dune_watch_lead",
+        "wm_dune_watch_worker",
+        "wm_dune_watch_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_dune_watch_work",
+        "wm_dune_watch_record",
+        "wm_dune_watch_local"
+      ],
+      "worksite_position": [
+        40.0,
+        856.0
+      ]
+    },
+    {
+      "id": "whitebough",
+      "name": "Whitebough Hospice",
+      "region": "frostward",
+      "level_band": [
+        45,
+        47
+      ],
+      "role": "Overlapping late-act hub",
+      "quest_leads": [
+        "Help stranded travellers without repeating the frontier introduction.",
+        "Find why a courier’s safety certificate was denied.",
+        "Complete a practical route-knowledge trial."
+      ],
+      "staff": [
+        "Hospice keeper",
+        "Courier instructor",
+        "Healer"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        620.0,
+        -1208.0
+      ],
+      "runtime_npc_ids": [
+        "wm_whitebough_lead",
+        "wm_whitebough_worker",
+        "wm_whitebough_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_whitebough_work",
+        "wm_whitebough_record",
+        "wm_whitebough_local"
+      ],
+      "worksite_position": [
+        668.0,
+        -1184.0
+      ]
+    },
+    {
+      "id": "last_beacon",
+      "name": "Last Beacon",
+      "region": "frostward",
+      "level_band": [
+        47,
+        48
+      ],
+      "role": "Final approach camp",
+      "quest_leads": [
+        "Verify the last northern evidence.",
+        "Prepare the shared final-chapter approach.",
+        "Close a local patrol story independently."
+      ],
+      "staff": [
+        "Beacon keeper",
+        "Witness",
+        "Quartermaster"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        516.0,
+        -1412.0
+      ],
+      "runtime_npc_ids": [
+        "wm_last_beacon_lead",
+        "wm_last_beacon_worker",
+        "wm_last_beacon_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_last_beacon_work",
+        "wm_last_beacon_record",
+        "wm_last_beacon_local"
+      ],
+      "worksite_position": [
+        448.0,
+        -1400.0
+      ]
+    },
+    {
+      "id": "saltroad",
+      "name": "Saltroad Caravanserai",
+      "region": "sable",
+      "level_band": [
+        45,
+        47
+      ],
+      "role": "Overlapping desert hub",
+      "quest_leads": [
+        "A shade agreement has made a small job everybody’s problem.",
+        "Help a caravan worker recover family papers.",
+        "Finish the local water-rights evidence."
+      ],
+      "staff": [
+        "Caravan host",
+        "Charter clerk",
+        "Apprentice"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        228.0,
+        1052.0
+      ],
+      "runtime_npc_ids": [
+        "wm_saltroad_lead",
+        "wm_saltroad_worker",
+        "wm_saltroad_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_saltroad_work",
+        "wm_saltroad_record",
+        "wm_saltroad_local"
+      ],
+      "worksite_position": [
+        256.0,
+        1004.0
+      ]
+    },
+    {
+      "id": "glass_road",
+      "name": "Glassroad Station",
+      "region": "sable",
+      "level_band": [
+        47,
+        48
+      ],
+      "role": "Desert final approach",
+      "quest_leads": [
+        "Verify the last southern evidence.",
+        "Prepare the shared final-chapter approach.",
+        "Resolve a small caravan rescue."
+      ],
+      "staff": [
+        "Guide",
+        "Witness",
+        "Quartermaster"
+      ],
+      "services": "Repair, provisions and a nearby rest point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [],
+      "position": [
+        412.0,
+        1208.0
+      ],
+      "runtime_npc_ids": [
+        "wm_glass_road_lead",
+        "wm_glass_road_worker",
+        "wm_glass_road_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_glass_road_work",
+        "wm_glass_road_record",
+        "wm_glass_road_local"
+      ],
+      "worksite_position": [
+        400.0,
+        1264.0
+      ]
+    },
+    {
+      "id": "north_ledger_gate",
+      "name": "Rimewatch Gate",
+      "region": "frostward",
+      "level_band": [
+        48,
+        50
+      ],
+      "role": "Finale staging hub",
+      "quest_leads": [
+        "Break the northern collection ward.",
+        "Carry the verified outcome into the shared final chapter.",
+        "Finish the capstone chapter once, earning level 50."
+      ],
+      "staff": [
+        "Field commander",
+        "Registrar witness",
+        "Healer"
+      ],
+      "services": "Repairs, supplies and a safe capstone staging point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_unwritten"
+      ],
+      "position": [
+        664.0,
+        -1288.0
+      ],
+      "runtime_npc_ids": [
+        "wm_north_ledger_gate_lead",
+        "wm_north_ledger_gate_worker",
+        "wm_north_ledger_gate_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_north_ledger_gate_work",
+        "wm_north_ledger_gate_record",
+        "wm_north_ledger_gate_local"
+      ],
+      "worksite_position": [
+        608.0,
+        -1340.0
+      ]
+    },
+    {
+      "id": "sunseal_court",
+      "name": "Sunseal Court",
+      "region": "sable",
+      "level_band": [
+        48,
+        50
+      ],
+      "role": "Alternative finale hub",
+      "quest_leads": [
+        "Break the southern collection ward.",
+        "Carry the verified outcome into the same shared final chapter.",
+        "Finish the capstone chapter once, earning level 50."
+      ],
+      "staff": [
+        "Caravan commander",
+        "Registrar witness",
+        "Healer"
+      ],
+      "services": "Repairs, supplies and a safe capstone staging point",
+      "build_status": "Authored world and quest prototype",
+      "placement_status": "Authored coordinates; automated walkability/road checks pass; representative regions rendered in Godot",
+      "dungeon_entrances": [
+        "di_unwritten"
+      ],
+      "position": [
+        692.0,
+        1348.0
+      ],
+      "runtime_npc_ids": [
+        "wm_sunseal_court_lead",
+        "wm_sunseal_court_worker",
+        "wm_sunseal_court_inn"
+      ],
+      "runtime_quest_ids": [
+        "wm_sunseal_court_work",
+        "wm_sunseal_court_record",
+        "wm_sunseal_court_local"
+      ],
+      "worksite_position": [
+        748.0,
+        1344.0
+      ]
+    }
+  ],
+  "return_pockets": [
+    {
+      "id": "sealhouse_cellars",
+      "name": "Sealhouse Cellars",
+      "region": "rillbank",
+      "level_band": [
+        25,
+        30
+      ],
+      "first_seen_at_hub": "rillbank_quays",
+      "story": "An earlier port’s barred cellars hold a stronger smuggling crew. The working quays remain low level.",
+      "quest_seed": null,
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": false,
+      "position": [
+        44.0,
+        -188.0
+      ],
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "outdoor_level_band": [
+        25,
+        30
+      ],
+      "outdoor_name": "Sealhouse Outer Yard"
+    },
+    {
+      "id": "drowned_pumphouse",
+      "name": "Drowned Pumphouse",
+      "region": "mirefen",
+      "level_band": [
+        25,
+        30
+      ],
+      "first_seen_at_hub": "pumpstead",
+      "story": "The deeper enginehouse is dangerous; the early drainage hamlet and its ordinary work remain safe.",
+      "quest_seed": null,
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": false,
+      "position": [
+        -452.0,
+        344.0
+      ],
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "outdoor_level_band": [
+        25,
+        30
+      ],
+      "outdoor_name": "Drowned Pumphouse"
+    },
+    {
+      "id": "stormwatch",
+      "name": "Stormwatch Point",
+      "region": "brinewatch",
+      "level_band": [
+        30,
+        35
+      ],
+      "first_seen_at_hub": "saltmere",
+      "story": "Return to the upper coast for pilotage and seamark work. Coastal combat and navigation are distinct from the inland routes.",
+      "quest_seed": "qp_seamark",
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": false,
+      "position": [
+        -508.0,
+        412.0
+      ],
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "outdoor_level_band": [
+        30,
+        35
+      ],
+      "outdoor_name": "Stormwatch Point"
+    },
+    {
+      "id": "deep_crucible",
+      "name": "Deep Crucible",
+      "region": "cinder",
+      "level_band": [
+        38,
+        42
+      ],
+      "first_seen_at_hub": "ashworks",
+      "story": "A deeper work pocket supports the forge-rescue design without turning the whole early camp into a level-42 area. The private normal instance targets 38–40; optional 40–42 outer workings are separate and do not block its entrance.",
+      "quest_seed": "qp_forge_cycle",
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": false,
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "dungeon_id": "di_crucible",
+      "position": [
+        -20.0,
+        504.0
+      ],
+      "outdoor_level_band": [
+        40,
+        42
+      ],
+      "outdoor_name": "Crucible Outer Workings"
+    },
+    {
+      "id": "old_bell_wing",
+      "name": "Sealed Bell Wing",
+      "region": "thornford",
+      "level_band": [
+        48,
+        50
+      ],
+      "first_seen_at_hub": "thornford",
+      "story": "A separately authored cave beyond the sealed wing leads to Graveshroud Hollow, recommended 48–49. The original exterior crypt, its keeper and low-level village stay unchanged.",
+      "quest_seed": null,
+      "build_status": "Planned",
+      "endgame": false,
+      "dungeon_id": "di_graveshroud",
+      "content_type": "Overworld approach to one private dungeon",
+      "position": [
+        -305,
+        -486
+      ],
+      "outdoor_name": "Graveshroud approach"
+    },
+    {
+      "id": "rook_audit_house",
+      "name": "Rook Audit House",
+      "region": "rillbank",
+      "level_band": [
+        50,
+        50
+      ],
+      "first_seen_at_hub": "millward",
+      "story": "A return to the port’s closed audit offices for endgame contracts and encounters.",
+      "quest_seed": null,
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": true,
+      "normal_enemy_level": 50,
+      "elite_enemy_level": 50,
+      "elite_difficulty": "Health, abilities, encounter structure and group pressure; never level 51+.",
+      "character_xp_budget": 0,
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "deferred_dungeon_id": "di_audit",
+      "position": [
+        32.0,
+        -328.0
+      ],
+      "outdoor_level_band": [
+        50,
+        50
+      ],
+      "outdoor_name": "Rook’s Outer Yard"
+    },
+    {
+      "id": "whitefall_vaults",
+      "name": "Whitefall Vaults",
+      "region": "frostward",
+      "level_band": [
+        50,
+        50
+      ],
+      "first_seen_at_hub": "hearthwatch",
+      "story": "Level-50 northern normal and elite encounters, with progression through equipment, reputation and encounter mastery.",
+      "quest_seed": null,
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": true,
+      "normal_enemy_level": 50,
+      "elite_enemy_level": 50,
+      "elite_difficulty": "Health, abilities, encounter structure and group pressure; never level 51+.",
+      "character_xp_budget": 0,
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "deferred_dungeon_id": "di_whitefall",
+      "position": [
+        312.0,
+        -1268.0
+      ],
+      "outdoor_level_band": [
+        50,
+        50
+      ],
+      "outdoor_name": "Whitefall Ridge"
+    },
+    {
+      "id": "sunken_cistern",
+      "name": "Sunken Cistern",
+      "region": "sable",
+      "level_band": [
+        50,
+        50
+      ],
+      "first_seen_at_hub": "dune_watch",
+      "story": "Level-50 oasis endgame work and elite encounters. This is content after the cap, not an extra character level.",
+      "quest_seed": null,
+      "build_status": "Outdoor patrol prototype; any dedicated private design remains unscheduled",
+      "endgame": true,
+      "normal_enemy_level": 50,
+      "elite_enemy_level": 50,
+      "elite_difficulty": "Health, abilities, encounter structure and group pressure; never level 51+.",
+      "character_xp_budget": 0,
+      "content_type": "Public outdoor patrol; any dedicated private design remains unscheduled",
+      "deferred_dungeon_id": "di_cistern",
+      "position": [
+        132.0,
+        1024.0
+      ],
+      "outdoor_level_band": [
+        50,
+        50
+      ],
+      "outdoor_name": "Saltglass Wastes"
+    }
+  ],
+  "area_brackets": [
+    {
+      "level_band": [
+        1,
+        5
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        5,
+        10
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        10,
+        16
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        16,
+        22
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        22,
+        28
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        25,
+        30
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        28,
+        35
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        30,
+        40
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        40,
+        46
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        45,
+        50
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        48,
+        50
+      ],
+      "endgame": false,
+      "budget_status": "Overlapping area band, not an additional mandatory journey allocation."
+    },
+    {
+      "level_band": [
+        50,
+        50
+      ],
+      "endgame": true,
+      "budget_status": "Outside the level-1–50 clock; all enemies level 50 normal or elite."
+    }
+  ],
+  "budget_slices": [
+    {
+      "id": "opening",
+      "name": "Village opening",
+      "travel_levels": [
+        1,
+        5
+      ],
+      "arrival_levels": [
+        2,
+        5
+      ],
+      "options": [
+        "thornford"
+      ],
+      "hub_chains": {
+        "thornford": [
+          "thornford"
+        ]
+      },
+      "baseline_minutes": 35,
+      "current_curve_xp_requirement": 2320,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "outskirts",
+      "name": "Onward settlements",
+      "travel_levels": [
+        5,
+        10
+      ],
+      "arrival_levels": [
+        6,
+        10
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "lantern_crossing"
+        ],
+        "mirefen": [
+          "mossreed_landing"
+        ]
+      },
+      "baseline_minutes": 85,
+      "current_curve_xp_requirement": 7400,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "river_hubs",
+      "name": "Trade and work hubs",
+      "travel_levels": [
+        10,
+        16
+      ],
+      "arrival_levels": [
+        11,
+        16
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "rillbank_quays",
+          "millward"
+        ],
+        "mirefen": [
+          "reedward",
+          "pumpstead"
+        ]
+      },
+      "baseline_minutes": 340,
+      "current_curve_xp_requirement": 15480,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "river_border",
+      "name": "Upper lowlands",
+      "travel_levels": [
+        16,
+        22
+      ],
+      "arrival_levels": [
+        17,
+        22
+      ],
+      "options": [
+        "rillbank",
+        "mirefen"
+      ],
+      "hub_chains": {
+        "rillbank": [
+          "north_ferry",
+          "tollhouse_rise"
+        ],
+        "mirefen": [
+          "stiltmarket",
+          "causeway_watch"
+        ]
+      },
+      "baseline_minutes": 450,
+      "current_curve_xp_requirement": 22680,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "middle",
+      "name": "Woodland or coast",
+      "travel_levels": [
+        22,
+        28
+      ],
+      "arrival_levels": [
+        23,
+        28
+      ],
+      "options": [
+        "paleweald",
+        "brinewatch"
+      ],
+      "hub_chains": {
+        "paleweald": [
+          "greyroot",
+          "scribes_rest"
+        ],
+        "brinewatch": [
+          "brinewatch_docks",
+          "saltmere"
+        ]
+      },
+      "baseline_minutes": 450,
+      "current_curve_xp_requirement": 29880,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "foothills",
+      "name": "Upland or works",
+      "travel_levels": [
+        28,
+        35
+      ],
+      "arrival_levels": [
+        29,
+        35
+      ],
+      "options": [
+        "highmere",
+        "cinder"
+      ],
+      "hub_chains": {
+        "highmere": [
+          "highmere_market",
+          "quarryend"
+        ],
+        "cinder": [
+          "cinder_gate",
+          "ashworks"
+        ]
+      },
+      "baseline_minutes": 525,
+      "current_curve_xp_requirement": 43960,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "frontier",
+      "name": "Upper frontier",
+      "travel_levels": [
+        35,
+        40
+      ],
+      "arrival_levels": [
+        36,
+        40
+      ],
+      "options": [
+        "highmere",
+        "cinder"
+      ],
+      "hub_chains": {
+        "highmere": [
+          "windscar",
+          "high_pass"
+        ],
+        "cinder": [
+          "furnace_camp",
+          "ember_relay"
+        ]
+      },
+      "baseline_minutes": 375,
+      "current_curve_xp_requirement": 37400,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "prestige_approach",
+      "name": "End-level settlements",
+      "travel_levels": [
+        40,
+        46
+      ],
+      "arrival_levels": [
+        41,
+        46
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "frostgate",
+          "lantern_pass",
+          "hearthwatch"
+        ],
+        "sable": [
+          "wellward",
+          "caravan_rest",
+          "dune_watch"
+        ]
+      },
+      "baseline_minutes": 745,
+      "current_curve_xp_requirement": 51480,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "late_act",
+      "name": "Late-act approaches",
+      "travel_levels": [
+        46,
+        48
+      ],
+      "arrival_levels": [
+        47,
+        48
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "whitebough",
+          "last_beacon"
+        ],
+        "sable": [
+          "saltroad",
+          "glass_road"
+        ]
+      },
+      "baseline_minutes": 295,
+      "current_curve_xp_requirement": 18760,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    },
+    {
+      "id": "finale",
+      "name": "Final-chapter hubs",
+      "travel_levels": [
+        48,
+        50
+      ],
+      "arrival_levels": [
+        49,
+        50
+      ],
+      "options": [
+        "frostward",
+        "sable"
+      ],
+      "hub_chains": {
+        "frostward": [
+          "north_ledger_gate"
+        ],
+        "sable": [
+          "sunseal_court"
+        ]
+      },
+      "baseline_minutes": 300,
+      "current_curve_xp_requirement": 19560,
+      "budget_rule": "Count each interval once; alternative or return-hub work replaces work in that interval."
+    }
+  ],
+  "services_policy": "Full services at main settlements; repair/provisions/rest at forward bases. Do not force travel across an entire region for every hand-in.",
+  "return_policy": "Retain fixed early encounters; add separately signposted dangerous pockets. Do not scale up the old safe village when the player returns.",
+  "dungeon_scope": {
+    "approved_layouts": 7,
+    "maximum_layouts": 8,
+    "plan_file": "instanced-dungeons.json",
+    "outdoor_alternatives": "Preserve all regional story and gear outcomes without mandatory regional dungeon clears."
+  }
+}

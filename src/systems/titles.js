@@ -1,6 +1,6 @@
 import { DB } from '../data/db.js';
 
-// Titles, Fable style (data/titles.json). You start a nobody, and townsfolk
+// Titles, Fable style (data/npcs/titles.json). You start a nobody, and townsfolk
 // greet you with "Hello there." or "Hey you!". Renown, kept with reputation
 // (systems/reputation.js), says how known you are; once it (and a title's own
 // conditions, such as a fishing rank) allows it, you

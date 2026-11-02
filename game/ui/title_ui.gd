@@ -131,7 +131,7 @@ func _build_main() -> void:
 	else:
 		var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
 		crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var h1 := UI.label(col, "S H A D O W F A L L", 46, UI.GOLD, 4)
+	var h1 := UI.label(col, "S H A D O W F E L L", 46, UI.GOLD, 4)
 	h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.h1 = h1
 	var t: Dictionary = DB.text.title
@@ -175,13 +175,13 @@ func _build_main() -> void:
 	_build_credits(v)
 
 
-## A small corner button that opens the credits list from data/credits.json.
+## A small corner button that opens the credits list from data/meta/credits.json.
 func _build_credits(v: Control) -> void:
 	var btn := UI.square_button(v, "©", func(): main.credits.visible = not main.credits.visible, 30)
 	btn.tooltip_text = "Credits"
 	btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	btn.position = Vector2(-46, -46)
-	var c = JSON.parse_string(FileAccess.get_file_as_string("res://data/credits.json"))
+	var c = JSON.parse_string(FileAccess.get_file_as_string("res://data/meta/credits.json"))
 	var w := UI.window(v, "Credits", 560, func(): main.credits.visible = false)
 	var p: PanelContainer = w.panel
 	p.set_anchors_preset(Control.PRESET_CENTER)

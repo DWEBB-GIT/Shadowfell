@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { WATER, OBSCURED } from './layout.js';
 import { heightAt, waterLevel } from './terrain.js';
 
-// Ponds and dark places, both from data/world.json.
+// Ponds and dark places, both from data/world/world.json.
 //
 // Water: a still surface over a bowl in the ground (terrain.js dips the land
 // under it), which the Warden cannot walk into. Fishing casts into it.

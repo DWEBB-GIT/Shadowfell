@@ -656,6 +656,9 @@ func update_marks() -> void:
 	var vp := get_viewport_rect().size
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.6) * 0.5 + 0.5
 	for n in game.npcs.all:
+		if not n.present or n.position.distance_squared_to(game.player.position) > 70.0 * 70.0:
+			if marks.has(n.id): marks[n.id].visible = false
+			continue
 		var status: String = game.quests.marker_for(n.id) if n.present else ""
 		var l: Label = marks.get(n.id)
 		if l == null:

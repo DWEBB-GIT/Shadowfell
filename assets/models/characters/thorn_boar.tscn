@@ -1,0 +1,299 @@
+[gd_scene load_steps=27 format=3]
+
+[sub_resource type="StandardMaterial3D" id="1"]
+albedo_color = Color(0.29, 0.18, 0.11, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="2"]
+albedo_color = Color(0.39, 0.25, 0.18, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="3"]
+albedo_color = Color(0.87, 0.81, 0.64, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="4"]
+albedo_color = Color(0.08, 0.06, 0.04, 1)
+roughness = 0.9
+
+[sub_resource type="SphereMesh" id="5"]
+radius = 0.48
+height = 0.96
+radial_segments = 10
+rings = 5
+
+[sub_resource type="SphereMesh" id="6"]
+radius = 0.31
+height = 0.62
+radial_segments = 10
+rings = 5
+
+[sub_resource type="SphereMesh" id="7"]
+radius = 0.21
+height = 0.42
+radial_segments = 10
+rings = 5
+
+[sub_resource type="SphereMesh" id="8"]
+radius = 0.035
+height = 0.07
+radial_segments = 10
+rings = 5
+
+[sub_resource type="CylinderMesh" id="9"]
+top_radius = 0.012
+bottom_radius = 0.06
+height = 0.24
+radial_segments = 6
+
+[sub_resource type="CylinderMesh" id="10"]
+top_radius = 0.0
+bottom_radius = 0.13
+height = 0.28
+radial_segments = 3
+
+[sub_resource type="SphereMesh" id="11"]
+radius = 0.035
+height = 0.07
+radial_segments = 10
+rings = 5
+
+[sub_resource type="CylinderMesh" id="12"]
+top_radius = 0.012
+bottom_radius = 0.06
+height = 0.24
+radial_segments = 6
+
+[sub_resource type="CylinderMesh" id="13"]
+top_radius = 0.0
+bottom_radius = 0.13
+height = 0.28
+radial_segments = 3
+
+[sub_resource type="BoxMesh" id="14"]
+size = Vector3(0.16, 0.34, 0.18)
+
+[sub_resource type="BoxMesh" id="15"]
+size = Vector3(0.18, 0.1, 0.23)
+
+[sub_resource type="BoxMesh" id="16"]
+size = Vector3(0.16, 0.34, 0.18)
+
+[sub_resource type="BoxMesh" id="17"]
+size = Vector3(0.18, 0.1, 0.23)
+
+[sub_resource type="BoxMesh" id="18"]
+size = Vector3(0.16, 0.34, 0.18)
+
+[sub_resource type="BoxMesh" id="19"]
+size = Vector3(0.18, 0.1, 0.23)
+
+[sub_resource type="BoxMesh" id="20"]
+size = Vector3(0.16, 0.34, 0.18)
+
+[sub_resource type="BoxMesh" id="21"]
+size = Vector3(0.18, 0.1, 0.23)
+
+[sub_resource type="CylinderMesh" id="22"]
+top_radius = 0.0
+bottom_radius = 0.075
+height = 0.16
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="23"]
+top_radius = 0.0
+bottom_radius = 0.075
+height = 0.16
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="24"]
+top_radius = 0.0
+bottom_radius = 0.075
+height = 0.16
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="25"]
+top_radius = 0.0
+bottom_radius = 0.075
+height = 0.16
+radial_segments = 3
+
+[sub_resource type="CylinderMesh" id="26"]
+top_radius = 0.0
+bottom_radius = 0.075
+height = 0.16
+radial_segments = 3
+
+[node name="ThornBoar" type="Node3D"]
+
+[node name="Torso" type="Node3D" parent="."]
+position = Vector3(0, 0.64, 0)
+
+[node name="Body" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(0.9, 0.85, 1.45)
+mesh = SubResource("5")
+material_override = SubResource("1")
+
+[node name="Head" type="Node3D" parent="Torso"]
+position = Vector3(0, -0.03, 0.65)
+
+[node name="HeadShape" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(0, 0, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(0.9, 1, 1.2)
+mesh = SubResource("6")
+material_override = SubResource("2")
+
+[node name="Snout" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(0, -0.1, 0.32)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 0.8, 0.8)
+mesh = SubResource("7")
+material_override = SubResource("2")
+
+[node name="Eye-1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(-0.24, 0.1, 0.11)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("8")
+material_override = SubResource("4")
+
+[node name="Tusk-1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(-0.19, -0.035, 0.35)
+rotation_degrees = Vector3(-25, 0, 18)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("9")
+material_override = SubResource("3")
+
+[node name="Ear-1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(-0.23, 0.3, -0.03)
+rotation_degrees = Vector3(15, 0, 25)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("10")
+material_override = SubResource("1")
+
+[node name="Eye1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(0.24, 0.1, 0.11)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("11")
+material_override = SubResource("4")
+
+[node name="Tusk1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(0.19, -0.035, 0.35)
+rotation_degrees = Vector3(-25, 0, -18)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("12")
+material_override = SubResource("3")
+
+[node name="Ear1" type="MeshInstance3D" parent="Torso/Head"]
+position = Vector3(0.23, 0.3, -0.03)
+rotation_degrees = Vector3(15, 0, -25)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("13")
+material_override = SubResource("1")
+
+[node name="Leg_L" type="Node3D" parent="."]
+position = Vector3(-0.29, 0.36, 0.45)
+
+[node name="Leg_LShin" type="MeshInstance3D" parent="Leg_L"]
+position = Vector3(0, -0.17, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("14")
+material_override = SubResource("1")
+
+[node name="Leg_LHoof" type="MeshInstance3D" parent="Leg_L"]
+position = Vector3(0, -0.31, 0.025)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("15")
+material_override = SubResource("4")
+
+[node name="Leg_R" type="Node3D" parent="."]
+position = Vector3(0.29, 0.36, 0.45)
+
+[node name="Leg_RShin" type="MeshInstance3D" parent="Leg_R"]
+position = Vector3(0, -0.17, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("16")
+material_override = SubResource("1")
+
+[node name="Leg_RHoof" type="MeshInstance3D" parent="Leg_R"]
+position = Vector3(0, -0.31, 0.025)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("17")
+material_override = SubResource("4")
+
+[node name="Arm_L" type="Node3D" parent="."]
+position = Vector3(-0.29, 0.36, -0.43)
+
+[node name="Arm_LShin" type="MeshInstance3D" parent="Arm_L"]
+position = Vector3(0, -0.17, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("18")
+material_override = SubResource("1")
+
+[node name="Arm_LHoof" type="MeshInstance3D" parent="Arm_L"]
+position = Vector3(0, -0.31, 0.025)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("19")
+material_override = SubResource("4")
+
+[node name="Arm_R" type="Node3D" parent="."]
+position = Vector3(0.29, 0.36, -0.43)
+
+[node name="Arm_RShin" type="MeshInstance3D" parent="Arm_R"]
+position = Vector3(0, -0.17, 0)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("20")
+material_override = SubResource("1")
+
+[node name="Arm_RHoof" type="MeshInstance3D" parent="Arm_R"]
+position = Vector3(0, -0.31, 0.025)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("21")
+material_override = SubResource("4")
+
+[node name="Bristle0" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0.43, -0.45)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("22")
+material_override = SubResource("4")
+
+[node name="Bristle1" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0.43, -0.26)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("23")
+material_override = SubResource("4")
+
+[node name="Bristle2" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0.43, -0.07)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("24")
+material_override = SubResource("4")
+
+[node name="Bristle3" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0.43, 0.12000000000000005)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("25")
+material_override = SubResource("4")
+
+[node name="Bristle4" type="MeshInstance3D" parent="Torso"]
+position = Vector3(0, 0.43, 0.31)
+rotation_degrees = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+mesh = SubResource("26")
+material_override = SubResource("4")

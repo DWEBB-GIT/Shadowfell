@@ -1,6 +1,6 @@
 @tool
 extends HSplitContainer
-## Skills: what a trainer teaches for coins (data/skills.json), such as
+## Skills: what a trainer teaches for coins (data/professions/skills.json), such as
 ## Camping or Fishing. A skill unlocks the abilities it teaches (its tools,
 ## which name it as their `skill`); one with a top rank rises with use.
 

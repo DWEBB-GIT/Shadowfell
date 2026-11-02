@@ -3,8 +3,8 @@ extends RefCounted
 ## What abilities are paid with (src/systems/resources.js). Mana is drawn
 ## from Intellect and refills slowly in combat (fast out of it). Every other
 ## resource is a class bar, one system with different numbers per class
-## (data/archetypes.json `resources.bars`); the keys are documented in the
-## JS file. Ability costs live in data/abilities.json (`cost`, `gain`, and
+## (data/abilities/archetypes.json `resources.bars`); the keys are documented in the
+## JS file. Ability costs live in data/abilities/abilities.json (`cost`, `gain`, and
 ## `spendsAll` for finishers such as Double Cut and Purge).
 
 var game
@@ -146,7 +146,7 @@ func can_afford(ability: Dictionary) -> bool:
 	return unlimited or lacking(ability) == ""
 
 
-## refuse with WoW's red message if short; true if it can be paid
+## refuse with red message if short; true if it can be paid
 func check(ability: Dictionary) -> bool:
 	var short := "" if unlimited else lacking(ability)
 	if short != "":
@@ -210,8 +210,8 @@ func update(dt: float) -> void:
 	since_combat += dt
 	since_hit += dt
 	var fighting := in_combat
-	# WoW-style notice when combat starts and fades, so you know when you
-	# can eat or rest (Dan, 2026-10-29)
+	# notice when combat starts and fades, so you know when you
+	# can eat or rest 
 	if fighting != was_fighting:
 		was_fighting = fighting
 		if game.hud:
@@ -230,8 +230,8 @@ func update(dt: float) -> void:
 		if b.get("points") and b.get("fadeAfter") and since_hit > b.fadeAfter and not hidden:
 			v = 0
 		values[b.id] = clampf(v, 0, b.max)
-	# WoW-style health regen: out of combat for a few seconds, faster when
-	# standing still (Dan, 2026-10-29)
+	# health regen: out of combat for a few seconds, faster when
+	# ststanding still 
 	if not fighting and since_combat > HEALTH_REGEN_DELAY and player.health < player.max_health:
 		var rate: float = HEALTH_REGEN_PERCENT * (1.0 if player.moving else HEALTH_REGEN_STILL)
 		player.health = minf(player.max_health, player.health + player.max_health * rate * dt / 100.0)

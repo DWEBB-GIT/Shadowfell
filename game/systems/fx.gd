@@ -31,14 +31,24 @@ func _init(g) -> void:
 	dust_mat = StandardMaterial3D.new()
 	dust_mat.albedo_color = Color("6a5c48")
 	var ev: Events = game.events
-	# a spell with its own look (data/spell_fx.json) skips the generic one
+	# a spell with its own look (data/abilities/spell_fx.json) skips the generic one
 	ev.on("spellFx", func(e): spell_fx(e))
 	ev.on("burst", func(e):
 		if not _has_look(e.get("id", ""), "impact"):
 			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
 	ev.on("enemyHit", func(e):
-		sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8)
-		_blow_lands(e))
+		var land := func():
+			if e.get("damage",0) > 0:
+				contact_impact(e)
+			_blow_lands(e)
+		# The opening auto-attack resolves early but its visible impact waits
+		# for the blade's windup, together with the floating damage number.
+		var delay: float = e.get("show",0.0)
+		if delay > 0:
+			_add(Node3D.new(),delay,func(_it,k,_dt):
+				if k >= 1: land.call())
+		else:
+			land.call())
 	# the weight of a landed blow: the camera kicks (nothing ever pauses)
 	ev.on("hitImpact", func(e):
 		if e.get("heavy") or e.get("crit"):
@@ -169,7 +179,7 @@ func dust(pos: Vector3, n: int, spread := 0.6) -> void:
 ## An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
 ## With `follow` (an enemy), it homes in on it as it moves, and arrives
 ## after `life` seconds. `look` (a spell id) adds that spell's
-## `projectile` shapes (data/spell_fx.json), carried along its flight.
+## `projectile` shapes (data/abilities/spell_fx.json), carried along its flight.
 func projectile(p: Dictionary) -> void:
 	var kind = p.get("kind")
 	var follow = p.get("follow")
@@ -398,7 +408,7 @@ static func _look_meshes() -> Array:
 
 
 ## A spell's own look: every part of its `cast` or `impact` list
-## (data/spell_fx.json), each after its own delay.
+## (data/abilities/spell_fx.json), each after its own delay.
 ## `e`: { id, phase, position, facing, follow (the player or null), tuning }
 func spell_fx(e: Dictionary) -> void:
 	var spell: Dictionary = DB.abilities.get(e.id, {})
@@ -436,6 +446,37 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 ## A melee blow connecting: hit-stop on both bodies, and on an auto attack
 ## a faint slash across the target in the swing's direction (main hand cuts
 ## down to the left, off hand down to the right).
+## A compact contact flash that is visible from the gameplay camera on
+## the first rendered hit frame. It never appears on misses or through walls.
+func contact_impact(e: Dictionary) -> void:
+	var enemy = e.enemy
+	var high := clampf(enemy.radius*1.6,0.5,1.35)
+	var at: Vector3 = enemy.position+Vector3.UP*high+game.camera.global_basis.z*0.35
+	var mat := Tex.fx_material(Tex.glint(),Color("ffe6bc"),true,true)
+	mat.render_priority = 2
+	var flash := Tex.sprite(mat)
+	flash.name = "HitContact"
+	flash.position = at
+	var size := 0.95 if e.get("crit",false) else 0.72
+	flash.scale = Vector3.ONE*size
+	_add(flash,0.22 if e.get("crit",false) else 0.17,func(it,k,_dt):
+		it.obj.scale = Vector3.ONE*size*(1.0+k*0.45)
+		mat.albedo_color.a = (1.0-k)*(1.0-k))
+	sparks(enemy.position,7 if e.get("crit",false) else 4)
+	var flesh: bool = enemy.type.contains("boar") or enemy.type.contains("wolf") or enemy.type.contains("briarjaw") or str(enemy.cfg.get("model","")).contains("hound")
+	if game.settings.get_value("bloodEffects") and flesh and e.get("kind","") == "strike":
+		for i in 4:
+			var droplet := Tex.sprite(Tex.fx_material(Tex.blob(),Color("982d29"),false,true))
+			droplet.name = "BloodDroplet"
+			droplet.position = at
+			droplet.scale = Vector3.ONE*(0.09 if not e.get("crit",false) else 0.13)
+			var velocity := Vector3((randf()-0.5)*2.5,0.5+randf(),(randf()-0.5)*2.5)
+			_add(droplet,0.32,func(it,k,dt):
+				it.obj.position += it.velocity*dt
+				it.velocity.y -= 8.0*dt
+				it.obj.material_override.albedo_color.a = 1.0-k,{"velocity":velocity})
+
+
 func _blow_lands(e: Dictionary) -> void:
 	var hand: String = e.get("hand", "main")
 	var player = game.player
@@ -452,8 +493,8 @@ func _blow_lands(e: Dictionary) -> void:
 	enemy.rig.hold(t)
 	if e.get("swing"):
 		var facing := atan2(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
-		var slash := {"mesh": "fx_arc", "glow": 0.55 if not e.get("crit") else 0.85, "life": 0.18, "height": 1.25, "forward": -0.2,
-			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.55, 0.7], "spin": 60 if hand == "main" else -60}
+		var slash := {"mesh": "fx_arc", "glow": 0.8 if not e.get("crit") else 1.0, "life": 0.23, "height": 1.1, "forward": -0.2,
+			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.7, 0.95], "spin": 60 if hand == "main" else -60}
 		_shape(slash, enemy.position, facing, null, Color("fff0d8"), {})
 
 
@@ -521,5 +562,6 @@ func update(dt: float) -> void:
 		var k: float = minf(1, it.age / it.life)
 		it.update.call(it, k, dt)
 		if k >= 1:
+			RenderCleanup.detach(it.obj)
 			it.obj.queue_free()
 			items.erase(it)

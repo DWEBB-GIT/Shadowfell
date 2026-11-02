@@ -1,6 +1,6 @@
 class_name Gems
 extends RefCounted
-## Gems (data/gems.json): every gem type in every quality is an item, made
+## Gems (data/professions/gems.json): every gem type in every quality is an item, made
 ## here from the two lists rather than written out in items.json. A gem in a
 ## socket gives back the slice of the item budget the socket took
 ## (Scaling.socket_share), worked out from its quality's level, so sockets

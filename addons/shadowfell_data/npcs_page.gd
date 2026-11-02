@@ -207,7 +207,7 @@ func _greeting(n: Dictionary) -> void:
 	form.add_child(UI.button("Edit all of their dialogue", func(): open_record.emit("dialogue", d.id), "Greetings for each step of a quest, topics and replies, on the Dialogue tab"))
 	var others := greets.size() - 1
 	var topics: int = d.get("topics", []).size()
-	UI.note(form, "Dialogue %s: %d greeting%s that depend on quests or flags, %d topic%s to ask about (edited in data/dialogue.json)." % [d.id, others, "" if others == 1 else "s", topics, "" if topics == 1 else "s"], Color(0.6, 0.6, 0.6))
+	UI.note(form, "Dialogue %s: %d greeting%s that depend on quests or flags, %d topic%s to ask about (edited in data/quests/dialogue.json)." % [d.id, others, "" if others == 1 else "s", topics, "" if topics == 1 else "s"], Color(0.6, 0.6, 0.6))
 
 
 ## a dialogue of their own, with one greeting to edit
@@ -398,7 +398,7 @@ func _world(n: Dictionary) -> void:
 	var sp := s.spawn_of(n.id)
 	if sp.is_empty():
 		UI.note(form, "Not placed anywhere yet, so they are not in the game.", Color("d0b070"))
-		form.add_child(UI.button("Place in Brackenford", func(): _place(n), "Stand them in the town square; move them with the World editor"))
+		form.add_child(UI.button("Place on active map", func(): _place(n), "Stand them near the map's start (the town square in Act 1); move them with the World editor"))
 		return
 	var p: Array = sp.get("position", [0, 0])
 	UI.note(form, "Stands at x %s, z %s, facing %d°. Move them with the World editor (res://addons/shadowfell_data/world_editor.tscn)." % [p[0], p[1], sp.get("facing", 0)])
@@ -409,6 +409,8 @@ func _world(n: Dictionary) -> void:
 ## a spawn a little way off the Brackenford square, clear of the others
 func _place(n: Dictionary) -> void:
 	var town := DataStore.find(s.locations, "brackenford")
+	if s.map_id == "new":
+		town = {}
 	var c: Array = town.get("position", s.files.world.get("playerStart", {}).get("position", [0, 0]))
 	var at := Vector2(c[0], c[1])
 	for step in 24:

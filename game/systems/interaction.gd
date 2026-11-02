@@ -69,6 +69,7 @@ func _candidates(near := INF) -> Array:
 	list.append_array(game.mining.interactions())
 	list.append_array(game.gathering.interactions())
 	list.append_array(game.discovery.interactions())
+	list.append_array(game.puzzles.interactions())
 	for sp in Layout.signposts:
 		if far.call(sp.position[0], sp.position[1]):
 			continue
@@ -92,7 +93,7 @@ func click_points() -> Array:
 		return game.afterlife.interactions()
 	if game.player.dead:
 		return []
-	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:"))
 
 
 const EXAMINE_REPEAT_MS := 10000
