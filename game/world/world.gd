@@ -259,7 +259,12 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 	return false
 
 
+## The see-through circle is for when you are outside and something stands
+## between you and the camera. Inside a building (its front and roof already
+## lift away) it is switched off: camera and focus at one point cut nothing.
 func set_cutaway(camera_pos: Vector3, focus: Vector3) -> void:
+	if indoors != null:
+		camera_pos = focus
 	land.set_cutaway(camera_pos, focus)
 
 

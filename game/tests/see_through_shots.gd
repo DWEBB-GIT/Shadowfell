@@ -67,6 +67,14 @@ func _process(_delta: float) -> bool:
 			var d := Vector2(got.x - cx, got.z - cz).length()
 			check(d >= c[2] * s + radius - 0.02, "%s pushes the player out (%.2f m)" % [model, d])
 			print("%s blocks at %.2f m (collider %.2f x %.2f)" % [model, d, c[2], s])
+		# indoors the circle is off: camera and focus meet, nothing is cut
+		var was = game.world.indoors
+		game.world.indoors = {"def": {}}
+		game.world.set_cutaway(Vector3(0, 30, 20), Vector3(0, 1.2, 0))
+		check(Land.cut_cam == Vector3(0, 1.2, 0), "no see-through circle indoors")
+		game.world.indoors = was
+		game.world.set_cutaway(Vector3(0, 30, 20), Vector3(0, 1.2, 0))
+		check(Land.cut_cam == Vector3(0, 30, 20), "see-through circle outdoors")
 		_stand_behind(TREE[0], TREE[1], 1.2)
 	if frames == 40:
 		_save("tree")

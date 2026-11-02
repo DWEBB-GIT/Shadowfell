@@ -452,7 +452,9 @@ func _model(model: String):
 
 ## the see-through circle follows the player: one pair of global shader
 ## values shared by every cutaway material (cutaway.gdshaderinc)
+static var cut_cam := Vector3.ZERO ## last values sent, for checks
 static func set_cutaway(camera_pos: Vector3, at: Vector3) -> void:
+	cut_cam = camera_pos
 	RenderingServer.global_shader_parameter_set("sf_cut_cam", camera_pos)
 	RenderingServer.global_shader_parameter_set("sf_cut_focus", at)
 
