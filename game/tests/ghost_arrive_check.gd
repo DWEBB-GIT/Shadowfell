@@ -35,7 +35,7 @@ func _process(_dt: float) -> bool:
 		game.player.take_damage(99999)
 		game.on_player_death(null)
 		_ok(game.audio.death_loop != null and game.audio.death_loop.playing, "the wind plays while dead")
-		_ok(game.audio.music.stream_paused, "the music waits while dead")
+		_ok(game.audio.dead and (game.audio.music.stream_paused or not game.audio.music.playing), "the music waits while dead")
 	elif frame == 150:
 		var u := Time.get_ticks_usec()
 		game.release_spirit()
@@ -69,7 +69,7 @@ func _process(_dt: float) -> bool:
 		if frame == start_frame + 160:
 			game.afterlife.revive_here()
 			_ok(not game.audio.death_loop.playing, "the wind stops on return to life")
-			_ok(not game.audio.music.stream_paused, "the music carries on")
+			_ok(not game.audio.dead and not game.audio.music.stream_paused, "the music carries on")
 	elif start_frame > 0:
 		_ok(loading_seen, "the arrival is behind the loading screen")
 		print("worst frame after the spirit rose: %.0f ms" % worst)
