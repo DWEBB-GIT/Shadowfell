@@ -50,7 +50,7 @@ const CONFIG := {
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
-		# Stable north-up view: 50 degrees down, with a 45-degree optional lower view.
+		# Stable north-up view: 45 degrees down by default (lowerOffset, Settings "Lower camera angle" on), 50 degrees with it off.
 		# Zoom changes distance, never pitch or player-facing direction.
 		# At 16:9 the default sees roughly 39 m across the player plane.
 		"offset": Vector3(0, 27.6067, 23.1648), "lowerOffset": Vector3(0, 25.5, 25.5),
