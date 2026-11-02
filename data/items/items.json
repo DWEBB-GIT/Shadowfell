@@ -1469,7 +1469,7 @@
       "price": 3,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Grey motes that glitter when no one looks straight at them. An enchanter spends it on gear up to level 10."
+      "description": "Grey motes that glitter when no one looks straight at them. An enchanter spends it refining gear up to level 10."
     },
     {
       "id": "glimmering_dust",
@@ -1480,7 +1480,7 @@
       "price": 6,
       "model": "rock1",
       "icon": "rock1",
-      "description": "It drifts up out of the pouch if you leave it open. An enchanter spends it on gear up to level 22."
+      "description": "It drifts up out of the pouch if you leave it open. An enchanter spends it refining gear up to level 22."
     },
     {
       "id": "radiant_dust",
@@ -1491,7 +1491,7 @@
       "price": 12,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Bright enough to read by. An enchanter spends it on gear up to level 38."
+      "description": "Bright enough to read by. An enchanter spends it refining gear up to level 38."
     },
     {
       "id": "eldritch_dust",
@@ -1502,7 +1502,7 @@
       "price": 25,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Black, and it shines anyway. An enchanter spends it on the highest gear."
+      "description": "Black, and it shines anyway. An enchanter spends it refining the highest gear."
     },
     {
       "id": "soulshard",
@@ -1513,7 +1513,7 @@
       "price": 100,
       "model": "grave_iron",
       "icon": "grave_iron",
-      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Enchanters need one for the last enhancement on the finest gear."
+      "description": "A sliver of a strong thing's will, left where it fell. Still warm. Enchanters need one for the last refining rank on the finest gear."
     },
     {
       "id": "whetstone",

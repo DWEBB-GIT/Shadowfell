@@ -218,7 +218,7 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 		if game.skills.has("mining"):
 			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
 	if def.get("enchanter"):
-		pg.options.append({"id": "ench:enchant", "text": "Enchant gear", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (dust and gems)", "icon": "shop", "group": "service"})
 	if def.get("jeweller"):
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
@@ -262,7 +262,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 					continue
 				pg.options.append({"id": "enchant:" + loc, "text": "%s → +%d: %s" % [_gear_name(loc), cost.rank, fg.cost_text(cost)], "icon": "accept", "disabled": not fg.affordable(cost)})
 			if pg.options.is_empty():
-				pg.text += "\n\nNothing you carry will take an enchantment. Plain gear has no magic to wake, and the rest holds all it can."
+				pg.text += "\n\nNothing you carry will take refining. Plain gear has no magic to wake, and the rest holds all it can."
 		"scrap":
 			pg.text = "I'll break it down and draw the magic out as dust. You get three parts in four of every mote I ever put into it, and every stone in it. The rest is ash. I'll tell you what you'll get first."
 			for loc in fg.gear_locations():

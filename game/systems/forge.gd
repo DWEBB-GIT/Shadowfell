@@ -130,7 +130,7 @@ func temper(loc: String) -> bool:
 		return false
 	var cost := temper_cost(st)
 	if cost.is_empty():
-		_say("That can be enchanted no further")
+		_say("That can be refined no further")
 		return false
 	if not affordable(cost):
 		_say("You don't have what that needs")
@@ -142,7 +142,7 @@ func temper(loc: String) -> bool:
 	r.temper = cost.rank
 	_changed(loc)
 	game.events.emit("itemEnchanted", {"loc": loc, "rank": cost.rank})
-	game.events.emit("log", {"text": "Enchanted: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
+	game.events.emit("log", {"text": "Refined: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
 	return true
 
 

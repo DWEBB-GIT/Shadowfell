@@ -887,17 +887,17 @@
         },
         {
           "id": "enchanting",
-          "prompt": "How does enchanting work?",
+          "prompt": "How does refining work?",
           "node": "sabeth_enchanting"
         }
       ],
       "nodes": [
         {
           "id": "sabeth_who",
-          "text": "Sabeth Gall. I wake what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
+          "text": "Sabeth Gall. I refine what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
           "replies": [
             {
-              "text": "How does enchanting work?",
+              "text": "How does refining work?",
               "node": "sabeth_enchanting"
             },
             {

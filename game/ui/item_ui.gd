@@ -1698,7 +1698,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
 	var cap: int = game.forge.temper_cap(stack) if Items.ROLLED_KINDS.has(def.kind) else 0
 	if cap > 0:
-		lines.append(_l("Enchanted %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
+		lines.append(_l("Refined %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
 	var rune := Runes.def(Runes.of(stack))
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
