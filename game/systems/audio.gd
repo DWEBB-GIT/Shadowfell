@@ -54,6 +54,7 @@ const SFX := {
 	"campfire": ["campfire.mp3"],
 	"fish_cast": ["fishing_cast.mp3"],
 	"fish_out": ["fishing_out.mp3"],
+	"fish_splash": ["fish_splash.wav"], # a bite: strike now
 	"step_dirt": ["step_dirt_1.wav", "step_dirt_2.wav", "step_dirt_3.wav", "step_dirt_4.wav", "step_dirt_5.wav"],
 	"step_stone": ["step_stone_1.wav", "step_stone_2.wav", "step_stone_3.wav", "step_stone_4.wav", "step_stone_5.wav"],
 	"step_wood": ["step_wood_1.wav", "step_wood_2.wav", "step_wood_3.wav", "step_wood_4.wav"],
@@ -247,6 +248,7 @@ func _bind() -> void:
 	ev.on("playerShot", func(_e): sfx("shot", 0.7))
 	ev.on("fishCast", func(_e): sfx("fish_cast", 0.8))
 	ev.on("fishReel", func(_e): sfx("fish_out", 0.8))
+	ev.on("fishBite", func(_e): sfx("fish_splash", 1.0))
 	ev.on("enemyHit", func(e):
 		if e.get("kind") != "strike":
 			return
@@ -331,8 +333,8 @@ func _bind() -> void:
 ## Sounds turned down from what their callers ask, in one place: running
 ## footsteps, panels and bags opening, drawing and sheathing (Dan
 ## 2026-11-02: too loud).
-const TRIM := {"step_dirt": 0.55, "step_stone": 0.55, "step_wood": 0.55,
-	"panel": 0.55, "bag": 0.55, "quest_log": 0.55, "sheathe": 0.5, "unsheathe": 0.5}
+const TRIM := {"step_dirt": 0.35, "step_stone": 0.35, "step_wood": 0.35,
+	"panel": 0.35, "bag": 0.35, "quest_log": 0.35, "sheathe": 0.3, "unsheathe": 0.3}
 
 
 ## Plays one of Dan's recorded sounds by its SFX name.

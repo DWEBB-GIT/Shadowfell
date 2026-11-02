@@ -19,6 +19,8 @@ var facing: float
 var radius: float
 var max_health: float
 var health: float
+var fled := false ## already broke and ran once this fight
+var flee_left := 0.0
 var mana: float
 var state := "idle"
 var attack_timer := 0.6
@@ -143,6 +145,13 @@ var chase_speed: float:
 			return 0.0
 		return DB.CONFIG.player.speed * run_percent / 100.0 * (1 - minf(90, mods.slow) / 100.0)
 
+## true once a wounded beast or man should break and run
+func _breaks() -> bool:
+	var f: Dictionary = DB.CONFIG.chase.flee
+	var can: bool = cfg.get("flees", f.types.has(cfg.get("type", "")) and not f.noModels.has(cfg.get("model", "")))
+	return can and health > 0 and health <= max_health * f.below
+
+
 var run_percent: float:
 	get:
 		var c: Dictionary = DB.CONFIG.chase
@@ -218,6 +227,7 @@ func reset() -> void:
 	position = home
 	position.y = Terrain.height_at(home.x, home.z)
 	health = max_health
+	fled = false
 	mana = cfg.get("mana", 0)
 	state = "idle"
 	windup = 0.0
@@ -499,9 +509,20 @@ func update(dt: float, player) -> void:
 				elif (from_home > DB.leash_distance or dist > cfg.detection * 2) and since_struck >= LEASH_GRACE:
 					state = "return"
 					windup = 0.0
+				elif not fled and _breaks():
+					fled = true
+					flee_left = DB.CONFIG.chase.flee.seconds
+					state = "flee"
+					windup = 0.0
+					game.events.emit("log", {"text": "The %s turns to flee!" % cfg.name, "kind": "muted"})
 				else:
 					state = "attack" if dist <= reach else "chase"
 					engaged = maxf(engaged, 2)
+			"flee":
+				flee_left -= dt
+				engaged = maxf(engaged, 2)
+				if flee_left <= 0 or from_home > DB.leash_distance:
+					state = "chase"
 			"return":
 				returning += dt
 				if from_home < 0.6 or returning >= RETURN_LIMIT:
@@ -561,6 +582,11 @@ func update(dt: float, player) -> void:
 				_melee_swing()
 	if casting != null:
 		pass # nothing else moves while committed to a telegraphed attack
+	elif state == "flee" and stagger <= 0 and dist > 0.01:
+		# runs straight away from the player, slower than its chase
+		var fs: float = DB.CONFIG.player.speed * DB.CONFIG.chase.flee.speed / 100.0 * (1 - minf(90, mods.slow) / 100.0)
+		_steer_towards(position.x - dx / dist * 6, position.z - dz / dist * 6, fs, dt, 0.1)
+		speed01 = 0.8
 	elif state == "return" and stagger <= 0:
 		_steer_towards(home.x, home.z, move_speed * 0.8, dt, 0.3)
 		speed01 = 0.8

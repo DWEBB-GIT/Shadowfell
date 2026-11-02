@@ -231,6 +231,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 	_pick_clip(dt, speed01)
 	anim.advance(dt)
 	_apply_upper(dt)
+	_apply_off_mirror()
 	_apply_snap(dt)
 	if track_steps:
 		_watch_feet(dt)
@@ -347,6 +348,49 @@ func _apply_upper(dt: float) -> void:
 		var q := a.rotation_track_interpolate(tb[0], t)
 		var b: int = tb[1]
 		_skel.set_bone_pose_rotation(b, _skel.get_bone_pose_rotation(b).slerp(q, _upper_w))
+
+
+## The off-hand blow on an imported model (Dan, 2026-11-02: dual wield
+## showed no off-hand swing): the Attack clip's right arm, mirrored onto
+## the left arm, timed so its blow lands on the off-hand's impact.
+const OFF_ARM := ["Shoulder", "Arm", "ForeArm", "Hand"]
+var _off_pairs = null ## [[right bone, left bone], ...]
+
+
+func _apply_off_mirror() -> void:
+	if off_action == null or death >= 0 or not anim.has_animation("Attack") or not _find_upper():
+		return
+	if _off_pairs == null:
+		_off_pairs = []
+		for part in OFF_ARM:
+			var r := _skel.find_bone("mixamorig_Right" + part)
+			var l := _skel.find_bone("mixamorig_Left" + part)
+			if r >= 0 and l >= 0:
+				_off_pairs.append([r, l])
+	if _off_pairs.is_empty():
+		return
+	var a := anim.get_animation("Attack")
+	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
+	var impact: float = maxf(0.05, off_action.impact)
+	# the clip's own blow sits at CLIP_IMPACT of its length
+	var ct: float = (k / impact * CLIP_IMPACT if k < impact else CLIP_IMPACT + (k - impact) / (1 - impact) * (1 - CLIP_IMPACT)) * a.length
+	var w := minf(1, minf(k, 1 - k) * 6) # eases in and out
+	for pair in _off_pairs:
+		var tr := a.find_track(NodePath("%s:%s" % [_track_root(a), _skel.get_bone_name(pair[0])]), Animation.TYPE_ROTATION_3D)
+		if tr < 0:
+			continue
+		var q := a.rotation_track_interpolate(tr, ct)
+		var m := Quaternion(q.x, -q.y, -q.z, q.w) # mirrored across the body
+		_skel.set_bone_pose_rotation(pair[1], _skel.get_bone_pose_rotation(pair[1]).slerp(m, w))
+
+
+## the skeleton path an animation's bone tracks start with
+func _track_root(a: Animation) -> String:
+	for i in a.get_track_count():
+		var p := str(a.track_get_path(i))
+		if p.contains(":"):
+			return p.split(":")[0]
+	return "."
 
 
 ## A blow taken (Dan, 2026-11-02): the head whips back and the chest gives

@@ -577,6 +577,10 @@ func _go(spell: Dictionary, target) -> void:
 				events.emit("log", {"text": "%s: the %s was not casting." % [spell.name, target.cfg.name], "kind": "muted"})
 		"camp":
 			game.camp.pitch(player.position.x, player.position.z)
+			# the fire is lit: cooking opens with it, one belt slot for both
+			# (Dan, 2026-11-02)
+			if game.hud and game.skills.knows_ability("cook") and not game.hud.panel_open("cooking"):
+				game.hud.toggle_window("cooking")
 		"portal":
 			game.camp.portal(spell.id, spell.portal, t.cooldown)
 		"buff":
@@ -1013,7 +1017,7 @@ func _enter_shadow(spell: Dictionary) -> void:
 	buffs["shadow"] = {"name": spell.name, "left": INF, "total": INF}
 	# whoever was after you loses you
 	for e in game.enemies.list:
-		if e.alive and (e.state == "chase" or e.state == "attack"):
+		if e.alive and (e.state == "chase" or e.state == "attack" or e.state == "flee"):
 			e.lose_track()
 	player.set_hidden(true)
 	game.events.emit("log", {"text": "You slip into Shadow.", "kind": "muted"})
