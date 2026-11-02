@@ -103,6 +103,7 @@ func _init(g, h) -> void:
 func _build() -> void:
 	bags = Control.new()
 	bags.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bags.z_index = 5 # bags always draw over the quest objectives list
 	add_child(bags)
 	character = UI.window(self, "Warden", 0, func(): close("character"))
 	character.title.size_flags_horizontal = Control.SIZE_FILL
