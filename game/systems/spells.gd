@@ -1,6 +1,6 @@
 class_name Spells
 extends RefCounted
-## The spell engine (src/systems/spells.js). Abilities in data/abilities.json
+## The spell engine (src/systems/spells.js). Abilities in data/abilities/abilities.json
 ## with a `kind` are run here from their data alone, so a new spell is a new
 ## record, not new code. The kinds and the keys a record may carry are
 ## documented at the top of src/systems/spells.js; this is a line-by-line
@@ -199,7 +199,7 @@ func tuned(id):
 
 
 # ------------------------------------------------------------ status tags
-## Does `enemy` carry a status (data/builds.json `statuses`)? Damage over
+## Does `enemy` carry a status (data/abilities/builds.json `statuses`)? Damage over
 ## time and auras name theirs (`status`); the rest are read off what an
 ## effect does: a slow is Slowed, a stun or sleep Stunned, more damage taken
 ## Vulnerable, less dealt Weakened, a full stagger bar Staggered.
@@ -246,7 +246,7 @@ var fortify: float:
 
 
 ## what a spell going off does for your key passive: Zeal stacks
-## The spell's own cast pose (data/spell_fx.json `anim`), else the kind's
+## The spell's own cast pose (data/abilities/spell_fx.json `anim`), else the kind's
 ## `type`. `keep_timing`: a blow that lands on its own clock (a sweep, a
 ## burst, a charge) takes only the pose, so blow and pose stay together.
 ## `key` "windupAnim" takes the look's `windupAnim` pose (the held part of a cast)
@@ -264,7 +264,7 @@ func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep
 	game.player.rig.play(a.type, duration, impact)
 
 
-## The spell's own effects (data/spell_fx.json): `windup` on you while a
+## The spell's own effects (data/abilities/spell_fx.json): `windup` on you while a
 ## cast is drawn out, `cast` on you as it goes, `impact` where it lands.
 func _show(spell: Dictionary, phase: String, at: Vector3, facing: float, follow = null) -> void:
 	if DB.spell_fx.has(spell.id):
@@ -297,7 +297,15 @@ func try_cast(id: String) -> bool:
 	var stats = game.stats
 	# Nothing about auto attack blocks an ability: only another cast, a
 	# charge in flight, or the global cooldown does.
-	if not DB.spells.has(id) or player.dead or player.lunge != null or player.casting != null:
+	if not DB.spells.has(id) or player.dead:
+		return false
+	# pressed in the last moments of a cast or a charge, it waits in the
+	# spell queue and goes the instant that ends (Dan, 2026-11-02)
+	var busy = player.casting if player.casting != null else player.lunge
+	if busy != null:
+		var left: float = (busy.get("total", busy.get("duration", 0.0)) - busy.t) if not busy.get("channel", false) else INF
+		if left <= DB.spell_queue_window and id != busy.id:
+			queued = {"id": id, "left": DB.spell_queue_window + 0.1}
 		return false
 	if not game.skills.knows_ability(id):
 		return false

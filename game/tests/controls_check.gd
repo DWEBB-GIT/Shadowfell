@@ -1,5 +1,5 @@
 extends SceneTree
-## Mouse aim and classic controls, and the camera's tilt:
+## Mouse aim and classic controls, and stable camera pitch:
 ##   godot --headless --path . --script res://game/tests/controls_check.gd
 
 var failures := 0
@@ -13,7 +13,9 @@ var t0 := 0 ## the frame the world is ready (after the loading screen)
 func _process(_dt: float) -> bool:
 	frame += 1
 	if frame == 1:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 		Store.dir = "user://test_store_controls"
+		DirAccess.make_dir_recursive_absolute(Store.dir)
 		for f in DirAccess.get_files_at(Store.dir):
 			DirAccess.remove_absolute(Store.dir + "/" + f)
 		game = load("res://game/main.tscn").instantiate()
@@ -36,13 +38,12 @@ func _process(_dt: float) -> bool:
 		game.keys.bind("bar0", "KeyT")
 		check(game.keys.keys("bar0") == ["KeyT", "MouseRight"], "rebinding slot 1 keeps the right button")
 		game.keys.reset_all()
-		# the camera: low near, steep far; classic keeps one angle
+		# Both camera choices hold one pitch while changing distance.
 		var pitch := func(z: float) -> float:
 			game.zoom = z
 			var o: Vector3 = game._camera_offset(1.0)
 			return rad_to_deg(atan2(o.y, o.z))
-		var k: Dictionary = DB.CONFIG.camera.tilt
-		check(absf(pitch.call(0.6) - k.pitchNear) < 0.1 and absf(pitch.call(1.0) - k.pitchMid) < 0.1 and absf(pitch.call(1.6) - k.pitchFar) < 0.1, "the camera tilts with the zoom")
+		check(absf(pitch.call(0.8) - pitch.call(1.35)) < 0.01, "the isometric camera keeps one angle throughout zoom")
 		game.settings.set_value("classicCamera", true)
 		check(absf(pitch.call(0.6) - pitch.call(1.3)) < 0.01, "the classic camera keeps one angle")
 		game.settings.set_value("classicCamera", false)

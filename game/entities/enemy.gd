@@ -533,7 +533,7 @@ func update(dt: float, player) -> void:
 		elif state == "attack":
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
-				# as in WoW, the blow lands the moment its swing timer is ready
+				# the blow lands the moment its swing timer is ready
 				# (no wind-up to step out of); telegraphed attacks are the
 				# `telegraph` and `special` casts above
 				attack_timer = cfg.attackInterval

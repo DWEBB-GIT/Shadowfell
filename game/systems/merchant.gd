@@ -61,7 +61,7 @@ func price_of(id: String) -> int:
 	return maxi(1 if off and price else 0, int(floor(price * (100 - off) / 100.0)))
 
 
-## An Outlaw is not served (data/infamy.json); says so, and returns true.
+## An Outlaw is not served (data/npcs/infamy.json); says so, and returns true.
 func refuses() -> bool:
 	if not game.law.outlaw:
 		return false

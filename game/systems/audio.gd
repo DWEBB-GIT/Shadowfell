@@ -61,7 +61,6 @@ const SFX := {
 ## region id -> ambience loop (anywhere else keeps the forest)
 const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
 const MUSIC := "music_loop.ogg" ## Dan's background track, looped under everything
-const STEP_GAP := 0.42 ## seconds between footsteps at a walk
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
 var game
@@ -85,7 +84,7 @@ var sfx_cache := {} ## file -> AudioStream
 var amb_loop: AudioStreamPlayer
 var amb_file := ""
 var music: AudioStreamPlayer
-var step_t := 0.0
+var step_seen := 0 ## the player rig's footfall count last heard
 
 
 ## Every sound the game can play is made ahead, a little each frame from
@@ -350,16 +349,19 @@ func _ambience(region_id: String) -> void:
 	amb_loop.play()
 
 
-## footsteps while the player moves: wood indoors, stone in town, dirt elsewhere
-func _footsteps(dt: float) -> void:
+## footsteps as the player's feet come down in the walk and run (Rig.steps):
+## wood indoors, stone in town, dirt elsewhere
+func _footsteps(_dt: float) -> void:
 	var pl = game.player
-	if pl == null or not pl.moving:
-		step_t = 0.0
+	if pl == null or pl.rig == null:
 		return
-	step_t -= dt
-	if step_t > 0:
+	var n: int = pl.rig.steps
+	if n == step_seen:
 		return
-	step_t = STEP_GAP
+	var fresh := n < step_seen # a new rig counts from 0
+	step_seen = n
+	if fresh or pl.rig.airborne:
+		return
 	var surface := "step_dirt"
 	if game.world.indoors != null:
 		surface = "step_wood"

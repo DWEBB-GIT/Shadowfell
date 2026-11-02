@@ -25,7 +25,7 @@ func _process(_dt: float) -> bool:
 		var bar: Array = game.action_bar.slots
 		_ok(inv.coins == 0, "a new character has no coins")
 		_ok(inv.count(ActionBar.STARTER_FOOD) == 5 and inv.count(ActionBar.STARTER_DRINK) == 5, "a mana class starts with 5 food and 5 drinks")
-		_ok(bar.slice(6) == ["item:healing_draught", "item:trail_bread", "item:spring_water", "returnHome"], "the utility bar holds them and Return Home: %s" % [bar.slice(6)])
+		_ok(bar.slice(6) == ["item:healing_draught", "item:trail_bread", "item:spring_water", null], "the consumable slots hold them (Return Home is on the tool belt): %s" % [bar.slice(6)])
 		# drinking restores mana while sitting
 		game.resources.mana = 0
 		var loc = null
@@ -65,11 +65,11 @@ func _process(_dt: float) -> bool:
 		_ok(prog.rested_percent == 100, "and never more than 100%")
 		_ok(full >= 600, "a full rest at camp takes %d s" % full)
 		# the level cap
-		prog.level = 99
+		prog.level = 49
 		prog.xp = 0
 		prog.add_xp(prog.xp_to_next + 500)
-		_ok(prog.level == 100 and prog.xp == 0, "levels stop at 100")
-		_ok(prog.add_xp(1000) == 0 and prog.level == 100, "no experience past the cap")
+		_ok(prog.level == 50 and prog.xp == 0, "levels stop at 50")
+		_ok(prog.add_xp(1000) == 0 and prog.level == 50, "no experience past the cap")
 		print("starter check: %s" % ("all checks pass" if failed == 0 else "%d failed" % failed))
 		quit(1 if failed else 0)
 	return false

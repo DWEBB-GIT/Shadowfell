@@ -133,6 +133,8 @@ func apply(mode: int, x: float, z: float, radius: float, strength: float, dt: fl
 		for a in range(a0, a1 + 1):
 			var sx := o.x + a * c
 			var sz := o.y + b * c
+			if not Terrain.map_rect().has_point(Vector2(sx, sz)):
+				continue
 			var d := Vector2(sx - x, sz - z).length()
 			if d > radius:
 				continue
@@ -169,12 +171,14 @@ func apply(mode: int, x: float, z: float, radius: float, strength: float, dt: fl
 					if f > 0.3:
 						info = (info & 0xf0) | (surface & 15)
 						layer.s[k] = surface & 15
+						Terrain.set_surface_paint(a, b, layer.s[k])
 			layer.h[k] += nh - h
 			for t in Terrain.set_sample(a, b, nh, walk, info):
 				_dirty[t] = true
-			chunks[Vector2i(floori(sx / Land.CHUNK), floori(sz / Land.CHUNK))] = true
-			# a sample on a chunk's edge is drawn by its neighbours too
-			chunks[Vector2i(floori((sx - 1) / Land.CHUNK), floori((sz - 1) / Land.CHUNK))] = true
+			# Refresh neighbours whose padded surface controls sample this brush edge.
+			for dx in [-6, 0, 6]:
+				for dz in [-6, 0, 6]:
+					chunks[Vector2i(floori((sx + dx) / Land.CHUNK), floori((sz + dz) / Land.CHUNK))] = true
 	dirty = true
 	return chunks
 
@@ -204,12 +208,14 @@ func restore(state: Dictionary) -> Dictionary:
 		layer.h[k] = v[3]
 		layer.w[k] = v[4]
 		layer.s[k] = v[5]
+		Terrain.set_surface_paint(key.x, key.y, v[5])
 		for t in Terrain.set_sample(key.x, key.y, v[0], v[1], v[2]):
 			_dirty[t] = true
 		var sx: float = o.x + key.x * c
 		var sz: float = o.y + key.y * c
-		chunks[Vector2i(floori(sx / Land.CHUNK), floori(sz / Land.CHUNK))] = true
-		chunks[Vector2i(floori((sx - 1) / Land.CHUNK), floori((sz - 1) / Land.CHUNK))] = true
+		for dx in [-6, 0, 6]:
+			for dz in [-6, 0, 6]:
+				chunks[Vector2i(floori((sx + dx) / Land.CHUNK), floori((sz + dz) / Land.CHUNK))] = true
 	dirty = true
 	return chunks
 

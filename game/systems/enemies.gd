@@ -65,7 +65,10 @@ func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)
 	for e in list:
-		e.update(dt, player)
+		var near: bool = e.position.distance_squared_to(player.position) < 180.0 * 180.0
+		e.group.visible = near
+		if near or e.state != "idle":
+			e.update(dt, player)
 	_separate()
 	# a body with loot stays down until looted; then it sinks away
 	for e in list.duplicate():

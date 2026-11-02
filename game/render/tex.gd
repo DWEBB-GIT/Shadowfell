@@ -52,21 +52,69 @@ static func blob() -> Texture2D:
 	return _cache.blob
 
 
+## a soft white puff (dust kicked up by a jump or a landing); tinted per use
+static func puff() -> Texture2D:
+	if not _cache.has("puff"):
+		_cache.puff = _radial([[0.0, Color(1, 1, 1, 0.9)], [0.45, Color(1, 1, 1, 0.55)], [1.0, Color(1, 1, 1, 0)]], 32)
+	return _cache.puff
+
+
+## a firm round drop with a thin soft rim (blood, bone chips); tinted per use
+static func drop() -> Texture2D:
+	if not _cache.has("drop"):
+		_cache.drop = _radial([[0.0, Color(1, 1, 1, 1)], [0.7, Color(1, 1, 1, 1)], [0.85, Color(1, 1, 1, 0.6)], [1.0, Color(1, 1, 1, 0)]], 32)
+	return _cache.drop
+
+
+## a splat for the ground: a ragged pool with flecks thrown off it, white so
+## a tint gives its colour. One shape, turned and sized differently each time.
+static func splat() -> Texture2D:
+	if not _cache.has("splat"):
+		var n := 64
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		var blobs := [[0.5, 0.5, 0.2]]
+		for i in 5:
+			var a := rng.randf() * TAU
+			blobs.append([0.5 + cos(a) * 0.12, 0.5 + sin(a) * 0.12, 0.08 + rng.randf() * 0.06])
+		for i in 9:
+			var a := rng.randf() * TAU
+			var d := 0.26 + rng.randf() * 0.18
+			blobs.append([0.5 + cos(a) * d, 0.5 + sin(a) * d, 0.02 + rng.randf() * 0.03])
+		for y in n:
+			for x in n:
+				var u := (x + 0.5) / n
+				var v := (y + 0.5) / n
+				var a := 0.0
+				for b in blobs:
+					var e: float = 1.0 - sqrt(pow(u - b[0], 2) + pow(v - b[1], 2)) / b[2]
+					a = maxf(a, clampf(e * 6.0, 0.0, 1.0))
+				img.set_pixel(x, y, Color(1, 1, 1, a))
+		_cache.splat = ImageTexture.create_from_image(img)
+	return _cache.splat
+
+
 ## the ground's hand-painted grain: grey specks, multiplied over the terrain colours
 static func ground_detail() -> Texture2D:
 	if _cache.has("ground"):
 		return _cache.ground
-	var rand := U.Seeded.new(7)
-	var s := 64
+	var noise := FastNoiseLite.new()
+	noise.seed = 7
+	noise.frequency = 0.08
+	noise.fractal_octaves = 3
+	var s := 128
 	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
-	img.fill(Color8(0xd8, 0xd8, 0xd8))
-	for i in 900:
-		var v := int(floor(170 + rand.next() * 85))
-		var w := 1 + int(floor(rand.next() * 2))
-		var x := int(floor(rand.next() * s))
-		var y := int(floor(rand.next() * s))
-		var h := w + int(floor(rand.next() * 2))
-		img.fill_rect(Rect2i(x, y, w, h).intersection(Rect2i(0, 0, s, s)), Color8(v, v, v))
+	# Periodic sampling keeps tile edges continuous. Quiet grain lets the
+	# painted palette and directional light describe the ground's form.
+	for y in s:
+		for x in s:
+			var fx := float(x) / s
+			var fy := float(y) / s
+			var a := lerpf(noise.get_noise_2d(x, y), noise.get_noise_2d(x - s, y), fx)
+			var b := lerpf(noise.get_noise_2d(x, y - s), noise.get_noise_2d(x - s, y - s), fx)
+			var v := 0.87 + lerpf(a, b, fy) * 0.075
+			img.set_pixel(x, y, Color(v, v, v))
 	img.generate_mipmaps() # sampled with mipmaps; without them GL samples black
 	_cache.ground = ImageTexture.create_from_image(img)
 	return _cache.ground

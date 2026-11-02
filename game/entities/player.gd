@@ -11,6 +11,7 @@ var rig: Rig
 var materials: Array
 var weapon_part: Node3D
 var default_weapon_mesh: Node3D
+var ground_shadow: MeshInstance3D
 var torch_light := OmniLight3D.new()
 var helm: Node3D
 var shield: Node3D
@@ -64,14 +65,19 @@ func _init(g) -> void:
 	# code-built warden, by DB.CONFIG.models
 	var body: String = DB.CONFIG.models.player if DB.CONFIG.models.imported and Assets.has(DB.CONFIG.models.player) else "warden"
 	model = Assets.instance(body)
+	# A readability scale on the body and attached gear. World distances,
+	# collision, attack ranges and movement stay in the same units.
+	model.scale *= DB.CONFIG.player.visualScale
 	if body != "warden":
 		Rig.add_sockets(model)
 	group.add_child(model)
 	rig = Rig.new(model, body)
+	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
-	group.add_child(Fx.blob_shadow(1.3))
+	ground_shadow = Fx.blob_shadow(1.3)
+	group.add_child(ground_shadow)
 	torch_light.light_color = Color("ffa860")
 	torch_light.light_energy = 0
 	torch_light.omni_range = 9
@@ -84,6 +90,7 @@ func _init(g) -> void:
 
 func place_at(x: float, z: float, f = null) -> void:
 	position = Vector3(x, Terrain.height_at(x, z), z)
+	_reset_jump()
 	if f != null:
 		facing = f
 	lunge = null
@@ -97,6 +104,8 @@ func place_at(x: float, z: float, f = null) -> void:
 func _sync() -> void:
 	group.position = position
 	group.rotation.y = facing
+	# The contact shadow stays on the ground while the body leaves it.
+	ground_shadow.position.y = 0.03 - jump_h
 
 
 func _part(name: String) -> Node3D:
@@ -173,7 +182,7 @@ var sitting: bool:
 
 ## X: sit on the ground, or stand. Moving, fighting or casting stands you up.
 func set_sitting(on: bool) -> void:
-	if on == sitting or (on and (rig.pose != null or eating != null)):
+	if on == sitting or (on and (rig.pose != null or eating != null or jump_h > 0 or jump_v != 0)):
 		return
 	rig.pose = "rest" if on else null
 
@@ -261,10 +270,53 @@ func face_towards(x: float, z: float) -> void:
 		aim_hold = AIM_HOLD
 
 
-const JUMP_SPEED := 5.0
-const JUMP_GRAVITY := 18.0
+## About 1.15 m high and 0.68 s long on level ground. Horizontal controls
+## remain live, including an existing click destination.
+const JUMP_SPEED := 6.8
+const JUMP_GRAVITY := 20.0
+const JUMP_BUFFER_TIME := 0.12
 var jump_v := 0.0
 var jump_h := 0.0
+var jump_buffer := 0.0
+
+
+func _reset_jump() -> void:
+	jump_v = 0.0
+	jump_h = 0.0
+	jump_buffer = 0.0
+	rig.airborne = false
+	position.y = Terrain.height_at(position.x, position.z)
+	ground_shadow.position.y = 0.03
+
+
+func _update_jump(dt: float, requested: bool) -> void:
+	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
+	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
+		set_sitting(false)
+		position.y = Terrain.height_at(position.x, position.z)
+		jump_v = JUMP_SPEED
+		jump_buffer = 0.0
+		game.events.emit("playerJumped", {"position": position})
+		# A buffered second hop needs a fresh animation even without an idle frame.
+		if rig.clip == "Jump":
+			rig.clip = ""
+	var ground := Terrain.height_at(position.x, position.z)
+	if jump_v != 0.0 or jump_h > 0.0:
+		# Integrate world height, so a slope cannot drag an airborne player up
+		# or down with the terrain. Land on the ground under the current x/z.
+		position.y += jump_v * dt - 0.5 * JUMP_GRAVITY * dt * dt
+		jump_v -= JUMP_GRAVITY * dt
+		if position.y <= ground:
+			position.y = ground
+			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
+			jump_v = 0.0
+			jump_h = 0.0
+		else:
+			jump_h = maxf(0.0, position.y - ground)
+	else:
+		position.y = ground
+		jump_h = 0.0
+	rig.airborne = jump_h > 0.0 or jump_v > 0.0
 
 
 func update(dt: float, controls) -> void:
@@ -390,19 +442,12 @@ func update(dt: float, controls) -> void:
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
-	position = game.collision.resolve(position, radius)
-	# Jump is cosmetic: a hop with no effect on combat or collision
-	if controls and controls.get("jump") and jump_h == 0 and not sitting:
-		jump_v = JUMP_SPEED
-	if jump_v != 0 or jump_h > 0:
-		jump_v -= JUMP_GRAVITY * dt
-		jump_h += jump_v * dt
-		if jump_h <= 0:
-			jump_h = 0
-			jump_v = 0
-	position.y = Terrain.height_at(position.x, position.z) + jump_h
-	moving = speed01 > 0
-	rig.airborne = jump_h > 0
+	# high in a hop you pass over low things (a fence, Collision `h`)
+	position = game.collision.resolve(position, radius, jump_h)
+	_update_jump(dt, controls != null and controls.get("jump", false))
+	# Stationary activities (fishing, eating, gathering and casting) also
+	# see a standing jump as movement, rather than continuing in mid-air.
+	moving = speed01 > 0 or rig.airborne
 	rig.update(dt, speed01 * DB.CONFIG.player.runGait)
 	_sync()
 
@@ -445,7 +490,7 @@ func set_hidden(on: bool) -> void:
 	Rig.set_alpha(materials, 0.35 if on else 1.0)
 
 
-## Auto attack, as WoW does it: each hand has a swing clock that counts down
+## Auto attack - each hand has a swing clock that counts down
 ## to the moment the blow lands. See src/entities/player.js for the full story.
 func try_strike(aim) -> bool:
 	if pending != null or casting != null:
@@ -493,7 +538,7 @@ func try_strike_off(aim) -> bool:
 	# the off-hand opener needs no windup of its own: the half-swing rule below places it
 	var ready: float = minf(windup, DB.attack.readyWindup)
 	var t := maxf(cooldowns.attackOff, ready)
-	# WoW style: the off hand lands half a swing after the main hand, so blows
+	# The off hand lands half a swing after the main hand, so blows
 	# alternate main, off, main rather than coming in pairs
 	var half: float = minf(stats.attack_cooldown_for("main"), stats.attack_cooldown_for("off")) * 0.5
 	var main: float = pending.t if pending != null and pending.type == "strike" else cooldowns.attack
@@ -537,10 +582,10 @@ func try_shoot(aim) -> bool:
 		return false
 	var stats = game.stats
 	if not game.inventory.ammo:
-		# WoW style, red in the middle of the screen
+		# Red in the middle of the screen
 		if game.hud:
 			game.hud.error("Out of Ammo")
-		game.events.emit("log", {"text": "You have no arrows. Buy them from Mara or Tam.", "kind": "muted", "throttle": "no-ammo"})
+		game.events.emit("log", {"text": "Out of Ammo.", "kind": "muted", "throttle": "no-ammo"})
 		return false
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
 	if cooldowns.ranged > draw:
@@ -607,7 +652,7 @@ func hold_bow(in_hand: bool) -> void:
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
 ## Running, an attack or spell at an enemy needs it in your front half
-## (WoW); standing still, it turns you to it.
+## standing still, it turns you to it.
 func can_hit_while_moving(x: float, z: float) -> bool:
 	return not moving or facing_point(x, z, DB.attack.coneDegrees / 2.0)
 
@@ -634,6 +679,7 @@ func take_damage(amount: float) -> bool:
 		lunge = null
 		casting = null
 		braced = 0
+		_reset_jump()
 		rig.die()
 	return true
 

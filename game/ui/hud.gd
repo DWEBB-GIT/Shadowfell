@@ -21,6 +21,7 @@ const LOOT_KINDS := ["loot", "item", "skin", "scrap", "gem", "reforge"]
 const LOG_LINES := 7 ## lines on screen
 const LOG_KEEP := 80 ## lines kept for switching tabs
 const SLOT := 48
+const SLOT_USE := 40 ## a consumable slot on the bar
 const EDGE := 12.0 ## the gap between the HUD and the screen edge
 ## the menus in the right dock: [window, glyph, tip, key action, pad label,
 ## Dan's icon (assets/icons/ui), drawn over the glyph when it exists]
@@ -35,13 +36,12 @@ const MICRO := [
 const UNIT_GAP := 132.0 ## from the middle of the screen to each unit frame
 const UNIT_W := 236.0 ## the width of your frame and your target's
 const UNIT_H := 96.0 ## the room kept over the spell bar for the unit frames
-const ORB_R := 14.0 ## the menu orbs round the minimap
-const ORB_TOP := 250.0 ## degrees round the rim of the first orb (0 = east, 90 = south)
-const ORB_STEP := 22.4
+const ORB_R := 14.0 ## the round menu buttons in the top-left row
+const WINDOW_TOP := EDGE + ORB_R * 2 + 10 ## windows open under the menu row
 const CIRCLE := "shader_type canvas_item;\nvoid fragment() { if (distance(UV, vec2(0.5)) > 0.5) discard; }\n"
 
 var game
-## 'title' | 'document' | 'death' | 'menu' | 'loading'. Bags, character panel and spellbook are
+## 'title' | 'document' | 'death' | 'confirm' | 'menu' | 'edit' | 'loading'. Bags, character panel and spellbook are
 ## not modal: the world keeps running while they are open, as in WoW.
 var modal = "title"
 var pad_mode := false
@@ -57,6 +57,9 @@ var shown_target = null
 var portrait_of = null
 
 var icons: Icons
+var belt: ToolBelt ## the tool belt, folded up out of the tray
+var menus: HBoxContainer ## the menu buttons, top left
+var hud_edit: HudEdit ## edit mode: the player moves the HUD's pieces
 var keybind_ui: KeybindUI
 var items: ItemUI
 var quests: QuestUI
@@ -137,6 +140,9 @@ var main_menu: MainMenu
 var death: PanelContainer
 var death_text: Label
 var document: PanelContainer
+var confirm_box: PanelContainer
+var confirm_text: Label
+var confirm_yes := Callable()
 var doc_title: Label
 var doc_body: RichTextLabel
 var sign_card: PanelContainer
@@ -454,7 +460,10 @@ func _build() -> void:
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
-	items.tip_on(coins, "Money")
+	belt = ToolBelt.new(game, self)
+	root.add_child(belt)
+	hud_edit = HudEdit.new(game, self)
+	root.add_child(hud_edit)
 	_build_modals()
 	title = TitleScreen.new(game)
 	root.add_child(title)
@@ -693,7 +702,9 @@ func _build_bottom() -> void:
 	for b in ActionBar.BAR_SLOTS:
 		if b.get("utility") and not ActionBar.BAR_SLOTS[i - 1].get("utility"):
 			row.add_child(_divider())
-		var s := ISlot.new("a:%d" % i, SLOT)
+		# the consumable slots are smaller than the spells, set on the bar's floor
+		var s := ISlot.new("a:%d" % i, SLOT_USE if b.get("utility") else SLOT)
+		s.size_flags_vertical = Control.SIZE_SHRINK_END
 		s.bar = true
 		row.add_child(s)
 		slots.append(s)
@@ -704,7 +715,8 @@ var _sockets_box: HBoxContainer
 
 
 ## bottom right, one row level with the spell bar: money and the bag
-## sockets (#right-dock). The menus are orbs round the minimap (_build_orbs).
+## sockets (#right-dock), the tool pack's slot first: it opens the tool belt.
+## The menus are a row top left (_build_orbs).
 func _build_dock() -> void:
 	dock = UI.panel(root, 0)
 	dock.add_theme_stylebox_override("panel", UI.frame(Vector4(10, 4, 8, 4)))
@@ -721,19 +733,30 @@ func _build_dock() -> void:
 	purse.mouse_filter = Control.MOUSE_FILTER_PASS
 	coins = UI.rich(purse, 13)
 	coins.autowrap_mode = TextServer.AUTOWRAP_OFF
+	# money lives in the backpack now (its tip and the bag window's foot), not
+	# on the screen (Dan, 2026-11-02); the empty plaque keeps the tray's top
+	purse.visible = false
 
 
-## the menus as round buttons down the minimap's left rim, RuneScape style,
-## from the top: character first. The key shows in each one's tip.
+## the menus as a row of round buttons in the top-left corner, character
+## first (Dan, 2026-11-02: off the minimap, where they hid the quest arrows).
+## The key shows in each one's tip.
 func _build_orbs() -> void:
-	var i := 0
+	menus = UI.hbox(root, 4)
+	menus.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for m in MICRO:
-		var b := minimap.orb(ORB_TOP - ORB_STEP * i, ORB_R)
+		var b := Button.new()
+		b.focus_mode = Control.FOCUS_NONE
+		for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+			b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		b.custom_minimum_size = Vector2(ORB_R * 2, ORB_R * 2)
+		menus.add_child(b)
+		b.draw.connect(func(): minimap._draw_orb(b, ORB_R))
 		var which: String = m[0]
 		var action: String = m[3]
 		var pad_label: String = m[4]
 		var tip: String = m[2]
-		# every button round the minimap sounds as the quest log does (Dan, 2026-10-28)
+		# every menu button sounds as the quest log does (Dan, 2026-10-28)
 		b.pressed.connect(func(): toggle_panel(which, "quest_log"))
 		var art := Icons.art("ui", m[5])
 		if art:
@@ -750,7 +773,6 @@ func _build_orbs() -> void:
 			items.cursor_tip(tip + (" (%s)" % k if k != "" else "")))
 		b.mouse_exited.connect(func(): items.cursor_tip_off())
 		micro_buttons[action] = [b, tip]
-		i += 1
 
 
 ## the kit's bronze divider, upright between two groups in a row
@@ -808,6 +830,19 @@ func _build_modals() -> void:
 	doc_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	doc_body.add_theme_color_override("default_color", Color("e2d4b0"))
 	document.visible = false
+	# a yes/no question over everything (confirm())
+	confirm_box = UI.panel(root, 0, UI.WINDOW, UI.BORDER)
+	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "window", 20))
+	confirm_box.mouse_filter = Control.MOUSE_FILTER_STOP
+	var cv := UI.vbox(confirm_box, 12)
+	confirm_text = UI.wrapped(UI.label(cv, "", 16, UI.TEXT))
+	confirm_text.custom_minimum_size = Vector2(320, 0)
+	confirm_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var cb := UI.hbox(cv, 12)
+	cb.alignment = BoxContainer.ALIGNMENT_CENTER
+	UI.button(cb, "Yes", func(): answer_confirm(true), 14)
+	UI.button(cb, "No", func(): answer_confirm(false), 14)
+	confirm_box.visible = false
 	main_menu = MainMenu.new(game, self)
 
 
@@ -856,7 +891,7 @@ func _set_world_ui(on: bool) -> void:
 			c.visible = on
 	if on:
 		main_menu.cancel()
-		for c in [death, document, backdrop, main_menu.panel, main_menu.wait_panel, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
+		for c in [death, document, confirm_box, backdrop, hud_edit, main_menu.panel, main_menu.wait_panel, banner, banner_band, sign_card, quick_bind_banner, prompt, mute, world_map]:
 			c.visible = false
 		hurt.modulate.a = 0
 
@@ -919,7 +954,7 @@ func bottom_top() -> float:
 
 ## is a screen point over the fixed HUD (not a window)?
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, purse, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
+	for c in [char_panel, target, bottom, dock, belt, menus, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -930,7 +965,7 @@ func over_hud(at: Vector2) -> bool:
 ## and the item windows do not.
 var blocks_gameplay: bool:
 	get:
-		return modal == "title" or modal == "document" or modal == "loading"
+		return modal == "title" or modal == "document" or modal == "loading" or modal == "confirm"
 
 ## any of the item, quest or dialogue windows
 var any_window_open: bool:
@@ -952,12 +987,50 @@ func toggle_panel(which: String, sound := "") -> void:
 	if modal:
 		return
 	if sound == "":
-		sound = "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+		sound = _panel_sound(which)
+	# a panel closes with the sound it opened with (Dan, 2026-10-29)
+	if panel_open(which):
+		sound = open_sounds.get(which, sound)
+	else:
+		open_sounds[which] = sound
 	game.audio.sfx(sound, 0.6)
 	if which == "quests":
 		quests.toggle_log()
 	else:
 		items.toggle(which)
+
+
+## the sound each open panel opened with, played again as it closes
+var open_sounds := {}
+
+
+static func _panel_sound(which: String) -> String:
+	return "quest_log" if which == "quests" else "bag" if which == "bags" else "panel"
+
+
+func panel_open(which: String) -> bool:
+	if which == "quests":
+		return quests.log_open
+	if which == "bags":
+		return items.bags_open
+	return items.open.get(which, false)
+
+
+## a panel's own close button: the sound it opened with
+func panel_closed_sound(which: String) -> void:
+	game.audio.sfx(open_sounds.get(which, _panel_sound(which)), 0.6)
+
+
+## The window opened last sits over the others (Dan, 2026-10-29): first in
+## its own layer (`layer`, the item or quest windows), then that layer over
+## the other one. Both stay under the world map and the modal windows.
+func raise(layer: Control, win: Control) -> void:
+	if win == null or win.get_parent() != layer:
+		return
+	layer.move_child(win, -1)
+	var other: Control = quests if layer == items else items
+	if other != null and layer.get_index() < other.get_index():
+		root.move_child(layer, other.get_index())
 
 
 func toggle_world_map() -> void:
@@ -1022,6 +1095,33 @@ func show_death(_coins_lost: int, destination: String) -> void:
 	death.visible = true
 
 
+## Ask a yes/no question in a box over the game; `on_yes` runs on Yes.
+func confirm(text: String, on_yes: Callable) -> void:
+	if modal != null:
+		return
+	modal = "confirm"
+	confirm_text.text = text
+	confirm_yes = on_yes
+	game.audio.sfx("panel", 0.6)
+	backdrop.visible = true
+	root.move_child(backdrop, -1)
+	root.move_child(confirm_box, -1)
+	confirm_box.visible = true
+
+
+func answer_confirm(yes: bool) -> void:
+	if modal != "confirm":
+		return
+	modal = null
+	confirm_box.visible = false
+	backdrop.visible = false
+	game.audio.sfx("panel", 0.6)
+	var f := confirm_yes
+	confirm_yes = Callable()
+	if yes and f.is_valid():
+		f.call()
+
+
 func hide_death() -> void:
 	death.visible = false
 	backdrop.visible = false
@@ -1035,12 +1135,18 @@ func close_modal(force := false) -> bool:
 	if keybind_ui.quick:
 		keybind_ui.set_quick(false)
 		return true
+	if modal == "edit":
+		hud_edit.close()
+		return true
 	if main_menu.close():
 		return true
 	if modal == "document":
 		document.visible = false
 		backdrop.visible = false
 		modal = null
+		return true
+	if modal == "confirm":
+		answer_confirm(false)
 		return true
 	if world_map.visible:
 		world_map.visible = false
@@ -1543,15 +1649,18 @@ func layout() -> void:
 	var m := EDGE
 	char_panel.size = char_panel.get_combined_minimum_size()
 	target.size = target.get_combined_minimum_size()
-	minimap.position = Vector2(vp.x - m - Minimap.SIZE, m)
+	# the rim buttons stand outside the map, so it keeps room for them
+	minimap.position = Vector2(vp.x - m - Minimap.SIZE - Minimap.OUT_RIGHT, m + Minimap.OUT_TOP)
 	bottom.size = bottom.get_combined_minimum_size()
 	bottom.position = Vector2(roundf((vp.x - bottom.size.x) / 2), vp.y - m - bottom.size.y)
 	# the tray stands as tall as the spell bar and level with it
 	dock.custom_minimum_size.y = action_bar.get_combined_minimum_size().y
 	dock.size = dock.get_combined_minimum_size()
 	dock.position = Vector2(vp.x - m - dock.size.x, vp.y - m - dock.size.y)
-	purse.size = purse.get_combined_minimum_size()
-	purse.position = Vector2(dock.position.x + dock.size.x - 8 - purse.size.x, dock.position.y - purse.size.y + 3)
+	purse.size = Vector2.ZERO
+	purse.position = Vector2(dock.position.x + dock.size.x, dock.position.y)
+	menus.size = menus.get_combined_minimum_size()
+	menus.position = Vector2(m, m)
 	# on a narrow screen the bar moves left rather than under the dock
 	if bottom.position.x + bottom.size.x > dock.position.x - m:
 		bottom.position.x = maxf(m, dock.position.x - m - bottom.size.x)
@@ -1604,10 +1713,15 @@ func layout() -> void:
 	sign_card.size = sign_card.get_combined_minimum_size()
 	sign_card.position = Vector2(vp.x - 340, roundf(vp.y / 2 - 80))
 	quests.layout()
+	# then the pieces the player moved in edit mode
+	hud_edit.apply(vp)
+	var tool_slot = items.slots.get("s:%d" % Items.TOOL_SOCKET)
+	if tool_slot != null and is_instance_valid(tool_slot) and tool_slot.is_inside_tree():
+		belt.place(Rect2(tool_slot.global_position - root.global_position, tool_slot.size))
 	items.layout() # windows settle to their size over a frame or two
 	mute.size = mute.get_combined_minimum_size()
 	mute.position = Vector2(vp.x - m - mute.size.x, purse.position.y - 6 - mute.size.y)
-	for win in [death, document]:
+	for win in [death, document, confirm_box]:
 		win.size = win.get_combined_minimum_size()
 		win.position = ((vp - win.size) / 2).round()
 	main_menu.layout(vp)
@@ -1683,6 +1797,7 @@ func update(dt := 0.0) -> void:
 	labels.update(dt)
 	quests.update_marks()
 	items.update(dt)
+	belt.refresh()
 	layout()
 
 

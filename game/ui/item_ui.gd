@@ -83,6 +83,20 @@ func _init(g, h) -> void:
 			open_bags.clear()
 		shop_opened_bags = false
 		_after_change(null))
+	# so does talking to anyone who sells (Dan, 2026-10-29), before you
+	# pick Browse goods; walking off or Goodbye closes them again
+	ev.on("dialogueChanged", func(_e):
+		var n = game.dialogue.npc
+		var vendor: bool = n != null and DB.npcs[n.id].get("shop")
+		if vendor and not bags_open:
+			shop_opened_bags = true
+			for i in _sockets():
+				open_bags[i] = true
+			_after_change("bags")
+		elif n == null and shop_opened_bags and game.merchant.current == null:
+			open_bags.clear()
+			shop_opened_bags = false
+			_after_change(null))
 
 
 # ------------------------------------------------------------------ building
@@ -115,6 +129,8 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		character.tabs[id] = b
 	preview = CharPreview.new(game)
+	# Own the preview even if this character panel is never opened.
+	character.main.add_child(preview)
 	spellbook = UI.window(self, "Spells", 500, func(): close("spellbook"))
 	skills_win = UI.window(self, "Professions", 420, func(): close("skills"))
 	# both scroll once they outgrow the screen, with a line of help under
@@ -251,6 +267,11 @@ func _build_settings() -> void:
 	hud.keybind_ui.quick_button = UI.button(btns, "Quick bind", func(): hud.keybind_ui.set_quick(not hud.keybind_ui.quick))
 	UI.button(btns, "Reset to defaults", func(): game.keys.reset_all())
 	hud.keybind_ui.list = UI.vbox(keys, 1)
+	var ui_page: VBoxContainer = settings_win.pages.interface
+	UI.gap(ui_page, 4)
+	UI.button(ui_page, "Edit HUD", func():
+		close("settings")
+		hud.hud_edit.open())
 	var foot := UI.hbox(body, 6)
 	UI.button(foot, "Save the game", func(): game.manual_save())
 	_show_settings_tab()
@@ -351,6 +372,7 @@ func toggle_bag(i: int) -> void:
 
 
 func close(which: String) -> void:
+	hud.panel_closed_sound(which)
 	if which == "bags":
 		open_bags.clear()
 	else:
@@ -375,9 +397,21 @@ func _after_change(which) -> void:
 		focus = null
 		_hide_tip()
 	render()
+	if which != null:
+		var win := _window_node(which)
+		if win != null and win.visible:
+			hud.raise(self, win)
 	if any_open and (focus == null or not _visible_locs().has(focus)):
 		focus = _default_focus(which)
 	_paint_focus()
+
+
+## a window's outer node, to raise it over the others
+func _window_node(which: String) -> Control:
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}.get(which)
+	if which == "bags":
+		return bags
+	return w.panel if w != null else null
 
 
 # ------------------------------------------------------------------ slots
@@ -531,9 +565,15 @@ func _render_sockets(inv) -> void:
 		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
 			slot.placeholder_size = 18
-			slot.dim = 1.0 if s else 0.6
-			if not s:
-				tip_on(slot, "Tool pack slot: earned from Mara Venn's first errand")
+			slot.dim = 1.0 if s else 0.75
+			slot.key = game.keys.label("toolbelt").split(" / ")[0] if not hud.pad_mode else "↓"
+			slot.lit = hud.belt != null and hud.belt.visible
+			slot.on_hover = func(_s: ISlot, on: bool):
+				if on and drag == null:
+					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
+				elif not on:
+					cursor_tip_off()
+			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
 		if s and str(Items.get_def(s.id).get("holds")) == "ammo":
@@ -545,7 +585,8 @@ func _render_sockets(inv) -> void:
 		slot.lit = open_bags.has(i)
 	# the free space in all bags shows on the backpack, as in WoW
 	var free: int = inv.free_slots()
-	var bp := _slot(sockets, "s:0", null, 40)
+	# the backpack stands as tall as a spell slot, the main bag of the tray
+	var bp := _slot(sockets, "s:0", null, hud.SLOT)
 	bp.border = UI.BORDER
 	bp.lit = open_bags.has(0)
 	bp.key = "Start" if hud.pad_mode else game.keys.label("bags").split(" / ")[0]
@@ -554,7 +595,12 @@ func _render_sockets(inv) -> void:
 	# Dan's painted backpack; the drawn one stays as the fallback
 	bp.icon = Icons.art("ui", "primary_bag")
 	bp.painter = Callable(self, "_paint_backpack")
-	tip_on(bp, "Backpack (B): %d free slot%s" % [free, "" if free == 1 else "s"])
+	# your money lives in the backpack: in its tip and the bag window's foot
+	bp.on_hover = func(s: ISlot, on: bool):
+		if on and drag == null:
+			cursor_tip("Backpack (%s): %d free slot%s\n%s" % [bp.key, free, "" if free == 1 else "s", U.money(inv.coins)])
+		elif not on:
+			cursor_tip_off()
 
 
 ## the backpack's little picture (style.css .bp-icon)
@@ -1202,7 +1248,7 @@ func _upgrade_lines(id: String) -> Array:
 
 # ------------------------------------------------------------------ talents
 ## Path points buy each spell's Enhanced rank, then one of its two forks;
-## one key passive per character (builds.gd, data/builds.json).
+## one key passive per character (builds.gd, data/abilities/builds.json).
 func _render_talents() -> void:
 	var w := talents
 	w.panel.visible = open.talents
@@ -1304,9 +1350,9 @@ func layout() -> void:
 		# not the render: a new label measures its height only once laid out)
 		if character.main.visible:
 			character.pages.custom_minimum_size = character.main.get_combined_minimum_size()
-		_fit(character.panel, Vector2(12, 12))
+		_fit(character.panel, Vector2(12, hud.WINDOW_TOP))
 	if shop.panel.visible:
-		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, 12))
+		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
@@ -1709,6 +1755,10 @@ func _down(loc: String, at: Vector2) -> void:
 		return
 	if loc == "s:0":
 		toggle_bag(0)
+		return
+	# the tool pack's slot is the tool belt's button (right click opens the pack)
+	if loc == "s:%d" % Items.TOOL_SOCKET:
+		hud.belt.toggle()
 		return
 	if loc.begins_with("m:") or loc.begins_with("y:"):
 		_shop_click(loc)

@@ -9,7 +9,7 @@ const SAVE_KEY := "shadowfall.save"
 const BACKUP_KEY := "shadowfall.save.unreadable"
 const SAVE_VERSION := 2
 ## The world's layout: 1 was the 72 x 225 m strip, 2 the whole world
-## (data/world_map.json). Older saves start again at the Last Cart.
+## (data/world/world_map.json). Older saves start again at the Last Cart.
 const MAP_VERSION := 2
 
 var game
@@ -171,7 +171,9 @@ static func validate_save(data) -> Array:
 		check.call(_is_num(p.get("health")) and p.health > 0, "player health")
 		check.call(_is_num(p.get("maxHealth")) and p.maxHealth >= 1 and _is_num(p.get("health")) and p.health <= p.maxHealth, "player max health")
 	var pr = data.get("progression")
-	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level < 100 and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
+	# Accept the previous cap's valid characters before Progression.apply
+	# clamps them to the new cap. Their inventory/quests remain intact.
+	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level <= maxi(100, DB.CONFIG.progression.maxLevel) and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
 	var inv = data.get("inventory")
 	check.call(typeof(inv) == TYPE_DICTIONARY, "missing inventory")
 	if typeof(inv) == TYPE_DICTIONARY:
@@ -207,6 +209,7 @@ static func validate_save(data) -> Array:
 	check.call(typeof(w) == TYPE_DICTIONARY, "missing world")
 	if typeof(w) == TYPE_DICTIONARY:
 		check.call(_is_str_array(w.get("defeated")) and _is_str_array(w.get("collected")) and _is_str_array(w.get("examined")), "world lists")
+		check.call(WorldPuzzles.valid_saved_states(w.get("puzzles", {})), "world puzzle state")
 		check.call(typeof(w.get("drops")) == TYPE_DICTIONARY and w.drops.values().all(func(d): return _in_bounds(d)), "world drops")
 		check.call(w.get("shrineActivated") == null or typeof(w.get("shrineActivated")) == TYPE_STRING, "shrine state")
 		check.call(w.get("respawn") == null or _in_bounds(w.respawn), "respawn position")
@@ -238,6 +241,7 @@ func serialize() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
 		"map": MAP_VERSION,
+		"worldId": Terrain.chosen_map(),
 		"savedAt": Time.get_datetime_string_from_system(true) + "Z",
 		"player": {
 			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
@@ -245,6 +249,7 @@ func serialize() -> Dictionary:
 			"health": player.health,
 			"maxHealth": player.max_health,
 			"wounds": game.afterlife.wounds,
+			"woundLeft": game.afterlife.wound_left,
 		},
 		"progression": game.progression.serialize(),
 		"inventory": game.inventory.serialize(),
@@ -313,7 +318,14 @@ func apply(data: Dictionary) -> void:
 	var progression = game.progression
 	var inventory = game.inventory
 	var ws = game.world_state
-	var old_map := int(data.get("map", 1)) < MAP_VERSION
+	# Older saves predate world identity and belong to the legacy continent.
+	# Keep possessions and quest state, but arrive at the new world's safe opening.
+	var old_map := int(data.get("map", 1)) < MAP_VERSION or str(data.get("worldId", "act1")) != Terrain.chosen_map()
+	if old_map:
+		var backup_key := key + ".before_world_" + Terrain.chosen_map()
+		var original = Store.get_item(key)
+		if original != null and Store.get_item(backup_key) == null:
+			Store.set_item(backup_key, original)
 	ws.apply(data.world)
 	if old_map:
 		ws.forget_places()
@@ -346,6 +358,7 @@ func apply(data: Dictionary) -> void:
 			if Items.get_def(g.item).get("toolPack") and inventory.tool_pack == null:
 				inventory.add_item(g.item, 1)
 	game.afterlife.wounds = clampi(int(data.player.get("wounds", 0)), 0, int(DB.CONFIG.death.maxWounds))
+	game.afterlife.wound_left = float(data.player.get("woundLeft", DB.CONFIG.death.woundSeconds))
 	game.recompute_max_health()
 	player.health = minf(data.player.health, player.max_health)
 	game.resources.reset()

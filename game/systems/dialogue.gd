@@ -4,7 +4,7 @@ extends RefCounted
 ## a greeting with its choices grouped and marked by kind: quests, things to
 ## ask, then services (the shop, the trainer, the inn) and Goodbye. A quest
 ## opens its own page. Topics open small dialogue trees from
-## data/dialogue.json. Training opens the trainer window (view 'train').
+## data/quests/dialogue.json. Training opens the trainer window (view 'train').
 ##
 ## This system owns where the conversation is; the HUD shows it and passes
 ## choices back. Walking away ends it, as with a shop.
@@ -398,7 +398,7 @@ func _service_choose(id: String, v: Dictionary) -> bool:
 
 
 # ------------------------------------------------------------ the forge
-## Mara moves a legendary power (data/builds.json `forge`): the item that
+## Mara moves a legendary power (data/abilities/builds.json `forge`): the item that
 ## carries it is melted down, and the power goes onto another piece for the
 ## same place (any weapon for a weapon).
 
@@ -467,6 +467,16 @@ func _imprint(src: String, dst: String) -> bool:
 	return true
 
 
+## The inn kept by innkeeper `npc_id` becomes your rest point and home.
+func make_home(npc_id: String) -> void:
+	game.world_state.rest_point = "inn:" + npc_id
+	game.world_state.home = "inn:" + npc_id
+	game.events.emit("log", {"text": "%s keeps a bed for you. If you fall, you will wake at the inn, and Return Home brings you back here." % DB.npcs[npc_id].name, "kind": "heal"})
+	game.hud.toast("This inn is now your home")
+	if npc != null:
+		game.events.emit("dialogueChanged", {})
+
+
 ## Act on an option id from `page.options`.
 func choose(id: String) -> bool:
 	if npc == null:
@@ -520,10 +530,10 @@ func choose(id: String) -> bool:
 		game.inn.sleep(n.id)
 		return true
 	elif id == "home":
-		game.world_state.rest_point = "inn:" + npc.id
-		game.world_state.home = "inn:" + npc.id
-		events.emit("log", {"text": "%s keeps a bed for you. If you fall, you will wake at the inn, and Return Home brings you back here." % def.name, "kind": "heal"})
-		game.hud.toast("This inn is now your home")
+		# asked first, in a box (Dan, 2026-10-29)
+		var inn: String = npc.id
+		game.hud.confirm("Are you sure you want to make this inn your home?", func(): make_home(inn))
+		return true
 	elif id.begins_with("quest:"):
 		view = {"kind": "quest", "id": id.substr(6)}
 	elif id.begins_with("node:"):

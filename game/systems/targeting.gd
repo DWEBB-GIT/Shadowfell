@@ -163,7 +163,7 @@ func engage(enemy) -> bool:
 		return false
 	if not attacking:
 		attacking = true
-		# WoW: a fresh fight opens the moment the target is in reach: the
+		# A fresh fight opens the moment the target is in reach: the
 		# clocks are ready, and the first blow comes after a short, visible
 		# windup. Switching targets mid-fight keeps the running clocks.
 		var p = game.player

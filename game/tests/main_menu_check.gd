@@ -82,11 +82,14 @@ func _process(dt: float) -> bool:
 			hud.items._show_settings_tab()
 		46:
 			_shot("settings_audio")
-			# Target lock off: nothing locks on by itself
+			hud.items.close_all()
+			# stand a few steps from an enemy, facing it, so it is on screen
 			var e = game.enemies.list[0]
-			var p: Vector3 = game.player.position
-			game.player.facing = atan2(e.position.x - p.x, e.position.z - p.z)
-			var far := 999.0
+			game.player.position = e.position - Vector3(0, 0, 3)
+			game.player.facing = 0.0
+		52:
+			# Target lock off: nothing locks on by itself
+			var far := 10.0
 			game.settings.set_value("targetLock", false)
 			_check(game.targeting.soft_target(null, far) == null, "Target lock off: no soft lock")
 			_check(game.targeting.soft_target(null, far, true) != null, "Tab still finds the enemy ahead")

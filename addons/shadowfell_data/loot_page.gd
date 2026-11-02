@@ -3,7 +3,7 @@ extends HSplitContainer
 ## Loot: who drops what. Pick an enemy (or boss) to give it a loot table and a
 ## skinning table, or pick a table to edit its drops.
 ##
-## A table (data/loot_tables.json) has `always` drops (a hound's meat, every
+## A table (data/items/loot_tables.json) has `always` drops (a hound's meat, every
 ## time) and random `drops`: some rolls, each with a chance of anything; then
 ## a rarity by weight, then an item from that rarity's list by weight.
 ##
