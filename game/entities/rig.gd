@@ -354,9 +354,11 @@ func _apply_upper(dt: float) -> void:
 ## Laid over the clip each frame on models without a Hit clip of their own.
 var snap := -1.0 ## seconds since the blow, -1 at rest
 var _snap_bones = null ## [[bone, share], ...]
-const SNAP_IN := 0.06 ## seconds to whip back
-const SNAP_OUT := 0.32 ## seconds to settle
-const SNAP_ANGLE := 0.5 ## radians, head + neck + chest together
+const SNAP_IN := 0.05 ## seconds to whip back
+const SNAP_OUT := 0.4 ## seconds to settle
+## radians, head + neck + chest together (0.5 until Dan asked for more
+## punch from the zoomed-out camera, 2026-11-02)
+const SNAP_ANGLE := 0.9
 
 
 func _apply_snap(dt: float) -> void:
@@ -374,7 +376,7 @@ func _apply_snap(dt: float) -> void:
 		_skel = found[0]
 	if _snap_bones == null:
 		_snap_bones = []
-		for pair in [["mixamorig_Spine2", 0.2], ["mixamorig_Neck", 0.3], ["mixamorig_Head", 0.5]]:
+		for pair in [["mixamorig_Spine1", 0.15], ["mixamorig_Spine2", 0.2], ["mixamorig_Neck", 0.25], ["mixamorig_Head", 0.4]]:
 			var b := _skel.find_bone(pair[0])
 			if b >= 0:
 				_snap_bones.append([b, pair[1]])
