@@ -213,7 +213,7 @@ static func validate_save(data) -> Array:
 		check.call(typeof(w.get("drops")) == TYPE_DICTIONARY and w.drops.values().all(func(d): return _in_bounds(d)), "world drops")
 		check.call(w.get("shrineActivated") == null or typeof(w.get("shrineActivated")) == TYPE_STRING, "shrine state")
 		check.call(w.get("respawn") == null or _in_bounds(w.respawn), "respawn position")
-		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return _is_stack(g) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
+		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return (_is_stack(g) or Loot.is_coins(g)) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
 		if w.has("camp"):
 			check.call(w.camp == null or _in_bounds(w.camp), "camp position")
 		if w.has("restPoint"):
