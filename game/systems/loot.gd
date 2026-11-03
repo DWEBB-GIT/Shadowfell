@@ -310,7 +310,7 @@ func _coin_piles(coins: int) -> Node3D:
 		var face := _coin_mat(p[1], 0.12)
 		var rim := _coin_mat(p[2], 0.05)
 		# no glow: a tiny star of the metal's colour that winks now and then
-		var spark := Tex.sprite(Tex.fx_material(Tex.glint(), Color(p[1].lightened(0.35), 0.0), true, true))
+		var spark := Tex.sprite(Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.0), true, true))
 		spark.scale = Vector3.ONE * 0.16
 		spark.position = p[3] + Vector3(0, 0.12, 0)
 		spark.add_to_group("coin_sparkle")
