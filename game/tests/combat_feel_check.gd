@@ -123,6 +123,20 @@ func _run() -> void:
 		bandit.position = game.player.position + Vector3(2, 0, 0)
 		game.events.emit("enemyDefeated", {"enemy": bandit})
 		check(game.shake > 0, "a kill kicks the camera")
+	# a swing leaves a weapon trail that fades soon after
+	game.player.rig.held = 0.0
+	game.player.rig.play("strike", 0.5, 0.5)
+	# (headless, the skeleton does not pose between these steps: turn the
+	# blade by hand as the swing would)
+	for i in 12:
+		game.player.rig.update(dt, 0.0)
+		game.player.weapon_part.rotate_x(0.12)
+		game.fx.update(dt)
+	check(game.fx.trail_pts.size() >= 2, "a swing leaves a weapon trail (%d points)" % game.fx.trail_pts.size())
+	game.player.rig.action = null
+	for i in 20:
+		game.fx.update(dt)
+	check(game.fx.trail_pts.is_empty(), "and it fades away")
 
 	# the spell queue covers the end of a cast, not only the global cooldown
 	var sp = game.spells
