@@ -45,7 +45,10 @@ func on_death(at: Vector3) -> void:
 		_clear()
 	var inv = game.inventory
 	var items := []
-	for i in mini(inv.sockets.size(), Items.BAG_SOCKETS):
+	# the bags and the materials pouch (not the tool belt)
+	for i in inv.sockets.size():
+		if i == Items.TOOL_SOCKET:
+			continue
 		var s = inv.sockets[i]
 		if s == null:
 			continue

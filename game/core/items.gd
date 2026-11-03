@@ -7,6 +7,8 @@ extends RefCounted
 const BACKPACK_SLOTS := 8
 const BAG_SOCKETS := 4 ## socket 0 is the backpack and cannot be removed
 const TOOL_SOCKET := 4 ## one more socket after the bags, for the tool pack
+const MATERIAL_SOCKET := 5 ## and one for the materials pouch (Dan, 2026-11-03)
+const MATERIAL_POUCH := "materials_pouch"
 
 const ROLLS := {"spread": 0.2, "damageSpread": 0.12, "valuePerPoint": 4}
 const ROLLED_KINDS := ["weapon", "armor", "shield", "jewellery"]

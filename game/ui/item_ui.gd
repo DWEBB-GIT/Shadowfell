@@ -675,6 +675,7 @@ func _render_sockets(inv) -> void:
 			# the tool belt is its own system: a divider and a gap keep it
 			# apart from the bags (Dan, 2026-11-02)
 			sockets.add_child(hud._divider(8))
+			_material_socket(inv)
 			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
@@ -702,6 +703,28 @@ func _render_sockets(inv) -> void:
 	bp.on_hover = func(s: ISlot, on: bool):
 		if on and drag == null:
 			cursor_tip("Backpack (%s): %d free slot%s\n%s" % [bp.key, free, "" if free == 1 else "s", U.money(inv.coins)])
+		elif not on:
+			cursor_tip_off()
+
+
+## the materials pouch's own slot, left of the bags (Dan, 2026-11-03):
+## ores, gems, fish, hides and stones go in it first
+func _material_socket(inv) -> void:
+	var i := Items.MATERIAL_SOCKET
+	var s = inv.sockets[i] if i < inv.sockets.size() else null
+	if not s:
+		return
+	var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1}, 40)
+	slot.ghost = Icons.art("ui", "socket_bag")
+	var free: int = s.slots.count(null)
+	slot.count = str(free)
+	slot.count_centre = true
+	slot.count_size = 13
+	slot.count_colour = ISlot.LABEL if free else Color("ff6a50")
+	slot.lit = open_bags.has(i)
+	slot.on_hover = func(_s: ISlot, on: bool):
+		if on and drag == null:
+			cursor_tip("Materials pouch: %d free slot%s\nOres, gems, fish, hides and stones go here." % [free, "" if free == 1 else "s"])
 		elif not on:
 			cursor_tip_off()
 
@@ -2040,6 +2063,8 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		var action := ""
 		if def.kind == "ammo":
 			action = "Right-click to use these for Auto Shot"
+		elif loc == "s:%d" % Items.MATERIAL_SOCKET:
+			action = "Click to open"
 		elif loc.begins_with("e:") or loc.begins_with("s:"):
 			action = "Right-click to unequip"
 		elif def.get("slot"):
