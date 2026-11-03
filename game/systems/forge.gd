@@ -164,7 +164,7 @@ func temper(loc: String) -> bool:
 	game.events.emit("spellFlash", {"position": game.player.position, "colour": "#ffe6a0"})
 	game.events.emit("log", {"text": "Refined: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
 	if cost.rank >= int(t.get("announceFrom", 99)):
-		game.events.emit("log", {"text": "%s has refined %s to +%d!" % [game.hud.char_name.text if game.hud and game.hud.char_name.text != "" else "You", Items.get_def(st.id).name, cost.rank], "kind": "level"})
+		game.events.emit("log", {"text": "%s has refined %s to Rank +%d!" % [game.hud.char_name.text if game.hud and game.hud.char_name.text != "" else "You", Items.get_def(st.id).name, cost.rank], "kind": "level"})
 	return true
 
 
