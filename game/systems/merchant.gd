@@ -56,6 +56,8 @@ func update() -> void:
 ## the item's price, less this shop's faction discount (Friendly and up)
 func price_of(id: String) -> int:
 	var shop = DB.shops.get(current) if current != null else null
+	if shop and shop.get("free"):
+		return 0 # test vendor: everything free
 	var off: float = game.reputation.discount(shop.get("faction")) if shop else 0.0
 	var price: float = Items.get_def(id).get("price", 0) * (1 + game.law.markup / 100.0)
 	return maxi(1 if off and price else 0, int(floor(price * (100 - off) / 100.0)))
