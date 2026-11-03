@@ -118,7 +118,7 @@ func sell(loc: String) -> bool:
 	buyback.push_front(b)
 	if buyback.size() > DB.CONFIG.shop.buybackSlots:
 		buyback.resize(int(DB.CONFIG.shop.buybackSlots))
-	events.emit("coins", {"amount": paid})
+	events.emit("coins", {"amount": paid, "sold": true})
 	events.emit("itemSold", {"id": taken.id, "count": taken.count, "paid": paid})
 	events.emit("log", {"text": "Sold: %s%s for %s." % [v.name, " ×%d" % taken.count if taken.count > 1 else "", U.money(paid)], "kind": "loot"})
 	if loc.begins_with("e:"):
@@ -156,6 +156,8 @@ func buy_back(index: int) -> bool:
 		return false
 	inventory.coins -= b.paid
 	buyback.remove_at(index)
+	game.events.emit("coins", {"amount": -b.paid, "bought": true})
+	game.events.emit("itemBought", {"id": b.id, "price": b.paid, "buyBack": true})
 	game.events.emit("log", {"text": "Bought back: %s." % Items.view(b).name, "kind": "loot"})
 	inventory._changed()
 	return true

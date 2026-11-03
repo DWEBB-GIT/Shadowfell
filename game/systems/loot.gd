@@ -308,8 +308,14 @@ func _coin_piles(coins: int) -> Node3D:
 	for p in piles:
 		if p[0] <= 0:
 			continue
-		var face := _coin_mat(p[1], 0.5)
-		var rim := _coin_mat(p[2], 0.25)
+		var face := _coin_mat(p[1], 0.12)
+		var rim := _coin_mat(p[2], 0.05)
+		# no glow: a tiny star of the metal's colour that winks now and then
+		var spark := Tex.sprite(Tex.fx_material(Tex.glint(), Color(p[1].lightened(0.35), 0.0), true, true))
+		spark.scale = Vector3.ONE * 0.16
+		spark.position = p[3] + Vector3(0, 0.12, 0)
+		spark.add_to_group("coin_sparkle")
+		root.add_child(spark)
 		var n: int = clampi(3 + int(sqrt(float(p[0])) * 1.5), 4, 14)
 		# a mound: rings of coins, each ring smaller and higher
 		var i := 0
@@ -608,6 +614,14 @@ func update(dt: float, time: float) -> void:
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
 		if l.get("beam"):
 			l.beam.material_override.albedo_color.a = 0.75 + sin(time * 1.8 + l.seed) * 0.15
+	# coin sparkles: a short wink every couple of seconds, each pile out of step
+	var k := 0
+	for sp in get_tree_sparkles():
+		var ph := fmod(time * 0.55 + k * 0.37, 1.0)
+		var w := maxf(0.0, 1.0 - absf(ph - 0.5) * 8.0) # on for an eighth of the cycle
+		sp.material_override.albedo_color.a = w * 0.95
+		sp.scale = Vector3.ONE * (0.08 + w * 0.12)
+		k += 1
 	_auto_t -= dt
 	if _auto_t <= 0:
 		_auto_t = 0.25
@@ -725,3 +739,7 @@ func skin(id: String) -> bool:
 func describe(entry: Dictionary) -> String:
 	var r: Dictionary = entry.def.reward
 	return Items.view({"id": r.item, "rolls": r.get("rolls")}).name if r.get("item") else ""
+
+
+func get_tree_sparkles() -> Array:
+	return game.scene.get_tree().get_nodes_in_group("coin_sparkle") if game.scene.is_inside_tree() else []

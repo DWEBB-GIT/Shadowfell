@@ -527,7 +527,7 @@ func _context(loc: String) -> void:
 		return
 	# with a shop open, right-clicking something you carry sells it (WoW)
 	if game.merchant.current != null and (loc.begins_with("b:") or loc.begins_with("e:")):
-		game.merchant.sell(loc)
+		_careful(loc, "sell", func(): game.merchant.sell(loc))
 	elif loc.begins_with("s:"):
 		toggle_bag(int(loc.substr(2)))
 	elif loc.begins_with("f:"):
@@ -540,6 +540,19 @@ func _context(loc: String) -> void:
 		game.rune_forge.put(loc)
 	elif loc != "":
 		game.inventory.use(loc)
+
+
+## Blue (rare) and better gear asks first before it is sold or dropped.
+func _careful(loc: String, verb: String, act: Callable) -> void:
+	var stack = game.inventory.get_at(loc)
+	if stack == null:
+		return
+	var v := Items.view(stack)
+	var keys: Array = DB.rarities.keys()
+	if keys.find(v.get("rarity", "common")) < keys.find("rare"):
+		act.call()
+		return
+	hud.confirm("Are you sure you want to %s %s?" % [verb, v.name], act)
 
 
 ## a plain tooltip for any button, stat or row: shown in the corner, as items are
@@ -1653,7 +1666,7 @@ func reset_windows() -> void:
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
-	UI.fit_steady(p)
+	UI.fit_steady(p, p == shop.panel)
 	if at != Vector2.ZERO:
 		p.position = at
 	return p.size
@@ -2143,7 +2156,8 @@ func _up(at: Vector2) -> void:
 				game.action_bar.clicked[a] = true
 		return
 	if game.merchant.current != null and _over(shop.panel, at) and not d.from.begins_with("a:") and not d.from.begins_with("k:"):
-		game.merchant.sell(d.from)
+		var from: String = d.from
+		_careful(from, "sell", func(): game.merchant.sell(from))
 		return
 	var to = _slot_at(at)
 	dropOn(d.from, to, _over(hud.action_bar, at), _over_window(at))
@@ -2218,7 +2232,7 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 		return
 	# released over the world rather than a window: drop it on the ground
 	if not over_window:
-		game.loot.drop_from_inventory(from)
+		_careful(from, "drop", func(): game.loot.drop_from_inventory(from))
 
 
 # ------------------------------------------------------------------ gamepad
