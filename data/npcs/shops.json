@@ -124,7 +124,7 @@
       "vendorType": "innkeeper",
       "stock": [
         "grilled_perch",
-        "travellers_stew",
+        "travellers_stew", "mug_of_ale", "black_stout", "cup_of_wine",
         "healing_draught"
       ]
     },

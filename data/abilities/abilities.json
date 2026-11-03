@@ -1718,6 +1718,141 @@
           }
         ]
       }
+    },
+    {
+      "id": "mendingPrayer",
+      "name": "Mending Prayer",
+      "kind": "heal",
+      "school": "holy",
+      "target": "self",
+      "desc": "A 2 second prayer that heals you. Moving interrupts the cast. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "castTime": 2,
+        "healMin": 18,
+        "healMax": 22,
+        "healPower": 1.5
+      },
+      "cost": {
+        "mana": 30
+      }
+    },
+    {
+      "id": "quickMend",
+      "name": "Quick Mend",
+      "kind": "heal",
+      "school": "holy",
+      "target": "self",
+      "desc": "An instant word of light that heals you a little. Triggers the global cooldown. 10 second cooldown.",
+      "tuning": {
+        "cooldown": 10,
+        "castTime": 0,
+        "healMin": 8,
+        "healMax": 10,
+        "healPower": 0.6
+      },
+      "cost": {
+        "mana": 25
+      }
+    },
+    {
+      "id": "renewingLight",
+      "name": "Renewing Light",
+      "kind": "hot",
+      "school": "holy",
+      "target": "self",
+      "desc": "Light settles on you and heals you every 3 seconds for 12 seconds. Triggers the global cooldown.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 12,
+        "tickInterval": 3,
+        "healMin": 5,
+        "healMax": 6,
+        "healPower": 0.3
+      },
+      "cost": {
+        "mana": 20
+      }
+    },
+    {
+      "id": "swiftRenewal",
+      "name": "Swift Renewal",
+      "kind": "heal",
+      "school": "holy",
+      "target": "self",
+      "consumes": "renewingLight",
+      "desc": "Consumes Renewing Light on you to heal at once for everything it had left, and a little more. Needs Renewing Light. 15 second cooldown.",
+      "tuning": {
+        "cooldown": 15,
+        "castTime": 0,
+        "healMin": 4,
+        "healMax": 6,
+        "healPower": 0.4,
+        "consumePercent": 100
+      },
+      "cost": {
+        "mana": 15
+      }
+    },
+    {
+      "id": "circleOfMending",
+      "name": "Circle of Mending",
+      "kind": "healZone",
+      "school": "holy",
+      "target": "ground",
+      "range": 20,
+      "desc": "Hallow a circle on the ground for 10 seconds. While you stand in it you heal every second. Triggers the global cooldown. 30 second cooldown.",
+      "tuning": {
+        "cooldown": 30,
+        "radius": 4,
+        "duration": 10,
+        "tickInterval": 1,
+        "healMin": 2,
+        "healMax": 3,
+        "healPower": 0.15
+      },
+      "cost": {
+        "mana": 35
+      }
+    },
+    {
+      "id": "radiantNova",
+      "name": "Radiant Nova",
+      "kind": "healBurst",
+      "school": "holy",
+      "target": "self",
+      "desc": "Light bursts out from you: it heals you and burns every enemy within 6 metres. Triggers the global cooldown. 12 second cooldown.",
+      "tuning": {
+        "cooldown": 12,
+        "radius": 6,
+        "healMin": 10,
+        "healMax": 12,
+        "healPower": 0.8,
+        "damageMin": 3,
+        "damageMax": 5,
+        "spellPower": 0.5
+      },
+      "cost": {
+        "mana": 30
+      }
+    },
+    {
+      "id": "thornedVow",
+      "name": "Thorned Vow",
+      "kind": "thorns",
+      "school": "holy",
+      "target": "self",
+      "desc": "Swear a thorned vow: for 30 seconds every enemy that lands a blow on you takes holy damage back. Triggers the global cooldown. 60 second cooldown.",
+      "tuning": {
+        "cooldown": 60,
+        "duration": 30,
+        "thornsMin": 2,
+        "thornsMax": 3,
+        "spellPower": 0.1
+      },
+      "cost": {
+        "mana": 20
+      }
     }
   ]
 }

@@ -114,7 +114,7 @@ static func craft_of(sk: String) -> Dictionary:
 
 ## what a trainer can teach you now (you must know the skill first)
 func offered_by(npc_id: String) -> Array:
-	return DB.recipes.values().filter(func(r): return r.get("trainer") == npc_id and game.skills.has(r.skill) and not learned.has(r.id))
+	return DB.recipes.values().filter(func(r): return DB.taught_by(r, npc_id) and game.skills.has(r.skill) and not learned.has(r.id))
 
 
 func learn_recipe(id: String) -> bool:

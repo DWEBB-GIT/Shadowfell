@@ -465,7 +465,9 @@ func update(dt: float, controls) -> void:
 		# spells first, so a swing coming due never swallows a key press
 		for id in acts:
 			if acts[id] and DB.spells.has(id):
-				game.spells.try_cast(id)
+				# a spell draws sheathed weapons properly (no copies left on the back)
+				if game.spells.try_cast(id) and sheathed:
+					set_sheathed(false)
 		# fighting draws your weapons
 		if sheathed and (acts.get("strike") or acts.get("shoot")):
 			set_sheathed(false)
@@ -690,9 +692,9 @@ func hold_bow(in_hand: bool) -> void:
 			torso.add_child(bow)
 	if weapon_part:
 		var mh = game.inventory.equipment.get("mainHand") if game.inventory else null
-		weapon_part.visible = not in_hand and (weapon_part != default_weapon_mesh or (mh != null and mh.id == "worn_longsword"))
+		weapon_part.visible = not in_hand and not sheathed and (weapon_part != default_weapon_mesh or (mh != null and mh.id == "worn_longsword"))
 	if shield:
-		shield.visible = not in_hand
+		shield.visible = not in_hand and not sheathed
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)

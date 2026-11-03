@@ -109,6 +109,27 @@ static func button(text: String, on_press: Callable, tip := "") -> Button:
 	return b
 
 
+## More trainers for one thing (`trainers`, beside the main `trainer`): a
+## chip for each with a remove button, and a picker to add another
+static func extra_trainers(s: DataStore, entry: Dictionary, on_change: Callable) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	for id in entry.get("trainers", []):
+		box.add_child(button("%s ✕" % s.npc_name(id), func():
+			entry.trainers.erase(id)
+			if entry.trainers.is_empty():
+				entry.erase("trainers")
+			on_change.call(), "No longer teaches it"))
+	var free := s.npc_choices().filter(func(c): return c[0] != entry.get("trainer") and not entry.get("trainers", []).has(c[0]))
+	box.add_child(choice([[null, "+ another trainer"]] + free, null, func(v):
+		if v == null:
+			return
+		if not entry.has("trainers"):
+			entry.trainers = []
+		entry.trainers.append(v)
+		on_change.call()))
+	return box
+
+
 static func hbox(parent: Node) -> HBoxContainer:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 6)

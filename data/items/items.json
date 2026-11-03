@@ -686,6 +686,23 @@
       "description": "A hunter's quiver. Place it in a bag slot: it holds only arrows (six stacks), and drawing from it is quicker, so Auto Shot fires 10% faster."
     },
     {
+      "id": "belt_pouch",
+      "name": "Belt pouch",
+      "kind": "bag",
+      "toolPack": true,
+      "holds": [
+        "tool",
+        "torch"
+      ],
+      "rarity": "common",
+      "bagSlots": 3,
+      "stack": 1,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "A plain pouch on your belt for a few tools, so they take no bag space. A proper tool pack replaces it."
+    },
+    {
       "id": "tool_pack",
       "name": "Warden's tool pack",
       "kind": "bag",
@@ -803,6 +820,57 @@
       "model": "stew",
       "icon": "stew",
       "description": "A heel of dark bread, hard enough to knock with. Restores 100 health over 15 seconds while you sit and eat."
+    },
+    {
+      "id": "mug_of_ale",
+      "name": "Mug of ale",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "drink": {
+          "mana": 150,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 3,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Brown ale from the Ford Inn's own cask, flat by noon. Restores 150 mana over 15 seconds while you sit and drink."
+    },
+    {
+      "id": "black_stout",
+      "name": "Black stout",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "drink": {
+          "mana": 200,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 5,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Thick as tar and nearly as bitter. Restores 200 mana over 15 seconds while you sit and drink."
+    },
+    {
+      "id": "cup_of_wine",
+      "name": "Cup of red wine",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "drink": {
+          "mana": 260,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 8,
+      "model": "draught",
+      "icon": "draught",
+      "description": "Sour red off a trader's cart. Hester charges as if it came from somewhere. Restores 260 mana over 15 seconds while you sit and drink."
     },
     {
       "id": "spring_water",

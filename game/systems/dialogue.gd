@@ -85,7 +85,7 @@ func train_rows(npc_id = null) -> Array:
 	var coins: int = game.inventory.coins
 	var rows := []
 	for s in DB.skills.values():
-		if s.get("trainer") != npc_id:
+		if not DB.taught_by(s, npc_id):
 			continue
 		var known: bool = skills.has(s.id)
 		var teaches: Array = s.get("teaches", [])
@@ -93,14 +93,14 @@ func train_rows(npc_id = null) -> Array:
 	# the next profession rank, from whoever teaches it (the ladder)
 	for s in DB.skills.values():
 		var nxt: Dictionary = skills.next_rank(s.id)
-		if nxt.is_empty() or nxt.get("trainer") != npc_id:
+		if nxt.is_empty() or not DB.taught_by(nxt, npc_id):
 			continue
 		var why: String = skills.rank_blocked(s.id)
 		var cost := int(nxt.get("cost", 0))
 		rows.append({"id": "rank:" + s.id, "name": "%s %s" % [nxt.name, s.name], "kind": "Profession rank", "desc": "Raises your %s limit from %d to %d." % [s.name, skills.cap(s.id), int(nxt.cap)], "need": why if why != "" else "%s %d" % [s.name, int(nxt.get("level", 0))], "cost": cost, "state": "locked" if why != "" else "poor" if coins < cost else "learn"})
 	# class spells this trainer teaches the character's class
 	for t in game.stats.archetype.get("trained", []):
-		if t.get("trainer") != npc_id or not DB.abilities.has(t.get("ability")):
+		if not DB.taught_by(t, npc_id) or not DB.abilities.has(t.get("ability")):
 			continue
 		var a: Dictionary = DB.abilities[t.ability]
 		var known: bool = skills.spells.has(t.ability)
@@ -111,7 +111,7 @@ func train_rows(npc_id = null) -> Array:
 		var need := "Requires level %d" % lvl if low else "Requires %s" % gate if gate != "" else "Level %d" % lvl
 		rows.append({"id": "spell:" + t.ability, "name": a.name, "kind": "%s spell" % game.stats.archetype.name, "ability": t.ability, "desc": a.get("desc", ""), "need": need, "cost": cost, "state": "known" if known else "locked" if low or gate != "" else "poor" if coins < cost else "learn"})
 	for r in DB.recipes.values():
-		if r.get("trainer") != npc_id:
+		if not DB.taught_by(r, npc_id):
 			continue
 		var skill: Dictionary = DB.skills[r.skill]
 		var known: bool = cooking.learned.has(r.id)

@@ -57,6 +57,10 @@ func reset() -> void:
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
+	# everyone starts with a small belt pouch, so the tool belt is its own
+	# place from the start and a bought rod never shows in the bags too
+	# (Dan, 2026-11-02); the Warden's tool pack replaces it
+	sockets[Items.TOOL_SOCKET] = {"id": STARTER_POUCH, "slots": _empty_slots(int(Items.get_def(STARTER_POUCH).bagSlots))}
 	sockets[0].slots[0] = {"id": "healing_draught", "count": DB.CONFIG.player.startDraughts}
 	ammo_choice = null
 	var arch: Dictionary = game.stats.archetype if game.stats else DB.archetypes[DB.CONFIG.player.archetype]
@@ -314,8 +318,24 @@ func on_belt(id: String) -> bool:
 	return false
 
 
+const STARTER_POUCH := "belt_pouch"
+
+
+## a bigger tool pack takes the old one's place and its tools; the old one
+## is thrown away (the starter pouch) or goes into the bags
 func _fit_tool_pack(id: String) -> void:
+	var old = tool_pack
 	_put("s:%d" % Items.TOOL_SOCKET, {"id": id, "count": 1})
+	if old:
+		var free := 0
+		for st in old.slots:
+			if st:
+				while free < tool_pack.slots.size() and tool_pack.slots[free] != null:
+					free += 1
+				if free < tool_pack.slots.size():
+					tool_pack.slots[free] = st
+				else:
+					_insert(st.id, st.get("count", 1), st.get("rolls"))
 	_stow_tools()
 	game.events.emit("log", {"text": "Your tools go into the %s, out of your bags." % Items.get_def(id).name.to_lower(), "kind": "loot"})
 
@@ -365,7 +385,7 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 	if def.is_empty():
 		return false
 	if def.get("toolPack", false):
-		if tool_pack:
+		if tool_pack and int(Items.get_def(tool_pack.id).get("bagSlots", 0)) >= int(def.get("bagSlots", 0)):
 			return false
 		_fit_tool_pack(id)
 		if not quiet:
@@ -393,7 +413,7 @@ func add_item(id: String, n := 1, quiet := false, rolls = null) -> bool:
 func room_for(id: String) -> int:
 	var def := Items.get_def(id)
 	if def.get("toolPack", false):
-		return 0 if tool_pack else 1
+		return 0 if tool_pack and int(Items.get_def(tool_pack.id).get("bagSlots", 0)) >= int(def.get("bagSlots", 0)) else 1
 	var room := 0
 	for loc in _slots_for(id):
 		var s = get_at(loc)

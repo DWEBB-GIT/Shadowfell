@@ -923,9 +923,16 @@ func _handle_input(dt: float):
 		hud.belt.toggle()
 	if keys.pressed("character") or pad.pressed(B.VIEW):
 		hud.toggle_panel("character")
-	for w in ["spellbook", "talents", "skills", "settings"]:
+	for w in ["spellbook", "talents", "skills"]:
 		if keys.pressed(w):
 			hud.toggle_panel(w)
+	# O opens the Main Menu, never Settings directly (Dan, 2026-11-02);
+	# with Settings open it closes them
+	if keys.pressed("settings"):
+		if hud.items.open.settings:
+			hud.toggle_panel("settings")
+		else:
+			hud.toggle_main_menu()
 	# D-pad right opens and closes the log (it moves the highlight in the bags)
 	if keys.pressed("map"):
 		hud.toggle_world_map()

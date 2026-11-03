@@ -73,6 +73,10 @@ static func collect(g) -> Array:
 	for a in ActionBar.BELT_ABILITIES:
 		if not DB.abilities.has(a) or not g.skills.knows_ability(a):
 			continue
+		# Make Camp lights a fire and opens cooking, so Cook needs no slot
+		# of its own (Dan, 2026-11-02)
+		if a == "cook" and g.skills.knows_ability("setCamp"):
+			continue
 		var e := {"kind": "ability", "id": a}
 		if a == "fish":
 			e.item = rod # the rod's picture; greyed with no rod
@@ -195,6 +199,11 @@ func use(e: Dictionary) -> void:
 	if e.kind == "ability":
 		if e.id == "fish" and e.get("item") == null:
 			hud.error("You need a fishing rod")
+			return
+		# already by a fire: cook there rather than pitch another camp
+		if e.id == "setCamp" and game.skills.knows_ability("cook") and game.cooking.near_fire != "":
+			if not hud.panel_open("cooking"):
+				hud.toggle_window("cooking")
 			return
 		game.action_bar.clicked[e.id] = true
 		return
