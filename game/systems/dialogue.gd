@@ -220,6 +220,7 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 	if def.get("refiner"):
 		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (stones and gems)", "icon": "shop", "group": "service"})
+		pg.options.append({"id": "ench:runecraft", "text": "Runecraft (bind rune fragments)", "icon": "shop", "group": "service"})
 	if def.get("jeweller"):
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
@@ -264,12 +265,22 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 			if pg.options.is_empty():
 				pg.text += "\n\nNothing you carry will take refining. Plain gear has no magic to wake, and the rest holds all it can."
 		"scrap":
-			pg.text = "I'll break it down and draw the magic out as dust. You get three parts in four of every mote I ever put into it, and every stone in it. The rest is ash. I'll tell you what you'll get first."
+			pg.text = "I'll break it down and draw the stones back out. You get three in four of the Fellstones that took, none of those lost to a slipped weave, and every gem in it. The rest is ash. I'll tell you what you'll get first."
 			for loc in fg.gear_locations():
 				if not fg.scrap_preview(inv.get_at(loc)).is_empty():
 					pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})
 			if pg.options.is_empty():
 				pg.text += "\n\nThere's no magic in anything you carry. Plain gear gives nothing."
+		"runecraft":
+			var bc := Runes.bind_cost("embers")
+			pg.text = "Bring me %d fragments of one rune and %s, and I'll bind them whole. Fragments come from things that carry the rune's nature, and only from those still worth your sword." % [bc.count, U.money(bc.coins)]
+			for r in DB.runes.get("runes", []):
+				var c := Runes.bind_cost(r.id)
+				var have: int = inv.count(c.fragment)
+				if have > 0 or inv.count("rune_" + r.id) > 0:
+					pg.options.append({"id": "bind:" + r.id, "text": "Rune of %s: %d / %d fragments" % [r.name, have, c.count], "icon": "accept", "disabled": not game.runes.can_bind(r.id)})
+			if pg.options.is_empty():
+				pg.text += "\n\nYou carry no rune fragments."
 		"scrapItem":
 			var st = inv.get_at(v.src)
 			pg.text = "Scrap %s? %s It's gone for good." % [Items.view(st).name, fg.scrap_text(st)] if st != null else ""
@@ -334,7 +345,7 @@ func _heal_price() -> int:
 ## A service choice; true if it was one (and was acted on).
 func _service_choose(id: String, v: Dictionary) -> bool:
 	var fg = game.forge
-	var views := {"ench:enchant": "enchant", "ench:scrap": "scrap", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
+	var views := {"ench:enchant": "enchant", "ench:scrap": "scrap", "ench:runecraft": "runecraft", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
 	if views.has(id):
 		view = {"kind": views[id]}
 		return true
@@ -344,6 +355,9 @@ func _service_choose(id: String, v: Dictionary) -> bool:
 		return true
 	if id.begins_with("enchant:"):
 		fg.temper(id.substr(8))
+		return true
+	if id.begins_with("bind:"):
+		game.runes.bind(id.substr(5))
 		return true
 	if id.begins_with("scrap:"):
 		view = {"kind": "scrapItem", "src": id.substr(6)}

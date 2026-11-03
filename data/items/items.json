@@ -1461,48 +1461,64 @@
       "description": "A bar of iridium, the hardest metal a forge can work."
     },
     {
+      "id": "fellstone",
+      "name": "Fellstone",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 50,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": { "colour": "#9fd0ff", "strength": 1.4, "pulse": 0.6 },
+      "description": "A dark stone with a light inside it that will not stay still. A Refiner works it into gear, one rank at a time. It only falls from foes still worth your while."
+    },
+    {
       "id": "faint_dust",
-      "name": "Gloamstone",
+      "name": "Fellstone (old)",
       "kind": "material",
       "rarity": "common",
       "stack": 20,
       "price": 3,
       "model": "rock1",
       "icon": "rock1",
-      "description": "A dull grey stone that drinks the light around it. A refiner spends it on gear up to level 10."
+      "description": "An old refining material. It turns into a Fellstone when your character loads.",
+      "becomes": "fellstone"
     },
     {
       "id": "glimmering_dust",
-      "name": "Wyrdstone",
+      "name": "Fellstone (old)",
       "kind": "material",
       "rarity": "common",
       "stack": 20,
       "price": 6,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Veined with lines that move when you are not looking. A refiner spends it on gear up to level 22."
+      "description": "An old refining material. It turns into a Fellstone when your character loads.",
+      "becomes": "fellstone"
     },
     {
       "id": "radiant_dust",
-      "name": "Starsteel",
+      "name": "Fellstone (old)",
       "kind": "material",
       "rarity": "enhanced",
       "stack": 20,
       "price": 12,
       "model": "rock1",
       "icon": "rock1",
-      "description": "A shard of fallen star, cold to the touch and bright enough to read by. A refiner spends it on gear up to level 38."
+      "description": "An old refining material. It turns into a Fellstone when your character loads.",
+      "becomes": "fellstone"
     },
     {
       "id": "eldritch_dust",
-      "name": "Godsiron",
+      "name": "Fellstone (old)",
       "kind": "material",
       "rarity": "rare",
       "stack": 20,
       "price": 25,
       "model": "rock1",
       "icon": "rock1",
-      "description": "Black iron from no mine of men, and it shines anyway. A refiner spends it on the highest gear."
+      "description": "An old refining material. It turns into a Fellstone when your character loads.",
+      "becomes": "fellstone"
     },
     {
       "id": "soulshard",
@@ -6899,81 +6915,171 @@
     },
     {
       "id": "rune_embers",
-      "name": "Rune of Embers (test)",
+      "name": "Rune of Embers",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "embers",
-      "description": "Test item: a rune scroll. Use it to put the Embers rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Embers. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Embers fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_embers_fragment",
+      "name": "Embers fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#ff7a2a",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Embers rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     },
     {
       "id": "rune_rime",
-      "name": "Rune of Rime (test)",
+      "name": "Rune of Rime",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "rime",
-      "description": "Test item: a rune scroll. Use it to put the Rime rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Rime. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Rime fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_rime_fragment",
+      "name": "Rime fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#7fd8ff",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Rime rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     },
     {
       "id": "rune_venom",
-      "name": "Rune of Venom (test)",
+      "name": "Rune of Venom",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "venom",
-      "description": "Test item: a rune scroll. Use it to put the Venom rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Venom. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Venom fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_venom_fragment",
+      "name": "Venom fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#7ee05a",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Venom rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     },
     {
       "id": "rune_storm",
-      "name": "Rune of Storm (test)",
+      "name": "Rune of Storm",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "storm",
-      "description": "Test item: a rune scroll. Use it to put the Storm rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Storm. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Storm fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_storm_fragment",
+      "name": "Storm fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#ffe680",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Storm rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     },
     {
       "id": "rune_dawn",
-      "name": "Rune of Dawn (test)",
+      "name": "Rune of Dawn",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "dawn",
-      "description": "Test item: a rune scroll. Use it to put the Dawn rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Dawn. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Dawn fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_dawn_fragment",
+      "name": "Dawn fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#ffd27a",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Dawn rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     },
     {
       "id": "rune_dread",
-      "name": "Rune of Dread (test)",
+      "name": "Rune of Dread",
       "kind": "material",
-      "rarity": "rare",
+      "rarity": "epic",
       "stack": 5,
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
       "rune": "dread",
-      "description": "Test item: a rune scroll. Use it to put the Dread rune on your main-hand weapon, which then glows with it.",
-      "test": true
+      "description": "A rune of Dread. Drag it onto any weapon to bind it there; the weapon takes its glow. Earned from the Dread fragments a Refiner binds, or, very rarely, from a great foe."
+    },
+    {
+      "id": "rune_dread_fragment",
+      "name": "Dread fragment",
+      "kind": "material",
+      "rarity": "rare",
+      "stack": 20,
+      "price": 0,
+      "model": "rock1",
+      "icon": "rock1",
+      "glow": {
+        "colour": "#a65cff",
+        "strength": 1.2,
+        "pulse": 0.5
+      },
+      "description": "A shard of a Dread rune, still warm with it. A Refiner binds 10 of them into a whole rune."
     }
   ]
 }

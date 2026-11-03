@@ -873,6 +873,13 @@ func apply(data: Dictionary) -> void:
 				_put(loc, clone(worn))
 			else:
 				back.append(clone(worn))
+	# retired items that turn into another (old refining dust -> Fellstone)
+	for s in sockets:
+		if s:
+			for i in s.slots.size():
+				var st = s.slots[i]
+				if st and Items.get_def(st.id).get("becomes"):
+					st.id = Items.get_def(st.id).becomes
 	ammo_choice = data.get("ammo") if DB.items.has(data.get("ammo", "")) else null
 	if not data.get("granted", []).has("kite_shield"):
 		if not equipment.offHand:

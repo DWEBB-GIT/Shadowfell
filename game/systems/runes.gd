@@ -132,6 +132,78 @@ func apply(loc, rid: String, target := "e:mainHand") -> bool:
 	return true
 
 
+# ------------------------------------------------------------ runecraft
+## Runecraft rules (runes.json `runecraft`).
+static func craft_rules() -> Dictionary:
+	return file().get("runecraft", {})
+
+
+## The element whose fragments an enemy carries, or "".
+static func fragment_element(enemy_id: String) -> String:
+	var src: Dictionary = craft_rules().get("sources", {})
+	for rid in src:
+		if src[rid].has(enemy_id):
+			return rid
+	return ""
+
+
+## On a kill that gave XP: maybe a rune fragment of the enemy's element,
+## and from a boss or rare elite, very rarely a whole rune. Returns the
+## item ids dropped.
+func drop_from_enemy(enemy, xp: int) -> Array:
+	var out := []
+	if xp <= 0:
+		return out
+	var rules := craft_rules()
+	var kind := Loot.fellstone_kind(enemy.cfg)
+	var el := fragment_element(String(enemy.cfg.get("id", "")))
+	if el != "" and game.random.call() * 100 < float(rules.get("chance", {}).get(kind, 0)):
+		out.append("rune_%s_fragment" % el)
+	if kind == "boss" and game.random.call() * 100 < float(rules.get("bossRuneChance", 0)):
+		var all: Array = file().get("runes", [])
+		var r: Dictionary = all[int(game.random.call() * all.size()) % all.size()]
+		out.append("rune_" + r.id)
+		game.events.emit("log", {"text": "The %s leaves behind a Rune of %s!" % [enemy.cfg.name, r.name], "kind": "level"})
+	for i in out.size():
+		var a := 1.3 + i * 1.7
+		game.loot.drop_at({"id": out[i], "count": 1}, Vector3(enemy.position.x + sin(a) * 0.7, 0, enemy.position.z + cos(a) * 0.7))
+		if out[i].ends_with("_fragment"):
+			game.events.emit("log", {"text": "The %s drops %s." % [enemy.cfg.name, U.article(Items.get_def(out[i]).name) + " " + Items.get_def(out[i]).name], "kind": "loot", "rarity": "rare"})
+	if not out.is_empty():
+		game.events.emit("fellstoneDropped", {"enemy": enemy, "count": out.size()})
+	return out
+
+
+## What binding rune `rid` costs: { fragment, count, coins }.
+static func bind_cost(rid: String) -> Dictionary:
+	var r := craft_rules()
+	return {"fragment": "rune_%s_fragment" % rid, "count": int(r.get("fragments", 10)), "coins": int(r.get("coins", 0))}
+
+
+func can_bind(rid: String) -> bool:
+	var c := bind_cost(rid)
+	return game.inventory.count(c.fragment) >= c.count and game.inventory.coins >= c.coins
+
+
+## A Refiner binds fragments into a whole rune.
+func bind(rid: String) -> bool:
+	var inv = game.inventory
+	if def(rid).is_empty() or not can_bind(rid):
+		inv._refuse("You don't have what that needs.")
+		return false
+	if inv.first_free() == null and inv.count("rune_" + rid) == 0:
+		inv._refuse("Your bags are full.")
+		return false
+	var c := bind_cost(rid)
+	inv.remove_count(c.fragment, c.count)
+	inv.lose_coins(c.coins)
+	inv.add_item("rune_" + rid, 1, true)
+	game.events.emit("itemEnchanted", {"loc": "", "rune": rid})
+	game.events.emit("spellFlash", {"position": game.player.position, "colour": def(rid).glow.colour})
+	game.events.emit("log", {"text": "The fragments run together: a Rune of %s." % def(rid).name, "kind": "level"})
+	return true
+
+
 # ------------------------------------------------------------ procs
 ## Called for each of your weapon hits that landed. `hand`: main, off or
 ## ranged. `amount`: the damage the hit did.

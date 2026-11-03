@@ -311,5 +311,7 @@ func on_enemy_defeated(enemy) -> void:
 	if enemy.cfg.get("uniqueDrop"):
 		loot.drop_unique(enemy)
 	loot.drop_from_enemy(enemy)
+	loot.drop_fellstones(enemy, xp)
+	game.runes.drop_from_enemy(enemy, xp)
 	game.afterlife.on_enemy_defeated(enemy)
 	game.grave.on_enemy_defeated(enemy)

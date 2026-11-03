@@ -23,6 +23,8 @@ func _process(_dt: float) -> bool:
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_refine()
+		_fellstones()
+		_runecraft()
 		_scrolls()
 		_drag()
 		_glow()
@@ -91,25 +93,71 @@ func _refine() -> void:
 	_clear_bags()
 	inv.add_item("test_frostbite", 1, true)
 	var loc = inv._find("test_frostbite")
-	inv.add_item("faint_dust", 20, true)
+	inv.add_item("fellstone", 20, true)
 	inv.add_item("soulshard", 2, true)
 	inv.coins += 5000
-	_ok(Items.get_def("faint_dust").name == "Gloamstone", "the first band's stone is Gloamstone")
+	_ok(Items.get_def("fellstone").name == "Fellstone" and fg.temper_cost(inv.get_at(loc)).items[0].item == "fellstone", "refining is paid in Fellstones")
 	var rnd = game.random
 	game.random = func(): return 0.0
 	_ok(fg.temper(loc) and fg.temper(loc), "+1 and +2 always take")
 	var c3: Dictionary = fg.temper_cost(inv.get_at(loc))
 	_ok(c3.chance < 100, "+3 can slip (%d%%)" % c3.chance)
-	var stones: int = inv.count("faint_dust")
+	var stones: int = inv.count("fellstone")
 	game.random = func(): return 0.999
 	_ok(not fg.temper(loc), "a slip fails the try")
 	_ok(Items.temper_of(inv.get_at(loc)) == 2 and inv.count("test_frostbite") == 1, "but the item keeps its rank and is not lost")
-	_ok(inv.count("faint_dust") < stones, "the stones are spent")
+	_ok(inv.count("fellstone") < stones, "the stones are spent")
 	_ok(fg.temper_cost(inv.get_at(loc)).chance == mini(100, c3.chance + 10), "and the next try is 10% likelier")
 	_ok(Items.valid_rolls("test_frostbite", inv.get_at(loc).rolls), "the item's resolve is a valid roll")
 	game.random = func(): return 0.0
 	_ok(fg.temper(loc) and Forge.resolve_of(inv.get_at(loc)) == 0, "a success clears the resolve")
 	game.random = rnd
+	_clear_bags()
+
+
+## Fellstones: only from foes that still give XP; bosses always; old
+## refining stones in a save turn into Fellstones.
+func _fellstones() -> void:
+	var inv = game.inventory
+	var loot = game.loot
+	var foe = game.enemies.list[0]
+	var rnd = game.random
+	game.random = func(): return 0.0
+	_ok(loot.drop_fellstones(foe, 0) == 0, "a grey foe (no XP) never drops one")
+	_ok(loot.drop_fellstones(foe, 10) >= 1, "a foe worth XP can")
+	game.random = func(): return 0.999
+	var cfg: Dictionary = foe.cfg
+	_ok(Loot.fellstone_kind({"type": "normal"}) == "normal" and Loot.fellstone_kind({"elite": true}) == "elite" and Loot.fellstone_kind({"mana": 10}) == "caster" and Loot.fellstone_kind({"uniqueDrop": "x"}) == "boss", "foes sort into normal, caster, elite and boss")
+	_ok(loot.drop_fellstones(foe, 10) == 0 or Loot.fellstone_kind(cfg) == "boss", "an unlucky roll drops none")
+	game.random = rnd
+	_clear_bags()
+	inv.add_item("glimmering_dust", 5, true)
+	inv.apply(inv.serialize())
+	_ok(inv.count("fellstone") == 5 and inv.count("glimmering_dust") == 0, "old refining stones in a save turn into Fellstones")
+	_ok(not DB.loot_tables.values().any(func(t): return JSON.stringify(t).contains("soulshard")), "no low-level loot table drops Soulshards")
+	_clear_bags()
+
+
+## Runecraft: fragments drop from fitting foes; a Refiner binds 10 into a rune.
+func _runecraft() -> void:
+	var inv = game.inventory
+	_ok(Runes.fragment_element("seer") == "dread" and Runes.fragment_element("ghoul") == "dawn", "foes carry fitting fragments")
+	var seer = null
+	for e in game.enemies.list:
+		if e.cfg.get("id") == "seer":
+			seer = e
+	var rnd = game.random
+	game.random = func(): return 0.0
+	if seer != null:
+		_ok(game.runes.drop_from_enemy(seer, 10).has("rune_dread_fragment"), "a seer can drop a Dread fragment")
+		_ok(game.runes.drop_from_enemy(seer, 0).is_empty(), "but not once it is grey")
+	game.random = rnd
+	_clear_bags()
+	inv.coins += 1000
+	inv.add_item("rune_rime_fragment", 9, true)
+	_ok(not game.runes.can_bind("rime"), "nine fragments are not enough")
+	inv.add_item("rune_rime_fragment", 1, true)
+	_ok(game.runes.bind("rime") and inv.count("rune_rime") == 1 and inv.count("rune_rime_fragment") == 0, "ten fragments bind into a Rune of Rime")
 	_clear_bags()
 
 

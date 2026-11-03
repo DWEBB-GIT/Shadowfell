@@ -180,6 +180,41 @@ func _add_ground(stack: Dictionary, pos: Vector3) -> Dictionary:
 	return g
 
 
+## Fellstones (data/professions/enchanting.json `fellstoneDrops`, Dan
+## 2026-11-03): only from enemies that still give XP, so low zones can't be
+## farmed; rarely from normal foes, a little more from casters and elites,
+## always from bosses and rare elites. Returns how many fell.
+func drop_fellstones(enemy, xp: int) -> int:
+	var rules: Dictionary = DB.enchanting.get("fellstoneDrops", {})
+	if xp <= 0 or rules.is_empty():
+		return 0
+	var cfg: Dictionary = enemy.cfg
+	var kind := fellstone_kind(cfg)
+	var r: Dictionary = rules.get(kind, {})
+	var n := 0
+	if r.has("min"):
+		n = int(r.min) + int(floor(game.random.call() * (int(r.get("max", r.min)) - int(r.min) + 1)))
+	elif game.random.call() * 100 < float(r.get("chance", 0)):
+		n = 1
+	if n > 0:
+		drop_at({"id": "fellstone", "count": n}, Vector3(enemy.position.x + 0.5, 0, enemy.position.z - 0.4))
+		game.events.emit("fellstoneDropped", {"enemy": enemy, "count": n})
+		game.events.emit("log", {"text": "The %s drops %s." % [cfg.name, "a Fellstone" if n == 1 else "%d Fellstones" % n], "kind": "loot", "rarity": "rare"})
+	return n
+
+
+## Which `fellstoneDrops` row an enemy uses: boss (a boss or a rare elite
+## with its own unique drop), elite, caster (has mana) or normal.
+static func fellstone_kind(cfg: Dictionary) -> String:
+	if cfg.get("type") == "boss" or cfg.get("rare", false) or cfg.get("uniqueDrop"):
+		return "boss"
+	if cfg.get("elite", false) or cfg.get("type") == "elite":
+		return "elite"
+	if cfg.has("mana"):
+		return "caster"
+	return "normal"
+
+
 ## Roll the enemy's own loot table, then the world drops for its level
 ## (rarity first, then the item), and lay what drops around the body. Gear rolls its stats as it drops.
 func drop_from_enemy(enemy) -> Array:
