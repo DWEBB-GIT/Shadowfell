@@ -139,7 +139,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 		var id = equipment.mainHand.id if equipment.get("mainHand") else null
 		# the worn longsword is built into the warden model, unless an
 		# imported model stands in for it (DB.with_imported)
-		var built_in: bool = id == "worn_longsword" and Items.get_def(id).get("model") == "worn_sword"
+		var built_in: bool = id == "worn_longsword" and Items.get_def(id).get("model") == "worn_sword" and Runes.of(equipment.mainHand) == ""
 		default_weapon_mesh.visible = built_in
 		weapon_part = default_weapon_mesh
 		if id and not built_in:
@@ -147,7 +147,8 @@ func _show_equipment(equipment: Dictionary) -> void:
 			blade.transform = default_weapon_mesh.transform
 			arm.add_child(blade)
 			weapon_part = blade
-			FancyGear.apply(blade, Items.get_def(id).get("glow", {}))
+			# a rune's glow (runes.json), or the item's own (the test weapons)
+			FancyGear.apply(blade, Runes.glow_for(equipment.mainHand))
 	if head:
 		_free(helm)
 		helm = null
@@ -188,7 +189,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 			shield.transform = default_weapon_mesh.transform
 			shield.position.x *= -1
 			larm.add_child(shield)
-			FancyGear.apply(shield, off.get("glow", {}))
+			FancyGear.apply(shield, Runes.glow_for(equipment.offHand))
 		elif off.get("kind") == "shield":
 			shield = Assets.instance(off.model)
 			shield.position = Vector3(0.11, -0.42, 0.04)
@@ -671,12 +672,15 @@ func hold_bow(in_hand: bool) -> void:
 	var larm := _part("Arm_L")
 	var r = game.inventory.equipment.get("ranged") if game.inventory else null
 	var want = r.id if r and Items.get_def(r.id).get("kind") == "weapon" else null
-	if bow and (bow_id != want or bow_in_hand != in_hand):
+	# the key carries the rune too, so a new rune rebuilds the bow's glow
+	var key = "%s:%s" % [want, Runes.of(r)] if want else null
+	if bow and (bow_id != key or bow_in_hand != in_hand):
 		_free(bow)
 		bow = null
 	if want and not bow:
 		bow = Assets.instance(Items.get_def(want).model)
-		bow_id = want
+		bow_id = key
+		FancyGear.apply(bow, Runes.glow_for(r))
 		bow_in_hand = in_hand
 		if in_hand and larm:
 			bow.position = Vector3(0, -0.62, 0.02)

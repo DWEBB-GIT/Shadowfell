@@ -60,6 +60,9 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	else:
 		enemy.hurt(hit.amount, hurt_opts)
 		visuals.call()
+	# a rune on the weapon may answer the blow (data/professions/runes.json)
+	if game.runes and not o.get("noRune", false):
+		game.runes.on_weapon_hit(enemy, hand, hit.amount)
 	return hit
 
 
@@ -308,5 +311,7 @@ func on_enemy_defeated(enemy) -> void:
 	if enemy.cfg.get("uniqueDrop"):
 		loot.drop_unique(enemy)
 	loot.drop_from_enemy(enemy)
+	loot.drop_fellstones(enemy, xp)
+	game.runes.drop_from_enemy(enemy, xp)
 	game.afterlife.on_enemy_defeated(enemy)
 	game.grave.on_enemy_defeated(enemy)

@@ -19,6 +19,7 @@
     "recipes": "professions/recipes.json",
     "forge": "professions/forge.json",
     "enchanting": "professions/enchanting.json",
+    "runes": "professions/runes.json",
     "gems": "professions/gems.json",
     "mining": "professions/mining.json",
     "nodes": "professions/nodes.json",

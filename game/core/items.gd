@@ -117,6 +117,8 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 		out.rarity = "legendary"
 	if typeof(rf) == TYPE_DICTIONARY:
 		out.reforged = rf
+	if r.has("rune"):
+		out.rune = r.rune
 	out.sockets = sockets
 	out.gems = gems
 	out.stats = stats
@@ -175,7 +177,11 @@ static func valid_rolls(id: String, r) -> bool:
 			return false
 	if r.has("suffix") and not DB.suffixes.has(r.suffix):
 		return false
+	if r.has("rune") and (typeof(r.rune) != TYPE_STRING or Runes.def(r.rune).is_empty() or d.kind != "weapon"):
+		return false
 	if r.has("power") and Builds.power_def(r.power).is_empty():
+		return false
+	if r.has("resolve") and not (_is_int(r.resolve) and r.resolve >= 0 and r.resolve <= 100):
 		return false
 	if r.has("temper") and not (_is_int(r.temper) and r.temper >= 0 and r.temper <= 10):
 		return false

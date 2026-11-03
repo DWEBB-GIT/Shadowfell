@@ -887,17 +887,17 @@
         },
         {
           "id": "enchanting",
-          "prompt": "How does enchanting work?",
+          "prompt": "How does refining work?",
           "node": "sabeth_enchanting"
         }
       ],
       "nodes": [
         {
           "id": "sabeth_who",
-          "text": "Sabeth Gall. I wake what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
+          "text": "Sabeth Gall. I refine what sleeps in good steel and good leather. A smith makes a thing well; I make it want to be better. The Reeve calls it a trade. The priest calls it something else.",
           "replies": [
             {
-              "text": "How does enchanting work?",
+              "text": "How does refining work?",
               "node": "sabeth_enchanting"
             },
             {
@@ -907,7 +907,7 @@
         },
         {
           "id": "sabeth_enchanting",
-          "text": "Anything with a little magic in it, green or better, can take more. Each rank is worth a level, no more, and a finer piece holds more ranks. I pay for it in dust: bring me gear you've no use for and I'll scrap it, and what's left is dust and its stones, and the seers in the Blackwood carry it too. The very last rank on the finest gear wants a soulshard, and those only come from great beasts and the things that lead men. Plain gear I can't touch.",
+          "text": "Anything with a little magic in it, green or better, can take more. Each rank is worth a level, no more, and a finer piece holds more ranks. I work it with Fellstones. They fall from anything still worth your sword, never from the small things you've outgrown, and rarely at that. Bring me gear you've no use for and I'll draw most of the stones back out of it, and its gems. The weave doesn't always take. When it slips you lose the stones, not the piece, and the piece remembers: each try after comes easier. The very last rank on the finest gear wants a soulshard, and those only come from the oldest, deepest places. Plain gear I can't touch.",
           "replies": [
             {
               "text": "Thank you."

@@ -534,6 +534,9 @@ func move(from: String, to: String) -> Dictionary:
 	var b = get_at(to)
 	if a == null:
 		return {"ok": false, "reason": ""}
+	# a rune scroll dropped on a weapon (worn or bagged) enchants it
+	if b != null and Items.get_def(a.id).get("rune") and Items.get_def(b.id).get("kind") == "weapon":
+		return {"ok": game.runes.drop_on(from, to), "reason": ""}
 	var pf := parse_loc(from)
 	var pt := parse_loc(to)
 	# a bag moves between bag sockets with its contents
@@ -644,6 +647,9 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
+	# a rune scroll: its rune goes on the main-hand weapon
+	if def.get("rune"):
+		return game.runes.use_scroll(loc)
 	# a charm that casts an ability (the Homeward charm: Return Home)
 	if def.get("use", {}).has("ability"):
 		game.action_bar.clicked[def.use.ability] = true
@@ -887,6 +893,13 @@ func apply(data: Dictionary) -> void:
 				_put(loc, clone(worn))
 			else:
 				back.append(clone(worn))
+	# retired items that turn into another (old refining dust -> Fellstone)
+	for s in sockets:
+		if s:
+			for i in s.slots.size():
+				var st = s.slots[i]
+				if st and Items.get_def(st.id).get("becomes"):
+					st.id = Items.get_def(st.id).becomes
 	ammo_choice = data.get("ammo") if DB.items.has(data.get("ammo", "")) else null
 	if not data.get("granted", []).has("kite_shield"):
 		if not equipment.offHand:

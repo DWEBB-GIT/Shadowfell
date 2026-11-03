@@ -110,6 +110,8 @@ func reset() -> void:
 	blows = []
 	queued = null
 	shadow_grace = 0.0
+	if game.get("runes"):
+		game.runes.reset()
 
 
 var trait_: Dictionary:
@@ -218,6 +220,8 @@ func has_status(enemy, status: String) -> bool:
 	for d in dots:
 		if d.enemy == enemy and DB.spells[d.id].get("status") == status:
 			return true
+	if game.runes and game.runes.has_status(enemy, status):
+		return true
 	for a in auras:
 		if a.enemy != enemy:
 			continue
@@ -1028,6 +1032,9 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":
 		events.emit("log", {"text": line.replace("{name}", enemy.cfg.name).replace("{n}", str(hit.amount)) + (" A critical blow!" if hit.crit else ""), "kind": "hit"})
+	# a rune answers the spell (a bow's for bow abilities, else the main hand's)
+	if game.runes and not hurt_opts.get("periodic", false) and spell.kind != "dot":
+		game.runes.on_spell_hit(enemy, hit.amount, spell.get("ranged", false))
 	if enemy.dead:
 		game.combat.on_enemy_defeated(enemy)
 	# hitting an enemy with nothing engaged starts auto attack on it

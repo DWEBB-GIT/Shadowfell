@@ -137,12 +137,12 @@
       "id": "sabeth",
       "mapIcon": "vendor",
       "name": "Sabeth Gall",
-      "title": "Enchanter",
+      "title": "Refiner",
       "level": 11,
       "model": "innkeeper",
       "rig": "warden",
       "tint": "#7a6ac8",
-      "enchanter": true,
+      "refiner": true,
       "dialogue": "sabeth"
     },
     {

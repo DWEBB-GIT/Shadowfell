@@ -73,9 +73,10 @@
       "name": "Curios (test)",
       "sells": [
         "weapon",
-        "armor"
+        "armor",
+        "material"
       ],
-      "description": "Test vendor: free fancy gear to preview glows and cosmetics."
+      "description": "Test vendor: free fancy gear and rune scrolls to preview glows, cosmetics and weapon runes."
     }
   ],
   "shops": [
@@ -838,7 +839,13 @@
         "test_bloodreaver",
         "test_glow_wings",
         "test_halo",
-        "test_horns"
+        "test_horns",
+        "rune_embers",
+        "rune_rime",
+        "rune_venom",
+        "rune_storm",
+        "rune_dawn",
+        "rune_dread"
       ]
     }
   ]

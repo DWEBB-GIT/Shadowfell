@@ -291,7 +291,15 @@ func _bind() -> void:
 			sfx("gold"))
 	ev.on("levelUp", func(_e): sfx("level_up"))
 	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
-	ev.on("itemEnchanted", func(_e): sfx("shrine", 0.6))
+	# a refined rank lands with a fanfare; a rune sinks in with the shrine chime
+	ev.on("itemEnchanted", func(e):
+		sfx("shrine", 0.6)
+		if e.has("rank"):
+			sfx("quest_complete", 0.7, 1.15))
+	ev.on("refineFailed", func(_e):
+		sfx("shrine", 0.3, 0.7)
+		thud(140, 0.12))
+	ev.on("fellstoneDropped", func(_e): sfx("shrine", 0.5, 1.4))
 	ev.on("itemScrapped", func(_e): sfx("shrine", 0.4))
 	ev.on("draught", func(_e): sfx("potion"))
 	ev.on("itemEquipped", func(e):
