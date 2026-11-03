@@ -509,8 +509,19 @@ func accepts(loc: String, stack) -> bool:
 
 
 ## Armour types, shields and dual wielding are limited by archetype, as in WoW.
+## The level a piece of gear needs: its own `requiredLevel`, else its base
+## item level (refining raises item level but never the requirement).
+static func required_level(def: Dictionary) -> int:
+	if not def.get("slot"):
+		return 0
+	var base: Dictionary = DB.raw_items.get(def.get("id", ""), def)
+	return int(def.get("requiredLevel", base.get("itemLevel", 0)))
+
+
 func can_wear(def: Dictionary, slot = null) -> bool:
 	var a: Dictionary = game.stats.archetype
+	if required_level(def) > game.progression.level:
+		return false
 	if def.has("armourType") and not a.armourTypes.has(def.armourType):
 		return false
 	if def.kind == "shield" and not a.get("shields", false):
@@ -589,6 +600,8 @@ func _why(loc: String, stack: Dictionary) -> String:
 	var def := Items.get_def(stack.id)
 	var arch: Dictionary = game.stats.archetype
 	if p.type == "equip" and DB.slot_fits(p.slot, def.get("slot")) and not can_wear(def, p.slot):
+		if required_level(def) > game.progression.level:
+			return "You must be level %d to use the %s." % [required_level(def), def.name]
 		if def.has("weaponType") and arch.get("bannedWeaponTypes", []).has(def.weaponType):
 			return "A %s cannot use %ss." % [arch.name, def.weaponType]
 		if def.kind == "weapon":

@@ -1850,12 +1850,12 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		var right_col := "#c8bca0"
 		if def.get("armourType"):
 			right = DB.armour_types[def.armourType].name
-			if not inv.can_wear(def):
+			if not inv.can_wear(def) and Inventory.required_level(def) <= game.progression.level:
 				right_col = UI.hex(UI.DOWN)
 		elif def.get("weaponType"):
 			right = str(def.weaponType).capitalize()
 		lines.append("[table=2][cell expand=1][color=#c8bca0]%s[/color][/cell][cell][color=%s]%s[/color][/cell][/table]\n" % [_esc(slot_name), right_col, _esc(right)])
-		if def.get("armourType") and not inv.can_wear(def):
+		if def.get("armourType") and not inv.can_wear(def) and Inventory.required_level(def) <= game.progression.level:
 			lines.append(_l("A %s cannot wear this" % game.stats.archetype.name, UI.hex(UI.DOWN), 12))
 	else:
 		lines.append(_l(_esc((DB.rarities[def.rarity].name + " " + kind.to_lower()) if rare else kind), "#9a8f78", 12))
@@ -1898,6 +1898,9 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("%d carried" % stack.count))
 	if def.get("description", "") != "":
 		lines.append(_l("[i]\"%s\"[/i]" % _esc(def.description), "#d0b878"))
+	var req := Inventory.required_level(def)
+	if req > 1:
+		lines.append(_l("Requires Level %d" % req, UI.hex(UI.DOWN) if req > game.progression.level else ""))
 	var sell := Items.sell_price(stack, DB.CONFIG.shop.sellFraction)
 	if shop_price != null:
 		lines.append(_l("Price: %s" % UI.money(shop_price), "#f0d890", 12))
