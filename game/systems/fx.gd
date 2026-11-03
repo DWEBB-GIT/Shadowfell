@@ -75,7 +75,7 @@ func _init(g) -> void:
 		light(at, null, {"energy": 4.0, "range": 7.0, "life": 1.0, "height": 1.7}, c)
 		game.shake_camera(DB.CONFIG.impact.shake))
 	# a refine: gold light off the altar (or the Refiner's hands) when it
-	# takes, a dull violet puff when the weave slips
+	# takes, a dull violet puff when a refine fails
 	ev.on("refined", func(e):
 		var at := Vector3(e.position[0], Terrain.height_at(e.position[0], e.position[1]), e.position[1])
 		if e.ok:

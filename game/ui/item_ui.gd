@@ -1141,12 +1141,12 @@ func _render_refining() -> void:
 			var res := Forge.resolve_of(st)
 			UI.label(w.body, "Chance: %d%%%s" % [c.chance, " (+%d%% resolve from slipped tries)" % res if res > 0 else ""], 13, UI.UP if c.chance >= 100 else Color("f0d070"))
 	if rf.last == "ok":
-		UI.label(w.body, "The weave takes.", 13, UI.UP).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.label(w.body, "Refined.", 13, UI.UP).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	elif rf.last == "slip":
-		UI.label(w.body, "The weave slips. Nothing is lost but the stones.", 12, Color("b8a0d8")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.label(w.body, "The refine failed. Only the stones and coin are lost.", 12, Color("b8a0d8")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if rf.channel != null:
 		_skill_bar(w.body, rf.channel.t / rf.channel.total, 0)
-		UI.label(w.body, "The weave tightens...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.label(w.body, "Refining...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var why: String = rf.blocked()
 	var btn := UI.button(w.body, "Refine" if c.is_empty() else "Refine to +%d" % c.rank, func(): game.refinery.refine(), 14)
 	btn.disabled = why != ""

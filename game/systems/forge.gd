@@ -155,7 +155,7 @@ func temper(loc: String) -> bool:
 		_changed(loc)
 		game.events.emit("refineFailed", {"loc": loc, "rank": cost.rank})
 		game.events.emit("spellFlash", {"position": game.player.position, "colour": "#7a6a90"})
-		game.events.emit("log", {"text": "The weave slips. %s stays as it was; the next try on it is likelier (%d%%)." % [Items.view(st).name, temper_cost(st).get("chance", 100)], "kind": "muted"})
+		game.events.emit("log", {"text": "The refine failed. %s stays as it was; the next try on it is likelier (%d%%)." % [Items.view(st).name, temper_cost(st).get("chance", 100)], "kind": "muted"})
 		return false
 	r.temper = cost.rank
 	r.erase("resolve")
