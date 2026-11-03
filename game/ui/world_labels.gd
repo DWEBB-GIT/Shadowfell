@@ -9,6 +9,7 @@ extends Control
 ## while you are in there too.
 
 const RANGE := 18.0 ## metres from the Warden
+const STATION_RANGE := 9.0 ## workplace names show this close
 
 var game
 var pool: Array = [] ## Labels, reused frame to frame
@@ -29,6 +30,15 @@ func _names() -> Array:
 	if settings.get_value("playerName") and game.character and not player.dead:
 		# your name in the law's colour: clean, Amber (seen), red (Wanted), Outlaw
 		out.append({"text": game.titles.full_name(game.character.name), "colour": game.law.nameplate_colour(), "at": player.position + Vector3(0, 2.15 * DB.CONFIG.player.visualScale, 0)})
+	# workplaces close by (Dan, 2026-11-03): the rune forge, the refining
+	# altar, a hearth; only within a few metres, so the view stays clear
+	if settings.get_value("stationNames"):
+		for st in Layout.stations:
+			var x: float = st.position[0]
+			var z: float = st.position[1]
+			if Vector2(x - player.position.x, z - player.position.z).length_squared() > STATION_RANGE * STATION_RANGE:
+				continue
+			out.append({"text": Interaction.title(st.name), "colour": Color(Interaction.look(st.kind).colour), "at": Vector3(x, Terrain.height_at(x, z) + 2.0, z)})
 	if not settings.get_value("names"):
 		return out
 	for n in game.npcs.list:
