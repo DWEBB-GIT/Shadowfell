@@ -22,6 +22,8 @@ class Npc:
 	var model: Node3D
 	var rig: Rig
 	var board := false ## a notice board: never turns or works
+	var rest_timer := 0.0 ## a smith's break between bouts at the anvil
+	var bout := 6 ## blows left in this bout
 	var work_timer: float
 	var collider: Dictionary
 	var present := true
@@ -86,7 +88,7 @@ class Npc:
 			want = rest_facing
 		elif near:
 			want = atan2(dx, dz)
-		elif anvil:
+		elif anvil and rest_timer <= 0:
 			want = atan2(anvil[0] - position.x, anvil[1] - position.z)
 		else:
 			want = rest_facing
@@ -94,10 +96,19 @@ class Npc:
 		d = atan2(sin(d), cos(d))
 		facing += d * minf(1, dt * 5)
 		# at work: a hammer blow every so often, unless someone wants a word
-		if anvil and not near:
+		# in bouts: a run of blows, then a breather looking about (Dan,
+		# 2026-11-03: the constant hammering wore thin)
+		if anvil and not near and rest_timer > 0:
+			rest_timer -= dt
+			if rest_timer <= 0:
+				bout = 4 + randi() % 6
+		elif anvil and not near:
 			work_timer -= dt
 			if work_timer <= 0:
 				work_timer = 1.5 + randf() * 0.8
+				bout -= 1
+				if bout <= 0:
+					rest_timer = 8.0 + randf() * 10.0
 				rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
 				if def.has("anvil"):
 					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})

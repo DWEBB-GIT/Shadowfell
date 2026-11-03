@@ -86,6 +86,7 @@ func _init(g, h) -> void:
 			for i in _sockets():
 				open_bags[i] = true
 		focus = null
+		_solo("shop")
 		_after_change("shop"))
 	ev.on("merchantClosed", func(_e):
 		if shop_opened_bags:
@@ -99,6 +100,8 @@ func _init(g, h) -> void:
 			for i in _sockets():
 				open_bags[i] = true
 		focus = null
+		for k in STATIONS:
+			open[k] = false
 		_after_change("bank"))
 	ev.on("bankClosed", func(_e):
 		if shop_opened_bags and game.merchant.current == null:
@@ -183,7 +186,7 @@ func _build() -> void:
 	talents.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cooking = UI.window(self, "Cooking", 380, func(): close("cooking"))
 	runeforge = UI.window(self, "Rune Forge", 330, func(): close("runeforge"))
-	refining = UI.window(self, "Refining", 340, func(): close("refining"))
+	refining = UI.window(self, "Refining", 420, func(): close("refining"))
 	shop = UI.window(self, "", 330, func(): game.merchant.close())
 	shop.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	shop.head.add_child(shop.sub)
@@ -380,7 +383,24 @@ func toggle(which: String) -> void:
 		_after_change("bags")
 		return
 	open[which] = not open[which]
+	if open[which]:
+		_solo(which)
 	_after_change(which)
+
+
+## The rune forge, the refining window, a shop and an npc's talk are one at
+## a time: opening one closes the others (Dan, 2026-11-03).
+const STATIONS := ["runeforge", "refining"]
+func _solo(which: String) -> void:
+	if not STATIONS.has(which) and which != "shop":
+		return
+	for k in STATIONS:
+		if k != which:
+			open[k] = false
+	if which != "shop":
+		game.merchant.close()
+		game.dialogue.close()
+		game.bank.close()
 
 
 func show_window(which: String) -> void:
@@ -395,6 +415,7 @@ func show_window(which: String) -> void:
 			open_bags[i] = true
 	else:
 		open[which] = true
+		_solo(which)
 	_after_change(which)
 
 
@@ -534,7 +555,7 @@ func _context(loc: String) -> void:
 		return
 	# with a shop open, right-clicking something you carry sells it (WoW)
 	if game.merchant.current != null and (loc.begins_with("b:") or loc.begins_with("e:")):
-		game.merchant.sell(loc)
+		_careful(loc, "sell", func(): game.merchant.sell(loc))
 	elif loc.begins_with("s:"):
 		toggle_bag(int(loc.substr(2)))
 	elif loc.begins_with("f:"):
@@ -547,6 +568,19 @@ func _context(loc: String) -> void:
 		game.rune_forge.put(loc)
 	elif loc != "":
 		game.inventory.use(loc)
+
+
+## Blue (rare) and better gear asks first before it is sold or dropped.
+func _careful(loc: String, verb: String, act: Callable) -> void:
+	var stack = game.inventory.get_at(loc)
+	if stack == null:
+		return
+	var v := Items.view(stack)
+	var keys: Array = DB.rarities.keys()
+	if keys.find(v.get("rarity", "common")) < keys.find("rare"):
+		act.call()
+		return
+	hud.confirm("Are you sure you want to %s %s?" % [verb, v.name], act)
 
 
 ## a plain tooltip for any button, stat or row: shown in the corner, as items are
@@ -1138,56 +1172,51 @@ func _render_refining() -> void:
 	UI.clear(w.body)
 	var rf = game.refinery
 	var st = rf.stack()
+	var c: Dictionary = rf.cost()
+	# header: the slot, the item's name, its rank and the rank it goes to
+	# (laid out like WoW's Item Upgrade window, Dan 2026-11-03). Plain
+	# labels with fixed widths: a wrapping rich label re-made every frame
+	# of the channel measured itself one letter wide and stretched the
+	# window to the bottom of the screen.
 	var top := UI.hbox(w.body, 12)
 	var sl := _slot(top, "r:item", st, 60, "Gear")
-	var head := UI.rich(top, 12)
-	head.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var head := UI.vbox(top, 2)
 	head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var c: Dictionary = rf.cost()
 	if st == null:
-		UI.set_rich(head, "[color=%s]Drag a piece of gear into the slot.[/color]\nEach rank adds an item level." % UI.hex(UI.TEXT_DIM))
+		UI.label(head, "Drag a piece of gear into the slot.", 13, UI.TEXT_DIM)
+		UI.label(head, "Each rank adds an item level.", 12, UI.TEXT_DIM)
 	else:
 		var v := Items.view(st)
+		var col := Items.rarity_colour(v.get("rarity", "common"))
 		var rank := Items.temper_of(st)
 		var cap: int = game.forge.temper_cap(st)
-		sl.glow = Color(Items.rarity_colour(v.get("rarity", "common")), 0.45)
-		UI.set_rich(head, "[font_size=14][color=%s]%s[/color][/font_size]\nRank +%d of +%d" % [UI.hex(Items.rarity_colour(v.get("rarity", "common"))), UI.esc(v.name), rank, cap])
+		sl.glow = Color(col, 0.45)
+		UI.label(head, v.name, 16, col)
+		UI.label(head, "Rank +%d / +%d   Item level %s" % [rank, cap, U.n(v.get("itemLevel", 0))], 12, UI.TEXT)
+		UI.label(head, "Refine to: Rank +%d" % c.rank if not c.is_empty() else "Fully refined", 13, UI.GOLD)
 		var nv: Dictionary = rf.preview()
 		if not nv.is_empty():
 			UI.rule(w.body, Color("2a2218"))
-			var t := UI.rich(w.body, 12)
-			var rows := ["[table=3][cell][color=#9a8f78]Item level[/color][/cell][cell]%s[/cell][cell][color=%s]→ %s[/color][/cell]" % [U.n(v.get("itemLevel", 0)), UI.hex(UI.UP), U.n(nv.get("itemLevel", 0))]]
-			if v.get("damage") and nv.get("damage"):
-				rows.append("[cell][color=#9a8f78]Damage[/color][/cell][cell]%s–%s[/cell][cell][color=%s]→ %s–%s[/color][/cell]" % [U.n(v.damage[0]), U.n(v.damage[1]), UI.hex(UI.UP), U.n(nv.damage[0]), U.n(nv.damage[1])])
-			var keys: Array = nv.get("stats", {}).keys()
-			for k in v.get("stats", {}):
-				if not keys.has(k):
-					keys.append(k)
-			for k in keys:
-				var a = v.get("stats", {}).get(k, 0)
-				var b = nv.get("stats", {}).get(k, 0)
-				rows.append("[cell][color=#9a8f78]%s[/color][/cell][cell]%s[/cell][cell][color=%s]→ %s[/color][/cell]" % [UI.esc(String(STAT_LABEL.get(k, k)).capitalize()), U.n(a), UI.hex(UI.UP if b > a else UI.TEXT), U.n(b)])
-			UI.set_rich(t, "".join(rows) + "[/table]")
+			var cols := UI.hbox(w.body, 8)
+			_refine_column(cols, "Current:", v, v, rank, cap, col)
+			_refine_column(cols, "Refined:", nv, v, c.rank, cap, col)
 			UI.rule(w.body, Color("2a2218"))
-			UI.label(w.body, "Cost of +%d" % c.rank, 12, UI.GOLD)
+			var cost := UI.hbox(w.body, 8)
+			cost.alignment = BoxContainer.ALIGNMENT_CENTER
+			UI.label(cost, "Total cost:", 13)
 			for x in c.get("items", []):
-				var row := UI.hbox(w.body, 8)
+				var have: int = game.inventory.count(x.item)
 				var ic := TextureRect.new()
 				ic.texture = _icon_for(x.item)
-				ic.custom_minimum_size = Vector2(26, 26)
+				ic.custom_minimum_size = Vector2(24, 24)
 				ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				row.add_child(ic)
-				var have: int = game.inventory.count(x.item)
-				var l := UI.label(row, Items.get_def(x.item).get("name", x.item), 13)
-				l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				UI.label(row, "%d / %d" % [have, x.count], 13, UI.TEXT if have >= x.count else UI.DOWN)
+				ic.tooltip_text = Items.get_def(x.item).get("name", x.item)
+				cost.add_child(ic)
+				UI.label(cost, "%d / %d" % [have, x.count], 13, UI.TEXT if have >= x.count else UI.DOWN)
 			if c.get("coins", 0):
-				var row := UI.hbox(w.body, 8)
-				var l := UI.label(row, "Coin", 13)
-				l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				UI.label(row, U.money(c.coins), 13, UI.TEXT if game.inventory.coins >= c.coins else UI.DOWN)
+				UI.label(cost, U.money(c.coins), 13, UI.TEXT if game.inventory.coins >= c.coins else UI.DOWN)
 			var res := Forge.resolve_of(st)
-			UI.label(w.body, "Chance: %d%%%s" % [c.chance, " (+%d%% resolve from slipped tries)" % res if res > 0 else ""], 13, UI.UP if c.chance >= 100 else Color("f0d070"))
+			UI.label(w.body, "Chance: %d%%%s" % [c.chance, " (+%d%% resolve)" % res if res > 0 else ""], 13, UI.UP if c.chance >= 100 else Color("f0d070")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if rf.last == "ok":
 		UI.label(w.body, "Refined.", 13, UI.UP).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	elif rf.last == "slip":
@@ -1196,11 +1225,48 @@ func _render_refining() -> void:
 		_skill_bar(w.body, rf.channel.t / rf.channel.total, 0)
 		UI.label(w.body, "Refining...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var why: String = rf.blocked()
-	var btn := UI.button(w.body, "Refine" if c.is_empty() else "Refine to +%d" % c.rank, func(): game.refinery.refine(), 14)
+	var btn := UI.button(w.body, "Refine" if c.is_empty() else "Refine to Rank +%d" % c.rank, func(): game.refinery.refine(), 14)
 	btn.disabled = why != ""
 	btn.custom_minimum_size = Vector2(0, 34)
 	if why != "" and rf.channel == null and st != null:
 		UI.label(w.body, why, 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+## One side of the refining compare: the item as it is (v == was) or as it
+## will be, every number in the same column, gains in green as (+N).
+func _refine_column(parent: Node, title: String, v: Dictionary, was: Dictionary, rank: int, cap: int, col: Color) -> void:
+	var box := UI.panel(parent, 8, Color("14110c"), Color("3a3020"))
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.custom_minimum_size = Vector2(190, 0)
+	var g := GridContainer.new()
+	g.columns = 2
+	g.add_theme_constant_override("h_separation", 8)
+	g.add_theme_constant_override("v_separation", 2)
+	var inner := UI.vbox(box, 3)
+	UI.label(inner, title, 12, UI.TEXT_DIM)
+	UI.label(inner, v.name, 13, col)
+	inner.add_child(g)
+	var same := is_same(v, was)
+	var row := func(label: String, now: String, gain: String, colour: Color) -> void:
+		UI.label(g, label, 12, Color("9a8f78"))
+		var h := UI.hbox(g, 4)
+		UI.label(h, now, 12, colour)
+		if gain != "":
+			UI.label(h, gain, 12, UI.UP)
+	var dil: int = int(v.get("itemLevel", 0)) - int(was.get("itemLevel", 0))
+	row.call("Item level", U.n(v.get("itemLevel", 0)), "" if same or dil <= 0 else "(+%d)" % dil, UI.GOLD)
+	row.call("Rank", "+%d / +%d" % [rank, cap], "", UI.GOLD)
+	if v.get("damage") and was.get("damage"):
+		var dd: int = int(v.damage[1]) - int(was.damage[1])
+		row.call("Damage", "%s–%s" % [U.n(v.damage[0]), U.n(v.damage[1])], "" if same or dd <= 0 else "(+%d)" % dd, UI.TEXT)
+	var keys: Array = was.get("stats", {}).keys()
+	for k in v.get("stats", {}):
+		if not keys.has(k):
+			keys.append(k)
+	for k in keys:
+		var a = was.get("stats", {}).get(k, 0)
+		var b = v.get("stats", {}).get(k, 0)
+		row.call(String(STAT_LABEL.get(k, k)).capitalize(), U.n(b), "" if same or b <= a else "(+%s)" % U.n(b - a), UI.TEXT)
 
 
 func _render_cooking() -> void:
@@ -1593,11 +1659,11 @@ func layout() -> void:
 	if cooking.panel.visible:
 		var s := _fit(cooking.panel, Vector2.ZERO)
 		cooking.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(vp.y * 0.22))
-	# at the left, as a shop is, so the forge and its flash stay in view
-	if runeforge.panel.visible:
-		_fit(runeforge.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
-	if refining.panel.visible:
-		_fit(refining.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
+	# in the middle of the screen (Dan, 2026-11-03)
+	for w in [runeforge, refining]:
+		if w.panel.visible:
+			var s := _fit(w.panel, Vector2.ZERO)
+			w.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(maxf(12, (vp.y - s.y) / 2)))
 	_place_moved()
 	_layout_bags(vp)
 
@@ -1653,7 +1719,7 @@ func reset_windows() -> void:
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
-	UI.fit_steady(p)
+	UI.fit_steady(p, p == shop.panel)
 	if at != Vector2.ZERO:
 		p.position = at
 	return p.size
@@ -1925,7 +1991,8 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	var rune := Runes.def(Runes.of(stack))
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
-	if def.get("rune"):
+	# only on the rune item itself, never on a weapon it was fused to
+	if def.get("rune") and not Items.ROLLED_KINDS.has(def.kind) and rune.is_empty():
 		lines.append(_l("Fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
@@ -2142,7 +2209,8 @@ func _up(at: Vector2) -> void:
 				game.action_bar.clicked[a] = true
 		return
 	if game.merchant.current != null and _over(shop.panel, at) and not d.from.begins_with("a:") and not d.from.begins_with("k:"):
-		game.merchant.sell(d.from)
+		var from: String = d.from
+		_careful(from, "sell", func(): game.merchant.sell(from))
 		return
 	var to = _slot_at(at)
 	# dropped on the bank window (not on a slot): into the vault
@@ -2223,7 +2291,7 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 		return
 	# released over the world rather than a window: drop it on the ground
 	if not over_window:
-		game.loot.drop_from_inventory(from)
+		_careful(from, "drop", func(): game.loot.drop_from_inventory(from))
 
 
 # ------------------------------------------------------------------ gamepad

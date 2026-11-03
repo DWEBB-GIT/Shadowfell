@@ -178,7 +178,7 @@ func bar():
 	if channel == null:
 		return null
 	var st = stack()
-	return {"t": channel.t, "total": channel.total, "name": "Refining %s to +%d" % [Items.view(st).name if st != null else "", channel.rank]}
+	return {"t": channel.t, "total": channel.total, "name": "Refining %s to Rank +%d" % [Items.view(st).name if st != null else "", channel.rank]}
 
 
 func update(dt: float) -> void:

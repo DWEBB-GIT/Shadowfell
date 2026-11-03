@@ -108,6 +108,12 @@ func _sync() -> void:
 		# a spirit floats a hand above the ground, bobbing
 		group.position.y += 0.15 + sin(game.time * 2) * 0.06
 	group.rotation.y = facing
+	group.rotation.x = 0.0
+	if flip >= 0.0:
+		# a front flip, turned about the waist rather than the feet
+		group.rotation.x = TAU * clampf(flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY), 0.0, 1.0)
+		var pivot := Vector3(0, 0.9 * DB.CONFIG.player.visualScale, 0)
+		group.position += pivot - group.basis * pivot
 	# The contact shadow stays on the ground while the body leaves it.
 	ground_shadow.position.y = 0.03 - jump_h
 
@@ -304,12 +310,15 @@ const JUMP_BUFFER_TIME := 0.12
 var jump_v := 0.0
 var jump_h := 0.0
 var jump_buffer := 0.0
+var flip := -1.0 ## seconds into a front flip, or -1 for a plain hop
+const FLIP_CHANCE := 0.12 ## now and then a jump turns into a front flip (Dan, 2026-11-03)
 
 
 func _reset_jump() -> void:
 	jump_v = 0.0
 	jump_h = 0.0
 	jump_buffer = 0.0
+	flip = -1.0
 	rig.airborne = false
 	position.y = Terrain.height_at(position.x, position.z)
 	ground_shadow.position.y = 0.03
@@ -322,6 +331,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
+		flip = 0.0 if not ghost and randf() < FLIP_CHANCE else -1.0
 		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
@@ -337,7 +347,10 @@ func _update_jump(dt: float, requested: bool) -> void:
 			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
 			jump_v = 0.0
 			jump_h = 0.0
+			flip = -1.0
 		else:
+			if flip >= 0.0:
+				flip += dt
 			jump_h = maxf(0.0, position.y - ground)
 	else:
 		position.y = ground

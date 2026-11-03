@@ -339,8 +339,15 @@ static func wrapped(l: Label) -> Label:
 ## that size is still settling (two frames the same): a window or tip with
 ## wrapped text otherwise shows for a frame at the wrong size, very large,
 ## before it shrinks into place (Dan, 2026-10-21).
-static func fit_steady(c: Control) -> Vector2:
+static func fit_steady(c: Control, stay_shown := false) -> Vector2:
 	var s := c.get_combined_minimum_size()
+	# a window already on screen that only reflows (a shop after a purchase)
+	# stays put rather than blinking out for a frame
+	if stay_shown and c.get_meta("fit_f", -1) == Engine.get_process_frames() - 1 and c.modulate.a > 0.0:
+		c.set_meta("fit_last", s)
+		c.set_meta("fit_f", Engine.get_process_frames())
+		c.size = s
+		return s
 	var f := Engine.get_process_frames()
 	var n: int = c.get_meta("fit_n", 0)
 	if c.get_meta("fit_last", Vector2(-1, -1)) != s:

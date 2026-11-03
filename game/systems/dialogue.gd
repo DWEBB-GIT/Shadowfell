@@ -27,6 +27,11 @@ var is_open: bool:
 func open(n) -> void:
 	game.merchant.close()
 	game.bank.close()
+	# talking closes the rune forge and refining windows (Dan, 2026-11-03)
+	if game.hud and game.hud.items:
+		for k in ["runeforge", "refining"]:
+			if game.hud.items.open.get(k):
+				game.hud.items.close(k)
 	npc = n
 	view = {"kind": "menu"}
 	# how they hail you: "Hey you!" while you are nobody, your title once you
