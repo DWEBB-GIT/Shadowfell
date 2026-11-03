@@ -7,6 +7,7 @@ extends RefCounted
 ##   'e:<slotId>'         a character equipment slot
 ##   's:<socket>'         a bag socket (1-3, or 4 for the tool pack)
 ##   'e:ammo'             the ammo slot: which arrows Auto Shot uses
+##   'v:<slot>'           a slot in your bank vault (Bank), kept per character
 
 const AMMO_LOC := "e:ammo"
 
@@ -16,6 +17,7 @@ var sockets: Array = []
 var equipment := {}
 var ammo_choice = null
 var prev_off_hand = null
+var bank: Array = [] ## the bank vault's slots (stacks or null), see Bank
 
 
 func _init(g) -> void:
@@ -31,6 +33,8 @@ static func parse_loc(loc: String) -> Dictionary:
 		return {"type": "equip", "slot": p[1]}
 	if p[0] == "s":
 		return {"type": "socket", "socket": int(p[1])}
+	if p[0] == "v":
+		return {"type": "bank", "slot": int(p[1])}
 	return {}
 
 
@@ -54,6 +58,7 @@ static func _empty_slots(n: int) -> Array:
 func reset() -> void:
 	coins = DB.CONFIG.player.startCoins
 	sockets = [{"id": "backpack", "slots": _empty_slots(Items.BACKPACK_SLOTS)}, null, null, null, null]
+	bank = _empty_slots(int(DB.CONFIG.bank.slots))
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
@@ -94,6 +99,8 @@ func get_at(loc: String):
 		return s.slots[p.slot] if s and p.slot < s.slots.size() else null
 	if p.type == "equip":
 		return equipment.get(p.slot)
+	if p.type == "bank":
+		return bank[p.slot] if p.slot >= 0 and p.slot < bank.size() else null
 	if p.type == "socket":
 		var s = sockets[p.socket] if p.socket < sockets.size() else null
 		return {"id": s.id, "count": 1} if s and s.id != "backpack" else null
@@ -264,6 +271,8 @@ func _put(loc: String, stack) -> void:
 		sockets[p.socket].slots[p.slot] = stack
 	elif p.type == "equip":
 		equipment[p.slot] = stack
+	elif p.type == "bank":
+		bank[p.slot] = stack
 	elif p.type == "socket":
 		sockets[p.socket] = {"id": stack.id, "slots": _empty_slots(int(Items.get_def(stack.id).bagSlots))} if stack else null
 
@@ -505,6 +514,9 @@ func accepts(loc: String, stack) -> bool:
 		var h = _bag_holds(p.socket)
 		var bag = sockets[p.socket] if p.socket < sockets.size() else null
 		return not def.get("toolPack", false) and bag != null and p.slot < bag.slots.size() and (h == null or h.has(def.kind))
+	if p.type == "bank":
+		# anything but quest items, which stay with you (and the tool pack)
+		return p.slot >= 0 and p.slot < bank.size() and not def.get("quest", false) and not def.get("toolPack", false)
 	return false
 
 
@@ -569,7 +581,7 @@ func move(from: String, to: String) -> Dictionary:
 	if not accepts(to, a):
 		return _refuse(_why(to, a))
 	var stack_max := int(Items.get_def(a.id).stack)
-	if b and b.id == a.id and stack_max > 1 and pt.type == "bag" and pf.type == "bag":
+	if b and b.id == a.id and stack_max > 1 and ["bag", "bank"].has(pt.type) and ["bag", "bank"].has(pf.type):
 		var k := mini(stack_max - b.count, a.count)
 		b.count += k
 		a.count -= k
@@ -610,6 +622,8 @@ func _why(loc: String, stack: Dictionary) -> String:
 		return "A %s cannot use %s." % [arch.name, what]
 	if p.type == "equip":
 		return "The %s does not go there." % def.name
+	if p.type == "bank" and def.get("quest", false):
+		return "Quest items stay with you."
 	if def.get("toolPack", false):
 		return "The %s stays in its own slot." % def.name.to_lower()
 	if p.type == "socket":
@@ -866,6 +880,70 @@ func use_draught(loc = null) -> bool:
 	return true
 
 
+# ------------------------------------------------------------ bank
+## Every bank slot's location.
+func bank_locations() -> Array:
+	var out := []
+	for i in bank.size():
+		out.append("v:%d" % i)
+	return out
+
+
+## Move the whole stack at `from` into the place list `to_locs`: topping up
+## stacks of the same item first, then the first empty slot that takes it.
+## Returns true if all of it went.
+func _shift(from: String, to_locs: Array) -> bool:
+	var st = get_at(from)
+	if st == null:
+		return false
+	var stack_max := int(Items.get_def(st.id).get("stack", 1))
+	if stack_max > 1:
+		for l in to_locs:
+			var t = get_at(l)
+			if t != null and t.id == st.id and t.get("rolls") == st.get("rolls") and t.count < stack_max:
+				var k := mini(stack_max - int(t.count), int(st.count))
+				t.count += k
+				st.count -= k
+				if st.count <= 0:
+					_put(from, null)
+					_changed()
+					return true
+	for l in to_locs:
+		if get_at(l) == null and accepts(l, st):
+			_put(l, st)
+			_put(from, null)
+			_changed()
+			return true
+	_changed()
+	return false
+
+
+## Right-click with the bank open: a bag item goes into the vault...
+func deposit(from: String) -> bool:
+	var st = get_at(from)
+	if st == null or not from.begins_with("b:"):
+		return false
+	if Items.get_def(st.id).get("quest", false):
+		_refuse("Quest items stay with you.")
+		return false
+	if not _shift(from, bank_locations()):
+		_refuse("Your bank is full.")
+		return false
+	game.events.emit("bankChanged", {})
+	return true
+
+
+## ...and a vault item comes back to your bags.
+func withdraw(from: String) -> bool:
+	if get_at(from) == null or not from.begins_with("v:"):
+		return false
+	if not _shift(from, _slots_for(get_at(from).id)):
+		_refuse("Your bags are full.")
+		return false
+	game.events.emit("bankChanged", {})
+	return true
+
+
 # ------------------------------------------------------------ saving
 const HOME_CHARM := "homeward_charm" ## the backpack charm that casts Return Home
 
@@ -877,7 +955,7 @@ func serialize() -> Dictionary:
 	var eq := {}
 	for k in equipment:
 		eq[k] = clone(equipment[k])
-	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice}
+	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice, "bank": bank.map(func(x): return clone(x))}
 
 
 func apply(data: Dictionary) -> void:
@@ -891,6 +969,18 @@ func apply(data: Dictionary) -> void:
 		back.pop_back()
 	while sockets.size() <= Items.TOOL_SOCKET:
 		sockets.append(null)
+	# the bank (saves from before it have none); a smaller vault in the
+	# config never loses what was in the slots beyond it
+	bank = _empty_slots(int(DB.CONFIG.bank.slots))
+	var kept: Array = data.get("bank", []) if data.get("bank") is Array else []
+	for i in kept.size():
+		var st = kept[i]
+		if st == null or not DB.items.has(st.get("id", "")):
+			continue
+		if i < bank.size():
+			bank[i] = clone(st)
+		else:
+			bank.append(clone(st))
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = clone(data.equipment.get(s.id))
@@ -915,6 +1005,9 @@ func apply(data: Dictionary) -> void:
 				var st = s.slots[i]
 				if st and Items.get_def(st.id).get("becomes"):
 					st.id = Items.get_def(st.id).becomes
+	for st in bank:
+		if st and Items.get_def(st.id).get("becomes"):
+			st.id = Items.get_def(st.id).becomes
 	ammo_choice = data.get("ammo") if DB.items.has(data.get("ammo", "")) else null
 	if not data.get("granted", []).has("kite_shield"):
 		if not equipment.offHand:

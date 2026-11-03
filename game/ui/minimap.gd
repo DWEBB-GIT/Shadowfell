@@ -634,6 +634,11 @@ func _trade_icon(g: Canvas2D, x: float, y: float, icon: String) -> void:
 				g.line_to(pt[0], pt[1])
 			g.close_path()
 			g.fill()
+		"banker":
+			# a strongbox with its lock
+			g.fill_rect(-3.6, -2.4, 7.2, 5.4)
+			g.fill_style = "rgba(12, 10, 8, 0.9)"
+			g.fill_rect(-0.8, -0.6, 1.6, 1.8)
 		"innkeeper":
 			# a tankard
 			g.fill_rect(-3, -2.8, 4.4, 6)

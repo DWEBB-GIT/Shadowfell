@@ -26,6 +26,7 @@ var is_open: bool:
 
 func open(n) -> void:
 	game.merchant.close()
+	game.bank.close()
 	# talking closes the rune forge and refining windows (Dan, 2026-11-03)
 	if game.hud and game.hud.items:
 		for k in ["runeforge", "refining"]:
@@ -153,6 +154,8 @@ var page:
 						pg.options.append({"id": "node:" + t.node, "text": t.prompt, "icon": "talk", "group": "talk"})
 				if def.get("shop"):
 					pg.options.append({"id": "shop", "text": "Browse goods", "icon": "shop", "group": "service"})
+				if def.get("banker"):
+					pg.options.append({"id": "bank", "text": "Open your bank", "icon": "shop", "group": "service"})
 				# a trainer: one way in to the trainer window, saying what is new
 				var rows := train_rows()
 				if not rows.is_empty():
@@ -528,6 +531,11 @@ func choose(id: String) -> bool:
 		var n = npc
 		close()
 		game.merchant.open(def.shop, n)
+		return true
+	elif id == "bank":
+		var n = npc
+		close()
+		game.bank.open(n)
 		return true
 	elif id.begins_with("train:"):
 		if not game.skills.learn(id.substr(6)):

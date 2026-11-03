@@ -73,6 +73,7 @@ var enemies: Enemies
 var targeting: Targeting
 var npcs: Npcs
 var merchant: Merchant
+var bank: Bank
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
@@ -168,6 +169,7 @@ func _ready() -> void:
 	targeting = Targeting.new(self)
 	npcs = Npcs.new(self)
 	merchant = Merchant.new(self)
+	bank = Bank.new(self)
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
@@ -424,6 +426,7 @@ func start_game(resume: bool) -> void:
 	inventory.reset()
 	dialogue.close()
 	merchant.close()
+	bank.close()
 	merchant.buyback = []
 	quests.start_new()
 	region = null # named again, quietly, from wherever the Warden stands
@@ -1115,6 +1118,7 @@ func step(dt: float) -> void:
 		grave.update(dt)
 		npcs.update(dt)
 		merchant.update()
+		bank.update()
 		dialogue.update()
 		telegraphs.update(dt)
 		targeting.update(dt, raw_aim, DB.abilities.strike.range + 1)

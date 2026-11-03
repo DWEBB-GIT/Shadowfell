@@ -80,7 +80,7 @@ class Npc:
 		var dz: float = player.position.z - position.z
 		# only someone you are talking to turns to you, and keeps an eye on
 		# you until you walk off
-		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
+		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self) or is_same(game.bank.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
 		var anvil = def.get("anvil", def.get("workAt"))
 		rig.pose = def.get("idlePose") if not near else null
 		var want: float
