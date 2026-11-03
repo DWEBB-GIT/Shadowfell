@@ -112,6 +112,17 @@ func _run() -> void:
 		for i in 60:
 			bandit.rig.update(dt, 0.0)
 		check(bandit.rig.model.position.distance_to(model_at) < 0.01, "and it settles back")
+	# area blows and kills weigh more; each foe sounds of what it is made of
+	if bandit and undead:
+		check(AudioSystem.material_of(undead) == "bone" and AudioSystem.material_of(bandit) == "flesh", "blows sound of bone on the undead, flesh on the living")
+		game.shake = 0.0
+		game.events.emit("burst", {"id": "", "position": bandit.position, "radius": 4.0, "hits": [bandit, undead], "school": "holy"})
+		check(game.shake > DB.CONFIG.impact.shake and bandit.rig.held > 0 and undead.rig.held > 0, "an area blow on two kicks the camera and holds both")
+		game.events.emit("enemyHit", {"enemy": bandit, "damage": 5, "kind": "spell", "school": "fire"})
+		game.shake = 0.0
+		bandit.position = game.player.position + Vector3(2, 0, 0)
+		game.events.emit("enemyDefeated", {"enemy": bandit})
+		check(game.shake > 0, "a kill kicks the camera")
 
 	# the spell queue covers the end of a cast, not only the global cooldown
 	var sp = game.spells

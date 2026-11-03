@@ -26,6 +26,10 @@ func _process(_d: float) -> bool:
 		"shieldBreak": func(): a.shield_break(), "growl": func(): a.growl(70, 0.5), "death": func(): a.death(true),
 		"chime": func(): a.chime([392, 494, 587, 784], 0.22), "coins": func(): a.coins(), "bell": func(): a.bell(0.25, 440),
 		"crow": func(): a.crow(), "creak": func(): a.creak(),
+		"clank": func(): a.clank(), "bone": func(): a.bone_crack(), "flesh": func(): a.flesh(), "rustle": func(): a.rustle(),
+		"crit": func(): a.crit_sting(), "killCrunch": func(): a.kill_crunch(), "charge": func(): a.cast_charge("holy"),
+		"fireHit": func(): a.school_impact("fire"), "holyHit": func(): a.school_impact("holy"),
+		"shadowHit": func(): a.school_impact("shadow"), "arcaneHit": func(): a.school_impact("arcane"),
 	}
 	for k in calls:
 		var t := Time.get_ticks_msec()

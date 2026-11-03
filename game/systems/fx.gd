@@ -35,7 +35,8 @@ func _init(g) -> void:
 	ev.on("spellFx", func(e): spell_fx(e))
 	ev.on("burst", func(e):
 		if not _has_look(e.get("id", ""), "impact"):
-			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
+			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0"))
+		aoe_weight(e))
 	ev.on("enemyHit", func(e):
 		var land := func():
 			if e.get("damage",0) > 0:
@@ -87,7 +88,9 @@ func _init(g) -> void:
 			sparks(at + Vector3(0, 1.6, 0), 10, Color("7a6a90"))
 			dust(at + Vector3(0, 1.0, 0), 8))
 	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
-	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
+	ev.on("enemyDefeated", func(e):
+		dust(e.enemy.position, 10)
+		kill_punch(e.enemy))
 	# the Grave Slam lands where the telegraph was painted
 	ev.on("graveSlam", func(e):
 		var sh = e.shape
@@ -569,6 +572,42 @@ static func blood_of(enemy) -> String:
 	if b:
 		return str(b)
 	return "straw" if enemy.cfg.get("dummy") else "red"
+
+
+## The weight of an area blow (Dan 2026-11-03, Conquer Online's area hits):
+## the more it catches, the harder the camera kicks, everything caught holds
+## still for a beat, and a big catch flashes real light and throws up dust.
+const SCHOOL_LIGHT := {"holy": Color("ffe6a0"), "fire": Color("ff9a50"), "shadow": Color("a070ff"), "nature": Color("a8e070")}
+
+
+func aoe_weight(e: Dictionary) -> void:
+	var hits: Array = e.get("hits", [])
+	if hits.size() < 2:
+		return
+	var c: Dictionary = DB.CONFIG.impact
+	game.shake_camera(c.shake * (1.0 + c.aoeShakePerHit * mini(hits.size(), 6)))
+	for en in hits:
+		if is_instance_valid(en) and en.rig:
+			en.rig.hold(c.aoeHitStop)
+	if hits.size() >= 3:
+		var col: Color = SCHOOL_LIGHT.get(str(e.get("school", "")), Color("ffd9a0"))
+		light(e.position, null, {"energy": 2.5, "range": e.get("radius", 4.0) * 1.8, "life": 0.4, "height": 0.8}, col)
+		dust(e.position, 14, e.get("radius", 4.0) * 0.5)
+
+
+## The killing blow lands harder: you hold still a moment longer, the camera
+## kicks (more for an elite) and the body gives up a last spray.
+func kill_punch(enemy) -> void:
+	var p = game.player
+	if p == null or p.position.distance_to(enemy.position) > 20.0:
+		return
+	var c: Dictionary = DB.CONFIG.impact
+	var big: bool = enemy.type == "brute" or str(enemy.cfg.get("type", "")) in ["elite", "heavy"]
+	if p.position.distance_to(enemy.position) <= 4.0 and p.rig:
+		p.rig.hold(c.killHitStop)
+	game.shake_camera(c.eliteKillShake if big else c.killShake)
+	if game.settings.get_value("bloodEffects"):
+		spatter(enemy, enemy.position + Vector3.UP * 1.0, true)
 
 
 ## A spray of drops thrown away from the player, a brief mist where the blow
