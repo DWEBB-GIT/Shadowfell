@@ -51,11 +51,13 @@ const S := {
 	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 13, "staminaPerLevel": 3},
 	## Fight length and danger (Dan, 2026-11-03, "Monster scaling and XP
 	## formulas"): an even-level normal enemy lasts fightSeconds against par
-	## damage, and in that time takes fightCost of par health. Each type scales
+	## damage, and in that time takes fight_cost(level) of par health. Each type scales
 	## its health, its damage a second (`danger`) and its kill XP (`xp`).
 	"fightSeconds": 14,
-	"fightCost": 0.40,
-	"earlyHit": [0.75, 0.82, 0.9], ## blows of level 1, 2, 3 foes against the share above; 4+ full
+	## share of par health one even normal fight costs, by level, straight
+	## lines between the points (Dan, 2026-11-03): 10-20% at level 1; at 6-10
+	## one mob is fine but two are a struggle; later you pull and cleave groups
+	"fightCost": [[1, 0.15], [3, 0.3], [6, 0.45], [10, 0.45], [20, 0.35], [35, 0.25], [50, 0.2]],
 	## kill XP of a level 1 normal enemy; grows with growth(level) like gear
 	"killXp1": 28,
 	"enemyHealthRoll": 0.1,
@@ -201,11 +203,9 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 	var level: float = e.get("level", 1)
 	var p := par(level, stats, weapon_seconds)
 	var health: float = S.fightSeconds * p.dps * t.health
-	var hit = null if not t.has("danger") else U.jround(S.fightCost * p.health / S.fightSeconds * t.danger * t.interval)
+	var hit = null if not t.has("danger") else snappedf(fight_cost(level) * p.health / S.fightSeconds * t.danger * t.interval, 0.1)
 	# foes of levels 1-3 hit softer, tapering to full at 4, so a new
 	# character finds their feet (Dan, 2026-10-28/29)
-	if hit != null and level < 1 + S.earlyHit.size():
-		hit = snappedf(hit * S.earlyHit[maxi(0, int(level) - 1)], 0.1)
 	var out := {
 		"health": U.jround(health),
 		"attackInterval": t.get("interval", 0.0),
@@ -227,6 +227,19 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 			r[k] = e.ranged[k]
 		out.ranged = r
 	return out
+
+
+## The share of par health an even normal fight costs at a level (fightCost).
+static func fight_cost(level: float) -> float:
+	var pts: Array = S.fightCost
+	if level <= pts[0][0]:
+		return pts[0][1]
+	for i in range(1, pts.size()):
+		if level <= pts[i][0]:
+			var a: Array = pts[i - 1]
+			var b: Array = pts[i]
+			return lerpf(a[1], b[1], (level - a[0]) / float(b[0] - a[0]))
+	return pts[-1][1]
 
 
 ## Kill XP of an enemy at its level before the level gap: killXp1 grown with
