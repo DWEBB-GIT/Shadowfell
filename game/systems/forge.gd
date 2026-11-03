@@ -8,7 +8,7 @@ extends RefCounted
 ## put into it comes back when you scrap it.
 ##
 ## - Refine (a refiner): +1 item level a rank, up to a cap by rarity;
-##   each rank costs more stones (of the item's level band) and coins, and
+##   each rank costs more Fellstones (no coins since 2026-11-03), and
 ##   may fail (losing only those; the item's next try gets easier). In code
 ##   and saves a rank is still called `temper`.
 ## - Scrap (a refiner): break magic gear into stones, `refund` of every
@@ -150,7 +150,7 @@ func temper(loc: String) -> bool:
 	var r := _rolls_of(st)
 	var t: Dictionary = enchant_rules().get("enchant", {})
 	if game.random.call() * 100 >= cost.chance:
-		# a slip: only the stones and coin are lost; the item remembers
+		# a slip: only the stones are lost; the item remembers
 		r.resolve = mini(100, resolve_of(st) + int(t.get("resolvePerFail", 10)))
 		_changed(loc)
 		game.events.emit("refineFailed", {"loc": loc, "rank": cost.rank})

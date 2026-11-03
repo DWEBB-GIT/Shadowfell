@@ -255,7 +255,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 	var back := {"id": "menu", "text": "Back", "icon": "back"}
 	match v.kind:
 		"enchant":
-			pg.text = "Each rank I add is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring stones for the piece's level, and coin. A refine does not always take; when it fails you lose only the stones, and the piece remembers the try."
+			pg.text = "Each rank I add is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring me Fellstones. A refine does not always take; when it fails you lose only the stones, and the piece remembers the try."
 			for loc in fg.gear_locations():
 				var st = inv.get_at(loc)
 				var cost: Dictionary = fg.temper_cost(st)
