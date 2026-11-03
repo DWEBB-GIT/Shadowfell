@@ -25496,6 +25496,26 @@
   ],
   "stations": [
 	{
+	  "id": "tf_refining_altar",
+	  "name": "the refining altar",
+	  "kind": "refining",
+	  "position": [
+		-445,
+		-208
+	  ],
+	  "radius": 2.6
+	},
+	{
+	  "id": "tf_rune_forge",
+	  "name": "the rune forge",
+	  "kind": "runeforge",
+	  "position": [
+		-441,
+		-204
+	  ],
+	  "radius": 2.6
+	},
+	{
 	  "id": "tf_forge",
 	  "name": "Iren's forge",
 	  "kind": "forge",

@@ -3238,6 +3238,16 @@
       "radius": 4.5
     },
     {
+      "id": "bf_rune_forge",
+      "name": "the rune forge",
+      "kind": "runeforge",
+      "position": [
+        -619.5,
+        452.0
+      ],
+      "radius": 2.6
+    },
+    {
       "id": "briony_bench",
       "name": "Briony's alchemy bench",
       "kind": "alchemy",

@@ -61,6 +61,31 @@ func _init(g) -> void:
 	ev.on("levelUp", func(_e): moment("levelUp"))
 	# an enchanter's work: a violet light rises off you
 	ev.on("itemEnchanted", func(_e): pillar(game.player.position, Color("c8a0ff")))
+	# the rune forge's finish: a column of the rune's colour off the forge,
+	# a ring and a fountain of sparks, and a burst of real light
+	ev.on("runeForged", func(e):
+		var st = game.rune_forge.station
+		if st == null:
+			return
+		var c := Color(Runes.def(e.rune).glow.colour)
+		var at := Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
+		pillar(at, c)
+		shockwave(at + Vector3(0, 0.1, 0), 3.0, c)
+		sparks(at + Vector3(0, 1.6, 0), 24, c)
+		light(at, null, {"energy": 4.0, "range": 7.0, "life": 1.0, "height": 1.7}, c)
+		game.shake_camera(DB.CONFIG.impact.shake))
+	# a refine: gold light off the altar (or the Refiner's hands) when it
+	# takes, a dull violet puff when the weave slips
+	ev.on("refined", func(e):
+		var at := Vector3(e.position[0], Terrain.height_at(e.position[0], e.position[1]), e.position[1])
+		if e.ok:
+			pillar(at, Color("ffe6a0"))
+			shockwave(at + Vector3(0, 0.1, 0), 2.6, Color("ffd890"))
+			sparks(at + Vector3(0, 1.6, 0), 20, Color("ffe6a0"))
+			light(at, null, {"energy": 3.5, "range": 6.0, "life": 0.9, "height": 1.7}, Color("ffd890"))
+		else:
+			sparks(at + Vector3(0, 1.6, 0), 10, Color("7a6a90"))
+			dust(at + Vector3(0, 1.0, 0), 8))
 	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
 	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
 	# the Grave Slam lands where the telegraph was painted

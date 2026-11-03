@@ -23,6 +23,7 @@ func _process(_dt: float) -> bool:
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_refine()
+		_refining_window()
 		_fellstones()
 		_runecraft()
 		_scrolls()
@@ -73,16 +74,52 @@ func _scrolls() -> void:
 	game.merchant.close()
 	var w = inv.equipment.mainHand
 	_ok(w != null, "the warden has a main-hand weapon")
+	# runes are fused at a rune forge now (Dan, 2026-11-03), not from the bags
 	inv.use(inv._find("rune_embers"))
-	_ok(Runes.of(inv.equipment.mainHand) == "embers", "using the scroll puts Embers on the weapon")
-	_ok(inv.count("rune_embers") == 0, "and the scroll is used up")
+	inv.move(inv._find("rune_embers"), "e:mainHand")
+	_ok(Runes.of(inv.equipment.mainHand) == "" and inv.count("rune_embers") == 1, "using or dragging a rune onto a weapon no longer fuses it")
+	var rf = game.rune_forge
+	_at_forge()
+	_ok(game.hud.items.open.runeforge, "using the rune forge opens its window")
+	_ok(rf.blocked() != "" and not rf.fuse(), "Fuse waits for a weapon and a rune")
+	_ok(not rf.put(inv._find("rune_embers"), "f:weapon"), "a rune won't go in the weapon slot")
+	_ok(rf.put("e:mainHand") and rf.put(inv._find("rune_embers")), "the weapon and the rune go into their slots")
+	_ok(rf.fuse() and rf.channel != null, "Fuse starts the forge working")
+	rf.update(1.0)
+	_ok(Runes.of(inv.equipment.mainHand) == "" and rf.bar() != null, "fusing takes a few seconds (cast bar shown)")
+	rf.update(RuneForge.CHANNEL)
+	_ok(rf.channel == null and Runes.of(inv.equipment.mainHand) == "embers", "then the rune is in the weapon")
+	_ok(inv.count("rune_embers") == 0 and rf.in_slot("f:rune") == null, "and the rune is used up")
+	_ok(rf.in_slot("f:weapon") != null, "the weapon stays on the forge")
 	_ok(Items.valid_rolls(inv.equipment.mainHand.id, inv.equipment.mainHand.rolls), "the rune is a valid roll (saves keep it)")
 	_ok(not Items.valid_rolls(inv.equipment.mainHand.id, {"rune": "nonsense"}), "an unknown rune is refused")
-	# a second rune asks before replacing; apply directly as the confirm would
-	inv.use(inv._find("rune_rime"))
-	_ok(Runes.of(inv.equipment.mainHand) == "embers", "a different rune waits for a yes")
+	# a second rune asks before replacing; begin as the Yes would
 	game.hud.modal = null
-	_ok(game.runes.apply(inv._find("rune_rime"), "rime") and Runes.of(inv.equipment.mainHand) == "rime", "saying yes replaces it with Rime")
+	rf.put(inv._find("rune_rime"))
+	rf.fuse()
+	_ok(rf.channel == null and Runes.of(inv.equipment.mainHand) == "embers", "a different rune waits for a yes")
+	game.hud.modal = null
+	rf._begin("rime")
+	game.player.moving = true
+	rf.update(0.1)
+	game.player.moving = false
+	_ok(rf.channel == null and Runes.of(inv.equipment.mainHand) == "embers", "moving stops the fusing")
+	rf._begin("rime")
+	rf.update(RuneForge.CHANNEL + 0.1)
+	_ok(Runes.of(inv.equipment.mainHand) == "rime", "saying yes replaces it with Rime")
+
+
+## Stand at the first rune forge and use it.
+func _at_forge() -> void:
+	var sts: Array = Layout.stations.filter(func(st): return st.kind == RuneForge.KIND)
+	_ok(not sts.is_empty(), "there is a rune forge in the world")
+	var st: Dictionary = sts[0]
+	game.player.position = Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
+	game.player.moving = false
+	game.hud.modal = null
+	for c in game.interaction._candidates():
+		if c.key == "station:" + st.id:
+			c.run.call()
 
 
 ## Refining (Dan, 2026-11-02): stones, a chance that can slip, and a
@@ -112,6 +149,55 @@ func _refine() -> void:
 	game.random = func(): return 0.0
 	_ok(fg.temper(loc) and Forge.resolve_of(inv.get_at(loc)) == 0, "a success clears the resolve")
 	game.random = rnd
+	_clear_bags()
+
+
+## The refining window (Dan, 2026-11-03): an altar, an item slot, a preview
+## of the next rank, a channel, then the rank (or a slip).
+func _refining_window() -> void:
+	var inv = game.inventory
+	var ui = game.hud.items
+	var rf = game.refinery
+	_clear_bags()
+	inv.add_item("test_frostbite", 1, true)
+	inv.add_item("fellstone", 20, true)
+	inv.coins += 5000
+	var sts: Array = Layout.stations.filter(func(s): return s.kind == Refinery.KIND)
+	_ok(not sts.is_empty(), "there is a refining altar in the world")
+	if sts.is_empty():
+		return
+	var st: Dictionary = sts[0]
+	game.player.position = Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
+	game.player.moving = false
+	game.hud.modal = null
+	for c in game.interaction._candidates():
+		if c.key == "station:" + st.id:
+			c.run.call()
+	_ok(ui.open.refining, "using the altar opens the refining window")
+	_ok(rf.blocked() != "", "Refine waits for gear")
+	_ok(not rf.put(inv._find("fellstone")), "stones don't go in the slot")
+	var loc = inv._find("test_frostbite")
+	ui.dropOn(loc, "r:item")
+	_ok(rf.loc() == loc, "dragging gear into the slot places it")
+	var before: float = Items.view(inv.get_at(loc)).itemLevel
+	_ok(rf.preview().get("itemLevel", 0) == before + 1 and rf.cost().rank == 1, "the window shows the next rank's item level")
+	var rnd = game.random
+	game.random = func(): return 0.0
+	_ok(rf.refine() and rf.channel != null and rf.bar() != null, "Refine starts the weave (cast bar shown)")
+	rf.update(1.0)
+	_ok(Items.temper_of(inv.get_at(loc)) == 0, "it takes a moment")
+	rf.update(Refinery.CHANNEL)
+	_ok(Items.temper_of(inv.get_at(loc)) == 1 and rf.last == "ok", "then the item is +1")
+	_ok(rf.loc() == loc and rf.cost().rank == 2, "the item stays in the slot for the next rank")
+	rf.refine()
+	game.player.moving = true
+	rf.update(0.1)
+	game.player.moving = false
+	_ok(rf.channel == null and Items.temper_of(inv.get_at(loc)) == 1, "moving stops it")
+	game.random = rnd
+	ui.close("refining")
+	rf.update(0.1)
+	_ok(rf.at == null and rf.item == null, "closing the window clears it")
 	_clear_bags()
 
 
@@ -164,26 +250,29 @@ func _runecraft() -> void:
 ## Drag a scroll onto any weapon: one in the bags, the off hand.
 func _drag() -> void:
 	var inv = game.inventory
+	var ui = game.hud.items
+	var rf = game.rune_forge
 	game.hud.modal = null
 	var n = game.npcs.by_id("test_vendor")
 	game.merchant.open("test_curios", n)
 	game.merchant.buy("rune_venom")
-	game.merchant.buy("rune_storm")
 	game.merchant.buy("test_frostbite")
 	game.merchant.close()
+	_at_forge()
 	var wl = inv._find("test_frostbite")
 	_ok(wl != null, "a spare weapon in the bags")
-	inv.move(inv._find("rune_venom"), wl)
-	_ok(Runes.of(inv.get_at(wl)) == "venom" and inv.count("rune_venom") == 0, "dropping a rune on a bagged weapon enchants it")
-	var off = inv.equipment.get("offHand")
-	if off != null and Items.get_def(off.id).get("kind") == "weapon":
-		inv.move(inv._find("rune_storm"), "e:offHand")
-		_ok(Runes.of(inv.equipment.offHand) == "storm", "dropping one on the off-hand weapon enchants it")
-	var before: int = inv.count("rune_storm")
-	var food = inv._find(ActionBar.STARTER_FOOD)
-	if food != null and inv.count("rune_storm") > 0:
-		inv.move(inv._find("rune_storm"), food)
-		_ok(inv.count("rune_storm") == before, "a rune dropped on something else is not used up")
+	ui.dropOn(wl, "f:weapon")
+	ui.dropOn(inv._find("rune_venom"), "f:rune")
+	_ok(rf.slot_loc("f:weapon") == wl and rf.in_slot("f:rune") != null, "dragging into the forge's slots places them")
+	ui.dropOn("f:weapon", null)
+	_ok(rf.in_slot("f:weapon") == null and inv.get_at(wl) != null, "dragging out of the forge only takes it off the forge")
+	ui.dropOn(wl, "f:weapon")
+	rf.fuse()
+	rf.update(RuneForge.CHANNEL + 0.1)
+	_ok(Runes.of(inv.get_at(wl)) == "venom" and inv.count("rune_venom") == 0, "a bagged weapon takes a rune at the forge")
+	ui.close("runeforge")
+	rf.update(0.1)
+	_ok(rf.station == null and rf.weapon == null, "closing the window clears the forge")
 
 
 func _glow() -> void:

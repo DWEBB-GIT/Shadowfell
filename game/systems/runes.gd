@@ -1,8 +1,8 @@
 class_name Runes
 extends RefCounted
 ## Weapon runes (Dan, 2026-11-02; data/professions/runes.json). One rune a
-## weapon, kept in the item's rolls as `rune`. A rune scroll used from the
-## bags puts its rune on the main-hand weapon. On your weapon hits a rune
+## weapon, kept in the item's rolls as `rune`, fused at a rune forge
+## (RuneForge: weapon slot, rune slot, Fuse). On your weapon hits a rune
 ## procs `ppm` times a minute on average (WoW's procs per minute, so slow
 ## and fast weapons proc alike), and what it does is a share of the hit, so
 ## it grows with your gear without ever being worth more than a new drop.
@@ -69,44 +69,9 @@ static func proc_chance(ppm: float, speed: float) -> float:
 	return clampf(ppm * speed / 60.0, 0.0, 1.0)
 
 
-# ------------------------------------------------------------ the scroll
-## Use a rune scroll from the bags (right-click): its rune goes on the
-## main-hand weapon, or the bow when there is no main-hand weapon. Dragging
-## the scroll onto any weapon, worn or in the bags, goes through drop_on.
-func use_scroll(loc: String) -> bool:
-	var inv = game.inventory
-	for slot in ["mainHand", "ranged"]:
-		var w = inv.equipment.get(slot)
-		if w != null and Items.get_def(w.id).get("kind") == "weapon":
-			return drop_on(loc, "e:" + slot)
-	inv._refuse("Drag the rune onto a weapon.")
-	return false
-
-
-## A rune scroll at `loc` dropped on the weapon at `target` (any worn or
-## bagged weapon). A weapon that already has a different rune asks first.
-func drop_on(loc: String, target: String) -> bool:
-	var inv = game.inventory
-	var st = inv.get_at(loc)
-	var weapon = inv.get_at(target)
-	if st == null or weapon == null:
-		return false
-	var rid: String = Items.get_def(st.id).get("rune", "")
-	if def(rid).is_empty():
-		return false
-	if Items.get_def(weapon.id).get("kind") != "weapon":
-		inv._refuse("Runes go on weapons.")
-		return false
-	var had := of(weapon)
-	if had == rid:
-		inv._refuse("That weapon already bears the %s rune." % def(rid).name)
-		return false
-	if had != "" and game.hud and game.hud.has_method("confirm"):
-		game.hud.confirm("Replace the %s rune on your %s with %s?" % [def(had).name, Items.view(weapon).name, def(rid).name], func(): apply(loc, rid, target))
-		return true
-	return apply(loc, rid, target)
-
-
+# ------------------------------------------------------------ fusing
+## Runes are fused at a rune forge (RuneForge, Dan 2026-11-03): the forge's
+## window calls apply when its channel finishes.
 ## Put rune `rid` on the weapon at `target`, using up one scroll from
 ## `loc` (if any). Returns whether it took.
 func apply(loc, rid: String, target := "e:mainHand") -> bool:
