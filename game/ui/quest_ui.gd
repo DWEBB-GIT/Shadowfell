@@ -181,14 +181,15 @@ func _sub(text: String) -> String:
 	return "[font_size=11][color=#9a8f78]%s[/color][/font_size]\n" % text.to_upper()
 
 
-func _rewards(r: Dictionary) -> String:
+func _rewards(r: Dictionary, id := "") -> String:
 	var parts := []
 	for g in r.get("items", []):
 		var def := Items.get_def(g.item)
 		parts.append("{item:%s:26} [color=%s]%s[/color]%s" % [g.item, UI.hex(Items.rarity_colour(def.get("rarity", "common"))), UI.esc(def.name), " ×%d" % g.count if g.get("count", 1) > 1 else ""])
 	var lines := []
-	if r.get("xp"):
-		lines.append("[color=#c8a0f0]%s experience[/color]" % U.n(r.xp))
+	var xp := Quests.reward_xp(id, game.progression.level) if id != "" else 0
+	if xp > 0:
+		lines.append("[color=#c8a0f0]%s experience[/color]" % U.n(xp))
 	if r.get("coins"):
 		var cr := U.coin_range(r.coins)
 		lines.append(UI.money(cr[0]) if cr[0] == cr[1] else "%s – %s" % [UI.money(cr[0]), UI.money(cr[1])])
@@ -225,7 +226,7 @@ func render_dialogue() -> void:
 		UI.set_rich(UI.rich(w.body, 13), text)
 	UI.wrapped(UI.label(w.body, ("%s %s" % [page.salutation, page.text]) if page.get("salutation", "") != "" else page.text, 14, Color("e6dbc0")))
 	if q != null:
-		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward))
+		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward, q.get("id", "")))
 	UI.rule(w.body)
 	var opts := UI.vbox(w.body, 2)
 	var group = null
@@ -524,7 +525,7 @@ func _details(id: String) -> String:
 	text += _objectives(ql.objectives(id))
 	var where := Quests.hand_in(id)
 	text += "[font_size=12][color=#ffd23c]Complete: return to %s.[/color][/font_size]\n\n" % UI.esc(where) if s == "ready" else "[font_size=12][color=#9a8f78]Hand in to %s.[/color][/font_size]\n\n" % UI.esc(where)
-	text += _rewards(q.get("reward", {}))
+	text += _rewards(q.get("reward", {}), id)
 	if s == "ready":
 		text += "\n[font_size=14][color=#7fd060]✔ Complete[/color][/font_size]\n"
 	return text

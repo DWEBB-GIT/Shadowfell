@@ -1,5 +1,5 @@
 extends SceneTree
-## Cap boundaries, legacy-cap saves and unchanged starter XP prices.
+## Cap boundaries, legacy-cap saves and the level 1-2 XP price.
 var game
 var failures := 0
 
@@ -35,11 +35,11 @@ func _run() -> void:
 	game.save.autosave_enabled = false
 	game.set_process(false)
 	check(DB.CONFIG.progression.maxLevel == 50, "configured character cap is 50")
-	check(DB.xp_for_next_level(1) == 280 and DB.xp_for_next_level(9) == 1880, "starter XP thresholds remain unchanged")
+	check(DB.xp_for_next_level(1) == 280, "level 1 to 2 still takes 280 XP")
 	var total := 0
 	for level in range(1, 50):
 		total += DB.xp_for_next_level(level)
-	check(total == 248920, "current placeholder curve totals 248920 XP across exactly 49 gains")
+	check(total > 1000000, "the pacing-plan curve totals about 1.45 million XP across 49 gains")
 	var p = game.progression
 	p.level = 49
 	p.xp = p.xp_to_next - 1

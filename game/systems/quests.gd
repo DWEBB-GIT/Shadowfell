@@ -255,8 +255,9 @@ func complete(id: String) -> bool:
 		inventory.add_coins(coins, "from %s" % DB.npcs[q.turnIn].name)
 	for g in gifts:
 		inventory.add_item(g.item, g.get("count", 1))
-	if r.get("xp"):
-		game.progression.add_xp(r.xp)
+	var xp := reward_xp(id, game.progression.level)
+	if xp > 0:
+		game.progression.add_xp(xp)
 	if r.get("reputation"):
 		game.reputation.add_all(r.reputation)
 	# a dark choice is remembered (data/npcs/infamy.json)
@@ -358,6 +359,20 @@ static func hand_in(id: String) -> String:
 			return "%s, %s" % [who, b.name]
 	var place: String = DB.region_at(at.x, at.y).get("name", "")
 	return "%s, %s" % [who, place] if place != "" else who
+
+
+## A quest's experience for a player of `player_level` (DB.quest_xp_base at
+## the middle of its level range). Outlevelling it costs a fifth a level like
+## a kill, but a quest always pays at least minQuestShare of its XP.
+static func reward_xp(id: String, player_level: int) -> int:
+	if not DB.quests.has(id):
+		return 0
+	var lv := levels(id)
+	var ql := int(round((lv.x + lv.y) / 2.0))
+	var base := DB.quest_xp_base(DB.quests[id].get("reward", {}), ql)
+	if base <= 0:
+		return 0
+	return maxi(DB.kill_xp(base, player_level, ql), U.jround(base * DB.CONFIG.progression.minQuestShare))
 
 
 ## The level range a quest suits: its `level` (a number or [min, max]) if
