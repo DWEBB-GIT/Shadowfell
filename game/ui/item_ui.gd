@@ -1833,23 +1833,32 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	var def := Items.view(stack)
 	var rare := ["enhanced", "rare", "epic", "legendary"].has(def.get("rarity"))
 	var kind: String = KIND_LABEL.get(def.kind, def.kind.capitalize())
-	var kind_line: String = (DB.rarities[def.rarity].name + " " + kind.to_lower()) if rare else kind
+	var lines := [_name_line(def.name, UI.hex(Items.rarity_colour(def.get("rarity", "common"))))]
+	if def.get("itemLevel"):
+		lines.append(_l("Item Level %s" % U.n(def.itemLevel), "#e8c860", 12))
 	if def.get("slot"):
+		# WoW layout: where it is worn on the left, what it is made of on the right
 		var slot_name := ""
 		if def.slot == "oneHand":
-			slot_name = "One-hand" + (" " + def.weaponType if def.get("weaponType") else "")
+			slot_name = "One-Hand"
 		else:
 			for s in DB.EQUIP_SLOTS:
 				if s.id == def.slot or s.get("fits") == def.slot:
 					slot_name = s.label
 					break
-		kind_line += " · " + slot_name
-	var lines := [_name_line(def.name, UI.hex(Items.rarity_colour(def.get("rarity", "common")))), _l(_esc(kind_line), "#9a8f78", 12)]
-	if def.get("itemLevel"):
-		lines.append(_l("Item level %s" % U.n(def.itemLevel), "#e8c860", 12))
-	if def.get("armourType"):
-		var ok: bool = inv.can_wear(def)
-		lines.append(_l(DB.armour_types[def.armourType].name + ("" if ok else " (a %s cannot wear this)" % game.stats.archetype.name), "" if ok else UI.hex(UI.DOWN)))
+		var right := ""
+		var right_col := "#c8bca0"
+		if def.get("armourType"):
+			right = DB.armour_types[def.armourType].name
+			if not inv.can_wear(def):
+				right_col = UI.hex(UI.DOWN)
+		elif def.get("weaponType"):
+			right = str(def.weaponType).capitalize()
+		lines.append("[table=2][cell expand=1][color=#c8bca0]%s[/color][/cell][cell][color=%s]%s[/color][/cell][/table]\n" % [_esc(slot_name), right_col, _esc(right)])
+		if def.get("armourType") and not inv.can_wear(def):
+			lines.append(_l("A %s cannot wear this" % game.stats.archetype.name, UI.hex(UI.DOWN), 12))
+	else:
+		lines.append(_l(_esc((DB.rarities[def.rarity].name + " " + kind.to_lower()) if rare else kind), "#9a8f78", 12))
 	if def.get("damage"):
 		# weapons compare by damage per second, as in WoW
 		var st = game.stats
@@ -1861,33 +1870,34 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("(%.1f damage per second%s)" % [mine, cmp]))
 	for k in def.get("stats", {}):
 		lines.append(_l("+%s %s" % [U.n(def.stats[k]), STAT_LABEL.get(k, k)], UI.hex(UI.UP)))
-	# forge work: reforged stat, sockets and the gems in them
+	# forge work: reforged stat, then durability, sockets, refining, rune
 	var rf = def.get("reforged")
 	if typeof(rf) == TYPE_DICTIONARY:
 		lines.append(_l("Reforged: %s into %s" % [STAT_LABEL.get(rf.from, rf.from), STAT_LABEL.get(rf.to, rf.to)], "#a0c8e8", 12))
+	var dur := Items.durability(stack)
+	if dur != -1:
+		lines.append(_l("Broken: gives no stats until repaired", UI.hex(UI.DOWN)) if dur == 0 else _l("Durability %d / 100" % dur, UI.hex(UI.DOWN) if dur <= 25 else ""))
 	for g in Items.gems_of(stack):
 		lines.append(_l("◆ %s: %s" % [_esc(Items.get_def(g).name), _esc(Gems.bonus_text(g))], UI.hex(Items.rarity_colour(Items.get_def(g).get("rarity", "common")))) if g != null else _l("◇ Empty socket", "#9a8f78"))
-	if def.get("kind") == "gem":
-		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
 	var cap: int = game.forge.temper_cap(stack) if Items.ROLLED_KINDS.has(def.kind) else 0
 	if cap > 0:
 		lines.append(_l("Refined %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
 	var rune := Runes.def(Runes.of(stack))
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
-	if def.get("rune"):
-		lines.append(_l("Fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
-	if def.get("bagSlots"):
-		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	var power := Builds.power_def(Items.power_of(stack))
 	if not power.is_empty():
-		lines.append(_l("%s: %s" % [_esc(power.name), _esc(power.text)], UI.hex(Items.rarity_colour("legendary"))))
-	var dur := Items.durability(stack)
-	if dur != -1:
-		lines.append(_l("Broken: gives no stats until repaired", UI.hex(UI.DOWN)) if dur == 0 else _l("Durability %d / 100" % dur, UI.hex(UI.DOWN) if dur <= 25 else ""))
+		lines.append(_l("Equip: %s: %s" % [_esc(power.name), _esc(power.text)], UI.hex(Items.rarity_colour("legendary"))))
+	if def.get("kind") == "gem":
+		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
+	if def.get("rune"):
+		lines.append(_l("Use: fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
+	if def.get("bagSlots"):
+		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	if stack.get("count", 1) > 1:
 		lines.append(_l("%d carried" % stack.count))
-	lines.append(_l("[i]%s[/i]" % _esc(def.get("description", "")), "#d0b878"))
+	if def.get("description", "") != "":
+		lines.append(_l("[i]\"%s\"[/i]" % _esc(def.description), "#d0b878"))
 	var sell := Items.sell_price(stack, DB.CONFIG.shop.sellFraction)
 	if shop_price != null:
 		lines.append(_l("Price: %s" % UI.money(shop_price), "#f0d890", 12))
@@ -1896,7 +1906,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	elif not sell:
 		lines.append(_l("No sell value", "#9a8f78", 12))
 	else:
-		lines.append(_l("Sell for %s%s" % [UI.money(sell * stack.get("count", 1)), " (%s each)" % UI.money(sell) if stack.get("count", 1) > 1 else ""], "#b8a880", 12))
+		lines.append(_l("Sell Price: %s%s" % [UI.money(sell * stack.get("count", 1)), " (%s each)" % UI.money(sell) if stack.get("count", 1) > 1 else ""], "#b8a880", 12))
 	var hint := ""
 	if shop_price != null:
 		if not hud.pad_mode:
