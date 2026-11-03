@@ -29,6 +29,7 @@
     "text": "ui/text.json",
     "credits": "meta/credits.json",
     "enemies": "npcs/enemies.json",
-    "model_colliders": "world/model_colliders.json"
+    "model_colliders": "world/model_colliders.json",
+    "renames": "meta/renames.json"
   }
 }
