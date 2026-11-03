@@ -258,6 +258,8 @@ func markers() -> Array:
 	var out := []
 	for s in Layout.shrines:
 		out.append({"x": s.position[0], "z": s.position[1], "kind": "shrine"})
+	for st in Layout.stations:
+		out.append({"x": st.position[0], "z": st.position[1], "kind": "station", "station": st.kind, "label": Interaction.title(st.name)})
 	# where open objectives point
 	var areas := {}
 	for id in quests.active:
@@ -459,6 +461,23 @@ func _draw_map() -> void:
 			g.line_to(s.x, s.y + 4)
 			g.line_to(s.x - 3, s.y)
 			g.fill()
+		elif m.kind == "station" and inside:
+			# Dan's art when painted (assets/icons/map/station_<kind>.png),
+			# else a coloured disc with the station's letter
+			if _art(g, "station_" + m.station, s.x, s.y, 14):
+				continue
+			var lk := Interaction.look(m.station)
+			g.fill_style = "#000"
+			g.begin_path()
+			g.arc(s.x, s.y, 5.5, 0, TAU)
+			g.fill()
+			g.fill_style = lk.colour
+			g.begin_path()
+			g.arc(s.x, s.y, 4.5, 0, TAU)
+			g.fill()
+			g.font_size = 8
+			g.fill_style = "#000"
+			g.fill_text(lk.letter, s.x, s.y + 0.5)
 		elif m.kind == "npc" and inside:
 			if m.icon:
 				if not _art(g, "npc_" + m.icon, s.x, s.y, 15):

@@ -645,7 +645,9 @@ func _cursor_for(pick) -> void:
 			"vein":
 				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
 			"point":
-				c = "lootFar" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else "loot"
+				# a station shows what it is for: an anvil, a pot, a flask, a gem
+				var base: String = o.get("cursor", "loot")
+				c = base + "Far" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else base
 	if c != cursor:
 		cursor = c
 		Cursors.show(c)

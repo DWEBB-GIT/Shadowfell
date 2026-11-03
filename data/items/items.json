@@ -703,6 +703,23 @@
       "description": "A plain pouch on your belt for a few tools, so they take no bag space. A proper tool pack replaces it."
     },
     {
+      "id": "materials_pouch",
+      "name": "Materials pouch",
+      "kind": "bag",
+      "materialPouch": true,
+      "holds": [
+        "material",
+        "gem"
+      ],
+      "rarity": "common",
+      "bagSlots": 16,
+      "stack": 1,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "description": "A roomy pouch of its own for ores, gems, fish, hides, herbs and stones, so materials leave your bags free. Finished goods and cooked food stay in the bags."
+    },
+    {
       "id": "tool_pack",
       "name": "Warden's tool pack",
       "kind": "bag",

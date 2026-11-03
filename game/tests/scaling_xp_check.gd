@@ -49,14 +49,15 @@ func _initialize() -> void:
 	var normal30 := Scaling.kill_xp_base({"type": "normal"}, 30)
 	check(normal30 == U.jround(28 * 34 / 5.0), "a level 30 normal enemy pays 190 (%d)" % normal30)
 	check(absi(Scaling.kill_xp_base({"type": "elite"}, 30) - 2 * normal30) <= 1, "an elite pays twice a normal")
-	# monster numbers: an even normal fight lasts fightSeconds and costs fightCost
-	for lv in [1, 5, 20, 40]:
+	# monster numbers: an even normal fight lasts fightSeconds and costs fight_cost(level)
+	for lv in [1, 5, 8, 20, 40]:
 		var p := Scaling.par(lv, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
 		var e := Scaling.scaled_enemy({"type": "normal", "level": lv}, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
 		var cost: float = e.damage / e.attackInterval * S.fightSeconds / p.health
-		var want: float = S.fightCost * (S.earlyHit[lv - 1] if lv <= S.earlyHit.size() else 1.0)
+		var want: float = Scaling.fight_cost(lv)
 		check(absf(cost - want) < 0.03, "level %d normal fight costs %.0f%% of par health (%.2f)" % [lv, want * 100, cost])
 		check(absf(e.health / p.dps - S.fightSeconds) < 0.5, "level %d normal enemy lasts %d s" % [lv, S.fightSeconds])
+	check(Scaling.fight_cost(1) <= 0.2 and Scaling.fight_cost(8) >= 0.4 and Scaling.fight_cost(50) < Scaling.fight_cost(8), "fights cost 10-20% at level 1, about 45% at 6-10, less later")
 	# every quest: XP from its size, none typed
 	for id in DB.quests:
 		var r: Dictionary = DB.quests[id].get("reward", {})

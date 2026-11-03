@@ -17,7 +17,7 @@ Dan's targets for the opening levels, built in the Godot game (`game/core/scalin
 | | Target | Built |
 |---|---|---|
 | Normal enemy health, level 1 / 2 | 30–40 / 50–55 | 35 / 44 (±10% per spawn point): `fightSeconds` 14 |
-| Normal enemy hit, level 1 | 4–5 (2026-10-27: the world must feel dangerous; 2026-10-29: early levels softened) | 3.8 ±35%, so 2–5: `fightCost` 0.40 times `earlyHit` 0.75 (level 2 0.82, level 3 0.9, level 4+ full), `enemyVariance` 0.35. A lone even-level mob costs under a third of your health; three at once can kill you |
+| Normal enemy hit, level 1 | 4–5 (2026-10-27: the world must feel dangerous; 2026-10-29: early levels softened) | 3.8 ±35%, so 2–5: `fightCost` by level (15% at 1, 30% at 3, 45% at 6-10, 35% at 20, 25% at 35, 20% at 50), `enemyVariance` 0.35. A lone even-level mob costs under a third of your health; three at once can kill you |
 | Player health, level 1 | 50–100 by class: cloth lowest, then leather, then plate | Occultist (cloth) 50, Rogue 68 and Ranger 74 (leather), Warrior and Paladin (plate) 98: 20 + 6 a point of Stamina |
 | Dagger, level 1 | 1–2 | 1–2 at 1.6 s |
 | One-hand sword, level 1 | 1–4 | 1–4 at 2.2 s |
@@ -428,7 +428,7 @@ The first swing waits for the weapon's speed, so a fight opens with Shield Break
 
 Raised on 16 Oct 2026 (Dan: too easy even at the start) from 4.5 s and ÷ 18, when one normal enemy cost 8% of your health. The heavy type (no ogre is in the game yet) is now more than one par character can take, so its multipliers want a look when the first ogre arrives.
 
-Fight length and danger are one pair of numbers, `fightSeconds` (14) and `fightCost` (0.40, from 2026-11-03; was `enemyHealthSeconds` and `enemyHitShare`): an even normal enemy lasts `fightSeconds` against par damage and takes `fightCost` of par health in that time. Each type scales health, `danger` (damage a second) and `xp`. Kill XP = `killXp1` (28) x growth(level)/5 x type `xp` x the enemy's `xpScale`; `noXp` pays nothing. XP to the next level = the pacing plan's minutes (docs/quest-design/level-50-pacing.csv) x `pace` (2) x a level's normal kill XP. Quest XP = a `size` share of the quest level's bar x `xpScale`. The tables above were measured before this change.
+Fight length and danger are one pair of numbers, `fightSeconds` (14) and `fightCost` (a share by level, from 2026-11-03; was `enemyHealthSeconds` and `enemyHitShare`): an even normal enemy lasts `fightSeconds` against par damage and takes `fightCost` of par health in that time. Each type scales health, `danger` (damage a second) and `xp`. Kill XP = `killXp1` (28) x growth(level)/5 x type `xp` x the enemy's `xpScale`; `noXp` pays nothing. XP to the next level = the pacing plan's minutes (docs/quest-design/level-50-pacing.csv) x `pace` (2) x a level's normal kill XP. Quest XP = a `size` share of the quest level's bar x `xpScale`. The tables above were measured before this change.
 
 ### Level gaps
 
