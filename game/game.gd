@@ -500,20 +500,24 @@ func release_spirit() -> bool:
 ## instead of a long stall in plain view (Dan, 2026-11-02).
 func _arrive(text: String) -> void:
 	var land = world.land
-	if land == null or land.missing(camera_target) == 0:
+	var stream = world.stream
+	if land == null or land.missing(camera_target) + stream.missing(camera_target) == 0:
 		return
 	land.gentle = true
+	stream.gentle = true
 	hud.show_loading()
 	var tree := get_tree()
-	var total := maxi(1, land.missing(camera_target))
+	var total := maxi(1, land.missing(camera_target) + stream.missing(camera_target))
 	while true:
-		var left: int = land.missing(camera_target)
+		var left: int = land.missing(camera_target) + stream.missing(camera_target)
 		hud.loading.show_progress(text, 1.0 - float(left) / total)
 		if left == 0:
 			break
 		land.update(camera_target, false, 30.0)
+		stream.update(camera_target, false, 15.0)
 		await tree.process_frame
 	land.gentle = false
+	stream.gentle = false
 	# one more frame so the new ground is drawn before the screen lifts
 	await tree.process_frame
 	hud.hide_loading()

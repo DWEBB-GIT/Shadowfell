@@ -32,7 +32,7 @@ func spawn_all() -> void:
 			e.rig.death = 2.0
 			e._sync()
 		list.append(e)
-		game.scene.add_child(e.group)
+		_show(e, e.position.distance_squared_to(game.player.position))
 
 
 func clear() -> void:
@@ -61,12 +61,18 @@ func reset_engaged() -> void:
 			e.reset()
 
 
+## The simulation and the drawing are separate: every enemy's AI runs from
+## its own position and state (an idle one far from anyone waits, as it
+## always has), and its body is in the scene only near the player or while
+## it is fighting (WorldStream.VIEW_IN / VIEW_OUT). A multiplayer server
+## would run update() for every enemy near any player and attach no bodies.
 func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)
 	for e in list:
-		var near: bool = e.position.distance_squared_to(player.position) < 180.0 * 180.0
-		e.group.visible = near
+		var d2: float = e.position.distance_squared_to(player.position)
+		var near: bool = d2 < 180.0 * 180.0
+		_show(e, d2)
 		if near or e.state != "idle":
 			e.update(dt, player)
 	_separate()
@@ -77,6 +83,28 @@ func update(dt: float) -> void:
 		if e.dead and not e.corpse and e.rig.death > 5.5:
 			e.group.queue_free()
 			list.erase(e)
+
+
+## put an enemy's body in the scene, or take it out, by distance
+func _show(e, d2: float) -> void:
+	var shown: bool = e.group.get_parent() != null
+	var want: bool = e.state != "idle" or d2 < WorldStream.VIEW_IN * WorldStream.VIEW_IN \
+		or (shown and d2 < WorldStream.VIEW_OUT * WorldStream.VIEW_OUT)
+	if want == shown:
+		return
+	if want:
+		game.scene.add_child(e.group)
+	else:
+		e.group.get_parent().remove_child(e.group)
+
+
+## bodies in the scene now (checks and the F3 readout)
+func shown_count() -> int:
+	var n := 0
+	for e in list:
+		if e.group.get_parent() != null:
+			n += 1
+	return n
 
 
 func _respawn(dt: float) -> void:
