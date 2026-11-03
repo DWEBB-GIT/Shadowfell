@@ -13,7 +13,7 @@ extends Control
 const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
-	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("8cbf78"),
+	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("4dff6a"),
 	"xp": Color("b77cff"),
 }
 

@@ -243,7 +243,7 @@ func update(dt: float) -> void:
 			if whole > 0:
 				e.carry -= whole
 				if player.health < player.max_health:
-					player.heal(whole)
+					game.spells._heal_number(player.heal(whole))
 			game.resources.add("mana", e.get("manaPerSecond", 0.0) * step)
 			var t: Dictionary = ability.tuning
 			if not e.get("fed", false) and e.total - e.left >= t.wellFedAfter - 1e-6:

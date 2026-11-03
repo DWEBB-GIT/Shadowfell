@@ -229,7 +229,7 @@ func _pick(n: Dictionary, time: float) -> void:
 			game.loot.drop_at({"id": g.id, "count": g.count}, Vector3(n.x, 0, n.z))
 	var heal: float = skills.perk(sk, "healPercent")
 	if heal > 0:
-		game.player.heal(game.player.max_health * heal / 100.0)
+		game.spells._heal_number(game.player.heal(game.player.max_health * heal / 100.0))
 	skills.gain(sk, skills.colour_for(sk, int(k.get("level", 1))))
 	game.events.emit("gathered", {"kind": n.kind, "items": got})
 	n.kind = ""
