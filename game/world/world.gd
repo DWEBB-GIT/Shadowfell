@@ -53,6 +53,7 @@ func build() -> World:
 	see_through = SeeThrough.new(game)
 	town = Town.new(game, self, group).build()
 	_build_signposts()
+	_build_rune_forges()
 	_add_lights()
 	_add_mist()
 	_add_motes()
@@ -219,6 +220,111 @@ func _build_signposts() -> void:
 			arm.rotation.y = lines[i].angle
 			group.add_child(arm)
 		game.collision.add(x, z, 0.3)
+
+
+## The rune forges (RuneForge, Dan 2026-11-03): an anvil on a dark stone
+## plinth with a violet crystal turning over it. The crystal and its glow
+## take the rune's colour while it fuses, and flare at the end.
+var rune_forges := {} ## station id -> {gem, glow, gem_mat, colour, flare, work}
+const RUNE_FORGE_COLOUR := Color("9a6aff")
+
+func _build_rune_forges() -> void:
+	for st in Layout.stations:
+		if st.kind != RuneForge.KIND:
+			continue
+		var x: float = st.position[0]
+		var z: float = st.position[1]
+		var root := Node3D.new()
+		root.name = "RuneForge"
+		root.position = Vector3(x, Terrain.height_at(x, z), z)
+		var plinth := _box(Vector3(1.5, 0.9, 1.2), Color("2c2a33"), false)
+		plinth.position.y = 0.45
+		root.add_child(plinth)
+		var lip := _box(Vector3(1.7, 0.14, 1.4), Color("45404f"), false)
+		lip.position.y = 0.95
+		root.add_child(lip)
+		# rune lines cut into the plinth's faces, glowing faintly
+		var lines: Array = []
+		for side in [-1.0, 1.0]:
+			for i in 3:
+				var cut := _box(Vector3(0.08, 0.5 - (i % 2) * 0.2, 0.02), RUNE_FORGE_COLOUR, true)
+				cut.position = Vector3(-0.4 + i * 0.4, 0.45, side * 0.61)
+				root.add_child(cut)
+				lines.append(cut)
+				var cut2 := _box(Vector3(0.02, 0.5 - (i % 2) * 0.2, 0.08), RUNE_FORGE_COLOUR, true)
+				cut2.position = Vector3(side * 0.76, 0.45, -0.3 + i * 0.3)
+				root.add_child(cut2)
+				lines.append(cut2)
+		var anvil := Assets.instance("anvil")
+		if anvil:
+			anvil.position.y = 1.02
+			root.add_child(anvil)
+		var gem := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.24
+		sm.height = 0.8
+		sm.radial_segments = 4
+		sm.rings = 2
+		gem.mesh = sm
+		var gm := StandardMaterial3D.new()
+		gm.albedo_color = RUNE_FORGE_COLOUR
+		gm.emission_enabled = true
+		gm.emission = RUNE_FORGE_COLOUR
+		gm.emission_energy_multiplier = 1.6
+		gem.material_override = gm
+		gem.position.y = 2.1
+		root.add_child(gem)
+		var glm := Tex.fx_material(Tex.glint(), Color(RUNE_FORGE_COLOUR, 0.7), true, true)
+		glm.disable_fog = true
+		var glow := Tex.sprite(glm)
+		glow.scale = Vector3.ONE * 1.2
+		glow.position.y = 2.1
+		root.add_child(glow)
+		group.add_child(root)
+		game.collision.add(x, z, 0.75)
+		rune_forges[st.id] = {"gem": gem, "glow": glow, "gem_mat": gm, "lines": lines, "colour": RUNE_FORGE_COLOUR, "flare": 0.0, "work": 0.0}
+
+
+## Tint forge `id` while it works (strength 1), flare it (above 1), or
+## settle it back to its own violet (0).
+func rune_forge_glow(id: String, colour: Color, strength: float) -> void:
+	var f = rune_forges.get(id)
+	if f == null:
+		return
+	if strength <= 0.0:
+		f.colour = RUNE_FORGE_COLOUR
+		f.work = 0.0
+	elif strength <= 1.0:
+		f.colour = colour
+		f.work = 1.0
+	else:
+		f.colour = colour
+		f.work = 0.0
+		f.flare = strength
+
+
+func _update_rune_forges(dt: float, time: float) -> void:
+	for id in rune_forges:
+		var f: Dictionary = rune_forges[id]
+		var gem: MeshInstance3D = f.gem
+		if not gem.is_visible_in_tree():
+			continue
+		gem.rotation.y += dt * (0.8 + f.work * 5.0 + f.flare * 3.0)
+		gem.position.y = 2.1 + sin(time * 1.6) * 0.06 + f.work * 0.2
+		var k: float = 1.0 + sin(time * 2.2) * 0.1 + f.work * (0.35 + sin(time * 14.0) * 0.15) + f.flare
+		f.glow.scale = Vector3.ONE * 1.2 * k
+		f.glow.position.y = gem.position.y
+		f.glow.material_override.albedo_color = Color(f.colour, clampf(0.55 + f.work * 0.25 + f.flare * 0.15, 0.0, 1.0))
+		f.gem_mat.emission = f.colour
+		f.gem_mat.albedo_color = f.colour
+		f.gem_mat.emission_energy_multiplier = 1.6 + f.work * 1.5 + f.flare * 2.0
+		var lc := Color(f.colour, 0.5 + 0.5 * maxf(f.work, minf(f.flare, 1.0)))
+		for l in f.lines:
+			l.material_override.albedo_color = lc
+		if f.flare > 0.0:
+			f.flare = maxf(0.0, f.flare - dt * 2.0)
+			if f.flare == 0.0 and f.work == 0.0:
+				f.colour = RUNE_FORGE_COLOUR
 
 
 ## Buildings you can walk into: the shell (floor, back walls, fittings), the
@@ -622,6 +728,7 @@ func update(dt: float, time: float) -> void:
 		if f.flame:
 			f.flame.scale = Vector3(1, k, 1)
 		f.glow.material_override.albedo_color.a = 0.65 + sin(t * 1.7) * 0.15
+	_update_rune_forges(dt, time)
 	for f in flicker_lights:
 		var t: float = time * 7 + f.seed
 		f.light.light_energy = f.base * Tex.OMNI_SCALE * (0.82 + sin(t) * 0.06 + sin(t * 2.7) * 0.05 + sin(t * 5.3) * 0.04)

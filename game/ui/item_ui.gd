@@ -24,7 +24,7 @@ var game
 var hud
 var icons: Icons
 var open_bags := {} ## socket indices whose bag window is open
-var open := {"character": false, "spellbook": false, "skills": false, "settings": false, "talents": false, "cooking": false}
+var open := {"character": false, "spellbook": false, "skills": false, "settings": false, "talents": false, "cooking": false, "runeforge": false}
 var drag = null ## { from, at, moved }
 var focus = null ## gamepad highlight: a location string
 var carry = null ## gamepad: location of the item being carried
@@ -46,6 +46,7 @@ var skills_win: Dictionary
 var settings_win: Dictionary
 var talents: Dictionary
 var cooking: Dictionary
+var runeforge: Dictionary ## the rune forge window (RuneForge)
 var craft_skill := "cooking" ## whose recipes the crafting window shows
 var shop: Dictionary
 var tooltip: HBoxContainer
@@ -66,6 +67,9 @@ func _init(g, h) -> void:
 	var ev = game.events
 	for e in ["inventoryChanged", "equipmentChanged", "levelUp", "barChanged", "skillsChanged", "reputationChanged", "titlesChanged"]:
 		ev.on(e, func(_e): render())
+	ev.on("runeForgeChanged", func(_e):
+		if open.runeforge:
+			render())
 	for e in ["craftEnd", "craftStart", "campPitched"]:
 		ev.on(e, func(_e):
 			if open.cooking:
@@ -160,15 +164,16 @@ func _build() -> void:
 	talents.inner = UI.vbox(tsc, 6)
 	talents.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cooking = UI.window(self, "Cooking", 380, func(): close("cooking"))
+	runeforge = UI.window(self, "Rune Forge", 330, func(): close("runeforge"))
 	shop = UI.window(self, "", 330, func(): game.merchant.close())
 	shop.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	shop.head.add_child(shop.sub)
 	shop.head.move_child(shop.sub, 1)
 	_build_settings()
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, shop]:
 		w.panel.visible = false
 	# drag any window by its title bar; it stays where you leave it
-	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}
+	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "shop": shop}
 	for id in named:
 		_draggable(id, named[id])
 	var saved_at = Store.get_item(WINDOWS_KEY)
@@ -315,7 +320,7 @@ func _show_settings_tab() -> void:
 # ------------------------------------------------------------------ state
 var any_open: bool:
 	get:
-		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or game.merchant.current != null
+		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or open.runeforge or game.merchant.current != null
 
 var bags_open: bool:
 	get:
@@ -421,7 +426,7 @@ func _after_change(which) -> void:
 
 ## a window's outer node, to raise it over the others
 func _window_node(which: String) -> Control:
-	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}.get(which)
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "shop": shop}.get(which)
 	if which == "bags":
 		return bags
 	return w.panel if w != null else null
@@ -432,6 +437,10 @@ func _slot(parent: Node, loc: String, stack, px := 42, ph := "") -> ISlot:
 	var s := ISlot.new(loc, px)
 	s.show_stack(stack, icons, ph)
 	s.carried = carry == loc
+	# a stack placed in the rune forge shows faded in the bags, as if carried
+	if open.runeforge and stack != null and (loc.begins_with("b:") or loc.begins_with("e:")):
+		var rf = game.rune_forge
+		s.carried = s.carried or is_same(stack, rf.weapon) or is_same(stack, rf.rune)
 	s.on_input = slot_input
 	s.on_hover = slot_hover
 	if parent:
@@ -496,6 +505,10 @@ func _context(loc: String) -> void:
 		game.merchant.sell(loc)
 	elif loc.begins_with("s:"):
 		toggle_bag(int(loc.substr(2)))
+	elif loc.begins_with("f:"):
+		game.rune_forge.clear(loc)
+	elif open.runeforge and (RuneForge.is_weapon(game.inventory.get_at(loc)) or RuneForge.is_rune(game.inventory.get_at(loc))):
+		game.rune_forge.put(loc)
 	elif loc != "":
 		game.inventory.use(loc)
 
@@ -551,6 +564,7 @@ func render() -> void:
 	_render_shop(inv)
 	_render_talents()
 	_render_cooking()
+	_render_runeforge()
 	_render_settings()
 	_render_skills()
 	_render_spellbook()
@@ -1002,6 +1016,57 @@ func _junk_value(inv) -> int:
 
 ## Cooking: every recipe you know, coloured by how much it can still teach
 ## you (WoW's orange / yellow / green / grey), with its ingredients.
+## The rune forge (RuneForge): a weapon slot, a rune slot beside it, and the
+## Fuse button; while it works, a bar fills across the window too.
+func _render_runeforge() -> void:
+	var w := runeforge
+	w.panel.visible = open.runeforge
+	if not open.runeforge:
+		return
+	UI.clear(w.body)
+	var rf = game.rune_forge
+	var intro := UI.label(w.body, "Lay a weapon on the forge and a rune beside it, then fuse them.", 12, UI.TEXT_DIM)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var row := UI.hbox(w.body, 14)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var wk := UI.vbox(row, 4)
+	var ws := _slot(wk, "f:weapon", rf.in_slot("f:weapon"), 56, "Weapon")
+	ws.ghost = Icons.art("slots", "slot_mainHand")
+	UI.label(wk, "Weapon", 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var plus := UI.label(row, "+", 26, UI.GOLD)
+	plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var rk := UI.vbox(row, 4)
+	var r = rf.in_slot("f:rune")
+	var rs := _slot(rk, "f:rune", r, 56, "Rune")
+	UI.label(rk, "Rune", 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# the rune's colour rings both slots once it is placed
+	if r != null:
+		var c := Color(Runes.def(Items.get_def(r.id).rune).glow.colour)
+		rs.glow = Color(c, 0.6)
+		if rf.in_slot("f:weapon") != null:
+			ws.glow = Color(c, 0.35)
+	var wst = rf.in_slot("f:weapon")
+	var info := UI.rich(w.body, 12)
+	var lines := []
+	if wst != null:
+		var had := Runes.of(wst)
+		lines.append("[color=%s]%s[/color]: %s" % [UI.hex(Items.rarity_colour(Items.view(wst).get("rarity", "common"))), UI.esc(Items.view(wst).name), "bears the %s rune" % UI.esc(Runes.def(had).name) if had != "" else "no rune yet"])
+	if r != null:
+		var rid: String = Items.get_def(r.id).rune
+		lines.append("[color=%s]%s[/color]: %s" % [UI.hex(Color(Runes.def(rid).glow.colour)), UI.esc(Runes.def(rid).name), UI.esc(Runes.text(rid))])
+	UI.set_rich(info, "\n".join(lines))
+	if rf.channel != null:
+		var k: float = rf.channel.t / rf.channel.total
+		_skill_bar(w.body, k, 0)
+		UI.label(w.body, "The forge hums...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var why: String = rf.blocked()
+	var b := UI.button(w.body, "Fuse Rune", func(): game.rune_forge.fuse(), 14)
+	b.disabled = why != ""
+	b.custom_minimum_size = Vector2(0, 34)
+	if why != "" and rf.channel == null:
+		UI.label(w.body, why, 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
 func _render_cooking() -> void:
 	var w := cooking
 	w.panel.visible = open.cooking
@@ -1390,6 +1455,9 @@ func layout() -> void:
 	if cooking.panel.visible:
 		var s := _fit(cooking.panel, Vector2.ZERO)
 		cooking.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(vp.y * 0.22))
+	# at the left, as a shop is, so the forge and its flash stay in view
+	if runeforge.panel.visible:
+		_fit(runeforge.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	_place_moved()
 	_layout_bags(vp)
 
@@ -1629,6 +1697,12 @@ func _tooltip(loc: String) -> void:
 		_set_tip(lines, [])
 		return
 	var inv = game.inventory
+	if loc.begins_with("f:"):
+		var real: String = game.rune_forge.slot_loc(loc)
+		if real == "":
+			_set_tip([_name_line("Weapon" if loc == "f:weapon" else "Rune", ""), _l("Drag one here from your bags.", UI.hex(UI.TEXT_DIM), 12)], [])
+			return
+		loc = real
 	var stack = inv.get_at(loc) if loc != "" else null
 	var shop_price = null
 	if loc.begins_with("m:"):
@@ -1706,7 +1780,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
 	if def.get("rune"):
-		lines.append(_l("Use: put the %s rune on your main-hand weapon. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
+		lines.append(_l("Fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	var power := Builds.power_def(Items.power_of(stack))
@@ -1843,6 +1917,8 @@ func _icon_for_loc(loc: String) -> Texture2D:
 		return _icon_for(ActionBar.item_ref(a)) if ActionBar.item_ref(a) != null else icons.abilities.get(a)
 	if loc.begins_with("k:"):
 		return icons.abilities.get(loc.substr(2))
+	if loc.begins_with("f:"):
+		loc = game.rune_forge.slot_loc(loc)
 	var stack = game.inventory.get_at(loc)
 	return _icon_for(stack.id) if stack != null else null
 
@@ -1864,6 +1940,10 @@ func _down(loc: String, at: Vector2) -> void:
 		return
 	if loc.begins_with("m:") or loc.begins_with("y:"):
 		_shop_click(loc)
+		return
+	if loc.begins_with("f:"):
+		if game.rune_forge.slot_loc(loc) != "":
+			drag = {"from": loc, "at": at, "moved": false}
 		return
 	if game.inventory.get_at(loc) == null:
 		if loc.begins_with("s:"):
@@ -1900,6 +1980,8 @@ func _up(at: Vector2) -> void:
 		# used (right click uses it too; a held left click drags it)
 		if d.from.begins_with("s:"):
 			toggle_bag(int(d.from.substr(2)))
+		if d.from.begins_with("f:"):
+			game.rune_forge.clear(d.from)
 		if d.from.begins_with("a:"):
 			var a = game.action_bar.slots[int(d.from.substr(2))]
 			if a != null:
@@ -1917,7 +1999,7 @@ func _over(c: Control, at: Vector2) -> bool:
 
 
 func _over_window(at: Vector2) -> bool:
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, shop]:
 		if _over(w.panel, at):
 			return true
 	for f in bags.get_children():
@@ -1950,6 +2032,14 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 			var nm := ActionBar.entry_name(ability)
 			var text := "%s removed from the bar." % nm if ActionBar.item_ref(ability) != null else "%s removed from the bar. Open %s to put it back." % [nm, "Professions (U)" if DB.abilities.get(ability, {}).get("skill") else "the spellbook (P)"]
 			game.events.emit("log", {"text": text, "kind": "muted", "throttle": "bar-removed"})
+		return
+	# the rune forge: dragged out puts it back down; dropped in slots it
+	if from.begins_with("f:"):
+		if to == null or not to.begins_with("f:"):
+			game.rune_forge.clear(from)
+		return
+	if to != null and to.begins_with("f:"):
+		game.rune_forge.put(from, to)
 		return
 	if to != null and to.begins_with("a:"):
 		# anything usable (a draught, a torch, lockpicks) goes on as an item
@@ -2121,6 +2211,9 @@ func update(dt: float) -> void:
 		_place_tip()
 	if open.character and char_tab == "main" and preview.is_inside_tree():
 		preview.render()
+	# the forge's bar fills while it works
+	if open.runeforge and game.rune_forge.channel != null:
+		_render_runeforge()
 	# cooking changes as you walk to a fire or your bags fill: redraw when it does
 	if open.cooking:
 		_cook_clock -= dt

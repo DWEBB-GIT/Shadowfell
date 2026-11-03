@@ -534,9 +534,10 @@ func move(from: String, to: String) -> Dictionary:
 	var b = get_at(to)
 	if a == null:
 		return {"ok": false, "reason": ""}
-	# a rune scroll dropped on a weapon (worn or bagged) enchants it
+	# a rune dropped on a weapon: runes are fused at a rune forge now
+	# (Dan, 2026-11-03), so it only says where to go
 	if b != null and Items.get_def(a.id).get("rune") and Items.get_def(b.id).get("kind") == "weapon":
-		return {"ok": game.runes.drop_on(from, to), "reason": ""}
+		return _refuse("Runes are fused to weapons at a rune forge.")
 	var pf := parse_loc(from)
 	var pt := parse_loc(to)
 	# a bag moves between bag sockets with its contents
@@ -647,9 +648,10 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
-	# a rune scroll: its rune goes on the main-hand weapon
+	# a rune: fused at a rune forge (Dan, 2026-11-03)
 	if def.get("rune"):
-		return game.runes.use_scroll(loc)
+		_refuse("Take the rune to a rune forge to fuse it to a weapon.")
+		return false
 	# a charm that casts an ability (the Homeward charm: Return Home)
 	if def.get("use", {}).has("ability"):
 		game.action_bar.clicked[def.use.ability] = true

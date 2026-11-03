@@ -25496,6 +25496,16 @@
   ],
   "stations": [
 	{
+	  "id": "tf_rune_forge",
+	  "name": "the rune forge",
+	  "kind": "runeforge",
+	  "position": [
+		-441,
+		-204
+	  ],
+	  "radius": 2.6
+	},
+	{
 	  "id": "tf_forge",
 	  "name": "Iren's forge",
 	  "kind": "forge",

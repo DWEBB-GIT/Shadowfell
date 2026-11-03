@@ -81,6 +81,7 @@ var mining: Mining
 var gathering: Gathering
 var forge: Forge
 var runes: Runes
+var rune_forge: RuneForge
 var law: Law
 var boons: Boons
 var sparkles: Sparkles
@@ -175,6 +176,7 @@ func _ready() -> void:
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
 	runes = Runes.new(self)
+	rune_forge = RuneForge.new(self)
 	law = Law.new(self)
 	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
@@ -1090,6 +1092,7 @@ func step(dt: float) -> void:
 		camp.update(dt, time)
 		fishing.update(dt)
 		cooking.update(dt)
+		rune_forge.update(dt)
 		mining.update(dt, time)
 		gathering.update(dt, time)
 		law.update(dt)
