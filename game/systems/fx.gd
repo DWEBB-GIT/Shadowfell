@@ -288,7 +288,15 @@ func projectile(p: Dictionary) -> void:
 	obj.position = a
 	var life = p.get("life")
 	var time: float = life if life != null else maxf(0.08, a.distance_to(b) / p.speed)
-	_add(obj, maxf(0.05, time), func(it, k, _dt):
+	var trail = p.get("trail", arrow_trail(p) if kind == "arrow" else null)
+	if kind == "arrow":
+		release_puff(a, b)
+	_add(obj, maxf(0.05, time), func(it, k, dt):
+		if trail != null:
+			it.emit -= dt
+			if it.emit <= 0:
+				it.emit = TRAIL_EVERY
+				trail_bit(it.obj.position, trail)
 		if it.follow:
 			var fp: Vector3 = it.follow.position
 			it.b = Vector3(fp.x, Terrain.height_at(fp.x, fp.z) + 1.0, fp.z)
@@ -298,9 +306,62 @@ func projectile(p: Dictionary) -> void:
 		if not bolt:
 			o.position.y += sin(k * PI) * minf(1.2, it.a.distance_to(it.b) * 0.04)
 		if aimed:
-			_look(o, it.b), {"a": a, "b": b, "follow": follow})
+			_look(o, it.b), {"a": a, "b": b, "follow": follow, "emit": 0.0})
 	if aimed:
 		_look(obj, b)
+
+
+## What an arrow leaves in the air behind it (Dan 2026-11-03): embers from a
+## fire arrow (an ability of the fire school, or the look's `trail`) or a
+## runed bow in its rune's colour, else a faint pale streak.
+const TRAIL_EVERY := 0.022
+
+
+func arrow_trail(p: Dictionary) -> Dictionary:
+	var id: String = p.get("look", "")
+	var look: Dictionary = DB.spell_fx.get(id, {})
+	if look.has("trail"):
+		return look.trail
+	var sp = DB.spells.get(id)
+	if sp is Dictionary and sp.get("school") == "fire":
+		return {"colour": "#ff8030", "embers": true}
+	var bow = game.inventory.ranged_weapon if game.inventory else null
+	var rune := Runes.of(bow)
+	if rune != "":
+		var g = Runes.def(rune).get("glow", {})
+		return {"colour": g.get("colour", "#ffd090"), "embers": true}
+	return {"colour": "#fff2dc", "embers": false}
+
+
+var _trail_mats := {}
+
+
+## one mote of an arrow's trail: it shrinks away; embers also rise and drift
+func trail_bit(pos: Vector3, tr: Dictionary) -> void:
+	var c := str(tr.get("colour", "#fff2dc"))
+	var embers: bool = tr.get("embers", false)
+	if not _trail_mats.has(c):
+		_trail_mats[c] = Tex.fx_material(Tex.glint(), Color(c), true, true)
+	var mote := Tex.sprite(_trail_mats[c])
+	mote.name = "ArrowMote"
+	var size := (0.2 + randf() * 0.12) if embers else 0.11
+	mote.scale = Vector3.ONE * size
+	mote.position = pos + (Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 0.08 if embers else Vector3.ZERO)
+	var drift := Vector3(randf() - 0.5, 1.0, randf() - 0.5) * (0.7 if embers else 0.0)
+	_add(mote, 0.4 if embers else 0.16, func(it, k, dt):
+		it.obj.scale = Vector3.ONE * size * (1.0 - k)
+		it.obj.position += drift * dt)
+
+
+## the bow let go: a small burst of air off the string, toward the shot
+func release_puff(from: Vector3, to: Vector3) -> void:
+	if not _trail_mats.has("release"):
+		_trail_mats.release = Tex.fx_material(Tex.glint(), Color(1, 0.96, 0.88, 0.7), true, true)
+	var pop := Tex.sprite(_trail_mats.release)
+	pop.position = from + (to - from).normalized() * 0.25
+	_add(pop, 0.12, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * (0.25 + k * 0.5) * (1.0 - k))
+	sparks(from, 3, Color("fff0d8"), {"spread": 1.5, "size": 0.12, "life": 0.18, "rise": [0.3, 1.0]})
 
 
 ## one shape carried by a projectile, its forward (+z) along the flight:

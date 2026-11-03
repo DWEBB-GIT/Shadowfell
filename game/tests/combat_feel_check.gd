@@ -137,6 +137,13 @@ func _run() -> void:
 	for i in 20:
 		game.fx.update(dt)
 	check(game.fx.trail_pts.is_empty(), "and it fades away")
+	# an arrow leaves a trail; a fire arrow leaves embers
+	var pp: Vector3 = game.player.position
+	game.events.emit("projectile", {"kind": "arrow", "from": pp + Vector3(0, 1.3, 0), "to": pp + Vector3(10, 0, 0), "speed": 30.0, "life": 0.3})
+	for i in 10:
+		game.fx.update(dt)
+	check(_named("ArrowMote") >= 4, "an arrow leaves a trail (%d motes)" % _named("ArrowMote"))
+	check(game.fx.arrow_trail({"look": "flamingArrow"}).get("embers") == true, "and a fire arrow leaves embers")
 
 	# the spell queue covers the end of a cast, not only the global cooldown
 	var sp = game.spells
