@@ -72,7 +72,11 @@ const CONFIG := {
 	"impact": {"shake": 0.07, "critShake": 0.16, "shakeDecay": 9.0,
 		# hit-stop on a landed melee blow: both bodies hold still this long,
 		# more for slower (heavier) weapons, more again on a crit
-		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
+		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5,
+		# area blows and killing blows (Dan 2026-11-03): an area spell that
+		# catches 2+ kicks the camera harder per foe and holds them all; a
+		# kill holds you a beat and kicks the camera, more for an elite
+		"aoeHitStop": 0.06, "aoeShakePerHit": 0.25, "killHitStop": 0.08, "killShake": 0.06, "eliteKillShake": 0.14},
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
