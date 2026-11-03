@@ -69,6 +69,13 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 		danger_zones.append({"position": z.position, "radius": z.radius, "enemy": z.enemySpawn})
 
 
+static func station(id: String):
+	for s in stations:
+		if s.id == id:
+			return s
+	return null
+
+
 static func enemy_spawn(id: String):
 	for s in enemies:
 		if s.id == id:

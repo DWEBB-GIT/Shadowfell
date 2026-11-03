@@ -2061,14 +2061,21 @@ func world_tip(pick) -> void:
 	if tip_from == "ui" and tooltip.visible:
 		return
 	var key = pick.obj if pick != null and (pick.kind == "enemy" or pick.kind == "npc" or pick.kind == "sign") else null
-	if key == null:
+	# a station, shrine, vein or herb: its name by the cursor, and what a
+	# click does under it (Dan, 2026-11-03: tell the rune forge from the
+	# refining altar without clicking)
+	var thing := _thing_tip(pick)
+	if key == null and thing.is_empty():
 		if tip_from == "world":
 			_hide_tip()
 		return
 	tip_from = "world"
-	tip_cursor = false
+	tip_cursor = key == null
 	var text := ""
-	if pick.kind == "sign":
+	if key == null:
+		key = thing.key
+		text = _name_line(thing.name, thing.colour) + (_l(thing.sub, "#9a8f78", 12) if thing.sub != "" else "")
+	elif pick.kind == "sign":
 		text = _name_line("Signpost", "")
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
@@ -2081,6 +2088,28 @@ func world_tip(pick) -> void:
 		tip_text = text
 		_set_tip([text], [])
 	_place_tip()
+
+
+## {key, name, colour, sub} for a hovered station, shrine, vein or herb; {} for none
+func _thing_tip(pick) -> Dictionary:
+	if pick == null:
+		return {}
+	var o = pick.obj
+	match pick.kind:
+		"point":
+			if not o.has("name"):
+				return {}
+			var colour := "#e8d8a0"
+			if o.key.begins_with("station:"):
+				var st = Layout.station(o.key.substr(8))
+				if st != null:
+					colour = Interaction.look(st.kind).colour
+			return {"key": o.key, "name": o.name, "colour": colour, "sub": Interaction.title(o.get("prompt", ""))}
+		"vein":
+			return {"key": "vein:%s" % o.name + str(o.x), "name": o.name, "colour": "#f0d890", "sub": "Mining"}
+		"herb":
+			return {"key": "herb:%s" % o.name + str(o.x), "name": o.name, "colour": "#9fe07a", "sub": DB.skills.get(o.skill, {}).get("name", "")}
+	return {}
 
 
 # ------------------------------------------------------------------ mouse drag
