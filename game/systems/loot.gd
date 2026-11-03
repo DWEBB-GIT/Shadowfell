@@ -280,10 +280,9 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 			beam = _beam(group, Items.rarity_colour(rarity), rarity)
 	# coins and plain (junk/common) drops lie bare, no glint (Dan 2026-11-02)
-	if coins > 0: # a tiny gold sparkle just above the coins
-		glint.scale = Vector3.ONE * 0.22
-		glint.material_override.albedo_color = Color(Color("fff2b0"), 0.6)
-	var bare: bool = (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
+	# coins keep only their piles' own sparkles in each metal's colour, so
+	# silver no longer shows a yellow glint above it
+	var bare: bool = coins > 0 or (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
 	glint.visible = not bare
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
