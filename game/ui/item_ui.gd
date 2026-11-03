@@ -1143,7 +1143,7 @@ func _render_refining() -> void:
 	if rf.last == "ok":
 		UI.label(w.body, "Refined.", 13, UI.UP).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	elif rf.last == "slip":
-		UI.label(w.body, "The refine failed. Only the stones and coin are lost.", 12, Color("b8a0d8")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UI.label(w.body, "The refine failed.", 12, Color("b8a0d8")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if rf.channel != null:
 		_skill_bar(w.body, rf.channel.t / rf.channel.total, 0)
 		UI.label(w.body, "Refining...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
