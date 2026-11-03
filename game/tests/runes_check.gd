@@ -23,6 +23,7 @@ func _process(_dt: float) -> bool:
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_refine()
+		_refining_window()
 		_fellstones()
 		_runecraft()
 		_scrolls()
@@ -148,6 +149,55 @@ func _refine() -> void:
 	game.random = func(): return 0.0
 	_ok(fg.temper(loc) and Forge.resolve_of(inv.get_at(loc)) == 0, "a success clears the resolve")
 	game.random = rnd
+	_clear_bags()
+
+
+## The refining window (Dan, 2026-11-03): an altar, an item slot, a preview
+## of the next rank, a channel, then the rank (or a slip).
+func _refining_window() -> void:
+	var inv = game.inventory
+	var ui = game.hud.items
+	var rf = game.refinery
+	_clear_bags()
+	inv.add_item("test_frostbite", 1, true)
+	inv.add_item("fellstone", 20, true)
+	inv.coins += 5000
+	var sts: Array = Layout.stations.filter(func(s): return s.kind == Refinery.KIND)
+	_ok(not sts.is_empty(), "there is a refining altar in the world")
+	if sts.is_empty():
+		return
+	var st: Dictionary = sts[0]
+	game.player.position = Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
+	game.player.moving = false
+	game.hud.modal = null
+	for c in game.interaction._candidates():
+		if c.key == "station:" + st.id:
+			c.run.call()
+	_ok(ui.open.refining, "using the altar opens the refining window")
+	_ok(rf.blocked() != "", "Refine waits for gear")
+	_ok(not rf.put(inv._find("fellstone")), "stones don't go in the slot")
+	var loc = inv._find("test_frostbite")
+	ui.dropOn(loc, "r:item")
+	_ok(rf.loc() == loc, "dragging gear into the slot places it")
+	var before: float = Items.view(inv.get_at(loc)).itemLevel
+	_ok(rf.preview().get("itemLevel", 0) == before + 1 and rf.cost().rank == 1, "the window shows the next rank's item level")
+	var rnd = game.random
+	game.random = func(): return 0.0
+	_ok(rf.refine() and rf.channel != null and rf.bar() != null, "Refine starts the weave (cast bar shown)")
+	rf.update(1.0)
+	_ok(Items.temper_of(inv.get_at(loc)) == 0, "it takes a moment")
+	rf.update(Refinery.CHANNEL)
+	_ok(Items.temper_of(inv.get_at(loc)) == 1 and rf.last == "ok", "then the item is +1")
+	_ok(rf.loc() == loc and rf.cost().rank == 2, "the item stays in the slot for the next rank")
+	rf.refine()
+	game.player.moving = true
+	rf.update(0.1)
+	game.player.moving = false
+	_ok(rf.channel == null and Items.temper_of(inv.get_at(loc)) == 1, "moving stops it")
+	game.random = rnd
+	ui.close("refining")
+	rf.update(0.1)
+	_ok(rf.at == null and rf.item == null, "closing the window clears it")
 	_clear_bags()
 
 

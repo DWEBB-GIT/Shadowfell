@@ -227,11 +227,14 @@ func _build_signposts() -> void:
 ## take the rune's colour while it fuses, and flare at the end.
 var rune_forges := {} ## station id -> {gem, glow, gem_mat, colour, flare, work}
 const RUNE_FORGE_COLOUR := Color("9a6aff")
+const REFINING_COLOUR := Color("ffc860")
 
 func _build_rune_forges() -> void:
 	for st in Layout.stations:
-		if st.kind != RuneForge.KIND:
+		if st.kind != RuneForge.KIND and st.kind != Refinery.KIND:
 			continue
+		# the refining altar's crystal is gold, the rune forge's violet
+		var base: Color = REFINING_COLOUR if st.kind == Refinery.KIND else RUNE_FORGE_COLOUR
 		var x: float = st.position[0]
 		var z: float = st.position[1]
 		var root := Node3D.new()
@@ -247,11 +250,11 @@ func _build_rune_forges() -> void:
 		var lines: Array = []
 		for side in [-1.0, 1.0]:
 			for i in 3:
-				var cut := _box(Vector3(0.08, 0.5 - (i % 2) * 0.2, 0.02), RUNE_FORGE_COLOUR, true)
+				var cut := _box(Vector3(0.08, 0.5 - (i % 2) * 0.2, 0.02), base, true)
 				cut.position = Vector3(-0.4 + i * 0.4, 0.45, side * 0.61)
 				root.add_child(cut)
 				lines.append(cut)
-				var cut2 := _box(Vector3(0.02, 0.5 - (i % 2) * 0.2, 0.08), RUNE_FORGE_COLOUR, true)
+				var cut2 := _box(Vector3(0.02, 0.5 - (i % 2) * 0.2, 0.08), base, true)
 				cut2.position = Vector3(side * 0.76, 0.45, -0.3 + i * 0.3)
 				root.add_child(cut2)
 				lines.append(cut2)
@@ -267,14 +270,14 @@ func _build_rune_forges() -> void:
 		sm.rings = 2
 		gem.mesh = sm
 		var gm := StandardMaterial3D.new()
-		gm.albedo_color = RUNE_FORGE_COLOUR
+		gm.albedo_color = base
 		gm.emission_enabled = true
-		gm.emission = RUNE_FORGE_COLOUR
+		gm.emission = base
 		gm.emission_energy_multiplier = 1.6
 		gem.material_override = gm
 		gem.position.y = 2.1
 		root.add_child(gem)
-		var glm := Tex.fx_material(Tex.glint(), Color(RUNE_FORGE_COLOUR, 0.7), true, true)
+		var glm := Tex.fx_material(Tex.glint(), Color(base, 0.7), true, true)
 		glm.disable_fog = true
 		var glow := Tex.sprite(glm)
 		glow.scale = Vector3.ONE * 1.2
@@ -282,7 +285,7 @@ func _build_rune_forges() -> void:
 		root.add_child(glow)
 		group.add_child(root)
 		game.collision.add(x, z, 0.75)
-		rune_forges[st.id] = {"gem": gem, "glow": glow, "gem_mat": gm, "lines": lines, "colour": RUNE_FORGE_COLOUR, "flare": 0.0, "work": 0.0}
+		rune_forges[st.id] = {"gem": gem, "glow": glow, "gem_mat": gm, "lines": lines, "colour": base, "base": base, "flare": 0.0, "work": 0.0}
 
 
 ## Tint forge `id` while it works (strength 1), flare it (above 1), or
@@ -292,7 +295,7 @@ func rune_forge_glow(id: String, colour: Color, strength: float) -> void:
 	if f == null:
 		return
 	if strength <= 0.0:
-		f.colour = RUNE_FORGE_COLOUR
+		f.colour = f.base
 		f.work = 0.0
 	elif strength <= 1.0:
 		f.colour = colour
@@ -324,7 +327,7 @@ func _update_rune_forges(dt: float, time: float) -> void:
 		if f.flare > 0.0:
 			f.flare = maxf(0.0, f.flare - dt * 2.0)
 			if f.flare == 0.0 and f.work == 0.0:
-				f.colour = RUNE_FORGE_COLOUR
+				f.colour = f.base
 
 
 ## Buildings you can walk into: the shell (floor, back walls, fittings), the

@@ -1538,6 +1538,9 @@ func _refresh_spells() -> void:
 		var rc: Dictionary = DB.recipes[k.id]
 		c = {"t": k.t, "total": k.total, "name": "%s %s%s" % [Cooking.craft_of(rc.skill).get("window", "Making"), Items.get_def(rc.output.item).name, " (%d)" % k.left if k.left > 1 else ""]}
 		tex = icons.item(rc.output.item)
+	elif game.refinery.channel != null:
+		c = game.refinery.bar()
+		tex = icons.item(game.refinery.item.id) if game.refinery.item != null else null
 	elif game.rune_forge.channel != null:
 		c = game.rune_forge.bar()
 		tex = icons.item(game.rune_forge.rune.id) if game.rune_forge.rune != null else null

@@ -53,6 +53,10 @@ func _candidates(near := INF) -> Array:
 			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
 				"prompt": "Use %s" % st.name, "run": func(): game.rune_forge.open_at(st)})
 			continue
+		if st.kind == Refinery.KIND:
+			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
+				"prompt": "Refine gear at %s" % st.name, "run": func(): game.refinery.open_at(st)})
+			continue
 		var sk := ""
 		for s in DB.skills.values():
 			if s.get("craft", {}).get("kind") == st.kind:

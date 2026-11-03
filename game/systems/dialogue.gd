@@ -345,6 +345,13 @@ func _heal_price() -> int:
 ## A service choice; true if it was one (and was acted on).
 func _service_choose(id: String, v: Dictionary) -> bool:
 	var fg = game.forge
+	# refining has its own window now (Dan, 2026-11-03): an item slot, the
+	# next rank's gain, its cost and chance, and a Refine button
+	if id == "ench:enchant":
+		var n = npc
+		close()
+		game.refinery.open_at_npc(n)
+		return true
 	var views := {"ench:enchant": "enchant", "ench:scrap": "scrap", "ench:runecraft": "runecraft", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
 	if views.has(id):
 		view = {"kind": views[id]}
