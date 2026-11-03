@@ -47,7 +47,15 @@ const CONFIG := {
 	# of a level of rested experience, and the inn as your rest point
 	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
-	"progression": {"maxLevel": 50, "firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
+	# XP to the next level = the baseline minutes the level 1-50 pacing plan
+	# gives it (docs/quest-design/level-50-pacing.csv, 60 hours) x `pace` x the
+	# kill XP of an even normal enemy at that level. `pace` is the XP a normal
+	# questing session earns a minute in even kills: about half quest rewards,
+	# half kills along the way; tune it from playtest timings (Dan, 2026-11-03).
+	# Quest XP = a share (`questSizes`) of the quest level's bar x `xpScale`.
+	"progression": {"maxLevel": 50, "pace": 2.0, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4,
+		"levelMinutes": [5, 8, 10, 12, 14, 16, 17, 18, 20, 30, 45, 55, 65, 70, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 100, 115, 125, 130, 135, 140, 145, 150, 150, 150],
+		"minQuestShare": 0.1, "questSizes": {"errand": 0.04, "standard": 0.07, "chainStep": 0.10, "chainFinale": 0.15, "actFinale": 0.30}},
 	"stats": {
 		"healthBase": 20.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
 		"powerPerMainStat": 0.3, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
@@ -340,7 +348,19 @@ static func ensure() -> void:
 
 
 static func xp_for_next_level(level: int) -> int:
-	return CONFIG.progression.firstLevelXp + (level - 1) * CONFIG.progression.xpGrowthPerLevel
+	var pr: Dictionary = CONFIG.progression
+	var mins: Array = pr.levelMinutes
+	var m: float = mins[clampi(level - 1, 0, mins.size() - 1)]
+	return U.jround(m * pr.pace * Scaling.kill_xp_base({}, level))
+
+
+## A quest's experience before the level gap: its `reward.size` share of the
+## quest level's bar, times `reward.xpScale` for a longer or harder quest.
+static func quest_xp_base(reward: Dictionary, quest_level: int) -> int:
+	if not reward.has("size"):
+		return 0
+	var share: float = CONFIG.progression.questSizes.get(reward.size, 0.0)
+	return U.jround(xp_for_next_level(quest_level) * share * reward.get("xpScale", 1.0))
 
 
 ## Experience for killing an enemy of `enemy_level` at `player_level`, WoW
@@ -437,8 +457,6 @@ static func enemy_cfg_at(type: String, spawn_id: String, level := 0) -> Dictiona
 	if not _cfg_at_level.has(key):
 		var at := e.duplicate()
 		at.level = level
-		# a stronger variant pays more, on the same growth line as its health
-		at.xp = U.jround(float(e.get("xp", 0)) * Scaling.growth(level) / Scaling.growth(e.level))
 		_cfg_at_level[key] = Scaling.scaled_enemy(at, CONFIG.stats, attack.abilityWeaponSeconds)
 	return _cfg_at_level[key]
 

@@ -323,8 +323,12 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 		var r: Dictionary = q.get("reward", {})
 		if not _coins_ok(r.get("coins")):
 			bad.call("reward coins must be whole silver, or a min to max range")
-		if r.has("xp") and not _is_int(r.xp):
-			bad.call("reward xp must be a whole number")
+		if r.has("xp"):
+			bad.call("reward xp is computed: give a size (errand, standard, chainStep, chainFinale, actFinale) instead")
+		if r.has("size") and not ["errand", "standard", "chainStep", "chainFinale", "actFinale"].has(r.size):
+			bad.call("reward size must be errand, standard, chainStep, chainFinale or actFinale")
+		if r.has("xpScale") and not (r.xpScale is float or r.xpScale is int) :
+			bad.call("reward xpScale must be a number")
 		for e in r.get("items", []):
 			if s.item(e.get("item")).is_empty():
 				bad.call("reward names unknown item %s" % e.get("item"))

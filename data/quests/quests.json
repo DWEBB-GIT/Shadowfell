@@ -23,7 +23,7 @@
       ],
       "reward": {
         "coins": 20,
-        "xp": 50,
+        "size": "errand",
         "items": [
           {
             "item": "tool_pack",
@@ -68,7 +68,7 @@
       ],
       "reward": {
         "coins": 30,
-        "xp": 80,
+        "size": "errand",
         "reputation": {
           "road_wardens": 250
         }
@@ -105,7 +105,7 @@
       ],
       "reward": {
         "coins": 25,
-        "xp": 70,
+        "size": "errand",
         "items": [
           {
             "item": "healing_draught",
@@ -158,7 +158,7 @@
       ],
       "reward": {
         "coins": 50,
-        "xp": 150,
+        "size": "errand",
         "items": [
           {
             "item": "iron_shield",
@@ -190,7 +190,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 60
+        "size": "errand"
       }
     },
     {
@@ -213,7 +213,7 @@
       ],
       "reward": {
         "coins": 18,
-        "xp": 90
+        "size": "standard"
       }
     },
     {
@@ -236,7 +236,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 70
+        "size": "errand"
       }
     },
     {
@@ -259,7 +259,7 @@
       ],
       "reward": {
         "coins": 20,
-        "xp": 100,
+        "size": "standard",
         "reputation": {
           "road_wardens": 150
         }
@@ -285,7 +285,7 @@
       ],
       "reward": {
         "coins": 45,
-        "xp": 220,
+        "size": "errand",
         "reputation": {
           "road_wardens": 250
         }
@@ -311,7 +311,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 80,
+        "size": "errand",
         "items": [
           {
             "item": "baked_carp",
@@ -350,7 +350,7 @@
       ],
       "reward": {
         "coins": 20,
-        "xp": 120
+        "size": "standard"
       }
     },
     {
@@ -376,7 +376,7 @@
       ],
       "reward": {
         "coins": 40,
-        "xp": 200,
+        "size": "standard",
         "items": [
           {
             "item": "ghostfin_broth",
@@ -410,7 +410,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 90
+        "size": "errand"
       }
     },
     {
@@ -434,7 +434,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 90
+        "size": "errand"
       }
     },
     {
@@ -458,7 +458,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 80
+        "size": "errand"
       }
     },
     {
@@ -482,7 +482,7 @@
       ],
       "reward": {
         "coins": 8,
-        "xp": 140,
+        "size": "errand",
         "items": [
           {
             "item": "tanners_knife",
@@ -515,7 +515,7 @@
       ],
       "reward": {
         "coins": 22,
-        "xp": 180
+        "size": "errand"
       }
     },
     {
@@ -539,7 +539,7 @@
       ],
       "reward": {
         "coins": 15,
-        "xp": 100
+        "size": "errand"
       }
     },
     {
@@ -563,7 +563,7 @@
       ],
       "reward": {
         "coins": 35,
-        "xp": 200
+        "size": "errand"
       }
     },
     {
@@ -593,7 +593,7 @@
       ],
       "reward": {
         "coins": 4,
-        "xp": 120
+        "size": "errand"
       }
     },
     {
@@ -618,7 +618,7 @@
         }
       ],
       "reward": {
-        "xp": 60
+        "size": "errand"
       }
     },
     {
@@ -645,7 +645,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 180
+        "size": "standard"
       }
     },
     {
@@ -670,7 +670,7 @@
         }
       ],
       "reward": {
-        "xp": 120
+        "size": "errand"
       }
     },
     {
@@ -712,7 +712,7 @@
         }
       ],
       "reward": {
-        "xp": 200
+        "size": "standard"
       }
     },
     {
@@ -741,7 +741,7 @@
       "turnInLog": "The Ashbys and the Corricks will dig the new drain together. Wren and Cal no longer need the stone.",
       "reward": {
         "coins": 25,
-        "xp": 300,
+        "size": "standard",
         "items": [
           {
             "item": "roast_boar",
@@ -776,7 +776,7 @@
       "turnInLog": "The old drain will be stopped. The feud cools, but the hedge stays, and so does the secret under the stone.",
       "reward": {
         "coins": 25,
-        "xp": 300
+        "size": "standard"
       }
     },
     {
@@ -805,7 +805,7 @@
       "turnInLog": "That night the Corrick hayrick burns. By morning Wren Ashby and Cal Fenner are gone, together, and nobody knows where.",
       "reward": {
         "coins": 40,
-        "xp": 300,
+        "size": "standard",
         "infamy": 8
       }
     },
@@ -830,7 +830,7 @@
         }
       ],
       "reward": {
-        "xp": 150
+        "size": "standard"
       }
     },
     {
@@ -856,7 +856,7 @@
       ],
       "reward": {
         "coins": 8,
-        "xp": 200
+        "size": "errand"
       }
     },
     {
@@ -891,7 +891,7 @@
       ],
       "reward": {
         "coins": 30,
-        "xp": 400,
+        "size": "standard",
         "reputation": {
           "road_wardens": 200
         }
@@ -930,7 +930,7 @@
       "turnInLog": "Somebody hired the Blackhedge bandits to ruin the Ashby farm. Their letters are sealed in grey wax, pressed with a closed eye.",
       "reward": {
         "coins": 50,
-        "xp": 600,
+        "size": "standard",
         "reputation": {
           "road_wardens": 400
         }
@@ -958,7 +958,7 @@
         }
       ],
       "reward": {
-        "xp": 120
+        "size": "errand"
       }
     },
     {
@@ -984,7 +984,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 220
+        "size": "errand"
       }
     },
     {
@@ -1008,7 +1008,7 @@
       ],
       "reward": {
         "coins": 8,
-        "xp": 120
+        "size": "standard"
       }
     },
     {
@@ -1040,7 +1040,7 @@
       ],
       "reward": {
         "coins": 15,
-        "xp": 220,
+        "size": "standard",
         "reputation": {
           "road_wardens": 100
         }
@@ -1070,7 +1070,7 @@
       ],
       "reward": {
         "coins": 25,
-        "xp": 420,
+        "size": "standard",
         "reputation": {
           "road_wardens": 150
         }
@@ -1097,7 +1097,7 @@
       ],
       "reward": {
         "coins": 30,
-        "xp": 360,
+        "size": "errand",
         "reputation": {
           "road_wardens": 150
         }
@@ -1128,7 +1128,7 @@
       ],
       "reward": {
         "coins": 25,
-        "xp": 150
+        "size": "standard"
       }
     },
     {
@@ -1156,7 +1156,7 @@
       ],
       "reward": {
         "coins": 20,
-        "xp": 150
+        "size": "errand"
       }
     },
     {
@@ -1184,7 +1184,7 @@
       ],
       "reward": {
         "coins": 30,
-        "xp": 150
+        "size": "standard"
       }
     },
     {
@@ -1216,7 +1216,7 @@
       ],
       "reward": {
         "coins": 25,
-        "xp": 400,
+        "size": "standard",
         "items": [
           {
             "item": "healing_draught",
@@ -1263,7 +1263,7 @@
       ],
       "reward": {
         "coins": 20,
-        "xp": 400,
+        "size": "standard",
         "items": [
           {
             "item": "tool_pack",
@@ -1316,7 +1316,7 @@
       ],
       "reward": {
         "coins": 40,
-        "xp": 550,
+        "size": "standard",
         "items": [
           {
             "item": "iron_shield",
@@ -1356,7 +1356,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 100,
+        "size": "standard",
         "items": [
           {
             "item": "healing_draught",
@@ -1396,7 +1396,7 @@
       ],
       "reward": {
         "coins": 25,
-        "xp": 260
+        "size": "standard"
       },
       "requires": [],
       "autoAccept": true,
@@ -1435,7 +1435,7 @@
       ],
       "reward": {
         "coins": 35,
-        "xp": 650,
+        "size": "standard",
         "items": [
           {
             "item": "healing_draught",
@@ -1481,7 +1481,7 @@
       ],
       "reward": {
         "coins": 55,
-        "xp": 650,
+        "size": "standard",
         "items": [
           {
             "item": "strong_healing_draught",
@@ -1518,7 +1518,7 @@
       ],
       "reward": {
         "coins": 16,
-        "xp": 120
+        "size": "errand"
       },
       "requires": [],
       "level": [
@@ -1548,7 +1548,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 140
+        "size": "errand"
       },
       "requires": [],
       "level": [
@@ -1578,7 +1578,7 @@
       ],
       "reward": {
         "coins": 10,
-        "xp": 100
+        "size": "errand"
       },
       "requires": [],
       "level": [
@@ -1610,7 +1610,7 @@
       ],
       "reward": {
         "coins": 16,
-        "xp": 150
+        "size": "standard"
       },
       "requires": [],
       "level": 2,
@@ -1637,7 +1637,7 @@
       ],
       "reward": {
         "coins": 8,
-        "xp": 70
+        "size": "errand"
       },
       "requires": [],
       "level": [
@@ -1668,7 +1668,7 @@
       ],
       "reward": {
         "coins": 12,
-        "xp": 90
+        "size": "errand"
       },
       "requires": [],
       "level": [
@@ -1718,7 +1718,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 4
       },
       "setsFlag": "nr_gauge_done"
@@ -1750,7 +1750,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 5
       },
       "setsFlag": "nr_timber_done"
@@ -1788,7 +1787,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 4
       },
       "setsFlag": "nr_water_notes_done"
@@ -1826,7 +1825,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 5
       },
       "setsFlag": "nr_reverse_route_done"
@@ -1858,7 +1857,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 5
       },
       "setsFlag": "nr_bedding_done"
@@ -1896,7 +1895,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 5
       },
       "setsFlag": "nr_shelter_tracks_done"
@@ -1935,7 +1934,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 4
       },
       "setsFlag": "nr_bottle_labels_done"
@@ -1973,7 +1971,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 4
       },
       "setsFlag": "nr_pollinator_notes_done"
@@ -2007,7 +2005,7 @@
         }
       ],
       "reward": {
-        "xp": 25,
+        "size": "errand",
         "coins": 8
       },
       "setsFlag": "nr_overtime_done"
@@ -2041,7 +2039,7 @@
         }
       ],
       "reward": {
-        "xp": 25,
+        "size": "errand",
         "coins": 8
       },
       "setsFlag": "nr_quiet_hours_done"
@@ -2073,7 +2071,7 @@
         }
       ],
       "reward": {
-        "xp": 20,
+        "size": "errand",
         "coins": 6
       },
       "setsFlag": "nr_water_rights_done"
@@ -2105,7 +2103,7 @@
         }
       ],
       "reward": {
-        "xp": 30,
+        "size": "errand",
         "coins": 10
       },
       "setsFlag": "nr_last_word_done"
@@ -2146,7 +2144,7 @@
         }
       ],
       "reward": {
-        "xp": 3182,
+        "size": "chainFinale",
         "coins": 45
       },
       "requiresAny": [
@@ -2185,7 +2183,7 @@
         }
       ],
       "reward": {
-        "xp": 3182,
+        "size": "chainFinale",
         "coins": 45
       },
       "setsFlag": "wm_lantern_crossing_chapter_done",
@@ -2220,7 +2218,7 @@
         }
       ],
       "reward": {
-        "xp": 1332,
+        "size": "standard",
         "coins": 45
       },
       "localStory": true
@@ -2261,7 +2259,7 @@
         }
       ],
       "reward": {
-        "xp": 3182,
+        "size": "chainFinale",
         "coins": 45
       },
       "requiresAny": [
@@ -2300,7 +2298,7 @@
         }
       ],
       "reward": {
-        "xp": 3182,
+        "size": "chainFinale",
         "coins": 45
       },
       "setsFlag": "wm_mossreed_landing_chapter_done",
@@ -2335,7 +2333,7 @@
         }
       ],
       "reward": {
-        "xp": 1332,
+        "size": "standard",
         "coins": 45
       },
       "localStory": true
@@ -2376,7 +2374,7 @@
         }
       ],
       "reward": {
-        "xp": 2941,
+        "size": "chainStep",
         "coins": 90
       },
       "requiresAny": [
@@ -2416,7 +2414,7 @@
         }
       ],
       "reward": {
-        "xp": 2941,
+        "size": "chainStep",
         "coins": 90
       },
       "setsFlag": "wm_rillbank_quays_chapter_done",
@@ -2451,7 +2449,7 @@
         }
       ],
       "reward": {
-        "xp": 1231,
+        "size": "standard",
         "coins": 90
       },
       "localStory": true
@@ -2492,7 +2490,7 @@
         }
       ],
       "reward": {
-        "xp": 3715,
+        "size": "chainFinale",
         "coins": 117
       },
       "requiresAny": [
@@ -2532,7 +2530,7 @@
         }
       ],
       "reward": {
-        "xp": 3715,
+        "size": "chainFinale",
         "coins": 117
       },
       "setsFlag": "wm_millward_chapter_done",
@@ -2566,7 +2564,7 @@
         }
       ],
       "reward": {
-        "xp": 1555,
+        "size": "standard",
         "coins": 117
       },
       "localStory": true
@@ -2607,7 +2605,7 @@
         }
       ],
       "reward": {
-        "xp": 2941,
+        "size": "chainStep",
         "coins": 90
       },
       "requiresAny": [
@@ -2647,7 +2645,7 @@
         }
       ],
       "reward": {
-        "xp": 2941,
+        "size": "chainStep",
         "coins": 90
       },
       "setsFlag": "wm_reedward_chapter_done",
@@ -2682,7 +2680,7 @@
         }
       ],
       "reward": {
-        "xp": 1231,
+        "size": "standard",
         "coins": 90
       },
       "localStory": true
@@ -2723,7 +2721,7 @@
         }
       ],
       "reward": {
-        "xp": 3715,
+        "size": "chainFinale",
         "coins": 117
       },
       "requiresAny": [
@@ -2763,7 +2761,7 @@
         }
       ],
       "reward": {
-        "xp": 3715,
+        "size": "chainFinale",
         "coins": 117
       },
       "setsFlag": "wm_pumpstead_chapter_done",
@@ -2797,7 +2795,7 @@
         }
       ],
       "reward": {
-        "xp": 1555,
+        "size": "standard",
         "coins": 117
       },
       "localStory": true
@@ -2838,7 +2836,7 @@
         }
       ],
       "reward": {
-        "xp": 4489,
+        "size": "chainStep",
         "coins": 144
       },
       "requiresAny": [
@@ -2878,7 +2876,7 @@
         }
       ],
       "reward": {
-        "xp": 4489,
+        "size": "chainStep",
         "coins": 144
       },
       "setsFlag": "wm_north_ferry_chapter_done",
@@ -2913,7 +2911,7 @@
         }
       ],
       "reward": {
-        "xp": 1879,
+        "size": "standard",
         "coins": 144
       },
       "localStory": true
@@ -2954,7 +2952,7 @@
         }
       ],
       "reward": {
-        "xp": 5263,
+        "size": "chainFinale",
         "coins": 171
       },
       "requiresAny": [
@@ -2994,7 +2992,7 @@
         }
       ],
       "reward": {
-        "xp": 5263,
+        "size": "chainFinale",
         "coins": 171
       },
       "setsFlag": "wm_tollhouse_rise_chapter_done",
@@ -3029,7 +3027,7 @@
         }
       ],
       "reward": {
-        "xp": 2203,
+        "size": "standard",
         "coins": 171
       },
       "localStory": true
@@ -3070,7 +3068,7 @@
         }
       ],
       "reward": {
-        "xp": 4489,
+        "size": "chainStep",
         "coins": 144
       },
       "requiresAny": [
@@ -3110,7 +3108,7 @@
         }
       ],
       "reward": {
-        "xp": 4489,
+        "size": "chainStep",
         "coins": 144
       },
       "setsFlag": "wm_stiltmarket_chapter_done",
@@ -3145,7 +3143,7 @@
         }
       ],
       "reward": {
-        "xp": 1879,
+        "size": "standard",
         "coins": 144
       },
       "localStory": true
@@ -3186,7 +3184,7 @@
         }
       ],
       "reward": {
-        "xp": 5263,
+        "size": "chainFinale",
         "coins": 171
       },
       "requiresAny": [
@@ -3226,7 +3224,7 @@
         }
       ],
       "reward": {
-        "xp": 5263,
+        "size": "chainFinale",
         "coins": 171
       },
       "setsFlag": "wm_causeway_watch_chapter_done",
@@ -3260,7 +3258,7 @@
         }
       ],
       "reward": {
-        "xp": 2203,
+        "size": "standard",
         "coins": 171
       },
       "localStory": true
@@ -3301,7 +3299,7 @@
         }
       ],
       "reward": {
-        "xp": 6037,
+        "size": "chainStep",
         "coins": 198
       },
       "requiresAny": [
@@ -3341,7 +3339,7 @@
         }
       ],
       "reward": {
-        "xp": 6037,
+        "size": "chainStep",
         "coins": 198
       },
       "setsFlag": "wm_greyroot_chapter_done",
@@ -3376,7 +3374,7 @@
         }
       ],
       "reward": {
-        "xp": 2527,
+        "size": "standard",
         "coins": 198
       },
       "localStory": true
@@ -3417,7 +3415,7 @@
         }
       ],
       "reward": {
-        "xp": 6811,
+        "size": "chainFinale",
         "coins": 225
       },
       "requiresAny": [
@@ -3457,7 +3455,7 @@
         }
       ],
       "reward": {
-        "xp": 6811,
+        "size": "chainFinale",
         "coins": 225
       },
       "setsFlag": "wm_scribes_rest_chapter_done",
@@ -3491,7 +3489,7 @@
         }
       ],
       "reward": {
-        "xp": 2851,
+        "size": "standard",
         "coins": 225
       },
       "localStory": true
@@ -3532,7 +3530,7 @@
         }
       ],
       "reward": {
-        "xp": 6037,
+        "size": "chainStep",
         "coins": 198
       },
       "requiresAny": [
@@ -3572,7 +3570,7 @@
         }
       ],
       "reward": {
-        "xp": 6037,
+        "size": "chainStep",
         "coins": 198
       },
       "setsFlag": "wm_brinewatch_docks_chapter_done",
@@ -3607,7 +3605,7 @@
         }
       ],
       "reward": {
-        "xp": 2527,
+        "size": "standard",
         "coins": 198
       },
       "localStory": true
@@ -3648,7 +3646,7 @@
         }
       ],
       "reward": {
-        "xp": 6811,
+        "size": "chainFinale",
         "coins": 225
       },
       "requiresAny": [
@@ -3688,7 +3686,7 @@
         }
       ],
       "reward": {
-        "xp": 6811,
+        "size": "chainFinale",
         "coins": 225
       },
       "setsFlag": "wm_saltmere_chapter_done",
@@ -3723,7 +3721,7 @@
         }
       ],
       "reward": {
-        "xp": 2851,
+        "size": "standard",
         "coins": 225
       },
       "localStory": true
@@ -3764,7 +3762,7 @@
         }
       ],
       "reward": {
-        "xp": 7585,
+        "size": "chainFinale",
         "coins": 252
       },
       "requiresAny": [
@@ -3804,7 +3802,7 @@
         }
       ],
       "reward": {
-        "xp": 7585,
+        "size": "chainStep",
         "coins": 252
       },
       "setsFlag": "wm_highmere_market_chapter_done",
@@ -3839,7 +3837,7 @@
         }
       ],
       "reward": {
-        "xp": 3175,
+        "size": "standard",
         "coins": 252
       },
       "localStory": true
@@ -3880,7 +3878,7 @@
         }
       ],
       "reward": {
-        "xp": 11317,
+        "size": "actFinale",
         "coins": 279
       },
       "requiresAny": [
@@ -3920,7 +3918,7 @@
         }
       ],
       "reward": {
-        "xp": 11317,
+        "size": "actFinale",
         "coins": 279
       },
       "setsFlag": "wm_quarryend_chapter_done",
@@ -3954,7 +3952,7 @@
         }
       ],
       "reward": {
-        "xp": 4737,
+        "size": "standard",
         "coins": 279
       },
       "localStory": true
@@ -3995,7 +3993,7 @@
         }
       ],
       "reward": {
-        "xp": 7585,
+        "size": "chainStep",
         "coins": 252
       },
       "requiresAny": [
@@ -4035,7 +4033,7 @@
         }
       ],
       "reward": {
-        "xp": 7585,
+        "size": "chainStep",
         "coins": 252
       },
       "setsFlag": "wm_cinder_gate_chapter_done",
@@ -4070,7 +4068,7 @@
         }
       ],
       "reward": {
-        "xp": 3175,
+        "size": "standard",
         "coins": 252
       },
       "localStory": true
@@ -4111,7 +4109,7 @@
         }
       ],
       "reward": {
-        "xp": 11317,
+        "size": "chainFinale",
         "coins": 279
       },
       "requiresAny": [
@@ -4151,7 +4149,7 @@
         }
       ],
       "reward": {
-        "xp": 11317,
+        "size": "chainFinale",
         "coins": 279
       },
       "setsFlag": "wm_ashworks_chapter_done",
@@ -4185,7 +4183,7 @@
         }
       ],
       "reward": {
-        "xp": 4737,
+        "size": "standard",
         "coins": 279
       },
       "localStory": true
@@ -4226,7 +4224,7 @@
         }
       ],
       "reward": {
-        "xp": 9391,
+        "size": "chainFinale",
         "coins": 315
       },
       "requiresAny": [
@@ -4266,7 +4264,7 @@
         }
       ],
       "reward": {
-        "xp": 9391,
+        "size": "chainFinale",
         "coins": 315
       },
       "setsFlag": "wm_windscar_chapter_done",
@@ -4301,7 +4299,7 @@
         }
       ],
       "reward": {
-        "xp": 3931,
+        "size": "standard",
         "coins": 315
       },
       "localStory": true
@@ -4342,7 +4340,7 @@
         }
       ],
       "reward": {
-        "xp": 6690,
+        "size": "chainStep",
         "coins": 342
       },
       "requiresAny": [
@@ -4382,7 +4380,7 @@
         }
       ],
       "reward": {
-        "xp": 6690,
+        "size": "chainStep",
         "coins": 342
       },
       "setsFlag": "wm_high_pass_chapter_done",
@@ -4417,7 +4415,7 @@
         }
       ],
       "reward": {
-        "xp": 2800,
+        "size": "standard",
         "coins": 342
       },
       "localStory": true
@@ -4458,7 +4456,7 @@
         }
       ],
       "reward": {
-        "xp": 9391,
+        "size": "chainFinale",
         "coins": 315
       },
       "requiresAny": [
@@ -4498,7 +4496,7 @@
         }
       ],
       "reward": {
-        "xp": 9391,
+        "size": "chainFinale",
         "coins": 315
       },
       "setsFlag": "wm_furnace_camp_chapter_done",
@@ -4533,7 +4531,7 @@
         }
       ],
       "reward": {
-        "xp": 3931,
+        "size": "standard",
         "coins": 315
       },
       "localStory": true
@@ -4574,7 +4572,7 @@
         }
       ],
       "reward": {
-        "xp": 6690,
+        "size": "standard",
         "coins": 342
       },
       "requiresAny": [
@@ -4614,7 +4612,7 @@
         }
       ],
       "reward": {
-        "xp": 6690,
+        "size": "standard",
         "coins": 342
       },
       "setsFlag": "wm_ember_relay_chapter_done",
@@ -4648,7 +4646,7 @@
         }
       ],
       "reward": {
-        "xp": 2800,
+        "size": "standard",
         "coins": 342
       },
       "localStory": true
@@ -4689,7 +4687,7 @@
         }
       ],
       "reward": {
-        "xp": 7034,
+        "size": "chainStep",
         "coins": 360
       },
       "requiresAny": [
@@ -4729,7 +4727,7 @@
         }
       ],
       "reward": {
-        "xp": 7034,
+        "size": "chainStep",
         "coins": 360
       },
       "setsFlag": "wm_frostgate_chapter_done",
@@ -4764,7 +4762,7 @@
         }
       ],
       "reward": {
-        "xp": 2944,
+        "size": "standard",
         "coins": 360
       },
       "localStory": true
@@ -4805,7 +4803,7 @@
         }
       ],
       "reward": {
-        "xp": 7378,
+        "size": "chainStep",
         "coins": 378
       },
       "requiresAny": [
@@ -4845,7 +4843,7 @@
         }
       ],
       "reward": {
-        "xp": 7378,
+        "size": "chainStep",
         "coins": 378
       },
       "setsFlag": "wm_lantern_pass_chapter_done",
@@ -4879,7 +4877,7 @@
         }
       ],
       "reward": {
-        "xp": 3088,
+        "size": "standard",
         "coins": 378
       },
       "localStory": true
@@ -4920,7 +4918,7 @@
         }
       ],
       "reward": {
-        "xp": 7722,
+        "size": "chainStep",
         "coins": 396
       },
       "requiresAny": [
@@ -4960,7 +4958,7 @@
         }
       ],
       "reward": {
-        "xp": 7722,
+        "size": "chainStep",
         "coins": 396
       },
       "setsFlag": "wm_hearthwatch_chapter_done",
@@ -4995,7 +4993,7 @@
         }
       ],
       "reward": {
-        "xp": 3232,
+        "size": "standard",
         "coins": 396
       },
       "localStory": true
@@ -5036,7 +5034,7 @@
         }
       ],
       "reward": {
-        "xp": 7034,
+        "size": "chainStep",
         "coins": 360
       },
       "requiresAny": [
@@ -5076,7 +5074,7 @@
         }
       ],
       "reward": {
-        "xp": 7034,
+        "size": "chainStep",
         "coins": 360
       },
       "setsFlag": "wm_wellward_chapter_done",
@@ -5111,7 +5109,7 @@
         }
       ],
       "reward": {
-        "xp": 2944,
+        "size": "standard",
         "coins": 360
       },
       "localStory": true
@@ -5152,7 +5150,7 @@
         }
       ],
       "reward": {
-        "xp": 7378,
+        "size": "chainStep",
         "coins": 378
       },
       "requiresAny": [
@@ -5192,7 +5190,7 @@
         }
       ],
       "reward": {
-        "xp": 7378,
+        "size": "chainStep",
         "coins": 378
       },
       "setsFlag": "wm_caravan_rest_chapter_done",
@@ -5227,7 +5225,7 @@
         }
       ],
       "reward": {
-        "xp": 3088,
+        "size": "standard",
         "coins": 378
       },
       "localStory": true
@@ -5268,7 +5266,7 @@
         }
       ],
       "reward": {
-        "xp": 7722,
+        "size": "chainStep",
         "coins": 396
       },
       "requiresAny": [
@@ -5308,7 +5306,7 @@
         }
       ],
       "reward": {
-        "xp": 7722,
+        "size": "chainStep",
         "coins": 396
       },
       "setsFlag": "wm_dune_watch_chapter_done",
@@ -5342,7 +5340,7 @@
         }
       ],
       "reward": {
-        "xp": 3232,
+        "size": "standard",
         "coins": 396
       },
       "localStory": true
@@ -5383,7 +5381,7 @@
         }
       ],
       "reward": {
-        "xp": 7894,
+        "size": "chainStep",
         "coins": 405
       },
       "requiresAny": [
@@ -5423,7 +5421,7 @@
         }
       ],
       "reward": {
-        "xp": 7894,
+        "size": "chainStep",
         "coins": 405
       },
       "setsFlag": "wm_whitebough_chapter_done",
@@ -5458,7 +5456,7 @@
         }
       ],
       "reward": {
-        "xp": 3304,
+        "size": "standard",
         "coins": 405
       },
       "localStory": true
@@ -5499,7 +5497,7 @@
         }
       ],
       "reward": {
-        "xp": 4076,
+        "size": "standard",
         "coins": 423
       },
       "requiresAny": [
@@ -5539,7 +5537,7 @@
         }
       ],
       "reward": {
-        "xp": 4076,
+        "size": "standard",
         "coins": 423
       },
       "setsFlag": "wm_last_beacon_chapter_done",
@@ -5573,7 +5571,7 @@
         }
       ],
       "reward": {
-        "xp": 1706,
+        "size": "errand",
         "coins": 423
       },
       "localStory": true
@@ -5614,7 +5612,7 @@
         }
       ],
       "reward": {
-        "xp": 7894,
+        "size": "chainStep",
         "coins": 405
       },
       "requiresAny": [
@@ -5654,7 +5652,7 @@
         }
       ],
       "reward": {
-        "xp": 7894,
+        "size": "chainStep",
         "coins": 405
       },
       "setsFlag": "wm_saltroad_chapter_done",
@@ -5689,7 +5687,7 @@
         }
       ],
       "reward": {
-        "xp": 3304,
+        "size": "standard",
         "coins": 405
       },
       "localStory": true
@@ -5730,7 +5728,7 @@
         }
       ],
       "reward": {
-        "xp": 4076,
+        "size": "standard",
         "coins": 423
       },
       "requiresAny": [
@@ -5770,7 +5768,7 @@
         }
       ],
       "reward": {
-        "xp": 4076,
+        "size": "standard",
         "coins": 423
       },
       "setsFlag": "wm_glass_road_chapter_done",
@@ -5805,7 +5803,7 @@
         }
       ],
       "reward": {
-        "xp": 1706,
+        "size": "errand",
         "coins": 423
       },
       "localStory": true
@@ -5846,7 +5844,7 @@
         }
       ],
       "reward": {
-        "xp": 4162,
+        "size": "standard",
         "coins": 432
       },
       "requiresAny": [
@@ -5886,7 +5884,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 432
       },
       "setsFlag": "wm_north_ledger_gate_chapter_done",
@@ -5921,7 +5918,7 @@
         }
       ],
       "reward": {
-        "xp": 1742,
+        "size": "errand",
         "coins": 432
       },
       "localStory": true
@@ -5962,7 +5959,7 @@
         }
       ],
       "reward": {
-        "xp": 4162,
+        "size": "standard",
         "coins": 432
       },
       "requiresAny": [
@@ -6002,7 +5999,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 432
       },
       "setsFlag": "wm_sunseal_court_chapter_done",
@@ -6036,7 +6032,7 @@
         }
       ],
       "reward": {
-        "xp": 1742,
+        "size": "errand",
         "coins": 432
       },
       "localStory": true
@@ -6076,7 +6072,7 @@
         }
       ],
       "reward": {
-        "xp": 1778,
+        "size": "standard",
         "coins": 300
       },
       "localStory": true
@@ -6116,7 +6112,7 @@
         }
       ],
       "reward": {
-        "xp": 1778,
+        "size": "standard",
         "coins": 300
       },
       "localStory": true
@@ -6156,7 +6152,7 @@
         }
       ],
       "reward": {
-        "xp": 2128,
+        "size": "standard",
         "coins": 360
       },
       "localStory": true
@@ -6196,7 +6192,7 @@
         }
       ],
       "reward": {
-        "xp": 2828,
+        "size": "standard",
         "coins": 480
       },
       "localStory": true
@@ -6236,7 +6232,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 600
       },
       "localStory": true
@@ -6276,7 +6271,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 600
       },
       "localStory": true
@@ -6316,7 +6310,6 @@
         }
       ],
       "reward": {
-        "xp": 0,
         "coins": 600
       },
       "localStory": true
