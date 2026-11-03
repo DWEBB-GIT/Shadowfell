@@ -227,10 +227,14 @@ func _refresh_overhead(force := false) -> void:
 	var jumped := at.distance_to(_captured_at) > 8.0
 	if not force and not jumped and is_equal_approx(scale, _capture_scale) and _capture_age < CAPTURE_INTERVAL:
 		return
-	_captured_at = at
 	_capture_scale = scale
 	_capture_age = 0.0
 	var span := CAPTURE_PIXELS / scale
+	# Snap the capture centre to the texel grid so every new capture samples
+	# the ground at the same sub-pixel phase; unsnapped, each recapture
+	# shifted the whole image by a fraction of a pixel (the run judder).
+	var texel := 1.0 / scale
+	var snapped_at := (at / texel).round() * texel
 	# Stay above nearby ridges as well as the player. The orthographic
 	# projection keeps scale identical at every ground height.
 	var peak := p.y
@@ -238,10 +242,16 @@ func _refresh_overhead(force := false) -> void:
 		for z in [-0.5, 0.0, 0.5]:
 			peak = maxf(peak, Terrain.height_at(p.x + x * span, p.z + z * span))
 	overhead_camera.size = span
-	overhead_camera.position = Vector3(p.x, peak + 64.0, p.z)
+	overhead_camera.position = Vector3(snapped_at.x, peak + 64.0, snapped_at.y)
 	overhead_camera.near = 0.1
 	overhead_camera.far = maxf(1024.0, overhead_camera.position.y + 256.0)
 	terrain_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	# Only move the drawn image once the new capture has actually rendered,
+	# so the old picture is never drawn at the new centre for a frame.
+	if _captured_at.x == INF:
+		_captured_at = snapped_at
+	else:
+		RenderingServer.frame_post_draw.connect(func(): _captured_at = snapped_at, CONNECT_ONE_SHOT)
 
 
 ## Shared coordinates for overlay markers: east right, north up.
