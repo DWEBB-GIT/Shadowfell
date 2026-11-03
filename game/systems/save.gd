@@ -145,6 +145,9 @@ static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
 			if typeof(s) == TYPE_DICTIONARY and typeof(s.get("slots")) == TYPE_ARRAY:
 				check.call(s.slots.all(func(x): return x == null or _is_stack(x)), "contents of bag %d" % i)
+	# the bank (Bank): saves from before it have none
+	var bk = inv.get("bank")
+	check.call(bk == null or (typeof(bk) == TYPE_ARRAY and bk.all(func(x): return x == null or _is_stack(x))), "contents of the bank")
 	var eq = inv.get("equipment")
 	check.call(typeof(eq) == TYPE_DICTIONARY, "equipment")
 	if typeof(eq) == TYPE_DICTIONARY:

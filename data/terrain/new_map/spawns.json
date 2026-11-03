@@ -2115,6 +2115,14 @@
 	  "facing": 225
 	},
 	{
+	  "npc": "banker",
+	  "position": [
+		-442,
+		-214
+	  ],
+	  "facing": 180
+	},
+	{
 	  "npc": "agna",
 	  "position": [
 		266.75,

@@ -370,7 +370,7 @@ static func _loops(s: DataStore, id, path: Array, checked: Dictionary) -> bool:
 
 static func _npcs(s: DataStore, out: PackedStringArray) -> void:
 	var seen := {}
-	var icons := ["vendor", "blacksmith", "fishing", "cooking", "innkeeper", "trainer", "tanner"]
+	var icons := ["vendor", "blacksmith", "fishing", "cooking", "innkeeper", "trainer", "tanner", "banker"]
 	for n in s.npcs:
 		var id := str(n.get("id", ""))
 		var bad := func(msg): out.append("NPC %s: %s" % [id, msg])

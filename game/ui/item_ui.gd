@@ -50,6 +50,7 @@ var runeforge: Dictionary ## the rune forge window (RuneForge)
 var refining: Dictionary ## the refining window (Refinery)
 var craft_skill := "cooking" ## whose recipes the crafting window shows
 var shop: Dictionary
+var bank_win: Dictionary ## the bank vault (Bank)
 var tooltip: HBoxContainer
 var ghost: TextureRect
 var sockets: HBoxContainer ## the bag slots in the bottom-right dock (the HUD makes the box)
@@ -90,6 +91,19 @@ func _init(g, h) -> void:
 		if shop_opened_bags:
 			open_bags.clear()
 		shop_opened_bags = false
+		_after_change(null))
+	# the bank opens your bags beside it, as a shop does
+	ev.on("bankOpened", func(_e):
+		if not bags_open:
+			shop_opened_bags = true
+			for i in _sockets():
+				open_bags[i] = true
+		focus = null
+		_after_change("bank"))
+	ev.on("bankClosed", func(_e):
+		if shop_opened_bags and game.merchant.current == null:
+			open_bags.clear()
+			shop_opened_bags = false
 		_after_change(null))
 	# so does talking to anyone who sells (Dan, 2026-10-29), before you
 	# pick Browse goods; walking off or Goodbye closes them again
@@ -174,11 +188,12 @@ func _build() -> void:
 	shop.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	shop.head.add_child(shop.sub)
 	shop.head.move_child(shop.sub, 1)
+	bank_win = UI.window(self, "Bank", 0, func(): game.bank.close())
 	_build_settings()
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop, bank_win]:
 		w.panel.visible = false
 	# drag any window by its title bar; it stays where you leave it
-	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop}
+	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop, "bank": bank_win}
 	for id in named:
 		_draggable(id, named[id])
 	var saved_at = Store.get_item(WINDOWS_KEY)
@@ -325,7 +340,7 @@ func _show_settings_tab() -> void:
 # ------------------------------------------------------------------ state
 var any_open: bool:
 	get:
-		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or open.runeforge or open.refining or game.merchant.current != null
+		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or open.runeforge or open.refining or game.merchant.current != null or game.bank.is_open
 
 var bags_open: bool:
 	get:
@@ -410,6 +425,7 @@ func close_all() -> bool:
 		open[k] = false
 	shop_opened_bags = false
 	game.merchant.close()
+	game.bank.close()
 	_after_change(null)
 	return was
 
@@ -431,7 +447,7 @@ func _after_change(which) -> void:
 
 ## a window's outer node, to raise it over the others
 func _window_node(which: String) -> Control:
-	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop}.get(which)
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop, "bank": bank_win}.get(which)
 	if which == "bags":
 		return bags
 	return w.panel if w != null else null
@@ -507,6 +523,15 @@ func _context(loc: String) -> void:
 		return
 	if _shop_click(loc):
 		return
+	# with the bank open, right-click moves a stack across (WoW)
+	if game.bank.is_open and loc.begins_with("v:"):
+		game.inventory.withdraw(loc)
+		return
+	if game.bank.is_open and loc.begins_with("b:"):
+		game.inventory.deposit(loc)
+		return
+	if loc.begins_with("v:"):
+		return
 	# with a shop open, right-clicking something you carry sells it (WoW)
 	if game.merchant.current != null and (loc.begins_with("b:") or loc.begins_with("e:")):
 		game.merchant.sell(loc)
@@ -573,6 +598,7 @@ func render() -> void:
 	_render_bags(inv)
 	_render_character(inv)
 	_render_shop(inv)
+	_render_bank(inv)
 	_render_talents()
 	_render_cooking()
 	_render_runeforge()
@@ -1014,6 +1040,28 @@ func _render_shop(inv) -> void:
 	UI.set_rich(coins, UI.money(inv.coins))
 	var h := UI.hint(w.body)
 	h.text = "A: buy   Y on a bag item: sell   B: leave" if hud.pad_mode else "Click to buy. Right-click (or drag here) anything in your bags to sell it."
+
+
+## The bank vault: a grid of slots, drag or right-click to move stacks
+## between it and your bags.
+func _render_bank(inv) -> void:
+	var w := bank_win
+	w.panel.visible = game.bank.is_open
+	if not game.bank.is_open:
+		return
+	UI.clear(w.body)
+	var used: int = inv.bank.filter(func(x): return x != null).size()
+	var sub := UI.label(w.body, "%d / %d slots used" % [used, inv.bank.size()], 12, UI.TEXT_DIM)
+	sub.add_theme_constant_override("line_spacing", 0)
+	var grid := GridContainer.new()
+	grid.columns = int(DB.CONFIG.bank.columns)
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	w.body.add_child(grid)
+	for i in inv.bank.size():
+		_slot(grid, "v:%d" % i, inv.bank[i])
+	var h := UI.hint(w.body)
+	h.text = "X: move between bank and bags   A: pick up   B: leave" if hud.pad_mode else "Drag, or right-click, to move items\nbetween your bank and bags."
 
 
 ## what the junk in your bags would fetch here
@@ -1524,6 +1572,8 @@ func layout() -> void:
 		_fit(character.panel, Vector2(12, hud.WINDOW_TOP))
 	if shop.panel.visible:
 		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
+	if bank_win.panel.visible:
+		_fit(bank_win.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
@@ -2095,6 +2145,10 @@ func _up(at: Vector2) -> void:
 		game.merchant.sell(d.from)
 		return
 	var to = _slot_at(at)
+	# dropped on the bank window (not on a slot): into the vault
+	if to == null and game.bank.is_open and _over(bank_win.panel, at) and d.from.begins_with("b:"):
+		game.inventory.deposit(d.from)
+		return
 	dropOn(d.from, to, _over(hud.action_bar, at), _over_window(at))
 
 
@@ -2103,7 +2157,7 @@ func _over(c: Control, at: Vector2) -> bool:
 
 
 func _over_window(at: Vector2) -> bool:
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop, bank_win]:
 		if _over(w.panel, at):
 			return true
 	for f in bags.get_children():
@@ -2153,6 +2207,8 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 	if to == "r:item":
 		game.refinery.put(from)
 		return
+	if to != null and to.begins_with("a:") and from.begins_with("v:"):
+		return # take it out of the bank first
 	if to != null and to.begins_with("a:"):
 		# anything usable (a draught, a torch, lockpicks) goes on as an item
 		var stack = inv.get_at(from)
@@ -2171,7 +2227,7 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 
 
 # ------------------------------------------------------------------ gamepad
-const _NAV_ORDER := ["m:", "y:", "b:", "e:", "k:", "s:", "a:"]
+const _NAV_ORDER := ["m:", "y:", "v:", "b:", "e:", "k:", "s:", "a:"]
 
 
 ## every slot on screen, windows first and the spell bar last
@@ -2200,6 +2256,8 @@ func _default_focus(which) -> Variant:
 		return pick.call("k:")
 	if which == "shop" and game.merchant.current != null:
 		return pick.call("m:")
+	if which == "bank" and game.bank.is_open:
+		return pick.call("v:")
 	var b = pick.call("b:")
 	if b != null:
 		return b
@@ -2264,7 +2322,7 @@ func gamepad(pad, dt: float) -> void:
 	if pad.pressed(B.LB) or pad.pressed(B.RB):
 		# cycle the highlight between the open windows and the spell bar
 		var locs := _visible_locs()
-		var groups := ["m:", "b:", "e:", "k:", "a:"].filter(func(p): return locs.any(func(l): return l.begins_with(p)))
+		var groups := ["m:", "v:", "b:", "e:", "k:", "a:"].filter(func(p): return locs.any(func(l): return l.begins_with(p)))
 		var cur := -1
 		for i in groups.size():
 			if focus != null and focus.begins_with(groups[i]):
@@ -2297,7 +2355,12 @@ func gamepad(pad, dt: float) -> void:
 		render()
 	if pad.pressed(B.X) and focus != null and not is_spell.call(focus) and not shop_loc.call(focus):
 		carry = null
-		inv.use(focus)
+		if game.bank.is_open and focus.begins_with("v:"):
+			inv.withdraw(focus)
+		elif game.bank.is_open and focus.begins_with("b:"):
+			inv.deposit(focus)
+		elif not focus.begins_with("v:"):
+			inv.use(focus)
 	if pad.pressed(B.Y):
 		var loc = carry if carry != null else focus
 		carry = null

@@ -31,6 +31,7 @@ var stock: Array:
 
 
 func open(id: String, n) -> void:
+	game.bank.close()
 	current = id
 	npc = n
 	game.events.emit("merchantOpened", {"id": id})

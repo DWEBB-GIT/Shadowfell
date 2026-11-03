@@ -1777,6 +1777,14 @@
         431.0
       ],
       "facing": 225
+    },
+    {
+      "npc": "banker",
+      "position": [
+        -612.0,
+        455.0
+      ],
+      "facing": 180
     }
   ],
   "enemySpawns": [

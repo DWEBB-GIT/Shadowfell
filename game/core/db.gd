@@ -32,6 +32,9 @@ const CONFIG := {
 		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
+	# a banker npc (`banker`) opens your bank vault: `slots` places, kept per
+	# character, shared by no one (Dan, 2026-11-03); walking `leaveRange` m off shuts it
+	"bank": {"slots": 28, "columns": 7, "leaveRange": 6.0},
 	"death": {
 		# your bags and coins wait in a grave for graveSeconds of play, then
 		# `scavengers` carry them off; each revival leaves a wound (-woundHealth%
