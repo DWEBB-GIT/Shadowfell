@@ -284,7 +284,9 @@ func _bind() -> void:
 		else:
 			sfx("pickup"))
 	ev.on("coins", func(e):
-		if e.get("amount", 0) > 0:
+		if e.get("sold"):
+			sfx("gold") # coins counted across the counter
+		elif e.get("amount", 0) > 0:
 			coin_frame = Engine.get_process_frames()
 			sfx("loot_gold")
 		elif e.get("amount", 0) < 0 and not e.get("bought"):
