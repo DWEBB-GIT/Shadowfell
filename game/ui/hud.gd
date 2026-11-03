@@ -1209,14 +1209,14 @@ func log_line(text: String, kind := "", throttle = null, rarity = null) -> void:
 			c.queue_free()
 
 
-## which tab a line belongs on: General has everything
+## which tab a line belongs on: General has everything but the combat lines
 static func log_shows(tab: String, kind: String, rarity) -> bool:
 	match tab:
 		"combat":
 			return kind in COMBAT_KINDS
 		"loot":
 			return kind in LOOT_KINDS or rarity != null
-	return true
+	return not kind in COMBAT_KINDS
 
 
 func _log_label(entry: Array) -> void:

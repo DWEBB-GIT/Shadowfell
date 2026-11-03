@@ -754,7 +754,14 @@ func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
 		return null
-	if keys_move.x or keys_move.z or (player.dead and not player.ghost):
+	if player.dead and not player.ghost:
+		move_to = null
+		return null
+	if keys_move.x or keys_move.z:
+		# keys steer while held; a mouse button still held down picks the
+		# walk back up once they let go (Dan, 2026-11-03)
+		if m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld):
+			return null
 		move_to = null
 		return null
 	var p := player.position
