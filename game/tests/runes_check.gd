@@ -183,7 +183,7 @@ func _refining_window() -> void:
 	_ok(rf.preview().get("itemLevel", 0) == before + 1 and rf.cost().rank == 1, "the window shows the next rank's item level")
 	var rnd = game.random
 	game.random = func(): return 0.0
-	_ok(rf.refine() and rf.channel != null and rf.bar() != null, "Refine starts the weave (cast bar shown)")
+	_ok(rf.refine() and rf.channel != null and rf.bar() != null, "Refine starts (cast bar shown)")
 	rf.update(1.0)
 	_ok(Items.temper_of(inv.get_at(loc)) == 0, "it takes a moment")
 	rf.update(Refinery.CHANNEL)

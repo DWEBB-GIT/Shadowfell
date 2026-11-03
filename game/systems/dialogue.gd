@@ -255,7 +255,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 	var back := {"id": "menu", "text": "Back", "icon": "back"}
 	match v.kind:
 		"enchant":
-			pg.text = "Each rank I weave in is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring stones for the piece's level, and coin. The weave does not always take; when it slips you lose only the stones, and the piece remembers the try."
+			pg.text = "Each rank I add is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring me Fellstones. A refine does not always take; when it fails you lose only the stones, and the piece remembers the try."
 			for loc in fg.gear_locations():
 				var st = inv.get_at(loc)
 				var cost: Dictionary = fg.temper_cost(st)
@@ -265,7 +265,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 			if pg.options.is_empty():
 				pg.text += "\n\nNothing you carry will take refining. Plain gear has no magic to wake, and the rest holds all it can."
 		"scrap":
-			pg.text = "I'll break it down and draw the stones back out. You get three in four of the Fellstones that took, none of those lost to a slipped weave, and every gem in it. The rest is ash. I'll tell you what you'll get first."
+			pg.text = "I'll break it down and draw the stones back out. You get three in four of the Fellstones that took, none of those lost to a failed refine, and every gem in it. The rest is ash. I'll tell you what you'll get first."
 			for loc in fg.gear_locations():
 				if not fg.scrap_preview(inv.get_at(loc)).is_empty():
 					pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})

@@ -4,7 +4,7 @@ extends RefCounted
 ## panel: drop a piece of gear into the slot, see what the next rank gives
 ## (item level, damage and stats before and after), what it costs and its
 ## chance, and press Refine. A short channel, then a flash: gold when the
-## weave takes, a grey-violet puff when it slips. Forge.temper does the work.
+## refine takes, a grey-violet puff when it fails. Forge.temper does the work.
 ##
 ## Opened at a refining altar (station kind `refining`) or from a Refiner's
 ## "Refine gear". Like the rune forge, the slot holds a reference to a stack
@@ -135,7 +135,7 @@ func blocked() -> String:
 	if not game.forge.affordable(cost()):
 		return "You don't have what this needs."
 	if channel != null:
-		return "The weave is already at work."
+		return "Already refining."
 	if not near():
 		return "You are too far away."
 	return ""
@@ -188,7 +188,7 @@ func update(dt: float) -> void:
 	var shown: bool = game.hud.items.open.get(KIND, false)
 	if not near() or player.dead or not shown:
 		if channel != null:
-			stop("The weave unravels.")
+			stop("The refine is interrupted.")
 		if shown and not near():
 			game.hud.items.close(KIND)
 		close()
