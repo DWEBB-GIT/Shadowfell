@@ -10,6 +10,8 @@ extends RefCounted
 var game
 var values := {}
 var mana := 0.0
+var _regen_shown := 0.0 ## health regen since the last green number
+var _regen_clock := 0.0
 var since_combat := INF
 var was_fighting := false
 var since_hit := INF
@@ -245,7 +247,14 @@ func update(dt: float) -> void:
 	# ststanding still 
 	if not fighting and since_combat > HEALTH_REGEN_DELAY and player.health < player.max_health:
 		var rate: float = HEALTH_REGEN_PERCENT * (1.0 if player.moving else HEALTH_REGEN_STILL)
-		player.health = minf(player.max_health, player.health + player.max_health * rate * dt / 100.0)
+		_regen_shown += player.heal(player.max_health * rate * dt / 100.0)
+	# regen shows as one green number a second, not a flicker per frame
+	_regen_clock += dt
+	if _regen_clock >= 1.0:
+		_regen_clock = 0.0
+		if _regen_shown >= 1:
+			game.events.emit("damageNumber", {"target": player, "amount": U.jround(_regen_shown), "kind": "heal"})
+			_regen_shown = fmod(_regen_shown, 1.0)
 	# Overcorrupted: health bleeds away until the bar drops (never below 1)
 	var o = overload
 	if o:
