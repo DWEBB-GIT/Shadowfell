@@ -1925,7 +1925,8 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	var rune := Runes.def(Runes.of(stack))
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
-	if def.get("rune"):
+	# only on the rune item itself, never on a weapon it was fused to
+	if def.get("rune") and not Items.ROLLED_KINDS.has(def.kind) and rune.is_empty():
 		lines.append(_l("Fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
 	if def.get("bagSlots"):
 		lines.append(_l("%s slots" % U.n(def.bagSlots)))
