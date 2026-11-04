@@ -39,6 +39,9 @@ var tracker_collapsed := false
 const TRACKER_W := 236.0
 var _way: RichTextLabel ## the way to the followed quest, under it in the tracker
 var _way_text := ""
+var _way_arrow: Control ## the small turned arrow in front of the way line
+var _way_angle := 0.0 ## clockwise from north (up the map), radians
+var _way_here := false
 var _way_t := 0.0
 var log_list_scroll: ScrollContainer
 var log_list: VBoxContainer
@@ -173,8 +176,25 @@ func _objectives(objs: Array) -> String:
 func _steps(objs: Array) -> String:
 	var out := []
 	for o in objs:
-		out.append("[color=#8cbf78]  ✓ %s[/color]" % UI.esc(Quests.line(o)) if o.done else "[color=#6e6250]  ▢[/color] [color=%s]%s[/color]" % [UI.hex(UI.TEXT), UI.esc(Quests.line(o))])
+		out.append("  %s [color=#8cbf78]%s[/color]" % [_tick(), UI.esc(Quests.line(o))] if o.done else "[color=#6e6250]  ▢[/color] [color=%s]%s[/color]" % [UI.hex(UI.TEXT), UI.esc(Quests.line(o))])
 	return "[font_size=12]%s[/font_size]" % "\n".join(out)
+
+
+## a done step's tick: Dan's gold tick (assets/icons/ui/tracker_tick.png)
+func _tick() -> String:
+	return "{art:ui/tracker_tick:13}" if Icons.art("ui", "tracker_tick") else "[color=#8cbf78]✓[/color]"
+
+
+## a ready quest's mark, left of its name like the steps' ticks: the same
+## gold ? that shows over the hand-in NPC
+func _ready_mark() -> String:
+	return "{art:map/quest_ready:15} " if Icons.art("map", "quest_ready") else "[font_size=13][color=#8cbf78]✓ [/color][/font_size]"
+
+
+## the followed quest's mark: the gold goal gem the minimap and world map
+## put on its goal, so the two read as one
+func _follow_mark() -> String:
+	return "{art:map/quest_goal:15} " if Icons.art("map", "quest_goal") else "◆ "
 
 
 func _sub(text: String) -> String:
@@ -551,6 +571,7 @@ func render_tracker() -> void:
 	var ql = game.quests
 	UI.clear(tracker_box)
 	_way = null
+	_way_arrow = null
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
 	tracker.visible = not ids.is_empty()
 	var head := UI.hbox(tracker_box, 6)
@@ -576,9 +597,9 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name), " [font_size=10][color=#8cbf78](Complete)[/color][/font_size]" if s == "ready" else ""]
+		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused else "", UI.esc(q.name)]
 		if s == "ready":
-			text += "[font_size=12][color=#ffd23c]  ➜ Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
+			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
 			text += _steps(ql.objectives(id))
 		var row := UI.hbox(tracker_box, 2)
@@ -606,7 +627,16 @@ func render_tracker() -> void:
 				selected = id
 				toggle_log(true))
 		if focused:
-			_way = UI.rich(tracker_box, 12, TRACKER_W - 22)
+			# the way line: the minimap's player arrow, small, turned to the goal
+			var way_row := UI.hbox(tracker_box, 4)
+			UI.gap(way_row, 0, 12)
+			_way_arrow = Control.new()
+			_way_arrow.custom_minimum_size = Vector2(14, 14)
+			_way_arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			_way_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_way_arrow.draw.connect(_draw_way_arrow)
+			way_row.add_child(_way_arrow)
+			_way = UI.rich(way_row, 12, TRACKER_W - 40)
 			_outline(_way)
 			_way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_way_text = ""
@@ -634,23 +664,46 @@ func _update_way() -> void:
 		return
 	var at: Dictionary = game.quests.goal(game.quests.focus) if game.quests.focus != "" else {}
 	var text := ""
+	if _way_arrow and is_instance_valid(_way_arrow):
+		_way_arrow.visible = not at.is_empty()
 	if at.is_empty():
-		text = "[color=#9a8f78]    No place to point to.[/color]"
+		text = "[color=#9a8f78]No place to point to.[/color]"
 	else:
 		var p: Vector3 = game.player.position
 		var dx: float = at.x - p.x
 		var dz: float = at.z - p.z
 		var d := maxf(0, U.hyp(dx, dz) - at.r)
 		if d < 4:
-			text = "[color=#fff0a0]    ➜ %s · here[/color]" % UI.esc(at.label)
+			text = "[color=#fff0a0]%s · here[/color]" % UI.esc(at.label)
 		else:
 			# north is up the map, which is -z
-			var i := posmod(roundi(atan2(dx, -dz) / (TAU / 8)), 8)
-			text = "[color=#fff0a0]    ➜ %s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+			var ang := atan2(dx, -dz)
+			var i := posmod(roundi(ang / (TAU / 8)), 8)
+			text = "[color=#fff0a0]%s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+			if _way_arrow and is_instance_valid(_way_arrow) and (absf(angle_difference(ang, _way_angle)) > 0.02 or _way_here):
+				_way_angle = ang
+				_way_here = false
+				_way_arrow.queue_redraw()
+		if d < 4 and not _way_here and _way_arrow and is_instance_valid(_way_arrow):
+			_way_here = true
+			_way_arrow.queue_redraw()
 	if text != _way_text:
 		_way_text = text
 		UI.set_rich(_way, "[font_size=12]%s[/font_size]" % text)
 		tracker.size = tracker.get_combined_minimum_size()
+
+
+## the minimap's player arrow (assets/icons/map/player.png), turned to the
+## goal; the quest goal diamond once you are there
+func _draw_way_arrow() -> void:
+	var c := _way_arrow.size / 2
+	var tex := Icons.art("map", "quest_goal" if _way_here else "player")
+	_way_arrow.draw_set_transform(c, 0.0 if _way_here else _way_angle)
+	if tex:
+		_way_arrow.draw_texture_rect(tex, Rect2(-c, _way_arrow.size), false)
+	elif not _way_here:
+		_way_arrow.draw_colored_polygon(PackedVector2Array([Vector2(0, -6), Vector2(4.5, 5), Vector2(0, 2.5), Vector2(-4.5, 5)]), Color("#fff0a0"))
+	_way_arrow.draw_set_transform(Vector2.ZERO)
 
 
 # ------------------------------------------------- ! and ? over heads

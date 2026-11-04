@@ -293,6 +293,30 @@ static func square_button(parent: Node, text: String, cb := Callable(), px := 22
 	return b
 
 
+## a window's close button: red, with a white × on top so it stands out
+## (Dan, 2026-11-04)
+static func close_button(parent: Node, cb := Callable(), px := 22) -> Button:
+	var b := button(parent, "×", cb, 16)
+	b.add_theme_font_override("font", bold)
+	for st in [["normal", Color("#a8231c")], ["hover", Color("#d0342a")], ["pressed", Color("#7a1712")]]:
+		var f := StyleBoxFlat.new()
+		f.bg_color = st[1]
+		f.border_color = Color("#2a0806")
+		f.set_border_width_all(2)
+		f.set_corner_radius_all(4)
+		f.set_content_margin_all(0)
+		b.add_theme_stylebox_override(st[0], f)
+	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(c, Color.WHITE)
+	b.add_theme_constant_override("outline_size", 3)
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	b.tooltip_text = "Close"
+	b.custom_minimum_size = Vector2(px, px)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return b
+
+
 static func button(parent: Node, text: String, cb := Callable(), size := 12) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -372,12 +396,13 @@ static func fit_steady(c: Control, stay_shown := false) -> Vector2:
 	return s
 
 
-const _TOKEN := "\\{(gold|silver|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
+const _TOKEN := "\\{(gold|silver|art:[^}]+|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
 static var _token_re: RegEx
 
 
 ## Fill rich text from BBCode with icon tokens: {gold} and {silver} coins,
-## {item:<id>:<px>} an item's icon, {ability:<id>:<px>} a spell's.
+## {item:<id>:<px>} an item's icon, {ability:<id>:<px>} a spell's,
+## {art:<group>/<id>:<px>} one of Dan's painted icons (assets/icons).
 static func set_rich(r: RichTextLabel, s: String) -> void:
 	r.clear()
 	if _token_re == null:
@@ -393,6 +418,11 @@ static func set_rich(r: RichTextLabel, s: String) -> void:
 			tex = coin(tok)
 			if Icons.art("ui", "coin_" + tok):
 				px = 14
+		elif tok.begins_with("art:"):
+			var parts := tok.split(":")
+			var gid := parts[1].split("/")
+			px = int(parts[2]) if parts.size() > 2 else 14
+			tex = Icons.art(gid[0], gid[1]) if gid.size() == 2 else null
 		elif icons:
 			var parts := tok.split(":")
 			px = int(parts[2]) if parts.size() > 2 else 26
@@ -468,7 +498,7 @@ static func window(parent: Node, title: String, width := 0.0, on_close := Callab
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var close: Button = null
 	if on_close.is_valid():
-		close = square_button(head, "×", on_close)
+		close = close_button(head, on_close)
 	rule(v)
 	var body := vbox(v, 6)
 	return {"panel": p, "body": body, "head": head, "title": t, "close": close}

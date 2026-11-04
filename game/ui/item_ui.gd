@@ -766,7 +766,7 @@ func _render_bags(inv) -> void:
 				used += 1
 		UI.label(head, "%d/%d" % [used, s.slots.size()], 13, UI.TEXT_DIM)
 		var bag: int = i
-		UI.square_button(head, "×", func(): toggle_bag(bag))
+		UI.close_button(head, func(): toggle_bag(bag))
 		UI.rule(v)
 		var grid := GridContainer.new()
 		grid.columns = 4
