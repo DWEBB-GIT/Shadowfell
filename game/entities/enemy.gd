@@ -60,6 +60,7 @@ func _init(g, spawn: Dictionary) -> void:
 	id = spawn.id
 	type = spawn.type
 	cfg = DB.enemy_cfg_at(type, id, int(spawn.get("level", 0)))
+	active_hours = spawn.get("activeHours", DB.enemies.get(type, {}).get("activeHours"))
 	home = Vector3(spawn.position[0], 0, spawn.position[1])
 	position = home
 	position.y = Terrain.height_at(position.x, position.z)
@@ -85,6 +86,11 @@ func _init(g, spawn: Dictionary) -> void:
 	if cfg.get("tint"):
 		Rig.tint(materials, Color(cfg.tint))
 	_sync()
+
+
+## the hours it is abroad ([from, to], e.g. [21, 5] for night only), or null
+## for always: the spawn's `activeHours`, else its enemy type's (Enemies)
+var active_hours = null
 
 
 var alive: bool:

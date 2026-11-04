@@ -41,6 +41,8 @@ func wake(npc_id: String) -> void:
 	var prog = game.progression
 	var cap: float = prog.xp_to_next * DB.CONFIG.camp.restedCap
 	prog.rested = minf(cap, prog.rested + prog.xp_to_next * cfg.restedShare)
+	# the world clock is shared (a server's, in multiplayer), so a bed mends
+	# you but never moves the hour (Dan, 2026-11-04)
 	game.world_state.rest_point = "inn:" + npc_id
 	game.events.emit("innRest", {"npc": npc_id})
 	game.events.emit("statsChanged", {})

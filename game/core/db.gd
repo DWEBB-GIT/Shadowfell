@@ -49,6 +49,21 @@ const CONFIG := {
 	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
 	# of a level of rested experience, and the inn as your rest point
 	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
+	# The world clock (WorldState.hour, saved with the world): a whole day
+	# passes in `dayMinutes` real minutes of play; a new world starts at
+	# `startHour`. It is a fact of the shared world: nothing one player does
+	# moves it (a bed mends you but the night goes on), so a server can own it
+	# and every client sees the dark fall together. DayNight turns the hour into the light: the sun rises in the
+	# east at 6 and sets in the west at 18; at night a dim blue moon
+	# (`moonlight`, a share of the sun) and `nightAmbient` of the day's fill.
+	"clock": {"dayMinutes": 48.0, "startHour": 9.0, "moonlight": 0.3, "nightAmbient": 0.55},
+	# Townsfolk routines (npcs.json `routine`, Npcs): walk at `walkSpeed`
+	# m/s; the inn they use is the nearest one (a building with `rest`) within
+	# `innRange` metres of their post, home the nearest house within
+	# `homeRange` (a spawn's own `home` [x, z] beats that). Each person keeps
+	# the hours a little early or late, up to `spread` hours, so a town does
+	# not move as one.
+	"routine": {"walkSpeed": 1.5, "innRange": 160.0, "homeRange": 70.0, "spread": 0.4},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
 	# XP to the next level = the baseline minutes the level 1-50 pacing plan
 	# gives it (docs/quest-design/level-50-pacing.csv, 60 hours) x `pace` x the
@@ -140,6 +155,7 @@ static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
 static var rarities := {} ## in order, lowest first (Dictionary keeps insertion order)
 static var npcs := {}
+static var routines := {} ## npcs.json routines: daily timetables townsfolk keep (Npcs)
 static var vendor_types := {}
 static var shops := {}
 static var quests := {}
@@ -228,6 +244,7 @@ static func setup(data) -> void:
 	world_drops = data.table("worldDrops").values()
 	rarities = data.table("rarities")
 	npcs = data.table("npcs")
+	routines = data.table("routines")
 	vendor_types = data.table("vendorTypes")
 	shops = data.table("shops")
 	quests = data.table("quests")

@@ -38,3 +38,6 @@ jobs:
 
       - name: Saves survive renamed and removed content
         run: ./godot --headless --path . --script res://game/tests/save_renames_check.gd
+
+      - name: Townsfolk routines and the world clock
+        run: ./godot --headless --path . --script res://game/tests/routine_check.gd

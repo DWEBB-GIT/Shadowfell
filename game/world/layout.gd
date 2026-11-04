@@ -42,7 +42,10 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 		npcs.append(m)
 	enemies = []
 	for sp in w.enemySpawns:
-		enemies.append({"id": sp.id, "type": sp.enemy, "position": sp.position})
+		var e := {"id": sp.id, "type": sp.enemy, "position": sp.position}
+		if sp.has("activeHours"):
+			e.activeHours = sp.activeHours
+		enemies.append(e)
 	for r in w.roads:
 		if r.id == "fallen_road":
 			road = r.points

@@ -7,6 +7,10 @@ extends RefCounted
 
 var game
 var list: Array = []
+## Enemies out of their `activeHours` (night things by day): not in the world
+## at all until their hours come round again, when they wait at home, whole.
+var dormant: Array = []
+var _hours_check := 0.0
 
 
 func _init(g) -> void:
@@ -36,9 +40,10 @@ func spawn_all() -> void:
 
 
 func clear() -> void:
-	for e in list:
+	for e in list + dormant:
 		e.group.queue_free()
 	list = []
+	dormant = []
 
 
 func by_id(id: String):
@@ -69,6 +74,10 @@ func reset_engaged() -> void:
 func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)
+	_hours_check -= dt
+	if _hours_check <= 0.0:
+		_hours_check = 1.0
+		_keep_hours()
 	for e in list:
 		var d2: float = e.position.distance_squared_to(player.position)
 		var near: bool = d2 < 180.0 * 180.0
@@ -105,6 +114,24 @@ func shown_count() -> int:
 		if e.group.get_parent() != null:
 			n += 1
 	return n
+
+
+## Night things go at dawn and come back at dusk (`activeHours`, by the world
+## clock). One that is fighting finishes first; a body stays to be looted.
+func _keep_hours() -> void:
+	var h: float = game.world_state.hour
+	for e in list.duplicate():
+		if e.active_hours != null and e.alive and e.state == "idle" and not DayNight.in_hours(h, e.active_hours):
+			list.erase(e)
+			dormant.append(e)
+			if e.group.get_parent():
+				e.group.get_parent().remove_child(e.group)
+	for e in dormant.duplicate():
+		if DayNight.in_hours(h, e.active_hours):
+			dormant.erase(e)
+			e.reset()
+			list.append(e)
+			_show(e, e.position.distance_squared_to(game.player.position))
 
 
 func _respawn(dt: float) -> void:

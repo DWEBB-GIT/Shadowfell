@@ -6,6 +6,27 @@ extends RefCounted
 ## Talking to one opens a conversation (dialogue.gd), which leads to quests
 ## and the shop. A spawn with `goneWhen` (a dialogue condition, such as a
 ## story flag) is absent while it holds.
+##
+## Routines (foundations step 3, Dan 2026-11-04): someone with a `routine`
+## (npcs.json; a timetable from npcs.json `routines`, or their own list of
+## blocks) keeps hours by the world clock (WorldState.hour): at work at their
+## post, at the inn of an evening, at home overnight, walking between. A
+## block is {from: hour, at: place}; the place is "work" (their post), "inn"
+## (a seat in the nearest inn, a building with `rest`), "home" (the door of
+## their house; they go in and are out of sight, but you can knock and they
+## still answer), or a name in their spawn's `places` ({name: [x, z]}).
+## Without an inn or a house near enough, that block keeps them at work.
+##
+## Simulation and drawing are separate, as for enemies (WorldStream): every
+## routine runs for the whole world (a few sums per person per frame; a path
+## is found once per walk, a few a frame at most), and a body is in the scene
+## only near the player (WorldStream.VIEW_IN / VIEW_OUT) and out of doors.
+
+## seats in an inn (the walk-in kit's room, 12 x 9 m, door in the south wall),
+## relative to its middle, clear of the tables, bar and beds
+const INN_SEATS := [[0.0, 0.8], [-2.8, 2.6], [2.8, 0.6], [-3.6, -0.6], [0.6, -2.2], [-0.4, 3.0], [3.2, -1.4], [-1.8, -0.2]]
+const SNAP_HOURS := 0.25 ## a clock jump bigger than this (a load, a night's sleep) puts people straight where they would be
+const PATHS_PER_FRAME := 2
 
 
 class Npc:
@@ -15,6 +36,7 @@ class Npc:
 	var id: String
 	var name: String
 	var position: Vector3
+	var post: Vector3 ## where their spawn stands them: their place of work
 	var rest_facing: float
 	var facing: float
 	var radius := 0.4
@@ -27,6 +49,17 @@ class Npc:
 	var work_timer: float
 	var collider: Dictionary
 	var present := true
+	# ---- the daily routine
+	var routine: Array = [] ## blocks {from, at}, by `from`
+	var shift := 0.0 ## hours this person keeps early (-) or late (+)
+	var places := {} ## name -> {at: Vector2, via: Array of Vector2 (outside first), inside: bool, facing: float}
+	var place := "work" ## where they are, or are walking to
+	var from_place := "" ## where a walk being planned starts ("" from wherever they stand)
+	var route: Array = [] ## waypoints (Vector2) still to walk
+	var walking := false
+	var waiting := false ## a walk is asked for and its path not yet found
+	var inside := false ## gone in at home: out of sight, but answers a knock
+	var speed := 0.0 ## m/s this frame, for the walk cycle
 
 	func _init(g, d: Dictionary) -> void:
 		game = g
@@ -35,6 +68,7 @@ class Npc:
 		name = d.name
 		position = Vector3(d.position[0], 0, d.position[1])
 		position.y = Terrain.height_at(position.x, position.z)
+		post = position
 		rest_facing = deg_to_rad(d.get("facing", 0))
 		facing = rest_facing
 		group = Node3D.new()
@@ -62,39 +96,121 @@ class Npc:
 		work_timer = 1 + randf()
 		group.position = position
 		collider = game.collision.add(position.x, position.z, radius)
+		places.work = {"at": Vector2(post.x, post.z), "via": [], "inside": false, "facing": rest_facing}
 
 	## Is this person here, given the story so far?
 	func update_presence() -> void:
-		var here: bool = not d_gone()
-		if here == present:
-			return
-		present = here
-		group.visible = here
-		collider.off = not here
+		present = not d_gone()
 
 	func d_gone() -> bool:
 		return def.get("goneWhen") != null and Quests.condition_holds(game, def.goneWhen)
+
+	## the place their routine has them at `hour`
+	func place_at(hour: float) -> String:
+		if routine.is_empty():
+			return "work"
+		var h := fposmod(hour - shift, 24.0)
+		var at: String = routine[-1].at # before the first block: still the last one of yesterday
+		for b in routine:
+			if float(b.from) <= h:
+				at = b.at
+		return at if places.has(at) else "work"
+
+	## talking with the player: they stop where they are
+	func busy() -> bool:
+		return is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self) or is_same(game.bank.npc, self)
+
+	## put them straight where they would be (no walk)
+	func snap_to(p: String) -> void:
+		place = p
+		var pl: Dictionary = places[p]
+		route = []
+		walking = false
+		waiting = false
+		_arrive(pl)
+
+	func _arrive(pl: Dictionary) -> void:
+		position = Vector3(pl.at.x, Terrain.height_at(pl.at.x, pl.at.y), pl.at.y)
+		facing = pl.facing
+		inside = pl.inside
+		walking = false
+
+	## the way from where they are to place `p`: out of the building they are
+	## in, then a path to the next one's door, then in
+	func leg_ends(p: String) -> Dictionary:
+		var from: Dictionary = places.get(from_place, {"via": []})
+		var out := []
+		var start := Vector2(position.x, position.z)
+		if not from.via.is_empty():
+			for i in range(from.via.size() - 1, -1, -1):
+				out.append(from.via[i])
+			start = from.via[0]
+		var to: Dictionary = places[p]
+		var goal: Vector2 = to.via[0] if not to.via.is_empty() else to.at
+		return {"exit": out, "start": start, "goal": goal, "enter": to.via.slice(1) + [to.at]}
+
+	## the routine, run for everyone whether drawn or not
+	func simulate(dt: float, want: String) -> bool:
+		if want != place and not waiting:
+			from_place = "" if walking else place
+			place = want
+			waiting = true
+			walking = false
+			route = []
+			inside = false # they come out to go
+			return true # a path is wanted
+		if walking and not busy():
+			var step: float = float(DB.CONFIG.routine.walkSpeed) * dt
+			speed = float(DB.CONFIG.routine.walkSpeed)
+			while step > 0.0 and not route.is_empty():
+				var to: Vector2 = route[0]
+				var d := Vector2(to.x - position.x, to.y - position.z)
+				var l := d.length()
+				if l > 0.001:
+					facing = atan2(d.x, d.y)
+				if l <= step:
+					position.x = to.x
+					position.z = to.y
+					step -= l
+					route.pop_front()
+				else:
+					position.x += d.x / l * step
+					position.z += d.y / l * step
+					step = 0.0
+			position.y = Terrain.height_at(position.x, position.z)
+			if route.is_empty():
+				_arrive(places[place])
+		else:
+			speed = 0.0
+		return false
+
+	## standing at their post (the only place their collider is)
+	func at_post() -> bool:
+		return place == "work" and not walking and not waiting
 
 	func update(dt: float, player) -> void:
 		var dx: float = player.position.x - position.x
 		var dz: float = player.position.z - position.z
 		# only someone you are talking to turns to you, and keeps an eye on
 		# you until you walk off
-		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self) or is_same(game.bank.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
-		var anvil = def.get("anvil", def.get("workAt"))
-		rig.pose = def.get("idlePose") if not near else null
+		var near: bool = busy() and U.hyp(dx, dz) < 8 and not player.dead
+		var anvil = def.get("anvil", def.get("workAt")) if at_post() else null
+		rig.pose = def.get("idlePose") if not near and not walking else null
 		var want: float
 		if board:
 			want = rest_facing
 		elif near:
 			want = atan2(dx, dz)
+		elif walking:
+			want = facing
 		elif anvil and rest_timer <= 0:
 			want = atan2(anvil[0] - position.x, anvil[1] - position.z)
 		else:
-			want = rest_facing
-		var d := want - facing
-		d = atan2(sin(d), cos(d))
-		facing += d * minf(1, dt * 5)
+			want = places[place].facing
+		if not walking or near:
+			var d := want - facing
+			d = atan2(sin(d), cos(d))
+			facing += d * minf(1, dt * 5)
 		# at work: a hammer blow every so often, unless someone wants a word
 		# in bouts: a run of blows, then a breather looking about (Dan,
 		# 2026-11-03: the constant hammering wore thin)
@@ -114,25 +230,118 @@ class Npc:
 					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
 		# limbs only move where the camera could see them
 		if U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
-			rig.update(dt, 0)
+			rig.update(dt, speed / float(DB.CONFIG.player.speed) * 1.6 if speed > 0 and not near else 0.0)
 		group.position = position
 		group.rotation.y = facing
 
 
 var game
 var all: Array = []
+var _paths := [] ## people waiting for a path, first come first served
+var _last_hour := -100.0
 
 
 func _init(g) -> void:
 	game = g
+	var inn_use := {}
 	for d in Layout.npcs:
 		var n := Npc.new(game, d)
 		all.append(n)
-		game.scene.add_child(n.group)
+		_plan(n, inn_use)
 
 
-## the townsfolk who are here now
+## who keeps what hours, and where their inn and home are
+func _plan(n: Npc, inn_use: Dictionary) -> void:
+	if n.board:
+		return
+	var r = n.def.get("routine")
+	var blocks = DB.routines.get(r, {}).get("blocks", []) if r is String else r
+	if not blocks is Array or blocks.is_empty():
+		return
+	n.routine = blocks.duplicate(true)
+	n.routine.sort_custom(func(a, b): return float(a.from) < float(b.from))
+	# a steady few minutes early or late, the same every day and every load
+	var spread: float = DB.CONFIG.routine.spread
+	n.shift = (float(absi(hash(n.id)) % 1000) / 999.0 * 2.0 - 1.0) * spread
+	var p := Vector2(n.post.x, n.post.z)
+	var wants := {}
+	for b in n.routine:
+		wants[b.at] = true
+	if wants.has("inn"):
+		var inn = _nearest_inn(p)
+		if inn != null:
+			var seat_i: int = inn_use.get(inn.id, 0)
+			inn_use[inn.id] = seat_i + 1
+			var c := Vector2(inn.position[0], inn.position[1])
+			var front: float = float(inn.size[1]) * 0.5
+			var seat: Array = INN_SEATS[seat_i % INN_SEATS.size()]
+			var at := c + Vector2(seat[0], seat[1]) + Vector2(0.4, 0.3) * float(seat_i / INN_SEATS.size())
+			n.places.inn = {"at": at, "via": [c + Vector2(0, front + 1.6), c + Vector2(0, front - 1.4)], "inside": false,
+				"facing": atan2(c.x - at.x, c.y - at.y) + PI * 0.15}
+	if wants.has("home"):
+		var door = _home_door(n, p)
+		if door != null:
+			n.places.home = {"at": door.at, "via": [], "inside": true, "facing": door.facing}
+	for k in n.def.get("places", {}):
+		var q: Array = n.def.places[k]
+		n.places[k] = {"at": Vector2(q[0], q[1]), "via": [], "inside": false, "facing": n.rest_facing}
+
+
+func _nearest_inn(p: Vector2):
+	var best = null
+	var best_d: float = DB.CONFIG.routine.innRange
+	for b in Layout.buildings:
+		if not b.get("rest"):
+			continue
+		var d := p.distance_to(Vector2(b.position[0], b.position[1]))
+		if d < best_d:
+			best_d = d
+			best = b
+	return best
+
+
+## the door of their house: the spawn's own `home` [x, z], else the nearest
+## house (Layout.houses) within CONFIG.routine.homeRange
+func _home_door(n: Npc, p: Vector2):
+	var own = n.def.get("home")
+	if own is Array and own.size() >= 2:
+		return {"at": Vector2(own[0], own[1]), "facing": n.rest_facing}
+	var best = null
+	var best_d: float = DB.CONFIG.routine.homeRange
+	for h in Layout.houses:
+		var d := p.distance_to(Vector2(h.position[0], h.position[1]))
+		if d < best_d:
+			best_d = d
+			best = h
+	if best == null:
+		return null
+	return house_door(best)
+
+
+## the spot outside a house's door (`door`: n, s, e or w; turned with it)
+static func house_door(h: Dictionary) -> Dictionary:
+	var w: float = h.size[0]
+	var d: float = h.size[1]
+	var side: String = h.get("door", "s")
+	var o := Vector2(0, d / 2 + 0.8)
+	match side:
+		"n": o = Vector2(0, -d / 2 - 0.8)
+		"e": o = Vector2(w / 2 + 0.8, 0)
+		"w": o = Vector2(-w / 2 - 0.8, 0)
+	var r := deg_to_rad(h.get("rotation", 0))
+	var at := Vector2(h.position[0] + o.x * cos(r) + o.y * sin(r), h.position[1] - o.x * sin(r) + o.y * cos(r))
+	# facing the door from the doorstep
+	return {"at": at, "facing": atan2(h.position[0] - at.x, h.position[1] - at.y)}
+
+
+## the townsfolk who are here now, out and about (not gone in at home)
 var list: Array:
+	get:
+		return all.filter(func(n): return n.present and not n.inside)
+
+
+## everyone here today, at home or not (quest markers find them at their door)
+var here: Array:
 	get:
 		return all.filter(func(n): return n.present)
 
@@ -145,21 +354,68 @@ func by_id(id: String):
 
 
 func update(dt: float) -> void:
+	var hour: float = game.world_state.hour
+	var jump := absf(hour - _last_hour)
+	var snap := minf(jump, 24.0 - jump) > SNAP_HOURS
+	_last_hour = hour
 	for n in all:
 		n.update_presence()
+		if not n.present or n.routine.is_empty():
+			continue
+		var want: String = n.place_at(hour)
+		if snap:
+			n.snap_to(want)
+			_paths.erase(n)
+		elif n.simulate(dt, want):
+			_paths.append(n)
+	for i in mini(PATHS_PER_FRAME, _paths.size()):
+		_route(_paths.pop_front())
+	var player = game.player
 	for n in all:
-		if n.present:
-			var near: bool = n.position.distance_squared_to(game.player.position) < 180.0 * 180.0
-			n.group.visible = near
-			if near:
-				n.update(dt, game.player)
+		n.collider.off = not (n.present and n.at_post())
+		var d2: float = n.position.distance_squared_to(player.position)
+		var shown: bool = n.group.get_parent() != null
+		var want: bool = n.present and not n.inside and (d2 < WorldStream.VIEW_IN * WorldStream.VIEW_IN
+			or (shown and d2 < WorldStream.VIEW_OUT * WorldStream.VIEW_OUT))
+		if want != shown:
+			if want:
+				game.scene.add_child(n.group)
+			else:
+				n.group.get_parent().remove_child(n.group)
+		if want:
+			n.update(dt, player)
 
 
-## what the interaction system offers for each NPC
+## find the way for a walk that was asked for
+func _route(n: Npc) -> void:
+	# the hour may have moved on while they waited: go where it says now
+	n.place = n.place_at(game.world_state.hour)
+	var legs := n.leg_ends(n.place)
+	var path: Array = game.collision.find_path(legs.start.x, legs.start.y, legs.goal.x, legs.goal.y, 0.3)
+	if path.is_empty():
+		path = [legs.goal]
+	n.route = legs.exit + path + legs.enter
+	n.waiting = false
+	n.walking = true
+	n.inside = false
+
+
+## bodies in the scene now (checks and the F3 readout)
+func shown_count() -> int:
+	var n := 0
+	for p in all:
+		if p.group.get_parent() != null:
+			n += 1
+	return n
+
+
+## what the interaction system offers for each NPC: a word, or a knock at
+## the door of someone gone in for the night
 func interactions() -> Array:
 	var out := []
-	for n in list:
-		out.append({"key": "npc:" + n.id, "x": n.position.x, "z": n.position.z, "bias": -0.6, "reach": DB.CONFIG.shop.talkRange, "prompt": "Talk to %s" % n.name, "run": func(): talk(n)})
+	for n in here:
+		var prompt := ("Knock for %s" if n.inside else "Talk to %s") % n.name
+		out.append({"key": "npc:" + n.id, "x": n.position.x, "z": n.position.z, "bias": -0.6, "reach": DB.CONFIG.shop.talkRange, "prompt": prompt, "run": func(): talk(n)})
 	return out
 
 
