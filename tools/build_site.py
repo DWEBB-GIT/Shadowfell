@@ -62,7 +62,7 @@ def main():
                  ("story.html", "Game Guide", "guide"), ("play/", "Play", "")]
         nav = "".join('<a class="btn%s" href="%s">%s</a>' % (" on" if p == page else "", h, t) for h, t, p in links)
         return ('<header class="banner wrap"><a href="index.html" class="logo"><img src="kit/crest.png" alt="">'
-                '<h1>SHADOWFALL</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
+                '<h1>MYTHKEEP</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
                 % (e(text["tagline"]), e(text["build"]), nav))
 
     crests = "".join('<a href="classes.html#%s" title="%s"><img src="kit/%s.png" alt="%s"></a>'
@@ -75,7 +75,7 @@ def main():
              '<li><a href="guide.html">Getting Started</a></li><li><a href="classes.html">Character</a></li></ul>'
              '<div class="crests">%s</div></div></aside>' % crests)
     stamp = " &middot; build %s, %s" % (e(build["commit"]), e(build["time"])) if build.get("commit") else ""
-    footer = '<footer class="wrap">Shadowfall %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
+    footer = '<footer class="wrap">Mythkeep %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
 
     cards = []
     icons = set()
