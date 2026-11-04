@@ -686,6 +686,44 @@
       "respawn": 100
     },
     {
+      "id": "tf_field_rat",
+      "base": "granary_rat",
+      "name": "Field Rat",
+      "level": 1,
+      "maxLevel": 2,
+      "pack": 6,
+      "detection": 5,
+      "respawn": 25
+    },
+    {
+      "id": "tf_shambler",
+      "base": "ghoul",
+      "name": "Barrow Shambler",
+      "type": "fodder",
+      "level": 2,
+      "maxLevel": 3,
+      "pack": 6,
+      "detection": 7,
+      "respawn": 30
+    },
+    {
+      "id": "tf_barrow_gnawer",
+      "base": "granary_rat",
+      "name": "Barrow Gnawer",
+      "level": 3,
+      "maxLevel": 4,
+      "pack": 7,
+      "detection": 6,
+      "scale": 0.55,
+      "respawn": 30,
+      "imported": {
+        "model": "rat",
+        "scale": 1.9,
+        "tint": null,
+        "barHeight": 0.75
+      }
+    },
+    {
       "id": "tf_sentry",
       "base": "ghoul",
       "name": "Fallen Watch Sentry",
