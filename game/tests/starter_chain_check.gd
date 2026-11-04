@@ -83,3 +83,16 @@ func _extra() -> void:
 		run(pair[0])
 		check(game.skills.has(pair[1]), "%s teaches %s" % pair.slice(0, 2))
 		check(inv.count(pair[2]) == had, "%s takes back the %s" % [pair[0], pair[2]])
+	# level 5: the mayor sends a warrior to Rowan, who teaches Cleave
+	check(game.quests.status("sf_calling_warden") == "locked", "the calling waits for level 5")
+	check(game.quests.status("sf_calling_paladin") == "locked", "another class's calling is never offered")
+	game.progression.level = 5
+	run("sf_calling_warden")
+	check(not game.skills.knows_ability("cleave"), "Cleave is not known before the class quest")
+	check(game.quests.accept("sf_class_warden", true), "Rowan's class quest taken")
+	check(game.skills.knows_ability("cleave"), "Rowan teaches Cleave")
+	game.quests.count_use("cleave", "ridge_wolf")
+	check(game.quests.objectives("sf_class_warden")[0].have == 0, "Cleave on the wrong beast does not count")
+	for n in 3:
+		game.quests.count_use("cleave", "vr_young_boar")
+	check(game.quests.complete("sf_class_warden"), "Cleave the boars handed in")

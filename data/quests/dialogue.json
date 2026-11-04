@@ -3314,6 +3314,23 @@
           ]
         }
       ]
+    },
+    {
+      "id": "vr_dunn",
+      "greetings": [
+        {
+          "text": "Dunn grips his spear like a crutch. “Still on watch. Do not argue. The lanterns went out, and the ones carrying them kept walking.”"
+        },
+        {
+          "text": "“Better. Not good. Better.” Dunn flexes his leg. “I owe you a drink. I owe Elsie for the last eleven, so you are in a queue.”",
+          "when": {
+            "quest": "sf_class_paladin",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

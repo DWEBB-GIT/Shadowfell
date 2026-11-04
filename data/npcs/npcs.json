@@ -1540,6 +1540,16 @@
       "tint": "#b8a46a",
       "banker": true,
       "dialogue": "banker"
+    },
+    {
+      "id": "vr_dunn",
+      "name": "Watchman Dunn",
+      "title": "Wounded watchman",
+      "level": 6,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#8f8a80",
+      "dialogue": "vr_dunn"
     }
   ]
 }

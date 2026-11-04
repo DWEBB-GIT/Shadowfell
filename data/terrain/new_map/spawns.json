@@ -2147,6 +2147,7 @@
 	  "facing": 180
 	},
 	{"npc": "tf_cook", "position": [-466.5, -209.5], "facing": 90},
+	{"npc": "vr_dunn", "position": [-461.5, -297.5], "facing": 0},
 	{
 	  "npc": "tf_iren",
 	  "position": [

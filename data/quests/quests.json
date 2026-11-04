@@ -1683,6 +1683,391 @@
       }
     },
     {
+      "id": "sf_calling_warden",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        5
+      ],
+      "minLevel": 5,
+      "classes": [
+        "warden"
+      ],
+      "giver": "vr_mayor",
+      "turnIn": "tf_rowan",
+      "requires": [],
+      "summary": "Mayor Alder says Captain Rowan wants to see you. Find Rowan at the watch barracks by the square.",
+      "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Rowan has asked after you. He trains the watch's fighters, and he says you hold a blade like someone who means it, which he also says about the cook.",
+      "progress": "Captain Rowan is waiting for you at the watch barracks by the square.",
+      "complete": "Rowan looks you up and down. “Alder says you can fight. Alder thinks a bread knife is a weapon. Let us find out.”",
+      "objectives": [
+        {
+          "id": "trainer",
+          "type": "talk",
+          "target": "tf_rowan",
+          "label": "Find Captain Rowan"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_calling_rogue",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        5
+      ],
+      "minLevel": 5,
+      "classes": [
+        "rogue"
+      ],
+      "giver": "vr_mayor",
+      "turnIn": "vr_rogue",
+      "requires": [],
+      "summary": "Mayor Alder says Mira Vale wants to see you. Find Mira Vale at the inn's back room.",
+      "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. There is a woman called Mira Vale who drinks in the corner of the Lantern Inn and never seems to pay. She asked about you. I would rather she asked about you than about me.",
+      "progress": "Mira Vale is waiting for you at the inn's back room.",
+      "complete": "Mira does not look up from her cup. “You walked in the front door. Everyone saw you. We will fix that.”",
+      "objectives": [
+        {
+          "id": "trainer",
+          "type": "talk",
+          "target": "vr_rogue",
+          "label": "Find Mira Vale"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_calling_ranger",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        5
+      ],
+      "minLevel": 5,
+      "classes": [
+        "ranger"
+      ],
+      "giver": "vr_mayor",
+      "turnIn": "tf_scout",
+      "requires": [],
+      "summary": "Mayor Alder says Scout Fen wants to see you. Find Fen at Briarwood Camp.",
+      "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Scout Fen came down from Briarwood to ask if the new arrival can shoot. I said you could certainly carry a bow. He wants to see for himself.",
+      "progress": "Scout Fen is waiting for you at Briarwood Camp.",
+      "complete": "Fen nods at your bow. “You carry it like a walking stick. Good. Means you have not learned anything wrong yet.”",
+      "objectives": [
+        {
+          "id": "trainer",
+          "type": "talk",
+          "target": "tf_scout",
+          "label": "Find Scout Fen"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_calling_occultist",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        5
+      ],
+      "minLevel": 5,
+      "classes": [
+        "occultist"
+      ],
+      "giver": "vr_mayor",
+      "turnIn": "vr_morrow",
+      "requires": [],
+      "summary": "Mayor Alder says Morrow Finch wants to see you. Find Morrow Finch at Mourning Hollow.",
+      "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Morrow Finch sent word from Mourning Hollow. Morrow does not send word. Morrow sends bottles with labels I prefer not to read. Go and see what they want.",
+      "progress": "Morrow Finch is waiting for you at Mourning Hollow.",
+      "complete": "Morrow corks a bottle that was, for a moment, whispering. “Ah. You came. Most people stop at the gate and remember an errand.”",
+      "objectives": [
+        {
+          "id": "trainer",
+          "type": "talk",
+          "target": "vr_morrow",
+          "label": "Find Morrow Finch"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_calling_paladin",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        5
+      ],
+      "minLevel": 5,
+      "classes": [
+        "paladin"
+      ],
+      "giver": "vr_mayor",
+      "turnIn": "vr_lyra",
+      "requires": [],
+      "summary": "Mayor Alder says Sister Lyra wants to see you. Find Lyra at the shrine path south of the square.",
+      "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Sister Lyra has been asking for you. She says the light has opinions about you. I said the light can queue like everyone else, but here we are.",
+      "progress": "Sister Lyra is waiting for you at the shrine path south of the square.",
+      "complete": "Lyra takes your hands and turns them palm up as if reading them. “They are not soft. Good. The light is not for the soft.”",
+      "objectives": [
+        {
+          "id": "trainer",
+          "type": "talk",
+          "target": "vr_lyra",
+          "label": "Find Sister Lyra"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_class_warden",
+      "name": "The Wide Swing",
+      "map": "new",
+      "zone": "nr_orchard",
+      "level": [
+        5,
+        6
+      ],
+      "minLevel": 5,
+      "classes": [
+        "warden"
+      ],
+      "giver": "tf_rowan",
+      "turnIn": "tf_rowan",
+      "requires": [
+        "sf_calling_warden"
+      ],
+      "summary": "Captain Rowan teaches you Cleave. Use it on the young boars in Holt Meadow three times, then report back.",
+      "offer": "One enemy at a time is a luxury. Out there they come in threes and fours and none of them wait their turn. Plant your feet, turn from the hips, and take the whole front rank with you. That is Cleave. Go and practise on Heda's young boars; they come in herds and nobody will miss them. Three good swings.",
+      "progress": "Cleave the young boars in Holt Meadow three times. Target one; the swing takes whatever stands beside it.",
+      "complete": "Rowan watches you roll your shoulder. “Sore? Good. That is where the swing lives now.” He almost smiles. “The watch could use more like you. The watch could use more of anything.”",
+      "acceptLearn": [
+        "cleave"
+      ],
+      "objectives": [
+        {
+          "id": "cleave",
+          "type": "use",
+          "target": "cleave",
+          "on": "vr_young_boar",
+          "count": 3,
+          "label": "Cleave the young boars",
+          "location": "vr_meadow"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_class_rogue",
+      "name": "Unseen",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        6
+      ],
+      "minLevel": 5,
+      "classes": [
+        "rogue"
+      ],
+      "giver": "vr_rogue",
+      "turnIn": "vr_rogue",
+      "requires": [
+        "sf_calling_rogue"
+      ],
+      "summary": "Mira Vale teaches you Shadow. Slip into it among the risen dead at the Nameless Yard, then look at the Bell Crypt's door without being caught.",
+      "offer": "Shadow is not magic, whatever the songs say. It is knowing where people are not looking. The dead are worse at it than the living, which makes them good practice. Go to the Nameless Yard south of Mourning Hollow, step into Shadow among them, and walk up to the Bell Crypt's door. Tell me what is carved on it.",
+      "progress": "Use Shadow at the Nameless Yard among the risen dead, then look over the Bell Crypt's door.",
+      "complete": "“A bell with a crack through it,” Mira repeats, and taps the table twice. “You looked. You came back. Two things most people only manage one of.”",
+      "acceptLearn": [
+        "shadow"
+      ],
+      "objectives": [
+        {
+          "id": "shadow",
+          "type": "use",
+          "target": "shadow",
+          "at": "vr_graves",
+          "radius": 30,
+          "count": 1,
+          "label": "Slip into Shadow at the Nameless Yard",
+          "location": "vr_graves"
+        },
+        {
+          "id": "door",
+          "type": "examine",
+          "target": "poi:vr_crypt",
+          "label": "Look over the Bell Crypt's door",
+          "location": "vr_crypt"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_class_ranger",
+      "name": "Tar and Patience",
+      "map": "new",
+      "zone": "nr_briar",
+      "level": [
+        5,
+        6
+      ],
+      "minLevel": 5,
+      "classes": [
+        "ranger"
+      ],
+      "giver": "tf_scout",
+      "turnIn": "tf_scout",
+      "requires": [
+        "sf_calling_ranger"
+      ],
+      "summary": "Scout Fen teaches you Tar Trap. Lay two traps in Wolf Hollow and thin out three of the wolves that run into them.",
+      "offer": "A wolf runs faster than you and it knows it. So you do not chase. You put a trap where it is going and let it come to you. Tar Trap: set it at your feet, step back, and let them come. Lay two in Wolf Hollow, then put three wolves down while they are stuck. You have seen me do it. Well, you have heard me talk about it.",
+      "progress": "Lay two Tar Traps in Wolf Hollow and kill three wolves.",
+      "complete": "Fen picks tar off your boot and sniffs it. “You stood in your own trap. Everyone does, once.” He hands the boot back. “The wolves did not. That is the bit that counts.”",
+      "acceptLearn": [
+        "tarTrap"
+      ],
+      "objectives": [
+        {
+          "id": "traps",
+          "type": "use",
+          "target": "tarTrap",
+          "at": "tf_hollow",
+          "radius": 30,
+          "count": 2,
+          "label": "Lay Tar Traps in Wolf Hollow",
+          "location": "tf_hollow"
+        },
+        {
+          "id": "wolves",
+          "type": "kill",
+          "target": "tf_wolf",
+          "count": 3,
+          "label": "Wolves defeated in Wolf Hollow",
+          "location": "tf_hollow"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_class_occultist",
+      "name": "What Grows on Graves",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        6
+      ],
+      "minLevel": 5,
+      "classes": [
+        "occultist"
+      ],
+      "giver": "vr_morrow",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "sf_calling_occultist"
+      ],
+      "summary": "Morrow Finch teaches you Grave Bloom. Raise it three times among the risen dead at the Nameless Yard.",
+      "offer": "Rot is patient. Grave Bloom is not. You pour the rot into the ground and the ground answers all at once, and everything standing on it learns what dirt feels like from the inside. The Nameless Yard south of here has plenty of things standing where they should be lying. Three blooms. Watch your feet.",
+      "progress": "Use Grave Bloom three times at the Nameless Yard among the risen dead.",
+      "complete": "Morrow writes something in a ledger with a very long list of names. “The yard is quieter. It will not stay quiet. Nothing there does.” They look at you over the ledger. “But you are learning to be loud back.”",
+      "acceptLearn": [
+        "graveBloom"
+      ],
+      "objectives": [
+        {
+          "id": "bloom",
+          "type": "use",
+          "target": "graveBloom",
+          "at": "vr_graves",
+          "radius": 30,
+          "count": 3,
+          "label": "Raise Grave Bloom at the Nameless Yard",
+          "location": "vr_graves"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_class_paladin",
+      "name": "Mercy on the Lantern Road",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        5,
+        6
+      ],
+      "minLevel": 5,
+      "classes": [
+        "paladin"
+      ],
+      "giver": "vr_lyra",
+      "turnIn": "vr_lyra",
+      "requires": [
+        "sf_calling_paladin"
+      ],
+      "summary": "Sister Lyra teaches you Quick Mend. A watchman lies hurt by the Fallen Lantern south of town: mend his wounds twice beside him, then return to Lyra.",
+      "offer": "A watchman crawled back from the lantern road last night and got as far as the Fallen Lantern before his legs gave out. Dunn, his name is. He will not let us move him; he says he is keeping watch. Then you will go to him. This is Quick Mend: a word, and the light closes what it can. Kneel by him and speak it twice. It does not ask whether he deserves it. Neither do we.",
+      "progress": "Use Quick Mend twice beside Watchman Dunn at the Fallen Lantern, south of Thornford.",
+      "complete": "“He is sitting up?” Lyra closes her eyes a moment. “Then the light was listening. Sometimes it is not, and that is when you keep speaking anyway.” She looks south. “Did he say what he saw out there?”",
+      "turnInLog": "Watchman Dunn kept muttering about lantern-bearers who did not carry lanterns. You remember it.",
+      "acceptLearn": [
+        "quickMend"
+      ],
+      "objectives": [
+        {
+          "id": "mend",
+          "type": "use",
+          "target": "quickMend",
+          "at": "tf_cairn",
+          "radius": 8,
+          "count": 2,
+          "label": "Mend Watchman Dunn at the Fallen Lantern",
+          "location": "tf_cairn"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "standard"
+      }
+    },
+    {
       "id": "vr_first_hunt",
       "name": "An Honest Day’s Work",
       "map": "new",
