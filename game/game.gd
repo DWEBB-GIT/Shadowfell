@@ -132,6 +132,9 @@ var _region_from := Vector2.ZERO
 func _ready() -> void:
 	DB.ensure()
 	scene = self
+	# the player-facing name (window title, browser tab); the Godot project
+	# keeps its old name so user:// and existing saves stay where they are
+	get_window().title = str(DB.text.title.get("name", "Mythkeep"))
 	_init_renderer()
 	add_child(preload("res://game/ui/perf_overlay.gd").new())
 	input = GameInput.new()

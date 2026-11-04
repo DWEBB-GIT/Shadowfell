@@ -29,6 +29,9 @@ const QUEST_GOLD := Color("ffd23c")
 static var font: Font
 static var bold: Font
 static var italic: Font
+# The game's logo face (Mythkeep wordmark): Cinzel Decorative Black,
+# SIL Open Font Licence, see game/fonts/CinzelDecorative-OFL.txt
+static var logo_font: Font
 ## the Icons node, so rich text can show item and spell icons
 static var icons
 
@@ -64,6 +67,25 @@ static func setup_fonts() -> void:
 	it.base_font = font
 	it.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
 	italic = it
+	logo_font = _with([load("res://game/fonts/CinzelDecorative-Black.ttf"), serif_bold, sym])
+
+
+## The game's name as a gold wordmark in the logo face, dark outline and drop
+## shadow so it reads on any background.
+static func logo(parent: Node, text: String, size := 56, spacing := 3) -> Label:
+	setup_fonts()
+	var l := label(parent, text, size, GOLD)
+	var f := FontVariation.new()
+	f.base_font = logo_font
+	f.spacing_glyph = spacing
+	l.add_theme_font_override("font", f)
+	l.add_theme_constant_override("outline_size", maxi(4, size / 9))
+	l.add_theme_color_override("font_outline_color", Color(0.16, 0.08, 0.02))
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	l.add_theme_constant_override("shadow_offset_y", maxi(2, size / 16))
+	l.add_theme_constant_override("shadow_offset_x", 0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return l
 
 
 static func _with(list: Array) -> FontVariation:
