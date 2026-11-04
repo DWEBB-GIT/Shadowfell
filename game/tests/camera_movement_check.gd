@@ -13,7 +13,7 @@ func _run()->void:
 	Store.dir='user://camera_movement_%d'%Time.get_ticks_usec()
 	game=load('res://game/main.tscn').instantiate()
 	root.add_child(game)
-	var c:Dictionary=game.roster.create('Movement Tester','warden')
+	var c:Dictionary=game.roster.create('Mover','warden')
 	game.enter_world(c.character.id)
 	var began:=Time.get_ticks_msec()
 	while game.hud.loading.visible:
