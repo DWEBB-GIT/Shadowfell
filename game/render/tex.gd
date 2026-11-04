@@ -26,6 +26,13 @@ static func glint() -> Texture2D:
 	return _cache.glint
 
 
+## the same soft star in plain white, so a tint shows true (silver coins)
+static func glint_white() -> Texture2D:
+	if not _cache.has("glint_white"):
+		_cache.glint_white = _radial([[0.0, Color8(255, 255, 255, 255)], [0.25, Color8(255, 255, 255, 128)], [1.0, Color8(255, 255, 255, 0)]], 32)
+	return _cache.glint_white
+
+
 ## a soft column of light, bright at its foot and fading up and to its
 ## sides (the Diablo loot beam)
 static func beam() -> Texture2D:
