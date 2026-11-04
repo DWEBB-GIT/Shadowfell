@@ -25,7 +25,7 @@ func _process(_dt: float) -> bool:
 		root.add_child(game)
 		print("stream_check: game built in %d ms (%d props as data)" % [Time.get_ticks_msec() - t0, Layout.props.size()])
 	elif frame == 2:
-		var who: Dictionary = game.roster.create("Stream Tester", "warden")
+		var who: Dictionary = game.roster.create("Stream", "warden")
 		game.enter_world(who.character.id)
 	elif frame == 4:
 		_props_near()

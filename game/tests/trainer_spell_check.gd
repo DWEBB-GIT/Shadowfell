@@ -21,7 +21,7 @@ func _process(_dt: float) -> bool:
 		real_trained = DB.archetypes.warden.trained.duplicate(true)
 		# Mara teaches Warriors Rend from level 3 for 15 silver (test data only)
 		DB.archetypes.warden.trained = [{"ability": "rend", "trainer": "mara", "level": 3, "cost": 15}]
-		var made: Dictionary = game.roster.create("Trainer Tester", "warden")
+		var made: Dictionary = game.roster.create("Trainer", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		var sk = game.skills

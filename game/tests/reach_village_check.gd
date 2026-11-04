@@ -24,7 +24,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var character: Dictionary = game.roster.create("Village Tester", "warden")
+	var character: Dictionary = game.roster.create("Village", "warden")
 	check(character.ok, "isolated test character created")
 	game.enter_world(character.character.id)
 	var frames := 0

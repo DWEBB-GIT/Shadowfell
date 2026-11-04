@@ -35,7 +35,7 @@ func _process(dt: float) -> bool:
 			game = load("res://game/main.tscn").instantiate()
 			root.add_child(game)
 		2:
-			var made: Dictionary = game.roster.create("Menu Tester", "warden")
+			var made: Dictionary = game.roster.create("Menu", "warden")
 			game.enter_world(made.character.id)
 		20:
 			hud.hide_loading()

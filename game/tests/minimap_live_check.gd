@@ -26,7 +26,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Map Tester", "warden")
+	var made: Dictionary = game.roster.create("Map", "warden")
 	check(made.ok, "test character created in a separate store")
 	if not made.ok:
 		quit(1)

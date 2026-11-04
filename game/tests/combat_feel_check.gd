@@ -17,7 +17,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Feel Tester", "warden")
+		var made: Dictionary = game.roster.create("Feel", "warden")
 		game.enter_world(made.character.id)
 	if frame <= 2:
 		return false

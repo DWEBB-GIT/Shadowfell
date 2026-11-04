@@ -21,7 +21,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Test Warden", "warden")
+		var made: Dictionary = game.roster.create("Testwarden", "warden")
 		game.enter_world(made.character.id)
 		check(game.mouse_aim, "mouse aim is the default")
 		check(game.keys.keys("bar4") == ["KeyR"] and game.keys.keys("bar5") == ["KeyF"], "mouse aim puts slots 5 and 6 on R and F")

@@ -13,7 +13,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	game=load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary=game.roster.create("Readability Trial","warden")
+	var made: Dictionary=game.roster.create("Readability","warden")
 	game.enter_world(made.character.id)
 	var began:=Time.get_ticks_msec()
 	while game.hud.loading.visible:
