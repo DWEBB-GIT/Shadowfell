@@ -141,6 +141,19 @@ func learn_spell(ability: String) -> bool:
 		events.emit("log", {"text": "You need %s to learn %s." % [U.money(cost), a.name], "kind": "muted", "throttle": "train-coins"})
 		return false
 	game.inventory.lose_coins(cost)
+	return _add_spell(ability)
+
+
+## A class quest teaches a spell outright: no trainer, level or fee.
+func grant_spell(ability: String) -> bool:
+	if not DB.abilities.has(ability) or spells.has(ability):
+		return false
+	return _add_spell(ability)
+
+
+func _add_spell(ability: String) -> bool:
+	var events: Events = game.events
+	var a: Dictionary = DB.abilities[ability]
 	spells.append(ability)
 	var free := ActionBar.free_spell_slot(game.action_bar.slots)
 	if free >= 0:
@@ -168,6 +181,19 @@ func learn(id: String) -> bool:
 		events.emit("log", {"text": "You need %s to learn %s." % [U.money(s.cost), s.name], "kind": "muted", "throttle": "train-coins"})
 		return false
 	inventory.lose_coins(s.cost)
+	return _add_skill(id)
+
+
+## A trainer's quest teaches the skill as its reward: no fee.
+func grant(id: String) -> bool:
+	if not DB.skills.has(id) or has(id):
+		return false
+	return _add_skill(id)
+
+
+func _add_skill(id: String) -> bool:
+	var s = DB.skills[id]
+	var events: Events = game.events
 	ranks[id] = 1
 	if laddered(id):
 		tiers[id] = 0

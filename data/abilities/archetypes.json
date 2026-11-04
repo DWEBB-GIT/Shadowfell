@@ -311,7 +311,7 @@
         {"ability": "lightShield", "trainer": "aveline", "level": 4, "cost": 25},
         {"ability": "divineStorm", "trainer": "aveline", "level": 6, "cost": 50}
       ],
-      "later": ["hallowedGround", "bringToKneel", "smite", "rebuke", "hallowedBolt"],
+      "later": ["hallowedGround", "bringToKneel", "smite", "rebuke", "hallowedBolt", "quickMend"],
       "startingGear": {
         "mainHand": "worn_longsword",
         "offHand": "kite_shield",

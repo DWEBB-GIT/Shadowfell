@@ -34,6 +34,9 @@ func _process(_dt: float) -> bool:
 								q.count_kill(o.target)
 						elif o.type == "examine":
 							game.world_state.examined[o.target] = true
+						elif o.type == "use" and not o.has("at"):
+							for n in int(o.get("count", 1)):
+								q.count_use(o.target, o.get("on", ""))
 					q.refresh()
 					if q.status(id) == "ready" and not q.complete(id):
 						print("could not hand in ", id)

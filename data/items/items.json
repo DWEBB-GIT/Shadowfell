@@ -683,7 +683,7 @@
     },
     {
       "id": "belt_pouch",
-      "name": "Belt pouch",
+      "name": "Utility belt",
       "kind": "bag",
       "toolPack": true,
       "holds": [
@@ -696,7 +696,61 @@
       "price": 0,
       "model": "satchel",
       "icon": "satchel",
-      "description": "A plain pouch on your belt for a few tools, so they take no bag space. A proper tool pack replaces it."
+      "description": "A plain leather belt with loops and three pockets, from Iren Holt's offcuts. It holds your tools (rods, picks, knives, torches) so they take no bag space, and opens your tool belt (T). A proper tool pack replaces it later."
+    },
+    {
+      "id": "sf_broken_hinge",
+      "name": "Broken inn-door hinge",
+      "kind": "document",
+      "rarity": "quest",
+      "quest": true,
+      "stack": 1,
+      "price": 0,
+      "model": "crate",
+      "icon": "coin_purse",
+      "description": "The Lantern Inn's back-door hinge, snapped clean through. Elsie says Iren owes her a favour. Iren will say otherwise."
+    },
+    {
+      "id": "wild_garlic",
+      "name": "Wild garlic",
+      "kind": "material",
+      "rarity": "common",
+      "herb": true,
+      "stack": 10,
+      "price": 1,
+      "model": "pine",
+      "icon": "pine",
+      "description": "Broad green leaves that smell like a kitchen before you have found the kitchen. Grows thick under Heda's orchard hedge."
+    },
+    {
+      "id": "old_rod",
+      "rod": true,
+      "name": "Tobin's old rod",
+      "kind": "tool",
+      "rarity": "quest",
+      "quest": true,
+      "stack": 1,
+      "price": 0,
+      "model": "fishing_rod",
+      "icon": "fishing_rod",
+      "description": "Patched ash, a knotted line and a hook that has seen things. Tobin wants it back. He was very clear about that."
+    },
+    {
+      "id": "pan_fried_perch",
+      "name": "Tobin's pan perch",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 75,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 7,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Perch fried in its own fat with a handful of wild garlic. Restores 75 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     },
     {
       "id": "materials_pouch",

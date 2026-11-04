@@ -85,6 +85,35 @@ func count_kill(type: String) -> void:
 			k[o.id] = mini(int(o.get("count", 1)), int(k.get(o.id, 0)) + 1)
 
 
+## You used an ability: every active quest with a `use` objective for it
+## counts one (a class quest: Cleave the boars, Shadow by the boundary).
+## `on` names the enemy type you must have targeted; `at` a map area you
+## must stand in (within `radius`, 15 m by default). Counted with the kills.
+func count_use(ability: String, on_type := "") -> void:
+	for id in active:
+		for o in DB.quests[id].objectives:
+			if o.type != "use" or o.get("target") != ability:
+				continue
+			if o.get("on") and o.on != on_type:
+				continue
+			if o.get("at") and not _standing_in(o.at, float(o.get("radius", 15.0))):
+				continue
+			if not kills.has(id):
+				kills[id] = {}
+			var k: Dictionary = kills[id]
+			var before := int(k.get(o.id, 0))
+			k[o.id] = mini(int(o.get("count", 1)), before + 1)
+			if k[o.id] != before:
+				refresh()
+
+
+func _standing_in(location: String, radius: float) -> bool:
+	if game.player == null or not DB.locations.has(location):
+		return false
+	var at: Array = DB.locations[location].position
+	return U.hyp(game.player.position.x - at[0], game.player.position.z - at[1]) <= radius
+
+
 ## A brand-new game takes the opening quest (the intro sets it).
 func start_new() -> void:
 	reset()
@@ -116,6 +145,9 @@ func status(id: String) -> String:
 	# Alternative regional chapters share an outcome without requiring both routes.
 	if q.has("minLevel") and game.progression.level < int(q.minLevel):
 		return "locked"
+	# a class quest is offered only to its classes (`classes`: archetype ids)
+	if q.has("classes") and game.stats and not q.classes.has(game.stats.archetype.get("id", "")):
+		return "locked"
 	var alternatives: Array = q.get("requiresAny", [])
 	if not alternatives.is_empty() and not alternatives.any(func(r): return done.has(r)):
 		return "locked"
@@ -141,7 +173,7 @@ func objectives(id: String) -> Array:
 		var need := int(o.get("count", 1))
 		var have := 0
 		match o.type:
-			"kill":
+			"kill", "use":
 				have = int(kills.get(id, {}).get(o.id, 0))
 			"collect":
 				have = game.inventory.count(o.target)
@@ -231,6 +263,22 @@ func accept(id: String, quiet := false) -> bool:
 	if status(id) != "available":
 		return false
 	var q: Dictionary = DB.quests[id]
+	# what the giver lends you for the job (an old rod), taken back on hand-in
+	for g in q.get("lend", []):
+		if game.inventory.room_for(g.item) < int(g.get("count", 1)):
+			game.events.emit("log", {"text": "Make room in your bags first: %s lends you something." % DB.npcs[q.giver].name, "kind": "muted", "throttle": "quest-room"})
+			if game.hud:
+				game.hud.error("Your bags are full.")
+			return false
+	for g in q.get("lend", []):
+		game.inventory.add_item(g.item, int(g.get("count", 1)))
+	# a lesson that starts at once (Tobin shows you how to fish)
+	# (or a class trainer teaches the spell the quest is about)
+	for sk in q.get("acceptLearn", []):
+		if DB.skills.has(sk):
+			game.skills.grant(sk)
+		else:
+			game.skills.grant_spell(sk)
 	accepted.append(id)
 	kills.erase(id)
 	if tracked.size() < MAX_TRACKED:
@@ -257,6 +305,7 @@ func abandon(id: String) -> bool:
 		focus = ""
 	_last.erase(id)
 	kills.erase(id)
+	_take_back_lent(id)
 	game.events.emit("log", {"text": "Quest abandoned: %s." % DB.quests[id].name, "kind": "muted"})
 	_changed()
 	return true
@@ -294,8 +343,16 @@ func complete(id: String) -> bool:
 	var coins := U.roll_coins(r.get("coins"), game.random)
 	if coins:
 		inventory.add_coins(coins, "from %s" % DB.npcs[q.turnIn].name)
+	_take_back_lent(id)
 	for g in gifts:
 		inventory.add_item(g.item, g.get("count", 1))
+	# a trainer's quest teaches as its reward: a skill, a recipe, a spell
+	for sk in r.get("learnSkill", []):
+		game.skills.grant(sk)
+	for rc in r.get("learnRecipe", []):
+		game.cooking.grant_recipe(rc)
+	for ab in r.get("learnSpell", []):
+		game.skills.grant_spell(ab)
 	var xp := reward_xp(id, game.progression.level)
 	if xp > 0:
 		game.progression.add_xp(xp)
@@ -307,6 +364,14 @@ func complete(id: String) -> bool:
 	events.emit("questComplete", {"id": id})
 	_changed()
 	return true
+
+
+## The giver takes back what was lent for a quest (the Old Rod).
+func _take_back_lent(id: String) -> void:
+	for g in DB.quests[id].get("lend", []):
+		var n: int = game.inventory.remove_count(g.item, int(g.get("count", 1)))
+		if n > 0:
+			game.events.emit("log", {"text": "You hand back the %s." % Items.get_def(g.item).name, "kind": "muted"})
 
 
 func set_tracked(id: String, on: bool) -> bool:

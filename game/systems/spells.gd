@@ -293,6 +293,10 @@ func _facing_to(enemy) -> float:
 
 
 func _cast_effects(spell: Dictionary) -> void:
+	# a class quest counts the ability going off (`use` objectives)
+	if game.quests:
+		var on = game.targeting.current if game.targeting else null
+		game.quests.count_use(spell.id, on.type if on != null and is_instance_valid(on) else "")
 	if not game.builds:
 		return
 	for e in game.builds.effects("critBuild"):

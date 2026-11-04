@@ -2730,6 +2730,8 @@
 	  ],
 	  "facing": 180
 	},
+	{"npc": "tf_cook", "position": [-466.5, -209.5], "facing": 90},
+	{"npc": "vr_dunn", "position": [-461.5, -297.5], "facing": 0},
 	{
 	  "npc": "tf_iren",
 	  "position": [
@@ -3628,6 +3630,13 @@
 	}
   ],
   "placedLoot": [
+	{"id": "sf_firewood_0", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-381.5, -277.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_1", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-379, -280.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_2", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-375.5, -278], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_garlic_0", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-346, -252], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_1", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-338.5, -251], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_2", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-343.5, -260.5], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_3", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-351, -258], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
 	{
 	  "id": "spring_water",
 	  "model": "draught",
@@ -5596,7 +5605,7 @@
 	],
 	"facing": 180
   },
-  "openingText": "Thornford has a warm inn, an overdue grain bill, and a watch that no longer comes home. Begin with Heda’s boars in Holt Meadow. Mayor Alder pays at the town hall. The rest of the village has problems of its own; you are allowed to leave some for tomorrow.",
+  "openingText": "Thornford has a warm inn, an overdue grain bill, and a watch that no longer comes home. Elsie at the Lantern Inn has odd jobs for empty pockets, and Heda’s boars are loose in Holt Meadow. Mayor Alder pays at the town hall. The rest of the village has problems of its own; you are allowed to leave some for tomorrow.",
   "trainerOverrides": {
 	"brask": "tf_rowan",
 	"nell": "vr_rogue",
@@ -5609,7 +5618,7 @@
 	"pell": "tf_rowan",
 	"orrin": "tf_iren",
 	"tam": "vr_tobin",
-	"hester": "tf_elsie",
+	"hester": "tf_cook",
 	"briony": "vr_morrow"
   },
   "regions": [

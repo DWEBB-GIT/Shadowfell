@@ -30,6 +30,11 @@ func _init(g, h) -> void:
 func toggle() -> void:
 	if hud.modal:
 		return
+	# no belt yet: the first quest earns it (Dan, 2026-11-04)
+	if not game.inventory.tool_pack:
+		visible = false
+		game.events.emit("log", {"text": "You have no utility belt yet. Ask around the Lantern Inn for work.", "kind": "muted", "throttle": "no-belt"})
+		return
 	game.audio.sfx("bag", 0.6)
 	visible = not visible
 	_sig = ""
