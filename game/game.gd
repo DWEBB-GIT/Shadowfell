@@ -121,6 +121,8 @@ var _bwk := -1.0
 var grade := {}
 var _ghost := false
 var _grade_check := 0.0
+var daylight := {} ## DayNight.light at the world clock's hour, laid over the grade
+var _day_hour := -100.0 ## the hour daylight was worked out for
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
 var _region_at := Vector2(INF, INF)
 var _region_from := Vector2.ZERO
@@ -1102,6 +1104,7 @@ func step(dt: float) -> void:
 	var paused: bool = not started or hud.blocks_gameplay
 	if not paused:
 		time += dt
+		world_state.advance_clock(dt)
 		player.update(dt, controls)
 		spells.update(dt)
 		runes.update(dt)
@@ -1140,6 +1143,7 @@ func step(dt: float) -> void:
 				hud.show_death(pending_death.loss, respawn_point().kind)
 	world.update(dt, Time.get_ticks_msec() / 1000.0)
 	_update_region(dt)
+	_update_daylight()
 	world.update_indoors(dt, player.position)
 	_update_camera(dt)
 	if started:
@@ -1202,15 +1206,32 @@ static func air(k: float) -> Dictionary:
 		"sunlight": lerpf(1, bw.light, k)}
 
 
+## The light of the hour (DayNight), worked out again each time the world
+## clock moves on a little (about every second of play at CONFIG.clock's
+## pace) or jumps (a night at the inn).
+func _update_daylight() -> void:
+	var h: float = world_state.hour
+	if not daylight.is_empty() and absf(h - _day_hour) < 0.01:
+		return
+	_day_hour = h
+	daylight = DayNight.light(h)
+	sun.light_color = daylight.colour
+	_place_sun(camera_target)
+	if not grade.is_empty():
+		_apply_grade()
+
+
 func _apply_grade() -> void:
 	var g := grade
+	var day: Dictionary = daylight if not daylight.is_empty() else DayNight.light(world_state.hour)
 	fog_base = {"near": g.fogNear, "far": maxf(g.fogFar, g.fogNear + 1.0)}
-	env.fog_light_color = g.fogColor
-	env.background_color = g.fogColor
+	var fog_colour: Color = (g.fogColor as Color) * (day.fogTint as Color)
+	env.fog_light_color = fog_colour
+	env.background_color = fog_colour
 	env.fog_density = clampf(g.fogAmount, 0.0, 1.0)
-	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient
-	env.ambient_light_color = g.ambientColor
-	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient * day.ambient
+	env.ambient_light_color = (g.ambientColor as Color) * (day.ambientTint as Color)
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight * day.light
 	if not _ghost:
 		ZoneGradeS.apply_colour(env, g)
 
@@ -1253,10 +1274,12 @@ func _place_showcase() -> void:
 	world.set_cutaway(camera.position, p + Vector3(0, 1.2, 0))
 
 
-## the sun sits low in the west-southwest (about 37 degrees up), so things
+## the sun (or the moon) where the hour puts it (DayNight); in the late
+## afternoon it sits low in the west-southwest, about 35 degrees up, so things
 ## cast long shadows across the ground and their far sides fall dark
 func _place_sun(t: Vector3) -> void:
-	sun.position = Vector3(t.x - 22, t.y + 17, t.z + 9)
+	var off: Vector3 = daylight.get("offset", Vector3(-22, 17, 9))
+	sun.position = t + off
 	sun.look_at(t)
 
 

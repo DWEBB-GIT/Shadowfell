@@ -370,6 +370,9 @@ static func validate_save(data) -> Array:
 		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return (_is_stack(g) or Loot.is_coins(g)) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
 		if w.has("camp"):
 			check.call(w.camp == null or _in_bounds(w.camp), "camp position")
+		if w.has("clock"):
+			var ck = w.clock
+			check.call(typeof(ck) == TYPE_DICTIONARY and _is_num(ck.get("hour", 0)) and _is_num(ck.get("day", 1)), "world clock")
 		if w.has("restPoint"):
 			var rp = w.restPoint
 			check.call(rp == "camp" or rp == "shrine" or (typeof(rp) == TYPE_STRING and rp.begins_with("inn:")), "rest point")

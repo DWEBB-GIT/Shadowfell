@@ -42,8 +42,10 @@ func wake(npc_id: String) -> void:
 	var cap: float = prog.xp_to_next * DB.CONFIG.camp.restedCap
 	prog.rested = minf(cap, prog.rested + prog.xp_to_next * cfg.restedShare)
 	game.world_state.rest_point = "inn:" + npc_id
+	# a night's sleep: the world wakes with you at first light
+	game.world_state.skip_to(float(cfg.get("wakeHour", 7.0)))
 	game.events.emit("innRest", {"npc": npc_id})
 	game.events.emit("statsChanged", {})
-	game.events.emit("log", {"text": "Yawn. Much better. It feels like no time has passed at all... If you fall, you will wake at %s's inn." % name.split(" ")[0], "kind": "heal"})
+	game.events.emit("log", {"text": "Yawn. Much better. The night has gone and the town is stirring. If you fall, you will wake at %s's inn." % name.split(" ")[0], "kind": "heal"})
 	if game.hud:
 		game.hud.toast("Rested at the inn")

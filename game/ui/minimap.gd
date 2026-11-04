@@ -67,8 +67,8 @@ func _init(g) -> void:
 	location.position = Vector2(SIZE / 2 - 75, -OUT_TOP)
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 4)
+	coords.size = Vector2(180, 14)
+	coords.position = Vector2(SIZE / 2 - 90, SIZE + 4)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
@@ -305,7 +305,7 @@ func markers() -> Array:
 		var at: Dictionary = quests.goal(id)
 		if not at.is_empty():
 			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
-	for n in game.npcs.list:
+	for n in game.npcs.here:
 		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
 		# a trade (the inn's tankard) shows even while its keeper has a quest:
@@ -377,7 +377,8 @@ func _process(dt: float) -> void:
 		var here := place_name()
 		if location.text != here:
 			location.text = here
-		var xy := "X: %d   Y: %d" % [roundi(p.x), roundi(p.z)]
+		# the world clock (WorldState.hour) beside where you stand
+		var xy := "%s   X: %d   Y: %d" % [DayNight.clock_text(game.world_state.hour), roundi(p.x), roundi(p.z)]
 		if coords.text != xy:
 			coords.text = xy
 		_drawn_at = now

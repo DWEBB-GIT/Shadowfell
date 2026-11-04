@@ -401,6 +401,48 @@ static func _npcs(s: DataStore, out: PackedStringArray) -> void:
 	for sp in s.npc_spawns:
 		if s.npc(sp.get("npc")).is_empty():
 			out.append("NPC %s: placed in the world but not in npcs.json" % sp.get("npc"))
+	_routines(s, out)
+
+
+const ROUTINE_PLACES := ["work", "inn", "home"]
+
+
+## timetables (npcs.json routines) and who keeps them (Npcs)
+static func _routines(s: DataStore, out: PackedStringArray) -> void:
+	var known := {}
+	for r in s.files.npcs.get("routines", []):
+		var id := str(r.get("id", ""))
+		if known.has(id) or id == "" or id != DataStore.slug(id):
+			out.append("Routine %s: needs a unique lower_snake_case id" % id)
+		known[id] = true
+		for msg in _blocks_problems(r.get("blocks"), {}):
+			out.append("Routine %s: %s" % [id, msg])
+	for n in s.npcs:
+		if not n.has("routine"):
+			continue
+		var r = n.routine
+		var places := {}
+		for sp in s.npc_spawns:
+			if sp.get("npc") == n.get("id"):
+				places.merge(sp.get("places", {}))
+		if r is String:
+			if not known.has(r):
+				out.append("NPC %s: unknown routine %s" % [n.get("id"), r])
+		else:
+			for msg in _blocks_problems(r, places):
+				out.append("NPC %s: routine %s" % [n.get("id"), msg])
+
+
+static func _blocks_problems(blocks, places: Dictionary) -> Array:
+	if not blocks is Array or blocks.is_empty():
+		return ["needs a list of blocks {from, at}"]
+	var out := []
+	for b in blocks:
+		if not b is Dictionary or not _is_num(b.get("from")) or float(b.from) < 0 or float(b.from) >= 24:
+			out.append("each block needs `from`, an hour from 0 to under 24")
+		elif not ROUTINE_PLACES.has(b.get("at")) and not places.has(b.get("at")):
+			out.append("block at %s: a place must be %s or one of the spawn's places" % [b.get("at"), ", ".join(ROUTINE_PLACES)])
+	return out
 
 
 static func _shops(s: DataStore, out: PackedStringArray) -> void:
