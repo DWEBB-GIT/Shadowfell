@@ -32,6 +32,9 @@ const CONFIG := {
 		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
+	# a banker npc (`banker`) opens your bank vault: `slots` places, kept per
+	# character, shared by no one (Dan, 2026-11-03); walking `leaveRange` m off shuts it
+	"bank": {"slots": 28, "columns": 7, "leaveRange": 6.0},
 	"death": {
 		# your bags and coins wait in a grave for graveSeconds of play, then
 		# `scavengers` carry them off; each revival leaves a wound (-woundHealth%
@@ -69,7 +72,11 @@ const CONFIG := {
 	"impact": {"shake": 0.07, "critShake": 0.16, "shakeDecay": 9.0,
 		# hit-stop on a landed melee blow: both bodies hold still this long,
 		# more for slower (heavier) weapons, more again on a crit
-		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
+		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5,
+		# area blows and killing blows (Dan 2026-11-03): an area spell that
+		# catches 2+ kicks the camera harder per foe and holds them all; a
+		# kill holds you a beat and kicks the camera, more for an elite
+		"aoeHitStop": 0.06, "aoeShakePerHit": 0.25, "killHitStop": 0.08, "killShake": 0.06, "eliteKillShake": 0.14},
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {

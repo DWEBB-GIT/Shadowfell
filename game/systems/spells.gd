@@ -263,12 +263,20 @@ func _anim(spell: Dictionary, type: String, duration: float, impact: float, keep
 	var a = look.get(key, look.get("anim"))
 	if a == null:
 		game.player.rig.play(type, duration, impact)
+		_trail(spell)
 		return
 	if not keep_timing:
 		var d = a.get("duration", duration)
 		duration = spell.tuning.get(d, duration) if typeof(d) == TYPE_STRING else d
 		impact = a.get("impact", impact)
 	game.player.rig.play(a.type, duration, impact)
+	_trail(spell)
+
+
+## a weapon ability's blade leaves a trail (Fx.weapon_trail)
+func _trail(spell: Dictionary) -> void:
+	if spell.get("school", "physical") == "physical" and not spell.get("ranged") and game.player.rig.action != null:
+		game.player.rig.action.trail = true
 
 
 ## The spell's own effects (data/abilities/spell_fx.json): `windup` on you while a
@@ -1028,7 +1036,7 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	enemy.hurt(hit.amount, opts)
 	var events: Events = game.events
 	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main"})
-	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell"})
+	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else "main"})
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":
 		events.emit("log", {"text": line.replace("{name}", enemy.cfg.name).replace("{n}", str(hit.amount)) + (" A critical blow!" if hit.crit else ""), "kind": "hit"})

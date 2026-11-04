@@ -7,10 +7,10 @@ const DataStore := preload("store.gd")
 const UI := preload("ui.gd")
 
 ## the order keys are written in, so an edited npc reads like the others
-const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "board"]
+const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "banker", "board"]
 const SHOP_ORDER := ["id", "name", "vendorType", "stock", "faction"]
 ## what the minimap can draw for an npc's trade (src/data/schema.js NPC_MAP_ICONS)
-const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"]]
+const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"], ["banker", "Banker"]]
 
 ## open another record (a quest) on its own tab
 signal open_record(kind: String, id: String)
@@ -170,6 +170,7 @@ func _build() -> void:
 	tint.add_child(picker)
 	UI.row(g, "Tint", tint, "Colours their model, to tell apart townsfolk who share one.")
 	UI.row(g, "Map icon", UI.choice(MAP_ICONS, n.get("mapIcon"), func(v): _put("mapIcon", v)), "Puts their trade on the minimap.")
+	UI.row(g, "Banker", UI.check(n.get("banker", false), "Keeps the bank (opens your bank vault)", func(on): _put("banker", on)))
 	UI.row(g, "Innkeeper", UI.check(n.get("innkeeper", false), "Keeps an inn (rent a bed to wake whole and rested, or make it your home)", func(on): _put("innkeeper", on)))
 	if n.get("innkeeper", false):
 		UI.row(g, "Bed price", UI.spin(n.get("bedPrice", 5), 0, 100000, 1, func(v): _put("bedPrice", v)), "Coins for a night's sleep: full health and mana, wounds mended, rested experience.")

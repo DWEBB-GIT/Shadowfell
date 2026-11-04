@@ -3264,6 +3264,16 @@
       ],
       "topics": [],
       "nodes": []
+    },
+    {
+      "id": "banker",
+      "greetings": [
+        {
+          "text": "Coin, cloth or keepsakes, the vault takes it all and asks no questions. Only you can open your box."
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

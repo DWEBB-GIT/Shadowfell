@@ -112,6 +112,38 @@ func _run() -> void:
 		for i in 60:
 			bandit.rig.update(dt, 0.0)
 		check(bandit.rig.model.position.distance_to(model_at) < 0.01, "and it settles back")
+	# area blows and kills weigh more; each foe sounds of what it is made of
+	if bandit and undead:
+		check(AudioSystem.material_of(undead) == "bone" and AudioSystem.material_of(bandit) == "flesh", "blows sound of bone on the undead, flesh on the living")
+		game.shake = 0.0
+		game.events.emit("burst", {"id": "", "position": bandit.position, "radius": 4.0, "hits": [bandit, undead], "school": "holy"})
+		check(game.shake > DB.CONFIG.impact.shake and bandit.rig.held > 0 and undead.rig.held > 0, "an area blow on two kicks the camera and holds both")
+		game.events.emit("enemyHit", {"enemy": bandit, "damage": 5, "kind": "spell", "school": "fire"})
+		game.shake = 0.0
+		bandit.position = game.player.position + Vector3(2, 0, 0)
+		game.events.emit("enemyDefeated", {"enemy": bandit})
+		check(game.shake > 0, "a kill kicks the camera")
+	# a swing leaves a weapon trail that fades soon after
+	game.player.rig.held = 0.0
+	game.player.rig.play("strike", 0.5, 0.5)
+	# (headless, the skeleton does not pose between these steps: turn the
+	# blade by hand as the swing would)
+	for i in 12:
+		game.player.rig.update(dt, 0.0)
+		game.player.weapon_part.rotate_x(0.12)
+		game.fx.update(dt)
+	check(game.fx.trail_pts.size() >= 2, "a swing leaves a weapon trail (%d points)" % game.fx.trail_pts.size())
+	game.player.rig.action = null
+	for i in 20:
+		game.fx.update(dt)
+	check(game.fx.trail_pts.is_empty(), "and it fades away")
+	# an arrow leaves a trail; a fire arrow leaves embers
+	var pp: Vector3 = game.player.position
+	game.events.emit("projectile", {"kind": "arrow", "from": pp + Vector3(0, 1.3, 0), "to": pp + Vector3(10, 0, 0), "speed": 30.0, "life": 0.3})
+	for i in 10:
+		game.fx.update(dt)
+	check(_named("ArrowMote") >= 4, "an arrow leaves a trail (%d motes)" % _named("ArrowMote"))
+	check(game.fx.arrow_trail({"look": "flamingArrow"}).get("embers") == true, "and a fire arrow leaves embers")
 
 	# the spell queue covers the end of a cast, not only the global cooldown
 	var sp = game.spells

@@ -133,8 +133,8 @@ static func fit_bags(data):
 static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 	check.call(_is_int(inv.get("coins")) and inv.coins >= 0, "coins")
 	var sk = inv.get("sockets")
-	# (saves from before the tool pack have no tool socket)
-	check.call(typeof(sk) == TYPE_ARRAY and (sk.size() == Items.BAG_SOCKETS or sk.size() == Items.TOOL_SOCKET + 1), "bag sockets")
+	# (saves from before the tool pack or the materials pouch lack their sockets)
+	check.call(typeof(sk) == TYPE_ARRAY and (sk.size() == Items.BAG_SOCKETS or sk.size() == Items.TOOL_SOCKET + 1 or sk.size() == Items.MATERIAL_SOCKET + 1), "bag sockets")
 	if typeof(sk) == TYPE_ARRAY:
 		for i in sk.size():
 			var s = sk[i]
@@ -142,9 +142,12 @@ static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 				check.call(typeof(s) == TYPE_DICTIONARY and s.get("id") == "backpack" and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() >= Items.BACKPACK_SLOTS, "backpack")
 			elif s != null:
 				var def = DB.items.get(s.get("id", "")) if typeof(s) == TYPE_DICTIONARY else null
-				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
+				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and bool(def.get("materialPouch", false)) == (i == Items.MATERIAL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
 			if typeof(s) == TYPE_DICTIONARY and typeof(s.get("slots")) == TYPE_ARRAY:
 				check.call(s.slots.all(func(x): return x == null or _is_stack(x)), "contents of bag %d" % i)
+	# the bank (Bank): saves from before it have none
+	var bk = inv.get("bank")
+	check.call(bk == null or (typeof(bk) == TYPE_ARRAY and bk.all(func(x): return x == null or _is_stack(x))), "contents of the bank")
 	var eq = inv.get("equipment")
 	check.call(typeof(eq) == TYPE_DICTIONARY, "equipment")
 	if typeof(eq) == TYPE_DICTIONARY:

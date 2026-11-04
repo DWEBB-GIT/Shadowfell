@@ -28,6 +28,8 @@ const SETTINGS := [
 	{"id": "names", "label": "Show NPC names", "tab": "interface", "default": true},
 	{"id": "playerName", "label": "Show your own name over your character", "tab": "interface", "default": true},
 	{"id": "bloodEffects", "label": "Small blood effects on living creatures", "tab": "interface", "default": true},
+	{"id": "weaponTrails", "label": "Weapon trails on swings", "tab": "interface", "default": true},
+	{"id": "stationNames", "label": "Show names of forges, hearths and other workplaces when you are close", "tab": "interface", "default": true},
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
 	# 0 off, 1 the player only, 2 the player, enemies and NPCs. Each step
 	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).

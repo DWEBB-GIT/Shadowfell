@@ -73,6 +73,7 @@ var enemies: Enemies
 var targeting: Targeting
 var npcs: Npcs
 var merchant: Merchant
+var bank: Bank
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
@@ -168,6 +169,7 @@ func _ready() -> void:
 	targeting = Targeting.new(self)
 	npcs = Npcs.new(self)
 	merchant = Merchant.new(self)
+	bank = Bank.new(self)
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
@@ -424,6 +426,7 @@ func start_game(resume: bool) -> void:
 	inventory.reset()
 	dialogue.close()
 	merchant.close()
+	bank.close()
 	merchant.buyback = []
 	quests.start_new()
 	region = null # named again, quietly, from wherever the Warden stands
@@ -642,7 +645,9 @@ func _cursor_for(pick) -> void:
 			"vein":
 				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
 			"point":
-				c = "lootFar" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else "loot"
+				# a station shows what it is for: an anvil, a pot, a flask, a gem
+				var base: String = o.get("cursor", "loot")
+				c = base + "Far" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else base
 	if c != cursor:
 		cursor = c
 		Cursors.show(c)
@@ -1115,6 +1120,7 @@ func step(dt: float) -> void:
 		grave.update(dt)
 		npcs.update(dt)
 		merchant.update()
+		bank.update()
 		dialogue.update()
 		telegraphs.update(dt)
 		targeting.update(dt, raw_aim, DB.abilities.strike.range + 1)

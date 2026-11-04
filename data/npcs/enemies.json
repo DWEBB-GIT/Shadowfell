@@ -395,6 +395,7 @@
     },
     {
       "id": "blackhedge_captain",
+      "material": "metal",
       "name": "Harl Voss",
       "attitude": "aggressive",
       "model": "mara",
@@ -432,6 +433,7 @@
     },
     {
       "id": "town_guard",
+      "material": "metal",
       "name": "Brackenford Watchman",
       "attitude": "passive",
       "lawful": "guard",
