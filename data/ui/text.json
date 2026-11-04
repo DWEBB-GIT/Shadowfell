@@ -92,6 +92,7 @@
   },
   "title": {
     "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "name": "Mythkeep",
     "build": "Alpha 0.1",
     "tagline": "The Fallen Road",
     "maxCharacters": 10,

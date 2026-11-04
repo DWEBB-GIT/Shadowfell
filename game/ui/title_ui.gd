@@ -131,7 +131,7 @@ func _build_main() -> void:
 	else:
 		var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
 		crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var h1 := UI.label(col, "S H A D O W F E L L", 46, UI.GOLD, 4)
+	var h1 := UI.logo(col, DB.text.title.name.to_upper(), 64)
 	h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.h1 = h1
 	var t: Dictionary = DB.text.title
@@ -382,7 +382,7 @@ func _render_main() -> void:
 				break
 	main.note.text = n
 	main.note.visible = n != ""
-	main.foot.text = "Shadowfall %s · saves are kept on this computer · %s" % [DB.text.title.build, "D-pad · A" if game.hud.pad_mode else "↑↓ Enter"]
+	main.foot.text = "%s %s · saves are kept on this computer · %s" % [DB.text.title.name, DB.text.title.build, "D-pad · A" if game.hud.pad_mode else "↑↓ Enter"]
 	focus(main["continue"] if can_continue else main.new)
 
 
