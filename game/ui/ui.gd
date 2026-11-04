@@ -238,7 +238,8 @@ static func label(parent: Node, text := "", size := 15, colour := TEXT, outline 
 ## the colour changes, since each write makes the control lay out again.
 static func set_colour(c: Control, colour: Color, key := "font_color") -> void:
 	var meta := "_colour_" + key
-	if c.get_meta(meta, null) != colour:
+	# has_meta first: get_meta with a null default still logs an error per call
+	if not c.has_meta(meta) or c.get_meta(meta) != colour:
 		c.set_meta(meta, colour)
 		c.add_theme_color_override(key, colour)
 
