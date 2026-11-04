@@ -24,7 +24,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Amb Tester", "warrior")
+		var made: Dictionary = game.roster.create("Amb", "warrior")
 		game.enter_world(made.character.id)
 	elif frame == 30:
 		var a = game.audio

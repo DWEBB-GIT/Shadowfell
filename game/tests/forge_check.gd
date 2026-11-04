@@ -16,7 +16,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Forge Tester", "warden")
+		var made: Dictionary = game.roster.create("Forge", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		game.inventory.add_coins(5000)

@@ -294,14 +294,14 @@ func _build_create() -> void:
 	var row := UI.hbox(c, 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var name_edit := LineEdit.new()
-	name_edit.max_length = 25
+	name_edit.max_length = Roster.NAME_MAX
 	name_edit.placeholder_text = "Name"
 	name_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_edit.custom_minimum_size = Vector2(260, 0)
 	name_edit.add_theme_font_size_override("font_size", 18)
 	name_edit.set_meta("nav", true)
 	name_edit.text_submitted.connect(func(_t): do_create())
-	name_edit.text_changed.connect(func(_t): create.error.text = "")
+	name_edit.text_changed.connect(func(t): _tidy_name_box(name_edit, t))
 	name_edit.focus_entered.connect(func(): focus_el = name_edit)
 	row.add_child(name_edit)
 	create.name = name_edit
@@ -556,6 +556,18 @@ func pick_class(id: String, move_focus := true) -> void:
 func random_name() -> void:
 	create.name.text = game.roster.random_name()
 	create.error.text = ""
+
+
+## One word, letters only, first letter capital, as it is typed.
+func _tidy_name_box(edit: LineEdit, t: String) -> void:
+	create.error.text = ""
+	var tidy := Roster.tidy_name(t)
+	if tidy == t:
+		return
+	var caret := edit.caret_column
+	var dropped := t.length() - tidy.length()
+	edit.text = tidy
+	edit.caret_column = clampi(caret - dropped, 0, tidy.length())
 
 
 func do_create() -> void:

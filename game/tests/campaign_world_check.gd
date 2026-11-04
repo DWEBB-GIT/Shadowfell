@@ -21,7 +21,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Campaign Tester", "warden")
+	var made: Dictionary = game.roster.create("Campaign", "warden")
 	check(made.ok, "isolated character created")
 	game.enter_world(made.character.id)
 	var frames := 0

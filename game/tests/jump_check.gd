@@ -14,7 +14,7 @@ func _run() -> void:
 	Store.dir = "user://jump_check_%d" % Time.get_ticks_usec()
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Jump Tester", "warden")
+	var made: Dictionary = game.roster.create("Jump", "warden")
 	game.enter_world(made.character.id)
 	var began := Time.get_ticks_msec()
 	while game.hud.loading.visible:

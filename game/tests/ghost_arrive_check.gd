@@ -24,7 +24,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Arrive Tester", "warrior")
+		var made: Dictionary = game.roster.create("Arrive", "warrior")
 		game.enter_world(made.character.id)
 	elif frame == 60:
 		var r: Dictionary = game.respawn_point()
