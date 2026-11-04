@@ -70,21 +70,35 @@ static func setup_fonts() -> void:
 	logo_font = _with([load("res://game/fonts/CinzelDecorative-Black.ttf"), serif_bold, sym])
 
 
-## The game's name as a gold wordmark in the logo face, dark outline and drop
-## shadow so it reads on any background.
-static func logo(parent: Node, text: String, size := 56, spacing := 3) -> Label:
+## The game's name as a cast-gold wordmark in the logo face: metal gradient
+## and grain (game/ui/logo.gdshader), dark outline, and a bronze shadow
+## under it as the letters' depth.
+static func logo(parent: Node, text: String, size := 56, spacing := 0) -> Label:
 	setup_fonts()
-	var l := label(parent, text, size, GOLD)
+	var l := label(parent, text, size, Color.WHITE)
 	var f := FontVariation.new()
 	f.base_font = logo_font
 	f.spacing_glyph = spacing
 	l.add_theme_font_override("font", f)
-	l.add_theme_constant_override("outline_size", maxi(4, size / 9))
-	l.add_theme_color_override("font_outline_color", Color(0.16, 0.08, 0.02))
-	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	l.add_theme_constant_override("shadow_offset_y", maxi(2, size / 16))
+	l.add_theme_constant_override("outline_size", maxi(4, size / 10))
+	l.add_theme_color_override("font_outline_color", Color(0.13, 0.06, 0.02))
+	l.add_theme_color_override("font_shadow_color", Color(0.33, 0.18, 0.06))
 	l.add_theme_constant_override("shadow_offset_x", 0)
+	l.add_theme_constant_override("shadow_offset_y", maxi(3, size / 14))
+	l.add_theme_constant_override("shadow_outline_size", maxi(4, size / 10))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var m := ShaderMaterial.new()
+	m.shader = load("res://game/ui/logo.gdshader")
+	l.material = m
+	var fit := func():
+		# the caps' height inside the label, so the gradient spans the letters
+		var asc: float = f.get_ascent(size)
+		var cap: float = asc * 0.72
+		var top: float = (l.size.y - f.get_height(size)) * 0.5 + asc - cap
+		m.set_shader_parameter("text_top", top)
+		m.set_shader_parameter("text_height", cap)
+	l.resized.connect(fit)
+	fit.call()
 	return l
 
 

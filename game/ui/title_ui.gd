@@ -131,7 +131,7 @@ func _build_main() -> void:
 	else:
 		var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
 		crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var h1 := UI.logo(col, DB.text.title.name.to_upper(), 60, 4)
+	var h1 := UI.logo(col, DB.text.title.name.to_upper(), 64)
 	h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.h1 = h1
 	var t: Dictionary = DB.text.title

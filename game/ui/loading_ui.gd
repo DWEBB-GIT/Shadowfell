@@ -26,7 +26,7 @@ func _init() -> void:
 	add_child(centre)
 	var v := UI.vbox(centre, 14)
 	v.custom_minimum_size = Vector2(360, 0)
-	title_label = UI.logo(v, DB.text.title.name.to_upper(), 40, 4)
+	title_label = UI.logo(v, DB.text.title.name.to_upper(), 42)
 	stage = UI.label(v, "Lighting the lamps…", 14, UI.TEXT_DIM)
 	stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var track := Panel.new()
