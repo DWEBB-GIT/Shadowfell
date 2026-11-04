@@ -812,7 +812,7 @@ func _shoot(spell: Dictionary, target) -> void:
 	var inventory = game.inventory
 	var ammo = inventory.ammo
 	if ammo:
-		inventory.remove_count(ammo, 1)
+		inventory.spend_arrow(ammo)
 	player.pending_shot = null
 	player.hold_bow(true)
 	_anim(spell, "shoot", 0.45, 0.25)

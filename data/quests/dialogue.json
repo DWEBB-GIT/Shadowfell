@@ -1319,6 +1319,13 @@
             "quest": "nr_shelter_tracks",
             "status": "done"
           }
+        },
+        {
+          "text": "Fen glances at the quiver on your back. “Keep it shooting. She hated a peg.”",
+          "when": {
+            "quest": "fen_gathering_quiver",
+            "status": "done"
+          }
         }
       ],
       "topics": [],

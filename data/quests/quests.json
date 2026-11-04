@@ -6313,6 +6313,126 @@
         "coins": 600
       },
       "localStory": true
+    },
+    {
+      "id": "fen_hawthorn_marks",
+      "name": "Hawthorn's Blind",
+      "map": "new",
+      "zone": "nr_briar",
+      "level": [
+        4,
+        5
+      ],
+      "giver": "tf_scout",
+      "turnIn": "tf_scout",
+      "requires": [
+        "tf_briar"
+      ],
+      "summary": "Scout Fen's teacher, the fletcher Hawthorn Ide, went into Wolf Hollow and did not come out. Find her old hunting blind east of the hollow.",
+      "offer": "Before I was a scout I was Hawthorn Ide's apprentice. She made arrows, and she never lost one. Not one, in thirty years. Three winters ago she went into the hollow after a wolf and I found her bow, and nothing else. Her blind is still out there, east of the hollow. I have not had the stomach to look. Will you?",
+      "progress": "Her blind is east of Wolf Hollow, under the leaning pine. Tell me what is left of it.",
+      "complete": "Fen turns the cut shafts over in his hands. “She was making new ones. Sinew bindings, grey fletching. She never left a job half done. So neither shall I.”",
+      "objectives": [
+        {
+          "id": "blind",
+          "type": "examine",
+          "target": "fen_hawthorn_blind",
+          "label": "Search Hawthorn's blind",
+          "location": "fen_hawthorn_blind"
+        }
+      ],
+      "reward": {
+        "coins": 10,
+        "size": "errand"
+      }
+    },
+    {
+      "id": "fen_sinew_and_shafts",
+      "name": "Sinew and Shafts",
+      "map": "new",
+      "zone": "nr_briar",
+      "level": [
+        4,
+        5
+      ],
+      "giver": "tf_scout",
+      "turnIn": "tf_scout",
+      "requires": [
+        "fen_hawthorn_marks"
+      ],
+      "summary": "Bring Scout Fen wolf sinew for the bindings, and recover the arrow bundle Hawthorn hid by the hollow.",
+      "offer": "Her quiver was a strange thing. She sewed it herself, and the arrows came home to it. She called it a gathering quiver. I mean to make it again. I need sinew from the Briarwood wolves, five lengths, and her last bundle of shafts. She cached them in a crate by the hollow. She cached everything.",
+      "progress": "Five lengths of wolf sinew, and Hawthorn's arrow cache by the hollow.",
+      "complete": "“Good sinew. Better shafts.” Fen lays them out on a cloth. “There is one thing still missing. Her pattern was sewn into the old quiver's lining. And the old quiver is wherever she is.”",
+      "objectives": [
+        {
+          "id": "sinew",
+          "type": "collect",
+          "target": "wolf_sinew",
+          "count": 5,
+          "label": "Wolf sinew",
+          "location": "tf_hollow"
+        },
+        {
+          "id": "cache",
+          "type": "examine",
+          "target": "fen_hawthorn_cache",
+          "label": "Open Hawthorn's arrow cache",
+          "location": "fen_hawthorn_cache"
+        }
+      ],
+      "reward": {
+        "coins": 15,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "fen_gathering_quiver",
+      "name": "The Gathering Quiver",
+      "map": "new",
+      "zone": "nr_briar",
+      "level": [
+        4,
+        5
+      ],
+      "giver": "tf_scout",
+      "turnIn": "tf_scout",
+      "requires": [
+        "fen_sinew_and_shafts"
+      ],
+      "summary": "Find where Hawthorn Ide fell in Wolf Hollow, thin the wolves that still den there, and bring her quiver lining back to Scout Fen.",
+      "offer": "I know where she is. I always have. There is a stone at the south end of the hollow and the wolves den beside it. Thin them out and look at the stone. Bring me what you find. Then you can have the quiver. I cannot draw a bow these days anyway.",
+      "progress": "The stone at the south end of Wolf Hollow. Four wolves, then look.",
+      "complete": "Fen is quiet a long while over the scrap of lining. Then he sews. When he is done he hands you the quiver. “She would want it shooting, not on a peg. One in four comes home to it. Do not ask me how. She never told me either.”",
+      "turnInLog": "You hand Fen the scrap of quiver lining, and the closed eye cut into the stone weighs on you.",
+      "objectives": [
+        {
+          "id": "wolves",
+          "type": "kill",
+          "target": "tf_wolf",
+          "count": 4,
+          "label": "Wolves at the hollow's den",
+          "location": "fen_hawthorn_cairn"
+        },
+        {
+          "id": "stone",
+          "type": "examine",
+          "target": "fen_hawthorn_cairn",
+          "label": "Look at the stone where Hawthorn fell",
+          "location": "fen_hawthorn_cairn"
+        }
+      ],
+      "reward": {
+        "coins": 30,
+        "size": "standard",
+        "items": [
+          {
+            "item": "gathering_quiver",
+            "count": 1
+          }
+        ]
+      },
+      "setsFlag": "gathering_quiver_earned"
     }
   ]
 }
