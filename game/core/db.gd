@@ -27,6 +27,10 @@ const CONFIG := {
 	## anything within its reach + `reachGrace` m. Wandering and walking home
 	## use the enemy's own `speed` (m/s).
 	"chase": {"default": 115, "byType": {"fodder": 110, "normal": 115, "armoured": 110, "skirmisher": 120, "pack_beast": 135, "elite": 115, "heavy": 100, "boss": 100}, "reachGrace": 0.3,
+		# a fresh spawn ignores you for `spawnGrace` s (Dan, 2026-11-04); taking up a
+		# chase it stops `alertSeconds` to look, then builds from its walk to its run
+		# over `rampSeconds`, so nothing bursts at you at full pelt (Dan, 2026-11-04)
+		"spawnGrace": 5.0, "alertSeconds": 0.4, "rampSeconds": 1.5,
 		# wounded beasts and men break and run, slower than they chase (Dan, 2026-11-02);
 		# the dead never flee. An enemy can set `flees` true/false itself.
 		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},

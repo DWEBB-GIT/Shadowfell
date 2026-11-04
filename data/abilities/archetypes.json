@@ -19,7 +19,7 @@
         "strength": 2,
         "stamina": 3
       },
-      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "armourTypes": ["cloth", "leather", "plate"],
       "shields": true,
       "dualWield": true,
       "resources": {
@@ -267,7 +267,7 @@
         "strength": 2,
         "stamina": 3
       },
-      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "armourTypes": ["cloth", "leather", "plate"],
       "shields": true,
       "dualWield": false,
       "bannedWeaponTypes": ["dagger"],

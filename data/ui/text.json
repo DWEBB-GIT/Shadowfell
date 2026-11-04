@@ -101,7 +101,7 @@
         "blurb": "Steel, shield and stubbornness. The last one standing.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
+          "Plate, leather, cloth",
           "Resolve",
           "Strong: area damage, long fights. Weak: escaping, ranged foes"
         ]
@@ -153,7 +153,7 @@
         "blurb": "Holy fury in heavy plate. Unmoving. Unbreakable.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
+          "Plate, leather, cloth",
           "Mana",
           "Strong: big crits, toughness. Weak: speed, chasing"
         ]

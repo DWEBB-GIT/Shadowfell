@@ -231,7 +231,7 @@ A helm is worth a third more than a belt and twice a cloak.
 
 ```
 armour = type factor × slot weight × (item level + 4) × rarity's main multiplier
-type factor: cloth 3, leather 6, mail 9, plate 12
+type factor: cloth 3, leather 6, plate 12 (mail removed 2026-11-04)
 cloak  = cloth for every wearer
 shield = 20 × (item level + 4) × rarity's main multiplier, plus a 10% block chance
 ```

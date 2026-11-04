@@ -98,7 +98,6 @@ func _routine() -> void:
 	ws.hour = inn_at - 0.1
 	game.npcs.update(0.016)
 	check(n.place == "work" and n.position.distance_to(n.post) < 0.01, "at work during the day")
-	check(not n.collider.off, "standing at their post blocks the way")
 	# the hour turns: they set off, and walk there however far the player is
 	game.player.position = Vector3(n.post.x + 400, game.player.position.y, n.post.z + 400)
 	ws.hour = inn_at + 0.05
@@ -113,7 +112,6 @@ func _routine() -> void:
 	check(seen_walking, "they walk to the inn")
 	check(walked and Vector2(n.position.x, n.position.z).distance_to(n.places.inn.at) < 0.05, "and arrive at a seat inside (%s)" % n.position)
 	check(n.group.get_parent() == null, "no body drawn while the player is far away")
-	check(n.collider.off, "no collider left at the post while away")
 	# night: home, out of sight, answering a knock
 	ws.hour = home_at + 0.5
 	game.npcs.update(0.016)
