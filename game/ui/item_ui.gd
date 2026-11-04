@@ -350,11 +350,13 @@ var bags_open: bool:
 		return not open_bags.is_empty()
 
 
+## the bag windows B (or a shop) opens: every filled socket but the tool
+## pack, whose tools are used only from the tool belt (T), since PR #126
 func _sockets() -> Array:
 	var out := []
 	var s: Array = game.inventory.sockets
 	for i in s.size():
-		if s[i]:
+		if s[i] and i != Items.TOOL_SOCKET:
 			out.append(i)
 	return out
 
@@ -421,6 +423,10 @@ func show_window(which: String) -> void:
 
 func toggle_bag(i: int) -> void:
 	if i >= game.inventory.sockets.size() or not game.inventory.sockets[i]:
+		return
+	# the tool pack is the tool belt now, not a bag window
+	if i == Items.TOOL_SOCKET:
+		hud.belt.toggle()
 		return
 	game.audio.sfx("bag", 0.6)
 	if open_bags.has(i):
