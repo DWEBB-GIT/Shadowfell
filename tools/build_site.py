@@ -9,6 +9,7 @@ bronze UI kit, class crests and spell icons the pages use. The game itself is
 exported to <folder>/play by the Pages workflow.
 """
 import html
+import re
 import json
 import os
 import shutil
@@ -52,12 +53,13 @@ def main():
     e = html.escape
 
     head = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
-            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">\n'
+            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" media="print" onload="this.media=\'all\'">\n'
             '<link rel="stylesheet" href="style.css">\n<link rel="icon" href="kit/crest.png">')
 
     def header(page):
-        links = [("index.html", "Home", "home"), ("index.html#about", "The Game", ""),
-                 ("classes.html", "Classes", "classes"), ("index.html#news", "News", ""), ("play/", "Play", "")]
+        links = [("index.html", "Home", "home"), ("news.html", "News", "news"),
+                 ("story.html", "Game Guide", "guide"), ("play/", "Play", "")]
         nav = "".join('<a class="btn%s" href="%s">%s</a>' % (" on" if p == page else "", h, t) for h, t, p in links)
         return ('<header class="banner wrap"><a href="index.html" class="logo"><img src="kit/crest.png" alt="">'
                 '<h1>SHADOWFALL</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
@@ -67,11 +69,11 @@ def main():
                      % (c["id"], e(c["name"]), crest(c["id"]), e(c["name"])) for c in classes)
     aside = ('<aside><div class="box panel"><a class="play" href="play/">PLAY NOW<small>Free in your browser</small></a>'
              '<p class="note">Best on a desktop browser with keyboard and mouse, or a gamepad. The first load is about 20 MB.</p></div>'
-             '<div class="box panel"><h3>Classes</h3><div class="crests">%s</div></div>'
-             '<div class="box panel"><h3>First Steps</h3><ul>'
-             '<li><b>WASD</b> or stick to move</li><li><b>Left click</b> selects</li>'
-             '<li><b>Right click</b> talks and loots</li><li><b>Number keys</b> use abilities</li>'
-             '<li>Every key can be rebound in Settings</li></ul></div></aside>' % crests)
+             '<div class="box panel side"><h3>News</h3><ul><li><a href="index.html#news">Current News</a></li>'
+             '<li><a href="news.html">Archived News</a></li></ul></div>'
+             '<div class="box panel side"><h3>Game Guide</h3><ul><li><a href="story.html">Introduction</a></li>'
+             '<li><a href="guide.html">Getting Started</a></li><li><a href="classes.html">Character</a></li></ul>'
+             '<div class="crests">%s</div></div></aside>' % crests)
     stamp = " &middot; build %s, %s" % (e(build["commit"]), e(build["time"])) if build.get("commit") else ""
     footer = '<footer class="wrap">Shadowfall %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
 
@@ -100,6 +102,9 @@ def main():
                      '<h3>First abilities</h3><div class="spells">%s</div></div></div></section>'
                      % (c["id"], crest(c["id"]), e(c["name"]), e(c["role"]), e(c["blurb"]), dl, "".join(spells)))
 
+    with open(os.path.join(ROOT, "site", "news.html"), encoding="utf-8") as f:
+        posts = re.findall(r"(?s)    <article>.*?</article>\n", f.read())
+
     os.makedirs(OUT, exist_ok=True)
     for name in os.listdir(os.path.join(ROOT, "site")):
         src = os.path.join(ROOT, "site", name)
@@ -109,8 +114,11 @@ def main():
         elif name.endswith(".html"):
             with open(src, encoding="utf-8") as f:
                 page = f.read()
-            for p in ("home", "classes"):
+            for p in ("home", "news"):
                 page = page.replace("<!--HEADER:%s-->" % p, header(p))
+            for p in ("classes", "story", "guide"):
+                page = page.replace("<!--HEADER:%s-->" % p, header("guide"))
+            page = page.replace("<!--NEWS:3-->", "".join(posts[:3]))
             page = (page.replace("<!--HEAD-->", head).replace("<!--ASIDE-->", aside)
                     .replace("<!--FOOTER-->", footer).replace("<!--CLASSES-->", "\n".join(cards)))
             with open(dst, "w", encoding="utf-8") as f:
