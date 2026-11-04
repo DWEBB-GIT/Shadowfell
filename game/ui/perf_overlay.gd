@@ -43,4 +43,15 @@ func _process(dt: float) -> void:
 		Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
 		RenderingServer.get_current_rendering_method(),
-	]
+	] + _streamed()
+
+
+## what the world stream has in the scene (game/world/stream.gd)
+func _streamed() -> String:
+	var g = get_parent()
+	if g == null or not ("world" in g) or g.world == null or g.world.stream == null:
+		return ""
+	var s: Dictionary = g.world.stream.stats()
+	return "\ncells %d  props %d in %d batches + %d nodes  enemies drawn %d/%d" % [
+		s.cells, s.batched, s.batches, s.nodes,
+		g.enemies.shown_count() if g.enemies else 0, g.enemies.list.size() if g.enemies else 0]

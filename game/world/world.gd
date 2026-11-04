@@ -26,6 +26,7 @@ var indoors = null
 var land: Land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
 var see_through: SeeThrough ## houses with the see-through circle
+var stream: WorldStream ## placed props and still things, drawn by the cell near the camera
 
 
 func _init(g) -> void:
@@ -36,13 +37,14 @@ func _init(g) -> void:
 
 func build() -> World:
 	land = Land.new(game, group)
+	stream = WorldStream.new(group)
+	# props are data for the whole world (colliders, examine points); their
+	# meshes are built by the cell as the camera comes near (stream.gd)
 	for p in Layout.props:
-		var obj := prop_instance(p)
-		budget_prop(obj, str(p.model))
 		var x: float = p.position[0]
 		var z: float = p.position[1]
-		group.add_child(obj)
-		_add_collider(p, x, z, obj)
+		stream.add_prop(p)
+		_add_collider(p, x, z)
 		if p.get("examine"):
 			var off: Array = p.get("examineOffset", [0, 0])
 			var r := deg_to_rad(p.get("rotation", 0))
@@ -113,6 +115,24 @@ static func budget_prop(obj: Node3D, model: String) -> void:
 ## Shared by world construction and authoring round-trip checks.
 static func prop_instance(p: Dictionary) -> Node3D:
 	var obj := Assets.instance(p.model)
+	place(obj, p)
+	if p.has("tint"):
+		Assets.tint_instance(obj, Color(p.tint))
+	if is_light_fixture(str(p.model)):
+		mark_light_fixture(obj)
+	# the nature pack: trees, rocks and plants open a see-through circle
+	# around the player instead of hiding them
+	if str(p.model).contains("/environment/nature/"):
+		Assets.use_cutaway(obj)
+	return obj
+
+
+static func is_light_fixture(model: String) -> bool:
+	return model.get_file().get_basename() in ["lamp_post", "torch"]
+
+
+## put a prop's node where its placement says (also used for batched props)
+static func place(obj: Node3D, p: Dictionary) -> void:
 	var x: float = p.position[0]
 	var z: float = p.position[1]
 	obj.position = Vector3(x, Terrain.height_at(x, z) + p.get("heightOffset", 0.0), z)
@@ -125,15 +145,6 @@ static func prop_instance(p: Dictionary) -> Node3D:
 		obj.scale = Vector3(p.scale3[0], p.scale3[1], p.scale3[2])
 	if p.has("rotation3"):
 		obj.rotation_degrees = Vector3(p.rotation3[0], p.rotation3[1], p.rotation3[2])
-	if p.has("tint"):
-		Assets.tint_instance(obj, Color(p.tint))
-	if str(p.model).get_file().get_basename() in ["lamp_post", "torch"]:
-		mark_light_fixture(obj)
-	# the nature pack: trees, rocks and plants open a see-through circle
-	# around the player instead of hiding them
-	if str(p.model).contains("/environment/nature/"):
-		Assets.use_cutaway(obj)
-	return obj
 
 
 static func mark_light_fixture(root: Node3D) -> void:
@@ -158,8 +169,8 @@ func _add_collider(p: Dictionary, x: float, z: float, obj: Node3D = null) -> voi
 	if p.has("scale3"):
 		s = maxf(absf(p.scale3[0]), absf(p.scale3[2]))
 	var h: float = LOW_PROPS.get(str(p.get("model", "")).get_file().get_basename(), INF) * s
-	if h == INF and obj != null:
-		var ph: float = prop_height(obj, Terrain.height_at(x, z))
+	if h == INF:
+		var ph: float = prop_height(obj, Terrain.height_at(x, z)) if obj != null else WorldStream.prop_height(p)
 		if ph <= JUMPABLE:
 			h = ph
 	if typeof(col) == TYPE_FLOAT or typeof(col) == TYPE_INT:
@@ -715,6 +726,7 @@ func _add_mist() -> void:
 func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
 	land.update(focus)
+	stream.update(focus)
 	town.update(dt)
 	for m in mist:
 		var x: float = m.x + MIST_REPEAT * roundf((focus.x - m.x) / MIST_REPEAT) + sin(time * 0.05 + m.seed) * 3

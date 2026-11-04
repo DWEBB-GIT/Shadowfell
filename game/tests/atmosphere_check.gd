@@ -36,7 +36,12 @@ func _run() -> void:
 	check(game.atmosphere.lamps.size() == 16,"point lights have a fixed pool of sixteen")
 	var a = game.atmosphere
 	check(a._twins.size() == a.SHADOW_BUDGET and a.lamps.slice(0, a.SHADOW_BUDGET).all(func(l): return not (l.light_cull_mask & World.MOVING_LAYER)),"shadow lamps skip moving bodies; a shadowless twin lights them")
-	var bodies: Array = game.enemies.list.slice(0, 3).map(func(e): return e.group)
+	# far bodies are parked out of the scene (WorldStream); one joins it here
+	var parked: Array = game.enemies.list.filter(func(e): return not e.group.is_inside_tree())
+	if not parked.is_empty():
+		game.scene.add_child(parked[0].group)
+	var bodies: Array = game.enemies.list.filter(func(e): return e.group.is_inside_tree()).slice(0, 3).map(func(e): return e.group)
+	check(not bodies.is_empty(), "some enemy bodies are in the scene")
 	check(bodies.all(func(b): return b.find_children("*","MeshInstance3D",true,false).all(func(m): return m.layers == World.MOVING_LAYER)),"enemy meshes sit on the moving layer")
 	check(game.player.group.find_children("*","MeshInstance3D",true,false).all(func(m): return not (m.layers & World.MOVING_LAYER)),"the player keeps a lamp shadow")
 	game.settings.set_value("lampShadows", 2)
