@@ -87,7 +87,7 @@ func _run()->void:
 	game.settings.set_value('tankControls',false)
 	_reset()
 	var goal:=_click_ground()
-	check(game.move_to!=null,'actual right-click on clear ground queues a destination')
+	check(game.move_to!=null,'actual left-click on clear ground queues a destination')
 	_release_mouse()
 	_pose(90)
 	var route:Dictionary=game._handle_input(0.05)
@@ -152,7 +152,7 @@ func _click_ground()->Vector3:
 		game.input.mouse.onCanvas=true
 		if game._pick_under_cursor()==null:break
 	var event:=InputEventMouseButton.new()
-	event.button_index=MOUSE_BUTTON_RIGHT
+	event.button_index=MOUSE_BUTTON_LEFT
 	event.position=Vector2(game.input.mouse.x,game.input.mouse.y)
 	event.pressed=true
 	game.input._unhandled_input(event)
@@ -161,7 +161,7 @@ func _click_ground()->Vector3:
 	return Vector3(goal.x,origin.y,goal.z)
 func _release_mouse()->void:
 	var event:=InputEventMouseButton.new()
-	event.button_index=MOUSE_BUTTON_RIGHT
+	event.button_index=MOUSE_BUTTON_LEFT
 	event.pressed=false
 	game.input._input(event)
 	game.input.end_frame()
