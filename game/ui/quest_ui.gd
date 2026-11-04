@@ -185,9 +185,10 @@ func _tick() -> String:
 	return "{art:ui/tracker_tick:13}" if Icons.art("ui", "tracker_tick") else "[color=#8cbf78]✓[/color]"
 
 
-## a ready quest's mark: the same gold ? that shows over the hand-in NPC
+## a ready quest's mark, left of its name like the steps' ticks: the same
+## gold ? that shows over the hand-in NPC
 func _ready_mark() -> String:
-	return " {art:map/quest_ready:15}" if Icons.art("map", "quest_ready") else " [font_size=10][color=#8cbf78](Complete)[/color][/font_size]"
+	return "{art:map/quest_ready:15} " if Icons.art("map", "quest_ready") else "[font_size=13][color=#8cbf78]✓ [/color][/font_size]"
 
 
 func _sub(text: String) -> String:
@@ -590,7 +591,7 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name), _ready_mark() if s == "ready" else ""]
+		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name)]
 		if s == "ready":
 			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
