@@ -70,14 +70,6 @@ func advance_clock(dt: float) -> void:
 		day += 1
 
 
-## jump the clock on to the next `h` o'clock (a night's sleep): today if it is
-## still to come, else tomorrow
-func skip_to(h: float) -> void:
-	if h <= hour:
-		day += 1
-	hour = h
-
-
 func is_defeated(id: String) -> bool:
 	return defeated.has(id)
 

@@ -28,6 +28,7 @@ func _process(_dt: float) -> bool:
 		_light()
 		_routine()
 		_streaming()
+		_night_things()
 		print("routine_check: %s" % ("all passed" if failures == 0 else "%d failed" % failures))
 		quit(1 if failures else 0)
 	return false
@@ -54,7 +55,7 @@ func _clock() -> void:
 	check(absf(ws.hour - float(DB.CONFIG.clock.startHour)) < 0.01, "a save from before the clock starts at the start hour")
 	ws.hour = 22.0
 	game.inn.wake("hester")
-	check(absf(ws.hour - float(DB.CONFIG.inn.wakeHour)) < 0.01, "a night at the inn wakes at first light")
+	check(absf(ws.hour - 22.0) < 0.01, "a bed mends you but never moves the shared clock")
 
 
 func _light() -> void:
@@ -142,6 +143,40 @@ func _streaming() -> void:
 	for i in 60:
 		game.npcs.update(0.016)
 	print("routine_check: npcs.update %.3f ms a frame for %d townsfolk" % [(Time.get_ticks_usec() - t0) / 60000.0, game.npcs.all.size()])
+
+
+## activeHours keeps an enemy to its hours; quests and conditions can ask the hour
+func _night_things() -> void:
+	var ws = game.world_state
+	check(DayNight.in_hours(23.0, [21, 5]) and DayNight.in_hours(2.0, [21, 5]) and not DayNight.in_hours(12.0, [21, 5]), "a span can run past midnight")
+	var e = null
+	for c in game.enemies.list:
+		if c.alive and c.state == "idle":
+			e = c
+			break
+	check(e != null, "an idle enemy to test with")
+	if e == null:
+		return
+	e.active_hours = [21, 5]
+	ws.hour = 12.0
+	game.enemies._keep_hours()
+	check(not game.enemies.list.has(e) and game.enemies.dormant.has(e) and e.group.get_parent() == null, "a night thing is gone by day")
+	ws.hour = 22.0
+	game.enemies._keep_hours()
+	check(game.enemies.list.has(e) and not game.enemies.dormant.has(e), "and back after dark")
+	e.active_hours = null
+	check(Quests.condition_holds(game, {"hours": [21, 5]}) and not Quests.condition_holds(game, {"hours": [6, 18]}), "conditions can ask the hour")
+	var open: Array = DB.quests.values().filter(func(q): return game.quests.status(q.id) == "available")
+	check(not open.is_empty(), "a quest on offer to test with")
+	if open.is_empty():
+		return
+	var q: Dictionary = open[0]
+	q.hours = [6, 7]
+	var gated: String = game.quests.status(q.id)
+	q.hours = [21, 5]
+	var at_night: String = game.quests.status(q.id)
+	q.erase("hours")
+	check(gated == "locked" and at_night == "available", "a night quest is offered only at night")
 
 
 func check(ok: bool, what: String) -> void:

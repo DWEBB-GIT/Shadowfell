@@ -48,10 +48,12 @@ const CONFIG := {
 	# a bed at an inn (an innkeeper npc; its `bedPrice` beats this price):
 	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
 	# of a level of rested experience, and the inn as your rest point
-	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6, "wakeHour": 7.0},
+	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
 	# The world clock (WorldState.hour, saved with the world): a whole day
 	# passes in `dayMinutes` real minutes of play; a new world starts at
-	# `startHour`. DayNight turns the hour into the light: the sun rises in the
+	# `startHour`. It is a fact of the shared world: nothing one player does
+	# moves it (a bed mends you but the night goes on), so a server can own it
+	# and every client sees the dark fall together. DayNight turns the hour into the light: the sun rises in the
 	# east at 6 and sets in the west at 18; at night a dim blue moon
 	# (`moonlight`, a share of the sun) and `nightAmbient` of the day's fill.
 	"clock": {"dayMinutes": 48.0, "startHour": 9.0, "moonlight": 0.3, "nightAmbient": 0.55},

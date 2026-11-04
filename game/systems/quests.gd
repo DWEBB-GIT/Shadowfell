@@ -38,6 +38,9 @@ static func condition_holds(g, when) -> bool:
 		return false
 	if when.get("level") and g.progression.level < when.level:
 		return false
+	# a time of day by the world clock, e.g. {"hours": [21, 5]} after dark
+	if when.has("hours") and not DayNight.in_hours(g.world_state.hour, when.hours):
+		return false
 	return true
 
 
@@ -66,6 +69,9 @@ func count_kill(type: String) -> void:
 		for o in DB.quests[id].objectives:
 			if o.type != "kill" or o.get("target") != type:
 				continue
+			# a quest kept to certain hours (a night's watch) counts only then
+			if not DayNight.in_hours(game.world_state.hour, DB.quests[id].get("hours")):
+				continue
 			if not kills.has(id):
 				kills[id] = {}
 			var k: Dictionary = kills[id]
@@ -93,6 +99,9 @@ func status(id: String) -> String:
 	if accepted.has(id):
 		return "ready" if objectives(id).all(func(o): return o.done) else "active"
 	if q.get("choice") and chosen(q.choice) != "":
+		return "locked"
+	# offered only at certain hours of the world clock (`hours`: [from, to])
+	if q.has("hours") and not DayNight.in_hours(game.world_state.hour, q.hours):
 		return "locked"
 	for r in q.get("requires", []):
 		if not done.has(r):

@@ -417,6 +417,16 @@ static func _routines(s: DataStore, out: PackedStringArray) -> void:
 		known[id] = true
 		for msg in _blocks_problems(r.get("blocks"), {}):
 			out.append("Routine %s: %s" % [id, msg])
+	# hours of the world clock: night things and night quests
+	for e in s.enemies:
+		if e.has("activeHours") and not _hours_ok(e.activeHours):
+			out.append("Enemy %s: activeHours must be [from, to], hours 0 to 24" % e.get("id"))
+	for sp in s.enemy_spawns:
+		if sp.has("activeHours") and not _hours_ok(sp.activeHours):
+			out.append("Enemy spawn %s: activeHours must be [from, to], hours 0 to 24" % sp.get("id"))
+	for q in s.quests:
+		if q.has("hours") and not _hours_ok(q.hours):
+			out.append("Quest %s: hours must be [from, to], hours 0 to 24" % q.get("id"))
 	for n in s.npcs:
 		if not n.has("routine"):
 			continue
@@ -431,6 +441,10 @@ static func _routines(s: DataStore, out: PackedStringArray) -> void:
 		else:
 			for msg in _blocks_problems(r, places):
 				out.append("NPC %s: routine %s" % [n.get("id"), msg])
+
+
+static func _hours_ok(span) -> bool:
+	return span is Array and span.size() == 2 and span.all(func(v): return _is_num(v) and float(v) >= 0 and float(v) <= 24)
 
 
 static func _blocks_problems(blocks, places: Dictionary) -> Array:

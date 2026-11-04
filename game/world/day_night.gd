@@ -65,6 +65,17 @@ static func _offset(dir: Vector2, elev: float) -> Vector3:
 	return Vector3(h.x, DISTANCE * sin(elev), h.y)
 
 
+## Is `hour` within [from, to)? A span may run past midnight ([21, 5]).
+## Enemies' `activeHours`, quests' `hours` and the `hours` condition use it.
+static func in_hours(hour: float, span) -> bool:
+	if not span is Array or span.size() < 2:
+		return true
+	var h := fposmod(hour, 24.0)
+	var a := float(span[0])
+	var b := float(span[1])
+	return (h >= a and h < b) if a <= b else (h >= a or h < b)
+
+
 ## "14:05"
 static func clock_text(hour: float) -> String:
 	var m := int(floor(fposmod(hour, 24.0) * 60.0))
