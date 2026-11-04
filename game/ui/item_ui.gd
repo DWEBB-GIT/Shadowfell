@@ -1845,7 +1845,10 @@ func _tip_box(text: String, width: float) -> void:
 ## The bottom-right corner, above the bag slots (left of the bags when
 ## they are open, so it never covers them).
 func _place_tip() -> void:
-	if not tooltip.visible:
+	# a button can report the mouse over it while the HUD is still joining the
+	# scene; out of the tree there is no viewport (on the web that crashed the
+	# game at load with "null function")
+	if not tooltip.visible or not is_inside_tree():
 		return
 	var vp := get_viewport_rect().size
 	var s := UI.fit_steady(tooltip)
