@@ -49,7 +49,7 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	var visuals := func():
 		if hit.get("holy"):
 			events.emit("spellFlash", {"position": enemy.position, "school": "holy"})
-		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main"})
+		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main", "ability": not swing})
 		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or swing})
 	if show > 0:
 		enemy.hurt(hit.amount, {"stagger": 0.0, "quiet": true})

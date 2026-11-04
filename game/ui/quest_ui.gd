@@ -662,6 +662,9 @@ func update_marks() -> void:
 	var cam: Camera3D = game.camera
 	var vp := get_viewport_rect().size
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.6) * 0.5 + 0.5
+	var map_rect := Rect2()
+	if hud.minimap and hud.minimap.visible:
+		map_rect = hud.minimap.get_global_rect().grow_individual(6, Minimap.OUT_TOP, Minimap.OUT_RIGHT, 30)
 	for n in game.npcs.all:
 		if not n.present or n.position.distance_squared_to(game.player.position) > 70.0 * 70.0:
 			if marks.has(n.id): marks[n.id].visible = false
@@ -684,8 +687,14 @@ func update_marks() -> void:
 		var at: Vector3 = n.position + Vector3(0, 2.55, 0)
 		var s := cam.unproject_position(at)
 		var visible := not cam.is_position_behind(at) and s.x > -vp.x * 0.025 and s.x < vp.x * 1.025 and s.y > -vp.y * 0.025 and s.y < vp.y * 1.025
+		var pos := s - Vector2(l.size.x / 2, l.size.y) - Vector2(0, bob * 5)
+		# never over the minimap, and never through a roof or wall (Dan 2026-11-04)
+		if visible and map_rect.intersects(Rect2(pos, l.size)):
+			visible = false
+		if visible and game.world and (game.world.roof_over(n.position.x, n.position.z) or game.world.see_through.hides(cam.global_position, at)):
+			visible = false
 		l.visible = visible
-		l.position = s - Vector2(l.size.x / 2, l.size.y) - Vector2(0, bob * 5)
+		l.position = pos
 
 
 # --------------------------------------------------------- layout

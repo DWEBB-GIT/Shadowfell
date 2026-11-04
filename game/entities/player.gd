@@ -78,6 +78,8 @@ func _init(g) -> void:
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
 	ground_shadow = Fx.blob_shadow(1.3)
+	# top level: the group's jump and front flip never lift or turn it
+	ground_shadow.top_level = true
 	group.add_child(ground_shadow)
 	torch_light.light_color = Color("ffa860")
 	torch_light.light_energy = 0
@@ -114,8 +116,9 @@ func _sync() -> void:
 		group.rotation.x = TAU * clampf(flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY), 0.0, 1.0)
 		var pivot := Vector3(0, 0.9 * DB.CONFIG.player.visualScale, 0)
 		group.position += pivot - group.basis * pivot
-	# The contact shadow stays on the ground while the body leaves it.
-	ground_shadow.position.y = 0.03 - jump_h
+	# The contact shadow stays flat on the ground while the body leaves it
+	# (it is top level, so it ignores the group's hop and flip).
+	ground_shadow.position = Vector3(position.x, position.y - jump_h + 0.03, position.z)
 
 
 func _part(name: String) -> Node3D:
@@ -321,7 +324,7 @@ func _reset_jump() -> void:
 	flip = -1.0
 	rig.airborne = false
 	position.y = Terrain.height_at(position.x, position.z)
-	ground_shadow.position.y = 0.03
+	ground_shadow.position = position + Vector3(0, 0.03, 0)
 
 
 func _update_jump(dt: float, requested: bool) -> void:
