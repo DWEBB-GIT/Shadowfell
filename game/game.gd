@@ -25,6 +25,7 @@ var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
+var releasing := false ## the spirit is rising behind the loading screen
 var zoom: float = DB.CONFIG.camera.zoomDefault
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
@@ -438,6 +439,7 @@ func start_game(resume: bool) -> void:
 	reputation.reset()
 	titles.reset()
 	pending_death = null
+	releasing = false
 	telegraphs.clear()
 	hud.clear_numbers()
 	action_bar.reset()
@@ -484,11 +486,19 @@ func on_player_death(killer = null) -> void:
 
 
 ## Leave the body and walk as a spirit (systems/afterlife.gd).
+## The loading screen goes up first, in the same frame as the click, so
+## there is always something to see while the spirit rises; it lifts once
+## the ground round the rest point is built (Dan, 2026-11-04: the death
+## screen seemed to freeze). Any dead, embodied player can release, even if
+## the death screen came up some other way.
 func release_spirit() -> bool:
-	if not player.dead or pending_death == null:
+	if not player.dead or afterlife.ghost or releasing:
 		return false
+	releasing = true
 	pending_death = null
 	hud.hide_death()
+	hud.show_loading()
+	hud.loading.show_progress("Your spirit drifts…", 0.0)
 	afterlife.release()
 	_snap_camera()
 	_arrive("Your spirit drifts…")
@@ -501,12 +511,17 @@ func release_spirit() -> bool:
 func _arrive(text: String) -> void:
 	var land = world.land
 	var stream = world.stream
+	var tree := get_tree()
 	if land == null or land.missing(camera_target) + stream.missing(camera_target) == 0:
+		# nothing to build: a short beat under the veil, then lift it
+		await tree.process_frame
+		await tree.process_frame
+		hud.hide_loading()
+		releasing = false
 		return
 	land.gentle = true
 	stream.gentle = true
 	hud.show_loading()
-	var tree := get_tree()
 	var total := maxi(1, land.missing(camera_target) + stream.missing(camera_target))
 	while true:
 		var left: int = land.missing(camera_target) + stream.missing(camera_target)
@@ -521,6 +536,7 @@ func _arrive(text: String) -> void:
 	# one more frame so the new ground is drawn before the screen lifts
 	await tree.process_frame
 	hud.hide_loading()
+	releasing = false
 
 
 ## Release and return to life at once at the rest point, wounded.
