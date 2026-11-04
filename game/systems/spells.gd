@@ -1035,7 +1035,7 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	opts.knockback = float(t.get("knockback", 0.0))
 	enemy.hurt(hit.amount, opts)
 	var events: Events = game.events
-	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main"})
+	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main", "ability": true})
 	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else "main"})
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":

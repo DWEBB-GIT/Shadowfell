@@ -312,12 +312,12 @@ func _coin_piles(coins: int) -> Node3D:
 		# tiny sparkles in the metal's colour drifting up off the pile
 		var motes := CPUParticles3D.new()
 		var dot := QuadMesh.new()
-		dot.size = Vector2(0.035, 0.035)
+		dot.size = Vector2(0.085, 0.085) # bigger, easy to spot (Dan 2026-11-04)
 		motes.mesh = dot
 		var dm := Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.9))
 		dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 		motes.material_override = dm
-		motes.amount = 6
+		motes.amount = 8
 		motes.lifetime = 1.4
 		motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 		motes.emission_sphere_radius = 0.1
