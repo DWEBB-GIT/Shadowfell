@@ -59,6 +59,7 @@ func _separation() -> void:
 	# a lone pair far from the rest: one step matches push_apart
 	var a = living[0]
 	var b = living[1]
+	game.player.position = Vector3(4990, 0, 4990) # (idle ones out of view are left be)
 	a.position = Vector3(5000, 0, 5000)
 	b.position = Vector3(5000.3, 0, 5000.1)
 	var want: Array = Enemies.push_apart(a.position, a.radius, b.position, b.radius, 0.5)
@@ -89,7 +90,7 @@ func _interaction_near() -> void:
 	for s in spots:
 		for off in [Vector2.ZERO, Vector2(1.5, 0), Vector2(0, -2.5)]:
 			game.player.position = Vector3(s.x + off.x, Terrain.height_at(s.x + off.x, s.y + off.y), s.y + off.y)
-			ia.update()
+			ia.update(true)
 			var got = ia.current.key if ia.current else ""
 			var want = _old_pick(ia)
 			if got == want:
@@ -130,7 +131,7 @@ func _area_loot() -> void:
 		ok = ok and loot.area_count(l) == loot.area_count(l, all)
 	check(ok and all.size() >= 4, "area counts match with the shared list (%d lootables)" % all.size())
 	game.player.position = base
-	game.interaction.update()
+	game.interaction.update(true)
 	var cur = game.interaction.current
 	check(cur != null and cur.key.begins_with("loot:") and cur.prompt.contains("more nearby"), "Space offers the heap (%s)" % (cur.prompt if cur else "nothing"))
 

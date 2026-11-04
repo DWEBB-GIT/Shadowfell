@@ -748,6 +748,12 @@ static func isolate_materials(root: Node) -> Array:
 				continue
 			if not cache.has(m):
 				cache[m] = m.duplicate()
+				# emission stays switched on (black until a hit flashes it): a
+				# material that switches it on mid-fight needs a new shader,
+				# and a browser stalls for seconds compiling it on the first hit
+				if cache[m] is BaseMaterial3D and not cache[m].emission_enabled:
+					cache[m].emission_enabled = true
+					cache[m].emission = Color.BLACK
 				out.append(cache[m])
 			mi.set_surface_override_material(i, cache[m])
 	return out
@@ -756,7 +762,7 @@ static func isolate_materials(root: Node) -> Array:
 static func set_emissive(materials: Array, colour: Color, amount: float) -> void:
 	for m in materials:
 		if m is BaseMaterial3D:
-			m.emission_enabled = amount > 0.001
+			m.emission_enabled = true # never toggled: see isolate_materials
 			m.emission = colour * amount
 
 

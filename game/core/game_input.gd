@@ -75,6 +75,11 @@ func _input(e: InputEvent) -> void:
 			held.erase(code)
 	elif e is InputEventMouseMotion:
 		_mouse(e.position)
+		# the motion carries which buttons are really down
+		if mouse.leftHeld and not (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			mouse.leftHeld = false
+		if mouse.rightHeld and not (e.button_mask & MOUSE_BUTTON_MASK_RIGHT):
+			mouse.rightHeld = false
 	elif e is InputEventMouseButton:
 		_mouse(e.position)
 		# a held left button (mouse aim) lets go wherever the mouse is
@@ -103,9 +108,26 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		held.clear()
+	# the browser never sends the key-up or button-up for a press let go on
+	# another window or screen: drop everything held when the game loses the
+	# mouse or focus, so a held click-walk cannot run on forever
+	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT, NOTIFICATION_WM_MOUSE_EXIT]:
+		if what != NOTIFICATION_WM_MOUSE_EXIT:
+			held.clear()
+		release_mouse()
+
+
+func release_mouse() -> void:
+	mouse.leftHeld = false
+	mouse.rightHeld = false
+
+
+## A held button the engine no longer sees as down has been let go somewhere
+## this window did not hear about (another screen, a browser popup).
+func _process(_dt: float) -> void:
+	if mouse.leftHeld and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		mouse.leftHeld = false
+	if mouse.rightHeld and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		mouse.rightHeld = false
 
 

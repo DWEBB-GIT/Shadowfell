@@ -37,11 +37,19 @@ func _init(g) -> void:
 ## Everything further than `near` metres (along x or z) is left out: there
 ## are hundreds of points across the world, and building them all, with
 ## each lootable's area count, twice a frame cost ~6 ms.
-func _candidates(near := INF) -> Array:
+## `fixed` keeps only the points that never move (shrines, the grave,
+## stations, puzzles, things to examine): all a click needs (click_points).
+func _candidates(near := INF, fixed := false) -> Array:
 	var loot = game.loot
 	var list := []
 	var pp: Vector3 = game.player.position
 	var far := func(x: float, z: float) -> bool: return absf(x - pp.x) > near or absf(z - pp.z) > near
+	if fixed:
+		list.append_array(game.grave.interactions())
+		_fixed_points(list, far)
+		list.append_array(game.puzzles.interactions())
+		_examine_points(list, far)
+		return list
 	# bodies and loot: using one loots everything close by
 	var lootables: Array = loot.lootables()
 	for l in lootables:
@@ -57,6 +65,23 @@ func _candidates(near := INF) -> Array:
 	list.append_array(game.npcs.interactions())
 	list.append_array(game.chests.interactions())
 	list.append_array(game.grave.interactions())
+	_fixed_points(list, far)
+	# a glinting ore vein, for a miner
+	list.append_array(game.mining.interactions())
+	list.append_array(game.gathering.interactions())
+	list.append_array(game.discovery.interactions())
+	list.append_array(game.puzzles.interactions())
+	for sp in Layout.signposts:
+		if far.call(sp.position[0], sp.position[1]):
+			continue
+		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
+	_examine_points(list, far)
+	return list
+
+
+## shrines and crafting stations
+func _fixed_points(list: Array, far: Callable) -> void:
+	var from := list.size()
 	for sh in Layout.shrines:
 		if far.call(sh.position[0], sh.position[1]):
 			continue
@@ -94,21 +119,16 @@ func _candidates(near := INF) -> Array:
 				else:
 					game.hud.error("You need to learn %s from a trainer first." % skill_name)})
 	# each station's name and cursor, for the hover tooltip (game.gd)
-	for c in list:
+	for i in range(from, list.size()):
+		var c = list[i]
 		if c.key.begins_with("station:") and not c.has("name"):
 			var st = Layout.station(c.key.substr(8))
 			if st != null:
 				c.name = title(st.name)
 				c.cursor = look(st.kind).cursor
-	# a glinting ore vein, for a miner
-	list.append_array(game.mining.interactions())
-	list.append_array(game.gathering.interactions())
-	list.append_array(game.discovery.interactions())
-	list.append_array(game.puzzles.interactions())
-	for sp in Layout.signposts:
-		if far.call(sp.position[0], sp.position[1]):
-			continue
-		list.append({"key": "sign:" + sp.id, "x": sp.position[0], "z": sp.position[1], "bias": 0.3, "reach": 2.6, "prompt": "Read the signpost", "run": func(): game.hud.show_signpost(sp)})
+
+
+func _examine_points(list: Array, far: Callable) -> void:
 	for p in game.world.examine_points:
 		if far.call(p.x, p.z):
 			continue
@@ -117,7 +137,6 @@ func _candidates(near := INF) -> Array:
 		if p.id == "watch_post":
 			c.reach = 3.2
 		list.append(c)
-	return list
 
 
 ## What Space reaches that has no clickable body of its own (shrines,
@@ -128,7 +147,18 @@ func click_points() -> Array:
 		return game.afterlife.interactions()
 	if game.player.dead:
 		return []
-	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:"))
+	# the cursor asks every frame; these points stand still, so a list a
+	# quarter second old is as good (it cost ~2 ms a frame)
+	var now := Time.get_ticks_msec()
+	if now - _click_at > CLICK_CACHE_MS:
+		_click_at = now
+		_click_cache = _candidates(CLICK_NEAR, true).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:"))
+	return _click_cache
+
+
+const CLICK_CACHE_MS := 250
+var _click_at := -100000
+var _click_cache: Array = []
 
 
 const EXAMINE_REPEAT_MS := 10000
@@ -150,7 +180,13 @@ func examine(id: String) -> void:
 		game.events.emit("examined", {"id": id})
 
 
-func update() -> void:
+## The prompt is looked for ten times a second (`force` now, as a key press
+## does): building every nearby point each frame was a millisecond or two.
+func update(force := false) -> void:
+	var now := Time.get_ticks_msec()
+	if not force and now - _update_at < UPDATE_MS:
+		return
+	_update_at = now
 	var player = game.player
 	if player.dead and not player.ghost:
 		current = null
@@ -171,8 +207,12 @@ func update() -> void:
 	current = best
 
 
+const UPDATE_MS := 100
+var _update_at := -100000
+
+
 func interact() -> bool:
-	update() # use the player's position this frame, not last frame's
+	update(true) # use the player's position this frame, not last frame's
 	if current == null:
 		return false
 	current.run.call()
