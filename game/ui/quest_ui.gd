@@ -191,6 +191,12 @@ func _ready_mark() -> String:
 	return "{art:map/quest_ready:15} " if Icons.art("map", "quest_ready") else "[font_size=13][color=#8cbf78]✓ [/color][/font_size]"
 
 
+## the followed quest's mark: the gold goal gem the minimap and world map
+## put on its goal, so the two read as one
+func _follow_mark() -> String:
+	return "{art:map/quest_goal:15} " if Icons.art("map", "quest_goal") else "◆ "
+
+
 func _sub(text: String) -> String:
 	return "[font_size=11][color=#9a8f78]%s[/color][/font_size]\n" % text.to_upper()
 
@@ -591,7 +597,7 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name)]
+		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused else "", UI.esc(q.name)]
 		if s == "ready":
 			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
