@@ -237,6 +237,10 @@ func _refresh_overhead(_force := false) -> void:
 	for k in land.chunks:
 		if _tiles.has(k) or maxi(absi(k.x - here.x), absi(k.y - here.y)) > 2:
 			continue
+		# wait until the streamed props on it are built too (WorldStream)
+		var stream = game.world.stream
+		if stream and not stream.covers(k.x * TILE_M, k.y * TILE_M, (k.x + 1) * TILE_M, (k.y + 1) * TILE_M):
+			continue
 		var d := Vector2(k - here).length_squared()
 		if d < best_d:
 			best_d = d

@@ -60,6 +60,18 @@ func is_loaded(x: float, z: float) -> bool:
 	return loaded.has(key(x, z))
 
 
+## every cell overlapping this rectangle is loaded (the minimap waits for
+## this before it photographs an area, so its still has the props on it)
+func covers(x0: float, z0: float, x1: float, z1: float) -> bool:
+	var a := key(x0, z0)
+	var b := key(x1 - 0.01, z1 - 0.01)
+	for i in range(a.x, b.x + 1):
+		for j in range(a.y, b.y + 1):
+			if not loaded.has(Vector2i(i, j)):
+				return false
+	return true
+
+
 # ------------------------------------------------------------ registering
 ## A placed prop (Layout.props entry): drawn with its cell.
 func add_prop(p: Dictionary) -> void:
