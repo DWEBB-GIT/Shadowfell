@@ -21,7 +21,7 @@ func _init(g, h) -> void:
 	hud = h
 	var root: Control = hud.root
 	panel = UI.panel(root, 0, UI.WINDOW)
-	panel.add_theme_stylebox_override("panel", UI.frame(Vector4(26, 20, 26, 22), "window", 20))
+	panel.add_theme_stylebox_override("panel", UI.frame(Vector4(26, 20, 26, 22), "panel", 8))
 	panel.custom_minimum_size = Vector2(240, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var v := UI.vbox(panel, 8)

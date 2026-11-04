@@ -211,7 +211,7 @@ static func bar_track() -> StyleBoxTexture:
 static func panel(parent: Node, pad := 6, bg := PANEL, border := BORDER) -> PanelContainer:
 	var p := PanelContainer.new()
 	if border == BORDER and (bg == PANEL or bg == WINDOW):
-		p.add_theme_stylebox_override("panel", frame(pad, "panel" if bg == PANEL else "window", 8 if bg == PANEL else 20))
+		p.add_theme_stylebox_override("panel", frame(pad, "panel", 8))
 	else:
 		p.add_theme_stylebox_override("panel", box(bg, border, pad))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -449,7 +449,7 @@ static func coin(kind: String) -> Texture2D:
 ## close button, a rule, then the body.
 static func window(parent: Node, title: String, width := 0.0, on_close := Callable()) -> Dictionary:
 	var p := panel(parent, 0, WINDOW, BORDER)
-	p.add_theme_stylebox_override("panel", frame(Vector4(18, 14, 18, 16), "window", 20))
+	p.add_theme_stylebox_override("panel", frame(Vector4(18, 14, 18, 16), "panel", 8))
 	if width > 0:
 		p.custom_minimum_size = Vector2(width, 0)
 	var v := vbox(p, 6)

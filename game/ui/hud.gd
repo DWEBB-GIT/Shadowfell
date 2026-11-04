@@ -847,7 +847,7 @@ func _build_modals() -> void:
 	document.visible = false
 	# a yes/no question over everything (confirm())
 	confirm_box = UI.panel(root, 0, UI.WINDOW, UI.BORDER)
-	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "window", 20))
+	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "panel", 8))
 	confirm_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	var cv := UI.vbox(confirm_box, 12)
 	confirm_text = UI.wrapped(UI.label(cv, "", 16, UI.TEXT))
