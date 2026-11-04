@@ -1368,6 +1368,188 @@
       "zone": "nr_briar"
     },
     {
+      "id": "sf_odd_jobs",
+      "name": "Odd Jobs",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        1,
+        1
+      ],
+      "giver": "tf_elsie",
+      "turnIn": "tf_iren",
+      "summary": "Take the Lantern Inn's broken hinge to Iren Holt at the forge across the square.",
+      "offer": "You have the look of someone whose purse is mostly hope. I know it well; half my regulars wear it. Here. This hinge broke on the back door last night. Take it to Iren at the forge. She owes me for a winter of soup, and she will pretend she does not. Tell her I said so, and tell her I said it kindly.",
+      "progress": "Iren's forge is across the square. Give her the hinge and Elsie's kind words. Mostly the hinge.",
+      "complete": "Iren turns the hinge over. “Soup. She means the soup.” She sighs and tosses it on the mend pile, then looks at you properly. “You have nothing to hang a tool on, have you? Here. Offcuts. It is a belt now. Rods, knives, a pick if you ever earn one. Keep them on that and your bags stay for the things you are going to lose.”",
+      "turnInLog": "Iren hands you a plain leather belt. Your tools have somewhere to live now. Press T to open your tool belt.",
+      "lend": [
+        {
+          "item": "sf_broken_hinge",
+          "count": 1
+        }
+      ],
+      "objectives": [
+        {
+          "id": "hinge",
+          "type": "talk",
+          "target": "tf_iren",
+          "label": "Bring the hinge to Iren at the forge",
+          "location": "tf_town"
+        }
+      ],
+      "reward": {
+        "coins": 2,
+        "size": "errand",
+        "items": [
+          {
+            "item": "belt_pouch",
+            "count": 1
+          }
+        ]
+      },
+      "requires": []
+    },
+    {
+      "id": "sf_hungry_work",
+      "name": "Hungry Work",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        1,
+        2
+      ],
+      "giver": "tf_elsie",
+      "turnIn": "tf_cook",
+      "requires": [
+        "sf_odd_jobs"
+      ],
+      "summary": "Elsie says her cook, Hobb Marrow, needs a pair of hands. Speak to him by the hearth inside the Lantern Inn.",
+      "offer": "Iren gave you a belt? She must like you. Do not tell her I noticed. Now, I cannot feed you for nothing; the stew would hear about it. But Hobb is short a pair of hands in the kitchen and you have two. Go and see him by the hearth. He is the one swearing at the pot.",
+      "progress": "Hobb Marrow cooks at the hearth inside the Lantern Inn. Follow the swearing.",
+      "complete": "Hobb does not look up from the pot. “Elsie sent you. Elsie sends me everyone. Last week it was a goat.” He tastes the spoon and makes a face. “No coin? No food either, then, unless you work. Right. I can use you.”",
+      "objectives": [
+        {
+          "id": "cook",
+          "type": "talk",
+          "target": "tf_cook",
+          "label": "Speak to Hobb Marrow by the inn's hearth",
+          "location": "tf_town"
+        }
+      ],
+      "reward": {
+        "size": "errand"
+      }
+    },
+    {
+      "id": "sf_a_meal_earned",
+      "name": "A Meal Earned",
+      "map": "new",
+      "zone": "nr_orchard",
+      "level": [
+        1,
+        2
+      ],
+      "giver": "tf_cook",
+      "turnIn": "tf_cook",
+      "requires": [
+        "sf_hungry_work"
+      ],
+      "summary": "Bring Hobb three bundles of firewood from Osric's woodpile, two boar haunches from the young boars in Holt Meadow and three handfuls of wild garlic from under Heda's orchard hedge.",
+      "offer": "Here is the bargain. I have a pot and a fire and no fuel, no meat and nothing to make it taste of anything. Osric the woodcutter leaves split wood by his stump; take three bundles, he will not miss them, he will only mention it. Two boar haunches from the meadow: Heda's young boars are eating her orchard, so we are eating them. And wild garlic, three handfuls, under her hedge. Bring the lot and you eat tonight.",
+      "progress": "Three bundles of firewood from Osric's woodpile, two boar haunches from Holt Meadow and three handfuls of wild garlic from Heda's orchard hedge. Then back to Hobb.",
+      "complete": "Hobb builds the fire high, sears the boar and throws in the garlic, and the inn smells like somewhere people stay. He hands you a plate. “Eat. Then watch.” He shows you how to turn the meat on the spit so the fat bastes it. “There. Now you can feed yourself. Do not tell Elsie I teach for free, or she will charge me for it.”",
+      "turnInLog": "Hobb teaches you Cooking and his spit-roast boar. Any hearth or campfire will do; boar haunches come from boars.",
+      "objectives": [
+        {
+          "id": "wood",
+          "type": "collect",
+          "target": "firewood",
+          "count": 3,
+          "label": "Firewood from Osric's woodpile",
+          "location": "tf_orchard"
+        },
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "boar_meat",
+          "count": 2,
+          "label": "Boar haunches from Holt Meadow",
+          "location": "vr_meadow"
+        },
+        {
+          "id": "garlic",
+          "type": "collect",
+          "target": "wild_garlic",
+          "count": 3,
+          "label": "Wild garlic from Heda's orchard hedge",
+          "location": "tf_orchard"
+        }
+      ],
+      "reward": {
+        "coins": 4,
+        "size": "standard",
+        "items": [
+          {
+            "item": "roast_boar",
+            "count": 3
+          }
+        ],
+        "learnSkill": [
+          "cooking"
+        ],
+        "learnRecipe": [
+          "roast_boar"
+        ]
+      }
+    },
+    {
+      "id": "sf_borrowed_rod",
+      "name": "The Borrowed Rod",
+      "map": "new",
+      "zone": "vr_village",
+      "level": [
+        1,
+        3
+      ],
+      "giver": "vr_tobin",
+      "turnIn": "vr_tobin",
+      "requires": [
+        "sf_a_meal_earned"
+      ],
+      "summary": "Tobin lends you his old rod and shows you how to cast. Catch a Gloomwater perch in Willow Pond and bring it to him.",
+      "offer": "Hobb sent you? Then you can cook a fish and cannot catch one. That is the wrong way round, but it is a start. Take my old rod. Do not lose it, it was my father's and he did not lose it either. Cast where the water is still, wait for the bob to dip, and strike. Bring me a perch and we will see if you have the patience.",
+      "progress": "Use the old rod from your tool belt at Willow Pond. When the bob dips, strike. One Gloomwater perch for Tobin.",
+      "complete": "Tobin weighs the perch in his hand and nods as if it has told him something. Then he holds out his other hand for the rod. “It goes home with me. Buy your own; I sell them, by coincidence.” He scribbles on a scrap. “And take this to the fire: perch fried in its own fat with Hobb's garlic. My mother's. She caught better fish than me and never let me forget it.”",
+      "turnInLog": "You hand back Tobin's old rod. Buy a fishing rod from him to fish again; his pan-perch recipe is in your Cooking book.",
+      "lend": [
+        {
+          "item": "old_rod",
+          "count": 1
+        }
+      ],
+      "acceptLearn": [
+        "fishing"
+      ],
+      "objectives": [
+        {
+          "id": "perch",
+          "type": "collect",
+          "target": "gloomwater_perch",
+          "count": 1,
+          "label": "Catch a Gloomwater perch",
+          "location": "vr_willow"
+        }
+      ],
+      "reward": {
+        "coins": 3,
+        "size": "standard",
+        "learnRecipe": [
+          "pan_fried_perch"
+        ]
+      }
+    },
+    {
       "id": "vr_first_hunt",
       "name": "An Honest Day’s Work",
       "map": "new",
@@ -1520,7 +1702,9 @@
         "coins": 16,
         "size": "errand"
       },
-      "requires": [],
+      "requires": [
+        "sf_borrowed_rod"
+      ],
       "level": [
         1,
         3

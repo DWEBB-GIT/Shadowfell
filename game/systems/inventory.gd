@@ -63,10 +63,9 @@ func reset() -> void:
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
-	# everyone starts with a small belt pouch, so the tool belt is its own
-	# place from the start and a bought rod never shows in the bags too
-	# (Dan, 2026-11-02); the Warden's tool pack replaces it
-	sockets[Items.TOOL_SOCKET] = {"id": STARTER_POUCH, "slots": _empty_slots(int(Items.get_def(STARTER_POUCH).bagSlots))}
+	# no tool belt at the start: the utility belt (belt_pouch) is the first
+	# quest's reward, and the belt's button and key appear once it is worn
+	# (Dan, 2026-11-04); the Warden's tool pack replaces it later
 	# and a materials pouch in its own slot: ores, gems, fish, hides and
 	# stones go there first, so they leave the bags free (Dan, 2026-11-03)
 	_give_material_pouch()
@@ -370,6 +369,9 @@ func _fit_tool_pack(id: String) -> void:
 					_insert(st.id, st.get("count", 1), st.get("rolls"))
 	_stow_tools()
 	game.events.emit("log", {"text": "Your tools go into the %s, out of your bags." % Items.get_def(id).name.to_lower(), "kind": "loot"})
+	# the first belt opens the tool belt (Dan, 2026-11-04)
+	if not old and game.hud:
+		game.hud.toast("Tool belt unlocked: press %s" % game.keys.label("toolbelt").split(" / ")[0])
 
 
 ## The fixed materials pouch everyone carries in its own socket.

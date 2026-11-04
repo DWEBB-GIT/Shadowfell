@@ -339,6 +339,23 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("reward names unknown item %s" % e.get("item"))
 			if not (_is_int(e.get("count", 1)) and e.get("count", 1) >= 1):
 				bad.call("reward %s needs a count of at least 1" % e.get("item"))
+		# a trainer's quest teaches (Dan, 2026-11-04): lent items, a lesson on
+		# taking it, and a skill, recipe or spell as the reward
+		for e in q.get("lend", []):
+			if s.item(e.get("item")).is_empty():
+				bad.call("lends unknown item %s" % e.get("item"))
+		for sk in q.get("acceptLearn", []) + r.get("learnSkill", []):
+			if DataStore.find(s.skills, sk).is_empty():
+				bad.call("teaches unknown skill %s" % sk)
+		for rc in r.get("learnRecipe", []):
+			var rec := DataStore.find(s.recipes, rc)
+			if rec.is_empty():
+				bad.call("teaches unknown recipe %s" % rc)
+			elif not rec.get("trainer"):
+				bad.call("recipe %s comes with its skill; only a trained recipe can be a reward" % rc)
+		for ab in r.get("learnSpell", []):
+			if DataStore.find(s.abilities, ab).is_empty():
+				bad.call("teaches unknown ability %s" % ab)
 		for f in r.get("reputation", {}):
 			if DataStore.find(s.factions, f).is_empty():
 				bad.call("reward names unknown faction %s" % f)

@@ -3281,6 +3281,39 @@
       ],
       "topics": [],
       "nodes": []
+    },
+    {
+      "id": "tf_cook",
+      "greetings": [
+        {
+          "text": "“Hobb Marrow. Cook. If you are not here to help, you are here to be in the way.”"
+        },
+        {
+          "text": "“You again. Good. The pot is always hungry and so, I expect, are you.”",
+          "when": {
+            "quest": "sf_a_meal_earned",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "hobb_trade",
+          "prompt": "How did you come to cook here?",
+          "node": "hobb_trade"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "hobb_trade",
+          "text": "“I cooked for the watch, up at the lantern posts. Then the watch stopped coming home and there was nobody to cook for.” He scrapes the pot harder than it needs. “Elsie took me in. The food is better here. The company is worse.”",
+          "replies": [
+            {
+              "text": "I will leave you to it."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

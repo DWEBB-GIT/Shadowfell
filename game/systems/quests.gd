@@ -231,6 +231,18 @@ func accept(id: String, quiet := false) -> bool:
 	if status(id) != "available":
 		return false
 	var q: Dictionary = DB.quests[id]
+	# what the giver lends you for the job (an old rod), taken back on hand-in
+	for g in q.get("lend", []):
+		if game.inventory.room_for(g.item) < int(g.get("count", 1)):
+			game.events.emit("log", {"text": "Make room in your bags first: %s lends you something." % DB.npcs[q.giver].name, "kind": "muted", "throttle": "quest-room"})
+			if game.hud:
+				game.hud.error("Your bags are full.")
+			return false
+	for g in q.get("lend", []):
+		game.inventory.add_item(g.item, int(g.get("count", 1)))
+	# a lesson that starts at once (Tobin shows you how to fish)
+	for sk in q.get("acceptLearn", []):
+		game.skills.grant(sk)
 	accepted.append(id)
 	kills.erase(id)
 	if tracked.size() < MAX_TRACKED:
@@ -257,6 +269,7 @@ func abandon(id: String) -> bool:
 		focus = ""
 	_last.erase(id)
 	kills.erase(id)
+	_take_back_lent(id)
 	game.events.emit("log", {"text": "Quest abandoned: %s." % DB.quests[id].name, "kind": "muted"})
 	_changed()
 	return true
@@ -294,8 +307,16 @@ func complete(id: String) -> bool:
 	var coins := U.roll_coins(r.get("coins"), game.random)
 	if coins:
 		inventory.add_coins(coins, "from %s" % DB.npcs[q.turnIn].name)
+	_take_back_lent(id)
 	for g in gifts:
 		inventory.add_item(g.item, g.get("count", 1))
+	# a trainer's quest teaches as its reward: a skill, a recipe, a spell
+	for sk in r.get("learnSkill", []):
+		game.skills.grant(sk)
+	for rc in r.get("learnRecipe", []):
+		game.cooking.grant_recipe(rc)
+	for ab in r.get("learnSpell", []):
+		game.skills.grant_spell(ab)
 	var xp := reward_xp(id, game.progression.level)
 	if xp > 0:
 		game.progression.add_xp(xp)
@@ -307,6 +328,14 @@ func complete(id: String) -> bool:
 	events.emit("questComplete", {"id": id})
 	_changed()
 	return true
+
+
+## The giver takes back what was lent for a quest (the Old Rod).
+func _take_back_lent(id: String) -> void:
+	for g in DB.quests[id].get("lend", []):
+		var n: int = game.inventory.remove_count(g.item, int(g.get("count", 1)))
+		if n > 0:
+			game.events.emit("log", {"text": "You hand back the %s." % Items.get_def(g.item).name, "kind": "muted"})
 
 
 func set_tracked(id: String, on: bool) -> bool:

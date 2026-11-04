@@ -165,7 +165,7 @@
     {
       "id": "roast_boar",
       "skill": "cooking",
-      "rank": 5,
+      "rank": 1,
       "skillUp": [20, 30, 40],
       "inputs": [
         {
@@ -180,6 +180,29 @@
       "station": "fire",
       "trainer": "hester",
       "cost": 4
+    },
+    {
+      "id": "pan_fried_perch",
+      "skill": "cooking",
+      "rank": 1,
+      "skillUp": [15, 25, 35],
+      "inputs": [
+        {
+          "item": "gloomwater_perch",
+          "count": 1
+        },
+        {
+          "item": "wild_garlic",
+          "count": 1
+        }
+      ],
+      "output": {
+        "item": "pan_fried_perch",
+        "count": 1
+      },
+      "station": "fire",
+      "trainer": "hester",
+      "cost": 2
     },
     {
       "id": "smelt_copper",

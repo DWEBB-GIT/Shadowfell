@@ -342,6 +342,17 @@
       "dialogue": "tf_elsie"
     },
     {
+      "id": "tf_cook",
+      "name": "Hobb Marrow",
+      "title": "Cook, Lantern Inn",
+      "mapIcon": "cooking",
+      "level": 8,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#b39a82",
+      "dialogue": "tf_cook"
+    },
+    {
       "id": "tf_iren",
       "name": "Iren Holt",
       "title": "Smith",
