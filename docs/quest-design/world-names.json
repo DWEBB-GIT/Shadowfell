@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "revision_date": "2026-11-01",
+  "status": "Approved design labels for future content; production IDs retained.",
+  "regions": [
+    {
+      "id": "thornford",
+      "old_name": "Thornford Reach",
+      "name": "Thornford Reach",
+      "biome": "Temperate farms, hedges and a wooded road",
+      "decision": "Keep",
+      "reason": "Thorn and ford suggest hedged country and a river crossing; Reach names the district."
+    },
+    {
+      "id": "rillbank",
+      "old_name": "Rillbank",
+      "name": "Rillbank Vale",
+      "biome": "River valley, mills and freight landings",
+      "decision": "Refine",
+      "reason": "Keep Rillbank as the town; Vale makes the wider geography distinct from its quays."
+    },
+    {
+      "id": "mirefen",
+      "old_name": "Mirefen",
+      "name": "Mirefen",
+      "biome": "Wetland, peat, reeds and raised paths",
+      "decision": "Keep",
+      "reason": "The name already signals wet ground; the hubs show how people work around it."
+    },
+    {
+      "id": "paleweald",
+      "old_name": "Paleweald",
+      "name": "Paleweald",
+      "biome": "Haunted woodland and sheltered archive settlements",
+      "decision": "Keep",
+      "reason": "Pale suggests the drained woodland palette; the woodland name fits roots, trees and old tracks."
+    },
+    {
+      "id": "brinewatch",
+      "old_name": "Brinewatch coast",
+      "name": "Brinewatch Strand",
+      "biome": "Salt coast, cliffs, beaches and working harbors",
+      "decision": "Refine",
+      "reason": "Brine suggests the sea; Strand describes the wider shoreline while Brinewatch remains the port."
+    },
+    {
+      "id": "highmere",
+      "old_name": "Highmere Downs",
+      "name": "Highmere Downs",
+      "biome": "Rolling uplands, grazing, quarries and small high waters",
+      "decision": "Keep",
+      "reason": "Highmere and Downs suit inhabited upland country rather than a second volcanic frontier."
+    },
+    {
+      "id": "cinder",
+      "old_name": "Cinder Reach",
+      "name": "Cinder Reach",
+      "biome": "Ash country, lava-cut rock and industrial work camps",
+      "decision": "Keep",
+      "reason": "Cinder immediately suggests heat and ash. The human settlements add their own identities."
+    },
+    {
+      "id": "frostward",
+      "old_name": "Frostward snowlands",
+      "name": "Frostward Marches",
+      "biome": "Snowbound borderlands, passes and sheltered settlements",
+      "decision": "Refine",
+      "reason": "Frost cues the climate; Marches suggests a frontier of watch posts and supply roads."
+    },
+    {
+      "id": "sable",
+      "old_name": "Sable Well desert",
+      "name": "Sunscar Basin",
+      "biome": "Sun-baked desert, salt roads, dunes and oasis settlements",
+      "decision": "Rename region",
+      "reason": "Sunscar suggests heat and weathered ground. Sable Well becomes the oasis town, not the name of an entire desert."
+    }
+  ],
+  "hub_changes": [
+    {
+      "id": "north_ferry",
+      "old_name": "North Ferry",
+      "name": "Willow Ferry",
+      "reason": "A river landmark is more memorable than a direction."
+    },
+    {
+      "id": "scribes_rest",
+      "old_name": "Scribes’ Rest",
+      "name": "Scribes’ Hollow",
+      "reason": "Keeps the archive identity while giving the settlement woodland geography."
+    },
+    {
+      "id": "high_pass",
+      "old_name": "High Pass Relay",
+      "name": "Heatherpass Relay",
+      "reason": "Heather ties this pass to the uplands rather than any generic high road."
+    },
+    {
+      "id": "furnace_camp",
+      "old_name": "Furnace Camp",
+      "name": "Redkiln Camp",
+      "reason": "A distinctive working name for the hot inner frontier."
+    },
+    {
+      "id": "lantern_pass",
+      "old_name": "Lantern Pass",
+      "name": "Rimepass",
+      "reason": "The cold pass gains an immediate climate cue and avoids confusion with Lantern Crossing."
+    },
+    {
+      "id": "wellward",
+      "old_name": "Wellward",
+      "name": "Sable Well",
+      "reason": "Retains the established oasis name as a settlement inside Sunscar Basin."
+    },
+    {
+      "id": "caravan_rest",
+      "old_name": "Caravan Rest",
+      "name": "Duneshade Rest",
+      "reason": "A desert rest stop with an understandable reason to exist."
+    },
+    {
+      "id": "glass_road",
+      "old_name": "Glass Road Station",
+      "name": "Glassroad Station",
+      "reason": "A compact proper name for the desert approach."
+    },
+    {
+      "id": "north_ledger_gate",
+      "old_name": "North Ledger Gate",
+      "name": "Rimewatch Gate",
+      "reason": "The northern final approach gets a geographical name; the institution is described in its story."
+    }
+  ],
+  "policy": [
+    "Use a geographical region name, a human settlement name and a specific landmark name at different scales.",
+    "A place name may convey climate, terrain, local work or history; it need not literally name the biome.",
+    "Keep existing current-map IDs and saved quest identities.",
+    "Use shorter local labels on the minimap, with region context in the map and journal."
+  ]
+}

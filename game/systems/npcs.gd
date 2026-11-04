@@ -22,6 +22,8 @@ class Npc:
 	var model: Node3D
 	var rig: Rig
 	var board := false ## a notice board: never turns or works
+	var rest_timer := 0.0 ## a smith's break between bouts at the anvil
+	var bout := 6 ## blows left in this bout
 	var work_timer: float
 	var collider: Dictionary
 	var present := true
@@ -37,8 +39,21 @@ class Npc:
 		facing = rest_facing
 		group = Node3D.new()
 		group.name = "Npc_" + id
+		group.add_to_group(World.MOVING_GROUP)
 		model = Assets.instance(d.model)
 		group.add_child(model)
+		if d.get("tool"):
+			var hand := model.find_child("Arm_R", true, false) as Node3D
+			if hand:
+				var built_in := model.find_child("Weapon", true, false) as Node3D
+				if built_in:
+					built_in.visible = false
+				var tool := Assets.instance(d.tool)
+				tool.name = "WorkTool"
+				tool.position = Vector3(0, -0.55, 0.04)
+				tool.rotation_degrees.x = -25
+				tool.scale = Vector3.ONE * d.get("toolScale", 0.8)
+				hand.add_child(tool)
 		rig = Rig.new(model, "warden")
 		# townsfolk who share a model are told apart by a tint
 		if d.get("tint"):
@@ -65,14 +80,15 @@ class Npc:
 		var dz: float = player.position.z - position.z
 		# only someone you are talking to turns to you, and keeps an eye on
 		# you until you walk off
-		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
-		var anvil = def.get("anvil")
+		var near: bool = (is_same(game.dialogue.npc, self) or is_same(game.merchant.npc, self) or is_same(game.bank.npc, self)) and U.hyp(dx, dz) < 8 and not player.dead
+		var anvil = def.get("anvil", def.get("workAt"))
+		rig.pose = def.get("idlePose") if not near else null
 		var want: float
 		if board:
 			want = rest_facing
 		elif near:
 			want = atan2(dx, dz)
-		elif anvil:
+		elif anvil and rest_timer <= 0:
 			want = atan2(anvil[0] - position.x, anvil[1] - position.z)
 		else:
 			want = rest_facing
@@ -80,13 +96,25 @@ class Npc:
 		d = atan2(sin(d), cos(d))
 		facing += d * minf(1, dt * 5)
 		# at work: a hammer blow every so often, unless someone wants a word
-		if anvil and not near:
+		# in bouts: a run of blows, then a breather looking about (Dan,
+		# 2026-11-03: the constant hammering wore thin)
+		if anvil and not near and rest_timer > 0:
+			rest_timer -= dt
+			if rest_timer <= 0:
+				bout = 4 + randi() % 6
+		elif anvil and not near:
 			work_timer -= dt
 			if work_timer <= 0:
 				work_timer = 1.5 + randf() * 0.8
-				rig.play("strike", 0.6, 0.45)
-				game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
-		rig.update(dt, 0)
+				bout -= 1
+				if bout <= 0:
+					rest_timer = 8.0 + randf() * 10.0
+				rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
+				if def.has("anvil"):
+					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
+		# limbs only move where the camera could see them
+		if U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
+			rig.update(dt, 0)
 		group.position = position
 		group.rotation.y = facing
 
@@ -121,7 +149,10 @@ func update(dt: float) -> void:
 		n.update_presence()
 	for n in all:
 		if n.present:
-			n.update(dt, game.player)
+			var near: bool = n.position.distance_squared_to(game.player.position) < 180.0 * 180.0
+			n.group.visible = near
+			if near:
+				n.update(dt, game.player)
 
 
 ## what the interaction system offers for each NPC

@@ -5,6 +5,8 @@ extends RefCounted
 ## bind: hover a bar slot and press a key. Movement stays on WASD and the
 ## arrow keys. A key held with Shift is its own binding, 'Shift+Digit1'.
 ##
+## Character specific (Settings) gives each character its own set.
+##
 ## Each control scheme (Settings: Classic controls) keeps its own bindings,
 ## so switching back and forth never loses either set. Mouse aim moves the
 ## last two spell slots off Q and E (WoW hands strafe there) to R and F, and
@@ -38,8 +40,9 @@ const KEY_ACTIONS := [
 	{"id": "talents", "label": "Talents", "group": "Menus", "keys": ["KeyN"]},
 	{"id": "quests", "label": "Quest log", "group": "Menus", "keys": ["KeyL"]},
 	{"id": "map", "label": "World map", "group": "Menus", "keys": ["KeyM"]},
-	{"id": "settings", "label": "Settings", "group": "Menus", "keys": ["KeyO"]},
+	{"id": "settings", "label": "Main menu", "group": "Menus", "keys": ["KeyO"]},
 	{"id": "bags", "label": "Bags", "group": "Menus", "keys": ["KeyB", "KeyI"]},
+	{"id": "toolbelt", "label": "Tool belt", "group": "Menus", "keys": ["KeyT"]},
 	{"id": "skills", "label": "Professions", "group": "Menus", "keys": ["KeyU"]},
 	{"id": "save", "label": "Save the game", "group": "Menus", "keys": ["KeyK"]},
 ]
@@ -85,14 +88,28 @@ func _init(g) -> void:
 	g.events.on("settingsChanged", func(e):
 		if e.id == "classicControls":
 			load_scheme(not e.value)
+			g.events.emit("keysChanged", {})
+		elif e.id == "keysPerCharacter":
+			load_scheme(aim)
 			g.events.emit("keysChanged", {}))
+
+
+## Where a scheme's bindings are kept. With Character specific on (Settings,
+## Key binding) each character has its own, starting from the shared ones.
+func _store_key(for_aim: bool, own := true) -> String:
+	var k := KEY_AIM if for_aim else KEY
+	if own and game.settings.get_value("keysPerCharacter") and game.character != null:
+		k += "." + str(game.character.id)
+	return k
 
 
 ## read the bindings of one scheme (defaults, then what the player changed)
 func load_scheme(for_aim: bool) -> void:
 	aim = for_aim
 	map = _defaults(aim)
-	var text = Store.get_item(KEY_AIM if aim else KEY)
+	var text = Store.get_item(_store_key(aim))
+	if text == null:
+		text = Store.get_item(_store_key(aim, false))
 	var saved = JSON.parse_string(text) if text != null else null
 	if typeof(saved) == TYPE_DICTIONARY:
 		for a in KEY_ACTIONS:
@@ -159,5 +176,5 @@ func reset_all() -> void:
 
 
 func _save() -> void:
-	Store.set_item(KEY_AIM if aim else KEY, JSON.stringify(map))
+	Store.set_item(_store_key(aim), JSON.stringify(map))
 	game.events.emit("keysChanged", {})

@@ -1,0 +1,322 @@
+{
+  "_about": "Playable archetypes (classes): base attributes, gains per level, what they may wear and wield, their resources, their always-on trait, their spellbook (`abilities`: the base kit and the swap pool), the spells they start with on the bar (`bar`, slots 1 2 3 4 Q E: only the basic ability, Dan 2026-10-27), the spells their early trainer in Brackenford teaches (`trained`: ability, trainer npc, level, cost, optional quest gate), the spells left for later trainers in the big cities (`later`: locked until a trainer for them is placed) and their starting gear. Resources: `mana` (from Intellect) and `bars`, one refilling-bar system with different numbers per class (Resolve, Energy, Focus, Corruption, combo points). See the comment at the top of src/systems/resources.js for what each bar field does.",
+  "archetypes": [
+    {
+      "id": "warden",
+      "name": "Warrior",
+      "mainStat": "strength",
+      "base": {
+        "strength": 4,
+        "agility": 2,
+        "intellect": 1,
+        "stamina": 13,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "strength": 2,
+        "stamina": 3
+      },
+      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "shields": true,
+      "dualWield": true,
+      "resources": {
+        "bars": [
+          {
+            "id": "resolve",
+            "name": "Resolve",
+            "colour": "#c8862e",
+            "max": 100,
+            "start": "empty",
+            "perSwing": 12,
+            "perHitTaken": 6,
+            "perBlock": 10,
+            "decayAfter": 10,
+            "decayPerSecond": 3,
+            "healPerSpent": 0.2
+          }
+        ]
+      },
+      "trait": {
+        "id": "weaponMaster",
+        "name": "Weapon Master",
+        "desc": "Heavy Strike, Cleave and Brace change with the weapons you hold: a weapon on its own, two weapons, or a weapon and shield. Spending Resolve heals you for 2% of your health per 10 spent."
+      },
+      "defensive": "brace",
+      "abilities": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace", "shieldBreak", "rend"],
+      "bar": ["heavyStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "crushingBlow", "trainer": "brask", "level": 3, "cost": 10},
+        {"ability": "brace", "trainer": "brask", "level": 4, "cost": 25},
+        {"ability": "cleave", "trainer": "brask", "level": 6, "cost": 50}
+      ],
+      "later": ["lunge", "battleCry", "shieldBreak", "rend"],
+      "startingGear": {
+        "mainHand": "worn_longsword",
+        "offHand": "kite_shield",
+        "chest": "travelling_clothes"
+      }
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue",
+      "mainStat": "agility",
+      "base": {
+        "strength": 2,
+        "agility": 5,
+        "intellect": 1,
+        "stamina": 8,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "agility": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth", "leather"],
+      "shields": false,
+      "dualWield": true,
+      "resources": {
+        "bars": [
+          {
+            "id": "energy",
+            "name": "Energy",
+            "colour": "#d8c040",
+            "max": 100,
+            "start": "full",
+            "regenPerSecond": 10,
+            "regenOutOfCombat": 25,
+            "shadowMultiplier": 3,
+            "decayAfter": 6
+          },
+          {
+            "id": "combo",
+            "name": "Combo points",
+            "colour": "#e05a30",
+            "max": 5,
+            "start": "empty",
+            "points": true,
+            "fadeAfter": 8
+          }
+        ]
+      },
+      "trait": {
+        "id": "opportunist",
+        "name": "Opportunist",
+        "desc": "Your attacks from behind your target, or from Shadow, always crit."
+      },
+      "defensive": "guile",
+      "abilities": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
+      "bar": ["quickStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "doubleCut", "trainer": "nell", "level": 3, "cost": 10},
+        {"ability": "guile", "trainer": "nell", "level": 4, "cost": 25},
+        {"ability": "poisonedBlade", "trainer": "nell", "level": 6, "cost": 50}
+      ],
+      "later": ["sleep", "shadow"],
+      "startingGear": {
+        "mainHand": "rusty_dirk",
+        "offHand": "rusty_dirk",
+        "chest": "travelling_clothes"
+      }
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "mainStat": "agility",
+      "rangedPowerShare": 1,
+      "base": {
+        "strength": 2,
+        "agility": 5,
+        "intellect": 1,
+        "stamina": 9,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "agility": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth", "leather"],
+      "shields": false,
+      "dualWield": false,
+      "resources": {
+        "bars": [
+          {
+            "id": "focus",
+            "name": "Focus",
+            "colour": "#5aa868",
+            "max": 150,
+            "start": "full",
+            "regenPerSecond": 8,
+            "regenOutOfCombat": 20,
+            "stillBonus": 0.5,
+            "decayAfter": 6
+          }
+        ]
+      },
+      "trait": {
+        "id": "houndCompanion",
+        "name": "Hound Companion",
+        "fromLevel": 8,
+        "desc": "From level 8 a hound joins you, attacks your target and keeps its attention. (The hound arrives in a later build: until then the Ranger relies on traps and Disengage.)"
+      },
+      "defensive": "disengage",
+      "abilities": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage", "venomArrow"],
+      "bar": ["quickShot", null, null, null, null, null],
+      "trained": [
+        {"ability": "flamingArrow", "trainer": "odo", "level": 3, "cost": 10},
+        {"ability": "disengage", "trainer": "odo", "level": 4, "cost": 25},
+        {"ability": "tarTrap", "trainer": "odo", "level": 6, "cost": 50}
+      ],
+      "later": ["tripleShot", "longShot", "venomArrow"],
+      "startingGear": {
+        "mainHand": "rusty_dirk",
+        "ranged": "hunting_bow",
+        "chest": "travelling_clothes",
+        "ammo": ["rough_arrow", 200]
+      }
+    },
+    {
+      "id": "occultist",
+      "name": "Occultist",
+      "mainStat": "intellect",
+      "base": {
+        "strength": 1,
+        "agility": 1,
+        "intellect": 6,
+        "stamina": 5,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "intellect": 2,
+        "stamina": 2
+      },
+      "armourTypes": ["cloth"],
+      "shields": false,
+      "dualWield": false,
+      "resources": {
+        "mana": {
+          "base": 100,
+          "perIntellect": 10,
+          "regenPerSecond": 0,
+          "regenOutOfCombat": 5
+        },
+        "bars": [
+          {
+            "id": "corruption",
+            "name": "Corruption",
+            "colour": "#8a4ac8",
+            "max": 100,
+            "start": "empty",
+            "perDotTick": 1.3333,
+            "decayAfter": 6,
+            "decayPerSecond": 5,
+            "overload": {
+              "name": "Overcorrupted",
+              "damageBonus": 20,
+              "healthLossPercent": 2
+            }
+          }
+        ]
+      },
+      "trait": {
+        "id": "leech",
+        "name": "Leech",
+        "dotHealPercent": 15,
+        "desc": "15% of all the damage your curses and rots deal over time heals you. Every tick builds Corruption: at 100 you are Overcorrupted, dealing 20% more damage but losing 2% of your health a second until you Purge."
+      },
+      "defensive": "siphonLife",
+      "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
+      "bar": ["blightBolt", null, null, null, null, null],
+      "trained": [
+        {"ability": "rot", "trainer": "grue", "level": 3, "cost": 10},
+        {"ability": "siphonLife", "trainer": "grue", "level": 4, "cost": 25},
+        {"ability": "graveBloom", "trainer": "grue", "level": 6, "cost": 50}
+      ],
+      "later": ["hexOfWithering", "purge"],
+      "startingGear": {
+        "mainHand": "ritual_knife",
+        "chest": "frayed_robe"
+      }
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "mainStat": "strength",
+      "base": {
+        "strength": 4,
+        "agility": 1,
+        "intellect": 3,
+        "stamina": 13,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "strength": 2,
+        "stamina": 3
+      },
+      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "shields": true,
+      "dualWield": false,
+      "bannedWeaponTypes": ["dagger"],
+      "resources": {
+        "mana": {
+          "base": 120,
+          "perIntellect": 10,
+          "regenPerSecond": 0,
+          "regenOutOfCombat": 5
+        },
+        "bars": []
+      },
+      "trait": {
+        "id": "empoweredLight",
+        "name": "Empowered Light",
+        "echoPercent": 30,
+        "desc": "Your weapon swings echo with a holy hit for 30% extra damage."
+      },
+      "defensive": "lightShield",
+      "abilities": [
+        "holyStrike",
+        "lightsHammer",
+        "divineStorm",
+        "hallowedGround",
+        "bringToKneel",
+        "lightShield",
+        "smite",
+        "rebuke",
+        "hallowedBolt",
+        "mendingPrayer",
+        "quickMend",
+        "renewingLight",
+        "swiftRenewal",
+        "circleOfMending",
+        "radiantNova",
+        "thornedVow"
+      ],
+      "bar": ["holyStrike", null, null, null, null, null],
+      "trained": [
+        {"ability": "lightsHammer", "trainer": "aveline", "level": 3, "cost": 10},
+        {"ability": "lightShield", "trainer": "aveline", "level": 4, "cost": 25},
+        {"ability": "divineStorm", "trainer": "aveline", "level": 6, "cost": 50}
+      ],
+      "later": ["hallowedGround", "bringToKneel", "smite", "rebuke", "hallowedBolt"],
+      "startingGear": {
+        "mainHand": "worn_longsword",
+        "offHand": "kite_shield",
+        "chest": "travelling_clothes"
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "_about": "Weapon runes (Dan, 2026-11-02): one rune a weapon, put on by using a rune scroll (an item with `rune`) from the bags, dropped (dragged) onto any weapon, worn or in the bags, enchants that weapon; right-clicking it enchants the main-hand weapon, or the bow (asks before replacing one). Saves keep it as rolls.rune. Code: game/systems/runes.gd. A rune procs on hits from its weapon: melee swings for a melee weapon, arrows and bow abilities for a bow, and every other damaging spell or ability for the main-hand weapon (casters too; a spell counts as `spellSpeed` seconds) `ppm` times a minute on average whatever the weapon's speed (chance = ppm x speed / 60), and its effect is a share of the hit's weapon damage, so it grows with your gear. `effect` kinds: dot (damage over `duration` in ticks of `tick`, status), strike (instant damage; `chain` more enemies within `chainRange`), slow (instant damage plus a slow aura), heal (instant damage and heals you `healPercent` of it; `undeadBonus` % more against bone and grave foes), vulnerable (an aura: `damageTaken` % more for `duration`). `glow`: the weapon's look (FancyGear); its strength rises `strengthPerRank` for each enchant rank on the weapon and motes appear from rank `motesFromRank`.",
+  "runecraft": {
+    "_about": "Runecraft (Dan, 2026-11-03): runes are earned. Rune fragments of one element (items rune_<id>_fragment) fall rarely from fitting enemies that still give you XP (`chance` percent by the enemy's kind, as Fellstones: normal, caster, elite, boss). A Refiner binds `fragments` of one element and `coins` into that rune. Bosses and rare elites also drop a whole random rune `bossRuneChance` percent of the time, announced in the chat.",
+    "fragments": 10,
+    "coins": 300,
+    "bossRuneChance": 1,
+    "chance": { "normal": 1.5, "caster": 2, "elite": 8, "boss": 25 },
+    "sources": {
+      "embers": ["wm_cinder_gate_threat", "wm_ashworks_threat", "wm_furnace_camp_threat", "wm_ember_relay_threat", "wm_return_deep_crucible_threat"],
+      "rime": ["wm_frostgate_threat", "wm_lantern_pass_threat", "wm_hearthwatch_threat", "wm_whitebough_threat", "wm_last_beacon_threat", "wm_north_ledger_gate_threat", "wm_return_whitefall_vaults_threat", "wm_return_whitefall_vaults_elite"],
+      "venom": ["blackwood_prowler", "wm_mossreed_landing_threat", "wm_reedward_threat", "wm_pumpstead_threat", "wm_stiltmarket_threat", "wm_causeway_watch_threat", "wm_return_drowned_pumphouse_threat"],
+      "storm": ["wm_brinewatch_docks_threat", "wm_saltmere_threat", "wm_return_stormwatch_threat", "wm_highmere_market_threat", "wm_windscar_threat", "wm_high_pass_threat", "wm_quarryend_threat"],
+      "dawn": ["ghoul", "brute", "tf_revenant", "tf_sentry", "vr_gravewalker", "wm_greyroot_threat", "wm_scribes_rest_threat"],
+      "dread": ["seer", "tf_keeper", "vr_crypt_keeper"]
+    }
+  },
+  "spellSpeed": 2.5,
+  "glowScale": { "strengthPerRank": 0.15, "motesFromRank": 3 },
+  "runes": [
+    { "id": "embers", "name": "Embers", "school": "fire", "status": "burning", "ppm": 4,
+      "text": "Your weapon hits sometimes set the target Burning: {pct}% of the hit as fire over 6 sec.",
+      "effect": { "kind": "dot", "percent": 45, "duration": 6, "tick": 1.5 },
+      "glow": { "colour": "#ff7a2a", "strength": 1.0, "pulse": 1.1 } },
+    { "id": "rime", "name": "Rime", "school": "frost", "status": "slowed", "ppm": 4,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as frost and slow the target by 30% for 4 sec.",
+      "effect": { "kind": "slow", "percent": 25, "slow": 30, "duration": 4 },
+      "glow": { "colour": "#7fd8ff", "strength": 1.0, "pulse": 0.0 } },
+    { "id": "venom", "name": "Venom", "school": "nature", "status": "poisoned", "ppm": 5,
+      "text": "Your weapon hits sometimes leave the target Poisoned: {pct}% of the hit as nature over 10 sec.",
+      "effect": { "kind": "dot", "percent": 50, "duration": 10, "tick": 2 },
+      "glow": { "colour": "#7ee05a", "strength": 1.0, "pulse": 0.5 } },
+    { "id": "storm", "name": "Storm", "school": "storm", "ppm": 3,
+      "text": "Your weapon hits sometimes call lightning: {pct}% of the hit to the target and one more enemy nearby.",
+      "effect": { "kind": "strike", "percent": 55, "chain": 1, "chainRange": 6 },
+      "glow": { "colour": "#ffe680", "strength": 1.0, "pulse": 2.6 } },
+    { "id": "dawn", "name": "Dawn", "school": "holy", "ppm": 3,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as holy and heal you for as much. Half again against the undead.",
+      "effect": { "kind": "heal", "percent": 35, "healPercent": 100, "undeadBonus": 50 },
+      "glow": { "colour": "#ffd27a", "strength": 1.0, "pulse": 0.35 } },
+    { "id": "dread", "name": "Dread", "school": "shadow", "status": "vulnerable", "ppm": 3,
+      "text": "Your weapon hits sometimes deal {pct}% of the hit as shadow and leave the target Vulnerable: 8% more damage taken for 5 sec.",
+      "effect": { "kind": "vulnerable", "percent": 20, "damageTaken": 8, "duration": 5 },
+      "glow": { "colour": "#a65cff", "strength": 1.0, "pulse": 1.5 } }
+  ]
+}

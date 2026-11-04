@@ -9,7 +9,7 @@ const SAVE_KEY := "shadowfall.save"
 const BACKUP_KEY := "shadowfall.save.unreadable"
 const SAVE_VERSION := 2
 ## The world's layout: 1 was the 72 x 225 m strip, 2 the whole world
-## (data/world_map.json). Older saves start again at the Last Cart.
+## (data/world/world_map.json). Older saves start again at the Last Cart.
 const MAP_VERSION := 2
 
 var game
@@ -42,6 +42,157 @@ static func _is_stack(s) -> bool:
 	if not Items.valid_rolls(s.id, s.get("rolls")):
 		return false
 	return not s.has("dur") or (_is_int(s.dur) and s.dur >= 0 and s.dur <= 100)
+
+
+## Content renamed or removed since a save was made (data/meta/renames.json:
+## { "items": { old: new }, "abilities": {...}, "quests": {...}, "recipes": {...} }).
+## A renamed id follows its rename; an id that no longer exists anywhere is
+## dropped with a note, so editing content never locks a player out of
+## their character. Returns the list of what was dropped.
+static var _renames = null
+
+
+static func renames() -> Dictionary:
+	if _renames == null:
+		var path := DataPaths.path_for("renames")
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		_renames = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return _renames
+
+
+## Problems in renames.json itself, for the data gate (game/tests/validate_data.gd).
+static func rename_problems() -> PackedStringArray:
+	var out := PackedStringArray()
+	var tables := {"items": DB.items, "abilities": DB.abilities, "quests": DB.quests, "recipes": DB.recipes}
+	for kind in renames():
+		if kind.begins_with("_"):
+			continue
+		if not tables.has(kind):
+			out.append("renames.json: unknown kind %s (use items, abilities, quests or recipes)" % kind)
+			continue
+		var m = renames()[kind]
+		if typeof(m) != TYPE_DICTIONARY:
+			out.append("renames.json: %s must map old ids to new ids" % kind)
+			continue
+		for old in m:
+			if tables[kind].has(old):
+				out.append("renames.json: %s %s still exists, so it cannot be renamed" % [kind, old])
+			if not tables[kind].has(str(m[old])):
+				out.append("renames.json: %s %s is renamed to unknown %s" % [kind, old, m[old]])
+	return out
+
+
+static func _follow(kind: String, id, table: Dictionary):
+	if typeof(id) != TYPE_STRING:
+		return id
+	var m = renames().get(kind, {})
+	var seen := 0
+	while typeof(m) == TYPE_DICTIONARY and m.has(id) and seen < 8:
+		id = str(m[id])
+		seen += 1
+	return id if table.has(id) else null
+
+
+static func _tidy_stack(st, where: String, dropped: Array):
+	if typeof(st) != TYPE_DICTIONARY or typeof(st.get("id")) != TYPE_STRING:
+		return st
+	var id = _follow("items", st.id, DB.items)
+	if id == null:
+		dropped.append("item %s (%s)" % [st.id, where])
+		return null
+	var out: Dictionary = st.duplicate()
+	out.id = id
+	if not Items.valid_rolls(id, out.get("rolls")):
+		out.erase("rolls")
+	return out
+
+
+static func _tidy_list(kind: String, l, table: Dictionary, where: String, dropped: Array):
+	if typeof(l) != TYPE_ARRAY:
+		return l
+	var out := []
+	for id in l:
+		var n = _follow(kind, id, table)
+		if n == null:
+			dropped.append("%s %s (%s)" % [kind.trim_suffix("s"), id, where])
+		elif not out.has(n):
+			out.append(n)
+	return out
+
+
+static func tidy_ids(data) -> Array:
+	var dropped := []
+	if typeof(data) != TYPE_DICTIONARY:
+		return dropped
+	var inv = data.get("inventory")
+	if typeof(inv) == TYPE_DICTIONARY:
+		var sk = inv.get("sockets")
+		if typeof(sk) == TYPE_ARRAY:
+			for i in sk.size():
+				var s = sk[i]
+				if typeof(s) != TYPE_DICTIONARY:
+					continue
+				if i > 0 and _follow("items", s.get("id"), DB.items) == null:
+					continue # an unknown bag stays for the check to report: its contents are at stake
+				if i > 0:
+					s.id = _follow("items", s.id, DB.items)
+				if typeof(s.get("slots")) == TYPE_ARRAY:
+					for k in s.slots.size():
+						s.slots[k] = _tidy_stack(s.slots[k], "bag %d" % i, dropped)
+		var eq = inv.get("equipment")
+		if typeof(eq) == TYPE_DICTIONARY:
+			for slot in eq:
+				eq[slot] = _tidy_stack(eq[slot], slot, dropped)
+		if typeof(inv.get("bank")) == TYPE_ARRAY:
+			for k in inv.bank.size():
+				inv.bank[k] = _tidy_stack(inv.bank[k], "bank", dropped)
+	if typeof(data.get("bar")) == TYPE_ARRAY:
+		var bar: Array = data.bar
+		for k in bar.size():
+			var a = bar[k]
+			if typeof(a) != TYPE_STRING or a == "dodge" or a == "draught":
+				continue
+			var ref = ActionBar.item_ref(a)
+			var n = _follow("items", ref, DB.items) if ref != null else _follow("abilities", a, DB.abilities)
+			if n == null:
+				dropped.append("bar button %s" % a)
+				bar[k] = null
+			else:
+				bar[k] = ("item:" + n) if ref != null else n
+	if typeof(data.get("spells")) == TYPE_ARRAY:
+		data.spells = _tidy_list("abilities", data.spells, DB.abilities, "learned", dropped)
+	var q = data.get("quests")
+	if typeof(q) == TYPE_DICTIONARY:
+		for k in ["accepted", "done", "tracked"]:
+			q[k] = _tidy_list("quests", q.get(k, []), DB.quests, k, dropped)
+		if typeof(q.get("kills")) == TYPE_DICTIONARY:
+			var kills := {}
+			for id in q.kills:
+				var n = _follow("quests", id, DB.quests)
+				if n != null:
+					kills[n] = q.kills[id]
+			q.kills = kills
+		if typeof(q.get("focus")) == TYPE_STRING:
+			var f = _follow("quests", q.focus, DB.quests)
+			q.focus = f if f != null else ""
+	var c = data.get("cooking")
+	if typeof(c) == TYPE_DICTIONARY and typeof(c.get("recipes")) == TYPE_ARRAY:
+		c.recipes = _tidy_list("recipes", c.recipes, DB.recipes, "known recipes", dropped)
+	var s = data.get("skills")
+	if typeof(s) == TYPE_DICTIONARY:
+		for id in s.keys():
+			if not DB.skills.has(id):
+				dropped.append("skill %s" % id)
+				s.erase(id)
+	var w = data.get("world")
+	if typeof(w) == TYPE_DICTIONARY and typeof(w.get("ground")) == TYPE_ARRAY:
+		var ground := []
+		for g in w.ground:
+			var n = g if Loot.is_coins(g) else _tidy_stack(g, "on the ground", dropped)
+			if n != null:
+				ground.append(n)
+		w.ground = ground
+	return dropped
 
 
 ## Upgrade a build-1 save: its flat item list goes into the backpack, its
@@ -133,8 +284,8 @@ static func fit_bags(data):
 static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 	check.call(_is_int(inv.get("coins")) and inv.coins >= 0, "coins")
 	var sk = inv.get("sockets")
-	# (saves from before the tool pack have no tool socket)
-	check.call(typeof(sk) == TYPE_ARRAY and (sk.size() == Items.BAG_SOCKETS or sk.size() == Items.TOOL_SOCKET + 1), "bag sockets")
+	# (saves from before the tool pack or the materials pouch lack their sockets)
+	check.call(typeof(sk) == TYPE_ARRAY and (sk.size() == Items.BAG_SOCKETS or sk.size() == Items.TOOL_SOCKET + 1 or sk.size() == Items.MATERIAL_SOCKET + 1), "bag sockets")
 	if typeof(sk) == TYPE_ARRAY:
 		for i in sk.size():
 			var s = sk[i]
@@ -142,9 +293,12 @@ static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 				check.call(typeof(s) == TYPE_DICTIONARY and s.get("id") == "backpack" and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() >= Items.BACKPACK_SLOTS, "backpack")
 			elif s != null:
 				var def = DB.items.get(s.get("id", "")) if typeof(s) == TYPE_DICTIONARY else null
-				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
+				check.call(def != null and def.kind == "bag" and bool(def.get("toolPack", false)) == (i == Items.TOOL_SOCKET) and bool(def.get("materialPouch", false)) == (i == Items.MATERIAL_SOCKET) and typeof(s.get("slots")) == TYPE_ARRAY and s.slots.size() == def.bagSlots, "bag in socket %d" % i)
 			if typeof(s) == TYPE_DICTIONARY and typeof(s.get("slots")) == TYPE_ARRAY:
 				check.call(s.slots.all(func(x): return x == null or _is_stack(x)), "contents of bag %d" % i)
+	# the bank (Bank): saves from before it have none
+	var bk = inv.get("bank")
+	check.call(bk == null or (typeof(bk) == TYPE_ARRAY and bk.all(func(x): return x == null or _is_stack(x))), "contents of the bank")
 	var eq = inv.get("equipment")
 	check.call(typeof(eq) == TYPE_DICTIONARY, "equipment")
 	if typeof(eq) == TYPE_DICTIONARY:
@@ -171,7 +325,9 @@ static func validate_save(data) -> Array:
 		check.call(_is_num(p.get("health")) and p.health > 0, "player health")
 		check.call(_is_num(p.get("maxHealth")) and p.maxHealth >= 1 and _is_num(p.get("health")) and p.health <= p.maxHealth, "player max health")
 	var pr = data.get("progression")
-	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level < 100 and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
+	# Accept the previous cap's valid characters before Progression.apply
+	# clamps them to the new cap. Their inventory/quests remain intact.
+	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level <= maxi(100, DB.CONFIG.progression.maxLevel) and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
 	var inv = data.get("inventory")
 	check.call(typeof(inv) == TYPE_DICTIONARY, "missing inventory")
 	if typeof(inv) == TYPE_DICTIONARY:
@@ -207,10 +363,11 @@ static func validate_save(data) -> Array:
 	check.call(typeof(w) == TYPE_DICTIONARY, "missing world")
 	if typeof(w) == TYPE_DICTIONARY:
 		check.call(_is_str_array(w.get("defeated")) and _is_str_array(w.get("collected")) and _is_str_array(w.get("examined")), "world lists")
+		check.call(WorldPuzzles.valid_saved_states(w.get("puzzles", {})), "world puzzle state")
 		check.call(typeof(w.get("drops")) == TYPE_DICTIONARY and w.drops.values().all(func(d): return _in_bounds(d)), "world drops")
 		check.call(w.get("shrineActivated") == null or typeof(w.get("shrineActivated")) == TYPE_STRING, "shrine state")
 		check.call(w.get("respawn") == null or _in_bounds(w.respawn), "respawn position")
-		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return _is_stack(g) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
+		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return (_is_stack(g) or Loot.is_coins(g)) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
 		if w.has("camp"):
 			check.call(w.camp == null or _in_bounds(w.camp), "camp position")
 		if w.has("restPoint"):
@@ -238,6 +395,7 @@ func serialize() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
 		"map": MAP_VERSION,
+		"worldId": Terrain.chosen_map(),
 		"savedAt": Time.get_datetime_string_from_system(true) + "Z",
 		"player": {
 			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
@@ -245,6 +403,7 @@ func serialize() -> Dictionary:
 			"health": player.health,
 			"maxHealth": player.max_health,
 			"wounds": game.afterlife.wounds,
+			"woundLeft": game.afterlife.wound_left,
 		},
 		"progression": game.progression.serialize(),
 		"inventory": game.inventory.serialize(),
@@ -291,7 +450,11 @@ func read(k = null) -> Dictionary:
 	var data = JSON.parse_string(text)
 	if data == null:
 		return {"status": "invalid", "errors": ["not valid JSON"], "raw": text}
-	data = fit_bags(migrate_save(data))
+	data = migrate_save(data)
+	var dropped := tidy_ids(data)
+	if not dropped.is_empty():
+		push_warning("Save %s: dropped content that no longer exists: %s" % [k, ", ".join(dropped)])
+	data = fit_bags(data)
 	var errors := validate_save(data)
 	if not errors.is_empty():
 		return {"status": "invalid", "errors": errors, "raw": text}
@@ -313,7 +476,14 @@ func apply(data: Dictionary) -> void:
 	var progression = game.progression
 	var inventory = game.inventory
 	var ws = game.world_state
-	var old_map := int(data.get("map", 1)) < MAP_VERSION
+	# Older saves predate world identity and belong to the legacy continent.
+	# Keep possessions and quest state, but arrive at the new world's safe opening.
+	var old_map := int(data.get("map", 1)) < MAP_VERSION or str(data.get("worldId", "act1")) != Terrain.chosen_map()
+	if old_map:
+		var backup_key := key + ".before_world_" + Terrain.chosen_map()
+		var original = Store.get_item(key)
+		if original != null and Store.get_item(backup_key) == null:
+			Store.set_item(backup_key, original)
 	ws.apply(data.world)
 	if old_map:
 		ws.forget_places()
@@ -346,6 +516,7 @@ func apply(data: Dictionary) -> void:
 			if Items.get_def(g.item).get("toolPack") and inventory.tool_pack == null:
 				inventory.add_item(g.item, 1)
 	game.afterlife.wounds = clampi(int(data.player.get("wounds", 0)), 0, int(DB.CONFIG.death.maxWounds))
+	game.afterlife.wound_left = float(data.player.get("woundLeft", DB.CONFIG.death.woundSeconds))
 	game.recompute_max_health()
 	player.health = minf(data.player.health, player.max_health)
 	game.resources.reset()

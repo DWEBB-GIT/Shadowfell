@@ -4,8 +4,8 @@ Shadowfell spell effect shapes.
 Builds the abstract shapes the spell effects are made of (slash arcs,
 shockwave walls, ground cracks, claw tears, speed streaks, aura columns, a
 ward plate, bolts, a dome, a rune circle, a hammer of light, a storm
-spiral, grasping roots, a curse sigil, chains, a starburst, a halo and a
-pillar of light) and exports each as glTF binary into assets/models/fx/. These are
+spiral, grasping roots, a curse sigil, chains, a starburst, a halo, a
+pillar of light, and the level-up crest, helix and nova) and exports each as glTF binary into assets/models/fx/. These are
 effect shapes, not characters, creatures or props: those are modelled by
 hand.
 
@@ -16,7 +16,7 @@ or, with the bpy module installed (pip install bpy):
 
 Conventions (game/systems/fx.gd relies on these):
   * 1 Blender unit = 1 metre; every shape is about 1 m across so the game
-    scales it (data/spell_fx.json). Forward is Blender -Y (+Z in the game).
+    scales it (data/abilities/spell_fx.json). Forward is Blender -Y (+Z in the game).
   * No colour of its own: the "Col" attribute is greyscale brightness, 1 at
     the hot edge, 0 where the shape fades out. The game draws the shapes
     additively and tints them per spell, so black reads as transparent and
@@ -509,9 +509,73 @@ def build_pillar():
     s.export("fx_pillar")
 
 
+def build_crest():
+    """A hero's seal on the ground, 1 m out (level up): a hot outer ring, a
+    fainter inner ring, sixteen rays from the middle, long and short in
+    turn, and eight chevrons pointing out between the rings."""
+    s = Shape()
+    _stroke(s, _circle(0, 0, 1.0, 56), 0.03, plane="xy")
+    _stroke(s, _circle(0, 0, 0.42, 36), 0.02, 0.7, plane="xy")
+    for k in range(16):
+        a = 2 * math.pi * k / 16
+        r1 = 0.95 if k % 2 == 0 else 0.7
+        _stroke(s, [(math.cos(a) * 0.12 * t + math.cos(a) * r1 * (1 - t), math.sin(a) * 0.12 * t + math.sin(a) * r1 * (1 - t)) for t in (1.0, 0.5, 0.0)],
+                0.03 if k % 2 == 0 else 0.018, lambda t: 1.0 - 0.6 * t, plane="xy")
+    for k in range(8):
+        a = 2 * math.pi * (k + 0.5) / 8
+        ca, sa = math.cos(a), math.sin(a)
+        tx, ty = -sa, ca
+        tip = (ca * 0.86, sa * 0.86)
+        pts = [(ca * 0.72 + tx * 0.09, sa * 0.72 + ty * 0.09), tip, (ca * 0.72 - tx * 0.09, sa * 0.72 - ty * 0.09)]
+        _stroke(s, pts, 0.022, 0.9, plane="xy")
+    s.export("fx_crest")
+
+
+def build_helix():
+    """Light rising in a spiral (level up): three ribbons winding up a 1 m
+    tall column, 1 m across at the foot and narrowing, hot low down and
+    fading out at the top. Spun about its axis in game, it climbs."""
+    s = Shape()
+    segs = 24
+    for r in range(3):
+        rows = [[], [], []]
+        for i in range(segs + 1):
+            t = i / segs
+            a = 2 * math.pi * (r / 3 + t * 0.85)
+            rad = 1.0 - 0.45 * t
+            w = 0.07 * (1 - 0.5 * t)
+            g = (1 - t) ** 0.8
+            x, y = math.cos(a) * rad, math.sin(a) * rad
+            for side, row in zip((-1, 0, 1), rows):
+                row.append(s.v(x, y, t + w * side, 0 if side else g))
+        s.strip(rows)
+    s.export("fx_helix")
+
+
+def build_nova():
+    """A heroic star flare standing up and facing you (level up): four
+    long rays like a cross of light, four shorter diagonals, eight short
+    glints between them, round a hot middle."""
+    s = Shape()
+    c_ring = [s.v(math.cos(2 * math.pi * i / 10) * 0.12, 0, math.sin(2 * math.pi * i / 10) * 0.12, 0.6) for i in range(10)]
+    c = s.v(0, 0, 0, 1.0)
+    for i in range(10):
+        s.face(c, c_ring[(i + 1) % 10], c_ring[i])
+    for k in range(16):
+        a = 2 * math.pi * k / 16
+        length, w = (1.0, 0.075) if k % 4 == 0 else (0.62, 0.05) if k % 2 == 0 else (0.34, 0.035)
+        tip = (math.cos(a) * length, math.sin(a) * length)
+        l = (math.cos(a + 1.5) * w, math.sin(a + 1.5) * w)
+        r = (math.cos(a - 1.5) * w, math.sin(a - 1.5) * w)
+        s.face(c, s.v(l[0], 0, l[1], 0.95), s.v(tip[0], 0, tip[1], 0.0))
+        s.face(c, s.v(tip[0], 0, tip[1], 0.0), s.v(r[0], 0, r[1], 0.95))
+    s.export("fx_nova")
+
+
 BUILDERS = [build_arc, build_wave, build_crack, build_claws, build_streak, build_aura, build_ward,
             build_bolt, build_dome, build_runes, build_hammer, build_spiral, build_vines,
-            build_sigil, build_chains, build_burst, build_halo, build_pillar]
+            build_sigil, build_chains, build_burst, build_halo, build_pillar,
+            build_crest, build_helix, build_nova]
 
 if __name__ == "__main__":
     for b in BUILDERS:

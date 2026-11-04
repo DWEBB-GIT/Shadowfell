@@ -1,7 +1,7 @@
 # Imported models: sources and licences
 
 These are the original downloads. `assets/blender/import_models.py` turns
-them into the game's models in `assets/models/`. All four are free to use,
+them into the game's models in `assets/models/`. All of them are free to use,
 including commercially, under **Creative Commons Attribution 4.0**
 (CC-BY-4.0, https://creativecommons.org/licenses/by/4.0/): the game must
 credit the author (an in-game credits screen or a credits file shipped with
@@ -13,10 +13,30 @@ the game). They are not CC0.
 | `chicken.glb` (Hen) | Stylized Chicken 3D Model (Free Download) | ToonMesh 3D | https://sketchfab.com/3d-models/stylized-chicken-3d-model-free-download-5faf58bd65724d17bd9d1154b153b671 |
 | `stylized_dagger.glb` (Rusty dirk) | Stylized Dagger | Bunty Somaiya | https://sketchfab.com/3d-models/stylized-dagger-44aa1520612c40fa96f707c175c9ce96 |
 | `stylized_sword.glb` (Worn longsword) | Stylized Sword (Free Download) | FilonovArt | https://sketchfab.com/3d-models/stylized-sword-free-download-1153c739ee6a44a5ba55c99c4246dbd0 |
+| `skeleton.glb` (Ashen Ghoul) | Free Stylized Dark Fantasy Skeleton V1 (`stylized_skeleton.glb`) | HotstrikeStudio | https://sketchfab.com/3d-models/free-stylized-dark-fantasy-skeleton-v1-13b75487badc4c54a6e1644376fe6900 |
 
 Changes made (allowed by the licence, and noted here as it asks): turned,
 scaled and re-centred; textures cut down to the base colour map at 256 or
-512 px; the rat and chicken were given Idle, Walk, Attack and Death clips;
+512 px; the rat and chicken were given Idle, Walk, Attack and Death clips, and
+the skeleton Idle, Walk, Attack, Hit and Death clips;
 the hen's wings are folded in.
 
 `base_male.glb` is our own (assets/blender/base_male.blend).
+
+`battle_mage.glb` (the player since 2026-10-28) comes from Dan's download
+"human-battle-mage-male" (an FBX with a Reallusion-style auto-rig and a
+2048 px PBR texture; it looks made with an AI model generator such as
+Meshy). It came with no licence file: **source and licence still to be
+confirmed by Dan**, then credited in data/meta/credits.json. The download is
+about 50 MB, so it is not kept in git: put it, as downloaded, in
+`assets/blender/imported/human-battle-mage-male/` to rebuild
+(`python assets/blender/import_models.py -- mage`). Changes: stood up and
+scaled to 1.82 m, cut from 50,000 to 7,000 triangles, texture reduced to
+the base colour map at 512 px, its own animation dropped and the player's
+clips keyed on it.
+
+`mixamo/` holds the player's Idle, Walk, Run and Jump clips: animation-only
+FBX files from Adobe Mixamo's "Action Adventure Pack" (idle (2), walking,
+running, jumping up), downloaded by Dan. Mixamo animations are free to use in
+games, commercial ones too, and need no credit. import_models.py retargets
+them onto the battle mage (`mixamo_clip`).

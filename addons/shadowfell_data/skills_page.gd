@@ -1,6 +1,6 @@
 @tool
 extends HSplitContainer
-## Skills: what a trainer teaches for coins (data/skills.json), such as
+## Skills: what a trainer teaches for coins (data/professions/skills.json), such as
 ## Camping or Fishing. A skill unlocks the abilities it teaches (its tools,
 ## which name it as their `skill`); one with a top rank rises with use.
 
@@ -64,7 +64,7 @@ func reload() -> void:
 func refresh_list() -> void:
 	list.clear()
 	for sk in s.skills:
-		var i := list.add_item("%s (%s)" % [sk.get("name", sk.id), s.npc_name(sk.get("trainer"))] + ("   new" if new_ids.has(sk.id) else ""))
+		var i := list.add_item("%s (%s)" % [sk.get("name", sk.id), ", ".join(DB.teachers_of(sk).map(func(n): return s.npc_name(n)))] + ("   new" if new_ids.has(sk.id) else ""))
 		list.set_item_metadata(i, sk.id)
 		list.set_item_tooltip(i, sk.id)
 		if sk == current:
@@ -127,6 +127,7 @@ func _build() -> void:
 	h.add_child(who)
 	h.add_child(UI.button("Open", func(): open_record.emit("npc", sk.get("trainer")), "Open the trainer on the NPCs tab"))
 	UI.row(g, "Trainer", h, "Who teaches it: a Train choice appears when you talk to them.")
+	UI.row(g, "Also taught by", UI.extra_trainers(s, sk, func(): _changed(true)), "Any number of other trainers who teach it too.")
 	UI.row(g, "Cost", UI.spin(sk.get("cost", 0), 0, 100000, 1, func(v):
 		sk.cost = v
 		_changed(), " coins"))

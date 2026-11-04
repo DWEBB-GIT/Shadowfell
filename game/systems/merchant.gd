@@ -31,6 +31,7 @@ var stock: Array:
 
 
 func open(id: String, n) -> void:
+	game.bank.close()
 	current = id
 	npc = n
 	game.events.emit("merchantOpened", {"id": id})
@@ -56,12 +57,14 @@ func update() -> void:
 ## the item's price, less this shop's faction discount (Friendly and up)
 func price_of(id: String) -> int:
 	var shop = DB.shops.get(current) if current != null else null
+	if shop and shop.get("free"):
+		return 0 # test vendor: everything free
 	var off: float = game.reputation.discount(shop.get("faction")) if shop else 0.0
 	var price: float = Items.get_def(id).get("price", 0) * (1 + game.law.markup / 100.0)
 	return maxi(1 if off and price else 0, int(floor(price * (100 - off) / 100.0)))
 
 
-## An Outlaw is not served (data/infamy.json); says so, and returns true.
+## An Outlaw is not served (data/npcs/infamy.json); says so, and returns true.
 func refuses() -> bool:
 	if not game.law.outlaw:
 		return false
@@ -85,7 +88,7 @@ func buy(id: String) -> bool:
 	if not inventory.add_item(id, n, true):
 		return false # bags full: add_item says so
 	inventory.coins -= price
-	events.emit("coins", {"amount": -price})
+	events.emit("coins", {"amount": -price, "bought": true})
 	events.emit("itemBought", {"id": id, "price": price})
 	events.emit("log", {"text": "Bought: %s%s for %s." % [name, " ×%d" % n if n > 1 else "", U.money(price)], "kind": "loot"})
 	inventory._changed()
@@ -116,7 +119,7 @@ func sell(loc: String) -> bool:
 	buyback.push_front(b)
 	if buyback.size() > DB.CONFIG.shop.buybackSlots:
 		buyback.resize(int(DB.CONFIG.shop.buybackSlots))
-	events.emit("coins", {"amount": paid})
+	events.emit("coins", {"amount": paid, "sold": true})
 	events.emit("itemSold", {"id": taken.id, "count": taken.count, "paid": paid})
 	events.emit("log", {"text": "Sold: %s%s for %s." % [v.name, " ×%d" % taken.count if taken.count > 1 else "", U.money(paid)], "kind": "loot"})
 	if loc.begins_with("e:"):
@@ -154,6 +157,8 @@ func buy_back(index: int) -> bool:
 		return false
 	inventory.coins -= b.paid
 	buyback.remove_at(index)
+	game.events.emit("coins", {"amount": -b.paid, "bought": true})
+	game.events.emit("itemBought", {"id": b.id, "price": b.paid, "buyBack": true})
 	game.events.emit("log", {"text": "Bought back: %s." % Items.view(b).name, "kind": "loot"})
 	inventory._changed()
 	return true

@@ -22,6 +22,10 @@ var active: Array = [] ## { def, x, z, group, glint, base_y, seed, depleted }
 var regrow: Array = [] ## { entry, at }: gathering nodes waiting to grow back
 var gathering = null ## { entry, t, total, from } or, skinning, { skin, name, t, total, from }
 var unique := {}
+var _auto_t := 0.0
+## seconds an item lies on the ground before it is gone (Dan, 2026-11-02);
+## the time left is saved with it, so it counts only while you play
+const GROUND_LIFE := 300.0
 
 
 ## The Skinning rank a beast of this level needs (by level, not by kind).
@@ -54,7 +58,7 @@ func start_gather(entry: Dictionary) -> bool:
 		return false
 	var item = entry.def.get("reward", {}).get("item")
 	if item and game.inventory.room_for(item) <= 0:
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)
@@ -91,7 +95,26 @@ func spawn_all() -> void:
 		_spawn_ground(g)
 
 
+## Coins a foe carried fall to the ground as a purse, picked up like any
+## other drop (Dan 2026-11-02), not left on the body.
+const COINS := "coins"
+
+
+static func is_coins(g) -> bool:
+	return typeof(g) == TYPE_DICTIONARY and g.get("id") == COINS and typeof(g.get("count")) in [TYPE_INT, TYPE_FLOAT] and int(g.count) == g.count and g.count >= 1
+
+
+func drop_coins(enemy, amount: int) -> Dictionary:
+	var a: float = enemy.facing + PI
+	var pos: Vector3 = game.collision.resolve(Vector3(enemy.position.x + sin(a) * 0.6, 0, enemy.position.z + cos(a) * 0.6), 0.2)
+	var g := _add_ground({"id": COINS, "count": amount}, pos)
+	_spawn_ground(g)
+	return g
+
+
 func _ground_def(g: Dictionary) -> Dictionary:
+	if g.id == COINS:
+		return {"id": "ground:%d" % int(g.uid), "ground": g, "model": "coin_purse", "prompt": "Pick up %s" % U.money(g.count), "reward": {"coins": int(g.count)}}
 	var item := Items.get_def(g.id)
 	return {
 		"id": "ground:%d" % int(g.uid),
@@ -157,6 +180,41 @@ func _add_ground(stack: Dictionary, pos: Vector3) -> Dictionary:
 	return g
 
 
+## Fellstones (data/professions/enchanting.json `fellstoneDrops`, Dan
+## 2026-11-03): only from enemies that still give XP, so low zones can't be
+## farmed; rarely from normal foes, a little more from casters and elites,
+## always from bosses and rare elites. Returns how many fell.
+func drop_fellstones(enemy, xp: int) -> int:
+	var rules: Dictionary = DB.enchanting.get("fellstoneDrops", {})
+	if xp <= 0 or rules.is_empty():
+		return 0
+	var cfg: Dictionary = enemy.cfg
+	var kind := fellstone_kind(cfg)
+	var r: Dictionary = rules.get(kind, {})
+	var n := 0
+	if r.has("min"):
+		n = int(r.min) + int(floor(game.random.call() * (int(r.get("max", r.min)) - int(r.min) + 1)))
+	elif game.random.call() * 100 < float(r.get("chance", 0)):
+		n = 1
+	if n > 0:
+		drop_at({"id": "fellstone", "count": n}, Vector3(enemy.position.x + 0.5, 0, enemy.position.z - 0.4))
+		game.events.emit("fellstoneDropped", {"enemy": enemy, "count": n})
+		game.events.emit("log", {"text": "The %s drops %s." % [cfg.name, "a Fellstone" if n == 1 else "%d Fellstones" % n], "kind": "loot", "rarity": "rare"})
+	return n
+
+
+## Which `fellstoneDrops` row an enemy uses: boss (a boss or a rare elite
+## with its own unique drop), elite, caster (has mana) or normal.
+static func fellstone_kind(cfg: Dictionary) -> String:
+	if cfg.get("type") == "boss" or cfg.get("rare", false) or cfg.get("uniqueDrop"):
+		return "boss"
+	if cfg.get("elite", false) or cfg.get("type") == "elite":
+		return "elite"
+	if cfg.has("mana"):
+		return "caster"
+	return "normal"
+
+
 ## Roll the enemy's own loot table, then the world drops for its level
 ## (rarity first, then the item), and lay what drops around the body. Gear rolls its stats as it drops.
 func drop_from_enemy(enemy) -> Array:
@@ -197,7 +255,8 @@ func clear() -> void:
 
 func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	var group := Node3D.new()
-	var model := Assets.instance(def.get("model", ""))
+	var coins: int = int(def.get("reward", {}).get("coins", 0))
+	var model: Node3D = _coin_piles(coins) if coins > 0 else Assets.instance(def.get("model", ""))
 	if def.get("scale"):
 		model.scale *= def.scale
 	if def.get("kind") == "weapon":
@@ -219,7 +278,12 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 			glint.scale = Vector3.ONE * 1.1
 		if not ["junk", "common", "quest"].has(rarity):
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
-			beam = _beam(group, Items.rarity_colour(rarity), ["junk", "common", "quest", "enhanced", "rare"].find(rarity))
+			beam = _beam(group, Items.rarity_colour(rarity), rarity)
+	# coins and plain (junk/common) drops lie bare, no glint (Dan 2026-11-02)
+	# coins keep only their piles' own sparkles in each metal's colour, so
+	# silver no longer shows a yellow glint above it
+	var bare: bool = coins > 0 or (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
+	glint.visible = not bare
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
 	group.position = Vector3(x, base_y, z)
@@ -230,14 +294,122 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	return entry
 
 
+## Coins on the ground: a mound of gold coins and a mound of silver beside
+## it (100 silver to the gold), with a few strays tipped over around them.
+## Low-poly chunky coins in the kit's flat style: a darker rim and a bright
+## stamped face, bright enough to spot without a glow. Bigger sums make
+## bigger mounds, up to a cap.
+func _coin_piles(coins: int) -> Node3D:
+	var root := Node3D.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = coins * 7919 + 13
+	var piles := [[int(coins / 100.0), Color("ffc22e"), Color("b07a12"), Vector3(-0.13, 0, 0)], [coins % 100, Color("eef3f8"), Color("8e98a6"), Vector3(0.13, 0, 0.05)]]
+	for p in piles:
+		if p[0] <= 0:
+			continue
+		var face := _coin_mat(p[1], 0.12)
+		var rim := _coin_mat(p[2], 0.05)
+		# tiny sparkles in the metal's colour drifting up off the pile
+		var motes := CPUParticles3D.new()
+		var dot := QuadMesh.new()
+		dot.size = Vector2(0.035, 0.035)
+		motes.mesh = dot
+		var dm := Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.9))
+		dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		motes.material_override = dm
+		motes.amount = 6
+		motes.lifetime = 1.4
+		motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		motes.emission_sphere_radius = 0.1
+		motes.direction = Vector3.UP
+		motes.spread = 15
+		motes.gravity = Vector3.ZERO
+		motes.initial_velocity_min = 0.12
+		motes.initial_velocity_max = 0.25
+		motes.scale_amount_min = 0.5
+		motes.scale_amount_max = 1.0
+		var fade := Gradient.new()
+		fade.set_color(0, Color(1, 1, 1, 0))
+		fade.add_point(0.25, Color(1, 1, 1, 1))
+		fade.set_color(fade.get_point_count() - 1, Color(1, 1, 1, 0))
+		motes.color_ramp = fade
+		motes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		motes.position = p[3] + Vector3(0, 0.05, 0)
+		root.add_child(motes)
+		var n: int = clampi(3 + int(sqrt(float(p[0])) * 1.5), 4, 14)
+		# a mound: rings of coins, each ring smaller and higher
+		var i := 0
+		var ring := 0
+		while i < n:
+			var per: int = maxi(1, 5 - ring * 2)
+			var r: float = 0.09 - ring * 0.045
+			for k in per:
+				if i >= n:
+					break
+				var a: float = TAU * k / per + ring * 0.7
+				var pos: Vector3 = p[3] + Vector3(cos(a) * r, 0.02 + ring * 0.035, sin(a) * r)
+				root.add_child(_coin(face, rim, pos, Vector3(rng.randf_range(-0.25, 0.25), rng.randf() * TAU, rng.randf_range(-0.25, 0.25))))
+				i += 1
+			ring += 1
+		for k in 2 + mini(int(p[0]) / 25, 3): # strays rolled off the mound
+			var a := rng.randf() * TAU
+			var d := rng.randf_range(0.17, 0.27)
+			root.add_child(_coin(face, rim, p[3] + Vector3(cos(a) * d, 0.02, sin(a) * d), Vector3(rng.randf_range(-0.15, 0.15), rng.randf() * TAU, 0)))
+	return root
+
+
+func _coin_mat(c: Color, glow: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = c
+	m.metallic = 0.5
+	m.roughness = 0.35
+	m.emission_enabled = true
+	m.emission = c
+	m.emission_energy_multiplier = glow # lit from within a touch so it reads in shade
+	return m
+
+
+## One chunky coin: a rimmed body with a raised, brighter face on top.
+func _coin(face: Material, rim: Material, pos: Vector3, rot: Vector3) -> Node3D:
+	var c := Node3D.new()
+	var body := MeshInstance3D.new()
+	var bm := CylinderMesh.new()
+	bm.top_radius = 0.075
+	bm.bottom_radius = 0.075
+	bm.height = 0.03
+	bm.radial_segments = 8
+	bm.rings = 1
+	bm.material = rim
+	body.mesh = bm
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	c.add_child(body)
+	var top := MeshInstance3D.new()
+	var tm := CylinderMesh.new()
+	tm.top_radius = 0.056
+	tm.bottom_radius = 0.056
+	tm.height = 0.008
+	tm.radial_segments = 8
+	tm.rings = 1
+	tm.material = face
+	top.mesh = tm
+	top.position.y = 0.017
+	top.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	c.add_child(top)
+	c.position = pos
+	c.rotation = rot
+	return c
+
+
 ## Green and better gear on the ground: a column of its colour rising off
-## it and motes drifting up it, as Diablo marks a good drop. `tier` (-1 for
-## epic and up) makes it taller and brighter.
-func _beam(group: Node3D, colour: Color, tier: int) -> MeshInstance3D:
-	var big := tier < 0 or tier > 3
+## it and motes drifting up it, as Diablo marks a good drop. The better the
+## rarity, the taller and wider the column.
+const BEAM_HEIGHT := {"enhanced": 3.0, "rare": 5.5, "epic": 8.5, "legendary": 12.0}
+
+func _beam(group: Node3D, colour: Color, rarity: String) -> MeshInstance3D:
+	var h: float = BEAM_HEIGHT.get(rarity, 3.0)
 	var beam := MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2(0.5 if not big else 0.7, 2.6 if tier == 3 else (3.4 if tier == 4 else 4.4))
+	q.size = Vector2(0.4 + h * 0.04, h)
 	beam.mesh = q
 	var m := Tex.fx_material(Tex.beam(), Color(colour, 0.85))
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
@@ -252,8 +424,8 @@ func _beam(group: Node3D, colour: Color, tier: int) -> MeshInstance3D:
 	var dm := Tex.fx_material(Tex.glint(), Color(colour.lightened(0.3), 0.9))
 	dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	motes.material_override = dm
-	motes.amount = 10 if big else 6
-	motes.lifetime = 1.8
+	motes.amount = int(4 + h)
+	motes.lifetime = 1.0 + h * 0.25
 	motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	motes.emission_sphere_radius = 0.18
 	motes.direction = Vector3.UP
@@ -392,7 +564,7 @@ func collect(entry: Dictionary) -> bool:
 	if r.get("item") and not inventory.add_item(r.item, r.get("count", 1), false, r.get("rolls")):
 		return false
 	if r.get("coins"):
-		inventory.add_coins(r.coins, "in a purse")
+		inventory.add_coins(r.coins, "" if def.has("ground") else "in a purse")
 	if def.has("ground"):
 		ws.ground.erase(def.ground)
 	elif def.get("respawn"):
@@ -414,6 +586,21 @@ func collect(entry: Dictionary) -> bool:
 		game.hud.open_document(def.opensDocument)
 		events.emit("objectiveChanged", {})
 	return true
+
+
+## ground items wear away after GROUND_LIFE seconds
+func _age_ground(dt: float) -> void:
+	for i in range(active.size() - 1, -1, -1):
+		var l: Dictionary = active[i]
+		var g = l.def.get("ground")
+		if g == null:
+			continue
+		g.left = float(g.get("left", GROUND_LIFE)) - dt
+		if g.left > 0:
+			continue
+		game.world_state.ground.erase(g)
+		l.group.queue_free()
+		active.remove_at(i)
 
 
 func update(dt: float, time: float) -> void:
@@ -439,6 +626,7 @@ func update(dt: float, time: float) -> void:
 					skin(g.skin)
 				else:
 					collect(g.entry)
+	_age_ground(dt)
 	for l in active:
 		if l.def.get("quest"):
 			l.glint.visible = available(l)
@@ -446,6 +634,31 @@ func update(dt: float, time: float) -> void:
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
 		if l.get("beam"):
 			l.beam.material_override.albedo_color.a = 0.75 + sin(time * 1.8 + l.seed) * 0.15
+	# coin sparkles: a short wink every couple of seconds, each pile out of step
+	var k := 0
+	for sp in get_tree_sparkles():
+		var ph := fmod(time * 0.55 + k * 0.37, 1.0)
+		var w := maxf(0.0, 1.0 - absf(ph - 0.5) * 8.0) # on for an eighth of the cycle
+		sp.material_override.albedo_color.a = w * 0.95
+		sp.scale = Vector3.ONE * (0.08 + w * 0.12)
+		k += 1
+	_auto_t -= dt
+	if _auto_t <= 0:
+		_auto_t = 0.25
+		auto_loot()
+
+
+## Auto loot (Settings, Controls): out of a fight, walking up to a body or
+## what fell from one takes it, and everything near it, as a click would.
+func auto_loot() -> void:
+	var p = game.player
+	if not game.settings.get_value("autoLoot") or p == null or p.dead or gathering != null or game.resources.in_combat:
+		return
+	var reach: float = DB.CONFIG.loot.reach
+	for l in lootables():
+		if (l.kind == "corpse" or l.get("area", false)) and U.hyp(l.x - p.position.x, l.z - p.position.z) <= reach:
+			loot_area(l)
+			return
 
 
 # ------------------------------------------------------------ skinning
@@ -482,7 +695,7 @@ var knife:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("skinningKnife") and inv.has(id) and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
+			if d.get("skinningKnife") and inv.on_belt(id) and (best == null or d.get("skinningSkill", 0) > best.get("skinningSkill", 0)):
 				best = d
 		return best
 
@@ -546,3 +759,7 @@ func skin(id: String) -> bool:
 func describe(entry: Dictionary) -> String:
 	var r: Dictionary = entry.def.reward
 	return Items.view({"id": r.item, "rolls": r.get("rolls")}).name if r.get("item") else ""
+
+
+func get_tree_sparkles() -> Array:
+	return game.scene.get_tree().get_nodes_in_group("coin_sparkle") if game.scene.is_inside_tree() else []

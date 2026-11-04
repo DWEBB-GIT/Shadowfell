@@ -7,10 +7,10 @@ const DataStore := preload("store.gd")
 const UI := preload("ui.gd")
 
 ## the order keys are written in, so an edited npc reads like the others
-const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "board"]
+const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "banker", "board"]
 const SHOP_ORDER := ["id", "name", "vendorType", "stock", "faction"]
 ## what the minimap can draw for an npc's trade (src/data/schema.js NPC_MAP_ICONS)
-const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"]]
+const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"], ["banker", "Banker"]]
 
 ## open another record (a quest) on its own tab
 signal open_record(kind: String, id: String)
@@ -170,11 +170,12 @@ func _build() -> void:
 	tint.add_child(picker)
 	UI.row(g, "Tint", tint, "Colours their model, to tell apart townsfolk who share one.")
 	UI.row(g, "Map icon", UI.choice(MAP_ICONS, n.get("mapIcon"), func(v): _put("mapIcon", v)), "Puts their trade on the minimap.")
+	UI.row(g, "Banker", UI.check(n.get("banker", false), "Keeps the bank (opens your bank vault)", func(on): _put("banker", on)))
 	UI.row(g, "Innkeeper", UI.check(n.get("innkeeper", false), "Keeps an inn (rent a bed to wake whole and rested, or make it your home)", func(on): _put("innkeeper", on)))
 	if n.get("innkeeper", false):
 		UI.row(g, "Bed price", UI.spin(n.get("bedPrice", 5), 0, 100000, 1, func(v): _put("bedPrice", v)), "Coins for a night's sleep: full health and mana, wounds mended, rested experience.")
 	UI.row(g, "Smith", UI.check(n.get("forge", false), "Reforges, punches sockets and lets you smelt", func(on): _put("forge", true if on else null)))
-	UI.row(g, "Enchanter", UI.check(n.get("enchanter", false), "Enchants gear (+1 item level a rank) and scraps it into dust and gems", func(on): _put("enchanter", true if on else null)))
+	UI.row(g, "Refiner", UI.check(n.get("refiner", false), "Refines gear (+1 item level a rank, may fail) and scraps it into stones and gems; also does Runecraft", func(on): _put("refiner", true if on else null)))
 	UI.row(g, "Jeweller", UI.check(n.get("jeweller", false), "Makes gems from shards, sets and removes gems", func(on): _put("jeweller", true if on else null)))
 	UI.row(g, "Notice board", UI.check(n.get("board", false), "A notice board, not a person (no greeting by title)", func(on): _put("board", on)))
 
@@ -207,7 +208,7 @@ func _greeting(n: Dictionary) -> void:
 	form.add_child(UI.button("Edit all of their dialogue", func(): open_record.emit("dialogue", d.id), "Greetings for each step of a quest, topics and replies, on the Dialogue tab"))
 	var others := greets.size() - 1
 	var topics: int = d.get("topics", []).size()
-	UI.note(form, "Dialogue %s: %d greeting%s that depend on quests or flags, %d topic%s to ask about (edited in data/dialogue.json)." % [d.id, others, "" if others == 1 else "s", topics, "" if topics == 1 else "s"], Color(0.6, 0.6, 0.6))
+	UI.note(form, "Dialogue %s: %d greeting%s that depend on quests or flags, %d topic%s to ask about (edited in data/quests/dialogue.json)." % [d.id, others, "" if others == 1 else "s", topics, "" if topics == 1 else "s"], Color(0.6, 0.6, 0.6))
 
 
 ## a dialogue of their own, with one greeting to edit
@@ -301,7 +302,7 @@ func _trains(n: Dictionary) -> void:
 	UI.heading(form, "Trains")
 	UI.note(form, "Anything here gives them a Train choice. Map icon Class trainer marks a class trainer on the minimap.", Color(0.6, 0.6, 0.6))
 	UI.note(form, "Skills:")
-	var skills := s.skills.filter(func(sk): return sk.get("trainer") == n.id)
+	var skills := s.skills.filter(func(sk): return DB.taught_by(sk, n.id))
 	for sk in skills:
 		var row := UI.hbox(form)
 		var b := LinkButton.new()
@@ -310,12 +311,19 @@ func _trains(n: Dictionary) -> void:
 		b.pressed.connect(func(): open_record.emit("skill", sk.id))
 		row.add_child(b)
 	var bar := UI.hbox(form)
-	var others := s.skills.filter(func(sk): return sk.get("trainer") != n.id).map(func(sk): return [sk.id, "%s (now %s)" % [sk.get("name", sk.id), s.npc_name(sk.get("trainer"))]])
+	var others := s.skills.filter(func(sk): return not DB.taught_by(sk, n.id)).map(func(sk): return [sk.id, "%s (taught by %s)" % [sk.get("name", sk.id), ", ".join(DB.teachers_of(sk).map(func(x): return s.npc_name(x)))]])
 	if others.size():
 		bar.add_child(UI.choice([[null, "+ teach a skill"]] + others, null, func(v):
 			if v == null:
 				return
-			s.skill(v).trainer = n.id
+			# another trainer for it: whoever taught it still does
+			var sk: Dictionary = s.skill(v)
+			if not sk.get("trainer"):
+				sk.trainer = n.id
+			else:
+				if not sk.has("trainers"):
+					sk.trainers = []
+				sk.trainers.append(n.id)
 			s.touch("skills")
 			_build.call_deferred()))
 	bar.add_child(UI.button("New skill", func(): open_record.emit("new_skill", n.id), "Make a new skill they teach, on the Skills tab"))
@@ -376,7 +384,7 @@ func _trains(n: Dictionary) -> void:
 		_build.call_deferred(), "Every spell in the chosen class's spellbook that is not on its starting bar and not taught by someone else: this npc teaches it (teach starting-bar spells one by one to take them off the bar)"))
 	add.add_child(UI.button("New spell", func(): open_record.emit("new_spell", n.id), "Make a new spell on the Abilities tab; tick a class and choose this trainer there"))
 	UI.note(form, "Teaching a spell from the starting bar takes it off the bar, so a new character must train it. A spell from outside the class's spellbook is added to it.", Color(0.6, 0.6, 0.6))
-	var recipes := s.recipes.filter(func(r): return r.get("trainer") == n.id)
+	var recipes := s.recipes.filter(func(r): return DB.taught_by(r, n.id))
 	if recipes.size():
 		UI.note(form, "Recipes: %s (recipes.json)." % ", ".join(recipes.map(func(r): return s.item(r.get("output", {}).get("item")).get("name", r.id))))
 
@@ -398,7 +406,7 @@ func _world(n: Dictionary) -> void:
 	var sp := s.spawn_of(n.id)
 	if sp.is_empty():
 		UI.note(form, "Not placed anywhere yet, so they are not in the game.", Color("d0b070"))
-		form.add_child(UI.button("Place in Brackenford", func(): _place(n), "Stand them in the town square; move them with the World editor"))
+		form.add_child(UI.button("Place on active map", func(): _place(n), "Stand them near the map's start (the town square in Act 1); move them with the World editor"))
 		return
 	var p: Array = sp.get("position", [0, 0])
 	UI.note(form, "Stands at x %s, z %s, facing %d°. Move them with the World editor (res://addons/shadowfell_data/world_editor.tscn)." % [p[0], p[1], sp.get("facing", 0)])
@@ -409,6 +417,8 @@ func _world(n: Dictionary) -> void:
 ## a spawn a little way off the Brackenford square, clear of the others
 func _place(n: Dictionary) -> void:
 	var town := DataStore.find(s.locations, "brackenford")
+	if s.map_id == "new":
+		town = {}
 	var c: Array = town.get("position", s.files.world.get("playerStart", {}).get("position", [0, 0]))
 	var at := Vector2(c[0], c[1])
 	for step in 24:

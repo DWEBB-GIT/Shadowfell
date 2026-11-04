@@ -31,14 +31,25 @@ func _init(g) -> void:
 	dust_mat = StandardMaterial3D.new()
 	dust_mat.albedo_color = Color("6a5c48")
 	var ev: Events = game.events
-	# a spell with its own look (data/spell_fx.json) skips the generic one
+	# a spell with its own look (data/abilities/spell_fx.json) skips the generic one
 	ev.on("spellFx", func(e): spell_fx(e))
 	ev.on("burst", func(e):
 		if not _has_look(e.get("id", ""), "impact"):
-			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0")))
+			shockwave(e.position, e.radius, Color("ffe6a0") if e.get("school") == "holy" else Color("ffd9a0"))
+		aoe_weight(e))
 	ev.on("enemyHit", func(e):
-		sparks(e.enemy.position, 14 if e.get("crit") else 7 if e.get("kind") == "strike" else 8)
-		_blow_lands(e))
+		var land := func():
+			if e.get("damage",0) > 0:
+				contact_impact(e)
+			_blow_lands(e)
+		# The opening auto-attack resolves early but its visible impact waits
+		# for the blade's windup, together with the floating damage number.
+		var delay: float = e.get("show",0.0)
+		if delay > 0:
+			_add(Node3D.new(),delay,func(_it,k,_dt):
+				if k >= 1: land.call())
+		else:
+			land.call())
 	# the weight of a landed blow: the camera kicks (nothing ever pauses)
 	ev.on("hitImpact", func(e):
 		if e.get("heavy") or e.get("crit"):
@@ -46,16 +57,53 @@ func _init(g) -> void:
 	ev.on("playerHurt", func(e):
 		game.shake_camera(DB.CONFIG.impact.critShake if e.get("heavy") else DB.CONFIG.impact.shake * 0.6)
 		game.hud.flash_damage())
-	ev.on("levelUp", func(_e): pillar(game.player.position))
+	# a hero's moment: a seal, a spiral and a column of light, a star flare,
+	# a fountain of sparks and a flash of real light (data `moments.levelUp`)
+	ev.on("levelUp", func(_e): moment("levelUp"))
 	# an enchanter's work: a violet light rises off you
 	ev.on("itemEnchanted", func(_e): pillar(game.player.position, Color("c8a0ff")))
+	# the rune forge's finish: a column of the rune's colour off the forge,
+	# a ring and a fountain of sparks, and a burst of real light
+	ev.on("runeForged", func(e):
+		var st = game.rune_forge.station
+		if st == null:
+			return
+		var c := Color(Runes.def(e.rune).glow.colour)
+		var at := Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
+		pillar(at, c)
+		shockwave(at + Vector3(0, 0.1, 0), 3.0, c)
+		sparks(at + Vector3(0, 1.6, 0), 24, c)
+		light(at, null, {"energy": 4.0, "range": 7.0, "life": 1.0, "height": 1.7}, c)
+		game.shake_camera(DB.CONFIG.impact.shake))
+	# a refine: gold light off the altar (or the Refiner's hands) when it
+	# takes, a dull violet puff when a refine fails
+	ev.on("refined", func(e):
+		var at := Vector3(e.position[0], Terrain.height_at(e.position[0], e.position[1]), e.position[1])
+		if e.ok:
+			pillar(at, Color("ffe6a0"))
+			shockwave(at + Vector3(0, 0.1, 0), 2.6, Color("ffd890"))
+			sparks(at + Vector3(0, 1.6, 0), 20, Color("ffe6a0"))
+			light(at, null, {"energy": 3.5, "range": 6.0, "life": 0.9, "height": 1.7}, Color("ffd890"))
+		else:
+			sparks(at + Vector3(0, 1.6, 0), 10, Color("7a6a90"))
+			dust(at + Vector3(0, 1.0, 0), 8))
 	ev.on("itemScrapped", func(_e): sparks(game.player.position, 12, Color("c8a0ff")))
-	ev.on("enemyDefeated", func(e): dust(e.enemy.position, 10))
+	ev.on("enemyDefeated", func(e):
+		dust(e.enemy.position, 10)
+		kill_punch(e.enemy))
 	# the Grave Slam lands where the telegraph was painted
 	ev.on("graveSlam", func(e):
 		var sh = e.shape
 		var r: float = sh.range * 0.55
 		shockwave(Vector3(sh.x + sin(sh.angle) * r, game.player.position.y, sh.z + cos(sh.angle) * r), sh.range * 0.6))
+	# a light scuff of dust, not a cloud (smaller and fainter, Dan 2026-11-02);
+	# a spirit's hop raises none
+	ev.on("playerJumped", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 3, 0.5))
+	ev.on("playerLanded", func(e):
+		if not game.player.ghost:
+			ground_puff(e.position, 4, clampf(e.speed / 6.8, 0.5, 0.8)))
 	ev.on("playerLunge", func(_e): dust(game.player.position, 6, 0.3))
 	ev.on("braceBlock", func(_e): sparks(game.player.position, 10))
 	ev.on("anvilStrike", func(e):
@@ -73,7 +121,7 @@ func _init(g) -> void:
 			siphon_beam(c, SCHOOL_COLOURS.get(c.spell.get("school"), Color("9a5ae0"))))
 	ev.on("darkCircle", func(e): shockwave(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), e.radius, Color("9a7cff")))
 	# spells (game/systems/spells.gd)
-	ev.on("spellFlash", func(e): flash(e.position, SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
+	ev.on("spellFlash", func(e): flash(e.position, Color(e.colour) if e.has("colour") else SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
 	ev.on("zone", func(e): zone(e.x, e.z, e.radius, e.duration, SCHOOL_COLOURS.get(e.get("school"), Color("ffd070"))))
 	# a set trap is a small dull ring until it is sprung or wears out
 	ev.on("trap", func(e): traps[e.key] = zone(e.x, e.z, e.radius, e.duration, Color("8a7050"), 0.35))
@@ -107,7 +155,15 @@ func prewarm(pos: Vector3) -> void:
 	sparks(under, 1)
 	flash(under, Color.WHITE)
 	pillar(under)
+	light(under, null, {"life": 0.1, "energy": 0.0}, Color.WHITE)
 	zone(under.x, under.z, 1, 0.1)
+	ground_puff(under, 1, 1.0)
+	var splat := Tex.ground_quad(Tex.fx_material(Tex.splat(), Color("4e0806"), false))
+	splat.position = under
+	_add(splat, 0.1, func(_it, _k, _dt): pass)
+	var drop := Tex.sprite(Tex.fx_material(Tex.drop(), Color("9a1612"), false, true))
+	drop.position = under
+	_add(drop, 0.1, func(_it, _k, _dt): pass)
 	for name in _look_meshes():
 		_shape({"mesh": name, "life": 0.1}, under, 0.0, null, Color.WHITE, {})
 	var tm := ShaderMaterial.new()
@@ -123,8 +179,9 @@ func prewarm(pos: Vector3) -> void:
 
 ## `update(it, k, dt)`; `it` is the effect's own dictionary, so it can keep state.
 func _add(obj: Node3D, life: float, update: Callable, state := {}) -> Dictionary:
+	var tag := str(obj.name) # its name before the scene makes a twin's unique
 	game.scene.add_child(obj)
-	var it := {"obj": obj, "life": life, "age": 0.0, "update": update}
+	var it := {"obj": obj, "life": life, "age": 0.0, "update": update, "tag": tag}
 	it.merge(state)
 	items.append(it)
 	return it
@@ -140,16 +197,42 @@ func shockwave(pos: Vector3, radius: float, colour := Color("ffd9a0")) -> void:
 	dust(pos, 14, radius * 0.7)
 
 
-func sparks(pos: Vector3, n: int, colour := Color("ffc890")) -> void:
+## `o` (an effect part) can make them bigger and longer lived: `spread`
+## (sideways speed), `rise` [min, max] upward speed, `life`, `size`,
+## `gravity` and `height` (where they start above `pos`).
+func sparks(pos: Vector3, n: int, colour := Color("ffc890"), o := {}) -> void:
+	var spread: float = o.get("spread", 4.0)
+	var rise: Array = o.get("rise", [1.5, 4.0])
+	var life: float = o.get("life", 0.3)
+	var size: float = o.get("size", 0.25)
+	var gravity: float = o.get("gravity", 12.0)
 	for i in n:
 		var s := Tex.sprite(Tex.fx_material(Tex.glint(), colour, true, true))
-		s.scale = Vector3.ONE * 0.25
-		s.position = Vector3(pos.x, pos.y + 1.1, pos.z)
-		var v := Vector3((randf() - 0.5) * 4, 1.5 + randf() * 2.5, (randf() - 0.5) * 4)
-		_add(s, 0.3 + randf() * 0.15, func(it, k, dt):
+		s.scale = Vector3.ONE * size
+		s.position = Vector3(pos.x, pos.y + o.get("height", 1.1), pos.z)
+		var v := Vector3((randf() - 0.5) * spread, lerpf(rise[0], rise[1], randf()), (randf() - 0.5) * spread)
+		_add(s, life * (1 + randf() * 0.5), func(it, k, dt):
 			it.obj.position += it.v * dt
-			it.v.y -= 12 * dt
-			it.obj.material_override.albedo_color.a = 1 - k, {"v": v})
+			it.v.y -= gravity * dt
+			it.obj.material_override.albedo_color.a = 1 - k * k, {"v": v})
+
+
+## A burst of real light that flares and dies away (`p`: `colour`,
+## `energy`, `range`, `height`, `life`). No shadows, and only its energy
+## changes as it plays, so it costs no more than a lamp for a moment.
+func light(at: Vector3, follow, p: Dictionary, colour: Color) -> void:
+	var l := OmniLight3D.new()
+	l.light_color = colour
+	l.omni_range = p.get("range", 8.0)
+	l.shadow_enabled = false
+	l.light_energy = 0
+	var energy: float = p.get("energy", 3.0)
+	var height: float = p.get("height", 1.5)
+	l.position = at + Vector3.UP * height
+	_add(l, p.get("life", 1.2), func(it, k, _dt):
+		if follow:
+			it.obj.position = follow.position + Vector3.UP * height
+		it.obj.light_energy = energy * minf(1, k / 0.06) * pow(1 - k, 1.6))
 
 
 func dust(pos: Vector3, n: int, spread := 0.6) -> void:
@@ -169,7 +252,7 @@ func dust(pos: Vector3, n: int, spread := 0.6) -> void:
 ## An arrow (a thin shaft) or a bolt (a glowing mote) flying from -> to.
 ## With `follow` (an enemy), it homes in on it as it moves, and arrives
 ## after `life` seconds. `look` (a spell id) adds that spell's
-## `projectile` shapes (data/spell_fx.json), carried along its flight.
+## `projectile` shapes (data/abilities/spell_fx.json), carried along its flight.
 func projectile(p: Dictionary) -> void:
 	var kind = p.get("kind")
 	var follow = p.get("follow")
@@ -205,7 +288,15 @@ func projectile(p: Dictionary) -> void:
 	obj.position = a
 	var life = p.get("life")
 	var time: float = life if life != null else maxf(0.08, a.distance_to(b) / p.speed)
-	_add(obj, maxf(0.05, time), func(it, k, _dt):
+	var trail = p.get("trail", arrow_trail(p) if kind == "arrow" else null)
+	if kind == "arrow":
+		release_puff(a, b)
+	_add(obj, maxf(0.05, time), func(it, k, dt):
+		if trail != null:
+			it.emit -= dt
+			if it.emit <= 0:
+				it.emit = TRAIL_EVERY
+				trail_bit(it.obj.position, trail)
 		if it.follow:
 			var fp: Vector3 = it.follow.position
 			it.b = Vector3(fp.x, Terrain.height_at(fp.x, fp.z) + 1.0, fp.z)
@@ -215,9 +306,62 @@ func projectile(p: Dictionary) -> void:
 		if not bolt:
 			o.position.y += sin(k * PI) * minf(1.2, it.a.distance_to(it.b) * 0.04)
 		if aimed:
-			_look(o, it.b), {"a": a, "b": b, "follow": follow})
+			_look(o, it.b), {"a": a, "b": b, "follow": follow, "emit": 0.0})
 	if aimed:
 		_look(obj, b)
+
+
+## What an arrow leaves in the air behind it (Dan 2026-11-03): embers from a
+## fire arrow (an ability of the fire school, or the look's `trail`) or a
+## runed bow in its rune's colour, else a faint pale streak.
+const TRAIL_EVERY := 0.022
+
+
+func arrow_trail(p: Dictionary) -> Dictionary:
+	var id: String = p.get("look", "")
+	var look: Dictionary = DB.spell_fx.get(id, {})
+	if look.has("trail"):
+		return look.trail
+	var sp = DB.spells.get(id)
+	if sp is Dictionary and sp.get("school") == "fire":
+		return {"colour": "#ff8030", "embers": true}
+	var bow = game.inventory.ranged_weapon if game.inventory else null
+	var rune := Runes.of(bow)
+	if rune != "":
+		var g = Runes.def(rune).get("glow", {})
+		return {"colour": g.get("colour", "#ffd090"), "embers": true}
+	return {"colour": "#fff2dc", "embers": false}
+
+
+var _trail_mats := {}
+
+
+## one mote of an arrow's trail: it shrinks away; embers also rise and drift
+func trail_bit(pos: Vector3, tr: Dictionary) -> void:
+	var c := str(tr.get("colour", "#fff2dc"))
+	var embers: bool = tr.get("embers", false)
+	if not _trail_mats.has(c):
+		_trail_mats[c] = Tex.fx_material(Tex.glint(), Color(c), true, true)
+	var mote := Tex.sprite(_trail_mats[c])
+	mote.name = "ArrowMote"
+	var size := (0.2 + randf() * 0.12) if embers else 0.11
+	mote.scale = Vector3.ONE * size
+	mote.position = pos + (Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 0.08 if embers else Vector3.ZERO)
+	var drift := Vector3(randf() - 0.5, 1.0, randf() - 0.5) * (0.7 if embers else 0.0)
+	_add(mote, 0.4 if embers else 0.16, func(it, k, dt):
+		it.obj.scale = Vector3.ONE * size * (1.0 - k)
+		it.obj.position += drift * dt)
+
+
+## the bow let go: a small burst of air off the string, toward the shot
+func release_puff(from: Vector3, to: Vector3) -> void:
+	if not _trail_mats.has("release"):
+		_trail_mats.release = Tex.fx_material(Tex.glint(), Color(1, 0.96, 0.88, 0.7), true, true)
+	var pop := Tex.sprite(_trail_mats.release)
+	pop.position = from + (to - from).normalized() * 0.25
+	_add(pop, 0.12, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * (0.25 + k * 0.5) * (1.0 - k))
+	sparks(from, 3, Color("fff0d8"), {"spread": 1.5, "size": 0.12, "life": 0.18, "rise": [0.3, 1.0]})
 
 
 ## one shape carried by a projectile, its forward (+z) along the flight:
@@ -389,21 +533,29 @@ static func _has_look(id: String, phase: String) -> bool:
 
 static func _look_meshes() -> Array:
 	var names := {}
-	for id in DB.spell_fx:
+	for look in DB.spell_fx.values() + DB.fx_moments.values():
+		if not look is Dictionary: # an `_about` note
+			continue
 		for phase in PHASES:
-			for p in DB.spell_fx[id].get(phase, []):
+			for p in look.get(phase, []):
 				if p.has("mesh"):
 					names[p.mesh] = true
 	return names.keys()
 
 
+## A moment's look (data/abilities/spell_fx.json `moments`), played on you.
+func moment(id: String) -> void:
+	var p = game.player
+	spell_fx({"id": id, "phase": "cast", "position": p.position, "facing": p.facing, "follow": p})
+
+
 ## A spell's own look: every part of its `cast` or `impact` list
-## (data/spell_fx.json), each after its own delay.
+## (data/abilities/spell_fx.json), each after its own delay.
 ## `e`: { id, phase, position, facing, follow (the player or null), tuning }
 func spell_fx(e: Dictionary) -> void:
 	var spell: Dictionary = DB.abilities.get(e.id, {})
 	var school: Color = SCHOOL_COLOURS.get(spell.get("school"), SCHOOL_COLOURS.physical)
-	for p in DB.spell_fx.get(e.id, {}).get(e.phase, []):
+	for p in DB.spell_fx.get(e.id, DB.fx_moments.get(e.id, {})).get(e.phase, []):
 		var go := _spell_part.bind(p, e, school)
 		if p.get("delay", 0) > 0:
 			_add(Node3D.new(), p.delay, func(_it, k, _dt):
@@ -424,7 +576,9 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 		"ring":
 			shockwave(at, p.get("radius", 2.0), colour)
 		"sparks":
-			sparks(at, int(p.get("n", 6)), colour if p.has("colour") else Color("ffc890"))
+			sparks(at, int(p.get("n", 6)), colour if p.has("colour") else Color("ffc890"), p)
+		"light":
+			light(at, follow, p, colour)
 		"dust":
 			dust(at, int(p.get("n", 6)), p.get("spread", 0.6))
 		"flash":
@@ -436,6 +590,165 @@ func _spell_part(p: Dictionary, e: Dictionary, school: Color) -> void:
 ## A melee blow connecting: hit-stop on both bodies, and on an auto attack
 ## a faint slash across the target in the swing's direction (main hand cuts
 ## down to the left, off hand down to the right).
+## A compact contact flash that is visible from the gameplay camera on
+## the first rendered hit frame. It never appears on misses or through walls.
+func contact_impact(e: Dictionary) -> void:
+	var enemy = e.enemy
+	var crit: bool = e.get("crit", false)
+	var high := clampf(enemy.radius * 1.6, 0.5, 1.35)
+	var at: Vector3 = enemy.position + Vector3.UP * high + game.camera.global_basis.z * 0.35
+	# a small, quick white pop where the blow lands: weight, not a light show
+	# (the old cream glint and orange sparks read as a yellow flash, Dan 2026-11-02)
+	var mat := Tex.fx_material(Tex.puff(), Color(1, 1, 1, 0.7), true, true)
+	mat.render_priority = 2
+	var pop := Tex.sprite(mat)
+	pop.name = "HitContact"
+	pop.position = at
+	var size := 0.5 if crit else 0.34
+	pop.scale = Vector3.ONE * size
+	_add(pop, 0.1, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * size * (1.0 + k * 0.6)
+		mat.albedo_color.a = 0.7 * (1.0 - k) * (1.0 - k))
+	# a crit or a weapon ability jolts the body back (the look only)
+	var hard: bool = crit or (e.get("kind", "") == "strike" and not e.get("swing", false))
+	if hard and e.get("hand", "") != "ranged" and enemy.rig:
+		var p = game.player
+		enemy.rig.knock(Vector3(enemy.position.x - p.position.x, 0, enemy.position.z - p.position.z), 0.26 if crit else 0.16)
+	if game.settings.get_value("bloodEffects") and e.get("kind", "") == "strike":
+		spatter(enemy, at, crit)
+
+
+## What a blow knocks out of a foe: "red" blood from anything living, "bone"
+## chips and grave dust from the undead, "straw" from the training dummy.
+## An enemy's data can say (`blood`); otherwise it bleeds.
+const BLOOD := {
+	"red": [Color("9a1612"), Color("4e0806")],
+	"bone": [Color("d8d0bc"), Color("8a8272")],
+	"straw": [Color("d2b464"), Color("8a6c34")],
+}
+
+
+static func blood_of(enemy) -> String:
+	var b = enemy.cfg.get("blood")
+	if b:
+		return str(b)
+	return "straw" if enemy.cfg.get("dummy") else "red"
+
+
+## The weight of an area blow (Dan 2026-11-03, Conquer Online's area hits):
+## the more it catches, the harder the camera kicks, everything caught holds
+## still for a beat, and a big catch flashes real light and throws up dust.
+const SCHOOL_LIGHT := {"holy": Color("ffe6a0"), "fire": Color("ff9a50"), "shadow": Color("a070ff"), "nature": Color("a8e070")}
+
+
+func aoe_weight(e: Dictionary) -> void:
+	var hits: Array = e.get("hits", [])
+	if hits.size() < 2:
+		return
+	var c: Dictionary = DB.CONFIG.impact
+	game.shake_camera(c.shake * (1.0 + c.aoeShakePerHit * mini(hits.size(), 6)))
+	for en in hits:
+		if is_instance_valid(en) and en.rig:
+			en.rig.hold(c.aoeHitStop)
+	if hits.size() >= 3:
+		var col: Color = SCHOOL_LIGHT.get(str(e.get("school", "")), Color("ffd9a0"))
+		light(e.position, null, {"energy": 2.5, "range": e.get("radius", 4.0) * 1.8, "life": 0.4, "height": 0.8}, col)
+		dust(e.position, 14, e.get("radius", 4.0) * 0.5)
+
+
+## The killing blow lands harder: you hold still a moment longer, the camera
+## kicks (more for an elite) and the body gives up a last spray.
+func kill_punch(enemy) -> void:
+	var p = game.player
+	if p == null or p.position.distance_to(enemy.position) > 20.0:
+		return
+	var c: Dictionary = DB.CONFIG.impact
+	var big: bool = enemy.type == "brute" or str(enemy.cfg.get("type", "")) in ["elite", "heavy"]
+	if p.position.distance_to(enemy.position) <= 4.0 and p.rig:
+		p.rig.hold(c.killHitStop)
+	game.shake_camera(c.eliteKillShake if big else c.killShake)
+	if game.settings.get_value("bloodEffects"):
+		spatter(enemy, enemy.position + Vector3.UP * 1.0, true)
+
+
+## A spray of drops thrown away from the player, a brief mist where the blow
+## landed and, for blood, a splash on the ground that soaks in over seconds.
+func spatter(enemy, at: Vector3, crit: bool) -> void:
+	var kind := blood_of(enemy)
+	var cols: Array = BLOOD.get(kind, BLOOD.red)
+	var p = game.player
+	var away := Vector3(enemy.position.x - p.position.x, 0, enemy.position.z - p.position.z)
+	away = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
+	var side := Vector3(-away.z, 0, away.x)
+	var floor_y: float = enemy.position.y + 0.04
+	for i in (16 if crit else 10):
+		var c: Color = cols[0].lerp(cols[1], randf())
+		var mat := Tex.fx_material(Tex.drop(), c, false, true)
+		mat.render_priority = 1
+		var d := Tex.sprite(mat)
+		d.name = "BloodDroplet" if kind == "red" else "HitChip"
+		d.position = at
+		var sz := randf_range(0.05, 0.12) * (1.3 if crit else 1.0)
+		d.scale = Vector3.ONE * sz
+		var v := away * randf_range(1.2, 3.8) + side * randf_range(-1.6, 1.6) + Vector3.UP * randf_range(0.4, 2.6)
+		_add(d, randf_range(0.4, 0.6), func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v.y -= 14.0 * dt
+			if it.obj.position.y < it.floor:
+				it.obj.position.y = it.floor
+				it.v = Vector3.ZERO
+			mat.albedo_color.a = 1.0 if k < 0.6 else (1.0 - k) / 0.4, {"v": v, "floor": floor_y})
+	var mist_mat := Tex.fx_material(Tex.puff(), Color(cols[0], 0.5), false, true)
+	mist_mat.render_priority = 1
+	var mist := Tex.sprite(mist_mat)
+	mist.name = "BloodMist"
+	mist.position = at
+	_add(mist, 0.28, func(it, k, _dt):
+		it.obj.scale = Vector3.ONE * (0.35 + k * 0.55) * (1.3 if crit else 1.0)
+		mist_mat.albedo_color.a = 0.5 * (1.0 - k))
+	if kind != "red":
+		dust(enemy.position, 4 if crit else 2, 0.3)
+		return
+	for j in (2 if crit else 1):
+		var off := away * randf_range(0.4, 1.2) + side * randf_range(-0.4, 0.4)
+		var gx: float = enemy.position.x + off.x
+		var gz: float = enemy.position.z + off.z
+		var gm := Tex.fx_material(Tex.splat(), Color(cols[1], 0.85), false)
+		var g := Tex.ground_quad(gm)
+		g.name = "BloodSplat"
+		g.position = Vector3(gx, Terrain.height_at(gx, gz) + 0.03, gz)
+		g.rotation.y = randf() * TAU
+		var gs := randf_range(0.55, 0.9) * (1.3 if crit else 1.0)
+		g.scale = Vector3(gs * 0.3, 1, gs * 0.3)
+		_add(g, 6.0, func(it, k, _dt):
+			var grow := minf(1.0, k * 6.0 / 0.2)
+			var sc := gs * (0.3 + 0.7 * grow)
+			it.obj.scale = Vector3(sc, 1, sc)
+			gm.albedo_color.a = 0.85 if k < 0.6 else 0.85 * (1.0 - k) / 0.4)
+
+
+## Dust kicked out from the feet: a small ring as the player leaves the ground,
+## a heavier one on landing (a harder landing throws more).
+func ground_puff(pos: Vector3, n: int, strength: float) -> void:
+	var y := Terrain.height_at(pos.x, pos.z)
+	for i in n:
+		var a := TAU * i / n + randf() * 0.6
+		var dir := Vector3(cos(a), 0, sin(a))
+		var mat := Tex.fx_material(Tex.puff(), Color(Color("a49378"), 0.0), false, true)
+		mat.render_priority = 1
+		var s := Tex.sprite(mat)
+		s.name = "JumpDust"
+		s.position = Vector3(pos.x, y + 0.15, pos.z) + dir * 0.25
+		var sz := randf_range(0.22, 0.34) * strength
+		s.scale = Vector3.ONE * sz
+		var v := dir * randf_range(1.2, 2.4) * strength + Vector3.UP * randf_range(0.2, 0.7)
+		_add(s, randf_range(0.35, 0.5), func(it, k, dt):
+			it.obj.position += it.v * dt
+			it.v *= maxf(0.0, 1.0 - 4.0 * dt)
+			it.obj.scale = Vector3.ONE * it.sz * (0.6 + k * 1.4)
+			mat.albedo_color.a = 0.4 * (1.0 - k) * minf(1.0, 0.3 + k * 8.0), {"v": v, "sz": sz})
+
+
 func _blow_lands(e: Dictionary) -> void:
 	var hand: String = e.get("hand", "main")
 	var player = game.player
@@ -452,8 +765,8 @@ func _blow_lands(e: Dictionary) -> void:
 	enemy.rig.hold(t)
 	if e.get("swing"):
 		var facing := atan2(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
-		var slash := {"mesh": "fx_arc", "glow": 0.55 if not e.get("crit") else 0.85, "life": 0.18, "height": 1.25, "forward": -0.2,
-			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.55, 0.7], "spin": 60 if hand == "main" else -60}
+		var slash := {"mesh": "fx_arc", "glow": 0.8 if not e.get("crit") else 1.0, "life": 0.23, "height": 1.1, "forward": -0.2,
+			"faceCamera": true, "rot": [90, 0, 0], "angle": -30 if hand == "main" else 30, "size": [0.7, 0.95], "spin": 60 if hand == "main" else -60}
 		_shape(slash, enemy.position, facing, null, Color("fff0d8"), {})
 
 
@@ -515,11 +828,97 @@ func _shape(p: Dictionary, pos: Vector3, facing: float, follow, colour: Color, t
 		mat.albedo_color.a = glow * fade)
 
 
+## Weapon trails (Dan 2026-11-03): while a melee swing or a weapon ability
+## plays, the blade leaves a short ribbon of light from hilt to tip that
+## fades within a fifth of a second. One ImmediateMesh, rebuilt each frame
+## only while a trail shows; nothing about the blow's timing changes.
+const TRAIL_LIFE := 0.16
+const TRAIL_SAMPLES := 14
+var trail_mesh: ImmediateMesh
+var trail_node: MeshInstance3D
+var trail_pts: Array = [] ## [hilt, tip, age]
+var trail_weapon: Node3D
+var trail_local := [Vector3.ZERO, Vector3(0, 0.8, 0)] ## hilt and tip in the weapon's own space
+
+
+func _trail_ends(w: Node3D) -> Array:
+	var meshes := w.find_children("*", "MeshInstance3D", true, false)
+	if w is MeshInstance3D:
+		meshes.push_front(w)
+	if meshes.is_empty():
+		return [Vector3.ZERO, Vector3(0, 0.8, 0)]
+	var mi: MeshInstance3D = meshes[0]
+	var box: AABB = mi.get_aabb()
+	var to_w: Transform3D = w.global_transform.affine_inverse() * mi.global_transform
+	var axis := box.get_longest_axis_index()
+	var lo := box.get_center()
+	var hi := box.get_center()
+	lo[axis] = box.position[axis]
+	hi[axis] = box.end[axis]
+	var a := to_w * lo
+	var b := to_w * hi
+	# the tip is the end further from the grip (the weapon's origin)
+	return [a, b] if a.length() <= b.length() else [b, a]
+
+
+func weapon_trail(dt: float) -> void:
+	var p = game.player
+	var rig = p.rig if p else null
+	var w: Node3D = p.weapon_part if p else null
+	var swinging: bool = rig != null and rig.action != null and (rig.action.type == "strike" or rig.action.get("trail", false)) \
+		and not p.bow_in_hand and w != null and w.is_visible_in_tree() and game.settings.get_value("weaponTrails") != false
+	for pt in trail_pts:
+		pt[2] += dt
+	trail_pts = trail_pts.filter(func(pt): return pt[2] < TRAIL_LIFE)
+	if swinging:
+		if w != trail_weapon:
+			trail_weapon = w
+			trail_local = _trail_ends(w)
+		var g := w.global_transform
+		var hilt: Vector3 = g * trail_local[0].lerp(trail_local[1], 0.3)
+		var tip: Vector3 = g * trail_local[1]
+		if trail_pts.is_empty() or trail_pts[-1][1].distance_to(tip) > 0.02:
+			trail_pts.append([hilt, tip, 0.0])
+			if trail_pts.size() > TRAIL_SAMPLES:
+				trail_pts.pop_front()
+	if trail_node == null:
+		trail_mesh = ImmediateMesh.new()
+		trail_node = MeshInstance3D.new()
+		trail_node.name = "WeaponTrail"
+		trail_node.mesh = trail_mesh
+		trail_node.top_level = true
+		trail_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.vertex_color_use_as_albedo = true
+		m.no_depth_test = false
+		trail_node.material_override = m
+		game.scene.add_child(trail_node)
+	trail_mesh.clear_surfaces()
+	if trail_pts.size() < 2:
+		return
+	var col: Color = Color("fff0d8")
+	trail_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
+	for i in trail_pts.size():
+		var pt: Array = trail_pts[i]
+		var a: float = (1.0 - pt[2] / TRAIL_LIFE) * (float(i + 1) / trail_pts.size())
+		trail_mesh.surface_set_color(Color(col.r, col.g, col.b, a * 0.05))
+		trail_mesh.surface_add_vertex(pt[0])
+		trail_mesh.surface_set_color(Color(col.r, col.g, col.b, a * 0.55))
+		trail_mesh.surface_add_vertex(pt[1])
+	trail_mesh.surface_end()
+
+
 func update(dt: float) -> void:
+	weapon_trail(dt)
 	for it in items.duplicate():
 		it.age += dt
 		var k: float = minf(1, it.age / it.life)
 		it.update.call(it, k, dt)
 		if k >= 1:
+			RenderCleanup.detach(it.obj)
 			it.obj.queue_free()
 			items.erase(it)

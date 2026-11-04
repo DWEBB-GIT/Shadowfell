@@ -1,6 +1,6 @@
 class_name Skills
 extends RefCounted
-## Skills learned from trainers (data/skills.json; src/systems/skills.js).
+## Skills learned from trainers (data/professions/skills.json; src/systems/skills.js).
 ## A skill unlocks the abilities it `teaches`. Skills with a `maxRank` rise
 ## with use, as WoW's professions do: fishing goes up by one with each catch.
 ## A class's `trained` spells (archetypes.json) are learned from a trainer
@@ -39,16 +39,16 @@ func rank(id: String) -> int:
 	return ranks.get(id, 0)
 
 
-## What the best tool carried adds to a skill: an item's `<skill>Skill`
-## (fishingSkill, skinningSkill) counts while it is in the bags, the tool
-## pack or equipped. Only the best one counts, as in WoW. A tool with a
+## What the best tool on the belt adds to a skill: an item's `<skill>Skill`
+## (fishingSkill, skinningSkill) counts only while it is on the tool belt
+## (Inventory.on_belt), not in the bags. Only the best one counts, as in WoW. A tool with a
 ## `reqSkill` counts only once your skill is that high.
 func tool_bonus(id: String) -> int:
 	var key := id + "Skill"
 	var best := 0
 	for item in DB.items:
 		var d: Dictionary = DB.items[item]
-		if d.has(key) and int(d[key]) > best and rank(id) >= int(d.get("reqSkill", 0)) and game.inventory.has(item):
+		if d.has(key) and int(d[key]) > best and rank(id) >= int(d.get("reqSkill", 0)) and game.inventory.on_belt(item):
 			best = int(d[key])
 	return best
 
@@ -142,7 +142,7 @@ func learn_spell(ability: String) -> bool:
 		return false
 	game.inventory.lose_coins(cost)
 	spells.append(ability)
-	var free := ActionBar.free_slot(game.action_bar.slots)
+	var free := ActionBar.free_spell_slot(game.action_bar.slots)
 	if free >= 0:
 		game.action_bar.place(ability, free)
 	events.emit("log", {"text": "You learn %s. It is in your spellbook (P)." % a.name, "kind": "level"})
@@ -154,7 +154,7 @@ func learn_spell(ability: String) -> bool:
 
 ## What a trainer offers that the character has not learned.
 func offered_by(npc_id: String) -> Array:
-	return DB.skills.values().filter(func(s): return s.get("trainer") == npc_id and not has(s.id))
+	return DB.skills.values().filter(func(s): return DB.taught_by(s, npc_id) and not has(s.id))
 
 
 ## Pay the trainer and learn; false (with a word why) if it cannot be done.

@@ -117,7 +117,7 @@ export class Hud {
 
   }
 
-  // Rarity colours come from data/rarities.json: item names, loot lines in
+  // Rarity colours come from data/items/rarities.json: item names, loot lines in
   // the log, and the border of a filled slot above common.
   _rarityStyles() {
     const css = Object.entries(RARITY).map(([id, r]) => {

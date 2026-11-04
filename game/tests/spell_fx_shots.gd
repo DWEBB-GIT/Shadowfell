@@ -1,10 +1,11 @@
 extends SceneTree
-## Pictures of spell looks (data/spell_fx.json) mid-cast, for checking a new
+## Pictures of spell looks (data/abilities/spell_fx.json) mid-cast, for checking a new
 ## effect or pose without opening the editor (needs a display; on a server
 ## use xvfb-run):
 ##   godot --path . --script res://game/tests/spell_fx_shots.gd -- out_dir heavyStrike,cleave,...
 ## SHOT_CLASS picks the caster (default warden, the Warrior) and SHOT_TIMES
 ## the moments, e.g. SHOT_TIMES=0.2,0.6,1.2,2.0 for a long cast.
+## `levelUp` in the list plays the level-up moment instead of a spell.
 ## For each spell a character of that class stands at the start with an enemy in front,
 ## casts it, and a picture is saved at each of SHOT_TIMES seconds in.
 ## Time is stepped by hand, so the pictures land on the same moments
@@ -99,4 +100,8 @@ func _start(id: String) -> void:
 		game.resources.since_combat = 99.0
 	t = 0.0
 	shot = 0
+	if id == "levelUp":
+		# a moment (spell_fx.json `moments`), as the game plays it
+		game.events.emit("levelUp", {"level": 2, "gains": {}})
+		return
 	print(id, " (", game.stats.archetype.get("id"), "): ", "cast" if game.spells.try_cast(id) else "refused")

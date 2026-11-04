@@ -1,16 +1,17 @@
 class_name Forge
 extends RefCounted
-## Forge, enchanter and jeweller services (data/forge.json,
-## data/enchanting.json, data/gems.json), offered by any npc with
-## `forge: true` (a smith), `enchanter: true` or `jeweller: true`, so every
+## Forge, enchanter and jeweller services (data/professions/forge.json,
+## data/professions/enchanting.json, data/professions/gems.json), offered by any npc with
+## `forge: true` (a smith), `refiner: true` or `jeweller: true`, so every
 ## town's smith (or enchanter) does the same work. The rule that holds it together: an upgrade
 ## makes a loved item last a few more levels, never forever, and what you
 ## put into it comes back when you scrap it.
 ##
-## - Enchant (an enchanter): +1 item level a rank, up to a cap by rarity;
-##   each rank costs more dust (of the item's level band) and coins. In code
+## - Refine (a refiner): +1 item level a rank, up to a cap by rarity;
+##   each rank costs more Fellstones (no coins since 2026-11-03), and
+##   may fail (losing only those; the item's next try gets easier). In code
 ##   and saves a rank is still called `temper`.
-## - Scrap (an enchanter): break magic gear into dust, `refund` of every
+## - Scrap (a refiner): break magic gear into stones, `refund` of every
 ##   enchanting material put in, and its gems; preview first. No metal.
 ## - Reforge: swap one stat for another, from options shown up front.
 ## - Sockets: a forge punches one (skyiron); a jeweller makes gems from
@@ -61,7 +62,7 @@ static func _band(list: Array, level: float) -> String:
 
 
 # ------------------------------------------------------------ enchanting
-## Enchanting rules (data/enchanting.json).
+## Enchanting rules (data/professions/enchanting.json).
 static func enchant_rules() -> Dictionary:
 	return DB.enchanting
 
@@ -86,7 +87,7 @@ static func rank_cost(base_level: float, rank: int, cap: int, rarity: String) ->
 	var last: Dictionary = t.get("lastRank", {})
 	if rank == cap and last.get("rarities", []).has(rarity):
 		items.append({"item": last.item, "count": int(last.get("count", 1))})
-	return {"items": items, "coins": int(rk.get("coins", 0)) + U.jround(t.get("coinsPerItemLevel", 0) * level)}
+	return {"items": items, "coins": int(rk.get("coins", 0)) + U.jround(t.get("coinsPerItemLevel", 0) * level), "chance": int(rk.get("chance", 100))}
 
 
 ## The next rank's cost for this item, or {} when it can go no higher.
@@ -100,7 +101,15 @@ func temper_cost(stack: Dictionary) -> Dictionary:
 	if not c.is_empty():
 		c.rank = now + 1
 		c.cap = cap
+		# each failed try on this item makes the next one likelier
+		c.chance = mini(100, c.chance + resolve_of(stack))
 	return c
+
+
+## Percent added to an item's next refine by its failed tries (rolls.resolve).
+static func resolve_of(stack) -> int:
+	var r = stack.get("rolls") if stack != null else null
+	return int(r.get("resolve", 0)) if typeof(r) == TYPE_DICTIONARY else 0
 
 
 func affordable(cost: Dictionary) -> bool:
@@ -112,7 +121,7 @@ func affordable(cost: Dictionary) -> bool:
 	return true
 
 
-## "3 Faint dust (5), 26c"
+## "3 Gloamstone (5), 26c"
 func cost_text(cost: Dictionary) -> String:
 	var parts := []
 	for x in cost.get("items", []):
@@ -130,7 +139,7 @@ func temper(loc: String) -> bool:
 		return false
 	var cost := temper_cost(st)
 	if cost.is_empty():
-		_say("That can be enchanted no further")
+		_say("That can be refined no further")
 		return false
 	if not affordable(cost):
 		_say("You don't have what that needs")
@@ -139,27 +148,40 @@ func temper(loc: String) -> bool:
 		inv.remove_count(x.item, x.count)
 	inv.lose_coins(cost.coins)
 	var r := _rolls_of(st)
+	var t: Dictionary = enchant_rules().get("enchant", {})
+	if game.random.call() * 100 >= cost.chance:
+		# a slip: only the stones are lost; the item remembers
+		r.resolve = mini(100, resolve_of(st) + int(t.get("resolvePerFail", 10)))
+		_changed(loc)
+		game.events.emit("refineFailed", {"loc": loc, "rank": cost.rank})
+		game.events.emit("spellFlash", {"position": game.player.position, "colour": "#7a6a90"})
+		game.events.emit("log", {"text": "The refine failed. %s stays as it was; the next try on it is likelier (%d%%)." % [Items.view(st).name, temper_cost(st).get("chance", 100)], "kind": "muted"})
+		return false
 	r.temper = cost.rank
+	r.erase("resolve")
 	_changed(loc)
 	game.events.emit("itemEnchanted", {"loc": loc, "rank": cost.rank})
-	game.events.emit("log", {"text": "Enchanted: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
+	game.events.emit("spellFlash", {"position": game.player.position, "colour": "#ffe6a0"})
+	game.events.emit("log", {"text": "Refined: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
+	if cost.rank >= int(t.get("announceFrom", 99)):
+		game.events.emit("log", {"text": "%s has refined %s to Rank +%d!" % [game.hud.char_name.text if game.hud and game.hud.char_name.text != "" else "You", Items.get_def(st.id).name, cost.rank], "kind": "level"})
 	return true
 
 
 ## What scrapping gives: { items: [{ item, count }], gems: [ids] }, or {}
-## when the item holds no magic (plain gear). Gear breaks down into dust and
+## when the item holds no magic (plain gear). Gear breaks down into stones and
 ## its gems, never metal or leather.
 func scrap_preview(stack: Dictionary) -> Dictionary:
 	var d := Items.get_def(stack.id)
 	var v := Items.view(stack)
 	var de: Dictionary = enchant_rules().get("scrap", {})
-	var n := int(de.get("dust", {}).get(v.get("rarity", "common"), 0))
+	var n := int(de.get("stones", {}).get(v.get("rarity", "common"), 0))
 	if n <= 0 or not d.has("itemLevel"):
 		return {}
 	var level: float = d.itemLevel
 	var got := {}
-	var dust := _band(enchant_rules().get("enchant", {}).get("bands", {}).get("dust", []), level)
-	got[dust] = n
+	var stone := _band(enchant_rules().get("enchant", {}).get("bands", {}).get("stones", []), level)
+	got[stone] = n
 	var extra: Dictionary = de.get("extra", {})
 	if extra.get("rarities", []).has(v.rarity):
 		got[extra.item] = got.get(extra.item, 0) + int(extra.get("count", 1))

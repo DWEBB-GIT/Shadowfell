@@ -13,7 +13,7 @@
 import { SCALING, isScaledItem, itemSpend, overBudget } from './scaling.js';
 
 export const KINDS = ['weapon', 'armor', 'shield', 'jewellery', 'torch', 'tool', 'key', 'bag', 'ammo', 'consumable', 'material', 'junk', 'document'];
-// rarity ids, lowest first (data/rarities.json holds their names and colours)
+// rarity ids, lowest first (data/items/rarities.json holds their names and colours)
 export const RARITIES = ['junk', 'common', 'enhanced', 'rare', 'epic', 'legendary', 'quest'];
 const GEAR = ['weapon', 'armor', 'shield'];
 const EQUIPPABLE = ['weapon', 'armor', 'shield', 'jewellery', 'torch'];
@@ -56,7 +56,7 @@ export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
 const SCHOOLS = ['physical', 'shadow', 'holy', 'nature', 'fire'];
 // what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
-export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer', 'tanner'];
+export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer', 'tanner', 'banker'];
 
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.
@@ -79,6 +79,12 @@ export const SPELL_KINDS = {
   channel: { enemy: true, tuning: ['castTime', 'tickInterval', 'damageMin', 'damageMax', 'healPercent'] },
   shield: { enemy: false, tuning: ['duration', 'absorbPercent'] },
   camp: { enemy: false, tuning: ['castTime'] }, // Set Camp: a cast, then the camp is pitched
+  // healing and thorns (Godot only, game/systems/spells.gd): heals scale with healPower
+  heal: { enemy: false, tuning: ['castTime', 'healMin', 'healMax'] }, // castTime 0 = instant; optional consumes (a hot) + consumePercent
+  hot: { enemy: false, tuning: ['duration', 'tickInterval', 'healMin', 'healMax'] },
+  healZone: { enemy: false, ground: true, tuning: ['radius', 'duration', 'tickInterval', 'healMin', 'healMax'] }, // optional damageMin/Max
+  healBurst: { enemy: false, ground: true, tuning: ['radius', 'healMin', 'healMax', 'damageMin', 'damageMax'] },
+  thorns: { enemy: false, tuning: ['duration', 'thornsMin', 'thornsMax'] }, // optional spellPower
 };
 // what an `applies` aura may say, all numbers: `then` is a second aura that follows it
 const AURA_KEYS = ['duration', 'slow', 'stun', 'sleep', 'damageTaken', 'damageDealt'];

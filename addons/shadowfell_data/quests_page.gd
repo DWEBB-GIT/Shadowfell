@@ -12,7 +12,7 @@ const UI := preload("ui.gd")
 const KEY_ORDER := ["id", "name", "giver", "turnIn", "autoAccept", "requires", "choice", "summary", "offer", "progress", "complete", "objectives", "reward", "setsFlag", "turnInLog"]
 const OBJECTIVE_ORDER := ["id", "type", "target", "count", "keep", "label", "location"]
 const REWARD_ORDER := ["coins", "xp", "items", "reputation", "infamy"]
-const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"]]
+const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"], ["puzzle", "Solve a world mechanism"]]
 
 ## open another record (an npc) on its own tab
 signal open_record(kind: String, id: String)
@@ -260,12 +260,21 @@ func _build() -> void:
 	var r: Dictionary = q.reward
 	g = UI.grid(form)
 	UI.coins_row(g, r, func(): _changed())
-	UI.row(g, "Experience", UI.spin(r.get("xp", 0), 0, 1000000, 5, func(v):
-		if v > 0:
-			r.xp = v
+	# XP comes from a formula (DB.quest_xp_base): a share of the quest level's
+	# bar by size, times xpScale for a longer or harder quest
+	UI.row(g, "Experience size", UI.choice([["", "None"], ["errand", "Errand (4% of a level)"], ["standard", "Standard (7%)"], ["chainStep", "Chain step (10%)"], ["chainFinale", "Chain finale (15%)"], ["actFinale", "Act finale (30%)"]], r.get("size", ""), func(v):
+		if v != "":
+			r.size = v
 		else:
-			r.erase("xp")
-		_changed()))
+			r.erase("size")
+			r.erase("xpScale")
+		_changed()), "Share of the quest level's XP bar (progression.questSizes in db.gd).")
+	UI.row(g, "XP scale", UI.spin(r.get("xpScale", 1.0), 0.25, 4.0, 0.05, func(v):
+		if is_equal_approx(v, 1.0):
+			r.erase("xpScale")
+		else:
+			r.xpScale = v
+		_changed()), "More for a long or hard quest, less for a quick one.")
 	UI.row(g, "Infamy", UI.spin(r.get("infamy", 0), 0, 1000, 1, func(v):
 		if v > 0:
 			r.infamy = int(v)
@@ -273,7 +282,7 @@ func _build() -> void:
 			r.erase("infamy")
 		_changed()), "For a dark choice: it is remembered (infamy.json).")
 	UI.note(form, "Items:")
-	UI.item_rows(form, s, r, "item", ["coins", "xp"], _changed)
+	UI.item_rows(form, s, r, "item", ["coins", "size", "xpScale"], _changed)
 	UI.note(form, "Reputation:")
 	var rep: Dictionary = r.get("reputation", {})
 	for f in rep.keys():
@@ -352,7 +361,10 @@ func _objective(q: Dictionary, o: Dictionary, i: int) -> void:
 				o.target = s.examine_points[0] if s.examine_points.size() else ""
 			"talk":
 				o.target = q.get("turnIn")
-		if v in ["examine", "talk"]:
+			"puzzle":
+				var mechanisms: Array = s.files.world.get("puzzles", [])
+				o.target = mechanisms[0].id if not mechanisms.is_empty() else ""
+		if v in ["examine", "talk", "puzzle"]:
 			o.erase("count")
 		elif not o.has("count"):
 			o.count = 1
@@ -374,6 +386,10 @@ func _objective(q: Dictionary, o: Dictionary, i: int) -> void:
 				_changed()), "A point in the world to look at (text.json examine).")
 		"talk":
 			UI.note(box, "Go and speak to %s (the hand-in npc)." % s.npc_name(q.get("turnIn")))
+		"puzzle":
+			UI.row(g, "Mechanism", UI.choice(s.files.world.get("puzzles", []).map(func(p): return [p.id, p.name]), o.get("target"), func(v):
+				o.target = v
+				_changed()), "Operate the placed mechanism. Reading its clue does not solve it. Move it in World → Puzzles.")
 	if o.get("type") in ["kill", "collect"]:
 		UI.row(g, "Count", UI.spin(o.get("count", 1), 1, 999, 1, func(v):
 			o.count = v
@@ -421,7 +437,7 @@ func new_quest(base: Dictionary) -> void:
 	}
 	if base.has("requires"):
 		q.requires = base.requires.duplicate()
-	q.merge({"summary": "", "offer": "", "progress": "", "complete": "", "objectives": [{"id": "objective_1", "type": "kill", "target": s.enemies[0].id if s.enemies.size() else "", "count": 1, "label": ""}], "reward": {"coins": 0, "xp": 0}})
+	q.merge({"summary": "", "offer": "", "progress": "", "complete": "", "objectives": [{"id": "objective_1", "type": "kill", "target": s.enemies[0].id if s.enemies.size() else "", "count": 1, "label": ""}], "reward": {"coins": 0, "size": "standard"}})
 	# next to the giver's other quests
 	var at := s.quests.size()
 	for i in s.quests.size():

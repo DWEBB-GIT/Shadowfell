@@ -1,6 +1,6 @@
 class_name Mining
 extends RefCounted
-## Mining (data/mining.json), a gathering profession like Skinning: a
+## Mining (data/professions/mining.json), a gathering profession like Skinning: a
 ## trainer, a pick in the tool pack, and a rank that rises with every swing
 ## that is not yet easy for you (5 ranks an ore level).
 ##
@@ -56,7 +56,7 @@ func _build() -> void:
 			node.add_child(glint)
 			node.position = Vector3(p[0], Terrain.height_at(p[0], p[1]), p[1])
 			node.rotation.y = fmod(p[0] * 13.7 + p[1] * 7.1, TAU)
-			game.scene.add_child(node)
+			game.world.stream.add_view(node, game.scene, p[0], p[1])
 			var mats := Rig.isolate_materials(model)
 			for m in mats:
 				if m is BaseMaterial3D:
@@ -146,7 +146,7 @@ var pick:
 		var best = null
 		for id in DB.items:
 			var d: Dictionary = DB.items[id]
-			if d.get("miningPick") and inv.has(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
+			if d.get("miningPick") and inv.on_belt(id) and (best == null or d.get("miningSkill", 0) > best.get("miningSkill", 0)):
 				best = d
 		return best
 
@@ -183,7 +183,7 @@ func start(o: Dictionary) -> bool:
 		game.hud.error("That vein %s." % why)
 		return false
 	if bags_full(o):
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)
@@ -255,7 +255,7 @@ func update(dt: float, time: float) -> void:
 		game.events.emit("log", {"text": "The vein is mined out. Another will glint somewhere along %s before long." % o.group.get("name", "the rock"), "kind": "muted"})
 	elif bags_full(o):
 		mining = null
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 	elif block({"rank": int(rock_def(o.rock).get("rank", 1))}) == "":
 		_swing(o) # keep swinging until it is bare, as long as you stand there
 	else:

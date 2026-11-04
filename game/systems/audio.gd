@@ -20,9 +20,16 @@ const SFX := {
 	"parry": ["parry_1.wav", "parry_2.wav", "parry_3.wav"],
 	"shot": ["bow_shot_1.wav", "bow_shot_2.wav"],
 	"block": ["shield_block.mp3"],
+	# combat by weapon (Dan's library, 2026-11-03): arrows and daggers land
+	# with their own sound; a blow turned by your shield or armour clanks
+	"hit_bow": ["bow_hit_1.ogg", "bow_hit_2.ogg", "bow_hit_3.ogg"],
+	"hit_dagger": ["dagger_stab.mp3"],
+	"blocked": ["sword_blocked_1.ogg", "sword_blocked_2.ogg", "sword_blocked_3.ogg"],
+	"arrow_blocked": ["bow_blocked_1.ogg", "bow_blocked_2.ogg", "bow_blocked_3.ogg"],
 	"lunge": ["heavy_whoosh.mp3"],
 	"wolf": ["wolf_growl.mp3"],
 	"gold": ["gold.ogg"],
+	"loot_gold": ["loot_gold.ogg"], # any coin picked up (Dan, 2026-10-29)
 	"pickup": ["pickup.ogg"],
 	"pickup_weapon": ["pickup_weapon.ogg"],
 	"pickup_potion": ["pickup_potion.mp3"],
@@ -38,6 +45,11 @@ const SFX := {
 	"quest_complete": ["quest_complete.mp3"],
 	"quest_log": ["quest_log.mp3"],
 	"panel": ["panel_open.mp3"],
+	"bag": ["bag_open.mp3"], # bags and the tool pack, opened or closed
+	"shop_greet": ["shop_greet.mp3"], # talking to a shopkeeper
+	"page_turn": ["page_turn.mp3"], # talking to a quest giver
+	"quest_accept": ["quest_accept.mp3"], # a quest taken: the pencil scribble
+	"quest_ready": ["quest_ready.mp3"], # a quest's objectives done out in the world
 	"potion": ["potion_drink.mp3"],
 	"chest": ["chest_open_1.wav", "chest_open_2.wav"],
 	"buy": ["buy.ogg"],
@@ -48,14 +60,32 @@ const SFX := {
 	"campfire": ["campfire.mp3"],
 	"fish_cast": ["fishing_cast.mp3"],
 	"fish_out": ["fishing_out.mp3"],
+	"fish_splash": ["fish_splash.wav"], # a bite: strike now
 	"step_dirt": ["step_dirt_1.wav", "step_dirt_2.wav", "step_dirt_3.wav", "step_dirt_4.wav", "step_dirt_5.wav"],
 	"step_stone": ["step_stone_1.wav", "step_stone_2.wav", "step_stone_3.wav", "step_stone_4.wav", "step_stone_5.wav"],
 	"step_wood": ["step_wood_1.wav", "step_wood_2.wav", "step_wood_3.wav", "step_wood_4.wav"],
 }
-## region id -> ambience loop (anywhere else keeps the forest)
-const AMB_LOOPS := {"brackenford": "amb_town.mp3", "fallen_road": "amb_forest.mp3", "blackwood": "amb_forest.mp3"}
-const MUSIC := "music_loop.ogg" ## Dan's background track, looped under everything
-const STEP_GAP := 0.42 ## seconds between footsteps at a walk
+## region id -> ambience loop; anywhere else is forest and open country,
+## which plays the day or the night forest (Dan, 2026-11-02)
+const AMB_LOOPS := {"brackenford": "amb_town.mp3"}
+const FOREST_DAY := "amb_forest_day.ogg" ## Pixabay "Morning Forest Ambiance", made to loop
+const FOREST_NIGHT := "amb_forest_night.ogg" ## Pixabay "Sounds of the Forest (Night)"
+## Night by the player's own clock, as WoW follows the realm's clock: from
+## 21:00 until 06:00. The game has no day/night cycle of its own yet.
+const NIGHT_FROM := 21
+const NIGHT_TO := 6
+const AMB_DB := -8.0
+const MUSIC := "music_loop.ogg" ## Dan's background track
+## The music as WoW plays it (Dan, 2026-11-02): silent when you arrive, it
+## fades in now and then, plays the track through, fades out and leaves
+## the world's ambience alone for a long while. Seconds.
+const MUSIC_DB := -10.0
+const MUSIC_FIRST := [150.0, 270.0] ## first time it comes in after you enter the world
+const MUSIC_QUIET := [420.0, 780.0] ## the silence between plays
+const MUSIC_NEW_REGION := 120.0 ## a new region brings it in early once it has been quiet this long
+const MUSIC_FADE_IN := 8.0
+const MUSIC_FADE_OUT := 12.0
+const DEATH_LOOP := "death_wind.mp3" ## Dan's wind, looped from death until you live again
 const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], "seer": [95, 0.45]}
 
 var game
@@ -65,6 +95,7 @@ var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
 var click_player: AudioStreamPlayer
 var last_sfx_frame := -1 ## frame a specific sound last played
+var coin_frame := -1 ## frame coins were last picked up
 var rumble: AudioStreamPlayer
 var rumble_level := 0.0
 var next_crow := 6.0
@@ -77,8 +108,18 @@ var _force_variant := -1
 var sfx_cache := {} ## file -> AudioStream
 var amb_loop: AudioStreamPlayer
 var amb_file := ""
+var amb_region := ""
+var amb_want := "" ## the loop to cross to (amb_file fades out first)
+var amb_level := 1.0
+var amb_check := 0.0 ## seconds to the next day/night look at the clock
 var music: AudioStreamPlayer
-var step_t := 0.0
+var music_level := 0.0
+var music_wait := 0.0 ## seconds of silence left before the music comes in
+var music_quiet := 0.0 ## seconds since the music last played
+var music_fading := false
+var dead := false
+var death_loop: AudioStreamPlayer ## the wind while dead; music and ambience wait
+var step_seen := 0 ## the player rig's footfall count last heard
 
 
 ## Every sound the game can play is made ahead, a little each frame from
@@ -91,11 +132,19 @@ func _ready() -> void:
 		func(): growl(55, 1.4), func(): growl(120, 0.35)]
 	for t in [[160, 0.18], [110, 0.25], [90, 0.3], [180, 0.12], [70, 0.6], [60, 0.6], [220, 0.12]]:
 		warm.append(func(): thud(t[0], t[1]))
+	for sc in SCHOOL_PITCH:
+		warm.append(func(): cast_charge(sc))
+		warm.append(func(): whoosh(0.3, SCHOOL_PITCH[sc] * 1.4))
+	warm.append(func(): whoosh(0.22, 700))
+	warm.append(func(): thud(150, 0.15))
+	warm.append(func(): thud(65, 0.6))
 	for g in GROWL.values():
 		warm.append(func(): growl(g[0], g[1]))
 	for v in VARIANTS:
 		warm.append(func(): bell(1, 180 + v * 10, "Ambience"))
-		for f in [func(): whoosh(0.18, 900), func(): impact(), func(): coins(), func(): crow(), func(): creak()]:
+		for f in [func(): whoosh(0.18, 900), func(): impact(), func(): coins(), func(): crow(), func(): creak(),
+				func(): clank(), func(): bone_crack(), func(): flesh(), func(): rustle(), func(): crit_sting(), func(): kill_crunch(),
+				func(): school_impact("fire"), func(): school_impact("holy"), func(): school_impact("shadow"), func(): school_impact("arcane")]:
 			warm.append(func():
 				_force_variant = v
 				f.call()
@@ -142,26 +191,35 @@ func start() -> void:
 		add_child(p)
 		voices.append(p)
 	apply_volumes()
+	apply_device()
 	game.events.on("settingsChanged", func(e):
-		if str(e.get("id", "")).begins_with("vol"):
-			apply_volumes())
+		var id := str(e.get("id", ""))
+		if id.begins_with("vol") or id == "soundOn":
+			apply_volumes()
+		elif id == "outputDevice":
+			apply_device())
 	rumble = _loop(_rumble(), "Ambience")
 	rumble.volume_db = -80.0
 	amb_loop = AudioStreamPlayer.new()
 	amb_loop.bus = "Ambience"
-	amb_loop.volume_db = -8.0
+	amb_loop.volume_db = AMB_DB
 	add_child(amb_loop)
 	music = AudioStreamPlayer.new()
 	music.bus = "Music"
-	music.volume_db = -10.0
+	music.volume_db = -80.0
 	add_child(music)
 	var m = _stream(MUSIC)
 	if m != null:
 		m = m.duplicate()
-		m.loop = true
+		m.loop = false # played through once each time, then silence
 		music.stream = m
-		music.play()
-	game.events.on("regionChanged", func(e): _ambience(str(e.region.get("id", ""))))
+	music.finished.connect(_music_done)
+	music_wait = rng.randf_range(MUSIC_FIRST[0], MUSIC_FIRST[1])
+	game.events.on("regionChanged", func(e):
+		_ambience(str(e.region.get("id", "")))
+		# somewhere new: the music may come in to greet it
+		if not music.playing and music_quiet > MUSIC_NEW_REGION:
+			music_wait = minf(music_wait, rng.randf_range(3.0, 8.0)))
 	if game.get("region") != null:
 		_ambience(str(game.region.get("id", "")))
 	_bind()
@@ -182,8 +240,20 @@ func apply_volumes() -> void:
 	for b in [["Master", "volMaster"], ["Effects", "volEffects"], ["Ambience", "volAmbience"], ["Music", "volMusic"]]:
 		var v: float = pow(float(st.get_value(b[1])) / 100.0, 2)
 		AudioServer.set_bus_volume_db(AudioServer.get_bus_index(b[0]), linear_to_db(maxf(v, 0.00001)))
+	var off: bool = not st.get_value("soundOn")
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), off)
 	if game.hud:
-		game.hud.set_muted(float(st.get_value("volMaster")) == 0)
+		game.hud.set_muted(off or float(st.get_value("volMaster")) == 0)
+
+
+## the speakers to play through (Settings, Audio); browsers offer only Default
+func output_devices() -> PackedStringArray:
+	return AudioServer.get_output_device_list()
+
+
+func apply_device() -> void:
+	var want: String = game.settings.get_value("outputDevice")
+	AudioServer.output_device = want if output_devices().has(want) else "Default"
 
 
 func _bind() -> void:
@@ -192,27 +262,35 @@ func _bind() -> void:
 	ev.on("playerShot", func(_e): sfx("shot", 0.7))
 	ev.on("fishCast", func(_e): sfx("fish_cast", 0.8))
 	ev.on("fishReel", func(_e): sfx("fish_out", 0.8))
-	ev.on("enemyHit", func(e):
-		if e.get("kind") != "strike":
-			return
-		sfx("hit")
-		if e.get("crit"):
-			thud(90, 0.3)) # a crit lands with a deeper crunch
-	ev.on("burst", func(_e): shield_break())
+	ev.on("fishBite", func(_e): sfx("fish_splash", 1.0))
+	# a blow is heard when it is seen (the opening swing's impact waits
+	# for the blade, `show`)
+	ev.on("enemyHit", func(e): _later(e.get("show", 0.0), func(): blow(e)))
+	ev.on("burst", func(e): burst_boom(e))
+	ev.on("castStart", func(e): cast_charge(_school_of(e.get("id", ""))))
+	ev.on("spellFx", func(e):
+		if e.get("phase") == "cast":
+			cast_release(_school_of(e.get("id", ""))))
+	ev.on("enemyMissed", func(_e): whoosh(0.18, 900))
+	ev.on("playerMiss", func(_e): whoosh(0.18, 900))
 	ev.on("playerBrace", func(_e): thud(180, 0.12))
 	ev.on("braceBlock", func(_e):
 		sfx("block"))
 	ev.on("enemyWhiff", func(_e): sfx("parry", 0.6))
-	ev.on("corpseLooted", func(_e): sfx("gold"))
+	ev.on("corpseLooted", func(_e):
+		if coin_frame != Engine.get_process_frames():
+			sfx("gold")) # the body's coins already chimed
 	ev.on("enemyWindup", func(e):
 		if e.enemy.type == "hound":
 			sfx("wolf", 0.6)
 			return
 		var g: Array = GROWL.get(e.enemy.type, [120, 0.35])
 		growl(g[0], g[1]))
-	ev.on("playerHurt", func(_e): thud(110, 0.25))
-	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
+	ev.on("playerHurt", func(e): hurt(e))
+	ev.on("enemyDefeated", func(e): kill(e.enemy))
 	ev.on("lootCollected", func(e):
+		if coin_frame == Engine.get_process_frames():
+			return # a purse: its coins already chimed
 		var def: Dictionary = Items.get_def(str(e.get("item", ""))) if e.get("item") else {}
 		if e.get("node"):
 			sfx("harvest", 0.8) # a gathering node, picked
@@ -222,10 +300,25 @@ func _bind() -> void:
 			sfx("pickup_potion")
 		else:
 			sfx("pickup"))
-	ev.on("coins", func(_e): sfx("gold"))
+	ev.on("coins", func(e):
+		if e.get("sold"):
+			sfx("gold") # coins counted across the counter
+		elif e.get("amount", 0) > 0:
+			coin_frame = Engine.get_process_frames()
+			sfx("loot_gold")
+		elif e.get("amount", 0) < 0 and not e.get("bought"):
+			sfx("gold"))
 	ev.on("levelUp", func(_e): sfx("level_up"))
 	ev.on("shrineRest", func(_e): sfx("shrine", 0.6))
-	ev.on("itemEnchanted", func(_e): sfx("shrine", 0.6))
+	# a refined rank lands with a fanfare; a rune sinks in with the shrine chime
+	ev.on("itemEnchanted", func(e):
+		sfx("shrine", 0.6)
+		if e.has("rank"):
+			sfx("quest_complete", 0.7, 1.15))
+	ev.on("refineFailed", func(_e):
+		sfx("shrine", 0.3, 0.7)
+		thud(140, 0.12))
+	ev.on("fellstoneDropped", func(_e): sfx("shrine", 0.5, 1.4))
 	ev.on("itemScrapped", func(_e): sfx("shrine", 0.4))
 	ev.on("draught", func(_e): sfx("potion"))
 	ev.on("itemEquipped", func(e):
@@ -238,11 +331,13 @@ func _bind() -> void:
 			sfx("equip", 0.7))
 	ev.on("chestOpened", func(_e): sfx("chest"))
 	ev.on("itemBought", func(_e): sfx("buy"))
-	ev.on("itemSold", func(_e): sfx("gold"))
 	ev.on("mined", func(_e): sfx("mine"))
 	ev.on("skinned", func(_e): sfx("skin"))
 	ev.on("campPitched", func(_e): sfx("campfire", 0.6))
-	ev.on("playerDied", func(_e): growl(55, 1.4))
+	ev.on("playerDied", func(_e):
+		growl(55, 1.4)
+		set_dead(true))
+	ev.on("playerRevived", func(_e): set_dead(false))
 	ev.on("playerLunge", func(_e): sfx("lunge"))
 	ev.on("graveSlam", func(_e):
 		thud(60, 0.6)
@@ -255,11 +350,283 @@ func _bind() -> void:
 		if d < 22:
 			bell(0.05 * maxf(0, 1 - d / 22), 880))
 	ev.on("questComplete", func(_e): sfx("quest_complete", 0.8))
+	ev.on("questReady", func(_e): sfx("quest_ready", 0.8))
+	ev.on("questAccepted", func(e):
+		if not e.get("quiet"):
+			sfx("quest_accept", 0.8))
+
+
+# --------------------------------------------------------------- combat
+## How a blow sounds (Dan 2026-11-03: fighting should feel impactful): the
+## weapon's own hit, then what it met (`material` in the enemy's data, else
+## from its `blood`: bone cracks, straw rustles, metal clanks, flesh thumps),
+## a bright sting on a crit, and a spell's school where a spell lands. Blows
+## that land in the same frame (an area spell) rattle in one after another,
+## each a little quieter, as Conquer Online's area hits do.
+const MAX_STACK := 4 ## blows heard from one frame
+const STACK_GAP := 0.035 ## seconds between them
+var _blow_frame := -1
+var _blow_n := 0
+
+
+func blow(e: Dictionary) -> void:
+	var enemy = e.get("enemy")
+	if enemy == null or e.get("damage", 0) <= 0:
+		return
+	var f := Engine.get_process_frames()
+	_blow_n = _blow_n + 1 if f == _blow_frame else 0
+	_blow_frame = f
+	var n := _blow_n
+	if n >= MAX_STACK:
+		return
+	var lv := 1.0 / (1.0 + n * 0.4)
+	var crit: bool = e.get("crit", false)
+	var mat := material_of(enemy)
+	_later(n * STACK_GAP, func():
+		if e.get("kind") == "spell":
+			school_impact(str(e.get("school", "arcane")), lv)
+		else:
+			var w := weapon_sound(str(e.get("hand", "main")))
+			if w == "":
+				thud(150, 0.15) # fists
+			else:
+				sfx(w, lv, rng.randf_range(0.94, 1.06) * (0.9 if crit else 1.0))
+		material_hit(mat, lv * 0.7)
+		if crit:
+			crit_sting(lv))
+
+
+## the hit sound of the weapon in a hand ("" for bare fists)
+func weapon_sound(hand: String) -> String:
+	if hand == "ranged":
+		return "hit_bow"
+	var w = game.stats.hand_weapon(hand) if game and game.stats else null
+	if w == null:
+		return ""
+	match str(w.get("weaponType", "sword")):
+		"dagger":
+			return "hit_dagger"
+		"bow":
+			return "hit_bow"
+	return "hit"
+
+
+static func material_of(enemy) -> String:
+	var m = enemy.cfg.get("material")
+	if m:
+		return str(m)
+	match Fx.blood_of(enemy):
+		"bone":
+			return "bone"
+		"straw":
+			return "straw"
+	return "flesh"
+
+
+func material_hit(mat: String, level := 1.0) -> void:
+	match mat:
+		"metal":
+			clank(level)
+		"bone":
+			bone_crack(level)
+		"straw":
+			rustle(level)
+		_:
+			flesh(level)
+
+
+## An enemy's blow on you: a thud and its weapon, or a clank off your guard.
+func hurt(e: Dictionary) -> void:
+	if float(e.get("blocked", 0)) > 0:
+		var foe = e.get("enemy")
+		var shot: bool = foe != null and foe.cfg.get("ranged") != null and game.player and foe.position.distance_to(game.player.position) > 3.0
+		sfx("arrow_blocked" if shot else "blocked", 0.8)
+	if e.get("damage", 0) <= 0:
+		return
+	thud(110, 0.25)
+	sfx("hit", 0.45, 0.85)
+	if e.get("crit"):
+		crit_sting(0.7)
+
+
+## The killing blow: the body's death and a last, louder break of what it
+## is made of.
+func kill(enemy) -> void:
+	var heavy: bool = enemy.type == "brute" or str(enemy.cfg.get("type", "")) in ["elite", "heavy"]
+	death(heavy)
+	material_hit(material_of(enemy), 1.0)
+	kill_crunch()
+
+
+func kill_crunch() -> void:
+	var make := func():
+		var b := _buf(0.25)
+		_noise(b, 0, 0.25, Biquad.new("lowpass", 1400, 0.9, RATE), [0.002, 0.45, 0.2])
+		return b
+	_play("killCrunch%d" % _variant(), make, 0.8)
+
+
+## An area spell going off: a boom that grows with how many it caught.
+func burst_boom(e: Dictionary) -> void:
+	var n: int = e.get("hits", []).size()
+	thud(65, 0.6)
+	whoosh(0.35, 300)
+	if n >= 3:
+		shield_break()
+	school_impact(str(e.get("school", "holy")), minf(1.0, 0.6 + n * 0.1))
+
+
+static func _school_of(id: String) -> String:
+	var sp = DB.spells.get(id)
+	return str(sp.get("school", "arcane")) if sp is Dictionary else ""
+
+
+## a cast being drawn: a soft rising hum in the school's pitch
+func cast_charge(school: String) -> void:
+	if school == "" or school == "physical":
+		return
+	var base: float = SCHOOL_PITCH.get(school, 500.0)
+	var make := func():
+		var b := _buf(0.5)
+		_tone(b, 0, 0.5, "sine", func(t): return _expo(base * 0.5, base, t, 0.5), [0.35, 0.12, 0.15])
+		_noise(b, 0, 0.5, Biquad.new("bandpass", base, 2.0, RATE), [0.4, 0.08, 0.1], func(t): return _expo(base, base * 2.5, t, 0.5))
+		return b
+	_play("charge:" + school, make, 1.0)
+
+
+## a spell let go: a rush in the school's pitch
+func cast_release(school: String) -> void:
+	if school == "":
+		return
+	if school == "physical":
+		whoosh(0.22, 700)
+		return
+	whoosh(0.3, SCHOOL_PITCH.get(school, 500.0) * 1.4)
+	if school == "holy":
+		chime([660, 990], 0.12)
+
+
+const SCHOOL_PITCH := {"fire": 380.0, "holy": 880.0, "shadow": 180.0, "nature": 520.0, "frost": 1200.0, "arcane": 760.0}
+
+
+## where a spell lands, by school
+func school_impact(school: String, level := 1.0) -> void:
+	match school:
+		"fire": # a whump and a crackle
+			var make := func():
+				var b := _buf(0.5)
+				_noise(b, 0, 0.45, Biquad.new("lowpass", 2400, 0.9, RATE), [0.004, 0.55, 0.4], func(t): return _expo(2400, 250, t, 0.4))
+				for i in 6:
+					var at := 0.05 + randf() * 0.35
+					_noise(b, at, 0.02, Biquad.new("highpass", 3000, 0.707, RATE), [0.001, 0.35, 0.015])
+				return b
+			_play("fireHit%d" % _variant(), make, level)
+		"holy": # a struck bell
+			var make := func():
+				var b := _buf(0.6)
+				var f := 990.0 + randf() * 120
+				for r in [1.0, 2.01, 3.0]:
+					var fr: float = f * r
+					_tone(b, 0, 0.6, "sine", func(_t): return fr, [0.002, 0.22 / r, 0.5 / r])
+				_noise(b, 0, 0.08, Biquad.new("highpass", 2500, 0.707, RATE), [0.001, 0.2, 0.06])
+				return b
+			_play("holyHit%d" % _variant(), make, level)
+		"shadow": # a low, sour rip
+			var make := func():
+				var b := _buf(0.5)
+				var f := 95.0 + randf() * 15
+				_tone(b, 0, 0.5, "sawtooth", func(t): return _expo(f * 1.4, f * 0.6, t, 0.45), [0.005, 0.3, 0.42], Biquad.new("lowpass", 600, 1.2, RATE))
+				_noise(b, 0, 0.3, Biquad.new("bandpass", 420, 1.5, RATE), [0.003, 0.35, 0.25])
+				return b
+			_play("shadowHit%d" % _variant(), make, level)
+		"nature": # a crack of wood and a rustle
+			thud(130, 0.15)
+			rustle(level)
+		_: # frost, arcane: a glassy ping
+			var make := func():
+				var b := _buf(0.35)
+				var f := 1500.0 + randf() * 300
+				_tone(b, 0, 0.35, "sine", func(t): return _expo(f, f * 0.4, t, 0.3), [0.002, 0.3, 0.3])
+				_noise(b, 0, 0.12, Biquad.new("highpass", 3500, 0.707, RATE), [0.001, 0.25, 0.1])
+				return b
+			_play("arcaneHit%d" % _variant(), make, level)
+
+
+## metal armour: a short, inharmonic ring and a scrape
+func clank(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.32)
+		var f := 900.0 + randf() * 400
+		for r in [1.0, 2.76, 5.4]:
+			var fr: float = f * r
+			_tone(b, 0, 0.3, "sine", func(_t): return fr, [0.001, 0.2 / r, 0.22 / r])
+		_noise(b, 0, 0.06, Biquad.new("bandpass", 4200, 1.2, RATE), [0.001, 0.3, 0.05])
+		return b
+	_play("clank%d" % _variant(), make, level)
+
+
+## bone: two dry cracks
+func bone_crack(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.18)
+		var f := 2200.0 + randf() * 800
+		_noise(b, 0, 0.05, Biquad.new("bandpass", f, 2.5, RATE), [0.001, 0.9, 0.04])
+		_noise(b, 0.035 + randf() * 0.02, 0.04, Biquad.new("bandpass", f * 0.7, 2.5, RATE), [0.001, 0.5, 0.03])
+		_tone(b, 0, 0.08, "triangle", func(t): return _expo(320, 140, t, 0.08), [0.001, 0.3, 0.07])
+		return b
+	_play("bone%d" % _variant(), make, level)
+
+
+## flesh: a wet, low slap
+func flesh(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.16)
+		_noise(b, 0, 0.14, Biquad.new("bandpass", 520 + randf() * 200, 1.4, RATE), [0.002, 0.6, 0.11])
+		_tone(b, 0, 0.12, "sine", func(t): return _expo(150, 70, t, 0.12), [0.002, 0.4, 0.1])
+		return b
+	_play("flesh%d" % _variant(), make, level)
+
+
+## straw and leaves: a dry rustle
+func rustle(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.22)
+		_noise(b, 0, 0.2, Biquad.new("highpass", 2200, 0.707, RATE), [0.004, 0.25, 0.16])
+		return b
+	_play("rustle%d" % _variant(), make, level)
+
+
+## a crit: a bright sting that falls away, over a deeper crunch
+func crit_sting(level := 1.0) -> void:
+	thud(90, 0.3)
+	var make := func():
+		var b := _buf(0.2)
+		var f := 2600.0 + randf() * 400
+		_tone(b, 0, 0.18, "square", func(t): return _expo(f, f * 0.45, t, 0.15), [0.001, 0.12, 0.15], Biquad.new("highpass", 900, 0.707, RATE))
+		_noise(b, 0, 0.05, Biquad.new("highpass", 4000, 0.707, RATE), [0.001, 0.3, 0.04])
+		return b
+	_play("crit%d" % _variant(), make, level)
+
+
+## runs `fn` after `delay` seconds (at once for none)
+func _later(delay: float, fn: Callable) -> void:
+	if delay <= 0.001 or not is_inside_tree():
+		fn.call()
+		return
+	get_tree().create_timer(delay).timeout.connect(fn)
 
 
 # ------------------------------------------------------------- playback
+## Sounds turned down from what their callers ask, in one place: running
+## footsteps, panels and bags opening, drawing and sheathing (Dan
+## 2026-11-02: too loud).
+const TRIM := {"step_dirt": 0.35, "step_stone": 0.35, "step_wood": 0.35,
+	"panel": 0.35, "bag": 0.35, "quest_log": 0.35, "sheathe": 0.3, "unsheathe": 0.3}
+
+
 ## Plays one of Dan's recorded sounds by its SFX name.
 func sfx(id: String, level := 1.0, pitch := 1.0) -> void:
+	level *= TRIM.get(id, 1.0)
 	if not started or level <= 0 or not SFX.has(id):
 		return
 	var files: Array = SFX[id]
@@ -302,13 +669,57 @@ func _stream(file: String) -> AudioStream:
 	return sfx_cache[file]
 
 
-## the region's ambience loop; the same file carries on across a border
-func _ambience(region_id: String) -> void:
-	var file: String = AMB_LOOPS.get(region_id, "amb_forest.mp3")
-	if file == amb_file:
+## Dead (and a spirit): only the wind plays, on loop; the music and the
+## region's ambience pause until you live again, then carry on.
+func set_dead(on: bool) -> void:
+	if not started:
 		return
-	amb_file = file
-	var s = _stream(file)
+	dead = on
+	if on:
+		if death_loop == null:
+			death_loop = AudioStreamPlayer.new()
+			death_loop.bus = "Ambience"
+			death_loop.volume_db = -4.0
+			add_child(death_loop)
+			var s = _stream(DEATH_LOOP)
+			if s != null:
+				s = s.duplicate()
+				s.loop = true
+				death_loop.stream = s
+		if not death_loop.playing and death_loop.stream != null:
+			death_loop.play()
+	elif death_loop != null:
+		death_loop.stop()
+	music.stream_paused = on
+	amb_loop.stream_paused = on
+	rumble.stream_paused = on
+
+
+## the region's ambience loop; the same file carries on across a border,
+## a new one fades in after the old fades out (update)
+func _ambience(region_id: String) -> void:
+	amb_region = region_id
+	amb_want = _amb_for(region_id)
+	if amb_file == "":
+		_amb_switch()
+
+
+## a town's own loop, else the forest by day or by night
+func _amb_for(region_id: String) -> String:
+	if AMB_LOOPS.has(region_id):
+		return AMB_LOOPS[region_id]
+	return FOREST_NIGHT if is_night() else FOREST_DAY
+
+
+## night on the player's clock
+static func is_night() -> bool:
+	var h: int = Time.get_datetime_dict_from_system().hour
+	return h >= NIGHT_FROM or h < NIGHT_TO
+
+
+func _amb_switch() -> void:
+	amb_file = amb_want
+	var s = _stream(amb_file)
 	if s == null:
 		return
 	s = s.duplicate()
@@ -317,16 +728,65 @@ func _ambience(region_id: String) -> void:
 	amb_loop.play()
 
 
-## footsteps while the player moves: wood indoors, stone in town, dirt elsewhere
-func _footsteps(dt: float) -> void:
+## crossing between loops, and day turning to night (checked twice a minute)
+func _update_ambience(dt: float) -> void:
+	amb_check -= dt
+	if amb_check <= 0:
+		amb_check = 30.0
+		amb_want = _amb_for(amb_region)
+	if amb_want != amb_file:
+		amb_level = move_toward(amb_level, 0.0, dt / 2.0)
+		if amb_level <= 0.0:
+			_amb_switch()
+	else:
+		amb_level = move_toward(amb_level, 1.0, dt / 3.0)
+	amb_loop.volume_db = AMB_DB + linear_to_db(maxf(amb_level, 0.0001))
+
+
+## The music's turns: silence, a slow fade in, the track through, a fade
+## out over its last seconds, then a long silence again.
+func _update_music(dt: float) -> void:
+	if music.stream == null:
+		return
+	if not music.playing:
+		music_quiet += dt
+		music_wait -= dt
+		if music_wait <= 0:
+			music_level = 0.0
+			music_fading = false
+			music.play()
+		return
+	var left: float = music.stream.get_length() - music.get_playback_position()
+	if left < MUSIC_FADE_OUT:
+		music_fading = true
+	if music_fading:
+		music_level = move_toward(music_level, 0.0, dt / MUSIC_FADE_OUT)
+		if music_level <= 0.0:
+			music.stop()
+			_music_done()
+	else:
+		music_level = move_toward(music_level, 1.0, dt / MUSIC_FADE_IN)
+	music.volume_db = MUSIC_DB + linear_to_db(maxf(music_level, 0.0001))
+
+
+func _music_done() -> void:
+	music_quiet = 0.0
+	music_wait = rng.randf_range(MUSIC_QUIET[0], MUSIC_QUIET[1])
+
+
+## footsteps as the player's feet come down in the walk and run (Rig.steps):
+## wood indoors, stone in town, dirt elsewhere
+func _footsteps(_dt: float) -> void:
 	var pl = game.player
-	if pl == null or not pl.moving:
-		step_t = 0.0
+	if pl == null or pl.rig == null:
 		return
-	step_t -= dt
-	if step_t > 0:
+	var n: int = pl.rig.steps
+	if n == step_seen:
 		return
-	step_t = STEP_GAP
+	var fresh := n < step_seen # a new rig counts from 0
+	step_seen = n
+	if fresh or pl.rig.airborne:
+		return
 	var surface := "step_dirt"
 	if game.world.indoors != null:
 		surface = "step_wood"
@@ -602,6 +1062,9 @@ func _rumble() -> AudioStreamWAV:
 func update(dt: float) -> void:
 	if not started:
 		return
+	if not dead:
+		_update_ambience(dt)
+		_update_music(dt)
 	_footsteps(dt)
 	next_crow -= dt
 	next_bell -= dt

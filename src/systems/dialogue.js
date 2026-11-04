@@ -7,7 +7,7 @@ import { conditionHolds } from './quests.js';
 // glance): quests (! and ?), things to ask, then services (the shop, the
 // trainer, the inn) and Goodbye. A quest opens its own page: the offer with
 // objectives and rewards and Accept, or the hand-in with Complete quest.
-// Topics open small dialogue trees from data/dialogue.json. Training opens
+// Topics open small dialogue trees from data/quests/dialogue.json. Training opens
 // the trainer window (view 'train'): every skill and recipe this person
 // teaches, with what it needs and costs. The shop and the trainer window
 // both have Back, to the greeting.

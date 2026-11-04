@@ -21,6 +21,18 @@ static func n(v) -> String:
 	return str(v)
 
 
+## a length of time for a tooltip: "45 sec", "1 minute", "2 minutes 30 seconds"
+static func span(sec: float) -> String:
+	if sec < 60:
+		return "%s sec" % n(sec)
+	var m := floori(sec / 60.0)
+	var s := roundi(sec - m * 60)
+	var out := "%d minute%s" % [m, "" if m == 1 else "s"]
+	if s > 0:
+		out += " %d second%s" % [s, "" if s == 1 else "s"]
+	return out
+
+
 ## "1 gold 20 silver", "35 silver": the purse holds silver, 100 to the gold.
 static func money(amount) -> String:
 	var a := maxi(0, int(amount))

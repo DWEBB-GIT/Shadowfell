@@ -2,8 +2,9 @@ extends SceneTree
 ## Dan's new map (data/terrain/new_map, 2026-10-28):
 ##   godot --headless --path . --script res://game/tests/new_map_check.gd
 ## With shadowfell/world/map = "new" the ground comes from the new map, with
-## nothing from the old world on it; the start stands on open ground; the
-## brushes work on it and their layer is the new map's own. Writes nothing to
+## nothing from the old world on it (only the enemies in its own
+## spawns.json); the start stands on open ground; the brushes work on it and
+## their layer is the new map's own. Writes nothing to
 ## the project. Exits 1 on failure.
 
 const Sculpt := preload("res://addons/shadowfell_world/sculpt.gd")
@@ -23,13 +24,16 @@ func _initialize() -> void:
 	check(Terrain.is_new_map(), "the setting picks the new map")
 	check(Terrain.dir == "res://data/terrain/new_map/", "its folder")
 	check(Sculpt.path() == "res://data/terrain/new_map/sculpt.json", "the brushes' layer is the new map's")
-	check(Layout.npcs.is_empty() and Layout.enemies.is_empty() and Layout.props.is_empty() and Layout.houses.is_empty(), "nothing from the old world is placed")
-	check(WorldMap.pois.is_empty() and Terrain.roads().is_empty(), "no old roads or places")
+	var placed = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "spawns.json"))
+	var scenery = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "scenery.json"))
+	check(Layout.npcs.size() == placed.get("npcSpawns", []).size() and Layout.props == scenery.props and Layout.houses == placed.get("houses", []), "only this map's authored placements are loaded")
+	check(Layout.enemies.size() == placed.enemySpawns.size(), "only the enemies in its spawns.json")
+	check(WorldMap.pois.size() == placed.get("pois", []).size() and Terrain.roads().size() == placed.get("roads", []).size(), "only this map's authored roads and places")
 	var st: Array = Layout.player_start.position
 	var p := Vector2(st[0], st[1])
 	check(Terrain.walkable(p.x, p.y), "the start (%s) is open ground" % p)
 	check(Terrain.height_at(p.x, p.y) > 0.5, "the start is above the sea")
-	check(Terrain.ground_colour(p.x, p.y) != null, "the ground has Dan's colours")
+	check(Terrain._ground_img != null, "the map image remains available beneath surface painting")
 	check(Land.chunk_trees(Vector2i(4, -3)).is_empty(), "no trees are scattered (Dan places them)")
 	# the brushes
 	var h0 := Terrain.base_height(p.x, p.y)
@@ -67,8 +71,9 @@ func _initialize() -> void:
 	var ed = load("res://addons/shadowfell_data/world_editor.tscn").instantiate()
 	root.add_child(ed)
 	ed.rebuild()
-	check(ed._chunks.size() == 32 * 48, "the World editor draws the whole map (%d chunks)" % ed._chunks.size())
-	check(ed.get_node_or_null("NPCs") == null, "and nothing placed on it")
+	check(ed._chunks.size() > 0 and ed._chunks.size() < 32 * 48, "the World editor previews nearby ground without drawing the entire map")
+	check(ed.get_node_or_null("NPCs") != null and ed.get_node_or_null("Props") != null, "the map has editable placement groups")
+	check(ed.get_node("Enemies").get_child_count() == placed.enemySpawns.size(), "existing new-map spawns are visible")
 	check(ed.save_world().is_empty(), "saving with no edits writes nothing")
 	ed.free()
 	print("new_map_check: %s" % ("ok" if failures == 0 else "%d failed" % failures))

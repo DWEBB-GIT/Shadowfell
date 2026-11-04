@@ -24,7 +24,7 @@ func _initialize() -> void:
 	for g in data.files.mining.veinGroups:
 		for o in g.outcrops:
 			check(Terrain.walk_at(o[0], o[1]) >= 0.5, "vein outcrop of %s stands on open ground" % g.id)
-	# spell looks (data/spell_fx.json) name real spells, poses and shapes
+	# spell looks (data/abilities/spell_fx.json) name real spells, poses and shapes
 	for id in DB.spell_fx:
 		var look: Dictionary = DB.spell_fx[id]
 		check(DB.abilities.has(id), "spell look %s names a known spell" % id)
@@ -36,6 +36,14 @@ func _initialize() -> void:
 				check(phase == "projectile" or part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake"], "spell look %s part %s is a known effect" % [id, part.get("fx", "mesh")])
 				if part.get("fx", "mesh") == "mesh":
 					check(Fx.fx_mesh(part.mesh) != null, "spell look %s shape %s exists" % [id, part.mesh])
+	# moment looks (`moments`, such as levelUp) use known effects and shapes
+	for id in DB.fx_moments:
+		if id.begins_with("_"):
+			continue
+		for part in DB.fx_moments[id].get("cast", []):
+			check(part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake", "light"], "moment look %s part %s is a known effect" % [id, part.fx])
+			if part.fx == "mesh":
+				check(Fx.fx_mesh(part.mesh) != null, "moment look %s shape %s exists" % [id, part.mesh])
 	var start: Array = data.section("world", "playerStart").position
 	check(WorldMap.act1_box.has_point(Vector2(start[0], start[1])), "the player starts in Act 1")
 	data.free()

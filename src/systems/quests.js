@@ -2,7 +2,7 @@ import { DB } from '../data/db.js';
 import { rollCoins } from '../ui/money.js';
 import { ENEMIES } from '../world/layout.js';
 
-// Quests, WoW style (data/quests.json). A quest is offered by its giver once
+// Quests, WoW style (data/quests/quests.json). A quest is offered by its giver once
 // the quests it requires are done, accepted into the quest log, and handed in
 // to its turn-in npc once every objective is met.
 //

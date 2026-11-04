@@ -74,6 +74,12 @@ func _run() -> void:
 	_ok(game.afterlife.wounds == 2, "a campfire does not mend wounds")
 	game.afterlife.rest_tick(DB.CONFIG.death.woundRestSeconds + 1, "inn")
 	_ok(game.afterlife.wounds == 0, "a rest at an inn does")
+	# and they close on their own after a while
+	game.afterlife._wound()
+	game.afterlife.update(DB.CONFIG.death.woundSeconds - 1)
+	_ok(game.afterlife.wounds == 1, "a fresh wound stays a while")
+	game.afterlife.update(2)
+	_ok(game.afterlife.wounds == 0, "wounds fade after %d s" % DB.CONFIG.death.woundSeconds)
 	# a bed at the inn: pay, sleep, wake whole and rested, the inn your rest point
 	game.afterlife.wounds = 2
 	game.recompute_max_health()
@@ -102,7 +108,13 @@ func _run() -> void:
 
 func _bag_stacks() -> int:
 	var inv = game.inventory
-	return inv.bag_locations().filter(func(l): return inv.get_at(l) != null and l.split(":")[1].to_int() < Items.BAG_SOCKETS).size()
+	return inv.bag_locations().filter(func(l): return inv.get_at(l) != null and l.split(":")[1].to_int() < Items.BAG_SOCKETS and not _kept(inv.get_at(l).id)).size()
+
+
+## keys, documents and quest items stay in your bags when you fall (grave.gd)
+func _kept(id: String) -> bool:
+	var def := Items.get_def(id)
+	return Grave.KEEP_KINDS.has(def.get("kind")) or def.get("rarity") == "quest"
 
 
 func _ok(cond: bool, what: String) -> void:

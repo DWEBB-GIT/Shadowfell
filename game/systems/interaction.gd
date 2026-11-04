@@ -9,6 +9,25 @@ var current = null
 ## radius at most); a click reaches what is on screen
 const REACH_NEAR := 12.0
 const CLICK_NEAR := 70.0
+## how a station shows itself (Dan, 2026-11-03: tell the rune forge from the
+## refining altar without clicking): the cursor over it, its colour on the
+## minimap and over it in the world, and the minimap letter
+const STATION_LOOK := {
+	"forge": {"cursor": "anvil", "colour": "#d0d6e0", "letter": "F"},
+	"runeforge": {"cursor": "runeAnvil", "colour": "#b08cff", "letter": "R"},
+	"refining": {"cursor": "gem", "colour": "#ffd060", "letter": "A"},
+	"fire": {"cursor": "pot", "colour": "#ff9a50", "letter": "H"},
+	"alchemy": {"cursor": "flask", "colour": "#8fe08a", "letter": "B"},
+}
+
+
+static func look(kind: String) -> Dictionary:
+	return STATION_LOOK.get(kind, {"cursor": "loot", "colour": "#e8d8a0", "letter": "?"})
+
+
+## "the rune forge" -> "The rune forge", for tooltips and labels
+static func title(text: String) -> String:
+	return text.substr(0, 1).to_upper() + text.substr(1) if text != "" else ""
 
 
 func _init(g) -> void:
@@ -41,12 +60,21 @@ func _candidates(near := INF) -> Array:
 	for sh in Layout.shrines:
 		if far.call(sh.position[0], sh.position[1]):
 			continue
-		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "run": func(): game.rest_at_shrine(sh)})
+		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "name": "Shrine", "run": func(): game.rest_at_shrine(sh)})
 	# a hearth prompts Cooking, a forge Smelting, an alchemy bench Alchemy
 	# (the skill whose `craft.kind` is the station's kind); without the
 	# skill the prompt still shows and says where to learn it
 	for st in Layout.stations:
 		if far.call(st.position[0], st.position[1]):
+			continue
+		# the rune forge: its own window, no skill needed (Dan, 2026-11-03)
+		if st.kind == RuneForge.KIND:
+			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
+				"prompt": "Use %s" % st.name, "run": func(): game.rune_forge.open_at(st)})
+			continue
+		if st.kind == Refinery.KIND:
+			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
+				"prompt": "Refine gear at %s" % st.name, "run": func(): game.refinery.open_at(st)})
 			continue
 		var sk := ""
 		for s in DB.skills.values():
@@ -65,10 +93,18 @@ func _candidates(near := INF) -> Array:
 					game.hud.show_window(win)
 				else:
 					game.hud.error("You need to learn %s from a trainer first." % skill_name)})
+	# each station's name and cursor, for the hover tooltip (game.gd)
+	for c in list:
+		if c.key.begins_with("station:") and not c.has("name"):
+			var st = Layout.station(c.key.substr(8))
+			if st != null:
+				c.name = title(st.name)
+				c.cursor = look(st.kind).cursor
 	# a glinting ore vein, for a miner
 	list.append_array(game.mining.interactions())
 	list.append_array(game.gathering.interactions())
 	list.append_array(game.discovery.interactions())
+	list.append_array(game.puzzles.interactions())
 	for sp in Layout.signposts:
 		if far.call(sp.position[0], sp.position[1]):
 			continue
@@ -92,7 +128,7 @@ func click_points() -> Array:
 		return game.afterlife.interactions()
 	if game.player.dead:
 		return []
-	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:"))
+	return _candidates(CLICK_NEAR).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:"))
 
 
 const EXAMINE_REPEAT_MS := 10000

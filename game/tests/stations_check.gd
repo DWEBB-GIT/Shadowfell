@@ -84,6 +84,11 @@ func _station(st: Dictionary) -> void:
 	_go(st.position[0], st.position[1])
 	if not _run("station:" + st.id):
 		return
+	if st.kind == RuneForge.KIND or st.kind == Refinery.KIND:
+		queue.push_front(func():
+			check(game.hud.items.open.get(st.kind, false), "%s opens its window" % st.id)
+			game.hud.items.close(st.kind))
+		return
 	var sk: String = game.hud.items.craft_skill
 	queue.push_front(func():
 		check(game.hud.items.open.cooking, "%s opens the %s window" % [st.id, sk])

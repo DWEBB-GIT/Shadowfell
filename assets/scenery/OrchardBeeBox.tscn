@@ -1,0 +1,70 @@
+[gd_scene load_steps=9 format=3]
+
+[sub_resource type="StandardMaterial3D" id="wood"]
+albedo_color = Color(0.31, 0.22, 0.13, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="mesh0"]
+size = Vector3(0.65, 0.55, 0.55)
+
+[sub_resource type="BoxMesh" id="mesh1"]
+size = Vector3(0.75, 0.1, 0.65)
+
+[sub_resource type="BoxMesh" id="mesh2"]
+size = Vector3(0.08, 0.4, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh3"]
+size = Vector3(0.08, 0.4, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh4"]
+size = Vector3(0.08, 0.4, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh5"]
+size = Vector3(0.08, 0.4, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh6"]
+size = Vector3(0.32, 0.12, 0.1)
+
+[node name="StoryProp" type="Node3D"]
+
+[node name="Part0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.65, 0)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh0")
+material_override = SubResource("wood")
+
+[node name="Part1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.98, 0)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh1")
+material_override = SubResource("wood")
+
+[node name="Part2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.23, 0.2, -0.18)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh2")
+material_override = SubResource("wood")
+
+[node name="Part3" type="MeshInstance3D" parent="."]
+position = Vector3(0.23, 0.2, -0.18)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh3")
+material_override = SubResource("wood")
+
+[node name="Part4" type="MeshInstance3D" parent="."]
+position = Vector3(-0.23, 0.2, 0.18)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh4")
+material_override = SubResource("wood")
+
+[node name="Part5" type="MeshInstance3D" parent="."]
+position = Vector3(0.23, 0.2, 0.18)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh5")
+material_override = SubResource("wood")
+
+[node name="Part6" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.47, 0.31)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("mesh6")
+material_override = SubResource("wood")

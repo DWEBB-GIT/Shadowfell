@@ -4,7 +4,7 @@ import { AMMO_LOC } from './inventory.js';
 import { ITEMS, sellPrice, itemView } from '../data/items.js';
 import { DB } from '../data/db.js';
 
-// Buying and selling, WoW style. A shop (data/shops.json) sells its stock at
+// Buying and selling, WoW style. A shop (data/npcs/shops.json) sells its stock at
 // the item database's price and buys at CONFIG.shop.sellFraction of it.
 // Anything sold this session can be bought back for what it fetched. Quest
 // items are never sold. (Talking and quests are the Dialogue's business.)

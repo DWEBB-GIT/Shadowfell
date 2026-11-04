@@ -30,8 +30,49 @@ static func _pick(head: String) -> String:
 	return "<path d='M6 26 L18 14' stroke='#000' stroke-width='5' stroke-linecap='round'/><path d='M6 26 L18 14' stroke='#a07040' stroke-width='3' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='#000' stroke-width='5.5' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='%s' stroke-width='3.2' stroke-linecap='round'/>" % head
 
 
+## a station's cursor (Dan, 2026-11-03): an anvil for a forge or the rune
+## forge, a pot for a hearth, a flask for an alchemy bench, a cut gem for the
+## refining altar; `fill` is grey when out of reach
+static func _anvil(fill: String) -> String:
+	return "<path d='M3 7 H22 Q26 7 26 11 H20 L18 14 V18 H22 V23 H6 V18 H10 V14 Q4 13 3 7 Z' fill='%s' stroke='#000' stroke-width='1.4' stroke-linejoin='round'/>" % fill
+
+
+static func _pot(fill: String) -> String:
+	return "<path d='M5 10 H23 L21 22 Q20 25 17 25 H11 Q8 25 7 22 Z' fill='%s' stroke='#000' stroke-width='1.4'/><path d='M3 10 H25' stroke='#000' stroke-width='2.4' stroke-linecap='round'/><path d='M11 7 Q12 4 11 2 M16 7 Q17 4 16 2' fill='none' stroke='#000' stroke-width='1.3'/>" % fill
+
+
+static func _flask(fill: String) -> String:
+	return "<path d='M11 3 H17 V10 L24 22 Q25 25 22 25 H6 Q3 25 4 22 L11 10 Z' fill='%s' stroke='#000' stroke-width='1.4' stroke-linejoin='round'/><path d='M10 3 H18' stroke='#000' stroke-width='2.2' stroke-linecap='round'/>" % fill
+
+
+static func _gem(fill: String) -> String:
+	return "<path d='M8 4 H20 L26 11 L14 25 L2 11 Z' fill='%s' stroke='#000' stroke-width='1.4' stroke-linejoin='round'/><path d='M2 11 H26 M8 4 L14 25 L20 4' fill='none' stroke='#000' stroke-width='0.8' stroke-opacity='0.6'/>" % fill
+
+
+## the station cursors and their colour; each has a grey "Far" twin
+const STATION_CURSORS := {"anvil": ["_anvil", "#b8c0cc"], "runeAnvil": ["_anvil", "#b08cff"],
+	"pot": ["_pot", "#c88a50"], "flask": ["_flask", "#8fe08a"], "gem": ["_gem", "#ffd060"]}
+
+
 ## [svg body, hotspot] per cursor name
 static func _defs() -> Dictionary:
+	var out := _base_defs()
+	for id in STATION_CURSORS:
+		var f: String = STATION_CURSORS[id][0]
+		out[id] = [_shape(f, STATION_CURSORS[id][1]), Vector2(3, 3)]
+		out[id + "Far"] = [_shape(f, "#7a7a7a"), Vector2(3, 3)]
+	return out
+
+
+static func _shape(f: String, fill: String) -> String:
+	match f:
+		"_anvil": return _anvil(fill)
+		"_pot": return _pot(fill)
+		"_flask": return _flask(fill)
+	return _gem(fill)
+
+
+static func _base_defs() -> Dictionary:
 	return {
 		"fish": [HOOK, Vector2(7, 11)],
 		"attack": [_sword("#e8e8f0", "#c89a3a"), Vector2(2, 2)],

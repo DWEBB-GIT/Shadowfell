@@ -1,5 +1,7 @@
 # Shadowfell in Godot
 
+**Current authoring workflow:** see [Building Shadowfell in Godot](authoring.md) for the expanded World tools, new-map placement, nature-asset library and ability controls. The port history below predates those improvements.
+
 Shadowfell is moving from the browser build (JavaScript and Three.js, in `src/`) to **Godot 4.5**. The Godot project sits at the root of this repo (`project.godot`), next to the browser build, so both read the same content:
 
 - `data/*.json`: items, enemies, quests, abilities, the world layout. Edit them by hand, with the quest editor (`npm run editor`), or ask Claude.
@@ -37,6 +39,7 @@ The Godot code is a faithful port of the browser build: each file in `src/` has 
 | `game/tests/trainer_spell_check.gd` | A class spell a trainer teaches: unknown until learned, locked below its level, costs its coins, kept in the save | |
 | `game/tests/check_scripts.gd` | Compiles every script and lists any that fail | |
 | `game/tests/perf_parts.gd`, `game/tests/perf_render.gd` | Frame cost: CPU time per system, and frame time with parts switched off in turn | |
+| `game/tests/stream_check.gd` | World streaming: props batched per cell, views and enemy bodies in and out of the scene | |
 | `game/tests/screenshot.gd` | Renders the game to a PNG without opening the editor; a fourth argument opens windows (`-- out.png 0 10 bags,character,quests`) | |
 
 Saves live in Godot's user folder (`user://store`, which is IndexedDB on a web export), one file per key, in the same format as the browser build's saves.
@@ -127,6 +130,20 @@ matter where the camera is. Only drawing is local to each screen:
   position, and their collision is registered per chunk on demand, so the
   game never depends on what one screen happens to draw (safe for
   multiplayer).
+- **Placed props and still things** (`WorldStream`, `game/world/stream.gd`).
+  Everything in `Layout.props` is data for the whole world (colliders and
+  examine points are made at load). Its meshes are built per 32 m cell
+  within 100 m of the camera as one `MultiMesh` per mesh part per cell (a
+  cell's fence posts are one draw), and freed past 132 m. Lamps, torches and
+  models with lights or skeletons stay nodes in the cell. Herb patches,
+  veins, chests and station models are registered with `add_view` and leave
+  the scene tree with their cell; their systems keep the nodes and may
+  change them while parked. `game/tests/stream_check.gd` checks it.
+- **Enemy bodies.** Enemy AI runs from its own position and state; the body
+  joins the scene within 110 m of the player (or while fighting) and leaves
+  past 140 m (`Enemies._show`). A server would run the AI and attach none.
+- **F3** shows the frame cost, and the streamed cells, props (batched and
+  as nodes) and enemies drawn.
 - **Draw distance.** The camera's far plane sits just past the fog; grass
   stops at 36 m (`visibility_range_end`), lamps fade out from 40 m, and the
   sun's shadows reach 40 m.
@@ -139,7 +156,7 @@ To measure: `game/tests/perf_parts.gd` (CPU per system) and
 
 ## The world map and how it is built
 
-Dan's painted map is the master. `data/world_map.json` holds it traced
+Dan's painted map is the master. `data/world/world_map.json` holds it traced
 (`world`: coast, zones, settlements, routes, landmarks; `terrain`: mountains,
 forests, rivers; `act1`: Act 1's regions, valleys, POIs and story notes).
 `tools/world/bake_world.py` turns it into `data/terrain/world.bin` and
@@ -156,7 +173,7 @@ mountain landmarks should be listed.
 - M opens the world map (`WorldMapUI`): zones, roads, boats, the places
   you've found and you.
 - Act 1 sits in the world at `world.act1Offset`; positions in
-  `data/world.json` are world positions.
+  `data/world/world.json` are world positions.
 - `game/tests/world_check.gd` checks the tiles, regions, chunk cost,
   discovery, boats and saves.
 

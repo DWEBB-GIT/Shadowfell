@@ -1,6 +1,6 @@
 class_name Layout
 extends RefCounted
-## The world's layout from data/world.json and data/scenery.json, under the
+## The world's layout from data/world/world.json and data/world/scenery.json, under the
 ## names the world code uses (src/world/layout.js). Positions are [x, z] in
 ## metres, rotations in degrees around the vertical axis. North is -z.
 
@@ -67,6 +67,13 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	danger_zones = []
 	for z in w.dangerZones:
 		danger_zones.append({"position": z.position, "radius": z.radius, "enemy": z.enemySpawn})
+
+
+static func station(id: String):
+	for s in stations:
+		if s.id == id:
+			return s
+	return null
 
 
 static func enemy_spawn(id: String):

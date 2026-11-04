@@ -11,8 +11,10 @@ var rig: Rig
 var materials: Array
 var weapon_part: Node3D
 var default_weapon_mesh: Node3D
+var ground_shadow: MeshInstance3D
 var torch_light := OmniLight3D.new()
 var helm: Node3D
+var cloak: Node3D ## a built back piece (FancyGear wings)
 var shield: Node3D
 var shield_id = null
 var bow: Node3D
@@ -64,14 +66,19 @@ func _init(g) -> void:
 	# code-built warden, by DB.CONFIG.models
 	var body: String = DB.CONFIG.models.player if DB.CONFIG.models.imported and Assets.has(DB.CONFIG.models.player) else "warden"
 	model = Assets.instance(body)
+	# A readability scale on the body and attached gear. World distances,
+	# collision, attack ranges and movement stay in the same units.
+	model.scale *= DB.CONFIG.player.visualScale
 	if body != "warden":
 		Rig.add_sockets(model)
 	group.add_child(model)
 	rig = Rig.new(model, body)
+	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
-	group.add_child(Fx.blob_shadow(1.3))
+	ground_shadow = Fx.blob_shadow(1.3)
+	group.add_child(ground_shadow)
 	torch_light.light_color = Color("ffa860")
 	torch_light.light_energy = 0
 	torch_light.omni_range = 9
@@ -84,6 +91,7 @@ func _init(g) -> void:
 
 func place_at(x: float, z: float, f = null) -> void:
 	position = Vector3(x, Terrain.height_at(x, z), z)
+	_reset_jump()
 	if f != null:
 		facing = f
 	lunge = null
@@ -96,7 +104,18 @@ func place_at(x: float, z: float, f = null) -> void:
 
 func _sync() -> void:
 	group.position = position
+	if ghost:
+		# a spirit floats a hand above the ground, bobbing
+		group.position.y += 0.15 + sin(game.time * 2) * 0.06
 	group.rotation.y = facing
+	group.rotation.x = 0.0
+	if flip >= 0.0:
+		# a front flip, turned about the waist rather than the feet
+		group.rotation.x = TAU * clampf(flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY), 0.0, 1.0)
+		var pivot := Vector3(0, 0.9 * DB.CONFIG.player.visualScale, 0)
+		group.position += pivot - group.basis * pivot
+	# The contact shadow stays on the ground while the body leaves it.
+	ground_shadow.position.y = 0.03 - jump_h
 
 
 func _part(name: String) -> Node3D:
@@ -111,6 +130,13 @@ func _free(n: Node) -> void:
 
 ## Show what is equipped: the blade in hand, a helm, the off hand.
 func show_equipment(equipment: Dictionary) -> void:
+	_show_equipment(equipment)
+	# gear changed on a spirit casts no shadow either
+	if ghost:
+		_set_casts_shadow(false)
+
+
+func _show_equipment(equipment: Dictionary) -> void:
 	var arm := _part("Arm_R")
 	var head := _part("Head")
 	if arm and default_weapon_mesh:
@@ -119,7 +145,7 @@ func show_equipment(equipment: Dictionary) -> void:
 		var id = equipment.mainHand.id if equipment.get("mainHand") else null
 		# the worn longsword is built into the warden model, unless an
 		# imported model stands in for it (DB.with_imported)
-		var built_in: bool = id == "worn_longsword" and Items.get_def(id).get("model") == "worn_sword"
+		var built_in: bool = id == "worn_longsword" and Items.get_def(id).get("model") == "worn_sword" and Runes.of(equipment.mainHand) == ""
 		default_weapon_mesh.visible = built_in
 		weapon_part = default_weapon_mesh
 		if id and not built_in:
@@ -127,14 +153,28 @@ func show_equipment(equipment: Dictionary) -> void:
 			blade.transform = default_weapon_mesh.transform
 			arm.add_child(blade)
 			weapon_part = blade
+			# a rune's glow (runes.json), or the item's own (the test weapons)
+			FancyGear.apply(blade, Runes.glow_for(equipment.mainHand))
 	if head:
 		_free(helm)
 		helm = null
-		if equipment.get("head") and equipment.head.id == "watch_helm":
+		var hdef := Items.get_def(equipment.head.id) if equipment.get("head") else {}
+		if hdef.get("cosmetic"):
+			helm = FancyGear.build(hdef.cosmetic, hdef.get("glow", {}))
+			head.add_child(helm)
+		elif equipment.get("head") and equipment.head.id == "watch_helm":
 			helm = Assets.instance("watch_helm")
 			helm.position = Vector3(0, 0.2, 0.02)
 			helm.scale = Vector3.ONE * 1.15
 			head.add_child(helm)
+	var torso := _part("Torso")
+	if torso:
+		_free(cloak)
+		cloak = null
+		var bdef := Items.get_def(equipment.back.id) if equipment.get("back") else {}
+		if bdef.get("cosmetic"):
+			cloak = FancyGear.build(bdef.cosmetic, bdef.get("glow", {}))
+			torso.add_child(cloak)
 	var larm := _part("Arm_L")
 	if larm:
 		_free(shield)
@@ -155,6 +195,7 @@ func show_equipment(equipment: Dictionary) -> void:
 			shield.transform = default_weapon_mesh.transform
 			shield.position.x *= -1
 			larm.add_child(shield)
+			FancyGear.apply(shield, Runes.glow_for(equipment.offHand))
 		elif off.get("kind") == "shield":
 			shield = Assets.instance(off.model)
 			shield.position = Vector3(0.11, -0.42, 0.04)
@@ -173,7 +214,7 @@ var sitting: bool:
 
 ## X: sit on the ground, or stand. Moving, fighting or casting stands you up.
 func set_sitting(on: bool) -> void:
-	if on == sitting or (on and (rig.pose != null or eating != null)):
+	if on == sitting or (on and (rig.pose != null or eating != null or jump_h > 0 or jump_v != 0)):
 		return
 	rig.pose = "rest" if on else null
 
@@ -184,7 +225,7 @@ func set_sheathed(on: bool) -> void:
 	if on == sheathed:
 		return
 	sheathed = on
-	game.audio.sfx("sheathe" if on else "unsheathe", 0.7, 0.85 if on else 1.0)
+	game.audio.sfx("sheathe" if on else "unsheathe", 0.35, 0.85 if on else 1.0)
 	if on:
 		_show_sheath()
 	else:
@@ -261,13 +302,73 @@ func face_towards(x: float, z: float) -> void:
 		aim_hold = AIM_HOLD
 
 
-const JUMP_SPEED := 5.0
-const JUMP_GRAVITY := 18.0
+## About 1.15 m high and 0.68 s long on level ground. Horizontal controls
+## remain live, including an existing click destination.
+const JUMP_SPEED := 6.8
+const JUMP_GRAVITY := 20.0
+const JUMP_BUFFER_TIME := 0.12
 var jump_v := 0.0
 var jump_h := 0.0
+var jump_buffer := 0.0
+var flip := -1.0 ## seconds into a front flip, or -1 for a plain hop
+const FLIP_CHANCE := 0.12 ## now and then a jump turns into a front flip (Dan, 2026-11-03)
+
+
+func _reset_jump() -> void:
+	jump_v = 0.0
+	jump_h = 0.0
+	jump_buffer = 0.0
+	flip = -1.0
+	rig.airborne = false
+	position.y = Terrain.height_at(position.x, position.z)
+	ground_shadow.position.y = 0.03
+
+
+func _update_jump(dt: float, requested: bool) -> void:
+	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
+	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
+		set_sitting(false)
+		position.y = Terrain.height_at(position.x, position.z)
+		jump_v = JUMP_SPEED
+		jump_buffer = 0.0
+		flip = 0.0 if not ghost and randf() < FLIP_CHANCE else -1.0
+		game.events.emit("playerJumped", {"position": position})
+		# A buffered second hop needs a fresh animation even without an idle frame.
+		if rig.clip == "Jump":
+			rig.clip = ""
+	var ground := Terrain.height_at(position.x, position.z)
+	if jump_v != 0.0 or jump_h > 0.0:
+		# Integrate world height, so a slope cannot drag an airborne player up
+		# or down with the terrain. Land on the ground under the current x/z.
+		position.y += jump_v * dt - 0.5 * JUMP_GRAVITY * dt * dt
+		jump_v -= JUMP_GRAVITY * dt
+		if position.y <= ground:
+			position.y = ground
+			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
+			jump_v = 0.0
+			jump_h = 0.0
+			flip = -1.0
+		else:
+			if flip >= 0.0:
+				flip += dt
+			jump_h = maxf(0.0, position.y - ground)
+	else:
+		position.y = ground
+		jump_h = 0.0
+	rig.airborne = jump_h > 0.0 or jump_v > 0.0
+
+
+## a red flash on the body as a blow lands, so a hit reads from the
+## zoomed-out camera (Dan, 2026-11-02); the head snap is Rig._apply_snap
+var hit_flash := 0.0
+var _hit_flash_shown := false
 
 
 func update(dt: float, controls) -> void:
+	if (hit_flash > 0 or _hit_flash_shown) and not dead:
+		hit_flash = maxf(0, hit_flash - dt * 4)
+		Rig.set_emissive(materials, Rig.FLASH_RED, hit_flash * 0.55)
+		_hit_flash_shown = hit_flash > 0
 	for k in cooldowns:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
@@ -282,9 +383,9 @@ func update(dt: float, controls) -> void:
 			position.x += mv.x * sp * dt
 			position.z += mv.z * sp * dt
 			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
-		position = game.collision.resolve(position, radius)
-		position.y = Terrain.height_at(position.x, position.z) + 0.15 + sin(game.time * 2) * 0.06
-		moving = mag > 0
+		position = game.collision.resolve(position, radius, jump_h)
+		_update_jump(dt, controls != null and controls.get("jump", false))
+		moving = mag > 0 or rig.airborne
 		rig.update(dt, mag)
 		_sync()
 		return
@@ -330,6 +431,12 @@ func update(dt: float, controls) -> void:
 			pending = {"type": "spell", "id": d.id, "t": 0.0}
 			lunge = null
 		speed01 = 1.0
+		# a key pressed near the end of a charge waits in the spell queue
+		if controls:
+			var lacts: Dictionary = controls.get("actions", {})
+			for id in lacts:
+				if lacts[id] and DB.spells.has(id):
+					game.spells.try_cast(id)
 	elif controls:
 		var mv: Dictionary = controls.move
 		var acts: Dictionary = controls.get("actions", {})
@@ -355,19 +462,11 @@ func update(dt: float, controls) -> void:
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
 					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-			elif game.mouse_aim:
-				# Mouse aim: you face the way you walk, unless you aim on
-				# purpose (left button or right stick held), or an ability
-				# has just turned you
-				var face_aim = controls.get("faceAim")
-				if face_aim != null:
-					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-				elif aim_hold <= 0:
-					facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
-			else:
-				# fighting, you keep your target in front of you as you move (strafe)
-				var look := atan2(aim.x - position.x, aim.z - position.z) if (acts.get("strike") or acts.get("shoot")) and aim != null else atan2(mv.x, mv.z)
-				facing = U.turn_towards(facing, look, dt * 14)
+			elif aim_hold <= 0:
+				# Running, you face the way you run (WoW): nothing turns you
+				# back at your target, so to hit something behind you, you
+				# stop (or turn) to face it. No shooting while kiting backwards.
+				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
 			speed01 = mag
 		elif turning:
 			pass
@@ -379,7 +478,9 @@ func update(dt: float, controls) -> void:
 		# spells first, so a swing coming due never swallows a key press
 		for id in acts:
 			if acts[id] and DB.spells.has(id):
-				game.spells.try_cast(id)
+				# a spell draws sheathed weapons properly (no copies left on the back)
+				if game.spells.try_cast(id) and sheathed:
+					set_sheathed(false)
 		# fighting draws your weapons
 		if sheathed and (acts.get("strike") or acts.get("shoot")):
 			set_sheathed(false)
@@ -398,18 +499,12 @@ func update(dt: float, controls) -> void:
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
-	position = game.collision.resolve(position, radius)
-	# Jump is cosmetic: a hop with no effect on combat or collision
-	if controls and controls.get("jump") and jump_h == 0 and not sitting:
-		jump_v = JUMP_SPEED
-	if jump_v != 0 or jump_h > 0:
-		jump_v -= JUMP_GRAVITY * dt
-		jump_h += jump_v * dt
-		if jump_h <= 0:
-			jump_h = 0
-			jump_v = 0
-	position.y = Terrain.height_at(position.x, position.z) + jump_h
-	moving = speed01 > 0
+	# high in a hop you pass over low things (a fence, Collision `h`)
+	position = game.collision.resolve(position, radius, jump_h)
+	_update_jump(dt, controls != null and controls.get("jump", false))
+	# Stationary activities (fishing, eating, gathering and casting) also
+	# see a standing jump as movement, rather than continuing in mid-air.
+	moving = speed01 > 0 or rig.airborne
 	rig.update(dt, speed01 * DB.CONFIG.player.runGait)
 	_sync()
 
@@ -452,7 +547,7 @@ func set_hidden(on: bool) -> void:
 	Rig.set_alpha(materials, 0.35 if on else 1.0)
 
 
-## Auto attack, as WoW does it: each hand has a swing clock that counts down
+## Auto attack - each hand has a swing clock that counts down
 ## to the moment the blow lands. See src/entities/player.js for the full story.
 func try_strike(aim) -> bool:
 	if pending != null or casting != null:
@@ -500,7 +595,7 @@ func try_strike_off(aim) -> bool:
 	# the off-hand opener needs no windup of its own: the half-swing rule below places it
 	var ready: float = minf(windup, DB.attack.readyWindup)
 	var t := maxf(cooldowns.attackOff, ready)
-	# WoW style: the off hand lands half a swing after the main hand, so blows
+	# The off hand lands half a swing after the main hand, so blows
 	# alternate main, off, main rather than coming in pairs
 	var half: float = minf(stats.attack_cooldown_for("main"), stats.attack_cooldown_for("off")) * 0.5
 	var main: float = pending.t if pending != null and pending.type == "strike" else cooldowns.attack
@@ -544,10 +639,10 @@ func try_shoot(aim) -> bool:
 		return false
 	var stats = game.stats
 	if not game.inventory.ammo:
-		# WoW style, red in the middle of the screen
+		# Red in the middle of the screen
 		if game.hud:
 			game.hud.error("Out of Ammo")
-		game.events.emit("log", {"text": "You have no arrows. Buy them from Mara or Tam.", "kind": "muted", "throttle": "no-ammo"})
+		game.events.emit("log", {"text": "Out of Ammo.", "kind": "muted", "throttle": "no-ammo"})
 		return false
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
 	if cooldowns.ranged > draw:
@@ -590,12 +685,15 @@ func hold_bow(in_hand: bool) -> void:
 	var larm := _part("Arm_L")
 	var r = game.inventory.equipment.get("ranged") if game.inventory else null
 	var want = r.id if r and Items.get_def(r.id).get("kind") == "weapon" else null
-	if bow and (bow_id != want or bow_in_hand != in_hand):
+	# the key carries the rune too, so a new rune rebuilds the bow's glow
+	var key = "%s:%s" % [want, Runes.of(r)] if want else null
+	if bow and (bow_id != key or bow_in_hand != in_hand):
 		_free(bow)
 		bow = null
 	if want and not bow:
 		bow = Assets.instance(Items.get_def(want).model)
-		bow_id = want
+		bow_id = key
+		FancyGear.apply(bow, Runes.glow_for(r))
 		bow_in_hand = in_hand
 		if in_hand and larm:
 			bow.position = Vector3(0, -0.62, 0.02)
@@ -607,12 +705,18 @@ func hold_bow(in_hand: bool) -> void:
 			torso.add_child(bow)
 	if weapon_part:
 		var mh = game.inventory.equipment.get("mainHand") if game.inventory else null
-		weapon_part.visible = not in_hand and (weapon_part != default_weapon_mesh or (mh != null and mh.id == "worn_longsword"))
+		weapon_part.visible = not in_hand and not sheathed and (weapon_part != default_weapon_mesh or (mh != null and mh.id == "worn_longsword"))
 	if shield:
-		shield.visible = not in_hand
+		shield.visible = not in_hand and not sheathed
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
+## Running, an attack or spell at an enemy needs it in your front half
+## standing still, it turns you to it.
+func can_hit_while_moving(x: float, z: float) -> bool:
+	return not moving or facing_point(x, z, DB.attack.coneDegrees / 2.0)
+
+
 func facing_point(x: float, z: float, half_degrees: float) -> bool:
 	var dx := x - position.x
 	var dz := z - position.z
@@ -627,6 +731,8 @@ func take_damage(amount: float) -> bool:
 		return false
 	health = maxf(0, health - amount)
 	rig.hit()
+	if amount > 0:
+		hit_flash = 1.0
 	if health <= 0:
 		dead = true
 		dead_time = 0
@@ -635,6 +741,7 @@ func take_damage(amount: float) -> bool:
 		lunge = null
 		casting = null
 		braced = 0
+		_reset_jump()
 		rig.die()
 	return true
 
@@ -652,6 +759,46 @@ func become_ghost(x: float, z: float) -> void:
 	place_at(x, z, PI)
 	Rig.set_alpha(materials, 0.45)
 	Rig.set_emissive(materials, Color(0.35, 0.55, 0.8), 1)
+	_set_casts_shadow(false)
+
+
+## A spirit casts no shadow and fades whole: the body and everything hung
+## on it (gear, weapons, shields; the blob under the feet goes). Gear put on
+## while a spirit is caught by show_equipment; all comes back on revive.
+var _shadow_off: Array = [] ## [instance, its cast_shadow]
+var _gear_faded: Array = [] ## [mesh, surface, its own override before]
+func _set_casts_shadow(on: bool) -> void:
+	if on:
+		for pair in _shadow_off:
+			if is_instance_valid(pair[0]):
+				pair[0].cast_shadow = pair[1]
+		_shadow_off.clear()
+		for g in _gear_faded:
+			if is_instance_valid(g[0]):
+				g[0].set_surface_override_material(g[1], g[2])
+		_gear_faded.clear()
+		ground_shadow.visible = true
+		return
+	for gi: GeometryInstance3D in model.find_children("*", "GeometryInstance3D", true, false):
+		if gi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			_shadow_off.append([gi, gi.cast_shadow])
+			gi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# gear meshes share their materials with the item models: fade copies
+	var copies := []
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(i)
+			if m == null or m in materials or copies.has(m):
+				continue
+			var c := m.duplicate()
+			_gear_faded.append([mi, i, mi.get_surface_override_material(i)])
+			mi.set_surface_override_material(i, c)
+			copies.append(c)
+	Rig.set_alpha(copies, 0.45)
+	Rig.set_emissive(copies, Color(0.35, 0.55, 0.8), 1)
+	ground_shadow.visible = false
 
 
 func revive(x: float, z: float, health_fraction := 1.0) -> void:
@@ -660,6 +807,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 		ghost = false
 		Rig.set_alpha(materials, 1.0)
 		Rig.set_emissive(materials, Color.BLACK, 0)
+		_set_casts_shadow(true)
 	health = maxf(1, U.jround(max_health * health_fraction))
 	rig.revive()
 	cooldowns = fresh_cooldowns()
@@ -668,6 +816,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 	if game.resources:
 		game.resources.reset()
 	place_at(x, z, PI)
+	game.events.emit("playerRevived", {})
 
 
 static func fresh_cooldowns() -> Dictionary:

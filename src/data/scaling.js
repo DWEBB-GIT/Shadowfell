@@ -71,11 +71,11 @@ export const SCALING = {
   // a type multiplies its level's normal enemy; `special` sizes a telegraphed
   // special from par health (a quarter for an elite, half for a heavy)
   enemyTypes: {
-    fodder: { health: 0.5, hit: 0.5, interval: 1.35, armour: 'none' },
+    fodder: { health: 0.5, hit: 0.74, interval: 2.0, armour: 'none' },
     pack_beast: { health: 0.6, hit: 0.6, interval: 0.95, armour: 'none' },
-    normal: { health: 1, hit: 1, interval: 1.35, armour: 'none' },
+    normal: { health: 1, hit: 1.48, interval: 2.0, armour: 'none' },
     skirmisher: { health: 0.6, hit: 1.75, interval: 2.5, armour: 'light' },
-    armoured: { health: 1.25, hit: 1, interval: 1.35, armour: 'heavy' },
+    armoured: { health: 1.25, hit: 1.48, interval: 2.0, armour: 'heavy' },
     elite: { health: 1.7, hit: 1.375, interval: 1.2, armour: 'armoured', special: 0.25 },
     heavy: { health: 4, hit: 3, interval: 2.2, armour: 'armoured', special: 0.5 },
     boss: { health: 15, armour: 'armoured', special: 0.5 }, // its hits are designed per fight

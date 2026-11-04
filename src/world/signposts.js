@@ -1,7 +1,7 @@
 import { DB } from '../data/db.js';
 import { SIGNPOSTS } from './layout.js';
 
-// Road signposts (data/world.json `signposts`): each arm points at a
+// Road signposts (data/world/world.json `signposts`): each arm points at a
 // location. Hovering over a post shows where its arms point, and reading it
 // (E) puts the same on screen.
 

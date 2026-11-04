@@ -1,9 +1,8 @@
 class_name Minimap
 extends Control
-## A round minimap in the top-right corner, north up (src/ui/minimap.js; the
-## camera never turns, so up on the map is up on the screen). The ground,
-## roads, water and props round the Warden are painted into a picture (again
-## when they walk out of it); each frame draws the part around them, then the markers on
+## A round north-up minimap, rendered from the actual gameplay World3D.
+## A throttled orthographic camera shows the real terrain, water, buildings
+## and placed assets, with the navigation markers drawn on
 ## top: townsfolk with their quest marks, shrines, the places current
 ## objectives point to, and the Warden as an arrow. Quest marks out of range
 ## sit on the rim, pointing the way, but only within
@@ -12,29 +11,11 @@ extends Control
 ## enemies fighting you show as red dots.
 
 const SIZE := 168.0 ## pixels across
-const PX := 3.0 ## picture pixels per metre
-const ZOOMS := [2.2, 3.2, 4.6] ## screen pixels per metre
-const PROP_STYLE := {
-	"watch_post": ["rect", "#8a6a44", 4.5],
-	"forge": ["rect", "#8a6a44", 3],
-	"awning": ["rect", "#7a5c3a", 3],
-	"palisade": ["rect", "#5e4a32", 2.4],
-	"fence": ["rect", "#5e4a32", 1.4],
-	"ruin_wall": ["rect", "#77736a", 2],
-	"cart": ["rect", "#9a7a4a", 1.8],
-	"standing_stone": ["dot", "#a8a89c", 0.9],
-	"grave0": ["dot", "#8c877a", 0.55],
-	"grave1": ["dot", "#8c877a", 0.55],
-	"rock0": ["dot", "#6c6a62", 1],
-	"rock1": ["dot", "#6c6a62", 0.8],
-	"bone_pile": ["dot", "#b0a890", 0.6],
-}
+const ZOOMS := [0.9, 1.5, 2.4] ## screen pixels per metre; visible radius stays within Land.RADIUS
 const SEGMENTS := 72 ## sides of the round window the map is shown through
 
 var game
 var zoom := 1
-var picture: Texture2D
-var origin := Vector2.ZERO
 var map: Control
 var view: SubViewport ## the square map is drawn here, then shown through a circle
 var location: Label ## where you are, on a bar across the foot of the map
@@ -42,6 +23,10 @@ var coords: Label ## X / Y in world metres, under the map
 var _circle := PackedVector2Array()
 var _circle_uv := PackedVector2Array()
 var zoom_buttons: Array = [] ## + and −, for the HUD to give them tips
+var _tip: Label ## a quest mark's name and how far off it is, at the cursor
+var _marks: Array = [] ## the markers last drawn, for the hover tip
+## marker kinds that are not quest places (no distance tip)
+const NOT_QUEST := ["shrine", "npc", "vein", "herb", "foe", "nemesis", "corpse", "camp"]
 
 
 func _init(g) -> void:
@@ -70,22 +55,23 @@ func _init(g) -> void:
 		var v := Vector2(cos(a), sin(a))
 		_circle.append(Vector2(r, r) + v * (r - 1))
 		_circle_uv.append(Vector2(0.5, 0.5) + v * (r - 1) / SIZE)
-	# where you are: a bar across the foot of the circle
-	location = UI.label(self, "", 11, UI.GOLD)
+	# where you are: a bar above the circle (Dan, 2026-11-02), the map
+	# moved down by NAME_ROOM to make room for it
+	location = UI.label(self, "", 13, UI.GOLD)
 	location.add_theme_stylebox_override("normal", _round_box(4))
 	location.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	location.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	location.clip_text = true
 	location.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	location.size = Vector2(124, 18)
-	location.position = Vector2(SIZE / 2 - 62, SIZE - 9)
+	location.size = Vector2(150, 20)
+	location.position = Vector2(SIZE / 2 - 75, -OUT_TOP)
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 17)
+	coords.position = Vector2(SIZE / 2 - 62, SIZE + 4)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
-	var north := orb(270.0, 10.0)
+	var north := orb(270.0, NORTH_R, ON_RIM)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var north_art := Icons.art("ui", "minimap_north")
 	if north_art:
@@ -99,21 +85,40 @@ func _init(g) -> void:
 	# zoom: two small round buttons on the rim, right side, clear of the place
 	# bar (the HUD sets its menu orbs round the left side the same way)
 	for z in [[1, 22.0], [-1, 48.0]]:
-		var b := orb(z[1], ZOOM_R)
+		var b := orb(z[1], ZOOM_R, ON_RIM)
 		var step: int = z[0]
 		b.pressed.connect(func():
 			game.audio.sfx("quest_log", 0.6)
 			set_zoom(zoom + step))
 		b.draw.connect(func(): _draw_zoom(b, step))
 		zoom_buttons.append(b)
+	_tip = UI.label(self, "", 12, UI.TEXT)
+	_tip.add_theme_stylebox_override("normal", UI.frame(Vector4(8, 4, 8, 4)))
+	_tip.top_level = true
+	_tip.z_index = 30
+	_tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip.visible = false
 
 
 const ZOOM_R := 11.0
+const NORTH_R := 9.0
+## the N and the zoom buttons sit ON the map's rim, centred on its edge
+## (Dan, 2026-11-02), not outside it as the menu orbs once did
+const ON_RIM := 0.0
+## room the rim buttons need outside SIZE: right for zoom, top for north
+const OUT_RIGHT := 4.0
+const NAME_ROOM := 22.0 ## the place name's bar above the north badge
+const OUT_TOP := 9.0 + NAME_ROOM
 
 
 ## A round button sat on the rim at `angle` degrees (0 = east, 90 = south),
-## RuneScape style: drawn as a true circle, a bronze ring on dark stone
-func orb(angle: float, radius: float) -> Button:
+## RuneScape style: drawn as a true circle, a bronze ring on dark stone.
+## It sits just outside the map, its inner edge on the dark frame, so it
+## never hides the quest arrows drawn round the inside of the rim (Dan,
+## 2026-11-02: the orbs covered the waypoint arrows).
+## `out` is how far the orb's centre stands out from the rim (-1: just
+## outside, its inner edge on the frame).
+func orb(angle: float, radius: float, out := -1.0) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
@@ -122,7 +127,8 @@ func orb(angle: float, radius: float) -> Button:
 	b.size = b.custom_minimum_size
 	var a := deg_to_rad(angle)
 	var r := SIZE / 2
-	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r - 2) - Vector2(radius, radius)
+	var dist := r + radius - 1 if out < 0 else r + out
+	b.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * dist - Vector2(radius, radius)
 	b.draw.connect(func(): _draw_orb(b, radius))
 	add_child(b)
 	return b
@@ -161,170 +167,110 @@ func set_zoom(z: int) -> void:
 	zoom = clampi(z, 0, ZOOMS.size() - 1)
 
 
-# ------------------------------------------- the land around you, painted
-## The world is far too big to paint whole, so a square WINDOW metres across
-## around the Warden is painted once, and painted again round the new spot
-## when they walk more than REPAINT metres from its middle.
-const WINDOW := 384.0
-const REPAINT := 96.0
-var _paint_vp: SubViewport
-var _paint_canvas: Control
-var _painted_at := Vector2(INF, INF)
-var _ground_tex: ImageTexture ## kept: the paint pass draws it after _paint_world returns
+# ----------------------------------------------- actual overhead world
+## The same World3D as gameplay, seen by an independent north-up camera.
+## Each 64 m patch of ground (one Land chunk) is photographed ONCE, the first
+## time its chunk is built, and kept as a still image; the minimap then just
+## slides those stills under the markers as the player moves (Dan,
+## 2026-11-04: capture once, no live re-rendering). Moving bodies are left
+## out of the photo so nobody is frozen into the ground.
+const TILE_M := 64.0 ## metres per still (matches Land.CHUNK, so a built chunk is a finished tile)
+const TILE_PX := 192 ## pixels per still: 3 px/m, as sharp as the closest zoom
+const KEEP_TILES := 4 ## stills further than this many tiles away are dropped (memory)
+var terrain_view: SubViewport
+var overhead_camera: Camera3D
+var _tiles := {} ## Vector2i -> ImageTexture
+var _capturing := false
 
 
-func _paint(at: Vector2) -> void:
-	_painted_at = at
-	origin = at - Vector2(WINDOW, WINDOW) / 2
-	var w := int(WINDOW * PX)
-	if _paint_vp == null:
-		_paint_vp = SubViewport.new()
-		_paint_vp.size = Vector2i(w, w)
-		_paint_vp.disable_3d = true
-		_paint_canvas = Control.new()
-		_paint_canvas.size = Vector2(w, w)
-		_paint_canvas.draw.connect(func(): _paint_world(Canvas2D.new(_paint_canvas), w, w))
-		_paint_vp.add_child(_paint_canvas)
-		add_child(_paint_vp)
-		picture = _paint_vp.get_texture()
-	_paint_canvas.queue_redraw()
-	_paint_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+func _ensure_overhead() -> void:
+	if terrain_view != null or not game.is_inside_tree():
+		return
+	terrain_view = SubViewport.new()
+	terrain_view.name = "WorldOverhead"
+	terrain_view.size = Vector2i(TILE_PX, TILE_PX)
+	terrain_view.own_world_3d = false
+	terrain_view.world_3d = game.get_world_3d()
+	terrain_view.gui_disable_input = true
+	terrain_view.audio_listener_enable_3d = false
+	terrain_view.positional_shadow_atlas_size = 0
+	terrain_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(terrain_view)
+	overhead_camera = Camera3D.new()
+	overhead_camera.name = "NorthUpCamera"
+	overhead_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	overhead_camera.rotation = Vector3(-PI / 2.0, 0, 0)
+	overhead_camera.cull_mask = 0xFFFFF ^ World.MOVING_LAYER
+	overhead_camera.size = TILE_M
+	# A separate environment prevents the gameplay camera's depth fog from
+	# hiding the ground when viewed from above.
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color("15242b")
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color("b8c4be")
+	environment.ambient_light_energy = 0.8
+	environment.ambient_light_sky_contribution = 0
+	environment.fog_enabled = false
+	environment.glow_enabled = false
+	overhead_camera.environment = environment
+	terrain_view.add_child(overhead_camera)
+	overhead_camera.make_current()
 
 
-## The ground's colour on the map: open ground by what it is, high ground
-## dark, water blue.
-const MAP_GROUND := {
-	Terrain.SEA: "#22404a", Terrain.MEADOW: "#4a4634", Terrain.MARSH: "#3e4a38", Terrain.DOWNS: "#5c5c40",
-	Terrain.BLACKWOOD: "#26302a", Terrain.ROCK: "#5a5650", Terrain.MOOR: "#4e4240", Terrain.SAND: "#8a7c5a",
-	Terrain.FARMLAND: "#525030", Terrain.FOREST: "#2e3a28", Terrain.SNOW: "#b8bcc0", Terrain.DESERT: "#8a6c44",
-	Terrain.ASH: "#3a302c", Terrain.SWAMP: "#30382a", Terrain.JUNGLE: "#2a4224", Terrain.HAUNTED: "#2c2a32",
-}
-
-
-func _ground_picture() -> ImageTexture:
-	var c := Terrain.cell()
-	var n := int(WINDOW / c) + 1
-	var img := Image.create(n, n, false, Image.FORMAT_RGB8)
-	var o := Terrain.grid_origin()
-	var a0 := roundi((origin.x - o.x) / c)
-	var b0 := roundi((origin.y - o.y) / c)
-	for j in n:
-		for i in n:
-			var s := Terrain.grid(a0 + i, b0 + j)
-			var col := Color(MAP_GROUND.get(s[2], "#4a4634"))
-			if s[0] < 0.3:
-				col = Color(MAP_GROUND[Terrain.SEA])
-			elif s[1] < 0.5:
-				col = col.darkened(0.55 - s[1] * 0.4)
-			img.set_pixel(i, j, col)
-	return ImageTexture.create_from_image(img)
-
-
-func _paint_world(g: Canvas2D, w: float, h: float) -> void:
-	var X := func(x: float) -> float: return (x - origin.x) * PX
-	var Z := func(z: float) -> float: return (z - origin.y) * PX
-	g.round_caps = true
-	# the ground, a pixel per 4 m sample, smoothed (the new map: Dan's picture)
-	var c := Terrain.cell()
-	var art := Terrain.map_picture()
-	if art:
-		var r := Terrain.map_rect()
-		g.fill_style = "#0a3c6e"
-		g.fill_rect(0, 0, w, h)
-		g.draw_image(art, X.call(r.position.x), Z.call(r.position.y), r.size.x * PX, r.size.y * PX)
-	_ground_tex = _ground_picture() if art == null else null
-	var ground := _ground_tex
-	var gs := ground.get_size() if ground else Vector2.ZERO
-	if ground:
-		g.draw_image(ground, X.call(Terrain.grid_origin().x + roundi((origin.x - Terrain.grid_origin().x) / c) * c) - c * PX / 2, Z.call(Terrain.grid_origin().y + roundi((origin.y - Terrain.grid_origin().y) / c) * c) - c * PX / 2, gs.x * c * PX, gs.y * c * PX)
-	# clearings read a little lighter
-	g.fill_style = "rgba(160, 150, 110, 0.10)"
-	for cl in Layout.clearings:
-		g.begin_path()
-		g.arc(X.call(cl[0]), Z.call(cl[1]), cl[2] * PX, 0, TAU)
-		g.fill()
-	# rivers and lakes
-	g.stroke_style = "#2c5056"
-	for r in DB.water.get("rivers", []):
-		g.line_width = (r.width + 2.0) * PX
-		g.begin_path()
-		for i in r.points.size():
-			var q: Array = r.points[i]
-			if i:
-				g.line_to(X.call(q[0]), Z.call(q[1]))
-			else:
-				g.move_to(X.call(q[0]), Z.call(q[1]))
-		g.stroke()
-	for l in DB.water.get("lakes", []):
-		g.fill_style = "#2c5056"
-		g.begin_path()
-		g.ellipse(X.call(l.center[0]), Z.call(l.center[1]), l.rx * PX, l.rz * PX, 0, 0, TAU)
-		g.fill()
-	# roads
-	for road in Terrain.roads():
-		if road.half <= 0:
+## Photograph the nearest built chunk that has no still yet (one per frame at
+## most, usually one per 64 m walked), and drop stills far behind.
+func _refresh_overhead(_force := false) -> void:
+	_ensure_overhead()
+	if overhead_camera == null or game.player == null or _capturing:
+		return
+	var land = game.world.land if game.get("world") else null
+	if land == null:
+		return
+	var p: Vector3 = game.player.position
+	var here := Vector2i(floori(p.x / TILE_M), floori(p.z / TILE_M))
+	for k in _tiles.keys():
+		if maxi(absi(k.x - here.x), absi(k.y - here.y)) > KEEP_TILES:
+			_tiles.erase(k)
+	var best = null
+	var best_d := INF
+	for k in land.chunks:
+		if _tiles.has(k) or maxi(absi(k.x - here.x), absi(k.y - here.y)) > 2:
 			continue
-		g.stroke_style = "#9c8358" if road.kind == "road" else "#7a6848"
-		g.line_width = maxf(road.half * 1.6, 2.2) * PX
-		g.begin_path()
-		for i in road.points.size():
-			var q: Array = road.points[i]
-			if i:
-				g.line_to(X.call(q[0]), Z.call(q[1]))
-			else:
-				g.move_to(X.call(q[0]), Z.call(q[1]))
-		g.stroke()
-	# props
-	for p in Layout.props:
-		var style = PROP_STYLE.get(p.get("model", ""))
-		if style == null:
+		# wait until the streamed props on it are built too (WorldStream)
+		var stream = game.world.stream
+		if stream and not stream.covers(k.x * TILE_M, k.y * TILE_M, (k.x + 1) * TILE_M, (k.y + 1) * TILE_M):
 			continue
-		g.fill_style = style[1]
-		var sz: float = style[2]
-		var x: float = p.position[0]
-		var z: float = p.position[1]
-		if style[0] == "dot":
-			g.begin_path()
-			g.arc(X.call(x), Z.call(z), sz * PX, 0, TAU)
-			g.fill()
-		else:
-			g.save()
-			g.translate(X.call(x), Z.call(z))
-			g.rotate(-deg_to_rad(p.get("rotation", 0)))
-			g.fill_rect(-sz * PX, -sz * 0.6 * PX, sz * 2 * PX, sz * 1.2 * PX)
-			g.restore()
-	# houses (roof colour) and palisades
-	for hs in Layout.houses:
-		g.fill_style = "#" + Town.ROOF.get(hs.get("roof", "thatch"), Town.ROOF.thatch).to_html(false)
-		g.save()
-		g.translate(X.call(hs.position[0]), Z.call(hs.position[1]))
-		g.rotate(-deg_to_rad(hs.get("rotation", 0)))
-		g.fill_rect(-hs.size[0] / 2.0 * PX, -hs.size[1] / 2.0 * PX, hs.size[0] * PX, hs.size[1] * PX)
-		g.restore()
-	g.stroke_style = "#5a4630"
-	g.line_width = 1.6 * PX
-	for tw in Layout.town_walls:
-		for line in tw.lines:
-			g.begin_path()
-			for i in line.size():
-				if i:
-					g.line_to(X.call(line[i][0]), Z.call(line[i][1]))
-				else:
-					g.move_to(X.call(line[i][0]), Z.call(line[i][1]))
-			g.stroke()
-	# ponds, and the places too dark to see into
-	for wt in Layout.water:
-		if wt.get("carved"):
-			continue
-		g.fill_style = "#2c5056"
-		g.begin_path()
-		g.arc(X.call(wt.position[0]), Z.call(wt.position[1]), wt.radius * PX, 0, TAU)
-		g.fill()
-	for o in Layout.obscured:
-		g.fill_style = "rgba(0, 0, 0, 0.85)"
-		g.begin_path()
-		g.arc(X.call(o.position[0]), Z.call(o.position[1]), o.radius * PX, 0, TAU)
-		g.fill()
+		var d := Vector2(k - here).length_squared()
+		if d < best_d:
+			best_d = d
+			best = k
+	if best != null:
+		_capture(best)
+
+
+func _capture(k: Vector2i) -> void:
+	_capturing = true
+	var c := (Vector2(k) + Vector2(0.5, 0.5)) * TILE_M
+	var peak := -INF
+	for x in [0.0, 0.5, 1.0]:
+		for z in [0.0, 0.5, 1.0]:
+			peak = maxf(peak, Terrain.height_at(k.x * TILE_M + x * TILE_M, k.y * TILE_M + z * TILE_M))
+	overhead_camera.position = Vector3(c.x, peak + 64.0, c.y)
+	overhead_camera.near = 0.1
+	overhead_camera.far = maxf(1024.0, peak + 320.0)
+	terrain_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(terrain_view):
+		_tiles[k] = ImageTexture.create_from_image(terrain_view.get_texture().get_image())
+		map.queue_redraw()
+	_capturing = false
+
+
+## Shared coordinates for overlay markers: east right, north up.
+func world_to_map(at: Vector2) -> Vector2:
+	var p: Vector3 = game.player.position
+	return Vector2.ONE * SIZE * 0.5 + (at - Vector2(p.x, p.z)) * float(ZOOMS[zoom])
 
 
 # ------------------------------------------------------------ markers
@@ -335,6 +281,8 @@ func markers() -> Array:
 	var out := []
 	for s in Layout.shrines:
 		out.append({"x": s.position[0], "z": s.position[1], "kind": "shrine"})
+	for st in Layout.stations:
+		out.append({"x": st.position[0], "z": st.position[1], "kind": "station", "station": st.kind, "label": Interaction.title(st.name)})
 	# where open objectives point
 	var areas := {}
 	for id in quests.active:
@@ -358,9 +306,14 @@ func markers() -> Array:
 		if not at.is_empty():
 			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
 	for n in game.npcs.list:
-		var status: String = quests.marker_for(n.id)
+		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
-		out.append({"x": n.position.x, "z": n.position.z, "kind": quest if quest != "" else "npc", "icon": n.def.get("mapIcon"), "label": n.name})
+		# a trade (the inn's tankard) shows even while its keeper has a quest:
+		# the quest mark then sits just above it
+		if quest == "" or n.def.get("mapIcon"):
+			out.append({"x": n.position.x, "z": n.position.z, "kind": "npc", "icon": n.def.get("mapIcon"), "label": n.name})
+		if quest != "":
+			out.append({"x": n.position.x, "z": n.position.z, "kind": quest, "icon": n.def.get("mapIcon"), "label": n.name})
 	# a miner sees where the live veins glint (WoW's Find Minerals)
 	if game.skills.has("mining"):
 		for v in game.mining.veins():
@@ -412,6 +365,10 @@ var _since := 0.0
 func _process(dt: float) -> void:
 	if not is_visible_in_tree() or game.player == null:
 		return
+	if not game.started and not game.hud.showcase:
+		return
+	_refresh_overhead()
+	_hover_tip()
 	_since += dt
 	var p: Vector3 = game.player.position
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
@@ -425,6 +382,45 @@ func _process(dt: float) -> void:
 			coords.text = xy
 		_drawn_at = now
 		map.queue_redraw()
+
+
+## Over a quest mark (an objective's area, a tracked goal, a quest giver):
+## its name and how far off it is, in metres, at the cursor (Dan, 2026-10-29).
+## Marks past the rim are found on the rim, where they are drawn.
+func _hover_tip() -> void:
+	var R := SIZE / 2
+	var c := Vector2(R, R)
+	var mp := get_local_mouse_position()
+	var best = null
+	if game.started and mp.distance_to(c) <= R:
+		var scale: float = ZOOMS[zoom]
+		var p: Vector3 = game.player.position
+		var near := 8.0
+		for m in _marks:
+			if m.kind in NOT_QUEST:
+				continue
+			var s := Vector2(R + (m.x - p.x) * scale, R + (m.z - p.z) * scale)
+			var reach: float = m.get("r", 0.0) * scale
+			if s.distance_to(c) - reach > R - 4:
+				s = c + (s - c).normalized() * (R - 9)
+				reach = 0.0
+			var d := maxf(0.0, mp.distance_to(s) - reach)
+			if d <= near:
+				near = d
+				best = m
+	if best == null:
+		_tip.visible = false
+		return
+	var pl: Vector3 = game.player.position
+	var metres := maxi(0, roundi(U.hyp(best.x - pl.x, best.z - pl.z) - best.get("r", 0.0)))
+	var label: String = best.get("label", "")
+	_tip.text = ("%s\n%d m" % [label, metres]) if label != "" else "%d m" % metres
+	_tip.size = _tip.get_combined_minimum_size()
+	var at := get_global_mouse_position() + Vector2(14, 10)
+	if at.x + _tip.size.x > get_viewport_rect().size.x - 4:
+		at.x -= _tip.size.x + 24 # the map sits at the right edge
+	_tip.global_position = at
+	_tip.visible = true
 
 
 ## The name of where you stand: the building you are in, else the region.
@@ -445,19 +441,22 @@ func _draw_map() -> void:
 		map.draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2, Color.BLACK)
 		return
 	var p: Vector3 = game.player.position
-	if picture == null or Vector2(p.x, p.z).distance_to(_painted_at) > REPAINT:
-		_paint(Vector2(p.x, p.z))
+	_refresh_overhead()
 	var g := Canvas2D.new(map)
 	var scale: float = ZOOMS[zoom]
 	var R := SIZE / 2
-	g.fill_style = "#000"
+	g.fill_style = "#15242b"
 	g.fill_rect(0, 0, SIZE, SIZE)
-	# the painted world around the Warden
-	var k := scale / PX
-	var ps := picture.get_size()
-	g.draw_image(picture, R - (p.x - origin.x) * scale, R - (p.z - origin.y) * scale, ps.x * k, ps.y * k)
-	var to_map := func(x: float, z: float) -> Vector2: return Vector2(R + (x - p.x) * scale, R + (z - p.z) * scale)
+	var tile_px := TILE_M * scale
+	for k in _tiles:
+		var at := Vector2(R, R) + (Vector2(k) * TILE_M - Vector2(p.x, p.z)) * scale
+		if at.x > SIZE or at.y > SIZE or at.x + tile_px < 0 or at.y + tile_px < 0:
+			continue
+		# a hair of overlap hides seams between neighbouring stills
+		map.draw_texture_rect(_tiles[k], Rect2(at, Vector2.ONE * (tile_px + 0.5)), false)
+	var to_map := func(x: float, z: float) -> Vector2: return world_to_map(Vector2(x, z))
 	var all := markers()
+	_marks = all
 	# objective areas first, under everything else
 	for m in all:
 		if m.kind != "area":
@@ -485,6 +484,23 @@ func _draw_map() -> void:
 			g.line_to(s.x, s.y + 4)
 			g.line_to(s.x - 3, s.y)
 			g.fill()
+		elif m.kind == "station" and inside:
+			# Dan's art when painted (assets/icons/map/station_<kind>.png),
+			# else a coloured disc with the station's letter
+			if _art(g, "station_" + m.station, s.x, s.y, 14):
+				continue
+			var lk := Interaction.look(m.station)
+			g.fill_style = "#000"
+			g.begin_path()
+			g.arc(s.x, s.y, 5.5, 0, TAU)
+			g.fill()
+			g.fill_style = lk.colour
+			g.begin_path()
+			g.arc(s.x, s.y, 4.5, 0, TAU)
+			g.fill()
+			g.font_size = 8
+			g.fill_style = "#000"
+			g.fill_text(lk.letter, s.x, s.y + 0.5)
 		elif m.kind == "npc" and inside:
 			if m.icon:
 				if not _art(g, "npc_" + m.icon, s.x, s.y, 15):
@@ -543,6 +559,8 @@ func _draw_map() -> void:
 		var glyph := "!" if m.kind == "available" else "?"
 		var colour := "#a8a8a8" if m.kind == "active" else "#ffd23c"
 		if s.distance_to(Vector2(R, R)) <= R - 8:
+			if m.get("icon"):
+				s.y -= 11
 			if not _art(g, "quest_" + m.kind, s.x, s.y, 16):
 				_glyph(g, s.x, s.y, glyph, colour, 15)
 		else:
@@ -569,6 +587,10 @@ func _draw_map() -> void:
 	# the Warden, at the centre, pointing the way they face
 	g.save()
 	g.translate(R, R)
+	g.begin_path()
+	g.arc(0, 0, 10, 0, TAU)
+	g.fill_style = "rgba(0, 0, 0, 0.55)"
+	g.fill()
 	g.rotate(PI - game.player.facing)
 	var arrow := Icons.art("map", "player")
 	if arrow:
@@ -654,6 +676,11 @@ func _trade_icon(g: Canvas2D, x: float, y: float, icon: String) -> void:
 				g.line_to(pt[0], pt[1])
 			g.close_path()
 			g.fill()
+		"banker":
+			# a strongbox with its lock
+			g.fill_rect(-3.6, -2.4, 7.2, 5.4)
+			g.fill_style = "rgba(12, 10, 8, 0.9)"
+			g.fill_rect(-0.8, -0.6, 1.6, 1.8)
 		"innkeeper":
 			# a tankard
 			g.fill_rect(-3, -2.8, 4.4, 6)
@@ -701,7 +728,7 @@ func _rim(g: Canvas2D, s: Vector2, R: float, colour: String, glyph: String, reac
 	if d - reach <= R - 4:
 		return
 	var a := atan2(dy, dx)
-	var r := R - 9
+	var r := R - 18 ## in from the rim, clear of the zoom buttons (Dan, 2026-11-02)
 	var x := R + cos(a) * r
 	var y := R + sin(a) * r
 	if glyph != "":

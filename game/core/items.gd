@@ -7,6 +7,8 @@ extends RefCounted
 const BACKPACK_SLOTS := 8
 const BAG_SOCKETS := 4 ## socket 0 is the backpack and cannot be removed
 const TOOL_SOCKET := 4 ## one more socket after the bags, for the tool pack
+const MATERIAL_SOCKET := 5 ## and one for the materials pouch (Dan, 2026-11-03)
+const MATERIAL_POUCH := "materials_pouch"
 
 const ROLLS := {"spread": 0.2, "damageSpread": 0.12, "valuePerPoint": 4}
 const ROLLED_KINDS := ["weapon", "armor", "shield", "jewellery"]
@@ -117,6 +119,8 @@ static func _rolled_view(stack: Dictionary) -> Dictionary:
 		out.rarity = "legendary"
 	if typeof(rf) == TYPE_DICTIONARY:
 		out.reforged = rf
+	if r.has("rune"):
+		out.rune = r.rune
 	out.sockets = sockets
 	out.gems = gems
 	out.stats = stats
@@ -175,7 +179,11 @@ static func valid_rolls(id: String, r) -> bool:
 			return false
 	if r.has("suffix") and not DB.suffixes.has(r.suffix):
 		return false
+	if r.has("rune") and (typeof(r.rune) != TYPE_STRING or Runes.def(r.rune).is_empty() or d.kind != "weapon"):
+		return false
 	if r.has("power") and Builds.power_def(r.power).is_empty():
+		return false
+	if r.has("resolve") and not (_is_int(r.resolve) and r.resolve >= 0 and r.resolve <= 100):
 		return false
 	if r.has("temper") and not (_is_int(r.temper) and r.temper >= 0 and r.temper <= 10):
 		return false

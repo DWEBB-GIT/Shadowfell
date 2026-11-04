@@ -1,6 +1,6 @@
 class_name Chests
 extends RefCounted
-## Chests in the world (data/world.json `chests`; src/systems/chests.js).
+## Chests in the world (data/world/world.json `chests`; src/systems/chests.js).
 ## Walk up and open one (E, or click it): what it holds goes into your bags
 ## (onto the ground beside it if they are full) and its silver into your
 ## purse. A chest with a `lock` needs its key in your bags, or Lockpicking
@@ -22,12 +22,13 @@ func _init(g) -> void:
 func spawn_all() -> void:
 	for c in list:
 		if c.group:
+			game.world.stream.remove_view(c.group)
 			c.group.queue_free()
 		c.group = Node3D.new()
 		c.group.add_child(Assets.instance("chest"))
 		c.group.position = Vector3(c.x, Terrain.height_at(c.x, c.z), c.z)
 		c.group.rotation.y = deg_to_rad(c.def.get("facing", 0))
-		game.scene.add_child(c.group)
+		game.world.stream.add_view(c.group, game.scene, c.x, c.z)
 		if not c.collider:
 			game.collision.add(c.x, c.z, 0.45)
 		c.collider = true
@@ -54,7 +55,7 @@ func _lock_state(c: Dictionary) -> String:
 	var skills = game.skills
 	if lock.get("key") and inventory.count(lock.key) > 0:
 		return ""
-	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.count("lockpicks") > 0:
+	if lock.get("pick") and skills.has("lockpicking") and skills.rank("lockpicking") >= lock.pick and inventory.on_belt("lockpicks"):
 		return ""
 	var ways := []
 	if lock.get("key"):

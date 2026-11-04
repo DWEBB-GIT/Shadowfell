@@ -46,8 +46,9 @@ var log_detail_scroll: ScrollContainer
 var log_detail: VBoxContainer
 var log_actions: HBoxContainer
 var log_hint: Label
-const LOG_W := 860.0
-const LOG_LIST_W := 280.0
+const LOG_W := 660.0
+const LOG_LIST_W := 236.0
+var log_folded := {} ## group key -> true while folded in the quest log
 const LOG_H := 440.0
 var marks_layer: Control
 
@@ -77,7 +78,9 @@ func _init(g, h) -> void:
 	trainer = UI.window(self, "", 360, func(): game.dialogue.close())
 	_with_subtitle(trainer)
 	trainer.sub.text = "Trainer"
-	quest_log = UI.window(self, "Quest log", LOG_W, func(): toggle_log(false))
+	quest_log = UI.window(self, "Quest log", LOG_W, func():
+		hud.panel_closed_sound("quests")
+		toggle_log(false))
 	_with_subtitle(quest_log)
 	_build_log()
 	for w in [dialogue, trainer, quest_log]:
@@ -86,7 +89,9 @@ func _init(g, h) -> void:
 	var ev = game.events
 	ev.on("dialogueChanged", func(_e):
 		choice = 0
-		render_dialogue())
+		render_dialogue()
+		if game.dialogue.is_open:
+			hud.raise(self, trainer.panel if trainer.panel.visible else dialogue.panel))
 	ev.on("questsChanged", func(_e): render())
 	ev.on("inventoryChanged", func(_e):
 		if game.dialogue.is_open:
@@ -121,6 +126,8 @@ func toggle_log(on = null) -> void:
 		var order := _ordered()
 		selected = order[0] if not order.is_empty() else null
 	render_log()
+	if log_open:
+		hud.raise(self, quest_log.panel)
 
 
 func select(id) -> void:
@@ -174,19 +181,24 @@ func _sub(text: String) -> String:
 	return "[font_size=11][color=#9a8f78]%s[/color][/font_size]\n" % text.to_upper()
 
 
-func _rewards(r: Dictionary) -> String:
+func _rewards(r: Dictionary, id := "") -> String:
 	var parts := []
-	if r.get("coins"):
-		var cr := U.coin_range(r.coins)
-		parts.append(UI.money(cr[0]) if cr[0] == cr[1] else "%s – %s" % [UI.money(cr[0]), UI.money(cr[1])])
-	if r.get("xp"):
-		parts.append("%s experience" % U.n(r.xp))
-	for f in r.get("reputation", {}):
-		parts.append("+%s %s" % [U.n(r.reputation[f]), UI.esc(DB.factions[f].name)])
 	for g in r.get("items", []):
 		var def := Items.get_def(g.item)
 		parts.append("{item:%s:26} [color=%s]%s[/color]%s" % [g.item, UI.hex(Items.rarity_colour(def.get("rarity", "common"))), UI.esc(def.name), " ×%d" % g.count if g.get("count", 1) > 1 else ""])
-	return _sub("Rewards") + "    ".join(parts) + "\n" if not parts.is_empty() else ""
+	var lines := []
+	var xp := Quests.reward_xp(id, game.progression.level) if id != "" else 0
+	if xp > 0:
+		lines.append("[color=#c8a0f0]%s experience[/color]" % U.n(xp))
+	if r.get("coins"):
+		var cr := U.coin_range(r.coins)
+		lines.append(UI.money(cr[0]) if cr[0] == cr[1] else "%s – %s" % [UI.money(cr[0]), UI.money(cr[1])])
+	for f in r.get("reputation", {}):
+		lines.append("+%s reputation with %s" % [U.n(r.reputation[f]), UI.esc(DB.factions[f].name)])
+	# items in one row under the rest
+	if not parts.is_empty():
+		lines.append("    ".join(parts))
+	return _sub("Rewards") + "\n".join(lines) + "\n" if not lines.is_empty() else ""
 
 
 # ---------------------------------------------------------- dialogue
@@ -214,7 +226,7 @@ func render_dialogue() -> void:
 		UI.set_rich(UI.rich(w.body, 13), text)
 	UI.wrapped(UI.label(w.body, ("%s %s" % [page.salutation, page.text]) if page.get("salutation", "") != "" else page.text, 14, Color("e6dbc0")))
 	if q != null:
-		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward))
+		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward, q.get("id", "")))
 	UI.rule(w.body)
 	var opts := UI.vbox(w.body, 2)
 	var group = null
@@ -345,6 +357,7 @@ func groups() -> Array:
 		if not by.has(key):
 			by[key] = {"name": z.name, "dungeon": z.dungeon, "ids": []}
 		by[key].ids.append(id)
+		by[key].key = key
 	var out: Array = by.values()
 	for g in out:
 		g.ids.sort_custom(func(a, b): return Quests.levels(a).x < Quests.levels(b).x)
@@ -403,7 +416,8 @@ func render_log() -> void:
 		return
 	var ql = game.quests
 	var act: Array = ql.active
-	w.sub.text = "%d in hand · %d done" % [act.size(), ql.done.size()]
+	# handed-in quests are gone from the log, so only count the ones ready to hand in
+	w.sub.text = "%d in hand · %d complete" % [act.size(), act.filter(func(id): return ql.status(id) == "ready").size()]
 	var vp := get_viewport_rect().size
 	var win_w := minf(LOG_W, vp.x - 24)
 	var h := clampf(vp.y - 230, 200, LOG_H)
@@ -416,11 +430,25 @@ func render_log() -> void:
 	if act.is_empty():
 		UI.set_rich(UI.rich(log_list, 12, LOG_LIST_W), "[color=#9a8f78]No quests in hand. Look for a [color=#ffd23c]![/color] over someone's head.[/color]")
 	for g in groups():
-		var head := UI.label(log_list, ("DUNGEON · " if g.dungeon else "") + g.name.to_upper(), 11, Color("d98a5a") if g.dungeon else UI.GOLD)
+		var folded: bool = log_folded.has(g.key)
+		var head := Button.new()
+		head.focus_mode = Control.FOCUS_NONE
+		head.flat = true
+		head.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		head.text = "%s %s%s  (%d)" % ["▸" if folded else "▾", "DUNGEON · " if g.dungeon else "", g.name.to_upper(), g.ids.size()]
+		head.tooltip_text = "Click to %s" % ("expand" if folded else "collapse")
 		head.add_theme_font_override("font", UI.bold)
-		if log_list.get_child_count() > 1:
+		head.add_theme_font_size_override("font_size", 11)
+		var hc := Color("d98a5a") if g.dungeon else UI.GOLD
+		for k in ["font_color", "font_hover_color", "font_pressed_color"]:
+			head.add_theme_color_override(k, hc.lightened(0.2) if k == "font_hover_color" else hc)
+		if log_list.get_child_count() > 0:
 			head.custom_minimum_size.y = 26
-			head.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		var key: String = g.key
+		head.pressed.connect(func(): toggle_group(key))
+		log_list.add_child(head)
+		if folded:
+			continue
 		for id in g.ids:
 			var b := _log_entry(id)
 			log_list.add_child(b)
@@ -446,6 +474,14 @@ func render_log() -> void:
 		log_list_scroll.ensure_control_visible.call_deferred(chosen_button)
 
 
+func toggle_group(key: String) -> void:
+	if log_folded.has(key):
+		log_folded.erase(key)
+	else:
+		log_folded[key] = true
+	render_log()
+
+
 func _log_entry(id: String) -> Button:
 	var ql = game.quests
 	var s: String = ql.status(id)
@@ -453,7 +489,7 @@ func _log_entry(id: String) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.text = "%s[%s]  %s%s" % ["◆ " if ql.focus == id else ("• " if ql.tracked.has(id) else "   "), level_text(lv).substr(3), DB.quests[id].name, "  (Complete)" if s == "ready" else ""]
+	b.text = "%s[%s]  %s%s" % ["◆ " if ql.focus == id else ("• " if ql.tracked.has(id) else "   "), level_text(lv).substr(3), DB.quests[id].name, "  ✔ Complete" if s == "ready" else ""]
 	b.tooltip_text = "%s · %s" % [level_text(lv), "ready to hand in" if s == "ready" else "in progress"]
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	b.custom_minimum_size = Vector2(LOG_LIST_W, 0)
@@ -489,7 +525,9 @@ func _details(id: String) -> String:
 	text += _objectives(ql.objectives(id))
 	var where := Quests.hand_in(id)
 	text += "[font_size=12][color=#ffd23c]Complete: return to %s.[/color][/font_size]\n\n" % UI.esc(where) if s == "ready" else "[font_size=12][color=#9a8f78]Hand in to %s.[/color][/font_size]\n\n" % UI.esc(where)
-	text += _rewards(q.get("reward", {}))
+	text += _rewards(q.get("reward", {}), id)
+	if s == "ready":
+		text += "\n[font_size=14][color=#7fd060]✔ Complete[/color][/font_size]\n"
 	return text
 
 
@@ -625,6 +663,9 @@ func update_marks() -> void:
 	var vp := get_viewport_rect().size
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.6) * 0.5 + 0.5
 	for n in game.npcs.all:
+		if not n.present or n.position.distance_squared_to(game.player.position) > 70.0 * 70.0:
+			if marks.has(n.id): marks[n.id].visible = false
+			continue
 		var status: String = game.quests.marker_for(n.id) if n.present else ""
 		var l: Label = marks.get(n.id)
 		if l == null:
@@ -653,7 +694,7 @@ func layout() -> void:
 	for w in [dialogue, trainer]:
 		if w.panel.visible:
 			UI.fit_steady(w.panel)
-			w.panel.position = Vector2(12, 12)
+			w.panel.position = Vector2(12, hud.WINDOW_TOP)
 	if quest_log.panel.visible:
 		var p: Control = quest_log.panel
 		p.custom_minimum_size.x = minf(LOG_W, vp.x - 24)

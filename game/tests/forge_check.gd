@@ -111,9 +111,9 @@ func _temper_and_scrap() -> void:
 	check(f.temper_cap(st) == 2, "an enhanced item enchants twice")
 	var base: Dictionary = Items.view(st)
 	var c1: Dictionary = f.temper_cost(st)
-	check(c1.items.size() == 1 and c1.items[0].item == "faint_dust", "rank 1 asks faint dust, no bars or whetstones")
-	check(not f.temper(loc), "no enchanting without the dust")
-	inv.add_item("faint_dust", 20, true)
+	check(c1.items.size() == 1 and c1.items[0].item == "fellstone", "rank 1 asks Fellstones, no bars or whetstones")
+	check(not f.temper(loc), "no refining without the Fellstones")
+	inv.add_item("fellstone", 20, true)
 	check(f.temper(loc), "enchanted once")
 	check(f.temper(loc), "enchanted twice")
 	check(not f.temper(loc), "and no further (capped)")
@@ -130,15 +130,15 @@ func _temper_and_scrap() -> void:
 	var p: Dictionary = f.scrap_preview(inv.get_at(loc))
 	var dust := 0
 	for x in p.items:
-		if x.item == "faint_dust":
+		if x.item == "fellstone":
 			dust += x.count
-	check(dust == 7, "scrapping gives 7 faint dust back (%d)" % dust)
+	check(dust == 7, "scrapping gives 7 Fellstones back (%d)" % dust)
 	check(not p.items.any(func(x): return x.item.ends_with("_bar")), "scrapping gives no metal")
 	check(f.scrap_text(inv.get_at(loc)).begins_with("You get back"), "the preview reads as a list")
 	check(f.scrap_preview({"id": "worn_longsword"}).is_empty(), "plain gear has nothing to give")
-	var before: int = inv.count("faint_dust")
+	var before: int = inv.count("fellstone")
 	check(f.scrap(loc), "scrapped")
-	check(inv.count("watchmans_edge") == 0 and inv.count("faint_dust") == before + 7, "the item is gone and the dust is in the bags")
+	check(inv.count("watchmans_edge") == 0 and inv.count("fellstone") == before + 7, "the item is gone and the dust is in the bags")
 	check(f.scrap_preview({"id": "bloodletter"}).items.any(func(x): return x.item == "soulshard"), "a legendary gives a soulshard")
 	# the enchanter offers the work, the smith no longer does, and she stands clear of walls
 	var dlg = game.dialogue

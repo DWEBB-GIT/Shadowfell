@@ -1,6 +1,6 @@
 class_name Gathering
 extends RefCounted
-## Gathering nodes (data/nodes.json): herb patches now, and whatever else is
+## Gathering nodes (data/professions/nodes.json): herb patches now, and whatever else is
 ## picked off the land later (Woodcutting's trees, say). A node kind needs
 ## its skill at its level; one gather gives its yield, maybe a rare bonus,
 ## and skill experience by the colour of the task (Skills.gain).
@@ -47,7 +47,7 @@ func _build() -> void:
 			node.position = Vector3(p[0], Terrain.height_at(p[0], p[1]), p[1])
 			node.rotation.y = fmod(p[0] * 11.3 + p[1] * 5.7, TAU)
 			node.visible = false
-			game.scene.add_child(node)
+			game.world.stream.add_view(node, game.scene, p[0], p[1])
 			var mats := Rig.isolate_materials(model)
 			for m in mats:
 				if m is BaseMaterial3D:
@@ -59,7 +59,7 @@ func _build() -> void:
 			var m := Assets.instance(st.model)
 			m.position = Vector3(st.position[0], Terrain.height_at(st.position[0], st.position[1]), st.position[1])
 			m.scale *= st.get("scale", 0.8)
-			game.scene.add_child(m)
+			game.world.stream.add_view(m, game.scene, st.position[0], st.position[1])
 			game.collision.add(st.position[0], st.position[1], 0.5)
 
 
@@ -155,7 +155,7 @@ func start(n: Dictionary) -> bool:
 		game.hud.error("That %s %s." % [v.name.to_lower(), why])
 		return false
 	if game.inventory.room_for(kind_def(n.kind).yields.item) <= 0:
-		game.hud.error("Bags are full.")
+		game.hud.error("Your bags are full.")
 		return false
 	if game.fishing:
 		game.fishing.stop(true)
