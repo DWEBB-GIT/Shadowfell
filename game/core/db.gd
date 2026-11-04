@@ -15,7 +15,7 @@ const CONFIG := {
 	# the imported player body, used while `imported` is on ("base_male" is
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
-	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "strafeBackpedal": 0.65, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
 	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
 	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
 	## base move speed (Dan, 2026-11-02).
