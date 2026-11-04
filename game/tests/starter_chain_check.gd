@@ -77,4 +77,9 @@ func _process(_dt: float) -> bool:
 
 ## later stages add their chains here
 func _extra() -> void:
-	pass
+	var inv = game.inventory
+	for pair in [["sf_ore_for_the_forge", "mining", "mining_pick"], ["sf_hides_for_agna", "skinning", "skinning_knife"], ["sf_bitter_roots", "herbalism", "herb_knife"]]:
+		var had: int = inv.count(pair[2])
+		run(pair[0])
+		check(game.skills.has(pair[1]), "%s teaches %s" % pair.slice(0, 2))
+		check(inv.count(pair[2]) == had, "%s takes back the %s" % [pair[0], pair[2]])

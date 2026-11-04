@@ -1550,6 +1550,139 @@
       }
     },
     {
+      "id": "sf_ore_for_the_forge",
+      "name": "Ore for the Forge",
+      "map": "new",
+      "zone": "nr_orchard",
+      "level": [
+        2,
+        4
+      ],
+      "giver": "tf_iren",
+      "turnIn": "tf_iren",
+      "requires": [
+        "sf_odd_jobs"
+      ],
+      "summary": "Iren lends you her spare mining pick. Bring her two lumps of tin ore from the pale outcrops east of Holt Meadow.",
+      "offer": "That belt looks lonely. Here, my spare pick; it has a chip in it and a temper, like its owner. There is tin in the pale rock out east, past Heda's meadow where Agna keeps her drying racks. Bring me two lumps and I will show you what the stuff is for. Then give the pick back. I know how many I own.",
+      "progress": "Two lumps of tin ore from the pale outcrops east of Holt Meadow, near Agna's racks. Then back to Iren's forge with her pick.",
+      "complete": "Iren cracks one lump on the anvil and shows you the grey glint inside. “That is tin. Copper and tin make bronze, and bronze makes everything a village needs to stay a village.” She takes her pick back. “Mining is yours now. I sell picks. You will notice I mention that last.”",
+      "turnInLog": "Iren teaches you Mining and takes back her spare pick. She sells mining picks at the forge.",
+      "lend": [
+        {
+          "item": "mining_pick",
+          "count": 1
+        }
+      ],
+      "acceptLearn": [
+        "mining"
+      ],
+      "objectives": [
+        {
+          "id": "tin",
+          "type": "collect",
+          "target": "tin_ore",
+          "count": 2,
+          "label": "Tin ore from the eastern outcrops"
+        }
+      ],
+      "reward": {
+        "coins": 4,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_hides_for_agna",
+      "name": "Hides for Agna",
+      "map": "new",
+      "zone": "nr_orchard",
+      "level": [
+        2,
+        4
+      ],
+      "giver": "agna",
+      "turnIn": "agna",
+      "requires": [
+        "sf_odd_jobs"
+      ],
+      "summary": "Agna the tanner lends you a skinning knife. Skin two wild boars near her racks and bring her the hides.",
+      "offer": "You have hands and you have not fainted yet. That puts you ahead of the last three. Take this knife. Kill a wild boar, loot it, then work the hide off before the crows do. Two hides. Bring them and the knife back, and I will tell you whether you ruined them.",
+      "progress": "Two boar hides, skinned with Agna's knife from the wild boars around her racks. Loot the body first, then skin it.",
+      "complete": "Agna holds each hide to the light and grunts. “One hole. I have seen worse. I have done worse.” She takes the knife back and wipes it on her apron. “Skinning is yours. Knives are mine, and I sell them.”",
+      "turnInLog": "Agna teaches you Skinning and takes back her knife. She sells skinning knives.",
+      "lend": [
+        {
+          "item": "skinning_knife",
+          "count": 1
+        }
+      ],
+      "acceptLearn": [
+        "skinning"
+      ],
+      "objectives": [
+        {
+          "id": "hides",
+          "type": "collect",
+          "target": "boar_hide",
+          "count": 2,
+          "label": "Boar hides skinned from wild boars"
+        }
+      ],
+      "reward": {
+        "coins": 4,
+        "size": "standard"
+      }
+    },
+    {
+      "id": "sf_bitter_roots",
+      "name": "Bitter Roots",
+      "map": "new",
+      "zone": "nr_briar",
+      "level": [
+        2,
+        4
+      ],
+      "giver": "vr_morrow",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "sf_odd_jobs"
+      ],
+      "summary": "Morrow Finch lends you an herb knife. Cut three ditchbell from the marked patches along the Briarwood path and bring them to Morrow at Mourning Hollow.",
+      "offer": "Everyone wants a draught. Nobody wants to kneel in a ditch for one. Take my herb knife: cut, do not pull, or the root dies and next year there is nothing. Ditchbell grows along the Briarwood path, blue and sulking. Three sprigs, and the knife back.",
+      "progress": "Three ditchbell from the Briarwood path, cut with Morrow's knife. Morrow waits at Mourning Hollow.",
+      "complete": "Morrow sniffs each sprig and sets them in a row. “Cut clean. Good. A plant you cut properly forgives you.” The knife goes back on its hook. “Herbalism is yours. Come back when you can tell woundwort from a weed by smell alone, and I will teach you to brew.”",
+      "turnInLog": "Morrow teaches you Herbalism and takes back the herb knife.",
+      "lend": [
+        {
+          "item": "herb_knife",
+          "count": 1
+        }
+      ],
+      "acceptLearn": [
+        "herbalism"
+      ],
+      "objectives": [
+        {
+          "id": "herbs",
+          "type": "collect",
+          "target": "ditchbell",
+          "count": 3,
+          "label": "Ditchbell from the Briarwood path",
+          "location": "tf_camp"
+        }
+      ],
+      "reward": {
+        "coins": 4,
+        "size": "standard",
+        "items": [
+          {
+            "item": "healing_draught",
+            "count": 2
+          }
+        ]
+      }
+    },
+    {
       "id": "vr_first_hunt",
       "name": "An Honest Day’s Work",
       "map": "new",
