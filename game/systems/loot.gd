@@ -309,12 +309,33 @@ func _coin_piles(coins: int) -> Node3D:
 			continue
 		var face := _coin_mat(p[1], 0.12)
 		var rim := _coin_mat(p[2], 0.05)
-		# no glow: a tiny star of the metal's colour that winks now and then
-		var spark := Tex.sprite(Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.0), true, true))
-		spark.scale = Vector3.ONE * 0.16
-		spark.position = p[3] + Vector3(0, 0.12, 0)
-		spark.add_to_group("coin_sparkle")
-		root.add_child(spark)
+		# tiny sparkles in the metal's colour drifting up off the pile
+		var motes := CPUParticles3D.new()
+		var dot := QuadMesh.new()
+		dot.size = Vector2(0.035, 0.035)
+		motes.mesh = dot
+		var dm := Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.9))
+		dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		motes.material_override = dm
+		motes.amount = 6
+		motes.lifetime = 1.4
+		motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		motes.emission_sphere_radius = 0.1
+		motes.direction = Vector3.UP
+		motes.spread = 15
+		motes.gravity = Vector3.ZERO
+		motes.initial_velocity_min = 0.12
+		motes.initial_velocity_max = 0.25
+		motes.scale_amount_min = 0.5
+		motes.scale_amount_max = 1.0
+		var fade := Gradient.new()
+		fade.set_color(0, Color(1, 1, 1, 0))
+		fade.add_point(0.25, Color(1, 1, 1, 1))
+		fade.set_color(fade.get_point_count() - 1, Color(1, 1, 1, 0))
+		motes.color_ramp = fade
+		motes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		motes.position = p[3] + Vector3(0, 0.05, 0)
+		root.add_child(motes)
 		var n: int = clampi(3 + int(sqrt(float(p[0])) * 1.5), 4, 14)
 		# a mound: rings of coins, each ring smaller and higher
 		var i := 0
