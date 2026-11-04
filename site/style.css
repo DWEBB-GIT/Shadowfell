@@ -123,3 +123,7 @@ footer { text-align: center; color: var(--dim); font-size: .85rem; padding: 10px
 .keys dd { margin: 0; }
 .tips { padding-left: 20px; }
 .tips li { margin-bottom: 6px; }
+aside .side a { text-decoration: none; display: block; }
+aside .side a:hover { color: var(--gold-hi); }
+aside .side .crests { margin-top: 10px; }
+.news .more { text-align: right; margin: 8px 0 0; }
