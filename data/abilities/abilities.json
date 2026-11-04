@@ -1725,7 +1725,7 @@
       "kind": "heal",
       "school": "holy",
       "target": "self",
-      "desc": "A 2 second prayer that heals you. Moving interrupts the cast. Triggers the global cooldown.",
+      "desc": "A 2 second prayer that heals your friendly target, or you. Moving interrupts the cast. Triggers the global cooldown.",
       "tuning": {
         "cooldown": 0,
         "castTime": 2,
@@ -1743,7 +1743,7 @@
       "kind": "heal",
       "school": "holy",
       "target": "self",
-      "desc": "An instant word of light that heals you a little. Triggers the global cooldown. 10 second cooldown.",
+      "desc": "An instant word of light that heals your friendly target (or you) a little. Triggers the global cooldown. 10 second cooldown.",
       "tuning": {
         "cooldown": 10,
         "castTime": 0,
@@ -1761,7 +1761,7 @@
       "kind": "hot",
       "school": "holy",
       "target": "self",
-      "desc": "Light settles on you and heals you every 3 seconds for 12 seconds. Triggers the global cooldown.",
+      "desc": "Light settles on your friendly target (or you) and heals every 3 seconds for 12 seconds. Triggers the global cooldown.",
       "tuning": {
         "cooldown": 0,
         "duration": 12,

@@ -2042,9 +2042,9 @@
       "requires": [
         "sf_calling_paladin"
       ],
-      "summary": "Sister Lyra teaches you Quick Mend. A watchman lies hurt by the Fallen Lantern south of town: mend his wounds twice beside him, then return to Lyra.",
-      "offer": "A watchman crawled back from the lantern road last night and got as far as the Fallen Lantern before his legs gave out. Dunn, his name is. He will not let us move him; he says he is keeping watch. Then you will go to him. This is Quick Mend: a word, and the light closes what it can. Kneel by him and speak it twice. It does not ask whether he deserves it. Neither do we.",
-      "progress": "Use Quick Mend twice beside Watchman Dunn at the Fallen Lantern, south of Thornford.",
+      "summary": "Sister Lyra teaches you Quick Mend. A watchman lies hurt by the Fallen Lantern south of town: select him and mend his wounds twice, then return to Lyra.",
+      "offer": "A watchman crawled back from the lantern road last night and got as far as the Fallen Lantern before his legs gave out. Dunn, his name is. He will not let us move him; he says he is keeping watch. Then you will go to him. This is Quick Mend: a word, and the light closes what it can. Choose him, not yourself, and speak it twice. It does not ask whether he deserves it. Neither do we.",
+      "progress": "Select Watchman Dunn at the Fallen Lantern, south of Thornford, and heal him twice with Quick Mend.",
       "complete": "“He is sitting up?” Lyra closes her eyes a moment. “Then the light was listening. Sometimes it is not, and that is when you keep speaking anyway.” She looks south. “Did he say what he saw out there?”",
       "turnInLog": "Watchman Dunn kept muttering about lantern-bearers who did not carry lanterns. You remember it.",
       "acceptLearn": [
@@ -2055,10 +2055,9 @@
           "id": "mend",
           "type": "use",
           "target": "quickMend",
-          "at": "tf_cairn",
-          "radius": 8,
+          "on": "vr_dunn",
           "count": 2,
-          "label": "Mend Watchman Dunn at the Fallen Lantern",
+          "label": "Heal Watchman Dunn with Quick Mend",
           "location": "tf_cairn"
         }
       ],

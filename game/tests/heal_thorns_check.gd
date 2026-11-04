@@ -61,6 +61,27 @@ func _run() -> void:
 	_ready_to_cast()
 	_ok(sp.try_cast("quickMend") and pl.health > 10.0 and pl.casting == null, "Quick Mend heals at once (%.1f)" % pl.health)
 
+	# a heal goes to a selected townsperson instead (Dan, 2026-11-04)
+	var npc = game.npcs.list[0] if game.npcs.list.size() > 0 else null
+	if npc != null:
+		var healed := []
+		game.events.on("allyHealed", func(e): healed.append(e.target))
+		pl.position = npc.position + Vector3(2, 0, 0)
+		game.targeting.select_friendly(npc)
+		pl.health = 10.0
+		_ready_to_cast()
+		pl.cooldowns.erase("quickMend")
+		_ok(sp.try_cast("quickMend") and healed.has(npc) and pl.health == 10.0, "Quick Mend heals the selected townsperson, not you")
+		_ready_to_cast()
+		_ok(sp.try_cast("renewingLight") and not sp.buffs.has("renewingLight") and sp.ally_hots.size() == 1, "Renewing Light goes on the townsperson")
+		pl.position = npc.position + Vector3(60, 0, 0)
+		_ready_to_cast()
+		pl.cooldowns.erase("quickMend")
+		_ok(not sp.try_cast("quickMend"), "out of range of the townsperson")
+		game.targeting.clear()
+		sp.ally_hots.clear()
+		pl.cooldowns.erase("quickMend")
+
 	# a cast heal fills a cast bar, then heals
 	pl.health = 10.0
 	_ready_to_cast()
