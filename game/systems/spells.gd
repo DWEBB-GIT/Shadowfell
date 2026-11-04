@@ -13,6 +13,7 @@ var buffs := {} ## id -> { name, icon, left, total, damageBonus, stacks, critBon
 var dots: Array = [] ## { enemy, id, left, next, ammo }
 var auras: Array = [] ## your auras on enemies
 var zones: Array = [] ## { id, x, z, left, next, radius, slow, damage }
+var ally_hots: Array = [] ## heals over time on someone else: { id, on, left, next }
 var traps: Array = [] ## { id, key, x, z, arm, left }
 var bolts: Array = [] ## { enemy, id, t, ammo, spell }
 var blows: Array = [] ## cleaves and bursts on their way to the impact frame
@@ -102,6 +103,7 @@ func _init(g) -> void:
 
 func reset() -> void:
 	buffs = {}
+	ally_hots = []
 	dots = []
 	auras = []
 	zones = []
@@ -293,10 +295,12 @@ func _facing_to(enemy) -> float:
 
 
 func _cast_effects(spell: Dictionary) -> void:
-	# a class quest counts the ability going off (`use` objectives)
+	# a class quest counts the ability going off (`use` objectives): on the
+	# enemy you target, or the person you heal
 	if game.quests:
 		var on = game.targeting.current if game.targeting else null
-		game.quests.count_use(spell.id, on.type if on != null and is_instance_valid(on) else "")
+		var ally = heal_target(spell)
+		game.quests.count_use(spell.id, ally.id if ally != null else on.type if on != null and is_instance_valid(on) else "")
 	if not game.builds:
 		return
 	for e in game.builds.effects("critBuild"):
@@ -371,6 +375,11 @@ func try_cast(id: String) -> bool:
 		game.hud.error(missing)
 		return false
 	if not game.resources.check(spell):
+		return false
+	# a heal goes to your friendly target when you have one (Dan, 2026-11-04)
+	var ally = heal_target(spell)
+	if ally != null and U.hyp(ally.position.x - player.position.x, ally.position.z - player.position.z) > float(spell.get("range", ALLY_HEAL_RANGE)):
+		game.hud.error("Out of range")
 		return false
 	# a heal that consumes a heal over time needs one on you (Swiftmend)
 	if spell.get("consumes") and not buffs.has(spell.consumes):
@@ -652,11 +661,22 @@ func _go(spell: Dictionary, target) -> void:
 				amount += hot_left(spell.consumes, hot) * t.get("consumePercent", 100) / 100.0
 				buffs.erase(spell.consumes)
 				used = " (%s consumed)" % hot.name
+			var ally = heal_target(spell)
+			if ally != null:
+				var given := _heal_ally(ally, amount)
+				events.emit("log", {"text": "Your %s heals %s for %d.%s" % [spell.name, ally.name, U.jround(given), used], "kind": "hit"})
+				return
 			var healed := _heal_player(amount)
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "Your %s heals you for %d.%s" % [spell.name, U.jround(healed), used], "kind": "hit"})
 		"hot":
 			_anim(spell, "brace", 0.5, 0.4)
+			var ally = heal_target(spell)
+			if ally != null:
+				ally_hots = ally_hots.filter(func(h): return not (h.id == spell.id and h.on == ally))
+				ally_hots.append({"id": spell.id, "on": ally, "left": t.duration, "next": t.tickInterval})
+				events.emit("log", {"text": "%s: %s heals every %s seconds for %s seconds." % [spell.name, ally.name, U.n(t.tickInterval), U.n(t.duration)], "kind": "hit"})
+				return
 			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "hot": true, "next": t.tickInterval}
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "%s: you heal every %s seconds for %s seconds." % [spell.name, U.n(t.tickInterval), U.n(t.duration)], "kind": "hit"})
@@ -1120,6 +1140,31 @@ static func _hurts(t: Dictionary) -> bool:
 	return t.has("damageMin") and t.get("damageMax", 0) > 0
 
 
+const ALLY_HEAL_RANGE := 30.0 ## metres, for a heal with no range of its own
+
+
+## Who a heal goes to: your friendly target (a townsperson now, another
+## player once there is multiplayer), or null for yourself. Only single-
+## target heals (heal, hot) go to someone else; zones and bursts stay
+## where they are cast.
+func heal_target(spell: Dictionary):
+	if spell.get("kind") != "heal" and spell.get("kind") != "hot":
+		return null
+	var f = game.targeting.friendly if game.targeting else null
+	return f if f != null and f.get("position") != null else null
+
+
+## Heal someone else: the number shows over them. Townsfolk keep no health
+## of their own yet, so the whole heal counts.
+func _heal_ally(ally, amount: float, periodic := false) -> float:
+	var crit: bool = not periodic and game.random.call() * 100 < game.stats.crit_chance
+	if crit:
+		amount *= Stats.S().critMultiplier
+	game.events.emit("damageNumber", {"target": ally, "amount": U.jround(amount), "kind": "heal", "crit": crit})
+	game.events.emit("allyHealed", {"target": ally, "amount": amount})
+	return amount
+
+
 ## Heal yourself; a direct heal can crit as a spell does, a tick never does.
 ## Returns what it healed (overhealing is lost).
 func _heal_player(amount: float, periodic := false) -> float:
@@ -1285,6 +1330,17 @@ func update(dt: float) -> void:
 		if b.left <= 1e-6:
 			buffs.erase(id)
 			events.emit("log", {"text": "%s fades." % b.name, "kind": "muted"})
+	# heals over time on someone else
+	for i in range(ally_hots.size() - 1, -1, -1):
+		var h: Dictionary = ally_hots[i]
+		var hs = tuned(h.id)
+		h.left -= dt
+		h.next -= dt
+		while h.next <= 1e-6 and hs != null:
+			h.next += hs.tuning.tickInterval
+			_heal_ally(h.on, _heal_roll(hs.tuning), true)
+		if h.left <= 1e-6 or hs == null:
+			ally_hots.remove_at(i)
 
 	# Rotheart: damage over time ticks faster while Overcorrupted
 	var dot_rate := 1.0
