@@ -41,7 +41,7 @@ func update() -> void:
 		f.name.text = m.get("name", "")
 		f.badge.text = str(m.get("level", 1))
 		var dead: bool = m.get("health", 0) <= 0
-		f.name.add_theme_color_override("font_color", UI.TEXT_DIM if dead else Color("e8d8b0"))
+		UI.set_colour(f.name, UI.TEXT_DIM if dead else Color("e8d8b0"))
 		hud.set_fill(f.hp, m.get("health", 0) / maxf(1, m.get("max_health", 1)))
 		f.hp.text.text = "Dead" if dead else "%d" % ceili(m.get("health", 0))
 		f.mp.root.visible = m.get("max_mana", 0) > 0

@@ -234,6 +234,15 @@ static func label(parent: Node, text := "", size := 15, colour := TEXT, outline 
 	return l
 
 
+## A font colour set from per-frame code: the override is only written when
+## the colour changes, since each write makes the control lay out again.
+static func set_colour(c: Control, colour: Color, key := "font_color") -> void:
+	var meta := "_colour_" + key
+	if c.get_meta(meta, null) != colour:
+		c.set_meta(meta, colour)
+		c.add_theme_color_override(key, colour)
+
+
 static func vbox(parent: Node, gap := 4) -> VBoxContainer:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", gap)

@@ -1860,14 +1860,16 @@ func _update_target() -> void:
 		return
 	var elite: bool = shown != null and shown.cfg.get("elite", false)
 	var ring: StyleBoxFlat = target_ring.get_theme_stylebox("panel")
-	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
+	var ring_colour: Color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
+	if ring.border_color != ring_colour:
+		ring.border_color = ring_colour
 	if friend != null:
 		target_name.text = friend.name
-		target_name.add_theme_color_override("font_color", UI.NAME_FRIENDLY)
+		UI.set_colour(target_name, UI.NAME_FRIENDLY)
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
 		target_kind.text = ""
-		target_label.add_theme_color_override("font_color", UI.TEXT_DIM)
+		UI.set_colour(target_label, UI.TEXT_DIM)
 		target_hp.root.visible = false
 		target_mp.root.visible = false
 		target_stagger.root.visible = false
@@ -1875,16 +1877,16 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
+	UI.set_colour(target_name, UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
-	target_kind.add_theme_color_override("font_color", KIND_GLYPH[kind][1])
+	UI.set_colour(target_kind, KIND_GLYPH[kind][1])
 	var kind_art := Icons.art("ui", "foe_" + kind)
 	target_kind.set_meta("tip", "%s[b]%s[/b]\nLevel %s · %s" % ["[img=16]%s[/img] " % kind_art.resource_path if kind_art else "", kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
 	var attacking: bool = t != null and tg.attacking
 	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
-	target_label.add_theme_color_override("font_color", Color("ff8a60") if attacking else UI.TEXT_DIM)
+	UI.set_colour(target_label, Color("ff8a60") if attacking else UI.TEXT_DIM)
 	target_hp.root.visible = true
 	set_fill(target_hp, shown.health / shown.max_health)
 	target_hp.text.text = "%d / %d" % [ceili(shown.health), shown.max_health]
@@ -1953,11 +1955,15 @@ func _update_enemy_bars() -> void:
 		bar.name_row.visible = elite or targeted or nemesis
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
+		# theme overrides and stylebox colours are set only when they change:
+		# either one makes Godot lay the bar out and draw it again
+		UI.set_colour(bar.name, UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null
-		st.border_color = Color("ff6a40") if targeted else Color("d0a050") if winding else UI.BORDER if elite else UI.BORDER_DIM
+		var edge: Color = Color("ff6a40") if targeted else Color("d0a050") if winding else UI.BORDER if elite else UI.BORDER_DIM
+		if st.border_color != edge:
+			st.border_color = edge
 		bar.fill.anchor_right = clampf(e.health / e.max_health, 0, 1)
 		bar.hp.text = "%d / %d" % [ceili(e.health), e.max_health] if targeted else ""
 		# FFXIV-style cast bar under the name while a telegraphed attack winds up
