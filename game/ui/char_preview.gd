@@ -14,6 +14,12 @@ var copy: Node3D
 var _shape := ""
 var _drag = null
 var _anim: AnimationPlayer ## the copy's own clips, kept on Idle
+## The figure is drawn again at most FPS times a second (its own 3D scene
+## would otherwise render every frame the panel is open), and at once when
+## it is turned or resized.
+const FPS := 15.0
+var _clock := 1.0
+var _drawn_turn := INF
 
 
 func _init(g) -> void:
@@ -67,7 +73,13 @@ func render() -> void:
 	var model: Node3D = game.player.model
 	if model == null:
 		return
+	_clock += get_process_delta_time()
 	var want := Vector2i(maxi(64, int(size.x)), maxi(64, int(size.y)))
+	if _clock < 1.0 / FPS and vp.size == want and turn == _drawn_turn and copy != null:
+		return
+	var step := _clock
+	_clock = 0.0
+	_drawn_turn = turn
 	if vp.size != want:
 		vp.size = want
 	var shape := _signature(model)
@@ -86,7 +98,7 @@ func render() -> void:
 		else:
 			_anim = null
 	if _anim:
-		_anim.advance(get_process_delta_time())
+		_anim.advance(minf(step, 0.25))
 	_sync(model, copy)
 	# The in-world readability scale must not crop the paper doll.
 	copy.transform = Transform3D(Basis.from_scale(model.transform.basis.get_scale() / DB.CONFIG.player.visualScale), Vector3.ZERO)

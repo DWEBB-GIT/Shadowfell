@@ -19,6 +19,12 @@ var tracked := {}
 var focus := "" ## the quest being followed: the minimap and world map point the way to it
 var kills := {} ## questId -> { objectiveId: kills since it was taken }
 var _last := {} ## questId -> progress text, to announce changes
+const MARK_TTL_MS := 250
+var _marks := {} ## npcId -> marker_for answer, kept for MARK_TTL_MS
+var _marks_at := -100000
+var _marks_sig := Vector2i(-1, -1)
+var _by_npc := {} ## npcId -> the quests they give or take in
+var _by_npc_size := -1
 
 
 ## Conditions in dialogue and gate data: { quest, status } | { flag } | { examined } | { level } (at least).
@@ -58,6 +64,7 @@ func reset() -> void:
 	focus = ""
 	kills = {}
 	_last = {}
+	_marks = {}
 
 
 ## An enemy of this type fell: every active quest that wants it counts one.
@@ -167,10 +174,7 @@ var active: Array:
 ## in, then new ones to offer, then ones still in hand.
 func for_npc(npc_id: String) -> Array:
 	var out := []
-	for q in DB.quests.values():
-		# Only evaluate this resident's quests; status resolves progression and objectives.
-		if q.get("giver") != npc_id and q.get("turnIn") != npc_id:
-			continue
+	for q in _quests_of(npc_id):
 		var s := status(q.id)
 		if (s == "ready" and q.get("turnIn") == npc_id) or (s == "available" and q.get("giver") == npc_id) or (s == "active" and q.get("turnIn") == npc_id):
 			out.append({"id": q.id, "status": s})
@@ -179,10 +183,38 @@ func for_npc(npc_id: String) -> Array:
 	return out
 
 
+## The quests an npc gives or takes in, looked up once (not a walk through
+## every quest per npc per frame); built again if the quest data changes.
+func _quests_of(npc_id: String) -> Array:
+	if _by_npc_size != DB.quests.size():
+		_by_npc_size = DB.quests.size()
+		_by_npc = {}
+		for q in DB.quests.values():
+			for who in [q.get("giver"), q.get("turnIn")]:
+				if who == null:
+					continue
+				var list: Array = _by_npc.get(who, [])
+				if not list.has(q):
+					list.append(q)
+				_by_npc[who] = list
+	return _by_npc.get(npc_id, [])
+
+
 ## What floats over an npc: 'ready' gold ?, 'available' gold !, 'active' grey ?.
+## The floating marks and the minimap ask for every npc in view each frame,
+## so the answer is kept for MARK_TTL_MS (bags, levels and kills move a quest
+## on without a quest event) and dropped at once when a quest changes.
 func marker_for(npc_id: String) -> String:
-	var list := for_npc(npc_id)
-	return list[0].status if not list.is_empty() else ""
+	var now := Time.get_ticks_msec()
+	var sig := Vector2i(accepted.size(), done.size())
+	if now - _marks_at > MARK_TTL_MS or sig != _marks_sig:
+		_marks_at = now
+		_marks_sig = sig
+		_marks = {}
+	if not _marks.has(npc_id):
+		var list := for_npc(npc_id)
+		_marks[npc_id] = list[0].status if not list.is_empty() else ""
+	return _marks[npc_id]
 
 
 # ---------------------------------------------------------- actions
@@ -498,6 +530,7 @@ func refresh() -> void:
 
 
 func _changed() -> void:
+	_marks = {}
 	game.events.emit("questsChanged", {})
 	game.events.emit("objectiveChanged", {})
 

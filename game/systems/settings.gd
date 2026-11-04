@@ -32,7 +32,7 @@ const SETTINGS := [
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
 	# 0 off, 1 the player only, 2 the player, enemies and NPCs. Each step
 	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).
-	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": 1, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
+	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": 1, "webDefault": 0, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
 ]
 
 var game
@@ -46,21 +46,27 @@ static func _def(id: String):
 	return null
 
 
+## A setting's starting value; the browser build may start lower
+## ("webDefault"), since a browser has less to spare for the same picture.
+static func default_of(s: Dictionary):
+	return s.webDefault if s.has("webDefault") and OS.has_feature("web") else s.default
+
+
 ## a stored value made safe: the right type, and inside a slider's range
 static func _clean(s: Dictionary, v):
 	if s.get("choice"):
-		return v if typeof(v) == TYPE_STRING and v != "" else s.default
+		return v if typeof(v) == TYPE_STRING and v != "" else default_of(s)
 	if s.has("min"):
 		if typeof(v) == TYPE_BOOL and s.has("names"):
 			return 1 if v else 0
-		return clampi(U.jround(v), s.min, s.max) if (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and is_finite(v) else s.default
-	return v if typeof(v) == TYPE_BOOL else s.default
+		return clampi(U.jround(v), s.min, s.max) if (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and is_finite(v) else default_of(s)
+	return v if typeof(v) == TYPE_BOOL else default_of(s)
 
 
 func _init(g) -> void:
 	game = g
 	for s in SETTINGS:
-		values[s.id] = s.default
+		values[s.id] = default_of(s)
 	var text = Store.get_item(KEY)
 	var saved = JSON.parse_string(text) if text != null else null
 	if typeof(saved) == TYPE_DICTIONARY:

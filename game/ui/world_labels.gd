@@ -104,7 +104,7 @@ func update(_dt := 0.0) -> void:
 		if l.text != text:
 			l.text = text
 			l.size = l.get_combined_minimum_size()
-		l.add_theme_color_override("font_color", lab.colour)
+		UI.set_colour(l, lab.colour)
 		var loot: bool = lab.get("loot", false)
 		if l.get_meta("loot", false) != loot:
 			l.set_meta("loot", loot)

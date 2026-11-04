@@ -201,9 +201,25 @@ func _ready() -> void:
 	_show_title()
 
 
+## How finely the 3D world is drawn. A browser on a high-density screen
+## (devicePixelRatio 2 or more) would otherwise draw every device pixel, four
+## times the work of the same window on a plain screen: there the world is
+## drawn at about 1.25x the page's own pixels and scaled up, while the HUD and
+## text stay sharp at full resolution.
+static func render_scale() -> float:
+	var base: float = DB.CONFIG.camera.renderScale
+	if not OS.has_feature("web"):
+		return base
+	var dpr := maxf(1.0, DisplayServer.screen_get_scale())
+	return clampf(base * WEB_PIXELS / dpr, 0.5, base)
+
+
+const WEB_PIXELS := 1.25 ## world pixels per page pixel in the browser
+
+
 func _init_renderer() -> void:
 	var vp := get_viewport()
-	vp.scaling_3d_scale = DB.CONFIG.camera.renderScale
+	vp.scaling_3d_scale = render_scale()
 	vp.msaa_3d = Viewport.MSAA_2X
 	# View-distance fog: clear around the player, swallowing the road ahead.
 	# Things past `far` are not drawn at all.
