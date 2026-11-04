@@ -675,7 +675,7 @@ func _release(p: Dictionary, dt: float) -> void:
 			rig.action = null
 		hold_bow(false)
 		return
-	inv.remove_count(ammo, 1)
+	inv.spend_arrow(ammo)
 	var late := minf(minf(-p.t, dt), DB.attack.catchUp)
 	cooldowns.ranged = maxf(0, game.stats.attack_cooldown_for("ranged") - late)
 	last_swing_at = game.time

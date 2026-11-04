@@ -1554,7 +1554,11 @@
       "price": 0,
       "model": "rock1",
       "icon": "rock1",
-      "glow": { "colour": "#9fd0ff", "strength": 1.4, "pulse": 0.6 },
+      "glow": {
+        "colour": "#9fd0ff",
+        "strength": 1.4,
+        "pulse": 0.6
+      },
       "description": "A dark stone with a light inside it that will not stay still. A Refiner works it into gear, one rank at a time. It only falls from foes still worth your while."
     },
     {
@@ -7213,6 +7217,33 @@
         "pulse": 0.5
       },
       "description": "A shard of a Dread rune, still warm with it. A Refiner binds 10 of them into a whole rune."
+    },
+    {
+      "id": "wolf_sinew",
+      "name": "Wolf sinew",
+      "kind": "material",
+      "rarity": "quest",
+      "stack": 10,
+      "price": 0,
+      "quest": true,
+      "model": "clothes",
+      "icon": "clothes",
+      "description": "A length of back sinew, scraped and dried. Hawthorn Ide bound her fletching with nothing else."
+    },
+    {
+      "id": "gathering_quiver",
+      "name": "Hawthorn's gathering quiver",
+      "kind": "bag",
+      "rarity": "enhanced",
+      "bagSlots": 6,
+      "holds": "ammo",
+      "rangedHaste": 10,
+      "ammoRecover": 25,
+      "stack": 1,
+      "price": 40,
+      "model": "quiver",
+      "icon": "quiver",
+      "description": "Hawthorn Ide's own quiver, rebound by Scout Fen. Place it in a bag slot: it holds only arrows (six stacks), Auto Shot fires 10% faster, and about one arrow in four you loose finds its way back into it."
     }
   ]
 }

@@ -241,6 +241,25 @@ var quiver_haste: float:
 				best = maxf(best, Items.get_def(s.id).get("rangedHaste", 0))
 		return best
 
+## a gathering quiver in a bag slot brings back some of the arrows you
+## loose (percent; the best one counts)
+var ammo_recover: float:
+	get:
+		var best := 0.0
+		for s in sockets:
+			if s:
+				best = maxf(best, Items.get_def(s.id).get("ammoRecover", 0))
+		return best
+
+## Loose one arrow: it leaves the bags unless a gathering quiver brings it
+## back (a chance of ammoRecover percent each shot).
+func spend_arrow(id: String) -> void:
+	var keep := ammo_recover
+	if keep > 0 and game.random.call() * 100.0 < keep:
+		game.events.emit("log", {"text": "Your quiver gathers back a spent arrow.", "kind": "muted", "throttle": "ammo-recover"})
+		return
+	remove_count(id, 1)
+
 ## a working bow in the ranged slot, else null
 var ranged_weapon:
 	get:
