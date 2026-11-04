@@ -181,7 +181,7 @@ func _click_ground(classic: bool) -> void:
 		game.input.mouse.onCanvas = true
 		if game._pick_under_cursor() == null: break
 	var event := InputEventMouseButton.new()
-	event.button_index = MOUSE_BUTTON_RIGHT if classic else MOUSE_BUTTON_LEFT
+	event.button_index = MOUSE_BUTTON_LEFT
 	event.position = Vector2(game.input.mouse.x, game.input.mouse.y)
 	event.pressed = true
 	game.input._unhandled_input(event)
