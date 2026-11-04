@@ -105,11 +105,13 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 			bad.call("price must be a whole number of coins")
 		for k in ["model", "icon"]:
 			var m = d.get(k)
+			if k == "model" and m == null and d.has("cosmetic"):
+				continue # a cosmetic (wings, halo, horns) is drawn by the game
 			if m == null or str(m) == "":
 				bad.call("needs a %s" % k)
 			elif not s.models.has(m):
 				bad.call("%s %s is not in assets/models" % [k, m])
-		if d.has("sprite") and not s.sprites.has(d.sprite):
+		if d.has("sprite") and not s.sprites.has(d.sprite) and not FileAccess.file_exists(DataStore.SPRITES_DIR + "/" + str(d.sprite) + ".png"):
 			bad.call("sprite %s is not in assets/icons" % d.sprite)
 		var equips := DataStore.EQUIPPABLE.has(kind)
 		if equips and not DataStore.SLOTS.has(d.get("slot")):
@@ -143,7 +145,10 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 			var food: Dictionary = u.get("food", {})
 			var drink: Dictionary = u.get("drink", {})
 			var elixir: Dictionary = u.get("elixir", {})
-			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0) or (elixir.has("stat") and elixir.get("amount", 0) > 0 and elixir.get("seconds", 0) > 0)):
+			if u.has("ability"):
+				if s.ability(u.ability).is_empty():
+					bad.call("its use casts unknown ability %s" % u.ability)
+			elif not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0) or (elixir.has("stat") and elixir.get("amount", 0) > 0 and elixir.get("seconds", 0) > 0)):
 				bad.call("its use must heal, be food that heals over some seconds, a drink that restores mana over some seconds or an elixir that raises a stat for some seconds")
 		for t in d.get("reservedFor", []):
 			if not table_ids.has(t):

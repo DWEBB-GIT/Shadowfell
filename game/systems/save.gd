@@ -44,6 +44,157 @@ static func _is_stack(s) -> bool:
 	return not s.has("dur") or (_is_int(s.dur) and s.dur >= 0 and s.dur <= 100)
 
 
+## Content renamed or removed since a save was made (data/meta/renames.json:
+## { "items": { old: new }, "abilities": {...}, "quests": {...}, "recipes": {...} }).
+## A renamed id follows its rename; an id that no longer exists anywhere is
+## dropped with a note, so editing content never locks a player out of
+## their character. Returns the list of what was dropped.
+static var _renames = null
+
+
+static func renames() -> Dictionary:
+	if _renames == null:
+		var path := DataPaths.path_for("renames")
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		_renames = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return _renames
+
+
+## Problems in renames.json itself, for the data gate (game/tests/validate_data.gd).
+static func rename_problems() -> PackedStringArray:
+	var out := PackedStringArray()
+	var tables := {"items": DB.items, "abilities": DB.abilities, "quests": DB.quests, "recipes": DB.recipes}
+	for kind in renames():
+		if kind.begins_with("_"):
+			continue
+		if not tables.has(kind):
+			out.append("renames.json: unknown kind %s (use items, abilities, quests or recipes)" % kind)
+			continue
+		var m = renames()[kind]
+		if typeof(m) != TYPE_DICTIONARY:
+			out.append("renames.json: %s must map old ids to new ids" % kind)
+			continue
+		for old in m:
+			if tables[kind].has(old):
+				out.append("renames.json: %s %s still exists, so it cannot be renamed" % [kind, old])
+			if not tables[kind].has(str(m[old])):
+				out.append("renames.json: %s %s is renamed to unknown %s" % [kind, old, m[old]])
+	return out
+
+
+static func _follow(kind: String, id, table: Dictionary):
+	if typeof(id) != TYPE_STRING:
+		return id
+	var m = renames().get(kind, {})
+	var seen := 0
+	while typeof(m) == TYPE_DICTIONARY and m.has(id) and seen < 8:
+		id = str(m[id])
+		seen += 1
+	return id if table.has(id) else null
+
+
+static func _tidy_stack(st, where: String, dropped: Array):
+	if typeof(st) != TYPE_DICTIONARY or typeof(st.get("id")) != TYPE_STRING:
+		return st
+	var id = _follow("items", st.id, DB.items)
+	if id == null:
+		dropped.append("item %s (%s)" % [st.id, where])
+		return null
+	var out: Dictionary = st.duplicate()
+	out.id = id
+	if not Items.valid_rolls(id, out.get("rolls")):
+		out.erase("rolls")
+	return out
+
+
+static func _tidy_list(kind: String, l, table: Dictionary, where: String, dropped: Array):
+	if typeof(l) != TYPE_ARRAY:
+		return l
+	var out := []
+	for id in l:
+		var n = _follow(kind, id, table)
+		if n == null:
+			dropped.append("%s %s (%s)" % [kind.trim_suffix("s"), id, where])
+		elif not out.has(n):
+			out.append(n)
+	return out
+
+
+static func tidy_ids(data) -> Array:
+	var dropped := []
+	if typeof(data) != TYPE_DICTIONARY:
+		return dropped
+	var inv = data.get("inventory")
+	if typeof(inv) == TYPE_DICTIONARY:
+		var sk = inv.get("sockets")
+		if typeof(sk) == TYPE_ARRAY:
+			for i in sk.size():
+				var s = sk[i]
+				if typeof(s) != TYPE_DICTIONARY:
+					continue
+				if i > 0 and _follow("items", s.get("id"), DB.items) == null:
+					continue # an unknown bag stays for the check to report: its contents are at stake
+				if i > 0:
+					s.id = _follow("items", s.id, DB.items)
+				if typeof(s.get("slots")) == TYPE_ARRAY:
+					for k in s.slots.size():
+						s.slots[k] = _tidy_stack(s.slots[k], "bag %d" % i, dropped)
+		var eq = inv.get("equipment")
+		if typeof(eq) == TYPE_DICTIONARY:
+			for slot in eq:
+				eq[slot] = _tidy_stack(eq[slot], slot, dropped)
+		if typeof(inv.get("bank")) == TYPE_ARRAY:
+			for k in inv.bank.size():
+				inv.bank[k] = _tidy_stack(inv.bank[k], "bank", dropped)
+	if typeof(data.get("bar")) == TYPE_ARRAY:
+		var bar: Array = data.bar
+		for k in bar.size():
+			var a = bar[k]
+			if typeof(a) != TYPE_STRING or a == "dodge" or a == "draught":
+				continue
+			var ref = ActionBar.item_ref(a)
+			var n = _follow("items", ref, DB.items) if ref != null else _follow("abilities", a, DB.abilities)
+			if n == null:
+				dropped.append("bar button %s" % a)
+				bar[k] = null
+			else:
+				bar[k] = ("item:" + n) if ref != null else n
+	if typeof(data.get("spells")) == TYPE_ARRAY:
+		data.spells = _tidy_list("abilities", data.spells, DB.abilities, "learned", dropped)
+	var q = data.get("quests")
+	if typeof(q) == TYPE_DICTIONARY:
+		for k in ["accepted", "done", "tracked"]:
+			q[k] = _tidy_list("quests", q.get(k, []), DB.quests, k, dropped)
+		if typeof(q.get("kills")) == TYPE_DICTIONARY:
+			var kills := {}
+			for id in q.kills:
+				var n = _follow("quests", id, DB.quests)
+				if n != null:
+					kills[n] = q.kills[id]
+			q.kills = kills
+		if typeof(q.get("focus")) == TYPE_STRING:
+			var f = _follow("quests", q.focus, DB.quests)
+			q.focus = f if f != null else ""
+	var c = data.get("cooking")
+	if typeof(c) == TYPE_DICTIONARY and typeof(c.get("recipes")) == TYPE_ARRAY:
+		c.recipes = _tidy_list("recipes", c.recipes, DB.recipes, "known recipes", dropped)
+	var s = data.get("skills")
+	if typeof(s) == TYPE_DICTIONARY:
+		for id in s.keys():
+			if not DB.skills.has(id):
+				dropped.append("skill %s" % id)
+				s.erase(id)
+	var w = data.get("world")
+	if typeof(w) == TYPE_DICTIONARY and typeof(w.get("ground")) == TYPE_ARRAY:
+		var ground := []
+		for g in w.ground:
+			var n = g if Loot.is_coins(g) else _tidy_stack(g, "on the ground", dropped)
+			if n != null:
+				ground.append(n)
+		w.ground = ground
+	return dropped
+
+
 ## Upgrade a build-1 save: its flat item list goes into the backpack, its
 ## weapon into the main hand. Anything else is returned unchanged.
 static func migrate_save(data):
@@ -299,7 +450,11 @@ func read(k = null) -> Dictionary:
 	var data = JSON.parse_string(text)
 	if data == null:
 		return {"status": "invalid", "errors": ["not valid JSON"], "raw": text}
-	data = fit_bags(migrate_save(data))
+	data = migrate_save(data)
+	var dropped := tidy_ids(data)
+	if not dropped.is_empty():
+		push_warning("Save %s: dropped content that no longer exists: %s" % [k, ", ".join(dropped)])
+	data = fit_bags(data)
 	var errors := validate_save(data)
 	if not errors.is_empty():
 		return {"status": "invalid", "errors": errors, "raw": text}

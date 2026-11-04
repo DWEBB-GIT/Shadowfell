@@ -1,0 +1,7 @@
+{
+  "_note": "When you rename or remove an item, ability, quest or recipe id, add old -> new here so saved characters keep it. An id that is removed with no rename is dropped from saves.",
+  "items": {},
+  "abilities": {},
+  "quests": {},
+  "recipes": {}
+}

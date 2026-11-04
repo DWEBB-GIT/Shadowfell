@@ -1,0 +1,40 @@
+name: Checks
+
+# Runs the data gate on every pull request, so a broken data link or a script
+# that does not compile shows on the PR before it is merged. The same checks
+# run again in deploy-pages.yml before each deploy.
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Data and scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Godot
+        run: |
+          V=4.7-stable
+          curl -sSLo godot.zip https://github.com/godotengine/godot/releases/download/$V/Godot_v${V}_linux.x86_64.zip
+          unzip -q godot.zip && mv Godot_v${V}_linux.x86_64 godot && rm godot.zip
+
+      - name: Import project
+        run: ./godot --headless --path . --import || true
+
+      - name: Check data
+        run: ./godot --headless --path . --script res://game/tests/validate_data.gd
+
+      - name: Check scripts compile
+        run: ./godot --headless --path . --script res://game/tests/check_scripts.gd
+
+      - name: Saves survive renamed and removed content
+        run: ./godot --headless --path . --script res://game/tests/save_renames_check.gd

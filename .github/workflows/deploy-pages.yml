@@ -46,10 +46,20 @@ jobs:
         run: |
           echo "{\"commit\": \"${GITHUB_SHA::7}\", \"time\": \"$(date -u +'%Y-%m-%d %H:%M') UTC\"}" > data/build.json
 
+      - name: Import project
+        run: ./godot --headless --path . --import || true
+
+      # The data gate: broken links between data files (an unknown item in a
+      # loot table, a quest naming a missing npc...) or a script that does not
+      # compile stop the deploy, so the live game never gets them.
+      - name: Check data and scripts
+        run: |
+          ./godot --headless --path . --script res://game/tests/validate_data.gd
+          ./godot --headless --path . --script res://game/tests/check_scripts.gd
+
       - name: Export Godot web build
         run: |
           mkdir -p _site/play
-          ./godot --headless --path . --import || true
           ./godot --headless --path . --export-release "Web" _site/play/index.html
           test -f _site/play/index.wasm
 
