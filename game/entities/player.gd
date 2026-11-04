@@ -453,26 +453,15 @@ func update(dt: float, controls) -> void:
 			var walk: float = tank.y * (DB.CONFIG.player.backpedal if tank.y < 0 else 1.0)
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
 		var mag := minf(1, U.hyp(mv.x, mv.z))
-		# Face target (Settings, WoW style): with a live enemy selected you
-		# keep facing it while you move any way; sideways is full speed,
-		# backing away slows to strafeBackpedal (so bows still can't kite)
-		var lock = _strafe_target() if tank == null and mag > 0 else null
-		var pace := 1.0
-		if lock != null:
-			var dot: float = (mv.x * sin(facing) + mv.z * cos(facing)) / maxf(U.hyp(mv.x, mv.z), 0.001)
-			if dot < 0:
-				pace = lerpf(1.0, DB.CONFIG.player.strafeBackpedal, -dot)
 		if mag > 0:
-			position.x += mv.x * DB.CONFIG.player.speed * pace * dt
-			position.z += mv.z * DB.CONFIG.player.speed * pace * dt
+			position.x += mv.x * DB.CONFIG.player.speed * dt
+			position.z += mv.z * DB.CONFIG.player.speed * dt
 			if tank != null:
 				# you face where the keys turn you; the left button held
 				# (mouse aim) still turns you to the cursor
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
 					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-			elif lock != null:
-				facing = U.turn_towards(facing, atan2(lock.position.x - position.x, lock.position.z - position.z), dt * 14)
 			elif aim_hold <= 0:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
@@ -719,19 +708,6 @@ func hold_bow(in_hand: bool) -> void:
 		weapon_part.visible = not in_hand and not sheathed and (weapon_part != default_weapon_mesh or (mh != null and mh.id == "worn_longsword"))
 	if shield:
 		shield.visible = not in_hand and not sheathed
-
-
-## Face target setting: the selected enemy you keep facing while moving,
-## or null (setting off, nothing selected, dead, or far away)
-func _strafe_target():
-	if game.settings == null or not game.settings.get_value("faceTarget"):
-		return null
-	var t = game.targeting.current
-	if t == null or not t.alive:
-		return null
-	if U.hyp(t.position.x - position.x, t.position.z - position.z) > DB.CONFIG.targeting.range:
-		return null
-	return t
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)

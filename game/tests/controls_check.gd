@@ -96,24 +96,6 @@ func _process(_dt: float) -> bool:
 		var d := Vector2(p0.x - start.x, p0.z - start.z)
 		check(d.length() > 0.3 and d.normalized().dot(fwd) > 0.9, "keyboard turning: W walks the way you face (%s, %s)" % [d, fwd])
 		game.settings.set_value("tankControls", false)
-		# face target: walking away keeps you facing the foe, at backpedal speed
-		game.settings.set_value("faceTarget", true)
-		game.targeting.engage(foe)
-		game.player.position = foe.position + Vector3(3, 0, 0)
-		start = game.player.position
-		game.player.facing = -PI / 2
-		game.input.held["KeyD"] = true
-	elif f == 71:
-		start = game.player.position
-	elif f == 101:
-		game.input.held.erase("KeyD")
-		var to_foe := atan2(foe.position.x - game.player.position.x, foe.position.z - game.player.position.z)
-		check(absf(angle_difference(game.player.facing, to_foe)) < 0.3, "face target: backing away still faces the foe (%.2f vs %.2f)" % [game.player.facing, to_foe])
-		check(game.player.can_hit_while_moving(foe.position.x, foe.position.z), "face target: the foe stays hittable while moving")
-		var back := Vector2(game.player.position.x - start.x, game.player.position.z - start.z).length()
-		var full: float = DB.CONFIG.player.speed * 30.0 / 60.0
-		check(back > full * 0.4 and back < full * 0.85, "face target: backing away is slower (%.2f of %.2f)" % [back, full])
-		game.settings.set_value("faceTarget", false)
 		print("controls checks: %s" % ("all passed" if failures == 0 else "%d failed" % failures))
 		quit(1 if failures else 0)
 	return false
