@@ -58,6 +58,7 @@ def main():
 
     def header(page):
         links = [("index.html", "Home", "home"), ("index.html#about", "The Game", ""),
+                 ("story.html", "Story", "story"), ("guide.html", "Getting Started", "guide"),
                  ("classes.html", "Classes", "classes"), ("index.html#news", "News", ""), ("play/", "Play", "")]
         nav = "".join('<a class="btn%s" href="%s">%s</a>' % (" on" if p == page else "", h, t) for h, t, p in links)
         return ('<header class="banner wrap"><a href="index.html" class="logo"><img src="kit/crest.png" alt="">'
@@ -110,7 +111,7 @@ def main():
         elif name.endswith(".html"):
             with open(src, encoding="utf-8") as f:
                 page = f.read()
-            for p in ("home", "classes"):
+            for p in ("home", "classes", "story", "guide"):
                 page = page.replace("<!--HEADER:%s-->" % p, header(p))
             page = (page.replace("<!--HEAD-->", head).replace("<!--ASIDE-->", aside)
                     .replace("<!--FOOTER-->", footer).replace("<!--CLASSES-->", "\n".join(cards)))

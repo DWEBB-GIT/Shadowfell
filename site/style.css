@@ -111,3 +111,15 @@ aside .crests img { width: 100%; }
 @media (max-width: 520px) { .class { grid-template-columns: 1fr; } }
 
 footer { text-align: center; color: var(--dim); font-size: .85rem; padding: 10px 0 40px; }
+
+/* ---------- story and guide */
+.lede { font-size: 1.15rem; font-style: italic; color: var(--gold); }
+.chapter h3 { font-size: 1.35rem; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.chapter h3 span { display: block; font-size: .75rem; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+.chapter p:first-of-type::first-letter { float: left; font: 700 2.6rem/1 "Cinzel", serif; color: var(--gold); margin: 4px 6px 0 0; }
+.toc { margin: 0; padding-left: 22px; columns: 2 220px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
+.keys dt { color: var(--gold); font-family: "Cinzel", serif; }
+.keys dd { margin: 0; }
+.tips { padding-left: 20px; }
+.tips li { margin-bottom: 6px; }
