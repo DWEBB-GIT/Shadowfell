@@ -457,6 +457,7 @@ func _ui_click() -> void:
 
 
 func start_game(resume: bool) -> void:
+	player.set_appearance(character.get("appearance") if character != null else null)
 	audio.start()
 	world_state.reset()
 	progression.apply({"level": 1, "xp": 0})

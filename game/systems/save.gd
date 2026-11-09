@@ -401,6 +401,7 @@ func serialize() -> Dictionary:
 		"worldId": Terrain.chosen_map(),
 		"savedAt": Time.get_datetime_string_from_system(true) + "Z",
 		"player": {
+			"appearance": player.appearance.duplicate(true),
 			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
 			"facing": _round(player.facing),
 			"health": player.health,
@@ -476,6 +477,7 @@ func quarantine(raw, k = null) -> void:
 
 func apply(data: Dictionary) -> void:
 	var player = game.player
+	player.set_appearance(data.player.get("appearance"))
 	var progression = game.progression
 	var inventory = game.inventory
 	var ws = game.world_state

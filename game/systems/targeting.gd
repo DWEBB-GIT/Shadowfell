@@ -205,17 +205,46 @@ var target_in_shot: bool:
 		return t != null and t.alive and st.has_ranged and not target_in_reach and _dist(t) <= st.ranged_reach + t.radius * 0.6
 
 
-## Tab / R3: the enemy you are aiming at first, then the next nearest each
-## press, round all those in range.
-func cycle(aim):
+## Tab / R3: the best enemy by `tab_score` first (closest in front, or one
+## right beside you even behind), then the next best each press. Enemies
+## already picked this run are skipped until all in range have had a turn.
+var _tabbed: Array = []
+
+func cycle(_aim = null):
 	var near: Array = game.enemies.list.filter(func(e): return targetable(e) and _dist(e) <= DB.CONFIG.targeting.range)
-	near.sort_custom(func(a, b): return _dist(a) < _dist(b))
 	if near.is_empty():
+		_tabbed.clear()
 		return select(null)
-	if current == null or not near.has(current):
-		var s = soft_target(aim, DB.CONFIG.targeting.range, true)
-		return select(s if s != null else near[0])
-	return select(near[(near.find(current) + 1) % near.size()])
+	near.sort_custom(func(a, b): return tab_score(a) < tab_score(b))
+	# a target picked some other way (click, being hit) starts a fresh run
+	if current == null or not _tabbed.has(current):
+		_tabbed.clear()
+		if current != null:
+			_tabbed.append(current)
+	_tabbed = _tabbed.filter(func(e): return near.has(e))
+	var pick = null
+	for e in near:
+		if not _tabbed.has(e):
+			pick = e
+			break
+	if pick == null: # everyone had a turn: start again from the best
+		_tabbed.clear()
+		pick = near[0] if near[0] != current or near.size() == 1 else near[1]
+	_tabbed.append(pick)
+	return select(pick)
+
+
+## Lower is better: distance, stretched the further the enemy is from the
+## way you face (x1 dead ahead, x`behindWeight`+1 straight behind). Anyone
+## within `tabCloseRange` counts as right beside you and beats them all.
+func tab_score(e) -> float:
+	var d := _dist(e)
+	var cfg: Dictionary = DB.CONFIG.targeting
+	if d <= cfg.tabCloseRange:
+		return d - 1000.0
+	var f: float = game.player.facing
+	var c: float = (sin(f) * (e.position.x - game.player.position.x) + cos(f) * (e.position.z - game.player.position.z)) / maxf(d, 0.01)
+	return d * (1.0 + cfg.tabBehindWeight * (1.0 - c) * 0.5)
 
 
 ## Called each frame with the raw aim, to show the soft-lock ring.
