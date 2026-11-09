@@ -698,19 +698,6 @@
       "respawn": 25
     },
     {
-      "id": "ni_grain_rat",
-      "base": "granary_rat",
-      "name": "Grain Rat",
-      "attitude": "passive",
-      "level": 1,
-      "maxLevel": 1,
-      "pack": 0,
-      "detection": 4,
-      "respawn": 60,
-      "flees": false,
-      "roam": 1.5
-    },
-    {
       "id": "ni_loose_boar",
       "base": "vr_young_boar",
       "name": "Loose Young Boar",

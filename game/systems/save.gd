@@ -347,7 +347,9 @@ static func validate_save(data) -> Array:
 	# the quest log (saves from before it have none, and start from the story flag)
 	if data.has("quests"):
 		var q = data.quests
-		var known := func(l): return _is_str_array(l) and l.all(func(id): return DB.quests.has(id))
+		# a quest id no longer in the data (a retired quest) is dropped by
+		# Quests.apply, not a reason to reject the whole character
+		var known := func(l): return _is_str_array(l)
 		check.call(typeof(q) == TYPE_DICTIONARY and known.call(q.get("accepted")) and known.call(q.get("done")) and known.call(q.get("tracked")), "quest log")
 	if data.has("titles"):
 		var t = data.titles
