@@ -96,6 +96,9 @@ var hud: Hud
 var audio: AudioSystem
 ## set by Log out: the reloaded scene opens on character select
 static var to_select := false
+## the character the lobby (game/boot/lobby.gd) chose before the world's
+## pack was in: the game goes straight in as them, without its title screen
+static var enter_id := ""
 var fx: Fx
 var save: SaveManager
 var roster := Roster.new()
@@ -288,7 +291,9 @@ func _init_renderer() -> void:
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.65
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	# the browser draws every shadow caster once more per split: one split
+	# there (the 4096 map over 60 m is sharp enough), two on desktop
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if OS.has_feature("web") else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	# the browser's sun shadow map is 4096 (project.godot) over a shorter
 	# reach, so trees there no longer cast blocky shadows; the camera's view
 	# ends inside about 60 m at the default zoom
@@ -324,6 +329,10 @@ func _show_title() -> void:
 			save.quarantine(rs.get("raw"), c.key)
 			push_warning("Save for %s rejected: %s" % [c.name, rs.get("errors")])
 	hud.show_title(note)
+	if enter_id != "":
+		var id := enter_id
+		enter_id = ""
+		enter_world(id)
 
 
 ## Play as a character from the roster: their own save, or a fresh start.
@@ -797,6 +806,10 @@ func _click(button: String) -> bool:
 		"enemy":
 			if acts or mouse_aim:
 				targeting.engage(o)
+				# attacking (not selecting) squares you up to it, as in WoW,
+				# so a foe you had walked past is hit without a dance
+				if targeting.target_in_reach and not player.moving:
+					player.face_towards(o.position.x, o.position.z)
 				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if walk:
@@ -861,7 +874,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 		# stop well inside the real swing reach (no moving leeway), so the
 		# first blow lands once both stand still
 		var f = m.follow
-		var stop: float = DB.attack.range * 0.75 + f.radius * 0.6
+		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
 		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
 			move_to = null
@@ -1403,7 +1416,23 @@ func _zoom_max() -> float:
 ## is no pan, orbit or cursor-driven look-ahead; north stays screen-up.
 func _camera_offset(z: float) -> Vector3:
 	var c: Dictionary = DB.CONFIG.camera
+	if _tuned_camera():
+		# Settings > Camera tuning: angle down, turn and distance by hand
+		var pitch := deg_to_rad(float(settings.get_value("camPitch")))
+		var yaw := deg_to_rad(float(settings.get_value("camYaw")))
+		var d := float(settings.get_value("camDistance"))
+		var flat := cos(pitch) * d
+		return Vector3(sin(yaw) * flat, sin(pitch) * d, cos(yaw) * flat) * z
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
+
+
+func _tuned_camera() -> bool:
+	return settings != null and settings.get_value("camTune")
+
+
+## the lens: the tuned one while camera tuning is on, else CONFIG's
+func _camera_fov() -> float:
+	return float(settings.get_value("camFov")) if _tuned_camera() else DB.CONFIG.camera.fov
 
 
 func _place_camera(dt := 0.0) -> void:
@@ -1417,6 +1446,7 @@ func _place_camera(dt := 0.0) -> void:
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
 	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
+	camera.fov = _camera_fov()
 	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
 	var t := camera_target + Vector3(0, 1.0, 0)

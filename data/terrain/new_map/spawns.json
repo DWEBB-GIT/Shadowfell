@@ -3864,10 +3864,10 @@
 	{"id": "sf_firewood_0", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-381.5, -277.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
 	{"id": "sf_firewood_1", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-379, -280.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
 	{"id": "sf_firewood_2", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-375.5, -278], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
-	{"id": "sf_garlic_0", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-346, -252], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
-	{"id": "sf_garlic_1", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-338.5, -251], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
-	{"id": "sf_garlic_2", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-343.5, -260.5], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
-	{"id": "sf_garlic_3", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-351, -258], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_0", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-346, -252], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_1", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-338.5, -251], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_2", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-343.5, -260.5], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_3", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-351, -258], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
 	{
 	  "id": "spring_water",
 	  "model": "draught",
@@ -31361,5 +31361,14 @@
 	  "sf_class_paladin",
       "sf_class_wizard"
 	]
-  }
+  },
+	"nodeGroups": [
+		{"id": "holt_hedges", "name": "the Holt Fields hedges", "live": 5, "respawn": [45, 90], "kinds": [{"kind": "wild_garlic", "weight": 3}, {"kind": "ditchbell", "weight": 1}], "spots": [[-364.8, -277.5], [-286.9, -339.6], [-287.0, -248.1], [-400.5, -339.8], [-344.7, -334.5], [-314.6, -292.1], [-399.3, -244.4], [-330.6, -249.4], [-286.6, -307.7], [-344.7, -302.5], [-312.5, -323.5], [-286.6, -277.5]]},
+		{"id": "thornford_verges", "name": "the verges round Thornford", "live": 4, "respawn": [45, 90], "kinds": [{"kind": "ditchbell", "weight": 3}, {"kind": "wild_garlic", "weight": 1}], "spots": [[-427.6, -336.0], [-467.7, -148.6], [-498.6, -260.5], [-412.4, -247.8], [-411.9, -168.7], [-485.9, -203.5], [-478.1, -311.8], [-459.6, -371.7], [-457.7, -238.7], [-456.0, -277.8]]},
+		{"id": "briarwood_floor", "name": "the Briarwood", "live": 4, "respawn": [60, 110], "kinds": [{"kind": "woundwort", "weight": 2}, {"kind": "ditchbell", "weight": 1}], "spots": [[-557.1, -370.1], [-583.3, -255.9], [-516.9, -276.0], [-583.6, -315.8], [-517.1, -373.9], [-556.9, -283.5], [-549.4, -336.0], [-590.4, -285.7], [-579.2, -351.7], [-534.4, -356.1]]},
+		{"id": "old_watch_slopes", "name": "the slopes below the Old Watch", "live": 3, "respawn": [60, 120], "kinds": [{"kind": "woundwort", "weight": 1}], "spots": [[-460.3, -384.9], [-406.0, -503.2], [-393.8, -425.1], [-454.3, -450.5], [-408.4, -463.4], [-430.3, -411.0], [-475.7, -421.2], [-434.3, -484.8]]},
+		{"id": "mourning_hollow", "name": "the Mourning Hollow", "live": 3, "respawn": [80, 140], "kinds": [{"kind": "woundwort", "weight": 2}, {"kind": "bloodroot", "weight": 1}], "spots": [[-318.0, -371.9], [-259.9, -521.5], [-395.7, -488.5], [-259.4, -436.6], [-396.5, -351.6], [-334.3, -446.6], [-322.4, -508.0], [-259.6, -348.6], [-386.4, -416.6]]},
+		{"id": "mossreed_banks", "name": "the Mossreed banks", "live": 3, "respawn": [90, 150], "kinds": [{"kind": "bloodroot", "weight": 2}, {"kind": "woundwort", "weight": 1}], "spots": [[-557.5, -79.9], [-621.9, -148.0], [-504.4, -148.2], [-621.4, -40.0], [-504.1, -40.6], [-563.9, -140.4], [-612.5, -93.9], [-503.9, -94.3]]},
+		{"id": "blackpick_scree", "name": "the Blackpick scree", "live": 3, "respawn": [120, 180], "kinds": [{"kind": "bloodroot", "weight": 1}, {"kind": "gravemoss", "weight": 1}], "spots": [[-276.9, -230.9], [-209.0, -302.4], [-315.2, -302.4], [-209.1, -219.4], [-263.2, -284.6], [-319.4, -255.3], [-225.1, -260.5], [-242.6, -223.1]]}
+	]
 }

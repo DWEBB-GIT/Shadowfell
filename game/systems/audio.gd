@@ -183,6 +183,9 @@ func start() -> void:
 	if started:
 		return
 	started = true
+	# the buses come from default_bus_layout.tres, so they exist from the
+	# first frame (a browser's web audio graph is built when the engine
+	# starts); this only covers a project without that file
 	for bus in ["Effects", "Ambience", "Music"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
@@ -255,6 +258,10 @@ func output_devices() -> PackedStringArray:
 
 
 func apply_device() -> void:
+	# a browser has only its own default output: setting it anyway restarted
+	# the web audio driver as the game began, and it stayed silent after
+	if OS.has_feature("web"):
+		return
 	var want: String = game.settings.get_value("outputDevice")
 	AudioServer.output_device = want if output_devices().has(want) else "Default"
 
