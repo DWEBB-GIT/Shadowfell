@@ -9,6 +9,11 @@ var turn := 0.0
 var dragging := false
 var clock := 0.0
 
+func center_character() -> void:
+	var camera: Camera3D = viewport.find_children("*", "Camera3D", true, false)[0]
+	camera.position = Vector3(0, 1.8, 6.6)
+	camera.transform = camera.transform.looking_at(Vector3(0, 0.85, 0), Vector3.UP)
+
 func _init() -> void:
 	expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	stretch_mode=TextureRect.STRETCH_SCALE
@@ -80,12 +85,13 @@ func _init() -> void:
 	pivot=Node3D.new()
 	viewport.add_child(pivot)
 
-func show_character(gear: Dictionary) -> void:
+func show_character(gear: Dictionary, appearance = null) -> void:
 	equipment=gear.duplicate(true)
 	if actor!=null:
 		actor.group.queue_free()
 	actor=Player.new({"inventory":{"equipment":equipment},"time":0.0})
 	pivot.add_child(actor.group)
+	actor.set_appearance(appearance)
 	actor.group.position=Vector3.ZERO
 	actor.group.rotation=Vector3.ZERO
 	actor.model.scale/=DB.CONFIG.player.visualScale

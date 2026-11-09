@@ -45,11 +45,15 @@ func _run() -> void:
 	game.enemies.list = foes
 	game.events.on("enemyHit", func(e): damage.append(e))
 	game.events.on("spellFx", func(e): impacts.append(e))
-	for id in DB.archetypes:
-		_select_class(id)
-		_structure(id)
-		for ability in game.stats.archetype.abilities:
-			_cast_ability(id, ability)
+	for sex in ["male", "female"]:
+		var look := ForgeCharacter.defaults()
+		look.sex = sex
+		game.player.set_appearance(look)
+		for id in DB.archetypes:
+			_select_class(id)
+			_structure(id)
+			for ability in game.stats.archetype.abilities:
+				_cast_ability(id, ability)
 	_warrior()
 	_paladin()
 	_rogue()
@@ -153,6 +157,7 @@ func _structure(id: String) -> void:
 
 
 func _cast_ability(class_id: String, id: String) -> void:
+	var animation_count: int = game.player.rig.play_count
 	game.spells.reset()
 	_ready_cast()
 	game.skills.all_spells = true
@@ -170,11 +175,14 @@ func _cast_ability(class_id: String, id: String) -> void:
 	check(game.spells.try_cast(id), class_id + " casts " + id + " through the normal spell entry point")
 	for step in 210:
 		game.spells.update(1.0 / 60.0)
+		game.player.rig.update(1.0 / 60.0, 0.0)
 		game.fx.update(1.0 / 60.0)
 		if game.player.lunge != null:
 			game.spells.resolve(id)
 			game.player.lunge = null
 	check(impacts.any(func(e): return e.id == id), id + " emits its own visual/audio event")
+	check(game.player.rig.play_count > animation_count, id + " triggers actual rig playback through normal casting")
+	check(game.player.rig.last_action_clip != "A_TPose", id + " never selects a T-pose")
 	game.skills.all_spells = false
 
 

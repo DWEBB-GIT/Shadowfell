@@ -1,0 +1,1614 @@
+{
+  "equipment_slots": [
+    "helmet",
+    "shoulders",
+    "chest",
+    "bracers",
+    "gloves",
+    "belt",
+    "legs",
+    "feet",
+    "cloak"
+  ],
+  "sexes": {
+    "male": {
+      "rig": "RPG_Humanoid_Male",
+      "bones": 68,
+      "modules": {
+        "ranger_chest": {
+          "slot": "chest",
+          "hide_skin_zones": [
+            "covered_chest",
+            "covered_chest_legs"
+          ],
+          "objects": [
+            "Male_ranger_chest_2",
+            "Male_chest_sleeve_Male_ranger_arms_0"
+          ],
+          "file": "modules/male_ranger_chest.glb",
+          "triangles": 1807
+        },
+        "ranger_bracers": {
+          "slot": "bracers",
+          "hide_skin_zones": [
+            "covered_bracers"
+          ],
+          "objects": [
+            "Male_bracer_Male_ranger_arms_0"
+          ],
+          "file": "modules/male_ranger_bracers.glb",
+          "triangles": 396
+        },
+        "ranger_belt": {
+          "slot": "belt",
+          "hide_skin_zones": [],
+          "objects": [
+            "Male_ranger_chest_0",
+            "Male_ranger_chest_1"
+          ],
+          "file": "modules/male_ranger_belt.glb",
+          "triangles": 676
+        },
+        "ranger_legs": {
+          "slot": "legs",
+          "hide_skin_zones": [
+            "covered_legs",
+            "covered_chest_legs"
+          ],
+          "objects": [
+            "Male_ranger_legs_0"
+          ],
+          "file": "modules/male_ranger_legs.glb",
+          "triangles": 474
+        },
+        "ranger_feet": {
+          "slot": "feet",
+          "hide_skin_zones": [
+            "covered_feet"
+          ],
+          "objects": [
+            "Male_ranger_feet_0"
+          ],
+          "file": "modules/male_ranger_feet.glb",
+          "triangles": 3866
+        },
+        "ranger_helmet": {
+          "slot": "helmet",
+          "hide_skin_zones": [],
+          "hide_hair": false,
+          "hide_facial_hair": false,
+          "objects": [
+            "Male_ranger_head_0"
+          ],
+          "file": "modules/male_ranger_helmet.glb",
+          "triangles": 1032,
+          "hair_fit": "hood"
+        },
+        "ranger_shoulders": {
+          "slot": "shoulders",
+          "hide_skin_zones": [],
+          "objects": [
+            "Male_ranger_shoulders_0"
+          ],
+          "file": "modules/male_ranger_shoulders.glb",
+          "triangles": 579
+        },
+        "ranger_gloves": {
+          "slot": "gloves",
+          "hide_skin_zones": [
+            "covered_gloves"
+          ],
+          "objects": [
+            "Male_ranger_gloves"
+          ],
+          "file": "modules/male_ranger_gloves.glb",
+          "triangles": 2086
+        },
+        "ranger_cloak": {
+          "slot": "cloak",
+          "hide_skin_zones": [],
+          "objects": [
+            "male_ranger_cloak"
+          ],
+          "file": "modules/male_ranger_cloak.glb",
+          "triangles": 224,
+          "attachment": "Top row barycentrically bound to the fitted back surface; same vertex weights."
+        }
+      },
+      "skin_zones": {
+        "head": [
+          "Male_skin_head",
+          "Male_Eyebrows",
+          "Male_Eyes"
+        ],
+        "covered_chest": [
+          "Male_skin_covered_chest"
+        ],
+        "always_visible": [
+          "Male_skin_always_visible"
+        ],
+        "covered_bracers": [
+          "Male_skin_covered_bracers"
+        ],
+        "covered_legs": [
+          "Male_skin_covered_legs"
+        ],
+        "covered_feet": [
+          "Male_skin_covered_feet"
+        ],
+        "covered_chest_legs": [
+          "Male_skin_covered_chest_legs"
+        ],
+        "covered_gloves": [
+          "Male_skin_covered_gloves"
+        ]
+      },
+      "appearance": {
+        "faces": {
+          "standard": [
+            "Male_skin_head",
+            "Male_Eyebrows",
+            "Male_Eyes"
+          ],
+          "broad": [
+            "Male_skin_head_broad",
+            "Male_broad_Male_Eyebrows",
+            "Male_broad_Male_Eyes"
+          ],
+          "slender": [
+            "Male_skin_head_slender",
+            "Male_slender_Male_Eyebrows",
+            "Male_slender_Male_Eyes"
+          ]
+        },
+        "hair": {
+          "parted": [
+            "Male_hair_parted_0",
+            "Male_hair_scalp_underlay"
+          ],
+          "buzzed": [
+            "Male_hair_buzzed_0"
+          ],
+          "long": [
+            "Male_hair_long_0",
+            "Male_hair_scalp_underlay"
+          ],
+          "buns": [
+            "Male_hair_buns_0",
+            "Male_hair_scalp_underlay"
+          ],
+          "swept_back": [
+            "Male_hair_swept_back",
+            "Male_hair_scalp_underlay"
+          ],
+          "mohawk": [
+            "Male_hair_mohawk_cap",
+            "Male_hair_mohawk_ridge"
+          ],
+          "ponytail": [
+            "Male_hair_ponytail_cap",
+            "Male_hair_ponytail_tail",
+            "Male_hair_scalp_underlay"
+          ]
+        },
+        "beards": {
+          "full": [
+            "Male_beard_lower"
+          ],
+          "short": [
+            "Male_beard_short"
+          ],
+          "long": [
+            "Male_beard_long"
+          ],
+          "wizard": [
+            "Male_beard_wizard"
+          ]
+        },
+        "moustaches": {
+          "classic": [
+            "Male_moustache_separate"
+          ]
+        }
+      },
+      "colors": {
+        "hair": [
+          {
+            "material": "male_MI_Hair_1.001",
+            "images": {
+              "black": "T_Hair_1_BaseColor_1024_black.001",
+              "brown": "T_Hair_1_BaseColor_1024_brown.001",
+              "auburn": "T_Hair_1_BaseColor_1024_auburn.001",
+              "blond": "T_Hair_1_BaseColor_1024_blond.001",
+              "silver": "T_Hair_1_BaseColor_1024_silver.001"
+            }
+          },
+          {
+            "material": "male_MI_Hair_2.002",
+            "images": {
+              "black": "T_Hair_2_BaseColor_1024.002_black.001",
+              "brown": "T_Hair_2_BaseColor_1024.002_brown.001",
+              "auburn": "T_Hair_2_BaseColor_1024.002_auburn.001",
+              "blond": "T_Hair_2_BaseColor_1024.002_blond.001",
+              "silver": "T_Hair_2_BaseColor_1024.002_silver.001"
+            }
+          },
+          {
+            "material": "male_MI_Hair_1.002",
+            "images": {
+              "black": "T_Hair_1_BaseColor_1024.002_black.001",
+              "brown": "T_Hair_1_BaseColor_1024.002_brown.001",
+              "auburn": "T_Hair_1_BaseColor_1024.002_auburn.001",
+              "blond": "T_Hair_1_BaseColor_1024.002_blond.001",
+              "silver": "T_Hair_1_BaseColor_1024.002_silver.001"
+            }
+          }
+        ],
+        "eyes": [
+          {
+            "material": "male_MI_Eyes.001",
+            "images": {
+              "brown": "T_Eye_Brown_1024_brown.001",
+              "blue": "T_Eye_Brown_1024_blue.001",
+              "green": "T_Eye_Brown_1024_green.001",
+              "amber": "T_Eye_Brown_1024_amber.001",
+              "grey": "T_Eye_Brown_1024_grey.001"
+            }
+          }
+        ],
+        "solid_facial_hair": [
+          "male_HairSolid"
+        ],
+        "skin": [
+          {
+            "material": "Skin_Fitted_male",
+            "images": {
+              "porcelain": "v6_male_skin_porcelain",
+              "fair": "v6_male_skin_fair",
+              "warm": "v6_male_skin_warm",
+              "olive": "v6_male_skin_olive",
+              "brown": "v6_male_skin_brown",
+              "deep": "v6_male_skin_deep"
+            }
+          }
+        ],
+        "solid_hair_scale": 0.1
+      },
+      "animation": "Male_Equipment_Check",
+      "presets": {
+        "base": {
+          "lod0": "glb/male_base_lod0.glb",
+          "lod1": "glb/male_base_lod1.glb",
+          "triangles_lod0": 7394,
+          "triangles_lod1": 3692,
+          "objects": [
+            "Male_skin_head",
+            "Male_skin_covered_chest",
+            "Male_Eyes",
+            "Male_skin_covered_feet",
+            "Male_hair_parted_0",
+            "Male_skin_covered_legs",
+            "Male_skin_covered_chest_legs",
+            "Male_Eyebrows",
+            "Male_hair_scalp_underlay",
+            "Male_skin_covered_bracers",
+            "Male_skin_always_visible",
+            "Male_skin_covered_gloves"
+          ]
+        },
+        "ranger": {
+          "lod0": "glb/male_ranger_lod0.glb",
+          "lod1": "glb/male_ranger_lod1.glb",
+          "triangles_lod0": 15291,
+          "triangles_lod1": 7638,
+          "objects": [
+            "Male_ranger_legs_0",
+            "Male_ranger_feet_0",
+            "male_ranger_cloak",
+            "Male_chest_sleeve_Male_ranger_arms_0",
+            "Male_ranger_head_0",
+            "Male_ranger_shoulders_0",
+            "Male_skin_head",
+            "Male_bracer_Male_ranger_arms_0",
+            "Male_Eyes",
+            "Male_ranger_chest_2",
+            "Male_ranger_chest_0",
+            "Male_ranger_gloves",
+            "Male_ranger_chest_1",
+            "Male_Eyebrows",
+            "Male_hood_hair_parted",
+            "Male_skin_always_visible",
+            "Male_hood_hair_parted_001"
+          ]
+        }
+      },
+      "all_objects": [
+        "Male_Eyebrows",
+        "Male_Eyes",
+        "Male_beard_long",
+        "Male_beard_lower",
+        "Male_beard_short",
+        "Male_beard_wizard",
+        "Male_bracer_Male_ranger_arms_0",
+        "Male_broad_Male_Eyebrows",
+        "Male_broad_Male_Eyes",
+        "Male_broad_beards_full",
+        "Male_broad_beards_long",
+        "Male_broad_beards_short",
+        "Male_broad_beards_wizard",
+        "Male_broad_moustaches_classic",
+        "Male_chest_sleeve_Male_ranger_arms_0",
+        "Male_hair_buns_0",
+        "Male_hair_buzzed_0",
+        "Male_hair_long_0",
+        "Male_hair_mohawk_cap",
+        "Male_hair_mohawk_ridge",
+        "Male_hair_parted_0",
+        "Male_hair_ponytail_cap",
+        "Male_hair_ponytail_tail",
+        "Male_hair_scalp_underlay",
+        "Male_hair_swept_back",
+        "Male_hood_hair_buns",
+        "Male_hood_hair_buns_001",
+        "Male_hood_hair_buzzed",
+        "Male_hood_hair_long",
+        "Male_hood_hair_long_001",
+        "Male_hood_hair_mohawk",
+        "Male_hood_hair_mohawk_001",
+        "Male_hood_hair_parted",
+        "Male_hood_hair_parted_001",
+        "Male_hood_hair_ponytail",
+        "Male_hood_hair_ponytail_001",
+        "Male_hood_hair_ponytail_002",
+        "Male_hood_hair_swept_back",
+        "Male_hood_hair_swept_back_001",
+        "Male_moustache_separate",
+        "Male_ranger_chest_0",
+        "Male_ranger_chest_1",
+        "Male_ranger_chest_2",
+        "Male_ranger_feet_0",
+        "Male_ranger_gloves",
+        "Male_ranger_head_0",
+        "Male_ranger_legs_0",
+        "Male_ranger_shoulders_0",
+        "Male_skin_always_visible",
+        "Male_skin_covered_bracers",
+        "Male_skin_covered_chest",
+        "Male_skin_covered_chest_legs",
+        "Male_skin_covered_feet",
+        "Male_skin_covered_gloves",
+        "Male_skin_covered_legs",
+        "Male_skin_head",
+        "Male_skin_head_broad",
+        "Male_skin_head_slender",
+        "Male_slender_Male_Eyebrows",
+        "Male_slender_Male_Eyes",
+        "Male_slender_beards_full",
+        "Male_slender_beards_long",
+        "Male_slender_beards_short",
+        "Male_slender_beards_wizard",
+        "Male_slender_moustaches_classic",
+        "male_ranger_cloak"
+      ],
+      "appearance_exports": {
+        "faces_standard": "modules/male_faces_standard.glb",
+        "faces_broad": "modules/male_faces_broad.glb",
+        "faces_slender": "modules/male_faces_slender.glb",
+        "hair_parted": "modules/male_hair_parted.glb",
+        "hair_buzzed": "modules/male_hair_buzzed.glb",
+        "hair_long": "modules/male_hair_long.glb",
+        "hair_buns": "modules/male_hair_buns.glb",
+        "hair_swept_back": "modules/male_hair_swept_back.glb",
+        "hair_mohawk": "modules/male_hair_mohawk.glb",
+        "hair_ponytail": "modules/male_hair_ponytail.glb",
+        "beards_full": "modules/male_beards_full.glb",
+        "beards_short": "modules/male_beards_short.glb",
+        "beards_long": "modules/male_beards_long.glb",
+        "beards_wizard": "modules/male_beards_wizard.glb",
+        "moustaches_classic": "modules/male_moustaches_classic.glb",
+        "hood_hair_parted": "modules/male_hood_hair_parted.glb",
+        "hood_hair_buzzed": "modules/male_hood_hair_buzzed.glb",
+        "hood_hair_long": "modules/male_hood_hair_long.glb",
+        "hood_hair_buns": "modules/male_hood_hair_buns.glb",
+        "hood_hair_swept_back": "modules/male_hood_hair_swept_back.glb",
+        "hood_hair_mohawk": "modules/male_hood_hair_mohawk.glb",
+        "hood_hair_ponytail": "modules/male_hood_hair_ponytail.glb",
+        "broad_beards_full": "modules/male_broad_beards_full.glb",
+        "broad_beards_short": "modules/male_broad_beards_short.glb",
+        "broad_beards_long": "modules/male_broad_beards_long.glb",
+        "broad_beards_wizard": "modules/male_broad_beards_wizard.glb",
+        "broad_moustaches_classic": "modules/male_broad_moustaches_classic.glb",
+        "slender_beards_full": "modules/male_slender_beards_full.glb",
+        "slender_beards_short": "modules/male_slender_beards_short.glb",
+        "slender_beards_long": "modules/male_slender_beards_long.glb",
+        "slender_beards_wizard": "modules/male_slender_beards_wizard.glb",
+        "slender_moustaches_classic": "modules/male_slender_moustaches_classic.glb"
+      },
+      "appearance_labels": {
+        "beards": {
+          "short": "Short",
+          "full": "Full",
+          "long": "Long",
+          "wizard": "Wizard"
+        },
+        "moustaches": {
+          "classic": "Classic"
+        }
+      },
+      "hood_hair": {
+        "parted": [
+          "Male_hood_hair_parted",
+          "Male_hood_hair_parted_001"
+        ],
+        "buzzed": [
+          "Male_hood_hair_buzzed"
+        ],
+        "long": [
+          "Male_hood_hair_long",
+          "Male_hood_hair_long_001"
+        ],
+        "buns": [
+          "Male_hood_hair_buns",
+          "Male_hood_hair_buns_001"
+        ],
+        "swept_back": [
+          "Male_hood_hair_swept_back",
+          "Male_hood_hair_swept_back_001"
+        ],
+        "mohawk": [
+          "Male_hood_hair_mohawk",
+          "Male_hood_hair_mohawk_001"
+        ],
+        "ponytail": [
+          "Male_hood_hair_ponytail",
+          "Male_hood_hair_ponytail_001",
+          "Male_hood_hair_ponytail_002"
+        ]
+      },
+      "body_mask_policy": "Conservative complete triangle coverage; shared borders reduced before splitting. Exposed groin and open boot backs remain present.",
+      "cloak_anchors": [
+        {
+          "vertex": 0,
+          "position": [
+            -0.21337175369262695,
+            0.15378502011299133,
+            1.4575141668319702
+          ],
+          "weights": [
+            [
+              "upperarm_r",
+              0.8070916764526727
+            ],
+            [
+              "clavicle_r",
+              0.11675075830449812
+            ],
+            [
+              "spine_03",
+              0.0761575652428293
+            ]
+          ]
+        },
+        {
+          "vertex": 1,
+          "position": [
+            -0.15632009506225586,
+            0.14089435338974,
+            1.4427058696746826
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.4724712593230622
+            ],
+            [
+              "clavicle_r",
+              0.3212050906759948
+            ],
+            [
+              "upperarm_r",
+              0.1310949714655789
+            ],
+            [
+              "spine_02",
+              0.07522867853536408
+            ]
+          ]
+        },
+        {
+          "vertex": 2,
+          "position": [
+            -0.07576673477888107,
+            0.13979363441467285,
+            1.4667538404464722
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7145193595653521
+            ],
+            [
+              "neck_01",
+              0.12910234971065318
+            ],
+            [
+              "clavicle_r",
+              0.1262339244272692
+            ],
+            [
+              "spine_02",
+              0.030144366296725646
+            ]
+          ]
+        },
+        {
+          "vertex": 3,
+          "position": [
+            -0.04539930075407028,
+            0.13853082060813904,
+            1.490327000617981
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7334229891492203
+            ],
+            [
+              "neck_01",
+              0.1876077936022893
+            ],
+            [
+              "clavicle_r",
+              0.07896921724849032
+            ],
+            [
+              "upperarm_l",
+              0.0
+            ]
+          ]
+        },
+        {
+          "vertex": 4,
+          "position": [
+            0.0207997877150774,
+            0.1347508579492569,
+            1.4884010553359985
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7689608971713018
+            ],
+            [
+              "neck_01",
+              0.18930232623765966
+            ],
+            [
+              "clavicle_l",
+              0.04161018899959247
+            ],
+            [
+              "upperarm_r",
+              0.00012658759144607677
+            ]
+          ]
+        },
+        {
+          "vertex": 5,
+          "position": [
+            0.046045295894145966,
+            0.13855420053005219,
+            1.4902867078781128
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7334227725883448
+            ],
+            [
+              "neck_01",
+              0.1876079780073757
+            ],
+            [
+              "clavicle_l",
+              0.0789692494042795
+            ],
+            [
+              "upperarm_l",
+              0.0
+            ]
+          ]
+        },
+        {
+          "vertex": 6,
+          "position": [
+            0.07538365572690964,
+            0.13984788954257965,
+            1.4667129516601562
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7145185451347007
+            ],
+            [
+              "neck_01",
+              0.12910392216170719
+            ],
+            [
+              "clavicle_l",
+              0.1262341098877956
+            ],
+            [
+              "spine_02",
+              0.03014342281579642
+            ]
+          ]
+        },
+        {
+          "vertex": 7,
+          "position": [
+            0.13493287563323975,
+            0.1345682442188263,
+            1.4573832750320435
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.5083112472006597
+            ],
+            [
+              "clavicle_l",
+              0.34035525268346245
+            ],
+            [
+              "neck_01",
+              0.10078525981755723
+            ],
+            [
+              "spine_02",
+              0.05054824029832071
+            ]
+          ]
+        },
+        {
+          "vertex": 8,
+          "position": [
+            0.2124178260564804,
+            0.1535944789648056,
+            1.4571452140808105
+          ],
+          "weights": [
+            [
+              "upperarm_l",
+              0.8091993365132583
+            ],
+            [
+              "clavicle_l",
+              0.11643820144586577
+            ],
+            [
+              "spine_03",
+              0.07436246204087607
+            ]
+          ]
+        }
+      ],
+      "body_fit": "Heavier classic fantasy proportions; skin and clothing share one continuous shape field. Closed skin reduced before partitioning.",
+      "face_facial_hair": {
+        "broad": {
+          "beards": {
+            "full": [
+              "Male_broad_beards_full"
+            ],
+            "short": [
+              "Male_broad_beards_short"
+            ],
+            "long": [
+              "Male_broad_beards_long"
+            ],
+            "wizard": [
+              "Male_broad_beards_wizard"
+            ]
+          },
+          "moustaches": {
+            "classic": [
+              "Male_broad_moustaches_classic"
+            ]
+          }
+        },
+        "slender": {
+          "beards": {
+            "full": [
+              "Male_slender_beards_full"
+            ],
+            "short": [
+              "Male_slender_beards_short"
+            ],
+            "long": [
+              "Male_slender_beards_long"
+            ],
+            "wizard": [
+              "Male_slender_beards_wizard"
+            ]
+          },
+          "moustaches": {
+            "classic": [
+              "Male_slender_moustaches_classic"
+            ]
+          }
+        }
+      },
+      "authoring_surface": "Male_skin_continuous",
+      "scene": "res://assets/characters/male.glb"
+    },
+    "female": {
+      "rig": "RPG_Humanoid_Female",
+      "bones": 68,
+      "modules": {
+        "ranger_chest": {
+          "slot": "chest",
+          "hide_skin_zones": [
+            "covered_chest",
+            "covered_chest_legs"
+          ],
+          "objects": [
+            "Female_ranger_chest_0",
+            "Female_chest_sleeve_Female_ranger_arms_1"
+          ],
+          "file": "modules/female_ranger_chest.glb",
+          "triangles": 1785
+        },
+        "ranger_bracers": {
+          "slot": "bracers",
+          "hide_skin_zones": [
+            "covered_bracers"
+          ],
+          "objects": [
+            "Female_bracer_Female_ranger_arms_0",
+            "Female_bracer_Female_ranger_arms_1"
+          ],
+          "file": "modules/female_ranger_bracers.glb",
+          "triangles": 2352
+        },
+        "ranger_belt": {
+          "slot": "belt",
+          "hide_skin_zones": [],
+          "objects": [
+            "Female_ranger_chest_1",
+            "Female_ranger_chest_2"
+          ],
+          "file": "modules/female_ranger_belt.glb",
+          "triangles": 676
+        },
+        "ranger_legs": {
+          "slot": "legs",
+          "hide_skin_zones": [
+            "covered_legs",
+            "covered_chest_legs",
+            "covered_legs_feet"
+          ],
+          "objects": [
+            "Female_ranger_legs_0"
+          ],
+          "file": "modules/female_ranger_legs.glb",
+          "triangles": 506
+        },
+        "ranger_feet": {
+          "slot": "feet",
+          "hide_skin_zones": [
+            "covered_feet",
+            "covered_legs_feet"
+          ],
+          "objects": [
+            "Female_ranger_feet_0"
+          ],
+          "file": "modules/female_ranger_feet.glb",
+          "triangles": 3866
+        },
+        "ranger_helmet": {
+          "slot": "helmet",
+          "hide_skin_zones": [],
+          "hide_hair": false,
+          "hide_facial_hair": false,
+          "objects": [
+            "Female_ranger_head_0"
+          ],
+          "file": "modules/female_ranger_helmet.glb",
+          "triangles": 1030,
+          "hair_fit": "hood"
+        },
+        "ranger_shoulders": {
+          "slot": "shoulders",
+          "hide_skin_zones": [],
+          "objects": [
+            "Female_ranger_shoulders_0"
+          ],
+          "file": "modules/female_ranger_shoulders.glb",
+          "triangles": 579
+        },
+        "ranger_gloves": {
+          "slot": "gloves",
+          "hide_skin_zones": [
+            "covered_gloves"
+          ],
+          "objects": [
+            "Female_ranger_gloves"
+          ],
+          "file": "modules/female_ranger_gloves.glb",
+          "triangles": 1880
+        },
+        "ranger_cloak": {
+          "slot": "cloak",
+          "hide_skin_zones": [],
+          "objects": [
+            "female_ranger_cloak"
+          ],
+          "file": "modules/female_ranger_cloak.glb",
+          "triangles": 224,
+          "attachment": "Top row barycentrically bound to the fitted back surface; same vertex weights."
+        }
+      },
+      "skin_zones": {
+        "head": [
+          "Female_skin_head",
+          "Female_Eyes",
+          "Female_Eyebrows"
+        ],
+        "always_visible": [
+          "Female_skin_always_visible"
+        ],
+        "covered_chest": [
+          "Female_skin_covered_chest"
+        ],
+        "covered_bracers": [
+          "Female_skin_covered_bracers"
+        ],
+        "covered_gloves": [
+          "Female_skin_covered_gloves"
+        ],
+        "covered_feet": [
+          "Female_skin_covered_feet"
+        ],
+        "covered_legs": [
+          "Female_skin_covered_legs"
+        ],
+        "covered_chest_legs": [
+          "Female_skin_covered_chest_legs"
+        ],
+        "covered_legs_feet": [
+          "Female_skin_covered_legs_feet"
+        ]
+      },
+      "appearance": {
+        "faces": {
+          "standard": [
+            "Female_skin_head",
+            "Female_Eyes",
+            "Female_Eyebrows"
+          ],
+          "broad": [
+            "Female_skin_head_broad",
+            "Female_broad_Female_Eyes",
+            "Female_broad_Female_Eyebrows"
+          ],
+          "slender": [
+            "Female_skin_head_slender",
+            "Female_slender_Female_Eyes",
+            "Female_slender_Female_Eyebrows"
+          ]
+        },
+        "hair": {
+          "parted": [
+            "Female_hair_parted_0",
+            "Female_hair_scalp_underlay"
+          ],
+          "buzzed": [
+            "Female_hair_buzzed_0"
+          ],
+          "long": [
+            "Female_hair_long_0",
+            "Female_hair_scalp_underlay"
+          ],
+          "buns": [
+            "Female_hair_buns_0",
+            "Female_hair_scalp_underlay"
+          ],
+          "swept_back": [
+            "Female_hair_swept_back",
+            "Female_hair_scalp_underlay"
+          ],
+          "mohawk": [
+            "Female_hair_mohawk_cap",
+            "Female_hair_mohawk_ridge"
+          ],
+          "ponytail": [
+            "Female_hair_ponytail_cap",
+            "Female_hair_ponytail_tail",
+            "Female_hair_scalp_underlay"
+          ]
+        },
+        "beards": {
+          "full": [
+            "Female_beard_lower"
+          ],
+          "short": [
+            "Female_beard_short"
+          ],
+          "long": [
+            "Female_beard_long"
+          ],
+          "wizard": [
+            "Female_beard_wizard"
+          ]
+        },
+        "moustaches": {
+          "classic": [
+            "Female_moustache_separate"
+          ]
+        }
+      },
+      "colors": {
+        "hair": [
+          {
+            "material": "female_MI_Hair_2.001",
+            "images": {
+              "black": "T_Hair_2_BaseColor_1024_black.001",
+              "brown": "T_Hair_2_BaseColor_1024_brown.001",
+              "auburn": "T_Hair_2_BaseColor_1024_auburn.001",
+              "blond": "T_Hair_2_BaseColor_1024_blond.001",
+              "silver": "T_Hair_2_BaseColor_1024_silver.001"
+            }
+          },
+          {
+            "material": "female_MI_Hair_1.002",
+            "images": {
+              "black": "T_Hair_1_BaseColor_1024.002_black.001",
+              "brown": "T_Hair_1_BaseColor_1024.002_brown.001",
+              "auburn": "T_Hair_1_BaseColor_1024.002_auburn.001",
+              "blond": "T_Hair_1_BaseColor_1024.002_blond.001",
+              "silver": "T_Hair_1_BaseColor_1024.002_silver.001"
+            }
+          },
+          {
+            "material": "female_MI_Hair_2.002",
+            "images": {
+              "black": "T_Hair_2_BaseColor_1024.002_black.001",
+              "brown": "T_Hair_2_BaseColor_1024.002_brown.001",
+              "auburn": "T_Hair_2_BaseColor_1024.002_auburn.001",
+              "blond": "T_Hair_2_BaseColor_1024.002_blond.001",
+              "silver": "T_Hair_2_BaseColor_1024.002_silver.001"
+            }
+          }
+        ],
+        "eyes": [
+          {
+            "material": "female_MI_Eyes.001",
+            "images": {
+              "brown": "T_Eye_Brown_1024_brown.001",
+              "blue": "T_Eye_Brown_1024_blue.001",
+              "green": "T_Eye_Brown_1024_green.001",
+              "amber": "T_Eye_Brown_1024_amber.001",
+              "grey": "T_Eye_Brown_1024_grey.001"
+            }
+          }
+        ],
+        "solid_facial_hair": [
+          "female_HairSolid"
+        ],
+        "skin": [
+          {
+            "material": "Skin_Fitted_female",
+            "images": {
+              "porcelain": "v6_female_skin_porcelain",
+              "fair": "v6_female_skin_fair",
+              "warm": "v6_female_skin_warm",
+              "olive": "v6_female_skin_olive",
+              "brown": "v6_female_skin_brown",
+              "deep": "v6_female_skin_deep"
+            }
+          }
+        ],
+        "solid_hair_scale": 0.1
+      },
+      "animation": "Female_Equipment_Check",
+      "presets": {
+        "base": {
+          "lod0": "glb/female_base_lod0.glb",
+          "lod1": "glb/female_base_lod1.glb",
+          "triangles_lod0": 7886,
+          "triangles_lod1": 3943,
+          "objects": [
+            "Female_skin_covered_chest_legs",
+            "Female_hair_scalp_underlay",
+            "Female_skin_always_visible",
+            "Female_skin_covered_feet",
+            "Female_Eyes",
+            "Female_Eyebrows",
+            "Female_skin_covered_bracers",
+            "Female_hair_parted_0",
+            "Female_skin_head",
+            "Female_skin_covered_gloves",
+            "Female_skin_covered_legs_feet",
+            "Female_skin_covered_legs",
+            "Female_skin_covered_chest"
+          ]
+        },
+        "ranger": {
+          "lod0": "glb/female_ranger_lod0.glb",
+          "lod1": "glb/female_ranger_lod1.glb",
+          "triangles_lod0": 17534,
+          "triangles_lod1": 8762,
+          "objects": [
+            "Female_ranger_legs_0",
+            "Female_skin_always_visible",
+            "Female_chest_sleeve_Female_ranger_arms_1",
+            "Female_Eyes",
+            "Female_ranger_chest_2",
+            "Female_ranger_chest_1",
+            "Female_ranger_shoulders_0",
+            "Female_Eyebrows",
+            "Female_ranger_chest_0",
+            "Female_bracer_Female_ranger_arms_0",
+            "Female_hood_hair_parted",
+            "Female_ranger_head_0",
+            "Female_skin_head",
+            "female_ranger_cloak",
+            "Female_ranger_gloves",
+            "Female_bracer_Female_ranger_arms_1",
+            "Female_ranger_feet_0",
+            "Female_hood_hair_parted_001"
+          ]
+        }
+      },
+      "all_objects": [
+        "Female_Eyebrows",
+        "Female_Eyes",
+        "Female_beard_long",
+        "Female_beard_lower",
+        "Female_beard_short",
+        "Female_beard_wizard",
+        "Female_bracer_Female_ranger_arms_0",
+        "Female_bracer_Female_ranger_arms_1",
+        "Female_broad_Female_Eyebrows",
+        "Female_broad_Female_Eyes",
+        "Female_broad_beards_full",
+        "Female_broad_beards_long",
+        "Female_broad_beards_short",
+        "Female_broad_beards_wizard",
+        "Female_broad_moustaches_classic",
+        "Female_chest_sleeve_Female_ranger_arms_1",
+        "Female_hair_buns_0",
+        "Female_hair_buzzed_0",
+        "Female_hair_long_0",
+        "Female_hair_mohawk_cap",
+        "Female_hair_mohawk_ridge",
+        "Female_hair_parted_0",
+        "Female_hair_ponytail_cap",
+        "Female_hair_ponytail_tail",
+        "Female_hair_scalp_underlay",
+        "Female_hair_swept_back",
+        "Female_hood_hair_buns",
+        "Female_hood_hair_buns_001",
+        "Female_hood_hair_buzzed",
+        "Female_hood_hair_long",
+        "Female_hood_hair_long_001",
+        "Female_hood_hair_mohawk",
+        "Female_hood_hair_mohawk_001",
+        "Female_hood_hair_parted",
+        "Female_hood_hair_parted_001",
+        "Female_hood_hair_ponytail",
+        "Female_hood_hair_ponytail_001",
+        "Female_hood_hair_ponytail_002",
+        "Female_hood_hair_swept_back",
+        "Female_hood_hair_swept_back_001",
+        "Female_moustache_separate",
+        "Female_ranger_chest_0",
+        "Female_ranger_chest_1",
+        "Female_ranger_chest_2",
+        "Female_ranger_feet_0",
+        "Female_ranger_gloves",
+        "Female_ranger_head_0",
+        "Female_ranger_legs_0",
+        "Female_ranger_shoulders_0",
+        "Female_skin_always_visible",
+        "Female_skin_covered_bracers",
+        "Female_skin_covered_chest",
+        "Female_skin_covered_chest_legs",
+        "Female_skin_covered_feet",
+        "Female_skin_covered_gloves",
+        "Female_skin_covered_legs",
+        "Female_skin_covered_legs_feet",
+        "Female_skin_head",
+        "Female_skin_head_broad",
+        "Female_skin_head_slender",
+        "Female_slender_Female_Eyebrows",
+        "Female_slender_Female_Eyes",
+        "Female_slender_beards_full",
+        "Female_slender_beards_long",
+        "Female_slender_beards_short",
+        "Female_slender_beards_wizard",
+        "Female_slender_moustaches_classic",
+        "female_ranger_cloak"
+      ],
+      "appearance_exports": {
+        "faces_standard": "modules/female_faces_standard.glb",
+        "faces_broad": "modules/female_faces_broad.glb",
+        "faces_slender": "modules/female_faces_slender.glb",
+        "hair_parted": "modules/female_hair_parted.glb",
+        "hair_buzzed": "modules/female_hair_buzzed.glb",
+        "hair_long": "modules/female_hair_long.glb",
+        "hair_buns": "modules/female_hair_buns.glb",
+        "hair_swept_back": "modules/female_hair_swept_back.glb",
+        "hair_mohawk": "modules/female_hair_mohawk.glb",
+        "hair_ponytail": "modules/female_hair_ponytail.glb",
+        "beards_full": "modules/female_beards_full.glb",
+        "beards_short": "modules/female_beards_short.glb",
+        "beards_long": "modules/female_beards_long.glb",
+        "beards_wizard": "modules/female_beards_wizard.glb",
+        "moustaches_classic": "modules/female_moustaches_classic.glb",
+        "hood_hair_parted": "modules/female_hood_hair_parted.glb",
+        "hood_hair_buzzed": "modules/female_hood_hair_buzzed.glb",
+        "hood_hair_long": "modules/female_hood_hair_long.glb",
+        "hood_hair_buns": "modules/female_hood_hair_buns.glb",
+        "hood_hair_swept_back": "modules/female_hood_hair_swept_back.glb",
+        "hood_hair_mohawk": "modules/female_hood_hair_mohawk.glb",
+        "hood_hair_ponytail": "modules/female_hood_hair_ponytail.glb",
+        "broad_beards_full": "modules/female_broad_beards_full.glb",
+        "broad_beards_short": "modules/female_broad_beards_short.glb",
+        "broad_beards_long": "modules/female_broad_beards_long.glb",
+        "broad_beards_wizard": "modules/female_broad_beards_wizard.glb",
+        "broad_moustaches_classic": "modules/female_broad_moustaches_classic.glb",
+        "slender_beards_full": "modules/female_slender_beards_full.glb",
+        "slender_beards_short": "modules/female_slender_beards_short.glb",
+        "slender_beards_long": "modules/female_slender_beards_long.glb",
+        "slender_beards_wizard": "modules/female_slender_beards_wizard.glb",
+        "slender_moustaches_classic": "modules/female_slender_moustaches_classic.glb"
+      },
+      "appearance_labels": {
+        "beards": {
+          "short": "Short",
+          "full": "Full",
+          "long": "Long",
+          "wizard": "Wizard"
+        },
+        "moustaches": {
+          "classic": "Classic"
+        }
+      },
+      "hood_hair": {
+        "parted": [
+          "Female_hood_hair_parted",
+          "Female_hood_hair_parted_001"
+        ],
+        "buzzed": [
+          "Female_hood_hair_buzzed"
+        ],
+        "long": [
+          "Female_hood_hair_long",
+          "Female_hood_hair_long_001"
+        ],
+        "buns": [
+          "Female_hood_hair_buns",
+          "Female_hood_hair_buns_001"
+        ],
+        "swept_back": [
+          "Female_hood_hair_swept_back",
+          "Female_hood_hair_swept_back_001"
+        ],
+        "mohawk": [
+          "Female_hood_hair_mohawk",
+          "Female_hood_hair_mohawk_001"
+        ],
+        "ponytail": [
+          "Female_hood_hair_ponytail",
+          "Female_hood_hair_ponytail_001",
+          "Female_hood_hair_ponytail_002"
+        ]
+      },
+      "body_mask_policy": "Conservative complete triangle coverage; shared borders reduced before splitting. Exposed groin and open boot backs remain present.",
+      "cloak_anchors": [
+        {
+          "vertex": 0,
+          "position": [
+            -0.1572105437517166,
+            0.10190791636705399,
+            1.4241666793823242
+          ],
+          "weights": [
+            [
+              "upperarm_r",
+              0.7182206943564597
+            ],
+            [
+              "clavicle_r",
+              0.18720166046499592
+            ],
+            [
+              "spine_03",
+              0.09457764517854436
+            ]
+          ]
+        },
+        {
+          "vertex": 1,
+          "position": [
+            -0.10438545048236847,
+            0.10769249498844147,
+            1.4032307863235474
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.5452788023323767
+            ],
+            [
+              "clavicle_r",
+              0.36172772753879306
+            ],
+            [
+              "upperarm_r",
+              0.061298098252009464
+            ],
+            [
+              "spine_02",
+              0.03169537187682075
+            ]
+          ]
+        },
+        {
+          "vertex": 2,
+          "position": [
+            -0.05800684168934822,
+            0.11899696290493011,
+            1.4169654846191406
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7528369077783683
+            ],
+            [
+              "clavicle_r",
+              0.18235926634102456
+            ],
+            [
+              "neck_01",
+              0.06086577157380008
+            ],
+            [
+              "upperarm_r",
+              0.003938054306807074
+            ]
+          ]
+        },
+        {
+          "vertex": 3,
+          "position": [
+            -0.039269834756851196,
+            0.12001252174377441,
+            1.4244399070739746
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7776156377824849
+            ],
+            [
+              "clavicle_r",
+              0.13583144858901067
+            ],
+            [
+              "neck_01",
+              0.08495480804196096
+            ],
+            [
+              "clavicle_l",
+              0.0015981055865435247
+            ]
+          ]
+        },
+        {
+          "vertex": 4,
+          "position": [
+            -0.017576955258846283,
+            0.11805211752653122,
+            1.4348636865615845
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7702634094648829
+            ],
+            [
+              "clavicle_r",
+              0.11519120816917615
+            ],
+            [
+              "neck_01",
+              0.10560354161409213
+            ],
+            [
+              "clavicle_l",
+              0.008941840751848782
+            ]
+          ]
+        },
+        {
+          "vertex": 5,
+          "position": [
+            0.03926974907517433,
+            0.12001269310712814,
+            1.4244393110275269
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7776164739993401
+            ],
+            [
+              "clavicle_l",
+              0.13583123334367253
+            ],
+            [
+              "neck_01",
+              0.08495417651497156
+            ],
+            [
+              "clavicle_r",
+              0.0015981161420157938
+            ]
+          ]
+        },
+        {
+          "vertex": 6,
+          "position": [
+            0.05806184932589531,
+            0.11911541223526001,
+            1.416354775428772
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.7528373738715249
+            ],
+            [
+              "clavicle_l",
+              0.18235893927052016
+            ],
+            [
+              "neck_01",
+              0.06086559444588425
+            ],
+            [
+              "upperarm_l",
+              0.0039380924120707116
+            ]
+          ]
+        },
+        {
+          "vertex": 7,
+          "position": [
+            0.1043868139386177,
+            0.1076919287443161,
+            1.4032318592071533
+          ],
+          "weights": [
+            [
+              "spine_03",
+              0.5452698273176488
+            ],
+            [
+              "clavicle_l",
+              0.3617347788021943
+            ],
+            [
+              "upperarm_l",
+              0.061301381874377225
+            ],
+            [
+              "spine_02",
+              0.03169401200577961
+            ]
+          ]
+        },
+        {
+          "vertex": 8,
+          "position": [
+            0.15720900893211365,
+            0.10190826654434204,
+            1.424166202545166
+          ],
+          "weights": [
+            [
+              "upperarm_l",
+              0.7182066879036687
+            ],
+            [
+              "clavicle_l",
+              0.18721074671161544
+            ],
+            [
+              "spine_03",
+              0.09458256538471584
+            ]
+          ]
+        }
+      ],
+      "body_fit": "Heavier classic fantasy proportions; skin and clothing share one continuous shape field. Closed skin reduced before partitioning.",
+      "face_facial_hair": {
+        "broad": {
+          "beards": {
+            "full": [
+              "Female_broad_beards_full"
+            ],
+            "short": [
+              "Female_broad_beards_short"
+            ],
+            "long": [
+              "Female_broad_beards_long"
+            ],
+            "wizard": [
+              "Female_broad_beards_wizard"
+            ]
+          },
+          "moustaches": {
+            "classic": [
+              "Female_broad_moustaches_classic"
+            ]
+          }
+        },
+        "slender": {
+          "beards": {
+            "full": [
+              "Female_slender_beards_full"
+            ],
+            "short": [
+              "Female_slender_beards_short"
+            ],
+            "long": [
+              "Female_slender_beards_long"
+            ],
+            "wizard": [
+              "Female_slender_beards_wizard"
+            ]
+          },
+          "moustaches": {
+            "classic": [
+              "Female_slender_moustaches_classic"
+            ]
+          }
+        }
+      },
+      "authoring_surface": "Female_skin_continuous",
+      "scene": "res://assets/characters/female.glb"
+    }
+  },
+  "palettes": {
+    "hair": {
+      "black": [
+        0.024,
+        0.018,
+        0.015
+      ],
+      "brown": [
+        0.19,
+        0.085,
+        0.035
+      ],
+      "auburn": [
+        0.33,
+        0.065,
+        0.025
+      ],
+      "blond": [
+        0.63,
+        0.4,
+        0.14
+      ],
+      "silver": [
+        0.62,
+        0.65,
+        0.7
+      ]
+    },
+    "eyes": {
+      "brown": [
+        0.25,
+        0.105,
+        0.035
+      ],
+      "blue": [
+        0.04,
+        0.24,
+        0.56
+      ],
+      "green": [
+        0.08,
+        0.3,
+        0.12
+      ],
+      "amber": [
+        0.58,
+        0.3,
+        0.035
+      ],
+      "grey": [
+        0.24,
+        0.27,
+        0.3
+      ]
+    },
+    "skin": {
+      "porcelain": [
+        0.96,
+        0.83,
+        0.76
+      ],
+      "fair": [
+        0.87,
+        0.69,
+        0.57
+      ],
+      "warm": [
+        0.74,
+        0.51,
+        0.35
+      ],
+      "olive": [
+        0.62,
+        0.46,
+        0.3
+      ],
+      "brown": [
+        0.43,
+        0.27,
+        0.17
+      ],
+      "deep": [
+        0.26,
+        0.15,
+        0.09
+      ]
+    }
+  },
+  "palette_images": {
+    "T_Hair_1_BaseColor_1024_black.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_hair_black.png",
+    "T_Hair_1_BaseColor_1024_brown.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_hair_brown.png",
+    "T_Hair_1_BaseColor_1024_auburn.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_hair_auburn.png",
+    "T_Hair_1_BaseColor_1024_blond.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_hair_blond.png",
+    "T_Hair_1_BaseColor_1024_silver.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_hair_silver.png",
+    "T_Eye_Brown_1024_brown.001": "res://assets/palettes/T_Eye_Brown_1024_eyes_brown.png",
+    "T_Eye_Brown_1024_blue.001": "res://assets/palettes/T_Eye_Brown_1024_eyes_blue.png",
+    "T_Eye_Brown_1024_green.001": "res://assets/palettes/T_Eye_Brown_1024_eyes_green.png",
+    "T_Eye_Brown_1024_amber.001": "res://assets/palettes/T_Eye_Brown_1024_eyes_amber.png",
+    "T_Eye_Brown_1024_grey.001": "res://assets/palettes/T_Eye_Brown_1024_eyes_grey.png",
+    "T_Hair_2_BaseColor_1024.002_black.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_002_hair_black.png",
+    "T_Hair_2_BaseColor_1024.002_brown.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_002_hair_brown.png",
+    "T_Hair_2_BaseColor_1024.002_auburn.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_002_hair_auburn.png",
+    "T_Hair_2_BaseColor_1024.002_blond.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_002_hair_blond.png",
+    "T_Hair_2_BaseColor_1024.002_silver.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_002_hair_silver.png",
+    "T_Hair_1_BaseColor_1024.002_black.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_002_hair_black.png",
+    "T_Hair_1_BaseColor_1024.002_brown.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_002_hair_brown.png",
+    "T_Hair_1_BaseColor_1024.002_auburn.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_002_hair_auburn.png",
+    "T_Hair_1_BaseColor_1024.002_blond.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_002_hair_blond.png",
+    "T_Hair_1_BaseColor_1024.002_silver.001": "res://assets/palettes/T_Hair_1_BaseColor_1024_002_hair_silver.png",
+    "T_Hair_2_BaseColor_1024_black.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_hair_black.png",
+    "T_Hair_2_BaseColor_1024_brown.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_hair_brown.png",
+    "T_Hair_2_BaseColor_1024_auburn.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_hair_auburn.png",
+    "T_Hair_2_BaseColor_1024_blond.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_hair_blond.png",
+    "T_Hair_2_BaseColor_1024_silver.001": "res://assets/palettes/T_Hair_2_BaseColor_1024_hair_silver.png",
+    "v6_male_skin_porcelain": "res://assets/palettes/male_skin_porcelain.png",
+    "v6_male_skin_fair": "res://assets/palettes/male_skin_fair.png",
+    "v6_male_skin_warm": "res://assets/palettes/male_skin_warm.png",
+    "v6_male_skin_olive": "res://assets/palettes/male_skin_olive.png",
+    "v6_male_skin_brown": "res://assets/palettes/male_skin_brown.png",
+    "v6_male_skin_deep": "res://assets/palettes/male_skin_deep.png",
+    "v6_female_skin_porcelain": "res://assets/palettes/female_skin_porcelain.png",
+    "v6_female_skin_fair": "res://assets/palettes/female_skin_fair.png",
+    "v6_female_skin_warm": "res://assets/palettes/female_skin_warm.png",
+    "v6_female_skin_olive": "res://assets/palettes/female_skin_olive.png",
+    "v6_female_skin_brown": "res://assets/palettes/female_skin_brown.png",
+    "v6_female_skin_deep": "res://assets/palettes/female_skin_deep.png"
+  }
+}
