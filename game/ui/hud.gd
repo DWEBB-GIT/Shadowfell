@@ -380,6 +380,9 @@ func _build() -> void:
 
 	# the prompt: a key badge and what it does (#prompt)
 	prompt = UI.panel(root, 0)
+	prompt.mouse_filter = Control.MOUSE_FILTER_STOP
+	prompt.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	prompt.gui_input.connect(_prompt_input)
 	prompt.add_theme_stylebox_override("panel", UI.frame(Vector4(14, 5, 14, 5)))
 	var ph := UI.hbox(prompt, 8)
 	prompt_key = UI.label(ph, "", 12, UI.GOLD)
@@ -973,8 +976,15 @@ func bottom_top() -> float:
 
 
 ## is a screen point over the fixed HUD (not a window)?
+func _prompt_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
+		prompt.accept_event()
+		game.input.consume_click()
+		game.move_to=null
+		if modal==null and game.interaction.current!=null:game.interaction.interact()
+
 func over_hud(at: Vector2) -> bool:
-	for c in [char_panel, target, bottom, dock, belt, menus, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party]:
+	for c in [char_panel, target, bottom, dock, belt, menus, minimap, quests.tracker, log_tabs, log_scroll, log_grip, party, prompt]:
 		if c.is_visible_in_tree() and c.get_global_rect().has_point(at):
 			return true
 	return false
@@ -985,7 +995,7 @@ func over_hud(at: Vector2) -> bool:
 ## and the item windows do not.
 var blocks_gameplay: bool:
 	get:
-		return modal == "title" or modal == "document" or modal == "loading" or modal == "confirm"
+		return modal == "title" or modal == "document" or modal == "loading" or modal == "confirm" or modal == "arrival"
 
 ## any of the item, quest or dialogue windows
 var any_window_open: bool:

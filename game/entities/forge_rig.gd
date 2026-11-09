@@ -49,12 +49,15 @@ func _init(m: Node3D, owner_player = null) -> void:
 	actor = owner_player
 	_skel = m.find_children("*", "Skeleton3D", true, false)[0]
 
-func weapon_clip(hand: String="main") -> String:
-	if actor==null:return "Sword_Attack"
+func weapon_kind(hand: String="main") -> String:
+	if actor==null:return ""
 	var item=actor.game.inventory.equipment.get("offHand" if hand=="off" else "mainHand")
-	var kind:String=Items.get_def(item.id).get("weaponType","") if item else ""
-	if kind=="dagger":return "Dagger_Stab"
-	if kind=="twoHand":return "Sword_Heavy_Combo"
+	return Items.get_def(item.id).get("weaponType","") if item else ""
+
+func weapon_clip(hand: String="main") -> String:
+	# Daggers share the one-handed sword's normal slashes. A thrusting
+	# ability chooses the dedicated stab explicitly in resolve_action().
+	if weapon_kind(hand)=="twoHand":return "Sword_Heavy_Combo"
 	return "Sword_Attack"
 
 func _make_dagger_clip() -> void:
@@ -83,9 +86,10 @@ func _make_dagger_clip() -> void:
 	clip=""
 	_clip("Idle",1.0,true)
 
-func resolve_action(type: String) -> String:
-	if type in ["strike","diagonal","overhead","thrust","jab","upstab","rip","quickStrike","slam","cleave","sweep","spinStrike","scissor","heavyOverhead","gavel"]:
-		return weapon_clip()
+func resolve_action(type: String, hand: String="main") -> String:
+	if type in ["thrust","jab","upstab"] and weapon_kind(hand)=="dagger":
+		return "Dagger_Stab"
+	if type=="strike":return weapon_clip(hand)
 	match type:
 		"shoot", "snapShot", "twistDraw", "fanShot", "longDraw", "loose": return "Spell_Simple_Shoot"
 		"guard", "brace", "liftShield", "shieldSlam", "shieldThrust": return "Shield_OneShot"
@@ -233,7 +237,7 @@ func _sample(name: String, at: float, weight: float, upper_only: bool) -> void:
 					_skel.set_bone_pose_position(bone, _skel.get_bone_pose_position(bone).lerp(a.position_track_interpolate(i, at), weight))
 
 func _mirror_off() -> void:
-	last_off_clip=weapon_clip("off")
+	last_off_clip=resolve_action(off_action.get("type","strike"),"off")
 	var clip_name:= "Dagger_Stab_L" if last_off_clip=="Dagger_Stab" else last_off_clip
 	var a := anim.get_animation(clip_name)
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
@@ -366,9 +370,9 @@ func _fit_hands() -> void:
 		if item:_curl_fingers("r")
 		if equipment.get("offHand"):_curl_fingers("l")
 		return
-	if action!=null and weapon_clip()=="Dagger_Stab" and resolve_action(action.type)=="Dagger_Stab":
+	if action!=null and resolve_action(action.type)=="Dagger_Stab":
 		_fit_dagger_stab("r",action)
-	if off_action!=null and weapon_clip("off")=="Dagger_Stab":
+	if off_action!=null and resolve_action(off_action.get("type","strike"),"off")=="Dagger_Stab":
 		_fit_dagger_stab("l",off_action)
 	if item and Items.get_def(item.id).get("weaponType") == "twoHand":
 		var local_grip: Transform3D = model.get_meta("palm_grip_r")

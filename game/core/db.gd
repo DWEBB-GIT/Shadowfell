@@ -325,6 +325,13 @@ static func setup(data) -> void:
 				swap.call(t)
 		for t in skills.values() + recipes.values():
 			swap.call(t)
+		for skill in skills.values():
+			for lesson in skill.get("train", []):
+				swap.call(lesson)
+				# Keep skill/coin requirements, but a quest on the retired
+				# continent must not permanently cap a new-map profession.
+				var gate: Dictionary = quests.get(lesson.get("quest", ""), {})
+				if not gate.is_empty() and gate.get("map", "act1") != "new":lesson.erase("quest")
 		# An opening belongs to the map whose giver is actually present.
 		# The legacy cart quest must not auto-start on a different continent.
 		quests = quests.duplicate(true)

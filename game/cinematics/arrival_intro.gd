@@ -8,6 +8,8 @@ const SEEN_FLAG := "mk_arrival_seen"
 @export var chapter_title := "The West Road"
 @export var chapter_location := "Thornford Reach"
 @export_multiline var hero_caption := "No coin. No title.\nA place to begin."
+@export var track_authored_cart := true
+@export var cart_aim_offset := Vector3(0,1.2,0)
 @export var aim_blend := 0.0
 @export var handoff := 0.0
 @export var chapter_alpha := 0.0
@@ -33,6 +35,8 @@ var _skip_switched := false
 var _game_pose := Transform3D.IDENTITY
 var _game_fov := 39.0
 var _hud_colour := Color.WHITE
+var _player_light_position := Vector3.ZERO
+var _local_idles: Array = []
 var _old_modal = null
 var _layer: CanvasLayer
 var _screen: Control
@@ -73,17 +77,16 @@ func begin() -> bool:
 	_game_pose = game.camera.global_transform
 	_game_fov = game.camera.fov
 	_hud_colour = game.hud.root.modulate
+	_player_light_position = game.player_light.position
 	_old_modal = game.hud.modal
 	global_position = game.player.position
 	# Follow an authored cart when the designer moves the starting area.
-	cart_focus.position = Vector3(-6, 1.6, 5)
-	for prop in Layout.props:
-		if prop.get("id") == "ni_cart":
-			var at := Vector3(prop.position[0], Terrain.height_at(prop.position[0],prop.position[1])+1.2, prop.position[1])
-			if at.distance_to(global_position) < 35: cart_focus.global_position = at
-			break
-	hero_focus.position = Vector3(0, 1.25, 0)
-	film_camera.near = 0.18
+	if track_authored_cart:
+		for prop in Layout.props:
+			if prop.get("id") == "ni_cart":
+				var at := Vector3(prop.position[0], Terrain.height_at(prop.position[0],prop.position[1]), prop.position[1])+cart_aim_offset
+				if at.distance_to(global_position) < 35: cart_focus.global_position = at
+				break
 	film_camera.far = game.camera.far
 	game.move_to = null
 	game.targeting.clear()
@@ -93,6 +96,15 @@ func begin() -> bool:
 	game.player.casting = null
 	game.player.moving = false
 	game.player.rig.action = null
+	# Streaming of NPC bodies normally happens in gameplay. Attach them once
+	# before the reveal so the carrier never appears after the camera flight.
+	game.npcs.update(0)
+	game.enemies.update(0)
+	_local_idles.clear()
+	for npc in game.npcs.list:
+		if npc.position.distance_to(game.player.position) < 32: _local_idles.append(npc.rig)
+	for enemy in game.enemies.list:
+		if not enemy.dead and enemy.position.distance_to(game.player.position) < 32: _local_idles.append(enemy.rig)
 	elapsed = 0.0
 	skipping = false
 	skip_elapsed = 0.0
@@ -125,6 +137,7 @@ func advance(dt: float) -> void:
 	game.time += dt
 	game.player.rig.update(dt, 0)
 	game.player._sync()
+	for idle in _local_idles: idle.update(dt, 0)
 	# Keep the air, water and idle pose alive; enemies and gameplay do not advance.
 	game.world.update(dt, Time.get_ticks_msec()/1000.0)
 	game.water_and_dark.update(dt, game.time)
@@ -176,6 +189,12 @@ func _point_camera() -> void:
 		film_camera.global_transform = film_camera.global_transform.interpolate_with(_game_pose, smoothstep(0,1,handoff))
 		film_camera.fov = lerpf(film_camera.fov, _game_fov, smoothstep(0,1,handoff))
 		game.world.set_cutaway(film_camera.global_position, hero_focus.global_position)
+		# Reuse the existing shadowless player fill for a readable portrait.
+		# Its position blends home with the camera; no extra light is created.
+		var toward: Vector3 = film_camera.global_position-game.player.position
+		toward.y = 0
+		var fill: Vector3 = game.player.position+toward.normalized()*1.8+Vector3.UP*2.4
+		game.player_light.position = fill.lerp(_player_light_position,smoothstep(0,1,handoff))
 
 func request_skip() -> void:
 	if not active or skipping: return
@@ -189,6 +208,7 @@ func _finish(was_skipped: bool) -> void:
 	game.camera.global_transform = _game_pose
 	game.camera.fov = _game_fov
 	game.camera.make_current()
+	game.player_light.position = _player_light_position
 	game.hud.root.modulate = _hud_colour
 	game.hud.loading.arrival_hold = false
 	game.hud.loading.visible = false
@@ -203,14 +223,17 @@ func _finish(was_skipped: bool) -> void:
 	game.input.mouse.rightHeld = false
 	game.world.set_cutaway(game.camera.global_position, game.player.position+Vector3(0,1.2,0))
 	_music.stop()
+	_local_idles.clear()
 	_layer.hide()
 	active = false
+	game.save.autosave()
 	finished.emit(was_skipped)
 
 func _start_music() -> void:
 	_music.stop()
 	if reduced or game.audio.music == null or game.audio.music.stream == null: return
 	_music.stream = game.audio.music.stream
+	_music.bus = "Music"
 	_music.volume_db = -80
 	_music.play()
 
@@ -269,6 +292,7 @@ func _build_presentation() -> void:
 	kicker.add_theme_constant_override("outline_size",4)
 	kicker.add_theme_color_override("font_outline_color",Color.BLACK)
 	var title := UI.logo(_chapter,chapter_title,38)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_color_override("font_color",Color("fff0cd"))
 	title.add_theme_color_override("font_outline_color",Color("17100a"))
 	title.add_theme_constant_override("outline_size",5)
@@ -313,4 +337,5 @@ func _rect(parent: Node, colour: Color, fill := true) -> ColorRect:
 
 func _exit_tree() -> void:
 	active = false
+	_local_idles.clear()
 	game = null

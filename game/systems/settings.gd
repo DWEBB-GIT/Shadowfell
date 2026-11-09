@@ -26,6 +26,8 @@ const SETTINGS := [
 	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
 	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 31, "min": 12, "max": 70, "unit": " m"},
 	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 39, "min": 15, "max": 75, "unit": "°"},
+	{"id": "openingCinematic", "label": "Cinematic arrival for new characters", "tab": "controls", "group": "Arrival", "default": true},
+	{"id": "reducedOpeningMotion", "label": "Reduced opening motion (simple fade instead of a camera flight)", "tab": "controls", "default": false},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},
 	{"id": "soundOn", "label": "Enable sound", "tab": "audio", "default": true},
 	{"id": "outputDevice", "label": "Output device", "tab": "audio", "default": "Default", "choice": true},
