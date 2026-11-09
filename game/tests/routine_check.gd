@@ -164,6 +164,8 @@ func _night_things() -> void:
 	check(game.enemies.list.has(e) and not game.enemies.dormant.has(e), "and back after dark")
 	e.active_hours = null
 	check(Quests.condition_holds(game, {"hours": [21, 5]}) and not Quests.condition_holds(game, {"hours": [6, 18]}), "conditions can ask the hour")
+	# a fresh character only holds the road-in quest, so finish it to put the next on offer
+	game.quests.done["ni_stretch_your_legs"] = true
 	var open: Array = DB.quests.values().filter(func(q): return game.quests.status(q.id) == "available")
 	check(not open.is_empty(), "a quest on offer to test with")
 	if open.is_empty():
