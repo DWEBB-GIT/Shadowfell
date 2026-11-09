@@ -73,3 +73,37 @@ func _run() -> void:
 	game.time += float(e.def.respawn) + 1.0
 	loot.update(0.1, game.time)
 	check(e.group.visible and loot.available(e), "it grows back on its timer")
+	_herbs()
+
+
+## Dan's 2026-11-09 ask: real herbs on the new map, picked like ores, with
+## wild garlic among them so the Pan-fried Perch has a source past Hobb.
+func _herbs() -> void:
+	var g = game.gathering
+	var groups: Array = DB.nodes.get("nodeGroups", [])
+	check(groups.size() >= 5, "the new map has its own herb grounds (%d)" % groups.size())
+	var dry := 0
+	for gr in groups:
+		for k in gr.kinds:
+			check(not Gathering.kind_def(k.kind).is_empty(), "%s grows a known herb (%s)" % [gr.id, k.kind])
+		for p in gr.spots:
+			if not Terrain.walkable(p[0], p[1]):
+				dry += 1
+	check(dry == 0, "every herb spot stands on walkable ground (%d not)" % dry)
+	check(groups.any(func(gr): return gr.kinds.any(func(k): return k.kind == "wild_garlic")), "wild garlic grows wild somewhere")
+	check(g.live().size() == groups.reduce(func(a, x): return a + int(x.live), 0), "every herb ground grows its live herbs")
+	# force a garlic patch and pick it
+	var n: Dictionary = g.nodes.filter(func(x): return x.kind != "")[0]
+	n.kind = "wild_garlic"
+	g._paint(n)
+	check(n.model.ends_with("Flower_3_Group.gltf") and n.node.get_child_count() == 1, "each herb kind shows its own plant")
+	game.inventory.coins += 100
+	check(game.skills.learn("herbalism"), "Herbalism can be learned on the new map")
+	var had: int = game.inventory.count("wild_garlic")
+	game.player.place_at(n.x + 1.0, n.z)
+	check(g.start(n), "picking wild garlic starts")
+	var time: float = game.time + 10.0
+	for i in 4:
+		time += 1.0
+		g.update(1.0, time)
+	check(game.inventory.count("wild_garlic") > had, "wild garlic from the herb goes in the bags")
