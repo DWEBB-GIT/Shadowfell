@@ -41,18 +41,12 @@ func _build() -> void:
 			var p: Array = g.spots[i]
 			var node := Node3D.new()
 			node.name = "Herb_%s_%d" % [g.id, i]
-			var model := Assets.instance(t.get("model", "pine"))
-			model.scale *= t.get("scale", 0.16)
-			node.add_child(model)
 			node.position = Vector3(p[0], Terrain.height_at(p[0], p[1]), p[1])
 			node.rotation.y = fmod(p[0] * 11.3 + p[1] * 5.7, TAU)
 			node.visible = false
 			game.world.stream.add_view(node, game.scene, p[0], p[1])
-			var mats := Rig.isolate_materials(model)
-			for m in mats:
-				if m is BaseMaterial3D:
-					m.set_meta("base", m.albedo_color)
-			nodes.append({"group": g, "i": i, "x": float(p[0]), "z": float(p[1]), "node": node, "mats": mats, "kind": "", "seed": randf() * 6})
+			# the plant itself is made when a kind grows here (_paint)
+			nodes.append({"group": g, "i": i, "x": float(p[0]), "z": float(p[1]), "node": node, "mats": [], "model": "", "kind": "", "seed": randf() * 6})
 	# a station that names a model (an alchemy bench) stands where it is
 	for st in Layout.stations:
 		if st.has("model"):
@@ -101,7 +95,23 @@ func _paint(n: Dictionary) -> void:
 	n.node.visible = n.kind != ""
 	if n.kind == "":
 		return
-	var colour := Color(kind_def(n.kind).get("tint", "#ffffff"))
+	var k := kind_def(n.kind)
+	var t := tuning()
+	var model_id: String = k.get("model", t.get("model", "pine"))
+	if n.model != model_id:
+		# each kind has its own plant: swap it when a different kind grows
+		for c in n.node.get_children():
+			n.node.remove_child(c)
+			c.queue_free()
+		var model := Assets.instance(model_id)
+		model.scale *= float(k.get("scale", t.get("scale", 0.16)))
+		n.node.add_child(model)
+		n.mats = Rig.isolate_materials(model)
+		for m in n.mats:
+			if m is BaseMaterial3D:
+				m.set_meta("base", m.albedo_color)
+		n.model = model_id
+	var colour := Color(k.get("tint", "#ffffff"))
 	for m in n.mats:
 		if m is BaseMaterial3D:
 			m.albedo_color = m.get_meta("base", Color.WHITE) * colour
