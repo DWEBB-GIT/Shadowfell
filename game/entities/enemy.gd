@@ -445,6 +445,9 @@ const ANIMATE_RANGE := 45.0
 var _flash_shown := false
 
 
+var idle_dt := 0.0 ## time saved up while idle out of sight (Enemies.update)
+
+
 func update(dt: float, player) -> void:
 	# the hit flash: materials are only touched while it shows (and once
 	# more to clear it), not every frame for every enemy in the world

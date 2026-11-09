@@ -48,7 +48,7 @@ func _process(_d: float) -> bool:
 	_t("merchant+dialogue", func(): g.merchant.update(); g.dialogue.update())
 	_t("telegraphs", func(): g.telegraphs.update(dt))
 	_t("targeting", func(): g.targeting.update(dt, g.raw_aim, 3.0))
-	_t("interaction", func(): g.interaction.update())
+	_t("interaction", func(): g.interaction.update(true))
 	_t("  candidates", func(): g.interaction._candidates())
 	_t("  candidates(12)", func(): g.interaction._candidates(12.0))
 	_t("  grave", func(): g.grave.interactions())
