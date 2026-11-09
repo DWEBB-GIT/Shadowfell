@@ -46,7 +46,9 @@ func _run() -> void:
 	var dt := 1.0 / 60.0
 	var rig: Rig = game.player.rig
 	check(rig.anim != null, "the player is an imported, skinned model")
-	if rig.anim:
+	if rig is ForgeRig:
+		_forge_swing(rig, dt)
+	elif rig.anim:
 		# standing, the swing is the whole body's
 		for i in 30:
 			rig.update(dt, 0.0)
@@ -153,3 +155,39 @@ func _run() -> void:
 		check(game.inventory.coins == coins + int(victim.cfg.coins) and not ws.ground.has(pile), "and the coins go to the purse (%d)" % game.inventory.coins)
 
 	check(AudioSystem.TRIM.get("step_dirt", 1.0) < 1.0 and AudioSystem.TRIM.get("panel", 1.0) < 1.0 and AudioSystem.TRIM.get("sheathe", 1.0) < 1.0, "footsteps, panels and sheathing are turned down")
+
+
+## The forge character (ForgeRig, Dan 2026-11-09): the swing is sampled over
+## the locomotion clip, the whole body standing and the waist up on the run.
+func _forge_swing(rig: ForgeRig, dt: float) -> void:
+	for i in 30:
+		rig.update(dt, 0.0)
+	rig.play("strike", 0.5, 0.4)
+	rig.update(dt, 0.0)
+	check(rig.action != null and rig.clip == "Idle" and not rig._moving(), "standing, the whole body swings (%s over %s)" % [rig.last_action_clip, rig.clip])
+	for i in 40:
+		rig.update(dt, 0.0)
+	for i in 30:
+		rig.update(dt, 1.0)
+	rig.play("strike", 0.5, 0.4)
+	for i in 10:
+		rig.update(dt, 1.0)
+	check(rig.clip == "Jog_Fwd", "running, the legs keep the run clip while attacking (%s)" % rig.clip)
+	check(rig.action != null and rig._moving() and rig.anim.has_animation(rig.last_action_clip), "and the upper body plays the swing (%s)" % rig.last_action_clip)
+	check(rig._upper_bones.size() > 10 and rig._upper_bones.size() < rig._skel.get_bone_count() - 6, "the upper body is the waist up (%d of %d bones)" % [rig._upper_bones.size(), rig._skel.get_bone_count()])
+	var legs := 0
+	var legs_up := 0
+	for bone in rig._skel.get_bone_count():
+		var n := rig._skel.get_bone_name(bone).to_lower()
+		if "thigh" in n or "calf" in n or "upleg" in n:
+			legs += 1
+			if rig._upper_bones.has(bone):
+				legs_up += 1
+	check(legs > 0 and legs_up == 0, "the legs are not part of it (%d leg bones)" % legs)
+	for i in 60:
+		rig.update(dt, 1.0)
+	check(rig.action == null and rig.clip == "Jog_Fwd", "after the swing the body just runs on")
+	if rig.anim.has_animation("Hit_Chest"):
+		rig.hit()
+		rig.update(dt, 1.0)
+		check(rig.clip == "Jog_Fwd" and rig._upper != null and rig._upper.name == "Hit_Chest", "a flinch on the run keeps the legs running")
