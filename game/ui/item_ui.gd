@@ -284,7 +284,7 @@ func _build_settings() -> void:
 				val.custom_minimum_size = Vector2(70, 0)
 			sl.value_changed.connect(func(x):
 				game.settings.set_value(id, int(x))
-				val.text = names[int(x)] if not names.is_empty() else "%d%%" % int(x))
+				val.text = names[int(x)] if not names.is_empty() else Settings.shown(s, int(x)))
 			settings_win.inputs[id] = [sl, val]
 		else:
 			var cb := CheckBox.new()
@@ -1401,7 +1401,7 @@ func _render_settings() -> void:
 		elif parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
 			var names: Array = Settings._def(id).get("names", [])
-			parts[1].text = names[int(v)] if not names.is_empty() else "%d%%" % int(v)
+			parts[1].text = names[int(v)] if not names.is_empty() else Settings.shown(Settings._def(id), int(v))
 		else:
 			parts[0].set_pressed_no_signal(v)
 	hud.keybind_ui.render()

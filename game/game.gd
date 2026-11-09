@@ -1416,7 +1416,23 @@ func _zoom_max() -> float:
 ## is no pan, orbit or cursor-driven look-ahead; north stays screen-up.
 func _camera_offset(z: float) -> Vector3:
 	var c: Dictionary = DB.CONFIG.camera
+	if _tuned_camera():
+		# Settings > Camera tuning: angle down, turn and distance by hand
+		var pitch := deg_to_rad(float(settings.get_value("camPitch")))
+		var yaw := deg_to_rad(float(settings.get_value("camYaw")))
+		var d := float(settings.get_value("camDistance"))
+		var flat := cos(pitch) * d
+		return Vector3(sin(yaw) * flat, sin(pitch) * d, cos(yaw) * flat) * z
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
+
+
+func _tuned_camera() -> bool:
+	return settings != null and settings.get_value("camTune")
+
+
+## the lens: the tuned one while camera tuning is on, else CONFIG's
+func _camera_fov() -> float:
+	return float(settings.get_value("camFov")) if _tuned_camera() else DB.CONFIG.camera.fov
 
 
 func _place_camera(dt := 0.0) -> void:
@@ -1430,6 +1446,7 @@ func _place_camera(dt := 0.0) -> void:
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
 	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
+	camera.fov = _camera_fov()
 	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
 	var t := camera_target + Vector3(0, 1.0, 0)

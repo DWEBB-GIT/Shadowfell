@@ -17,6 +17,13 @@ const SETTINGS := [
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
+	# Camera tuning (Dan, 2026-11-09): try angles in the game, then lock the
+	# chosen numbers into CONFIG.camera. Off, the fixed view is used.
+	{"id": "camTune", "label": "Tune the camera myself (test: find the view, then send Claude the numbers)", "tab": "controls", "group": "Camera tuning", "default": false},
+	{"id": "camPitch", "label": "Angle down", "tab": "controls", "group": "Camera tuning", "default": 42, "min": 15, "max": 80, "unit": "°"},
+	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
+	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 31, "min": 12, "max": 70, "unit": " m"},
+	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 39, "min": 15, "max": 75, "unit": "°"},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},
 	{"id": "soundOn", "label": "Enable sound", "tab": "audio", "default": true},
 	{"id": "outputDevice", "label": "Output device", "tab": "audio", "default": "Default", "choice": true},
@@ -73,6 +80,11 @@ func _init(g) -> void:
 		for s in SETTINGS:
 			if saved.has(s.id):
 				values[s.id] = _clean(s, saved[s.id])
+
+
+## a slider's number as shown: volumes in percent, else in its `unit`
+static func shown(s: Dictionary, v: int) -> String:
+	return "%d%s" % [v, s.get("unit", "%")]
 
 
 func get_value(id: String):
