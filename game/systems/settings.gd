@@ -14,6 +14,7 @@ const SETTINGS := [
 	{"id": "autoLoot", "label": "Auto loot (walking up to a body you can loot takes what it holds)", "tab": "controls", "default": false},
 	{"id": "clickToMove", "label": "Click to move (left click)", "tab": "controls", "default": false},
 	{"id": "targetLock", "label": "Target lock (with nothing selected, abilities lock on to the enemy you face)", "tab": "controls", "default": true},
+	{"id": "combatHop", "label": "Combat hop (experiment: in a fight, jumping while you move leaps you further, to hop in and out of reach)", "tab": "controls", "default": true},
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
