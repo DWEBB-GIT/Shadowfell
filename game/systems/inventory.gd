@@ -607,6 +607,10 @@ func can_wear(def: Dictionary, slot = null) -> bool:
 		return false
 	if def.kind == "shield" and not a.get("shields", false):
 		return false
+	if slot == "mainHand" and def.get("weaponType") == "twoHand" and equipment.get("offHand") != null:
+		return false
+	if slot == "offHand" and weapon != null and weapon.get("weaponType") == "twoHand":
+		return false
 	if slot == "offHand" and def.kind == "weapon" and not a.get("dualWield", false):
 		return false
 	if def.has("weaponType") and a.get("bannedWeaponTypes", []).has(def.weaponType):
@@ -685,6 +689,8 @@ func _why(loc: String, stack: Dictionary) -> String:
 			return "You must be level %d to use the %s." % [required_level(def), def.name]
 		if def.has("weaponType") and arch.get("bannedWeaponTypes", []).has(def.weaponType):
 			return "A %s cannot use %ss." % [arch.name, def.weaponType]
+		if def.get("weaponType") == "twoHand" or (p.slot == "offHand" and weapon != null and weapon.get("weaponType") == "twoHand"):
+			return "A two-handed weapon needs both hands. Empty the other hand first."
 		if def.kind == "weapon":
 			return "A %s cannot dual wield." % arch.name
 		var what: String = "shields" if def.kind == "shield" else "%s armour" % DB.armour_types[def.armourType].name.to_lower()

@@ -7,6 +7,7 @@ extends RefCounted
 
 const ROSTER_KEY := "shadowfall.characters"
 
+var deleted: Array = []
 var list: Array = []
 var last = null
 
@@ -80,10 +81,16 @@ func load_roster(read_save: Callable) -> Dictionary:
 	var data = JSON.parse_string(text) if text != null else null
 	var ok: bool = typeof(data) == TYPE_DICTIONARY and typeof(data.get("list")) == TYPE_ARRAY and data.list.all(func(c): return typeof(c) == TYPE_DICTIONARY and typeof(c.get("id")) == TYPE_STRING and typeof(c.get("name")) == TYPE_STRING and typeof(c.get("key")) == TYPE_STRING)
 	list = data.list if ok else []
+	deleted = data.get("deleted", []) if ok else []
+	deleted = deleted.filter(func(c): return c is Dictionary and c.has_all(["id","name","key","classId","deletedAt"]))
+	for c in deleted.duplicate():
+		if Time.get_unix_time_from_system()-float(c.deletedAt)>30*86400:
+			Store.remove_item(c.key)
+			deleted.erase(c)
 	last = data.get("last") if ok and by_id(data.get("last", "")) != null else (list[0].id if not list.is_empty() else null)
 	# adopt a save made before the roster existed
 	var legacy_unreadable := false
-	if not list.any(func(c): return c.key == SaveManager.SAVE_KEY) and Store.get_item(SaveManager.SAVE_KEY) != null:
+	if not (list+deleted).any(func(c): return c.key == SaveManager.SAVE_KEY) and Store.get_item(SaveManager.SAVE_KEY) != null:
 		if read_save.call(SaveManager.SAVE_KEY).status == "ok":
 			var c := {"id": _new_id(), "name": "Warden", "classId": "warden", "key": SaveManager.SAVE_KEY, "createdAt": Time.get_unix_time_from_system() * 1000, "lastPlayed": Time.get_unix_time_from_system() * 1000}
 			list.push_front(c)
@@ -110,6 +117,8 @@ func name_problem(raw) -> String:
 		return "Use one word of %d to %d letters, with no spaces or symbols." % [NAME_MIN, NAME_MAX]
 	if is_offensive(name):
 		return "That name is not allowed. Please choose another."
+	if deleted.any(func(c): return c.name.to_lower()==name.to_lower()):
+		return "A recently deleted character has that name. Restore them or choose another name."
 	if list.any(func(c): return c.name.to_lower() == name.to_lower()):
 		return "There is already a character called %s." % name
 	return ""
@@ -143,16 +152,24 @@ func create(raw_name, class_id: String) -> Dictionary:
 	return {"ok": true, "character": c}
 
 
-## Deleting removes the character's save for good.
+## Deletion frees a slot and retains the save for thirty days.
 func remove(id: String) -> bool:
 	var c = by_id(id)
 	if c == null:
 		return false
+	var before: Array=list.duplicate(true)
+	var previous=last
 	list.erase(c)
-	Store.remove_item(c.key)
+	c=c.duplicate(true)
+	c.deletedAt=Time.get_unix_time_from_system()
+	deleted.append(c)
 	if last == id:
 		last = list[0].id if not list.is_empty() else null
-	_write()
+	if not _write():
+		list=before
+		last=previous
+		deleted.erase(c)
+		return false
 	return true
 
 
@@ -167,10 +184,26 @@ func touch(id: String) -> void:
 
 func _new_id() -> String:
 	var n := list.size() + 1
-	while list.any(func(c): return c.id == "c%d" % n):
+	while (list+deleted).any(func(c): return c.id == "c%d" % n):
 		n += 1
 	return "c%d" % n
 
 
 func _write() -> bool:
-	return Store.set_item(ROSTER_KEY, JSON.stringify({"version": 1, "last": last, "list": list}))
+	return Store.set_item(ROSTER_KEY, JSON.stringify({"version": 1, "last": last, "list": list, "deleted": deleted}))
+
+
+func restore(id: String) -> Dictionary:
+	if full:
+		return {"ok":false,"reason":"All ten slots are occupied. Free a slot before restoring a character."}
+	for c in deleted:
+		if c.id!=id:
+			continue
+		deleted.erase(c)
+		list.append(c)
+		if not _write():
+			list.erase(c)
+			deleted.append(c)
+			return {"ok":false,"reason":"Storage could not be updated. Your character has been kept."}
+		return {"ok":true}
+	return {"ok":false,"reason":"That character is no longer available to restore."}

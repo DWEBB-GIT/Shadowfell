@@ -124,6 +124,10 @@ var _ghost := false
 var _grade_check := 0.0
 var daylight := {} ## DayNight.light at the world clock's hour, laid over the grade
 var _day_hour := -100.0 ## the hour daylight was worked out for
+var _sun_off := Vector3.ZERO ## where the sun stands from the focus now
+var _sun_goal := Vector3.ZERO ## and where its quarter-hour step puts it
+const SUN_STEP := 0.25 ## game hours between steps of the sun's angle
+const SUN_EASE := 1.2 ## how fast a step is eased in (about 3 s)
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
 var _region_at := Vector2(INF, INF)
 var _region_from := Vector2.ZERO
@@ -285,7 +289,10 @@ func _init_renderer() -> void:
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.65
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 72.0
+	# the browser's sun shadow map is 4096 (project.godot) over a shorter
+	# reach, so trees there no longer cast blocky shadows; the camera's view
+	# ends inside about 60 m at the default zoom
+	sun.directional_shadow_max_distance = 60.0 if OS.has_feature("web") else 72.0
 	sun.shadow_opacity = 0.78
 	sun.shadow_blur = 1.5
 	add_child(sun)
@@ -360,8 +367,14 @@ func load_world() -> void:
 	hud.loading.show_progress("Raising the world…", 0.45)
 	var shelf := _model_shelf()
 	fx.prewarm(camera_target)
+	# the target rings too: hidden until the first fight, they were compiled then
+	for m in [targeting.marker, targeting.soft_marker]:
+		m.visible = true
+		m.position = camera_target + Vector3(0, 0.1, 0)
 	await tree.process_frame
 	await tree.process_frame
+	for m in [targeting.marker, targeting.soft_marker]:
+		m.visible = false
 	shelf.queue_free()
 	# target-frame portraits for everyone you can meet
 	var models := {}
@@ -394,6 +407,8 @@ func _model_shelf() -> Node3D:
 	var cols := ceili(sqrt(names.size()))
 	for k in names.size():
 		var m := Assets.instance(names[k])
+		# as an enemy or the player wears it (emission on, for the hit flash)
+		Rig.isolate_materials(m)
 		m.position = camera_target + Vector3((k % cols - cols / 2.0) * 1.2, 0, (k / cols - cols / 2.0) * 1.2)
 		shelf.add_child(m)
 	return shelf
@@ -589,6 +604,22 @@ func _screen_dist(p: Vector3) -> float:
 		return INF
 	var s := camera.unproject_position(p)
 	return U.hyp(s.x - input.mouse.x, s.y - input.mouse.y)
+
+
+## The hover tooltip and cursor look again 15 times a second, not every
+## frame (a pick unprojects everything near: ~1.5 ms); a click still picks
+## afresh (_click)
+func _hover_pick():
+	var now := Time.get_ticks_msec()
+	if now - _hover_at >= HOVER_MS or (_hover != null and _hover.kind == "enemy" and not _hover.obj.alive):
+		_hover_at = now
+		_hover = _pick_under_cursor()
+	return _hover
+
+
+const HOVER_MS := 66
+var _hover_at := -100000
+var _hover = null
 
 
 ## What is under the cursor: a body or drop to loot, a living enemy, or a
@@ -1077,7 +1108,7 @@ func _handle_input(dt: float):
 			hud.error("Out of range")
 	# hovering over anyone in the world shows who they are
 	if not using_pad:
-		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
+		var hover = _hover_pick() if input.mouse.onCanvas else null
 		hud.world_tip(hover)
 		_cursor_for(hover)
 	# classic: left click selects, right click attacks, talks or loots.
@@ -1185,6 +1216,8 @@ func step(dt: float) -> void:
 	world.update(dt, Time.get_ticks_msec() / 1000.0)
 	_update_region(dt)
 	_update_daylight()
+	if _sun_off != _sun_goal and _sun_goal != Vector3.ZERO:
+		_sun_off = _sun_off.lerp(_sun_goal, minf(1.0, dt * SUN_EASE)) if _sun_off.distance_to(_sun_goal) > 0.01 else _sun_goal
 	world.update_indoors(dt, player.position)
 	_update_camera(dt)
 	if started:
@@ -1254,9 +1287,16 @@ func _update_daylight() -> void:
 	var h: float = world_state.hour
 	if not daylight.is_empty() and absf(h - _day_hour) < 0.01:
 		return
+	var jumped := absf(h - _day_hour) > 0.5 # a night at the inn, a load
 	_day_hour = h
 	daylight = DayNight.light(h)
 	sun.light_color = daylight.colour
+	# the sun's angle moves on in quarter-hour steps, each eased in over a
+	# few seconds: nudged every second, every shadow in the world hopped once
+	# a second (it looked like trees swaying at 1 fps)
+	_sun_goal = DayNight.light(floorf(h / SUN_STEP) * SUN_STEP).get("offset", Vector3(-22, 17, 9))
+	if jumped or _sun_off == Vector3.ZERO:
+		_sun_off = _sun_goal
 	_place_sun(camera_target)
 	if not grade.is_empty():
 		_apply_grade()
@@ -1301,6 +1341,25 @@ func shake_camera(amount: float) -> void:
 	shake = maxf(shake, amount)
 
 
+## Character select draws a small scene: only the few metres around the
+## character (the rest is fog, past the camera's reach) and a short, sharp
+## sun shadow, instead of the whole view of the world behind them.
+func _showcase_draw(on: bool) -> void:
+	var sh: Dictionary = DB.CONFIG.camera.showcase
+	sun.directional_shadow_max_distance = sh.get("shadow", 16.0) if on else (60.0 if OS.has_feature("web") else 72.0)
+	if on:
+		camera.far = sh.get("far", 34.0)
+		env.fog_depth_begin = sh.get("fogNear", 14.0)
+		env.fog_depth_end = camera.far - 2.0
+	elif fog_base != null:
+		env.fog_depth_begin = fog_base.near
+		env.fog_depth_end = fog_base.far
+		camera.far = fog_base.far + 6
+
+
+var _showcase_view := false
+
+
 ## character select and creation: the camera stands in front of the
 ## character, low, so they fill the middle of the screen
 func _place_showcase() -> void:
@@ -1319,7 +1378,9 @@ func _place_showcase() -> void:
 ## afternoon it sits low in the west-southwest, about 35 degrees up, so things
 ## cast long shadows across the ground and their far sides fall dark
 func _place_sun(t: Vector3) -> void:
-	var off: Vector3 = daylight.get("offset", Vector3(-22, 17, 9))
+	if _sun_off == Vector3.ZERO:
+		_sun_off = daylight.get("offset", Vector3(-22, 17, 9))
+	var off: Vector3 = _sun_off
 	sun.position = t + off
 	sun.look_at(t)
 
@@ -1340,7 +1401,11 @@ func _camera_offset(z: float) -> Vector3:
 
 
 func _place_camera(dt := 0.0) -> void:
-	if not started and hud and hud.showcase:
+	var show_now: bool = not started and hud and hud.showcase
+	if show_now != _showcase_view:
+		_showcase_view = show_now
+		_showcase_draw(show_now)
+	if show_now:
 		_place_showcase()
 		return
 	# a fixed isometric view: the scenes are composed for this one angle;

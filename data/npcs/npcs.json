@@ -131,7 +131,7 @@
       "id": "agna",
       "mapIcon": "tanner",
       "name": "Agna Holt",
-      "title": "Tanner",
+      "title": "Thornford Leatherworker",
       "level": 9,
       "model": "mara",
       "rig": "warden",
@@ -466,7 +466,7 @@
     {
       "id": "wm_lantern_crossing_lead",
       "name": "Merrit Vale",
-      "title": "Bridge reeve",
+      "title": "Crossing Reeve",
       "level": 5,
       "model": "warden",
       "dialogue": "wm_lantern_crossing_lead",
@@ -484,8 +484,8 @@
     },
     {
       "id": "wm_lantern_crossing_inn",
-      "name": "Keeper Vale",
-      "title": "Rest-house keeper",
+      "name": "Anwen Vale",
+      "title": "The Bent Nail Inn",
       "mapIcon": "innkeeper",
       "level": 5,
       "model": "innkeeper",
@@ -515,8 +515,8 @@
     },
     {
       "id": "wm_mossreed_landing_inn",
-      "name": "Keeper Pike",
-      "title": "Rest-house keeper",
+      "name": "Jory Pike",
+      "title": "The Last Oar",
       "mapIcon": "innkeeper",
       "level": 5,
       "model": "innkeeper",
@@ -1550,6 +1550,92 @@
       "rig": "warden",
       "tint": "#8f8a80",
       "dialogue": "vr_dunn"
+    },
+    {
+      "id": "in_paige",
+      "name": "Paige Wren",
+      "title": "Road Courier",
+      "level": 5,
+      "model": "warden",
+      "dialogue": "in_paige",
+      "tint": "#c4b091"
+    },
+    {
+      "id": "in_benn",
+      "name": "Benn Fenner",
+      "title": "Gravekeeper",
+      "level": 5,
+      "model": "mara",
+      "dialogue": "in_benn",
+      "tint": "#aeb5a3"
+    },
+    {
+      "id": "in_della",
+      "name": "Della Fenner",
+      "title": "Retired Seamstress",
+      "level": 5,
+      "model": "innkeeper",
+      "dialogue": "in_della",
+      "tint": "#b9a6b8",
+      "routine": "townsfolk"
+    },
+    {
+      "id": "in_ada",
+      "name": "Ada Fenwick",
+      "title": "Cartwright",
+      "level": 5,
+      "model": "mara",
+      "dialogue": "in_ada",
+      "tint": "#c7a47b",
+      "routine": "labourer"
+    },
+    {
+      "id": "in_kit",
+      "name": "Kit Vale",
+      "title": "Stablehand",
+      "level": 5,
+      "model": "warden",
+      "dialogue": "in_kit",
+      "tint": "#a6b7bd",
+      "routine": "labourer"
+    },
+    {
+      "id": "in_hale",
+      "name": "Hale Fenn",
+      "title": "Keeper of the Bank Lamps",
+      "level": 5,
+      "model": "skeleton",
+      "dialogue": "in_hale",
+      "tint": "#a9c7b7"
+    },
+    {
+      "id": "in_tess",
+      "name": "Tess Fenn",
+      "title": "Herbalist",
+      "level": 5,
+      "model": "innkeeper",
+      "dialogue": "in_tess",
+      "tint": "#b4be9e",
+      "routine": "labourer"
+    },
+    {
+      "id": "in_sella",
+      "name": "Sergeant Sella Ash",
+      "title": "Lamplighter’s Rest",
+      "level": 5,
+      "model": "warden",
+      "dialogue": "in_sella",
+      "tint": "#b1bac5"
+    },
+    {
+      "id": "in_edda",
+      "name": "Edda Fenwick",
+      "title": "Mine Forewoman",
+      "level": 5,
+      "model": "mara",
+      "dialogue": "in_edda",
+      "tint": "#c7b193",
+      "routine": "labourer"
     }
   ]
 }

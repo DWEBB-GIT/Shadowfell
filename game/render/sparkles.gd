@@ -12,6 +12,8 @@ var game
 var mm: MultiMesh
 var node: MultiMeshInstance3D
 var t := 0.0
+var _near: Array = [] ## the spots within RANGE, refreshed every _near_age
+var _near_age := 0.0
 
 
 func _init(g) -> void:
@@ -54,14 +56,22 @@ func spots() -> Array:
 func update(dt: float) -> void:
 	t += dt
 	var p: Vector3 = game.player.position
+	# which things sparkle is looked up four times a second (it walks every
+	# lootable in the world); only the motes move every frame
+	_near_age -= dt
+	if _near_age <= 0.0:
+		_near_age = 0.25
+		_near.clear()
+		for s in spots():
+			if U.hyp(s.x - p.x, s.z - p.z) < RANGE:
+				s.base = s.get("base", Terrain.height_at(s.x, s.z))
+				_near.append(s)
+				if _near.size() >= MAX:
+					break
 	var n := 0
 	var i := 0
-	for s in spots():
-		if i >= MAX:
-			break
-		if U.hyp(s.x - p.x, s.z - p.z) >= RANGE:
-			continue
-		var base: float = s.get("base", Terrain.height_at(s.x, s.z)) + s.y
+	for s in _near:
+		var base: float = s.base + s.y
 		for k in PER:
 			# each mote rises over 1.6 s on its own phase, drifting round the spot
 			var ph := fmod(t / 1.6 + float(k) / PER + i * 0.37, 1.0)

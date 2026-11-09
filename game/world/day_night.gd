@@ -14,8 +14,8 @@ const SUN_LOW := Color("ff9a55") ## at the horizon
 const SUN_AFTERNOON := Color("ffe0b2") ## the PR #108 sun
 const SUN_NOON := Color("fff0d8")
 const MOON := Color("9fb4e0")
-const NIGHT_AIR := Color(0.62, 0.70, 1.0) ## fill light, multiplied, at night
-const NIGHT_FOG := Color(0.26, 0.30, 0.44) ## haze and background, multiplied
+const NIGHT_AIR := Color(0.82, 0.89, 1.0) ## fill light, multiplied, at night
+const NIGHT_FOG := Color(0.40, 0.49, 0.60) ## haze and background, multiplied
 const DUSK_FOG := Color(1.0, 0.72, 0.56) ## the haze warms as the sun goes
 
 

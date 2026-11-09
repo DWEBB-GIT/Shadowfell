@@ -16,7 +16,7 @@ var game
 var accepted: Array = [] ## quest ids, in the order taken
 var done := {}
 var tracked := {}
-var focus := "" ## the quest being followed: the minimap and world map point the way to it
+var focus := "" ## an active quest, or an available lead pointing to its giver
 var kills := {} ## questId -> { objectiveId: kills since it was taken }
 var _last := {} ## questId -> progress text, to announce changes
 const MARK_TTL_MS := 250
@@ -87,8 +87,23 @@ func count_kill(type: String) -> void:
 
 ## You used an ability: every active quest with a `use` objective for it
 ## counts one (a class quest: Cleave the boars, Shadow by the boundary).
-## `on` names the enemy type you must have targeted; `at` a map area you
+## `on` names the enemy type you must have targeted (or the npc you heal); `at` a map area you
 ## must stand in (within `radius`, 15 m by default). Counted with the kills.
+func count_talk(npc_id: String) -> void:
+	var changed := false
+	for id in active:
+		for objective in DB.quests[id].objectives:
+			if objective.type != "talk" or not objective.get("requireVisit", false) or objective.get("target") != npc_id:
+				continue
+			if not kills.has(id):
+				kills[id] = {}
+			if not kills[id].get(objective.id, 0):
+				kills[id][objective.id] = 1
+				changed = true
+	if changed:
+		refresh()
+
+
 func count_use(ability: String, on_type := "") -> void:
 	for id in active:
 		for o in DB.quests[id].objectives:
@@ -180,7 +195,7 @@ func objectives(id: String) -> Array:
 			"examine":
 				have = 1 if game.world_state.examined.has(o.target) else 0
 			"talk":
-				have = need
+				have = int(kills.get(id, {}).get(o.id, 0)) if o.get("requireVisit", false) else need
 			"puzzle":
 				have = need if game.puzzles != null and game.puzzles.solved(o.target) else 0
 		have = mini(have, need)
@@ -255,7 +270,43 @@ func marker_for(npc_id: String) -> String:
 	if not _marks.has(npc_id):
 		var list := for_npc(npc_id)
 		_marks[npc_id] = list[0].status if not list.is_empty() else ""
+		if _marks[npc_id] == "":
+			for quest_id in active:
+				if DB.quests[quest_id].objectives.any(func(o): return o.type == "talk" and o.get("requireVisit", false) and o.target == npc_id and not kills.get(quest_id, {}).get(o.id, 0)):
+					_marks[npc_id] = "active"
+					break
 	return _marks[npc_id]
+
+
+## Only actionable children are offered. Class, level, choice and prerequisite
+## gates still come from status(). Accepted children can be resumed.
+func followups(completed: String) -> Array:
+	var main := []
+	var local := []
+	for quest in DB.quests.values():
+		if not quest.get("requires", []).has(completed) and not quest.get("requiresAny", []).has(completed):
+			continue
+		if status(quest.id) not in ["available", "active", "ready"]:
+			continue
+		if quest.get("story", false):
+			main.append(quest.id)
+		else:
+			local.append(quest.id)
+	# Parallel opening tasks meet at the watch quest. If its other prerequisite
+	# remains unfinished, show that task rather than leaving a silent dead end.
+	if main.is_empty() and DB.quests.get(completed, {}).get("story", false):
+		var journey: Dictionary = DB.world.get("introJourney", {})
+		var opening: Array = journey.get("opening", [])
+		var east: Array = journey.get("crossingRoute", [])
+		var west: Array = journey.get("landingRoute", [])
+		var finale: Array = journey.get("sharedFinale", [])
+		if (opening + east + west + finale).has(completed):
+			var middle: Array = east if east.has(completed) or chosen("in_first_road") == "in_letter_east" else west if west.has(completed) or chosen("in_first_road") == "in_letter_west" else []
+			for quest_id in opening + middle + finale:
+				if quest_id != completed and status(quest_id) in ["available", "active", "ready"]:
+					main.append(quest_id)
+					break
+	return main + local.filter(func(id): return not main.has(id))
 
 
 # ---------------------------------------------------------- actions
@@ -281,7 +332,14 @@ func accept(id: String, quiet := false) -> bool:
 			game.skills.grant_spell(sk)
 	accepted.append(id)
 	kills.erase(id)
+	if game.dialogue != null and game.dialogue.npc != null:
+		count_talk(game.dialogue.npc.id)
 	if tracked.size() < MAX_TRACKED:
+		tracked[id] = true
+	elif focus == id:
+		# Accepting the followed offer keeps the journey visible in a full log.
+		# The older quest stays in the log; only its tracker entry is replaced.
+		tracked.erase(tracked.keys()[0])
 		tracked[id] = true
 	_last[id] = _text(id)
 	if not quiet:
@@ -391,11 +449,12 @@ func set_tracked(id: String, on: bool) -> bool:
 
 
 ## Follow a quest (or stop, with ""): the minimap points the way to its
-## next step whatever the distance. A followed quest is always tracked.
+## next step whatever the distance. An available lead points to its giver
+## without accepting it; an active followed quest is tracked.
 func set_focus(id: String) -> void:
-	if id != "" and not active.has(id):
+	if id != "" and not active.has(id) and status(id) != "available":
 		return
-	if id != "" and not tracked.has(id) and not set_tracked(id, true):
+	if active.has(id) and not tracked.has(id) and not set_tracked(id, true):
 		return
 	focus = id
 	_changed()
@@ -406,16 +465,18 @@ func set_focus(id: String) -> void:
 ## first unmet objective's place (its `location`, the nearest spawn of what
 ## it wants killed, or whom it wants spoken to). { x, z, r, label } or {}.
 func goal(id: String) -> Dictionary:
+	if status(id) == "available":
+		return npc_goal(DB.quests[id].giver)
 	if status(id) == "ready":
 		return npc_goal(DB.quests[id].turnIn)
 	for o in objectives(id):
 		if o.done:
 			continue
+		if o.type == "talk":
+			return npc_goal(o.target)
 		if o.location and DB.locations.has(o.location):
 			var l: Dictionary = DB.locations[o.location]
 			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}
-		if o.type == "talk":
-			return npc_goal(o.target)
 		if o.type == "puzzle":
 			var p := WorldPuzzles.definition(o.target)
 			if not p.is_empty():
@@ -604,6 +665,13 @@ func refresh() -> void:
 
 
 func _changed() -> void:
+	if focus != "" and not active.has(focus) and status(focus) != "available":
+		focus = ""
+	if focus == "":
+		for quest_id in active:
+			if DB.quests[quest_id].get("story", false) and tracked.has(quest_id):
+				focus = quest_id
+				break
 	_marks = {}
 	game.events.emit("questsChanged", {})
 	game.events.emit("objectiveChanged", {})
@@ -627,7 +695,7 @@ func apply(data, flags: Dictionary) -> void:
 		for id in data.get("tracked", []):
 			if accepted.has(id):
 				tracked[id] = true
-		if tracked.has(str(data.get("focus", ""))):
+		if tracked.has(str(data.get("focus", ""))) or (DB.quests.has(str(data.get("focus", ""))) and status(str(data.focus)) == "available"):
 			focus = data.focus
 		# kill counts; a save from before them counts the bodies still down
 		var type_of := {}
@@ -646,7 +714,7 @@ func apply(data, flags: Dictionary) -> void:
 				continue
 			for o in DB.quests[id].objectives:
 				var n = saved.get(o.id)
-				if o.type == "kill" and (typeof(n) == TYPE_INT or typeof(n) == TYPE_FLOAT) and n == floor(n) and n > 0:
+				if (o.type in ["kill", "use"] or (o.type == "talk" and o.get("requireVisit", false))) and (typeof(n) == TYPE_INT or typeof(n) == TYPE_FLOAT) and n == floor(n) and n > 0:
 					if not kills.has(id):
 						kills[id] = {}
 					kills[id][o.id] = mini(int(n), int(o.get("count", 1)))

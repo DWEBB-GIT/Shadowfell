@@ -12,6 +12,7 @@ var b
 func _process(_dt: float) -> bool:
 	frame += 1
 	if frame == 1:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 		Store.dir = "user://test_store"
 		for f in DirAccess.get_files_at(Store.dir):
 			DirAccess.remove_absolute(Store.dir + "/" + f)

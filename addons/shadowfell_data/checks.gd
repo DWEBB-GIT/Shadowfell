@@ -314,7 +314,10 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					if q.get("map", "act1") == s.map_id and not s.examine_points.has(o.get("target")):
 						bad.call("%s names unknown examine point %s" % [label, o.get("target")])
 				"talk":
-					if o.get("target") != q.get("turnIn"):
+					if o.get("requireVisit", false):
+						if DataStore.find(s.npcs, o.get("target")).is_empty():
+							bad.call("%s names unknown conversation npc %s" % [label, o.get("target")])
+					elif o.get("target") != q.get("turnIn"):
 						bad.call("%s: a talk objective names the hand-in npc (%s)" % [label, q.get("turnIn")])
 				"puzzle":
 					if q.get("map", "act1") == s.map_id and DataStore.find(s.files.world.get("puzzles", []), o.get("target")).is_empty():
@@ -323,8 +326,8 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					# use an ability (on a targeted enemy type, at a map area)
 					if DataStore.find(s.abilities, o.get("target")).is_empty():
 						bad.call("%s names unknown ability %s" % [label, o.get("target")])
-					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty():
-						bad.call("%s: on names unknown enemy %s" % [label, o.on])
+					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty() and DataStore.find(s.npcs, o.on).is_empty():
+						bad.call("%s: on names unknown enemy or npc %s" % [label, o.on])
 					if o.has("at") and DataStore.find(s.locations, o.at).is_empty():
 						bad.call("%s: at names unknown map area %s" % [label, o.at])
 				_:

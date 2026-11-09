@@ -90,6 +90,10 @@
     "well": "res://assets/models/environment/props/well.glb",
     "wheel": "res://assets/models/environment/props/wheel.glb",
     "witchbane": "res://assets/models/items/weapons/witchbane.glb",
-    "worn_sword": "res://assets/models/items/supplies/worn_sword.glb"
+    "worn_sword": "res://assets/models/items/supplies/worn_sword.glb",
+    "oak_club": "res://assets/models/weapons/oak_club.tscn",
+    "ironwood_club": "res://assets/models/weapons/ironwood_club.tscn",
+    "greatsword": "res://assets/models/weapons/greatsword.tscn",
+    "fx_meteor": "res://assets/models/fx/fx_meteor.tscn"
   }
 }

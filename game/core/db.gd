@@ -60,7 +60,7 @@ const CONFIG := {
 	# and every client sees the dark fall together. DayNight turns the hour into the light: the sun rises in the
 	# east at 6 and sets in the west at 18; at night a dim blue moon
 	# (`moonlight`, a share of the sun) and `nightAmbient` of the day's fill.
-	"clock": {"dayMinutes": 48.0, "startHour": 9.0, "moonlight": 0.3, "nightAmbient": 0.55},
+	"clock": {"dayMinutes": 48.0, "startHour": 9.0, "moonlight": 0.42, "nightAmbient": 0.82},
 	# Townsfolk routines (npcs.json `routine`, Npcs): walk at `walkSpeed`
 	# m/s; the inn they use is the nearest one (a building with `rest`) within
 	# `innRange` metres of their post, home the nearest house within

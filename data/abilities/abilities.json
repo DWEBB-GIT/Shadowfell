@@ -46,13 +46,13 @@
       "school": "physical",
       "target": "enemy",
       "range": 20,
-      "desc": "An instant arrow from your bow at your target, for 110% of a bow shot. Cheap filler. Needs a bow in your ranged slot and uses one arrow. Does not reset Auto Shot. Triggers the global cooldown.",
+      "desc": "Fire while moving and mark your target with Aim for eight seconds.",
       "tuning": {
         "cooldown": 0,
-        "damageMultiplier": 1.1
+        "damageMultiplier": 0.9
       },
       "cost": {
-        "focus": 25
+        "focus": 16
       },
       "upgrades": {
         "enhanced": {
@@ -81,6 +81,10 @@
             }
           }
         ]
+      },
+      "applies": {
+        "name": "Aim",
+        "duration": 8
       }
     },
     {
@@ -131,16 +135,13 @@
       "school": "physical",
       "target": "enemy",
       "range": 6.6,
-      "desc": "Charge at an enemy (never away from one) and strike on arrival, dazing it for 1 second. Builds 15 Resolve. Triggers the global cooldown. 8 second cooldown.",
+      "desc": "Rush toward an enemy and gain 15 Fury when you hit.",
       "tuning": {
         "cooldown": 8,
         "damageMultiplier": 1.5,
         "duration": 0.26,
         "hitRadius": 1.6,
         "distance": 5
-      },
-      "gain": {
-        "resolve": 15
       },
       "applies": {
         "name": "Dazed",
@@ -174,6 +175,9 @@
             }
           }
         ]
+      },
+      "hitGain": {
+        "resolve": 15
       }
     },
     {
@@ -183,7 +187,7 @@
       "school": "physical",
       "target": "self",
       "defensive": true,
-      "desc": "Weapon Master: with a shield, block every blow for 3 seconds, even a Grave Slam. With two weapons, parry the next 2 blows within 4 seconds. With a weapon alone, take 40% less damage for 4 seconds. Off the global cooldown. 12 second cooldown.",
+      "desc": "Brace against incoming blows. A shield reduces damage, one weapon can parry, and dual wielding guards against one hit.",
       "tuning": {
         "cooldown": 12,
         "window": 3,
@@ -260,7 +264,7 @@
       "school": "physical",
       "target": "enemy",
       "range": 2.6,
-      "desc": "Tear open your target's wounds. They bleed for 5 ticks over 10 seconds; using it again refreshes the bleed. Triggers the global cooldown.",
+      "desc": "Spend 15 Fury to bleed a target for 10 seconds.",
       "tuning": {
         "cooldown": 0,
         "duration": 10,
@@ -268,7 +272,7 @@
         "tickMultiplier": 0.45
       },
       "cost": {
-        "resolve": 20
+        "resolve": 15
       },
       "status": "bleeding"
     },
@@ -280,29 +284,21 @@
       "school": "physical",
       "target": "enemy",
       "range": 2.6,
-      "desc": "An instant strike at your target. Builds 10 Resolve. Weapon Master: a weapon alone hits hardest (180% of normalised weapon damage), two weapons strike with both hands, a weapon and shield hits for 140% and builds 10 more Resolve. Triggers the global cooldown. 4 second cooldown.",
+      "desc": "A committed weapon hit builds 16 Fury on contact. With two weapons, strike with both.",
       "tuning": {
         "cooldown": 4,
-        "damageMultiplier": 1.4
-      },
-      "gain": {
-        "resolve": 10
+        "damageMultiplier": 1.35
       },
       "loadouts": {
         "twoHand": {
           "tuning": {
-            "damageMultiplier": 1.8
+            "damageMultiplier": 1.7
           }
         },
         "dualWield": {
           "tuning": {
-            "damageMultiplier": 1,
-            "bothHands": 1
-          }
-        },
-        "shield": {
-          "gain": {
-            "resolve": 20
+            "bothHands": 1,
+            "damageMultiplier": 1.0
           }
         }
       },
@@ -331,6 +327,9 @@
             }
           }
         ]
+      },
+      "hitGain": {
+        "resolve": 16
       }
     },
     {
@@ -341,10 +340,11 @@
       "school": "physical",
       "target": "enemy",
       "range": 2.6,
-      "desc": "A brutal overhead blow with your weapon, for 300% of normalised weapon damage. Triggers the global cooldown. 12 second cooldown.",
+      "desc": "Spend 30 Fury on a heavy blow that can interrupt an ordinary swing.",
       "tuning": {
         "cooldown": 12,
-        "damageMultiplier": 3
+        "damageMultiplier": 3,
+        "stagger": 0.25
       },
       "cost": {
         "resolve": 30
@@ -377,7 +377,8 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "heavy"
     },
     {
       "id": "smite",
@@ -456,7 +457,7 @@
       "kind": "cleave",
       "school": "physical",
       "target": "self",
-      "desc": "A wide swing that hits up to 4 enemies in front of you. Weapon Master: a weapon alone swings a wider arc at up to 5, two weapons spin twice around you, a weapon and shield cuts a narrow arc at up to 3. Triggers the global cooldown. 5 second cooldown.",
+      "desc": "Spend 25 Fury to strike up to four enemies in front of you.",
       "tuning": {
         "cooldown": 5,
         "damageMultiplier": 1.2,
@@ -466,7 +467,7 @@
         "windup": 0.16
       },
       "cost": {
-        "resolve": 30
+        "resolve": 25
       },
       "loadouts": {
         "twoHand": {
@@ -522,14 +523,14 @@
       "name": "Battle Cry",
       "kind": "buff",
       "target": "self",
-      "desc": "A shout that steels you: gives 25 Resolve at once, and all your damage is increased by 20% for 15 seconds. Starts the ramp early. Triggers the global cooldown. 45 second cooldown.",
+      "desc": "Gain 30 Fury immediately.",
       "tuning": {
         "cooldown": 45,
-        "duration": 15,
-        "damageBonus": 20
+        "duration": 1,
+        "damageBonus": 0
       },
       "gain": {
-        "resolve": 25
+        "resolve": 30
       },
       "upgrades": {
         "enhanced": {
@@ -652,16 +653,13 @@
       "target": "enemy",
       "range": 2.6,
       "inShadow": "ambush",
-      "desc": "A quick strike at your target for 110% of normalised weapon damage. Adds a combo point. From Shadow it becomes Ambush. Triggers the global cooldown.",
+      "desc": "Strike to build one combo point. In Shadow this slot becomes Ambush.",
       "tuning": {
         "cooldown": 0,
         "damageMultiplier": 1.1
       },
       "cost": {
         "energy": 40
-      },
-      "gain": {
-        "combo": 1
       },
       "upgrades": {
         "enhanced": {
@@ -686,6 +684,9 @@
             }
           }
         ]
+      },
+      "hitGain": {
+        "combo": 1
       }
     },
     {
@@ -697,7 +698,7 @@
       "target": "enemy",
       "range": 2.6,
       "bar": false,
-      "desc": "Strike from Shadow: a huge hit for 300% of normalised weapon damage that stuns your target for 2 seconds and adds 3 combo points. Triggers the global cooldown.",
+      "desc": "Open from Shadow for heavy damage and three combo points on a hit.",
       "tuning": {
         "cooldown": 0,
         "damageMultiplier": 3
@@ -705,13 +706,13 @@
       "cost": {
         "energy": 60
       },
-      "gain": {
-        "combo": 3
-      },
       "applies": {
         "name": "Stunned",
         "duration": 2,
         "stun": 1
+      },
+      "hitGain": {
+        "combo": 3
       }
     },
     {
@@ -775,16 +776,13 @@
       "school": "nature",
       "target": "enemy",
       "range": 2.6,
-      "desc": "A poisoned cut for 80% of normalised weapon damage that adds a combo point. The target stays Poisoned for 12 seconds and takes 30% more from Double Cut. Triggers the global cooldown.",
+      "desc": "Strike to apply poison and build one combo point on a hit.",
       "tuning": {
         "cooldown": 0,
         "damageMultiplier": 0.8
       },
       "cost": {
         "energy": 30
-      },
-      "gain": {
-        "combo": 1
       },
       "applies": {
         "name": "Poisoned",
@@ -819,7 +817,11 @@
             }
           }
         ]
-      }
+      },
+      "hitGain": {
+        "combo": 1
+      },
+      "follow": "poisonedBladeToxin"
     },
     {
       "id": "sleep",
@@ -872,7 +874,7 @@
       "name": "Shadow",
       "kind": "stealth",
       "target": "self",
-      "desc": "Slip into Shadow: enemies lose sight of you and stop chasing. In Shadow your Energy refills three times as fast and your combo points are kept; Strike becomes Ambush. Attacking, or being hit, brings you out. Off the global cooldown. 15 second cooldown.",
+      "desc": "Step into Shadow outside combat. In combat this slot becomes Vanish, with its own longer cooldown.",
       "tuning": {
         "cooldown": 15,
         "offGlobalCooldown": 1
@@ -937,7 +939,7 @@
       "school": "fire",
       "target": "enemy",
       "range": 20,
-      "desc": "A burning arrow: your target takes fire damage every 2 seconds for 10 seconds (5 ticks of 40% of a bow shot). Using it again refreshes the burn. Needs a bow and uses one arrow. Triggers the global cooldown.",
+      "desc": "Burn the target. Hitting an active tar pool ignites it, removing its slow and burning enemies within.",
       "tuning": {
         "cooldown": 0,
         "duration": 10,
@@ -973,7 +975,8 @@
           }
         ]
       },
-      "status": "burning"
+      "status": "burning",
+      "mechanic": "ignite"
     },
     {
       "id": "tarTrap",
@@ -981,7 +984,7 @@
       "kind": "trap",
       "school": "nature",
       "target": "self",
-      "desc": "Set a trap at your feet. The first enemy to step on it bursts it into a pool of tar 3 metres across that slows every enemy in it by 50% for 8 seconds. Up to 2 traps; each lasts 60 seconds. Costs no Focus. Triggers the global cooldown. 12 second cooldown.",
+      "desc": "Set a trap at your feet. The first enemy to spring it leaves a slowing pool you can ignite with Flaming Arrow.",
       "tuning": {
         "cooldown": 12,
         "armTime": 1,
@@ -1070,11 +1073,12 @@
       "school": "physical",
       "target": "enemy",
       "range": 20,
-      "desc": "Draw and hold for 3 seconds, then loose an arrow for 300% of a bow shot that marks the target: it takes 15% more damage from you for 10 seconds. Moving breaks the draw. Needs a bow and uses one arrow. Triggers the global cooldown. 10 second cooldown.",
+      "desc": "Stand still for a long draw. Consumes Aim on impact for 35% more damage.",
       "tuning": {
         "cooldown": 10,
-        "castTime": 3,
-        "damageMultiplier": 3
+        "castTime": 2.2,
+        "damageMultiplier": 3,
+        "aimBonus": 0.35
       },
       "cost": {
         "focus": 40
@@ -1114,7 +1118,8 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "consumeAim"
     },
     {
       "id": "disengage",
@@ -1205,7 +1210,7 @@
       "school": "shadow",
       "target": "enemy",
       "range": 20,
-      "desc": "An instant curse of rot: your target takes shadow damage every second for 12 seconds. Using it again refreshes it. Triggers the global cooldown.",
+      "desc": "Apply a damaging curse. Its ticks build Corruption, with diminishing gains across targets.",
       "tuning": {
         "cooldown": 0,
         "duration": 12,
@@ -1213,7 +1218,8 @@
         "damageMin": 1,
         "damageMax": 2,
         "spellPower": 1.0,
-        "tickMultiplier": 0.3333
+        "tickMultiplier": 0.3333,
+        "corruptionGain": 5
       },
       "cost": {
         "mana": 20
@@ -1242,7 +1248,8 @@
           }
         ]
       },
-      "status": "blighted"
+      "status": "blighted",
+      "mechanic": "rot"
     },
     {
       "id": "graveBloom",
@@ -1252,7 +1259,7 @@
       "target": "ground",
       "range": 20,
       "spreads": "rot",
-      "desc": "Raise a circle of grave-flowers at the cursor, 4 metres across, for 5 seconds: every enemy inside is afflicted by Rot (or has it refreshed) each second. Triggers the global cooldown. 15 second cooldown.",
+      "desc": "Seed an area that applies Rot to enemies standing in it.",
       "tuning": {
         "cooldown": 15,
         "radius": 4,
@@ -1356,7 +1363,7 @@
       "school": "shadow",
       "target": "self",
       "spendsAll": "corruption",
-      "desc": "Spend all your Corruption: heal 0.3% of your health for each point, and every Rot and curse of yours lasts 4 seconds longer. Triggers the global cooldown. 10 second cooldown.",
+      "desc": "Release your Corruption to heal and extend your active curses.",
       "tuning": {
         "cooldown": 10,
         "healPerPoint": 0.3,
@@ -1397,7 +1404,7 @@
       "target": "enemy",
       "range": 20,
       "defensive": true,
-      "desc": "Channel for 3 seconds, draining your target every half second; every point drained heals you. Moving breaks the channel. Triggers the global cooldown. 12 second cooldown.",
+      "desc": "Channel damage into healing. Each successful pulse builds Corruption.",
       "tuning": {
         "cooldown": 12,
         "castTime": 3,
@@ -1405,7 +1412,8 @@
         "damageMin": 1,
         "damageMax": 1,
         "spellPower": 1.0,
-        "healPercent": 100
+        "healPercent": 100,
+        "corruptionGain": 7
       },
       "cost": {
         "mana": 25
@@ -1437,7 +1445,8 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "drain"
     },
     {
       "id": "holyStrike",
@@ -1447,20 +1456,10 @@
       "school": "holy",
       "target": "enemy",
       "range": 2.6,
-      "stacks": {
-        "id": "righteous",
-        "name": "Righteous",
-        "max": 3,
-        "duration": 10,
-        "critBonus": 10
-      },
-      "desc": "A slow, heavy holy blow for 160% of normalised weapon damage. Each hit gives you a Righteous stack (+10% crit chance, up to 3, for 10 seconds); your next crit uses them all up. \n5 second cooldown.",
+      "desc": "Land a holy weapon hit to build one Conviction. Successful auto-attacks also build Conviction.",
       "tuning": {
-        "cooldown": 5,
+        "cooldown": 3,
         "damageMultiplier": 1.6
-      },
-      "cost": {
-        "mana": 30
       },
       "upgrades": {
         "enhanced": {
@@ -1489,6 +1488,9 @@
             "follow": "lightsBurn"
           }
         ]
+      },
+      "hitGain": {
+        "conviction": 1
       }
     },
     {
@@ -1499,16 +1501,16 @@
       "target": "enemy",
       "range": 15,
       "follow": "lightsBurn",
-      "desc": "A hammer of light falls on your target from the sky, then it burns for 8 seconds.  \n12 second cooldown.",
+      "desc": "Spend up to three Conviction on a heavy holy hit. Spend Reprisal for bonus damage. Full Reprisal guarantees a critical hit.",
       "tuning": {
         "cooldown": 12,
         "damageMin": 3,
         "damageMax": 6,
         "spellPower": 0.8,
-        "weaponDamage": 0.35
-      },
-      "cost": {
-        "mana": 30
+        "weaponDamage": 0.35,
+        "spendCap": 3,
+        "perCharge": 0.24,
+        "reprisalBonus": 0.4
       },
       "upgrades": {
         "enhanced": {
@@ -1539,7 +1541,9 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "conviction",
+      "spendsAll": "conviction"
     },
     {
       "id": "lightsBurn",
@@ -1569,17 +1573,17 @@
       "kind": "burst",
       "school": "holy",
       "target": "self",
-      "desc": "One holy spin around you that strikes every enemy within 3.5 metres for 150% of normalised weapon damage. Best at 3 Righteous stacks. Triggers the global cooldown. 10 second cooldown.",
+      "desc": "Spend up to three Conviction to burst around you. Spend Reprisal for bonus damage. Full Reprisal guarantees critical hits.",
       "tuning": {
         "cooldown": 10,
         "damageMultiplier": 1.5,
         "radius": 3.5,
         "windup": 0.22,
         "stagger": 0.2,
-        "knockback": 0
-      },
-      "cost": {
-        "mana": 30
+        "knockback": 0,
+        "spendCap": 3,
+        "perCharge": 0.24,
+        "reprisalBonus": 0.4
       },
       "upgrades": {
         "enhanced": {
@@ -1607,7 +1611,9 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "conviction",
+      "spendsAll": "conviction"
     },
     {
       "id": "bringToKneel",
@@ -1682,15 +1688,17 @@
       "school": "holy",
       "target": "self",
       "defensive": true,
-      "desc": "A shield of light absorbs damage up to 25% of your health for 10 seconds. Off the global cooldown. 30 second cooldown.",
+      "desc": "Spend up to three Conviction on a shield. Absorbing damage stores Reprisal for Hammer or Storm.",
       "tuning": {
-        "cooldown": 30,
+        "cooldown": 20,
         "duration": 10,
-        "absorbPercent": 25,
-        "offGlobalCooldown": 1
-      },
-      "cost": {
-        "mana": 20
+        "absorbPercent": 9,
+        "offGlobalCooldown": 1,
+        "spendCap": 3,
+        "perCharge": 6,
+        "reprisalBonus": 0.4,
+        "reprisalStore": 0.7,
+        "reprisalCap": 14
       },
       "upgrades": {
         "enhanced": {
@@ -1717,7 +1725,9 @@
             }
           }
         ]
-      }
+      },
+      "mechanic": "conviction",
+      "spendsAll": "conviction"
     },
     {
       "id": "mendingPrayer",
@@ -1725,7 +1735,7 @@
       "kind": "heal",
       "school": "holy",
       "target": "self",
-      "desc": "A 2 second prayer that heals you. Moving interrupts the cast. Triggers the global cooldown.",
+      "desc": "Spend mana on a deliberate self-heal.",
       "tuning": {
         "cooldown": 0,
         "castTime": 2,
@@ -1743,7 +1753,7 @@
       "kind": "heal",
       "school": "holy",
       "target": "self",
-      "desc": "An instant word of light that heals you a little. Triggers the global cooldown. 10 second cooldown.",
+      "desc": "An instant self-heal that trades efficiency for speed.",
       "tuning": {
         "cooldown": 10,
         "castTime": 0,
@@ -1852,6 +1862,945 @@
       },
       "cost": {
         "mana": 20
+      }
+    },
+    {
+      "id": "berserk",
+      "name": "Berserk",
+      "kind": "buff",
+      "school": "physical",
+      "target": "self",
+      "desc": "At 100 Fury, rampage for up to 10 seconds. Fury drains, and landed attacks extend the rampage by up to four seconds.",
+      "tuning": {
+        "cooldown": 32,
+        "duration": 6,
+        "damageBonus": 24,
+        "drain": 15,
+        "maxDuration": 10,
+        "extension": 0.45
+      },
+      "mechanic": "berserk"
+    },
+    {
+      "id": "twinFang",
+      "name": "Twin Fang",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Strike with each weapon. Landing both halves the Fury cost of your next Flurry or Crosscut.",
+      "tuning": {
+        "cooldown": 5,
+        "damageMultiplier": 0.85,
+        "comboDiscount": 50
+      },
+      "range": 2.6,
+      "mechanic": "pair",
+      "requires": "dualWield"
+    },
+    {
+      "id": "flurry",
+      "name": "Flurry",
+      "kind": "buff",
+      "school": "physical",
+      "target": "self",
+      "desc": "Spend 28 Fury for four alternating blows while moving at half speed. Press again to cancel.",
+      "tuning": {
+        "cooldown": 8,
+        "duration": 1.6,
+        "damageBonus": 0,
+        "tickInterval": 0.4,
+        "damageMultiplier": 0.65,
+        "movementScale": 0.5,
+        "radius": 2.8,
+        "pulses": 4
+      },
+      "mechanic": "mobile",
+      "cost": {
+        "resolve": 28
+      },
+      "requires": "dualWield"
+    },
+    {
+      "id": "crosscut",
+      "name": "Crosscut",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Spend 30 Fury to hit quickly with both weapons. Twin Fang can discount it.",
+      "tuning": {
+        "cooldown": 5,
+        "damageMultiplier": 1.25
+      },
+      "range": 2.6,
+      "mechanic": "pair",
+      "cost": {
+        "resolve": 30
+      },
+      "requires": "dualWield"
+    },
+    {
+      "id": "whirlwind",
+      "name": "Whirlwind",
+      "kind": "buff",
+      "school": "physical",
+      "target": "self",
+      "desc": "Spin for up to three seconds, spending 8 Fury per pulse and moving slowly. Press again to cancel.",
+      "tuning": {
+        "cooldown": 10,
+        "duration": 3,
+        "damageBonus": 0,
+        "tickInterval": 0.5,
+        "damageMultiplier": 0.66,
+        "movementScale": 0.55,
+        "radius": 3.2,
+        "pulseCost": 8,
+        "pulses": 6
+      },
+      "mechanic": "mobile",
+      "cost": {
+        "resolve": 8
+      },
+      "requires": "weapon"
+    },
+    {
+      "id": "vanish",
+      "name": "Vanish",
+      "kind": "stealth",
+      "school": "shadow",
+      "target": "self",
+      "desc": "Disappear mid-fight. Enemies search briefly while your existing poison continues ticking.",
+      "tuning": {
+        "cooldown": 36,
+        "offGlobalCooldown": 1,
+        "inCombat": 1,
+        "searchTime": 4
+      },
+      "bar": false
+    },
+    {
+      "id": "poisonedBladeToxin",
+      "name": "Blade Venom",
+      "kind": "dot",
+      "school": "nature",
+      "target": "enemy",
+      "desc": "A lingering poison applied by Poisoned Blade.",
+      "tuning": {
+        "cooldown": 0,
+        "duration": 12,
+        "tickInterval": 2,
+        "tickMultiplier": 0.23
+      },
+      "range": 3,
+      "bar": false,
+      "status": "poisoned"
+    },
+    {
+      "id": "assassinate",
+      "name": "Assassinate",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Spend combo points for immediate damage. Deals 40% more against targets below 35% health.",
+      "tuning": {
+        "cooldown": 4,
+        "damageMultiplier": 0.65,
+        "perPoint": 0.43
+      },
+      "range": 2.6,
+      "cost": {
+        "energy": 30
+      },
+      "requires": "weapon",
+      "spendsAll": "combo",
+      "execute": {
+        "below": 35,
+        "percent": 40
+      }
+    },
+    {
+      "id": "deathVenom",
+      "name": "Death Venom",
+      "kind": "control",
+      "school": "nature",
+      "target": "enemy",
+      "desc": "Spend combo points to intensify your poison and extend it briefly. Requires your poison on the target.",
+      "tuning": {
+        "cooldown": 5,
+        "venomPerPoint": 0.23,
+        "extend": 2
+      },
+      "range": 2.8,
+      "mechanic": "venom",
+      "cost": {
+        "energy": 20
+      },
+      "spendsAll": "combo",
+      "applies": {
+        "name": "Venom intensified",
+        "duration": 1
+      }
+    },
+    {
+      "id": "cripplingCut",
+      "name": "Crippling Cut",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Wound and slow a pursuer, building one combo point on a hit.",
+      "tuning": {
+        "cooldown": 6,
+        "damageMultiplier": 0.65
+      },
+      "range": 2.6,
+      "cost": {
+        "energy": 25
+      },
+      "requires": "weapon",
+      "hitGain": {
+        "combo": 1
+      },
+      "applies": {
+        "name": "Crippled",
+        "duration": 5,
+        "slow": 45
+      }
+    },
+    {
+      "id": "smokeBomb",
+      "name": "Smoke Bomb",
+      "kind": "aoe",
+      "school": "shadow",
+      "target": "self",
+      "desc": "Throw down smoke that blocks enemy shots passing through it for five seconds.",
+      "tuning": {
+        "cooldown": 25,
+        "radius": 3.2,
+        "duration": 5,
+        "tickInterval": 1,
+        "damageMin": 0,
+        "damageMax": 0,
+        "spellPower": 0
+      },
+      "mechanic": "smoke",
+      "cost": {
+        "energy": 25
+      }
+    },
+    {
+      "id": "distract",
+      "name": "Distract",
+      "kind": "control",
+      "school": "shadow",
+      "target": "enemy",
+      "desc": "Turn an unaware enemy toward the point you aim at without breaking Shadow.",
+      "tuning": {
+        "cooldown": 14
+      },
+      "range": 12,
+      "mechanic": "distract",
+      "cost": {
+        "energy": 15
+      },
+      "applies": {
+        "name": "Distracted",
+        "duration": 5
+      }
+    },
+    {
+      "id": "silencingBlade",
+      "name": "Silencing Blade",
+      "kind": "interrupt",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Interrupt a nearby enemy cast and lock it out briefly.",
+      "tuning": {
+        "cooldown": 12,
+        "lockout": 3,
+        "damageMin": 1,
+        "damageMax": 2,
+        "offGlobalCooldown": 1,
+        "spellPower": 0,
+        "weaponDamage": 0.35
+      },
+      "range": 2.8,
+      "cost": {
+        "energy": 20
+      },
+      "requires": "weapon"
+    },
+    {
+      "id": "pinningShot",
+      "name": "Pinning Shot",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Root an ordinary enemy for two seconds.",
+      "tuning": {
+        "cooldown": 10,
+        "damageMultiplier": 0.65
+      },
+      "range": 18,
+      "cost": {
+        "focus": 22
+      },
+      "ranged": true,
+      "applies": {
+        "name": "Pinned",
+        "duration": 2,
+        "root": 1
+      }
+    },
+    {
+      "id": "concussionArrow",
+      "name": "Concussion Arrow",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Knock an ordinary enemy back, including into prepared ground.",
+      "tuning": {
+        "cooldown": 10,
+        "damageMultiplier": 0.9,
+        "knockback": 2.8
+      },
+      "range": 18,
+      "mechanic": "ordinaryPush",
+      "cost": {
+        "focus": 25
+      },
+      "ranged": true
+    },
+    {
+      "id": "piercingShot",
+      "name": "Piercing Shot",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Shoot through your target and up to two enemies directly behind it.",
+      "tuning": {
+        "cooldown": 8,
+        "damageMultiplier": 1.18,
+        "maxTargets": 3,
+        "spread": 6
+      },
+      "range": 18,
+      "mechanic": "pierce",
+      "cost": {
+        "focus": 30
+      },
+      "ranged": true
+    },
+    {
+      "id": "scatterShot",
+      "name": "Scatter Shot",
+      "kind": "instant",
+      "school": "physical",
+      "target": "enemy",
+      "desc": "Interrupt a cast with a shot at close range.",
+      "tuning": {
+        "cooldown": 13,
+        "damageMultiplier": 0.6,
+        "lockout": 3,
+        "offGlobalCooldown": 1
+      },
+      "range": 5,
+      "mechanic": "interruptArrow",
+      "cost": {
+        "focus": 20
+      },
+      "ranged": true
+    },
+    {
+      "id": "tripwire",
+      "name": "Tripwire",
+      "kind": "trap",
+      "school": "nature",
+      "target": "self",
+      "desc": "Lay a tripwire that roots the first ordinary enemy to cross it.",
+      "tuning": {
+        "cooldown": 16,
+        "armTime": 0.65,
+        "triggerRadius": 1.6,
+        "lifetime": 30,
+        "maxTraps": 1,
+        "radius": 1.6,
+        "duration": 2.5,
+        "slow": 0
+      },
+      "mechanic": "tripwire",
+      "cost": {
+        "focus": 15
+      }
+    },
+    {
+      "id": "burningTar",
+      "name": "Burning Tar",
+      "kind": "aoe",
+      "school": "fire",
+      "target": "ground",
+      "desc": "An ignited pool burns instead of slowing.",
+      "tuning": {
+        "cooldown": 0,
+        "radius": 3,
+        "duration": 8,
+        "tickInterval": 1,
+        "damageMin": 2,
+        "damageMax": 4,
+        "weaponDamage": 0.18,
+        "spellPower": 0
+      },
+      "range": 18,
+      "bar": false
+    },
+    {
+      "id": "soulWard",
+      "name": "Soul Ward",
+      "kind": "shield",
+      "school": "shadow",
+      "target": "self",
+      "desc": "Spend up to 40 Corruption to absorb damage while you hold your ground.",
+      "tuning": {
+        "cooldown": 16,
+        "duration": 7,
+        "absorbPercent": 8,
+        "spendCap": 40,
+        "perCharge": 0.9,
+        "offGlobalCooldown": 1
+      },
+      "mechanic": "soulWard",
+      "spendsAll": "corruption"
+    },
+    {
+      "id": "erupt",
+      "name": "Erupt",
+      "kind": "burst",
+      "school": "shadow",
+      "target": "self",
+      "desc": "Spend 30 Corruption. Consume your Rot on nearby targets for a burst based on its remaining ticks, capped per enemy.",
+      "tuning": {
+        "cooldown": 10,
+        "damageMultiplier": 0,
+        "radius": 6,
+        "windup": 0.28,
+        "stagger": 0,
+        "knockback": 0,
+        "cashoutScale": 0.75,
+        "cashoutCap": 38
+      },
+      "mechanic": "erupt",
+      "cost": {
+        "corruption": 30
+      }
+    },
+    {
+      "id": "reap",
+      "name": "Reap",
+      "kind": "instant",
+      "school": "shadow",
+      "target": "enemy",
+      "desc": "Consume one target’s Rot to deal a capped burst based on its remaining damage.",
+      "tuning": {
+        "cooldown": 7,
+        "damageMin": 0,
+        "damageMax": 0,
+        "cashoutScale": 0.9,
+        "cashoutCap": 34,
+        "spellPower": 0
+      },
+      "range": 16,
+      "mechanic": "reap",
+      "cost": {
+        "corruption": 15
+      }
+    },
+    {
+      "id": "graspingDead",
+      "name": "Grasping Dead",
+      "kind": "aoe",
+      "school": "shadow",
+      "target": "ground",
+      "desc": "Hands grasp at enemies in a ground area and slow their advance.",
+      "tuning": {
+        "cooldown": 18,
+        "radius": 4,
+        "duration": 6,
+        "tickInterval": 1,
+        "damageMin": 0,
+        "damageMax": 0,
+        "slow": 55,
+        "spellPower": 0
+      },
+      "range": 17,
+      "cost": {
+        "mana": 22
+      }
+    },
+    {
+      "id": "bloodPact",
+      "name": "Blood Pact",
+      "kind": "buff",
+      "school": "shadow",
+      "target": "self",
+      "desc": "Trade 12% of maximum health for eight seconds of 35% stronger life drains.",
+      "tuning": {
+        "cooldown": 25,
+        "duration": 8,
+        "damageBonus": 0,
+        "healthCost": 12,
+        "drainBonus": 35
+      },
+      "mechanic": "bloodPact"
+    },
+    {
+      "id": "dread",
+      "name": "Dread",
+      "kind": "control",
+      "school": "shadow",
+      "target": "enemy",
+      "desc": "Drive an ordinary enemy away for a short time.",
+      "tuning": {
+        "cooldown": 20
+      },
+      "range": 12,
+      "mechanic": "fear",
+      "cost": {
+        "mana": 20
+      },
+      "applies": {
+        "name": "Dread",
+        "duration": 3
+      }
+    },
+    {
+      "id": "firebolt",
+      "name": "Firebolt",
+      "kind": "cast",
+      "school": "fire",
+      "target": "enemy",
+      "desc": "Cast a fire projectile. On hit, consume Chill to release a small steam burst.",
+      "tuning": {
+        "cooldown": 0,
+        "castTime": 1.25,
+        "damageMin": 9,
+        "damageMax": 13,
+        "spellPower": 0.85,
+        "projectileSpeed": 23
+      },
+      "range": 19,
+      "mechanic": "steam",
+      "cost": {
+        "mana": 12
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "A quicker incantation reduces the cast by 0.15 seconds.",
+          "add": {
+            "castTime": -0.15
+          }
+        },
+        "forks": [
+          {
+            "id": "hotterFlame",
+            "name": "Hotter Flame",
+            "text": "Firebolt gains 20% spell power scaling.",
+            "add": {
+              "spellPower": 0.2
+            }
+          },
+          {
+            "id": "scorched",
+            "name": "Scorched",
+            "text": "Firebolt leaves the target Vulnerable, taking 8% more damage for four seconds.",
+            "applies": {
+              "name": "Scorched",
+              "duration": 4,
+              "damageTaken": 8,
+              "status": "vulnerable"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "frostLance",
+      "name": "Frost Lance",
+      "kind": "cast",
+      "school": "frost",
+      "target": "enemy",
+      "desc": "Strike with a shard of frost and Chill the target, slowing it by 35%.",
+      "tuning": {
+        "cooldown": 4,
+        "castTime": 0.85,
+        "damageMin": 6,
+        "damageMax": 9,
+        "spellPower": 0.6,
+        "projectileSpeed": 28
+      },
+      "range": 18,
+      "cost": {
+        "mana": 15
+      },
+      "applies": {
+        "name": "Chilled",
+        "duration": 5,
+        "slow": 35,
+        "status": "chilled"
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Chill lasts seven seconds.",
+          "applies": {
+            "name": "Chilled",
+            "duration": 7,
+            "slow": 35,
+            "status": "chilled"
+          }
+        },
+        "forks": [
+          {
+            "id": "deepChill",
+            "name": "Deep Chill",
+            "text": "Chill slows by 50% for seven seconds.",
+            "applies": {
+              "name": "Chilled",
+              "duration": 7,
+              "slow": 50,
+              "status": "chilled"
+            }
+          },
+          {
+            "id": "splinter",
+            "name": "Splinter",
+            "text": "Frost Lance gains 25% spell power scaling.",
+            "add": {
+              "spellPower": 0.25
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stormfield",
+      "name": "Stormfield",
+      "kind": "aoe",
+      "school": "lightning",
+      "target": "ground",
+      "desc": "Place a field that hits enemies with lightning every second.",
+      "tuning": {
+        "cooldown": 12,
+        "radius": 3.5,
+        "duration": 5,
+        "tickInterval": 1,
+        "damageMin": 3,
+        "damageMax": 5,
+        "spellPower": 0.35
+      },
+      "range": 17,
+      "cost": {
+        "mana": 26
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The field lasts another second.",
+          "add": {
+            "duration": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "gatheringStorm",
+            "name": "Gathering Storm",
+            "text": "Widen the field by one metre.",
+            "add": {
+              "radius": 1
+            }
+          },
+          {
+            "id": "chargedGround",
+            "name": "Charged Ground",
+            "text": "Each pulse gains 20% spell power scaling, and the cast costs 32 mana.",
+            "add": {
+              "spellPower": 0.2
+            },
+            "cost": {
+              "mana": 32
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "frostRing",
+      "name": "Frost Ring",
+      "kind": "burst",
+      "school": "frost",
+      "target": "self",
+      "desc": "Release a ring of frost that briefly roots nearby ordinary enemies.",
+      "tuning": {
+        "cooldown": 16,
+        "damageMultiplier": 0,
+        "radius": 3.8,
+        "windup": 0.15,
+        "stagger": 0,
+        "knockback": 0,
+        "damageMin": 2,
+        "damageMax": 4,
+        "spellPower": 0.25
+      },
+      "cost": {
+        "mana": 19
+      },
+      "applies": {
+        "name": "Frozen",
+        "duration": 2,
+        "root": 1
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The ring reaches another 0.7 metres.",
+          "add": {
+            "radius": 0.7
+          }
+        },
+        "forks": [
+          {
+            "id": "wideWinter",
+            "name": "Wide Winter",
+            "text": "The ring reaches another metre.",
+            "add": {
+              "radius": 1
+            }
+          },
+          {
+            "id": "quickThaw",
+            "name": "Quick Thaw",
+            "text": "A shorter one-second root reduces the cooldown by four seconds.",
+            "add": {
+              "cooldown": -4
+            },
+            "applies": {
+              "name": "Frozen",
+              "duration": 1,
+              "root": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "blink",
+      "name": "Blink",
+      "kind": "buff",
+      "school": "arcane",
+      "target": "self",
+      "desc": "Blink toward your aim, stopping before solid obstacles or unsafe ground.",
+      "tuning": {
+        "cooldown": 14,
+        "duration": 0,
+        "damageBonus": 0,
+        "distance": 6,
+        "offGlobalCooldown": 1
+      },
+      "mechanic": "blink",
+      "cost": {
+        "mana": 15
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "Blink recovers two seconds sooner.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "longStep",
+            "name": "Long Step",
+            "text": "Blink travels another two metres, stopping before obstacles.",
+            "add": {
+              "distance": 2
+            }
+          },
+          {
+            "id": "lightFoot",
+            "name": "Light Foot",
+            "text": "Blink costs eight mana.",
+            "cost": {
+              "mana": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "arcaneWard",
+      "name": "Arcane Ward",
+      "kind": "shield",
+      "school": "arcane",
+      "target": "self",
+      "desc": "Raise a ward that absorbs a portion of your maximum health in damage.",
+      "tuning": {
+        "cooldown": 20,
+        "duration": 8,
+        "absorbPercent": 25,
+        "offGlobalCooldown": 1
+      },
+      "cost": {
+        "mana": 20
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The ward absorbs another 5% of maximum health.",
+          "add": {
+            "absorbPercent": 5
+          }
+        },
+        "forks": [
+          {
+            "id": "lastingWard",
+            "name": "Lasting Ward",
+            "text": "The ward lasts twelve seconds.",
+            "tuning": {
+              "duration": 12
+            }
+          },
+          {
+            "id": "stoutWard",
+            "name": "Stout Ward",
+            "text": "The ward absorbs another 10% maximum health, with a five-second longer cooldown.",
+            "add": {
+              "absorbPercent": 10,
+              "cooldown": 5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "arcaneBolt",
+      "name": "Arcane Bolt",
+      "kind": "cast",
+      "school": "arcane",
+      "target": "enemy",
+      "desc": "Cast a fast and repeatable force projectile.",
+      "tuning": {
+        "cooldown": 0,
+        "castTime": 1,
+        "damageMin": 7,
+        "damageMax": 11,
+        "spellPower": 0.75,
+        "projectileSpeed": 24
+      },
+      "range": 19,
+      "cost": {
+        "mana": 10
+      }
+    },
+    {
+      "id": "echoSigil",
+      "name": "Echo Sigil",
+      "kind": "buff",
+      "school": "arcane",
+      "target": "ground",
+      "desc": "Place a sigil. Cast your next eligible projectile nearby to repeat it once at 45% damage.",
+      "tuning": {
+        "cooldown": 18,
+        "duration": 10,
+        "damageBonus": 0,
+        "radius": 4,
+        "echoScale": 0.45
+      },
+      "range": 10,
+      "mechanic": "sigil",
+      "cost": {
+        "mana": 16
+      }
+    },
+    {
+      "id": "forceWave",
+      "name": "Force Wave",
+      "kind": "burst",
+      "school": "arcane",
+      "target": "self",
+      "desc": "Push ordinary nearby enemies away from you, including into a field.",
+      "tuning": {
+        "cooldown": 12,
+        "damageMultiplier": 0,
+        "radius": 4,
+        "windup": 0.18,
+        "stagger": 0,
+        "knockback": 3,
+        "damageMin": 4,
+        "damageMax": 6,
+        "spellPower": 0.45
+      },
+      "mechanic": "ordinaryPush",
+      "cost": {
+        "mana": 20
+      }
+    },
+    {
+      "id": "collapseWard",
+      "name": "Collapse Ward",
+      "kind": "burst",
+      "school": "arcane",
+      "target": "self",
+      "desc": "Consume your remaining Arcane Ward and turn its absorb value into a burst.",
+      "tuning": {
+        "cooldown": 10,
+        "damageMultiplier": 0,
+        "radius": 4,
+        "windup": 0.18,
+        "stagger": 0,
+        "knockback": 0,
+        "damageMin": 0,
+        "damageMax": 0,
+        "wardScale": 1.15,
+        "spellPower": 0
+      },
+      "mechanic": "collapseWard"
+    },
+    {
+      "id": "meteor",
+      "name": "Meteor",
+      "kind": "groundCast",
+      "school": "fire",
+      "target": "ground",
+      "desc": "Mark an area and commit to a long cast. The meteor hits the marked ground when the cast completes.",
+      "tuning": {
+        "cooldown": 18,
+        "castTime": 2.7,
+        "radius": 4.2,
+        "damageMin": 20,
+        "damageMax": 27,
+        "spellPower": 1.1
+      },
+      "range": 18,
+      "cost": {
+        "mana": 35
+      }
+    },
+    {
+      "id": "chainLightning",
+      "name": "Chain Lightning",
+      "kind": "cast",
+      "school": "lightning",
+      "target": "enemy",
+      "desc": "Strike a target, then jump to up to two nearby enemies at reduced damage.",
+      "tuning": {
+        "cooldown": 9,
+        "castTime": 1.4,
+        "damageMin": 8,
+        "damageMax": 12,
+        "spellPower": 0.75,
+        "projectileSpeed": 37,
+        "maxTargets": 3,
+        "spread": 5,
+        "jumpScale": 0.72
+      },
+      "range": 17,
+      "mechanic": "chain",
+      "cost": {
+        "mana": 24
       }
     }
   ]

@@ -12,6 +12,7 @@ var real_trained: Array
 func _process(_dt: float) -> bool:
 	frame += 1
 	if frame == 1:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 		Store.dir = "user://test_store"
 		for f in DirAccess.get_files_at(Store.dir):
 			DirAccess.remove_absolute(Store.dir + "/" + f)
@@ -26,7 +27,7 @@ func _process(_dt: float) -> bool:
 	elif frame == 3:
 		var sk = game.skills
 		_ok(not sk.knows_ability("rend") and not ActionBar.bar_ability(game, "rend"), "a trained spell is unknown and not in the spellbook until learned")
-		_ok(sk.knows_ability("cleave"), "the rest of the kit is known from the start")
+		_ok(sk.knows_ability("heavyStrike"), "the first core ability is known from the start")
 		var row = game.dialogue.train_rows("mara").filter(func(r): return r.id == "spell:rend")
 		_ok(row.size() == 1 and row[0].state == "locked", "below its level the trainer shows it locked: %s" % [row])
 		_ok(not sk.learn_spell("rend"), "it cannot be learned below its level")
@@ -56,13 +57,13 @@ func _process(_dt: float) -> bool:
 		sk.reset()
 		sk.apply_spells(data.spells)
 		_ok(sk.knows_ability("rend"), "and a load gives it back")
-		# the real data: a Warrior starts with Heavy Strike alone, Brask
-		# teaches three early spells, the rest wait for later trainers
+		# The production class has six core spells. Trainers offer six swaps.
 		DB.archetypes.warden.trained = real_trained
 		sk.reset()
-		_ok(sk.knows_ability("heavyStrike") and not sk.knows_ability("crushingBlow"), "a new Warrior knows only Heavy Strike")
-		_ok(game.dialogue.train_rows("brask").filter(func(r): return r.id.begins_with("spell:")).size() == 3, "Brask teaches Warriors three spells")
-		_ok(not sk.knows_ability("lunge") and not sk.learn_spell("lunge"), "a later spell is locked and no trainer teaches it yet")
+		game.progression.level = 1
+		_ok(DB.archetypes.warden.bar.filter(func(id): return sk.knows_ability(id)) == ["heavyStrike"], "a new Warrior begins with one core ability")
+		_ok(game.dialogue.train_rows("brask").filter(func(r): return r.id.begins_with("spell:")).size() == 6, "Brask offers six Warrior swaps")
+		_ok(not sk.knows_ability("brace") and not sk.learn_spell("brace"), "a later swap remains level locked")
 		print("trainer spell check: %s" % ("all checks pass" if failed == 0 else "%d failed" % failed))
 		quit(1 if failed else 0)
 	return false

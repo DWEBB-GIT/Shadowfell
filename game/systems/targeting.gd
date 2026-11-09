@@ -102,12 +102,14 @@ func soft_target(aim, range_: float, force := false):
 	var best = null
 	var best_score := INF
 	for e in game.enemies.list:
-		if not targetable(e):
-			continue
+		# the cheap distance test first: most of the world is far away
 		var dx: float = e.position.x - p.x
 		var dz: float = e.position.z - p.z
+		var lim: float = range_ + e.radius
+		if absf(dx) > lim or absf(dz) > lim:
+			continue
 		var d := U.hyp(dx, dz)
-		if d > range_ + e.radius:
+		if d > lim or not targetable(e):
 			continue
 		var near_cursor: bool = aim != null and U.hyp(e.position.x - aim.x, e.position.z - aim.z) <= DB.CONFIG.targeting.softAimRadius
 		var angle := acos(clampf((dx * ax + dz * az) / d, -1, 1)) if d > 0.01 else 0.0
