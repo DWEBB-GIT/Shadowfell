@@ -2613,7 +2613,7 @@
       "id": "tf_wolf_field_1",
       "enemy": "tf_wolf",
       "position": [
-        -592,
+        -576.5,
         -348
       ]
     },
@@ -2645,8 +2645,8 @@
       "id": "tf_wolf_field_5",
       "enemy": "tf_wolf",
       "position": [
-        -566,
-        -394
+        -561.8,
+        -383.8
       ]
     },
     {

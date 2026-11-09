@@ -47,8 +47,16 @@ func _run() -> void:
 	p.add_xp(1)
 	check(p.level == 50 and p.xp == 0 and p.rested == 0, "one XP crosses 49 to 50 and clears overflow/rested")
 	check(p.add_xp(1000000) == 0 and p.level == 50 and p.xp == 0, "large awards cannot create level 51")
+	# its prerequisite first (Elsie's odd jobs), handed in for real so the
+	# save holds what that quest gives
+	for need in DB.quests.vr_reed_message.get("requires", []):
+		if game.quests.status(need) == "available":
+			game.quests.accept(need) # (Odd Jobs is taken on entering the world)
+		game.quests.count_talk(DB.quests[need].turnIn) # walk the hinge to Iren
+		check(game.quests.complete(need), "prerequisite %s completes at the cap" % need)
+	var coins_before: int = game.inventory.coins
 	check(game.quests.accept("vr_reed_message") and game.quests.complete("vr_reed_message"), "quests can still complete at the cap")
-	check(game.inventory.coins == 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
+	check(game.inventory.coins == coins_before + 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
 	check(game.save.save().ok and game.save.read().status == "ok", "a level-50 character saves and reads normally")
 	var saved: Dictionary = game.save.read().data
 	var inventory: Dictionary = saved.inventory.duplicate(true)
