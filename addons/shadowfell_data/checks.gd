@@ -326,8 +326,8 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					# use an ability (on a targeted enemy type, at a map area)
 					if DataStore.find(s.abilities, o.get("target")).is_empty():
 						bad.call("%s names unknown ability %s" % [label, o.get("target")])
-					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty():
-						bad.call("%s: on names unknown enemy %s" % [label, o.on])
+					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty() and DataStore.find(s.npcs, o.on).is_empty():
+						bad.call("%s: on names unknown enemy or npc %s" % [label, o.on])
 					if o.has("at") and DataStore.find(s.locations, o.at).is_empty():
 						bad.call("%s: at names unknown map area %s" % [label, o.at])
 				_:
