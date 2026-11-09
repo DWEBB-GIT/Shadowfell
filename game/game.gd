@@ -724,7 +724,11 @@ func _click(button: String) -> bool:
 	move_to = null
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
-	var acts: bool = button == "right" or settings.get_value("leftInteract")
+	# right click acts and never moves you. With click to move a left click
+	# also acts: it walks you up to whoever you clicked (into your attack's
+	# reach for an enemy, talking range for a townsperson), then attacks or
+	# talks, the same for every class (Dan, 2026-11-04).
+	var acts: bool = button == "right" or walk or settings.get_value("leftInteract")
 	# a left click on the ground lets go of the target (unless it walks you
 	# there: a caster keeps their target while repositioning); a right click
 	# does not. With mouse aim a left click there attacks whoever is near.
