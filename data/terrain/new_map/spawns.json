@@ -2619,7 +2619,7 @@
 	  "id": "tf_wolf_field_1",
 	  "enemy": "tf_wolf",
 	  "position": [
-		-592,
+		-576.5,
 		-348
 	  ]
 	},
@@ -2651,8 +2651,8 @@
 	  "id": "tf_wolf_field_5",
 	  "enemy": "tf_wolf",
 	  "position": [
-		-566,
-		-394
+		-561.8,
+		-383.8
 	  ]
 	},
 	{
@@ -4045,8 +4045,8 @@
 	  "id": "copper_ore_10",
 	  "model": "rock1",
 	  "position": [
-		478.47,
-		-103.81
+		476.02,
+		-103.32
 	  ],
 	  "prompt": "Take the copper ore",
 	  "reward": {
