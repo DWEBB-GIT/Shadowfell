@@ -1386,7 +1386,7 @@
       "summary": "Speak to Abel beside the broken cart. Read the milestone just east along the road, then return to him.",
       "offer": "“Up you get. Wheel’s off.” Abel Hurst, the carrier, is already sitting in the road with his boots off. “I said you could ride on my sacks from Mossreed if you made yourself useful. Here is useful. Walk on to the milestone and tell me how far we are from Thornford. My feet and I are not speaking.”",
       "progress": "“Read the milestone up the road,” Abel says. “My feet and I are not speaking.”\n\nMove with W, A, S and D or click the ground. Follow the road east. Press {interact} beside the milestone to read it, then return to Abel. {jump} jumps over low obstacles.",
-      "complete": "“Two hundred paces? Good. That gives Elsie plenty of time to start being cross.” Abel pulls a sack over the loose wheel. “And somebody has carved ALE NOT INCLUDED on it? Sensible. People expect miracles from a milestone.” He points behind the cart. “Speaking of expectations, those rats think I brought them breakfast.”",
+      "complete": "“Two hundred paces? Good. That gives Elsie plenty of time to start being cross.” Abel pulls a sack over the loose wheel. “And somebody has carved ALE NOT INCLUDED on it? Sensible. People expect miracles from a milestone.” Something grunts behind the cart. Abel does not look round. “Speaking of expectations, something thinks I brought it breakfast.”",
       "objectives": [
         {
           "id": "abel",
@@ -1415,42 +1415,6 @@
       "allowAbandon": true
     },
     {
-      "id": "ni_rats_in_the_grain",
-      "name": "Rats in the Grain",
-      "map": "new",
-      "zone": "tf_reach",
-      "level": [
-        1,
-        1
-      ],
-      "giver": "ni_abel",
-      "turnIn": "ni_abel",
-      "requires": [
-        "ni_stretch_your_legs"
-      ],
-      "summary": "Kill four grain rats in the spilled grain beside Abel's cart, then return to him.",
-      "offer": "“Hear that? That is my grain being eaten. Two sacks split when the wheel went, and the rats were here before the dust settled.” He nods at whatever you are holding. “You have a weapon of sorts. Four of them, and the rest will take the hint.”",
-      "progress": "Click a rat or press {cycleTarget} to select a nearby target. Press {bar0} for your first class ability; right-click an enemy to keep attacking. Fight one at a time. Press {interact} beside dropped loot to collect it. Use Trail Bread from your utility bar between fights to recover. Turn toward your target before attacking. Hover over your ability icon to see its resource cost.",
-      "complete": "Abel knots a split sack shut. “Four fewer mouths on the payroll. That is a start.” He looks at your weapon. “Thornford has people who can teach you a few tricks. First, we have a larger customer.”",
-      "objectives": [
-        {
-          "id": "rats",
-          "type": "kill",
-          "target": "ni_grain_rat",
-          "count": 4,
-          "label": "Grain rats driven off",
-          "location": "ni_roadside"
-        }
-      ],
-      "reward": {
-        "size": "chainStep",
-        "xpScale": 1.0,
-        "coins": 1
-      },
-      "story": true,
-      "chapter": "The Road In"
-    },
-    {
       "id": "ni_loose_boar",
       "name": "A Pig With Ideas",
       "map": "new",
@@ -1462,12 +1426,12 @@
       "giver": "ni_abel",
       "turnIn": "ni_abel",
       "requires": [
-        "ni_rats_in_the_grain"
+        "ni_stretch_your_legs"
       ],
-      "summary": "Kill the loose young boar eating the grain east of Abel's cart, then return to Abel.",
-      "offer": "Something large is snuffling in the grain behind the cart. Abel does not get up. “That is not a rat. That is a young boar, loose from the farms past Thornford. Heda Holt’s fence has been down half the summer and her orchard is full of them now.” He waves a boot at it. “It is bigger than a rat and it bites back. Mind it.”",
-      "progress": "The loose young boar is east of the cart. Its Tusk Sweep shows a wedge on the ground: step out before it fills. The boar commits to that direction, so circle behind it. Eat Trail Bread between fights if you need to recover; moving or taking damage interrupts eating.",
-      "complete": "“Ha! Well, that is supper for somebody.” Abel looks at you differently. “Heda will pay good coin for hands that can do that. Tell her I sent you, once Elsie has fed you.”",
+      "summary": "Kill the loose young boar eating the spilled grain east of Abel's cart, take its meat, then return to Abel.",
+      "offer": "Something large is snuffling in the grain behind the cart. Abel does not get up. “Two sacks split when the wheel went, and that is a young boar eating them. Loose from the farms past Thornford. Heda Holt’s fence has been down half the summer and her orchard is full of them now.” He waves a boot at it. “You have a weapon of sorts. It bites back, so mind it. And do not leave the meat in the road. Nobody walks into Thornford empty-handed.”",
+      "progress": "Click the boar or press {cycleTarget} to select it. Press {bar0} for your first class ability; right-click it to keep attacking. Turn toward your target before attacking, and hover over your ability icon to see its resource cost. The loose young boar is east of the cart. Its Tusk Sweep shows a wedge on the ground: step out before it fills. The boar commits to that direction, so circle behind it. Eat Trail Bread between fights if you need to recover; moving or taking damage interrupts eating.",
+      "complete": "“Ha! Well, that is supper for somebody. Keep that meat, it is your fare into town.” Abel looks at you differently. “Heda will pay good coin for hands that can do that. Tell her I sent you, once Elsie has fed you.”",
       "objectives": [
         {
           "id": "boar",
@@ -1475,6 +1439,15 @@
           "target": "ni_loose_boar",
           "count": 1,
           "label": "Drive off the loose boar",
+          "location": "ni_roadside"
+        },
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "boar_meat",
+          "count": 1,
+          "keep": true,
+          "label": "Take the boar's meat",
           "location": "ni_roadside"
         }
       ],
@@ -1501,9 +1474,9 @@
         "ni_loose_boar"
       ],
       "summary": "Take Abel's note to Elsie Reed at the Lantern Inn in Thornford, so she knows her grain is late and can send the wheelwright.",
-      "offer": "“I am not leaving the cart for the next rat, or the next pig. Take this to Elsie Reed at the Lantern Inn. It says her grain is late, not stolen, and could she send the wheelwright.” He hesitates, then adds a line at the bottom. “And it says you are not useless. She will want to know that. She has more work than hands in that village.”",
+      "offer": "“I am not leaving the cart for the next pig. Take this to Elsie Reed at the Lantern Inn. It says her grain is late, not stolen, and could she send the wheelwright.” He hesitates, then adds a line at the bottom. “And it says you are not useless. She will want to know that. She has more work than hands in that village. And take the boar meat with you. Elsie’s kitchen will know what to do with it.”",
       "progress": "Follow the road east and down past Miller's Pool into Thornford. The Lantern Inn stands on the west side of the square. Give Abel's note to Elsie Reed.",
-      "complete": "Elsie reads Abel's note twice. “Late. Of course he is late. That man would be late to his own wake and then complain about the ale.” She reads the last line again and looks you over. “He says you dealt with his rats and a pig and did not steal anything. Round here, that is a reference.”",
+      "complete": "Elsie reads Abel's note twice. “Late. Of course he is late. That man would be late to his own wake and then complain about the ale.” She reads the last line again and looks you over. “He says you dealt with a pig in his grain and did not steal anything. Round here, that is a reference.”",
       "turnInLog": "You have reached Thornford. Elsie Reed runs the Lantern Inn, and the village has work for anyone willing to do it.",
       "lend": [
         {

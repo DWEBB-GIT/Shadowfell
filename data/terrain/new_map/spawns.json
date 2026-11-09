@@ -1,11 +1,6 @@
 {
   "_about": "Enemies placed on the new map by hand (the bake does not touch this file), in world.json's enemySpawns shape. For now a few risen dead by the start, to test hits on. Quiet Levy narrative: named local quest zones and original optional stories. puzzles contains physical controls, clues, retry text and solutions; move mechanisms using World → Puzzles.",
   "enemySpawns": [
-	{"id": "ni_grain_rat_1", "enemy": "ni_grain_rat", "position": [-626, -168]},
-	{"id": "ni_grain_rat_2", "enemy": "ni_grain_rat", "position": [-631, -173]},
-	{"id": "ni_grain_rat_3", "enemy": "ni_grain_rat", "position": [-622, -162]},
-	{"id": "ni_grain_rat_4", "enemy": "ni_grain_rat", "position": [-633, -163]},
-	{"id": "ni_grain_rat_5", "enemy": "ni_grain_rat", "position": [-627, -157]},
 	{"id": "ni_loose_boar", "enemy": "ni_loose_boar", "position": [-611, -168]},
 	{
 	  "id": "nm_skeleton_1",
@@ -31306,7 +31301,6 @@
 	"baselineMinutes": 120,
 	"opening": [
 	  "ni_stretch_your_legs",
-	  "ni_rats_in_the_grain",
 	  "ni_loose_boar",
 	  "ni_the_road_in",
 	  "sf_odd_jobs",

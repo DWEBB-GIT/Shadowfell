@@ -1569,16 +1569,16 @@
           "text": "“Seasoned timber. Straight grain. Opinions available while you wait.”"
         },
         {
-          "text": "Three paces. I moved it back. Heda has her hedge, I have the timber trail, and perhaps we can all get on with our work.",
-          "when": {
-            "flag": "vr_boundary_settled"
-          }
-        },
-        {
           "text": "Iren has the dry handles. Good. A tool should outlive a bad mood.",
           "when": {
             "quest": "nr_timber",
             "status": "done"
+          }
+        },
+        {
+          "text": "Three paces. I moved it back. Heda has her hedge, I have the timber trail, and perhaps we can all get on with our work.",
+          "when": {
+            "flag": "vr_boundary_settled"
           }
         },
         {

@@ -64,7 +64,7 @@ func _run():
 	check(game.quests.status("in_pond_to_pot")=="done","Cooked meals finish the actual order")
 	check(game.inventory.coins==paid_before+12,"The finite lunch order pays its stated wage")
 	check(not game.quests.complete("in_pond_to_pot") and game.inventory.coins==paid_before+12,"Completed order cannot be paid twice")
-	check(not game.quests.done.has("ni_rats_in_the_grain") and not game.quests.done.has("vr_first_hunt") and not game.quests.done.has("sf_a_meal_earned"),"Livelihood loop does not secretly complete combat quests")
+	check(not game.quests.done.has("ni_loose_boar") and not game.quests.done.has("vr_first_hunt") and not game.quests.done.has("sf_a_meal_earned"),"Livelihood loop does not secretly complete combat quests")
 	game.dialogue.close()
 	game.player.health=game.player.max_health-30
 	game.resources.since_combat=100
