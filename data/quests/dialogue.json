@@ -3665,6 +3665,23 @@
           ]
         }
       ]
+    },
+    {
+      "id": "ni_abel",
+      "greetings": [
+        {
+          "text": "Abel sits in the road beside his tilted cart. “Mossreed to Thornford, every week for twenty years, and today the wheel decides it has had enough.”"
+        },
+        {
+          "text": "“Still here. Wheel’s still off. If you see the wheelwright, tell him there is a carrier on the west road growing old.”",
+          "when": {
+            "quest": "ni_the_road_in",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

@@ -1,5 +1,9 @@
 {
   "props": [
+    {"id": "ni_cart", "model": "cart", "position": [-625, -176], "rotation": 28, "scale": 1},
+    {"id": "ni_wheel", "model": "wheel", "position": [-621, -173], "rotation": 75, "scale": 1},
+    {"id": "ni_crate_1", "model": "crate_broken", "position": [-628, -171], "rotation": 15, "scale": 0.9},
+    {"id": "ni_crate_2", "model": "crate", "position": [-627.5, -179], "rotation": 40, "scale": 0.8},
     {
       "model": "archer",
       "position": [278.43, -171.96],
