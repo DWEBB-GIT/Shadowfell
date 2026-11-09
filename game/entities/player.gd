@@ -375,6 +375,10 @@ var jump_h := 0.0
 var jump_buffer := 0.0
 var flip := -1.0 ## seconds into a front flip, or -1 for a plain hop
 const FLIP_CHANCE := 0.12 ## now and then a jump turns into a front flip (Dan, 2026-11-03)
+## combat hop (CONFIG.player.hop): the way a fighting leap carries you,
+## zero for a plain hop, and the seconds until the next one
+var hop_dir := Vector3.ZERO
+var hop_cd := 0.0
 
 
 func _reset_jump() -> void:
@@ -382,6 +386,7 @@ func _reset_jump() -> void:
 	jump_h = 0.0
 	jump_buffer = 0.0
 	flip = -1.0
+	hop_dir = Vector3.ZERO
 	rig.airborne = false
 	if rig is ForgeRig:
 		rig.was_airborne = false
@@ -391,13 +396,35 @@ func _reset_jump() -> void:
 	ground_shadow.position = position + Vector3(0, 0.03, 0)
 
 
-func _update_jump(dt: float, requested: bool) -> void:
+## Which way a jump taken now would leap, or zero for a plain hop: only in
+## a fight (if combatOnly), only while moving, never as a spirit.
+func _hop_direction(controls) -> Vector3:
+	var rule: Dictionary = DB.CONFIG.player.get("hop", {})
+	if rule.is_empty() or ghost or hop_cd > 0 or controls == null or not game.settings.get_value("combatHop"):
+		return Vector3.ZERO
+	if rule.get("combatOnly", true) and not (game.resources.in_combat or game.targeting.attacking):
+		return Vector3.ZERO
+	var tank = controls.get("tank")
+	var d := Vector3.ZERO
+	if tank != null:
+		d = Vector3(sin(facing), 0, cos(facing)) * signf(tank.y)
+	else:
+		var mv: Dictionary = controls.get("move", {"x": 0.0, "z": 0.0})
+		d = Vector3(mv.x, 0, mv.z)
+	return d.normalized() if d.length() > 0.2 else Vector3.ZERO
+
+
+func _update_jump(dt: float, requested: bool, controls = null) -> void:
+	hop_cd = maxf(0.0, hop_cd - dt)
 	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
 	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
 		set_sitting(false)
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
+		hop_dir = _hop_direction(controls)
+		if hop_dir != Vector3.ZERO:
+			hop_cd = DB.CONFIG.player.hop.get("cooldown", 1.6)
 		# The v6 rig owns its take-off/air/landing poses; whole-body random
 		# flips would rotate that pose and the attached weapons a second time.
 		flip = 0.0 if not rig is ForgeRig and not ghost and randf() < FLIP_CHANCE else -1.0
@@ -405,6 +432,13 @@ func _update_jump(dt: float, requested: bool) -> void:
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
 			rig.clip = ""
+	if hop_dir != Vector3.ZERO and (jump_v != 0.0 or jump_h > 0.0):
+		# a combat hop carries you on, the way you leapt, on top of your
+		# steering: committed, so a foe can read and punish it
+		var extra: float = (DB.CONFIG.player.hop.get("carry", 1.8) - 1.0) * DB.CONFIG.player.speed
+		position.x += hop_dir.x * extra * dt
+		position.z += hop_dir.z * extra * dt
+		position = game.collision.resolve(position, radius, jump_h)
 	var ground := Terrain.height_at(position.x, position.z)
 	if jump_v != 0.0 or jump_h > 0.0:
 		# Integrate world height, so a slope cannot drag an airborne player up
@@ -417,6 +451,7 @@ func _update_jump(dt: float, requested: bool) -> void:
 			jump_v = 0.0
 			jump_h = 0.0
 			flip = -1.0
+			hop_dir = Vector3.ZERO
 		else:
 			if flip >= 0.0:
 				flip += dt
@@ -454,7 +489,7 @@ func update(dt: float, controls) -> void:
 			position.z += mv.z * sp * dt
 			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
 		position = game.collision.resolve(position, radius, jump_h)
-		_update_jump(dt, controls != null and controls.get("jump", false))
+		_update_jump(dt, controls != null and controls.get("jump", false), controls)
 		moving = mag > 0 or rig.airborne
 		rig.update(dt, mag)
 		_sync()
@@ -577,7 +612,7 @@ func update(dt: float, controls) -> void:
 		set_sitting(false)
 	# high in a hop you pass over low things (a fence, Collision `h`)
 	position = game.collision.resolve(position, radius, jump_h)
-	_update_jump(dt, controls != null and controls.get("jump", false))
+	_update_jump(dt, controls != null and controls.get("jump", false), controls)
 	# Stationary activities (fishing, eating, gathering and casting) also
 	# see a standing jump as movement, rather than continuing in mid-air.
 	moving = speed01 > 0 or rig.airborne

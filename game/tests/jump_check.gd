@@ -95,6 +95,43 @@ func _run() -> void:
 		_tick()
 		check(game.player.rig.airborne, "rebound jump key works in " + str(classic))
 		game.keys.reset_all()
+	# combat hop (experiment): a jump on the move in a fight leaps further
+	game.settings.set_value("classicControls", false)
+	var hop: Dictionary = DB.CONFIG.player.hop
+	game.targeting.attacking = true # in a fight (auto attack on)
+	for on in [true, false]:
+		game.settings.set_value("combatHop", on)
+		_reset()
+		game.player.hop_cd = 0.0
+		_key(KEY_W, true)
+		_key(KEY_SPACE, true)
+		var hs: Vector3 = game.player.position
+		for i in 20: _tick()
+		var hm := Vector2(game.player.position.x-hs.x, game.player.position.z-hs.z).length()
+		var want: float = DB.CONFIG.player.speed / 3.0 * (hop.carry if on else 1.0)
+		check(absf(hm - want) < 0.1, "combat hop %s carries %.2f m in 1/3 s (want %.2f)" % [on, hm, want])
+	game.settings.set_value("combatHop", true)
+	_reset()
+	_key(KEY_W, true)
+	_key(KEY_SPACE, true)
+	for i in 50: _tick()
+	check(game.player.jump_h == 0.0 and game.player.hop_dir == Vector3.ZERO, "combat hop lands and stops carrying")
+	_key(KEY_SPACE, false)
+	_key(KEY_SPACE, true)
+	_tick()
+	check(game.player.rig.airborne and game.player.hop_dir == Vector3.ZERO, "a hop inside the cooldown is a plain jump")
+	_reset()
+	game.player.hop_cd = 0.0
+	_key(KEY_SPACE, true)
+	_tick()
+	check(game.player.hop_dir == Vector3.ZERO, "a standing jump stays a plain hop")
+	game.targeting.attacking = false
+	_reset()
+	game.player.hop_cd = 0.0
+	_key(KEY_W, true)
+	_key(KEY_SPACE, true)
+	_tick()
+	check(game.player.hop_dir == Vector3.ZERO, "out of combat the hop is plain (combatOnly)")
 	_reset()
 	game.player.set_sitting(true)
 	_key(KEY_SPACE, true)
