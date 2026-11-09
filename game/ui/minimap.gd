@@ -304,6 +304,10 @@ func markers() -> Array:
 		var at: Dictionary = quests.goal(id)
 		if not at.is_empty():
 			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
+	if quests.focus != "" and quests.status(quests.focus) == "available":
+		var at: Dictionary = quests.goal(quests.focus)
+		if not at.is_empty():
+			out.append({"x": at.x, "z": at.z, "r": 0, "kind": "goal", "label": at.label, "npc": true, "focus": true})
 	for n in game.npcs.here:
 		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""

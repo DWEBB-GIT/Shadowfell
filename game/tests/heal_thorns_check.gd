@@ -52,7 +52,11 @@ func _run() -> void:
 	game.random = func() -> float: return 0.99 # never crit, top of every roll
 	# Quick Mend comes from Sister Lyra's class quest (Dan, 2026-11-04)
 	_ok(not game.skills.knows_ability("quickMend"), "Quick Mend waits for the class quest")
-	game.skills.grant_spell("quickMend")
+	# the heal kinds are tested here, not the Paladin kit (Dan's class kits of
+	# 2026-11 learn some of these later): teach whichever are not known yet
+	for id in ["quickMend", "mendingPrayer", "renewingLight", "swiftRenewal", "circleOfMending", "radiantNova", "thornedVow"]:
+		if not game.skills.knows_ability(id):
+			game.skills.grant_spell(id)
 	for id in ["mendingPrayer", "quickMend", "renewingLight", "swiftRenewal", "circleOfMending", "radiantNova", "thornedVow"]:
 		_ok(DB.spells.has(id) and game.skills.knows_ability(id), "the paladin knows %s" % id)
 

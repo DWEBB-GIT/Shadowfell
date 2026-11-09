@@ -538,6 +538,8 @@ func _details(id: String) -> String:
 	var note := "  [color=#ff4a3a](dangerous at your level)[/color]" if danger >= 5 else ("  [color=#ff9a40](hard at your level)[/color]" if danger >= 3 else "")
 	var text := "[font_size=18][color=#e6b85e]%s[/color][/font_size]\n" % UI.esc(q.name)
 	text += "[font_size=12][color=%s]%s[/color]  [color=#9a8f78]·  %s%s[/color]%s[/font_size]\n\n" % [UI.hex(_level_colour(lv)), level_text(lv).replace("Lv", "Level"), "Dungeon: " if z.dungeon else "", UI.esc(z.name), note]
+	if q.has("story"):
+		text += "[font_size=12][color=#c9a45c]%s%s[/color][/font_size]\n\n" % ["Main story" if q.story else "Local story", " · " + UI.esc(q.chapter) if q.get("chapter", "") != "" else ""]
 	text += _sub("Description") + "[color=#d8ccb0]%s[/color]\n\n" % UI.esc(q.get("offer", q.get("summary", "")))
 	text += _sub("Summary")
 	if q.get("summary") and q.get("offer"):
@@ -573,6 +575,8 @@ func render_tracker() -> void:
 	_way = null
 	_way_arrow = null
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
+	if ql.focus != "" and ql.status(ql.focus) == "available":
+		ids.push_front(ql.focus)
 	tracker.visible = not ids.is_empty()
 	var head := UI.hbox(tracker_box, 6)
 	var title := UI.label(head, "%s  OBJECTIVES" % ("▸" if tracker_collapsed else "▾"), 12, UI.GOLD, 4)
@@ -598,7 +602,9 @@ func render_tracker() -> void:
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
 		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused else "", UI.esc(q.name)]
-		if s == "ready":
+		if s == "available":
+			text += "[font_size=12][color=#ffd23c]  Next quest · Speak to %s[/color][/font_size]" % UI.esc(DB.npcs[q.giver].name)
+		elif s == "ready":
 			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
 			text += _steps(ql.objectives(id))
@@ -607,23 +613,27 @@ func render_tracker() -> void:
 		r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_outline(r)
 		# the cross takes the quest off the list (it stays in the quest log)
-		var off := UI.button(row, "✕", func(): game.quests.set_tracked(id, false), 11)
+		var off := UI.button(row, "✕", func():
+			if s == "available":
+				game.quests.set_focus("")
+			else:
+				game.quests.set_tracked(id, false), 11)
 		off.flat = true
 		off.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		off.custom_minimum_size = Vector2(18, 18)
 		off.add_theme_color_override("font_color", UI.TEXT_DIM)
 		off.add_theme_color_override("font_hover_color", UI.GOLD)
-		off.tooltip_text = "Stop tracking this quest"
+		off.tooltip_text = "Stop following this lead" if s == "available" else "Stop tracking this quest"
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		r.tooltip_text = "Click: show the way · Right click: open in the quest log"
+		r.tooltip_text = "Speak to the marked NPC to accept this quest." if s == "available" else "Click: show the way · Right click: open in the quest log"
 		UI.set_rich(r, text)
 		r.gui_input.connect(func(e):
 			if not (e is InputEventMouseButton and e.pressed):
 				return
 			if e.button_index == MOUSE_BUTTON_LEFT:
 				game.quests.set_focus("" if game.quests.focus == id else id)
-			elif e.button_index == MOUSE_BUTTON_RIGHT:
+			elif e.button_index == MOUSE_BUTTON_RIGHT and s != "available":
 				selected = id
 				toggle_log(true))
 		if focused:

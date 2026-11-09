@@ -314,7 +314,10 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					if q.get("map", "act1") == s.map_id and not s.examine_points.has(o.get("target")):
 						bad.call("%s names unknown examine point %s" % [label, o.get("target")])
 				"talk":
-					if o.get("target") != q.get("turnIn"):
+					if o.get("requireVisit", false):
+						if DataStore.find(s.npcs, o.get("target")).is_empty():
+							bad.call("%s names unknown conversation npc %s" % [label, o.get("target")])
+					elif o.get("target") != q.get("turnIn"):
 						bad.call("%s: a talk objective names the hand-in npc (%s)" % [label, q.get("turnIn")])
 				"puzzle":
 					if q.get("map", "act1") == s.map_id and DataStore.find(s.files.world.get("puzzles", []), o.get("target")).is_empty():

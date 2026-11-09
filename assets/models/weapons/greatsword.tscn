@@ -1,0 +1,30 @@
+[gd_scene load_steps=6 format=3]
+[sub_resource type="StandardMaterial3D" id="Steel"]
+albedo_color = Color(0.51, 0.56, 0.61, 1)
+metallic = 0.75
+roughness = 0.42
+[sub_resource type="StandardMaterial3D" id="GripMat"]
+albedo_color = Color(0.18, 0.095, 0.07, 1)
+roughness = 0.8
+[sub_resource type="PrismMesh" id="Blade"]
+material = SubResource("Steel")
+size = Vector3(0.15, 1.12, 0.05)
+[sub_resource type="BoxMesh" id="Guard"]
+material = SubResource("Steel")
+size = Vector3(0.39, 0.045, 0.075)
+[sub_resource type="CylinderMesh" id="Grip"]
+material = SubResource("GripMat")
+top_radius = 0.035
+bottom_radius = 0.042
+height = 0.28
+radial_segments = 8
+[node name="RoadwardenGreatsword" type="Node3D"]
+[node name="Blade" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.67, 0)
+mesh = SubResource("Blade")
+[node name="Crossguard" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 0)
+mesh = SubResource("Guard")
+[node name="Grip" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.05, 0)
+mesh = SubResource("Grip")

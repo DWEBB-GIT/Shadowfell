@@ -29,6 +29,7 @@ const S := {
 	"weaponTypes": {
 		"dagger": {"dps": 0.8, "spread": 0.33},
 		"sword": {"dps": 1.0, "spread": 0.6},
+		"club": {"dps": 1.0, "spread": 0.3},
 		"twoHand": {"dps": 1.2, "spread": 0.25},
 		"bow": {"dps": 1.2, "spread": 0.43},
 	},

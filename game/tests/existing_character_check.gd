@@ -36,8 +36,9 @@ func _run() -> void:
 	check(game.quests.done.size()==before.get("quests",{}).get("done",[]).size(),"finished quests are retained")
 	check(Terrain.walkable(game.player.position.x,game.player.position.z),"existing character arrives on walkable ground")
 	var start:Array=DB.world.playerStart.position
-	check(Vector2(game.player.position.x-start[0],game.player.position.z-start[1]).length()<2,"older character arrives safely in Thornford")
-	check(Store.get_item(entry.key+".before_world_new") != null,"an untouched copy of the older save is retained before migration")
+	if before.get("worldId", "") != "new":
+		check(Vector2(game.player.position.x-start[0],game.player.position.z-start[1]).length()<2,"older character arrives safely in Thornford")
+		check(Store.get_item(entry.key+".before_world_new") != null,"an untouched copy of the older save is retained before migration")
 	check(after.worldId=="new" and game.save.save().ok,"copied save records its new world identity")
 	game.queue_free()
 	await process_frame

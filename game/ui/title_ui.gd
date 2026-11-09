@@ -8,6 +8,7 @@ extends Control
 ## and creation the world shows behind, with the Warden standing in it.
 
 const CLASSES_KEY := "classes"
+const CLASS_COLOURS := {"warden":"#c79c6e","rogue":"#fff273","ranger":"#86c77a","occultist":"#b694ed","paladin":"#ed99bb","wizard":"#83d3f1"}
 
 var game
 var view = null ## 'main' | 'select' | 'create' | null when closed
@@ -63,6 +64,9 @@ static func ago(t: float) -> String:
 func _draw_bg() -> void:
 	var r := bg.get_rect()
 	var g := Canvas2D.new(bg)
+	if view=="select":
+		g.fill_style=Color("15282c")
+		g.fill_rect(0,0,r.size.x,r.size.y)
 	if view == "main":
 		var grad := g.create_radial_gradient(r.size.x / 2, r.size.y / 2, 0, r.size.x / 2, r.size.y / 2, r.size.length() * 0.5)
 		Canvas2D.add_color_stop(grad, 0, Color(8 / 255.0, 6 / 255.0, 4 / 255.0, 0.72))
@@ -210,7 +214,7 @@ func _controls_table(parent: Node) -> Control:
 	var row := UI.hbox(parent, 22)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	# the mouse rows follow the control scheme (Settings: Classic controls)
-	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot (walk there with Click to move)"], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
+	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot (Click to move: walk up, then attack or talk)"], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
 	var tables := [
 		["Keyboard and mouse", [["WASD / arrow keys", "Move"]] + mouse_rows + [["Shift-1 to Shift-4", "The four utility slots (draught, torch, fishing...)"], ["F (G with mouse aim)", "Interact / loot everything nearby"], ["Space", "Jump"], ["Tab", "Next target"], ["Mouse wheel", "Zoom the camera"], ["B · C · P · L", "Bags · Character · Spellbook · Quest log"], ["K · O · Esc", "Save · Settings (keys, sound, click to move) · Close / clear target"]]],
 		["Gamepad", [["Left stick", "Move"], ["Right stick", "Aim"], ["RT", "Auto attack the target (or who is ahead)"], ["R3 (stick click)", "Next target"], ["X · Y · RB", "Lunge · Shield Break · Healing draught"], ["LB · LT", "Spell-bar slots 4 and 5"], ["B", "Brace"], ["A", "Interact / loot / confirm"], ["Start · View", "Bags · Character"], ["D-pad up · down · right", "Spellbook · Save · Quest log"]]],
@@ -251,33 +255,93 @@ func _centre(v: Control) -> VBoxContainer:
 
 func _build_select() -> void:
 	var v := _view("select")
-	var side := _side(v, "Characters")
-	sel.count = UI.label(side, "", 12, UI.TEXT_DIM)
-	sel.list = UI.vbox(side, 6)
-	var acts := UI.hbox(side, 8)
-	sel.create = _nav(acts, "Create new", func(): show_view("create"), 13)
-	sel.delete = _nav(acts, "Delete", ask_delete, 13)
-	sel.back = _nav(acts, "Back", back, 13)
-	for b in [sel.create, sel.delete, sel.back]:
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sel.confirm = UI.vbox(side, 8)
-	sel.confirm_text = UI.label(sel.confirm, "", 13, Color("e0b8a0"))
-	sel.confirm_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var ca := UI.hbox(sel.confirm, 8)
-	sel.yes = _nav(ca, "Delete for ever", do_delete, 13)
-	sel.yes.add_theme_color_override("font_color", Color("e0a090"))
-	sel.yes.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), Color("8a3a2a"), 0, 1, Vector4(18, 7, 18, 7)))
-	sel.no = _nav(ca, "Keep", cancel_delete, 13)
-	sel.confirm.visible = false
-	var c := _centre(v)
-	sel.name = UI.label(c, "", 34, UI.GOLD, 6)
-	sel.name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sel.line = UI.label(c, "", 14, Color("d6c9a8"), 4)
-	sel.line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sel.enter = _nav(c, "Enter world", enter_selected, 18)
-	sel.enter.custom_minimum_size = Vector2(220, 0)
-	sel.enter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_hint(c, "↑↓ choose · Enter play · Del delete · Esc back", "D-pad choose · A play · Y delete · B back")
+	sel.preview = preload("res://game/ui/roster_preview.gd").new()
+	v.add_child(sel.preview)
+	var shade:=Control.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	shade.draw.connect(func():
+		var g:=Canvas2D.new(shade)
+		var gradient:=g.create_linear_gradient(0,0,shade.size.x*0.65,0)
+		Canvas2D.add_color_stop(gradient,0,Color(0.015,0.025,0.03,0.92))
+		Canvas2D.add_color_stop(gradient,0.65,Color(0.015,0.025,0.03,0.45))
+		Canvas2D.add_color_stop(gradient,1,Color(0,0,0,0))
+		g.fill_style=gradient
+		g.fill_rect(0,0,shade.size.x,shade.size.y))
+	shade.resized.connect(func(): shade.queue_redraw())
+	v.add_child(shade)
+	sel.brand=UI.logo(v,"MYTHKEEP",30)
+	sel.brand.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	sel.brand.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	sel.panel = UI.panel(v,0)
+	sel.panel.add_theme_stylebox_override("panel",UI.frame(Vector4(16,14,16,14)))
+	var side := UI.vbox(sel.panel,6)
+	UI.label(side,"YOUR CHARACTERS",22,UI.GOLD)
+	sel.count=UI.label(side,"",13,UI.TEXT_DIM)
+	sel.scroll=ScrollContainer.new()
+	sel.scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	sel.scroll.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	sel.scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	side.add_child(sel.scroll)
+	sel.list=UI.vbox(sel.scroll,3)
+	sel.list.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var acts := UI.hbox(side,8)
+	sel.create=_nav(acts,"Create Character",func(): show_view("create"),14)
+	sel.delete=_nav(acts,"Delete Character",ask_delete,14)
+	for button in [sel.create,sel.delete]:
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	var tools := UI.hbox(side,8)
+	sel.restore=_nav(tools,"Recently Deleted",show_deleted,13)
+	sel.back=_nav(tools,"Back",back,13)
+	sel.message=UI.label(side,"New adventures keep your existing heroes.",12,UI.TEXT_DIM)
+	sel.message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	sel.confirm=UI.vbox(side,6)
+	sel.confirm_text=UI.label(sel.confirm,"",13,UI.WARN)
+	sel.confirm_text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	sel.delete_name=LineEdit.new()
+	sel.delete_name.placeholder_text="Type the character's name"
+	sel.confirm.add_child(sel.delete_name)
+	var ca := UI.hbox(sel.confirm,8)
+	sel.yes=_nav(ca,"Delete Character",do_delete,13)
+	sel.no=_nav(ca,"Cancel",cancel_delete,13)
+	sel.yes.disabled=true
+	sel.delete_name.text_changed.connect(func(value): sel.yes.disabled=value!=str(game.roster.by_id(selected).name) if game.roster.by_id(selected)!=null else true)
+	sel.confirm.visible=false
+	sel.deleted=UI.vbox(side,6)
+	UI.label(sel.deleted,"Recover a character within 30 days",13,UI.GOLD)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size.y=210
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	sel.deleted_scroll=scroll
+	sel.deleted.add_child(scroll)
+	sel.deleted_list=UI.vbox(scroll,6)
+	_nav(sel.deleted,"Back to characters",func(): sel.deleted.visible=false; sel.scroll.visible=true,13)
+	sel.deleted.visible=false
+	sel.footer=UI.vbox(v,6)
+	sel.name=UI.label(sel.footer,"",30,UI.GOLD,5)
+	sel.name.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	sel.line=UI.label(sel.footer,"",13,UI.TEXT,3)
+	sel.line.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	var rotate := UI.hbox(sel.footer,8)
+	rotate.alignment=BoxContainer.ALIGNMENT_CENTER
+	_nav(rotate,"↶ Rotate",func(): sel.preview.turn-=PI/4,13)
+	_nav(rotate,"Front",func(): sel.preview.turn=0,13)
+	_nav(rotate,"Rotate ↷",func(): sel.preview.turn+=PI/4,13)
+	sel.line.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	sel.enter=_nav(sel.footer,"ENTER WORLD",enter_selected,18)
+	sel.hint=_hint(sel.footer,"Drag the character to rotate · Select a slot to inspect", "Right stick rotates · A selects · Enter World to play")
+	sel.hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	sel.enter.size_flags_horizontal=Control.SIZE_SHRINK_CENTER
+	sel.enter.custom_minimum_size=Vector2(260,44)
+	sel.enter.add_theme_stylebox_override("normal",UI.box(Color("b68a3d"),Color("ffe0a0"),4,2,Vector4(24,8,24,8)))
+	sel.enter.add_theme_stylebox_override("hover",UI.box(Color("dcaf58"),Color("fff0bf"),4,2,Vector4(24,8,24,8)))
+	sel.enter.add_theme_stylebox_override("pressed",UI.box(Color("916a28"),Color("ffe0a0"),4,2,Vector4(24,8,24,8)))
+	sel.enter.add_theme_color_override("font_color",Color("21170a"))
+	sel.enter.add_theme_color_override("font_hover_color",Color("21170a"))
+	for button in [sel.delete,sel.yes]:
+		button.add_theme_stylebox_override("normal",UI.box(Color("542329"),Color("ad5961"),3,1,Vector4(12,7,12,7)))
+		button.add_theme_stylebox_override("hover",UI.box(Color("7d3038"),Color("e59094"),3,1,Vector4(12,7,12,7)))
+		button.add_theme_color_override("font_color",Color("ffd1ca"))
 
 
 func _build_create() -> void:
@@ -328,7 +392,7 @@ func open(n := "", which := "main") -> void:
 	note = n
 	game.hud.modal = "title"
 	visible = true
-	show_view("select" if which == "select" and not game.roster.list.is_empty() else "main")
+	show_view("select" if which == "select" and (not game.roster.list.is_empty() or not game.roster.deleted.is_empty()) else "main")
 
 
 func close() -> void:
@@ -373,7 +437,7 @@ func _render_main() -> void:
 	var can_continue: bool = i != null and i.ok
 	main["continue"].visible = can_continue
 	main["continue"].text = "Continue\n%s · level %s %s" % [last.name, i.level, class_name_of(last)] if can_continue else "Continue"
-	main.chars.visible = not roster.list.is_empty()
+	main.chars.visible = not roster.list.is_empty() or not roster.deleted.is_empty()
 	var n := note
 	if n == "":
 		for c in roster.list:
@@ -432,28 +496,56 @@ func _card(parent: Node, lines: Array, cb: Callable, selected_: bool, faded := f
 
 
 func _render_select() -> void:
-	var roster = game.roster
-	if selected == null or roster.by_id(selected) == null:
-		selected = roster.last if roster.last != null else (roster.list[0].id if not roster.list.is_empty() else null)
-	# most recently played first
-	var list: Array = roster.list.duplicate()
-	list.sort_custom(func(a, b): return a.lastPlayed > b.lastPlayed)
-	sel.count.text = "%d of %d" % [roster.list.size(), roster.max]
+	var roster=game.roster
+	if selected==null or roster.by_id(selected)==null:
+		selected=roster.last if roster.last!=null else (roster.list[0].id if not roster.list.is_empty() else null)
+	sel.count.text="%d / 10 characters" % roster.list.size()
 	UI.clear(sel.list)
-	sel.cards = {}
-	for c in list:
-		var i := info(c)
-		var id: String = c.id
-		var card := _card(sel.list, [c.name, "Level %s %s" % [i.level, class_name_of(c)], i.where, not i.ok], func():
-			# a second click on the chosen character plays them (a double click)
-			if selected == id:
-				enter_selected()
-			else:
-				select(id), c.id == selected)
-		card.set_meta("char", id)
-		sel.cards[id] = card
-	sel.create.disabled = roster.full
-	sel.confirm.visible = false
+	sel.cards={}
+	sel.slots=[]
+	for index in 10:
+		var c=roster.list[index] if index<roster.list.size() else null
+		var button := Button.new()
+		button.set_meta("nav",true)
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.text="+   Create a new character"
+		button.add_theme_font_size_override("font_size",14)
+		button.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+		if c!=null:
+			var i:=info(c)
+			var id: String=c.id
+			button.text=""
+			var emblem:=TextureRect.new()
+			emblem.texture=Icons.art("ui","class_"+("warrior" if c.classId=="warden" else c.classId))
+			emblem.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+			emblem.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			emblem.position=Vector2(8,7)
+			emblem.size=Vector2(40,40)
+			emblem.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			button.add_child(emblem)
+			var words:=UI.rich(button,12,220)
+			words.position=Vector2(58,4)
+			words.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			var text: String="[font_size=15][color=#efe2bf]%s[/color][/font_size]\n[font_size=12]Level %s · [color=%s]%s[/color][/font_size]\n[font_size=11][color=#a9b5ad]%s[/color][/font_size]" % [UI.esc(c.name),i.level,CLASS_COLOURS.get(c.classId,"#c9a45c"),UI.esc(class_name_of(c)),UI.esc(i.where)]
+			UI.set_rich(words,text)
+			button.set_meta("details",words)
+			button.set_meta("emblem",emblem)
+			button.tooltip_text="%s · Level %s %s · %s" % [c.name,i.level,class_name_of(c),i.where]
+			button.set_meta("char",id)
+			button.pressed.connect(func(): select(id))
+			sel.cards[id]=button
+		else:
+			button.disabled=roster.full
+			button.pressed.connect(func(): show_view("create"))
+		sel.list.add_child(button)
+		sel.slots.append(button)
+	sel.create.disabled=roster.full
+	sel.create.tooltip_text="All ten slots are occupied. Delete a character to free a slot." if roster.full else "Begin a new adventure without replacing your existing characters."
+	sel.message.text="All ten slots are occupied. Deleted characters can be recovered for 30 days." if roster.full else "New adventures keep your existing heroes."
+	sel.confirm.visible=false
+	sel.message.visible=false
+	sel.deleted.visible=false
+	sel.scroll.visible=true
 	select(selected)
 
 
@@ -468,10 +560,16 @@ func select(id) -> void:
 		card.add_theme_stylebox_override("hover", box)
 	var i = info(c) if c != null else null
 	sel.name.text = c.name if c != null else ""
-	sel.line.text = "Level %s %s · %s · played %s" % [i.level, class_name_of(c), i.where, ago(c.lastPlayed)] if c != null else "No characters yet"
+	sel.line.text = "Level %s %s · %s · played %s" % [i.level, class_name_of(c), i.where, ago(c.lastPlayed)] if c != null else "Choose an empty slot to begin"
+	if c != null:
+		_preview_selected(c)
+	elif sel.preview.actor != null:
+		sel.preview.actor.group.visible=false
 	sel.enter.disabled = c == null or not i.ok
 	sel.delete.disabled = c == null
 	focus(sel.cards.get(id) if id != null and sel.has("cards") and sel.cards.has(id) else sel.create)
+	if sel.cards.has(id):
+		_reveal_selected.call_deferred()
 
 
 func enter_selected() -> void:
@@ -485,21 +583,31 @@ func ask_delete() -> void:
 	if c == null:
 		return
 	confirm_delete = true
-	sel.confirm_text.text = "Delete %s? Their save is removed from this computer and cannot be brought back." % c.name
+	sel.deleted.visible=false
+	sel.scroll.visible=false
+	sel.confirm_text.text = "Delete %s? This frees a slot. You can restore this hero for 30 days. Type their name to confirm." % c.name
+	sel.delete_name.text=""
+	sel.yes.disabled=true
 	sel.confirm.visible = true
-	focus(sel.no)
+	sel.delete_name.grab_focus()
 
 
 func cancel_delete() -> void:
+	sel.scroll.visible=true
 	confirm_delete = false
 	sel.confirm.visible = false
 	focus(sel.delete)
 
 
 func do_delete() -> void:
-	game.roster.remove(selected)
+	var c=game.roster.by_id(selected)
+	if c==null or sel.delete_name.text!=c.name:
+		return
+	if not game.roster.remove(selected):
+		sel.confirm_text.text="The character could not be deleted. Your save has been kept."
+		return
 	selected = null
-	show_view("select" if not game.roster.list.is_empty() else "main")
+	show_view("select")
 
 
 # ------------------------------------------------------------ create
@@ -626,6 +734,12 @@ func focus(el: Control, from_mouse := false) -> void:
 ## the focus look (style.css .nav-focus): a gold edge and a warm glow
 func _lit(b: Button, on: bool) -> void:
 	b.modulate = Color(1.18, 1.12, 1.0, b.modulate.a) if on else Color(1, 1, 1, b.modulate.a)
+	if b==sel.get("enter"):
+		b.add_theme_color_override("font_color",Color("21170a"))
+		return
+	if b==sel.get("delete") or b==sel.get("yes"):
+		b.add_theme_color_override("font_color",Color("ffd1ca"))
+		return
 	if b.has_meta("char") or b.has_meta("class"):
 		return
 	if on:
@@ -669,6 +783,25 @@ func _labels() -> void:
 ## .select-center, #class-detail).
 func layout() -> void:
 	var vp := get_viewport_rect().size
+	if sel.has("panel"):
+		var width := clampf(vp.x*0.28,300,380)
+		sel.preview.position=Vector2.ZERO
+		sel.preview.size=vp
+		sel.panel.position=Vector2(20,16)
+		sel.panel.size=Vector2(width,vp.y-32)
+		sel.scroll.custom_minimum_size.y=80
+		sel.deleted_scroll.custom_minimum_size.y=clampf(vp.y-400,90,220)
+		for slot in sel.get("slots",[]):
+			slot.custom_minimum_size=Vector2(0,54)
+			if slot.has_meta("details"):
+				var words: RichTextLabel=slot.get_meta("details")
+				words.custom_minimum_size.x=maxf(120,width-108)
+				words.size.x=maxf(120,width-108)
+		sel.footer.position=Vector2(width+40,vp.y-184)
+		sel.footer.size=Vector2(maxf(1,vp.x-width-60),172)
+		sel.brand.position=Vector2(width+40,24)
+		sel.brand.size=Vector2(maxf(1,vp.x-width-60),42)
+
 	for v in views.values():
 		for c in v.get_children():
 			if not (c is Control):
@@ -695,6 +828,14 @@ func update(dt: float) -> void:
 		_pad_shown = game.hud.pad_mode
 		_labels()
 	layout()
+	if view=="select" and sel.delete_name.has_focus():
+		if input.consume("Escape"):
+			cancel_delete()
+		elif input.consume("Enter") and not sel.yes.disabled:
+			do_delete()
+		return
+	if view=="select" and pad.right.z>0.2:
+		sel.preview.turn+=pad.right.x*dt*2.0
 	if create.has("name") and create.name.has_focus():
 		if input.consume("Escape"):
 			create.name.release_focus()
@@ -722,3 +863,43 @@ func update(dt: float) -> void:
 			ask_delete()
 		elif view == "create":
 			random_name()
+
+
+func _preview_selected(c: Dictionary) -> void:
+	var saved: Dictionary=game.save.read(c.key)
+	var gear := {}
+	if saved.status=="ok":
+		gear=saved.data.inventory.equipment.duplicate(true)
+	else:
+		var arch: Dictionary=DB.archetypes.get(c.classId,DB.archetypes.warden)
+		for slot in arch.get("startingGear",{}):
+			if slot!="ammo":
+				gear[slot]={"id":arch.startingGear[slot],"count":1}
+	sel.preview.show_character(gear)
+
+
+func show_deleted() -> void:
+	cancel_delete()
+	sel.scroll.visible=false
+	sel.deleted.visible=true
+	UI.clear(sel.deleted_list)
+	if game.roster.deleted.is_empty():
+		UI.label(sel.deleted_list,"No recently deleted characters.",13,UI.TEXT_DIM)
+	for c in game.roster.deleted:
+		var id: String=c.id
+		var button:=_nav(sel.deleted_list,"Restore %s · %s" % [c.name,class_name_of(c)],func():
+			var result: Dictionary=game.roster.restore(id)
+			if result.ok:
+				selected=id
+				_render_select()
+			else:
+				sel.message.text=result.reason
+			sel.message.visible=true,13)
+		button.disabled=game.roster.full
+	layout()
+
+
+func _reveal_selected() -> void:
+	var card=sel.get("cards",{}).get(selected)
+	if is_instance_valid(card) and sel.scroll.is_ancestor_of(card):
+		sel.scroll.ensure_control_visible(card)

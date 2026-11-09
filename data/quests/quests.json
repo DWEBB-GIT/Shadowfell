@@ -1196,7 +1196,7 @@
       "summary": "Inspect the fallen lantern on the north road and put three road revenants to rest. Return to Captain Rowan at the Thornford watch house.",
       "offer": "My patrol signed out at dusk. Their relief found men who had been buried for twenty years, carrying winter-work chits. Follow Lantern Road to the fallen cart. Read what is caught in the lantern, and put three revenants down before another traveller joins them. I would rather be wrong about all of this.",
       "progress": "The broken lantern is beside the cart on the north road. Three revenants, then bring me what you can read. Keep clear of the deeper graveyard for now.",
-      "complete": "A stamped chit: ROOK & SONS — CONTINUANCE OF SERVICE. Rowan’s jaw tightens. “Their winter grain came with a labour clause. Apparently retirement was not the only thing it failed to mention.” The bell seal points to Old Watch. “End the Bellkeeper’s patrol. Fen’s woodland route is there if you want it; you need not clear the wolves for me.”",
+      "complete": "A stamped chit reads ROOK & SONS — CONTINUANCE OF SERVICE. Rowan’s jaw tightens. “Their winter grain came with a labour clause. Before we follow that seal to Old Watch, find Dunn by the fallen lantern. Paige was carrying letters through there. Bring her and the post home if you can.”",
       "objectives": [
         {
           "id": "lantern",
@@ -1216,23 +1216,23 @@
       ],
       "reward": {
         "coins": 25,
-        "size": "standard",
+        "size": "chainStep",
         "items": [
           {
             "item": "healing_draught",
             "count": 2
           }
-        ]
+        ],
+        "xpScale": 2.72
       },
       "requires": [
-        "vr_first_hunt"
+        "in_watchmans_word"
       ],
       "autoAccept": false,
-      "level": [
-        2,
-        3
-      ],
-      "zone": "nr_lantern"
+      "level": 3,
+      "zone": "nr_lantern",
+      "story": true,
+      "chapter": "The watch that never came home"
     },
     {
       "id": "tf_briar",
@@ -1272,7 +1272,8 @@
         ]
       },
       "requires": [
-        "vr_first_hunt"
+        "vr_first_hunt",
+        "in_watchmans_word"
       ],
       "level": [
         2,
@@ -1289,7 +1290,7 @@
       "summary": "Search Old Watch, defeat the Bellkeeper and read the old charter at Dawnstone. Report to Rowan. Briarwood is an optional route.",
       "offer": "The Bellkeeper used to close the working day. Now his seal is on orders calling the dead to another shift. Search Old Watch, stop him, then read the charter stone at Dawnstone. Before Rook’s people arrived, that bell meant something. We need to know what they changed.",
       "progress": "Old Watch is north of the fallen cart. Dawnstone is on the path beyond it. Stop the Bellkeeper and read both places before you come back.",
-      "complete": "“A day’s service ends at dusk. The dead owe no labour.” Rowan reads the old words twice. “Somebody replaced a limit with a loophole.” He offers a shield. “Take this. Whichever trade taught you to fight, you did right by my watch.” Alder needs to see the burial rolls. The graves east of the watch are still moving.",
+      "complete": "“A day’s service ends at dusk. The dead owe no labour.” Rowan reads the old words twice. “Somebody replaced a limit with a loophole.” He offers the watch’s reward. “Take this account to Morrow Finch in Mourning Hollow, east of Old Watch. He keeps the parish sick lists. He will know whose names these were.”",
       "objectives": [
         {
           "id": "ruins",
@@ -1316,23 +1317,23 @@
       ],
       "reward": {
         "coins": 40,
-        "size": "standard",
+        "size": "chainFinale",
         "items": [
           {
             "item": "iron_shield",
             "count": 1
           }
-        ]
+        ],
+        "xpScale": 2.24
       },
       "requires": [
-        "tf_lanterns"
+        "in_lost_courier"
       ],
       "setsFlag": "tf_reach_safe",
-      "level": [
-        3,
-        4
-      ],
-      "zone": "nr_watch"
+      "level": 4,
+      "zone": "nr_watch",
+      "story": true,
+      "chapter": "The watch that never came home"
     },
     {
       "id": "tf_herbs",
@@ -1364,7 +1365,9 @@
           }
         ]
       },
-      "requires": [],
+      "requires": [
+        "in_watchmans_word"
+      ],
       "zone": "nr_briar"
     },
     {
@@ -1395,20 +1398,25 @@
           "type": "talk",
           "target": "tf_iren",
           "label": "Bring the hinge to Iren at the forge",
-          "location": "tf_town"
+          "location": "tf_town",
+          "requireVisit": true
         }
       ],
       "reward": {
         "coins": 2,
-        "size": "errand",
+        "size": "chainStep",
         "items": [
           {
             "item": "belt_pouch",
             "count": 1
           }
-        ]
+        ],
+        "xpScale": 1.28
       },
-      "requires": []
+      "requires": [],
+      "autoAccept": true,
+      "story": true,
+      "chapter": "A place at the table"
     },
     {
       "id": "sf_hungry_work",
@@ -1434,22 +1442,23 @@
           "type": "talk",
           "target": "tf_cook",
           "label": "Speak to Hobb Marrow by the inn's hearth",
-          "location": "tf_town"
+          "location": "tf_town",
+          "requireVisit": true
         }
       ],
       "reward": {
-        "size": "errand"
-      }
+        "size": "chainStep",
+        "xpScale": 0.96
+      },
+      "story": true,
+      "chapter": "A place at the table"
     },
     {
       "id": "sf_a_meal_earned",
       "name": "A Meal Earned",
       "map": "new",
       "zone": "nr_orchard",
-      "level": [
-        1,
-        2
-      ],
+      "level": 2,
       "giver": "tf_cook",
       "turnIn": "tf_cook",
       "requires": [
@@ -1488,7 +1497,7 @@
       ],
       "reward": {
         "coins": 4,
-        "size": "standard",
+        "size": "chainStep",
         "items": [
           {
             "item": "roast_boar",
@@ -1500,8 +1509,11 @@
         ],
         "learnRecipe": [
           "roast_boar"
-        ]
-      }
+        ],
+        "xpScale": 2.4
+      },
+      "story": true,
+      "chapter": "A place at the table"
     },
     {
       "id": "sf_borrowed_rod",
@@ -1589,7 +1601,8 @@
       "reward": {
         "coins": 4,
         "size": "standard"
-      }
+      },
+      "minLevel": 3
     },
     {
       "id": "sf_hides_for_agna",
@@ -1631,7 +1644,8 @@
       "reward": {
         "coins": 4,
         "size": "standard"
-      }
+      },
+      "minLevel": 3
     },
     {
       "id": "sf_bitter_roots",
@@ -1645,7 +1659,8 @@
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
       "requires": [
-        "sf_odd_jobs"
+        "sf_odd_jobs",
+        "in_watchmans_word"
       ],
       "summary": "Morrow Finch lends you an herb knife. Cut three ditchbell from the marked patches along the Briarwood path and bring them to Morrow at Mourning Hollow.",
       "offer": "Everyone wants a draught. Nobody wants to kneel in a ditch for one. Take my herb knife: cut, do not pull, or the root dies and next year there is nothing. Ditchbell grows along the Briarwood path, blue and sulking. Three sprigs, and the knife back.",
@@ -1697,7 +1712,9 @@
       ],
       "giver": "vr_mayor",
       "turnIn": "tf_rowan",
-      "requires": [],
+      "requires": [
+        "tf_lanterns"
+      ],
       "summary": "Mayor Alder says Captain Rowan wants to see you. Find Rowan at the watch barracks by the square.",
       "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Rowan has asked after you. He trains the watch's fighters, and he says you hold a blade like someone who means it, which he also says about the cook.",
       "progress": "Captain Rowan is waiting for you at the watch barracks by the square.",
@@ -1729,7 +1746,9 @@
       ],
       "giver": "vr_mayor",
       "turnIn": "vr_rogue",
-      "requires": [],
+      "requires": [
+        "tf_lanterns"
+      ],
       "summary": "Mayor Alder says Mira Vale wants to see you. Find Mira Vale at the inn's back room.",
       "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. There is a woman called Mira Vale who drinks in the corner of the Lantern Inn and never seems to pay. She asked about you. I would rather she asked about you than about me.",
       "progress": "Mira Vale is waiting for you at the inn's back room.",
@@ -1761,7 +1780,9 @@
       ],
       "giver": "vr_mayor",
       "turnIn": "tf_scout",
-      "requires": [],
+      "requires": [
+        "tf_lanterns"
+      ],
       "summary": "Mayor Alder says Scout Fen wants to see you. Find Fen at Briarwood Camp.",
       "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Scout Fen came down from Briarwood to ask if the new arrival can shoot. I said you could certainly carry a bow. He wants to see for himself.",
       "progress": "Scout Fen is waiting for you at Briarwood Camp.",
@@ -1793,7 +1814,9 @@
       ],
       "giver": "vr_mayor",
       "turnIn": "vr_morrow",
-      "requires": [],
+      "requires": [
+        "tf_lanterns"
+      ],
       "summary": "Mayor Alder says Morrow Finch wants to see you. Find Morrow Finch at Mourning Hollow.",
       "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Morrow Finch sent word from Mourning Hollow. Morrow does not send word. Morrow sends bottles with labels I prefer not to read. Go and see what they want.",
       "progress": "Morrow Finch is waiting for you at Mourning Hollow.",
@@ -1825,7 +1848,9 @@
       ],
       "giver": "vr_mayor",
       "turnIn": "vr_lyra",
-      "requires": [],
+      "requires": [
+        "tf_lanterns"
+      ],
       "summary": "Mayor Alder says Sister Lyra wants to see you. Find Lyra at the shrine path south of the square.",
       "offer": "You have done more for Thornford this week than the watch has all season. Do not tell them I said so; they are touchy. Sister Lyra has been asking for you. She says the light has opinions about you. I said the light can queue like everyone else, but here we are.",
       "progress": "Sister Lyra is waiting for you at the shrine path south of the square.",
@@ -1860,13 +1885,10 @@
       "requires": [
         "sf_calling_warden"
       ],
-      "summary": "Captain Rowan teaches you Cleave. Use it on the young boars in Holt Meadow three times, then report back.",
+      "summary": "Captain Rowan asks you to practise Cleave. Use it on the young boars in Holt Meadow three times, then report back.",
       "offer": "One enemy at a time is a luxury. Out there they come in threes and fours and none of them wait their turn. Plant your feet, turn from the hips, and take the whole front rank with you. That is Cleave. Go and practise on Heda's young boars; they come in herds and nobody will miss them. Three good swings.",
       "progress": "Cleave the young boars in Holt Meadow three times. Target one; the swing takes whatever stands beside it.",
       "complete": "Rowan watches you roll your shoulder. “Sore? Good. That is where the swing lives now.” He almost smiles. “The watch could use more like you. The watch could use more of anything.”",
-      "acceptLearn": [
-        "cleave"
-      ],
       "objectives": [
         {
           "id": "cleave",
@@ -1880,7 +1902,14 @@
       ],
       "reward": {
         "coins": 10,
-        "size": "standard"
+        "size": "chainStep",
+        "items": [
+          {
+            "item": "in_watch_sword",
+            "count": 1
+          }
+        ],
+        "xpScale": 3.0
       }
     },
     {
@@ -1901,13 +1930,10 @@
       "requires": [
         "sf_calling_rogue"
       ],
-      "summary": "Mira Vale teaches you Shadow. Slip into it among the risen dead at the Nameless Yard, then look at the Bell Crypt's door without being caught.",
+      "summary": "Mira Vale asks you to practise Shadow. Slip into it among the risen dead at the Nameless Yard, then look at the Bell Crypt's door without being caught.",
       "offer": "Shadow is not magic, whatever the songs say. It is knowing where people are not looking. The dead are worse at it than the living, which makes them good practice. Go to the Nameless Yard south of Mourning Hollow, step into Shadow among them, and walk up to the Bell Crypt's door. Tell me what is carved on it.",
       "progress": "Use Shadow at the Nameless Yard among the risen dead, then look over the Bell Crypt's door.",
       "complete": "“A bell with a crack through it,” Mira repeats, and taps the table twice. “You looked. You came back. Two things most people only manage one of.”",
-      "acceptLearn": [
-        "shadow"
-      ],
       "objectives": [
         {
           "id": "shadow",
@@ -1929,7 +1955,14 @@
       ],
       "reward": {
         "coins": 10,
-        "size": "standard"
+        "size": "chainStep",
+        "items": [
+          {
+            "item": "in_watch_dirk",
+            "count": 2
+          }
+        ],
+        "xpScale": 3.0
       }
     },
     {
@@ -1950,13 +1983,10 @@
       "requires": [
         "sf_calling_ranger"
       ],
-      "summary": "Scout Fen teaches you Tar Trap. Lay two traps in Wolf Hollow and thin out three of the wolves that run into them.",
+      "summary": "Scout Fen asks you to practise Tar Trap. Lay two traps in Wolf Hollow and thin out three of the wolves that run into them.",
       "offer": "A wolf runs faster than you and it knows it. So you do not chase. You put a trap where it is going and let it come to you. Tar Trap: set it at your feet, step back, and let them come. Lay two in Wolf Hollow, then put three wolves down while they are stuck. You have seen me do it. Well, you have heard me talk about it.",
       "progress": "Lay two Tar Traps in Wolf Hollow and kill three wolves.",
       "complete": "Fen picks tar off your boot and sniffs it. “You stood in your own trap. Everyone does, once.” He hands the boot back. “The wolves did not. That is the bit that counts.”",
-      "acceptLearn": [
-        "tarTrap"
-      ],
       "objectives": [
         {
           "id": "traps",
@@ -1979,7 +2009,14 @@
       ],
       "reward": {
         "coins": 10,
-        "size": "standard"
+        "size": "chainStep",
+        "items": [
+          {
+            "item": "in_waywatch_bow",
+            "count": 1
+          }
+        ],
+        "xpScale": 3.0
       }
     },
     {
@@ -2000,28 +2037,45 @@
       "requires": [
         "sf_calling_occultist"
       ],
-      "summary": "Morrow Finch teaches you Grave Bloom. Raise it three times among the risen dead at the Nameless Yard.",
-      "offer": "Rot is patient. Grave Bloom is not. You pour the rot into the ground and the ground answers all at once, and everything standing on it learns what dirt feels like from the inside. The Nameless Yard south of here has plenty of things standing where they should be lying. Three blooms. Watch your feet.",
-      "progress": "Use Grave Bloom three times at the Nameless Yard among the risen dead.",
-      "complete": "Morrow writes something in a ledger with a very long list of names. “The yard is quieter. It will not stay quiet. Nothing there does.” They look at you over the ledger. “But you are learning to be loud back.”",
-      "acceptLearn": [
-        "graveBloom"
-      ],
+      "summary": "Use Rot three times and Soul Ward once in Nameless Yard, then return to Morrow.",
+      "offer": "“Apply Rot three times in the yard. Let it build Corruption, then spend some on Soul Ward. Power is useful. Knowing when to stop borrowing it is a profession.”",
+      "progress": "Use Rot three times and Soul Ward once in Nameless Yard, then return to Morrow.",
+      "complete": "Morrow checks your hands. “Steady. Good. A ward is wiser than trying to explain a missing finger.” He writes Grave Bloom into your book and offers a balanced athame. “A second way to spend what you gather. Try it, then decide which tools belong on your bar.”",
       "objectives": [
         {
-          "id": "bloom",
+          "id": "rot",
           "type": "use",
-          "target": "graveBloom",
-          "at": "vr_graves",
-          "radius": 30,
+          "target": "rot",
           "count": 3,
-          "label": "Raise Grave Bloom at the Nameless Yard",
+          "at": "vr_graves",
+          "radius": 35,
+          "label": "Apply Rot three times in Nameless Yard",
+          "location": "vr_graves"
+        },
+        {
+          "id": "ward",
+          "type": "use",
+          "target": "soulWard",
+          "count": 1,
+          "at": "vr_graves",
+          "radius": 35,
+          "label": "Spend Corruption on Soul Ward",
           "location": "vr_graves"
         }
       ],
       "reward": {
         "coins": 10,
-        "size": "standard"
+        "size": "chainStep",
+        "items": [
+          {
+            "item": "in_apprentice_athame",
+            "count": 1
+          }
+        ],
+        "xpScale": 3.0,
+        "learnSpell": [
+          "graveBloom"
+        ]
       }
     },
     {
@@ -2042,40 +2096,45 @@
       "requires": [
         "sf_calling_paladin"
       ],
-      "summary": "Sister Lyra teaches you Quick Mend. A watchman lies hurt by the Fallen Lantern south of town: select him and mend his wounds twice, then return to Lyra.",
-      "offer": "A watchman crawled back from the lantern road last night and got as far as the Fallen Lantern before his legs gave out. Dunn, his name is. He will not let us move him; he says he is keeping watch. Then you will go to him. This is Quick Mend: a word, and the light closes what it can. Choose him, not yourself, and speak it twice. It does not ask whether he deserves it. Neither do we.",
-      "progress": "Select Watchman Dunn at the Fallen Lantern, south of Thornford, and heal him twice with Quick Mend.",
-      "complete": "“He is sitting up?” Lyra closes her eyes a moment. “Then the light was listening. Sometimes it is not, and that is when you keep speaking anyway.” She looks south. “Did he say what he saw out there?”",
+      "summary": "Build Conviction and practise Light Shield twice near the fallen lantern. Return to Sister Lyra.",
+      "offer": "“A shield is a promise to stay long enough to help. Build Conviction with Holy Strike and your weapon, then practise Light Shield twice on the Lantern Road. Step out of danger while it recovers. You can care for people without offering every monster a free swing.”",
+      "progress": "Build Conviction and practise Light Shield twice near the fallen lantern. Return to Sister Lyra.",
+      "complete": "Lyra checks the nicks on your shield. “You stayed long enough to help and moved before you needed rescuing. Good. Conviction is useful when it protects somebody.” She offers a balanced watch sword. “Equip this before the next patrol. Protection is a craft, and crafts deserve sound tools.”",
       "turnInLog": "Watchman Dunn kept muttering about lantern-bearers who did not carry lanterns. You remember it.",
-      "acceptLearn": [
-        "quickMend"
-      ],
       "objectives": [
         {
-          "id": "mend",
+          "id": "shield",
           "type": "use",
-          "target": "quickMend",
-          "on": "vr_dunn",
+          "target": "lightShield",
           "count": 2,
-          "label": "Heal Watchman Dunn with Quick Mend",
+          "at": "tf_cairn",
+          "radius": 25,
+          "label": "Practise Light Shield on the Lantern Road",
           "location": "tf_cairn"
         }
       ],
       "reward": {
         "coins": 10,
-        "size": "standard"
+        "size": "chainStep",
+        "items": [
+          {
+            "item": "in_watch_sword",
+            "count": 1
+          }
+        ],
+        "xpScale": 3.0
       }
     },
     {
       "id": "vr_first_hunt",
       "name": "An Honest Day’s Work",
       "map": "new",
-      "giver": "vr_mayor",
-      "turnIn": "vr_mayor",
-      "summary": "Clear three young boars from Holt Meadow and inspect the broken fence. Report to Mayor Alder in Thornford’s town hall.",
-      "offer": "Welcome to Thornford. We have work, if you have boots. Heda’s young boars have taken to eating next season’s income. Clear three from Holt Meadow and look over the broken fence. Rowan’s watch used to bring repair timber. Last night they stopped coming. One problem at a time. That is our entire emergency plan.",
-      "progress": "The meadow is east of Heda’s farm, beyond the pigpen. Three young boars and a look at the fence. Then find me inside the town hall.",
-      "complete": "Alder counts out your pay. “Food on a table. A fence to mend. That is what this job is supposed to be.” He turns a winter-grain contract face down. “Rowan needs someone on the lantern road. Ask him why his watch has stopped coming home.”",
+      "giver": "vr_heda",
+      "turnIn": "vr_heda",
+      "summary": "Help Heda protect her orchard. Clear three young boars, inspect the broken fence, then return to her farm gate.",
+      "offer": "“Those are wild boars in the orchard, before you ask. My pigs have names and better manners. Thin out three young boars, then look at the broken fence. Leave the big ones alone for now. You will find me here when the job is done.”",
+      "progress": "Help Heda protect her orchard. Clear three young boars, inspect the broken fence, then return to her farm gate.",
+      "complete": "Heda counts the pigs twice. “Three. Excellent. Last week I was down to two pigs and a very convincing argument.” She presses your pay into your hand. “The fence needs timber. Osric is waiting for the watch to bring it. Ask Rowan where his patrol went.”",
       "objectives": [
         {
           "id": "boars",
@@ -2094,27 +2153,32 @@
         }
       ],
       "reward": {
-        "coins": 25,
-        "size": "standard"
+        "size": "chainStep",
+        "xpScale": 2.72,
+        "coins": 12
       },
-      "requires": [],
-      "autoAccept": true,
+      "requires": [
+        "in_farm_introduction"
+      ],
+      "autoAccept": false,
       "level": [
         1,
         2
       ],
-      "zone": "nr_orchard"
+      "zone": "nr_orchard",
+      "story": true,
+      "chapter": "A place at the table"
     },
     {
       "id": "vr_names",
       "name": "The Names They Left Behind",
       "map": "new",
-      "giver": "vr_mayor",
+      "giver": "vr_morrow",
       "turnIn": "vr_mayor",
       "summary": "Read the altered headstones at Nameless Yard and lay three gravewalkers to rest. Bring the evidence to Mayor Alder.",
-      "offer": "I signed the winter relief. Three carts of grain, no child going hungry. Rook’s clerk called the rest “standard terms”. Now families vanish from the burial roll and appear on his work lists. Read the stones at Nameless Yard and lay three gravewalkers to rest. I need evidence, not someone to tell me I meant well.",
+      "offer": "Morrow opens the parish book. “Read the memorial stones in Nameless Yard and lay three of the wandering watchmen to rest. Remember whose names have been taken. Tell Mayor Alder in Thornford what you find. He signed the grain contract. It is time he saw who is paying for it.”",
       "progress": "Take Mourning Road east of Old Watch. The yard lies south of Morrow’s apothecary. Copy the altered stones and put three gravewalkers down.",
-      "complete": "Alder lays your copy beside the contract. “My mother’s family. Elsie’s father. Paid debts copied onto dead names.” He uncaps his ink. “My signature let the clerk in. Mine will go on the account of what happened. The keeper at Bell Crypt holds the original family seals. Until those return, the false roll keeps its hold.”",
+      "complete": "Alder lays your account beside the contract. “My mother’s family. Elsie’s father. Paid debts copied onto dead names.” He uncaps his ink. “My signature let the clerk in. Mine will go on the inquiry. First, ask Benn the gravekeeper for permission to copy the family stones. Morrow needs an independent record.”",
       "objectives": [
         {
           "id": "stones",
@@ -2134,22 +2198,22 @@
       ],
       "reward": {
         "coins": 35,
-        "size": "standard",
+        "size": "chainStep",
         "items": [
           {
             "item": "healing_draught",
             "count": 2
           }
-        ]
+        ],
+        "xpScale": 3.04
       },
       "requires": [
-        "tf_bell"
+        "in_hollow_introduction"
       ],
-      "level": [
-        4,
-        5
-      ],
-      "zone": "vr_hollow"
+      "level": 4,
+      "zone": "vr_hollow",
+      "story": true,
+      "chapter": "The names they left behind"
     },
     {
       "id": "vr_crypt",
@@ -2160,7 +2224,7 @@
       "summary": "Find Bell Crypt beyond Nameless Yard and defeat the Keeper of the Lost Names. Return to Alder with the family seals.",
       "offer": "The collector bound the stolen names to our family seals. The crypt keeper carries them. Find Bell Crypt beyond the yard and end his watch. I will put the real names back where they belong. There will be an inquiry afterwards. I intend to attend it, which is an unfashionable position for a mayor.",
       "progress": "Bell Crypt is beyond the southern graves. Defeat the Keeper of the Lost Names and return here. Lyra will help the families once the seals are safe.",
-      "complete": "Alder presses the recovered seals into the book. The scratched names darken into legible ink. “The levy on these families is ended. The dead already raised will not all fall quiet tonight, but no more names leave this roll.” He writes his own beneath the statement. “Rook’s accounts went east to Rillbank. That can wait. Tonight we read these names aloud.” Sister Lyra has something smaller, and kinder, to finish at the yard.",
+      "complete": "Alder presses the recovered seals into the book. The scratched names darken into legible ink. “No more names leave this roll. Tonight we read them aloud.” He prepares two letters. “When you are ready, choose a road. Merrit at Lantern Crossing needs reliable hands east of Thornford. Nessa at Mossreed Landing keeps the ferry community northwest along Ferry Ridge. Both have seen Rook’s collectors. Either will know where this account belongs.”",
       "objectives": [
         {
           "id": "crypt",
@@ -2180,20 +2244,23 @@
       ],
       "reward": {
         "coins": 55,
-        "size": "standard",
+        "size": "actFinale",
         "items": [
           {
             "item": "strong_healing_draught",
             "count": 2
           }
-        ]
+        ],
+        "xpScale": 1.68
       },
       "requires": [
-        "vr_names"
+        "in_burial_record"
       ],
       "level": 5,
       "setsFlag": "vr_names_restored",
-      "zone": "vr_hollow"
+      "zone": "vr_hollow",
+      "story": true,
+      "chapter": "The names they left behind"
     },
     {
       "id": "vr_perch",
@@ -2251,7 +2318,9 @@
         "coins": 12,
         "size": "errand"
       },
-      "requires": [],
+      "requires": [
+        "in_watchmans_word"
+      ],
       "level": [
         3,
         5
@@ -2281,13 +2350,17 @@
         "coins": 10,
         "size": "errand"
       },
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "level": [
         1,
         3
       ],
       "setsFlag": "vr_boundary_settled",
-      "zone": "nr_orchard"
+      "zone": "nr_orchard",
+      "minLevel": 2,
+      "story": false
     },
     {
       "id": "vr_pig_wolf",
@@ -2313,10 +2386,13 @@
         "coins": 16,
         "size": "standard"
       },
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "level": 2,
       "setsFlag": "vr_pigs_safe",
-      "zone": "nr_orchard"
+      "zone": "nr_orchard",
+      "minLevel": 2
     },
     {
       "id": "vr_reed_message",
@@ -2340,12 +2416,15 @@
         "coins": 8,
         "size": "errand"
       },
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "level": [
         1,
         3
       ],
-      "zone": "nr_orchard"
+      "zone": "nr_orchard",
+      "minLevel": 2
     },
     {
       "id": "vr_lost_brooch",
@@ -2371,12 +2450,15 @@
         "coins": 12,
         "size": "errand"
       },
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "level": [
         1,
         3
       ],
-      "zone": "vr_village"
+      "zone": "vr_village",
+      "minLevel": 2
     },
     {
       "id": "nr_gauge",
@@ -2389,7 +2471,9 @@
       ],
       "giver": "tf_iren",
       "turnIn": "tf_iren",
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "summary": "Compare the two stamped measures just east of Iren’s forge. Recover the gauge case and return it to Iren.",
       "offer": "Someone says my axe heads are short. Someone used a gauge that thinks an inch grows with age. Compare the master stamp beside my forge with the rejected gauge south of it. Bring the gauge’s case back. If I am wrong, I will say so. Do not look so alarmed; it has happened before.",
       "progress": "Compare the two stamped measures just east of Iren’s forge. Recover the gauge case and return it to Iren.",
@@ -2422,7 +2506,8 @@
         "size": "errand",
         "coins": 4
       },
-      "setsFlag": "nr_gauge_done"
+      "setsFlag": "nr_gauge_done",
+      "minLevel": 2
     },
     {
       "id": "nr_timber",
@@ -2435,7 +2520,9 @@
       ],
       "giver": "vr_osric",
       "turnIn": "tf_iren",
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "summary": "Take the two tagged billets beside Osric’s woodlot to Iren at the Thornford smithy. Iren receives the delivery.",
       "offer": "Two dry handle billets, from the tagged stack beside me, for Iren’s smithy. I spent a year seasoning them. Last week someone called them kindling. Please deliver them before I commit a small, very well-documented crime.",
       "progress": "Take the two tagged billets beside Osric’s woodlot to Iren at the Thornford smithy. Iren receives the delivery.",
@@ -2453,7 +2540,8 @@
       "reward": {
         "coins": 5
       },
-      "setsFlag": "nr_timber_done"
+      "setsFlag": "nr_timber_done",
+      "minLevel": 2
     },
     {
       "id": "nr_water_notes",
@@ -2466,7 +2554,9 @@
       ],
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "summary": "Read the observation boards at Willow Pond’s northwestern reed edge and Miller’s Pool’s north bank. Report to Tobin.",
       "offer": "Willow’s reeds, Miller’s open bank. Have a proper look at both and tell me where the fish shelter. You need not catch anything. An angler who can only describe the one that got away is a man with a rod, not a source.",
       "progress": "Read the observation boards at Willow Pond’s northwestern reed edge and Miller’s Pool’s north bank. Report to Tobin.",
@@ -2491,7 +2581,8 @@
         "size": "errand",
         "coins": 4
       },
-      "setsFlag": "nr_water_notes_done"
+      "setsFlag": "nr_water_notes_done",
+      "minLevel": 2
     },
     {
       "id": "nr_reverse_route",
@@ -2504,7 +2595,9 @@
       ],
       "giver": "vr_rogue",
       "turnIn": "vr_rogue",
-      "requires": [],
+      "requires": [
+        "in_watchmans_word"
+      ],
       "summary": "Read the split-stump mark on Briarwood Loop, west of Lantern Road and the pale-boulder mark on Briarwood Camp’s eastern approach. Return to Mira inside the inn.",
       "offer": "People hire me to find doors. Then they walk straight past the way home. Check the split-stump mark on Briarwood Loop, west of Lantern Road and the pale boulder near Fen’s camp. Read both faces. No theft, no ambush, no dramatic leap. I am trying a radical new teaching method called arriving alive.",
       "progress": "Read the split-stump mark on Briarwood Loop, west of Lantern Road and the pale-boulder mark on Briarwood Camp’s eastern approach. Return to Mira inside the inn.",
@@ -2542,7 +2635,9 @@
       ],
       "giver": "vr_lyra",
       "turnIn": "vr_lyra",
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "summary": "Collect Elsie’s two marked bedding rolls outside the inn’s west door and bring them to Sister Lyra beside the chapel.",
       "offer": "Two travellers came in soaked. The chapel has a roof; the inn has spare bedding. Elsie has set two clean rolls outside her west door for us. Bring them here. No relic hunt, I am afraid. Holiness is mostly carrying things after everyone else has gone to bed.",
       "progress": "Collect Elsie’s two marked bedding rolls outside the inn’s west door and bring them to Sister Lyra beside the chapel.",
@@ -2561,7 +2656,8 @@
         "size": "errand",
         "coins": 5
       },
-      "setsFlag": "nr_bedding_done"
+      "setsFlag": "nr_bedding_done",
+      "minLevel": 2
     },
     {
       "id": "nr_shelter_tracks",
@@ -2574,7 +2670,9 @@
       ],
       "giver": "tf_scout",
       "turnIn": "tf_scout",
-      "requires": [],
+      "requires": [
+        "in_watchmans_word"
+      ],
       "summary": "Inspect the bootprints and borrowed-kettle note at the small shelter south of Briarwood Camp. Return to Fen.",
       "offer": "Smoke by the old shelter. Someone at the inn called it bandits. Could be a family trying to keep warm. Check the tracks and the note box south of camp. Tell me what is there before anyone goes out to make a hero of himself.",
       "progress": "Inspect the bootprints and borrowed-kettle note at the small shelter south of Briarwood Camp. Return to Fen.",
@@ -2650,7 +2748,9 @@
       ],
       "giver": "vr_heda",
       "turnIn": "vr_heda",
-      "requires": [],
+      "requires": [
+        "sf_odd_jobs"
+      ],
       "summary": "Inspect the quiet bee box on the orchard’s north edge and the eastern blossom branch. Return to Heda.",
       "offer": "The blossoms look healthy, but there are hardly any bees. Check the little bee box by the north fence and the flowering branch east of the pen. Boars are loud problems. This one can empty a pantry without making a sound.",
       "progress": "Inspect the quiet bee box on the orchard’s north edge and the eastern blossom branch. Return to Heda.",
@@ -2675,7 +2775,8 @@
         "size": "errand",
         "coins": 4
       },
-      "setsFlag": "nr_pollinator_notes_done"
+      "setsFlag": "nr_pollinator_notes_done",
+      "minLevel": 2
     },
     {
       "id": "nr_overtime",
@@ -2811,103 +2912,104 @@
     },
     {
       "id": "wm_lantern_crossing_work",
-      "name": "A Second Copy — Lantern Crossing",
+      "name": "A Crossing Worth Keeping",
       "map": "new",
       "zone": "rillbank",
-      "hub": "lantern_crossing",
-      "level": [
-        5,
-        10
-      ],
-      "minLevel": 3,
+      "level": 5,
       "giver": "wm_lantern_crossing_lead",
-      "turnIn": "wm_lantern_crossing_lead",
+      "turnIn": "in_ada",
       "requires": [],
-      "summary": "Get relief wagons across a damaged crossing. Inspect the marked worksite and deal with three roadside cutpurse. Return to Merrit Vale.",
-      "offer": "Get relief wagons across a damaged crossing. Inspect the marked worksite and deal with three roadside cutpurse. Return to Merrit Vale.",
-      "progress": "Follow the marked local path. Get relief wagons across a damaged crossing. Inspect the marked worksite and deal with three roadside cutpurse. Return to Merrit Vale.",
-      "complete": "The immediate danger is reduced. Merrit Vale keeps the original notice and asks for its surviving counterpart. Relief consignments carry two different totals under the same collection seal. The smaller total has the driver’s original mark.",
+      "summary": "Clear the cutpurses by the marked cartway northwest of the crossing. Read their notice and report to Ada at her shed.",
+      "offer": "“That account from Thornford matches our grain tallies. First we keep people moving. Four cutpurses have taken the cartway and called it an office. Clear them out, read their notice, then find Ada at the cart shed. She knows which bits of this bridge are actually broken.”",
+      "progress": "Clear the cutpurses by the marked cartway northwest of the crossing. Read their notice and report to Ada at her shed.",
+      "complete": "Ada wipes her hands. “Excellent. Now the armed accountants have left, we can attend to the timber. It was beginning to feel neglected.”",
       "objectives": [
         {
           "id": "notice",
           "type": "examine",
           "target": "poi:wm_lantern_crossing_worksite",
-          "label": "Read the surviving work notice",
+          "label": "Read the new toll notice",
           "location": "wm_lantern_crossing_worksite"
         },
         {
           "id": "threats",
           "type": "kill",
           "target": "wm_lantern_crossing_threat",
-          "count": 3,
-          "label": "Roadside Cutpurse defeated",
+          "count": 4,
+          "label": "Roadside cutpurses driven off",
           "location": "wm_lantern_crossing_worksite"
         }
       ],
       "reward": {
-        "size": "chainFinale",
-        "coins": 45
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
       },
+      "story": true,
+      "chapter": "The crossing keeps its word",
       "requiresAny": [
         "vr_crypt"
       ],
-      "storyBeat": 0
+      "minLevel": 5
     },
     {
       "id": "wm_lantern_crossing_record",
-      "name": "Lantern Crossing: The Surviving Copy",
+      "name": "The Crossing’s Own Copy",
       "map": "new",
       "zone": "rillbank",
-      "hub": "lantern_crossing",
-      "level": [
-        5,
-        10
-      ],
-      "minLevel": 3,
+      "level": 7,
       "giver": "wm_lantern_crossing_lead",
       "turnIn": "wm_lantern_crossing_lead",
       "requires": [
-        "wm_lantern_crossing_work"
+        "in_crossing_supper"
       ],
-      "summary": "Track road predators near working farms. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "offer": "Track road predators near working farms. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "progress": "Follow the marked local path. Track road predators near working farms. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "complete": "The original limit and later demand are entered together. The local dispute remains local, but its evidence can now travel with the wider inquiry.",
+      "summary": "Recover the existing packet at the cartway and check the bridge brace, then return to Merrit.",
+      "offer": "“Ada put the witness packet in the cartway lockbox while we cleared the shed. Fetch it and check her signed brace marks. We will send our own copy to Sergeant Sella at Lamplighter’s Rest. The same collectors are taking miners off the north road.”",
+      "progress": "Recover the existing packet at the cartway and check the bridge brace, then return to Merrit.",
+      "complete": "“Two copies. One here and one with you. If somebody loses ours, it will have to be on purpose.” Merrit gives you Sella’s directions. “She is west along the lamplit ridge. Tell her these people have already paid.”",
       "objectives": [
         {
-          "id": "packet",
+          "id": "record",
           "type": "collect",
           "target": "wm_lantern_crossing_record_packet",
           "count": 1,
-          "label": "Recover the surviving record",
+          "label": "Retrieve Merrit’s witness packet",
           "location": "wm_lantern_crossing_worksite"
+        },
+        {
+          "id": "brace",
+          "type": "examine",
+          "target": "poi:in_bridge_brace",
+          "label": "Check the signed repair marks",
+          "location": "in_bridge_brace"
         }
       ],
       "reward": {
-        "size": "chainFinale",
-        "coins": 45
+        "size": "chainStep",
+        "xpScale": 5.2,
+        "coins": 28
       },
-      "setsFlag": "wm_lantern_crossing_chapter_done",
-      "storyBeat": 0
+      "story": true,
+      "chapter": "The crossing keeps its word",
+      "setsFlag": "in_crossing_witnessed"
     },
     {
       "id": "wm_lantern_crossing_local",
-      "name": "The Unpaid Shovel — Lantern Crossing",
+      "name": "Beren’s Borrowed Shovel",
       "map": "new",
       "zone": "rillbank",
       "hub": "lantern_crossing",
-      "level": [
-        5,
-        10
-      ],
+      "level": 6,
       "minLevel": 3,
       "giver": "wm_lantern_crossing_worker",
       "turnIn": "wm_lantern_crossing_worker",
-      "requires": [],
+      "requires": [
+        "wm_lantern_crossing_work"
+      ],
       "summary": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified.",
-      "offer": "A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified.",
+      "offer": "“Ada lent me her father’s shovel. The runners took it with the cart. It is not worth much coin. That is not quite the same as it not being worth anything. If you find it while you are out, bring it back to me.”",
       "progress": "Follow the marked local path. A carter and a miner both claim the same shovel. Recover the stamped handle from the roadside crate so the owner can be identified.",
-      "complete": "The stamp matches the miner. The carter is paid for lending it, not for owning it.",
+      "complete": "Beren checks the worn handle. “Same notch. Good. I can return it without making a speech. Ada enjoys speeches even less than I do.”",
       "objectives": [
         {
           "id": "parcel",
@@ -2919,125 +3021,133 @@
         }
       ],
       "reward": {
-        "size": "standard",
-        "coins": 45
+        "size": "chainStep",
+        "coins": 12,
+        "xpScale": 2.8
       },
-      "localStory": true
+      "localStory": true,
+      "story": false,
+      "chapter": "Lives at the crossing"
     },
     {
       "id": "wm_mossreed_landing_work",
-      "name": "A Second Copy — Mossreed Landing",
+      "name": "The Landing Still Opens",
       "map": "new",
       "zone": "mirefen",
-      "hub": "mossreed_landing",
-      "level": [
-        5,
-        10
-      ],
-      "minLevel": 3,
+      "level": 5,
       "giver": "wm_mossreed_landing_lead",
-      "turnIn": "wm_mossreed_landing_lead",
+      "turnIn": "wm_mossreed_landing_worker",
       "requires": [],
-      "summary": "Clear the raised footpath for deliveries. Inspect the marked worksite and deal with three reedbank prowler. Return to Nessa Pike.",
-      "offer": "Clear the raised footpath for deliveries. Inspect the marked worksite and deal with three reedbank prowler. Return to Nessa Pike.",
-      "progress": "Follow the marked local path. Clear the raised footpath for deliveries. Inspect the marked worksite and deal with three reedbank prowler. Return to Nessa Pike.",
-      "complete": "The immediate danger is reduced. Nessa Pike keeps the original notice and asks for its surviving counterpart. Relief consignments carry two different totals under the same collection seal. The smaller total has the driver’s original mark.",
+      "summary": "Follow the bank path south of Mossreed Landing. Clear four prowlers, read the ferry notice and report to Celia.",
+      "offer": "“Alder’s letter reached the right landing. Four prowlers have made the ferry bank their dining room. Clear them from the marked reeds, read the stranding notice and speak to Celia. We have people on both banks waiting for ordinary things to happen.”",
+      "progress": "Follow the bank path south of Mossreed Landing. Clear four prowlers, read the ferry notice and report to Celia.",
+      "complete": "Celia unties a wet knot. “A useful morning, then. Mother has been waiting for one. Help me with these lamps before the river swallows the light as well.”",
       "objectives": [
         {
           "id": "notice",
           "type": "examine",
           "target": "poi:wm_mossreed_landing_worksite",
-          "label": "Read the surviving work notice",
+          "label": "Read the stranded ferry notice",
           "location": "wm_mossreed_landing_worksite"
         },
         {
           "id": "threats",
           "type": "kill",
           "target": "wm_mossreed_landing_threat",
-          "count": 3,
-          "label": "Reedbank Prowler defeated",
+          "count": 4,
+          "label": "Reedbank prowlers driven off",
           "location": "wm_mossreed_landing_worksite"
         }
       ],
       "reward": {
-        "size": "chainFinale",
-        "coins": 45
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
       },
+      "story": true,
+      "chapter": "The river keeps its people",
       "requiresAny": [
         "vr_crypt"
       ],
-      "storyBeat": 0
+      "minLevel": 5
     },
     {
       "id": "wm_mossreed_landing_record",
-      "name": "Mossreed Landing: The Surviving Copy",
+      "name": "The Landing’s Own Copy",
       "map": "new",
       "zone": "mirefen",
-      "hub": "mossreed_landing",
-      "level": [
-        5,
-        10
-      ],
-      "minLevel": 3,
+      "level": 7,
       "giver": "wm_mossreed_landing_lead",
       "turnIn": "wm_mossreed_landing_lead",
       "requires": [
-        "wm_mossreed_landing_work"
+        "in_last_oar_supper"
       ],
-      "summary": "Find a missing reed-cutter’s tools. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "offer": "Find a missing reed-cutter’s tools. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "progress": "Follow the marked local path. Find a missing reed-cutter’s tools. Recover the sealed packet at the marked worksite, then bring it back for comparison.",
-      "complete": "The original limit and later demand are entered together. The local dispute remains local, but its evidence can now travel with the wider inquiry.",
+      "summary": "Recover the existing packet beside the ferry worksite, speak to Hale, then return to Nessa.",
+      "offer": "“Celia put the packet in the bank stores. Fetch it and tell Hale his paid receipt is on file. Then take our account east to Sergeant Sella at Lamplighter’s Rest. The mine collectors are using the same seal. She will need a witness who has seen what it does.”",
+      "progress": "Recover the existing packet beside the ferry worksite, speak to Hale, then return to Nessa.",
+      "complete": "“One copy stays dry here. The other goes with you.” Nessa ties the packet shut. “Follow the ridge lamps east. Give Sella my regards, and tell her I would like my boatmen home before supper.”",
       "objectives": [
         {
-          "id": "packet",
+          "id": "record",
           "type": "collect",
           "target": "wm_mossreed_landing_record_packet",
           "count": 1,
-          "label": "Recover the surviving record",
+          "label": "Recover the landing’s witness packet",
+          "location": "wm_mossreed_landing_worksite"
+        },
+        {
+          "id": "hale",
+          "type": "talk",
+          "target": "in_hale",
+          "label": "Tell Hale his receipt is on file",
+          "requireVisit": true,
           "location": "wm_mossreed_landing_worksite"
         }
       ],
       "reward": {
-        "size": "chainFinale",
-        "coins": 45
+        "size": "chainStep",
+        "xpScale": 5.2,
+        "coins": 28
       },
-      "setsFlag": "wm_mossreed_landing_chapter_done",
-      "storyBeat": 0
+      "story": true,
+      "chapter": "The river keeps its people",
+      "setsFlag": "in_landing_witnessed"
     },
     {
       "id": "wm_mossreed_landing_local",
-      "name": "The Work Road Again — Mossreed Landing",
+      "name": "Celia’s Mislaid Locket",
       "map": "new",
       "zone": "mirefen",
       "hub": "mossreed_landing",
-      "level": [
-        5,
-        10
-      ],
+      "level": 6,
       "minLevel": 3,
       "giver": "wm_mossreed_landing_worker",
       "turnIn": "wm_mossreed_landing_worker",
-      "requires": [],
+      "requires": [
+        "wm_mossreed_landing_work"
+      ],
       "summary": "The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely.",
-      "offer": "The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely.",
+      "offer": "“I lost my locket pulling the first boat in. Father says he remembers the day he gave it to Mother. Mother says he got the date wrong. If you find it by the bank stores, I should like to keep the argument going.”",
       "progress": "Follow the marked local path. The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely.",
-      "complete": "The work route is usable again. Nobody has volunteered to chair the next committee.",
+      "complete": "Celia closes the locket. “There. Another small thing the river did not get to keep. Thank you.”",
       "objectives": [
         {
-          "id": "threats",
-          "type": "kill",
-          "target": "wm_mossreed_landing_threat",
-          "count": 3,
-          "label": "Reedbank Prowler defeated",
+          "id": "keepsake",
+          "type": "collect",
+          "target": "wm_mossreed_landing_keepsake",
+          "count": 1,
+          "label": "Find Celia’s locket beside the reeds",
           "location": "wm_mossreed_landing_worksite"
         }
       ],
       "reward": {
-        "size": "standard",
-        "coins": 45
+        "size": "chainStep",
+        "coins": 12,
+        "xpScale": 2.8
       },
-      "localStory": true
+      "localStory": true,
+      "story": false,
+      "chapter": "Lives at the landing"
     },
     {
       "id": "wm_rillbank_quays_work",
@@ -3049,10 +3159,12 @@
         10,
         13
       ],
-      "minLevel": 8,
+      "minLevel": 10,
       "giver": "wm_rillbank_quays_lead",
       "turnIn": "wm_rillbank_quays_lead",
-      "requires": [],
+      "requires": [
+        "in_road_to_rillbank"
+      ],
       "summary": "A ferry manifest disagrees with the waterline. Inspect the marked worksite and deal with three roadside cutpurse. Return to Orlen Moss.",
       "offer": "A ferry manifest disagrees with the waterline. Inspect the marked worksite and deal with three roadside cutpurse. Return to Orlen Moss.",
       "progress": "Follow the marked local path. A ferry manifest disagrees with the waterline. Inspect the marked worksite and deal with three roadside cutpurse. Return to Orlen Moss.",
@@ -7134,6 +7246,1196 @@
         ]
       },
       "setsFlag": "gathering_quiver_earned"
+    },
+    {
+      "id": "in_farm_introduction",
+      "name": "The Price of Supper",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 1,
+      "giver": "tf_iren",
+      "turnIn": "vr_heda",
+      "requires": [
+        "sf_odd_jobs"
+      ],
+      "summary": "Follow Orchard Lane east from Thornford. Heda waits by the farm gate, before the meadow.",
+      "offer": "“Elsie can feed you once. Heda can keep the village fed if her orchard survives. Take the east lane to her farm. Tell her the hinge is mended and I have not forgotten her gate. A useful pair of hands will earn more than sympathy there.”",
+      "progress": "Follow Orchard Lane east from Thornford. Heda waits by the farm gate, before the meadow.",
+      "complete": "“Iren sent you? Good. I need someone who can tell a wild boar from a pig. There is a distressing amount of disagreement about this among my helpers.”",
+      "objectives": [
+        {
+          "id": "heda",
+          "type": "talk",
+          "target": "vr_heda",
+          "label": "Ask Heda what the orchard needs",
+          "requireVisit": true,
+          "location": "tf_orchard"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.44,
+        "coins": 2
+      },
+      "story": true,
+      "chapter": "A place at the table"
+    },
+    {
+      "id": "in_watchmans_word",
+      "name": "A Watchman’s Word",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 2,
+      "giver": "vr_heda",
+      "turnIn": "tf_rowan",
+      "requires": [
+        "vr_first_hunt",
+        "sf_a_meal_earned"
+      ],
+      "summary": "Return along Orchard Lane and speak to Captain Rowan by Thornford’s watch house.",
+      "offer": "“We have supper again. Now find out why the watch stopped bringing timber. Rowan keeps his promises, even the ones that inconvenience him. The watch house is back in Thornford, beside the inn. Ask about the north patrol.”",
+      "progress": "Return along Orchard Lane and speak to Captain Rowan by Thornford’s watch house.",
+      "complete": "Rowan unfolds a patrol list. “Five names went out. None came back. The timber was their last errand. I have held this road for sixteen years, and this morning I cannot tell a farmer when her gate will be fixed.”",
+      "objectives": [
+        {
+          "id": "rowan",
+          "type": "talk",
+          "target": "tf_rowan",
+          "label": "Ask Captain Rowan about the missing timber",
+          "requireVisit": true,
+          "location": "tf_town"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.92,
+        "coins": 4
+      },
+      "story": true,
+      "chapter": "The watch that never came home"
+    },
+    {
+      "id": "in_lost_courier",
+      "name": "Letters Worth Bringing Home",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 3,
+      "giver": "tf_rowan",
+      "turnIn": "tf_rowan",
+      "requires": [
+        "tf_lanterns"
+      ],
+      "summary": "Follow Lantern Road beyond Dunn’s cart. Speak to Paige, recover her satchel and carry the letters to Rowan in Thornford.",
+      "offer": "“Dunn hurt his ankle by the fallen lantern. Ask him where Paige stopped. She is the courier, and she stayed to help him. Find her and recover the post near the broken axle beyond Dunn’s cart. Bring the letters to me. We could all use something written by the living.”",
+      "progress": "Follow Lantern Road beyond Dunn’s cart. Speak to Paige, recover her satchel and carry the letters to Rowan in Thornford.",
+      "complete": "Rowan puts the private envelopes aside without opening them. “I will see that everyone gets theirs. Paige can rest. The next road is my responsibility, and I am asking you because you came back for someone.”",
+      "objectives": [
+        {
+          "id": "dunn",
+          "type": "talk",
+          "target": "vr_dunn",
+          "label": "Ask Dunn where Paige went",
+          "requireVisit": true,
+          "location": "tf_cairn"
+        },
+        {
+          "id": "paige",
+          "type": "talk",
+          "target": "in_paige",
+          "label": "Find Paige beyond the fallen lantern",
+          "requireVisit": true,
+          "location": "in_courier_satchel"
+        },
+        {
+          "id": "letters",
+          "type": "collect",
+          "target": "in_dry_letters",
+          "count": 1,
+          "label": "Recover the dry letters",
+          "location": "in_courier_satchel"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.72,
+        "coins": 9
+      },
+      "story": true,
+      "chapter": "The watch that never came home"
+    },
+    {
+      "id": "in_hollow_introduction",
+      "name": "Medicine After Dark",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 4,
+      "giver": "tf_rowan",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "tf_bell"
+      ],
+      "summary": "Take the orchard path to Mourning Hollow. Morrow Finch works outside the apothecary.",
+      "offer": "“Those orders are using the names of buried watchmen. Morrow Finch keeps the sick lists in Mourning Hollow, east of Old Watch. He knows the families. Show him the seal. Stay on the orchard path until you see the blue-green lamps.”",
+      "progress": "Take the orchard path to Mourning Hollow. Morrow Finch works outside the apothecary.",
+      "complete": "Morrow puts on his reading spectacles. “Yes. I know these names. One of them still owes me a jar. Before you ask, I shall settle for getting him a proper burial.” He sets out the parish book. “Let us find out who has been borrowing the dead.”",
+      "objectives": [
+        {
+          "id": "morrow",
+          "type": "talk",
+          "target": "vr_morrow",
+          "label": "Take Rowan’s account to Morrow Finch",
+          "requireVisit": true,
+          "location": "vr_hollow"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.24,
+        "coins": 8
+      },
+      "story": true,
+      "chapter": "The names they left behind"
+    },
+    {
+      "id": "in_burial_record",
+      "name": "Names, Not Numbers",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 4,
+      "giver": "vr_mayor",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "vr_names"
+      ],
+      "summary": "Ask Benn by Nameless Yard, copy three marked family stones and bring the rubbings to Morrow’s apothecary.",
+      "offer": "Alder opens a blank page. “I signed for winter grain. I did not sign away these families. Ask Benn the gravekeeper for leave to copy the names. Bring the rubbings to Morrow. We will compare my contract against a record Rook could not quietly replace.”",
+      "progress": "Ask Benn by Nameless Yard, copy three marked family stones and bring the rubbings to Morrow’s apothecary.",
+      "complete": "Morrow sets the rubbings beside the ledger. “Three people, three settled accounts, and three demands for another winter’s service. Benn was right to keep his own book. The seals in the crypt are holding this forgery together.”",
+      "objectives": [
+        {
+          "id": "benn",
+          "type": "talk",
+          "target": "in_benn",
+          "label": "Ask Benn before copying the stones",
+          "requireVisit": true,
+          "location": "vr_graves"
+        },
+        {
+          "id": "names",
+          "type": "collect",
+          "target": "in_burial_rubbing",
+          "count": 3,
+          "label": "Copy three family names",
+          "location": "vr_graves"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.04,
+        "coins": 12
+      },
+      "story": true,
+      "chapter": "The names they left behind"
+    },
+    {
+      "id": "in_soup_round",
+      "name": "The Supper Round",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 4,
+      "giver": "vr_morrow",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "in_hollow_introduction"
+      ],
+      "summary": "Visit Della at the shuttered cottage and Benn at Nameless Yard. Return to Morrow when both have been checked on.",
+      "offer": "“Two jars of soup. One for Della, one for Benn. Neither will collect them because each is convinced the other needs looking after. I am a physician, not a referee, but I appear to be charging for the wrong service.”",
+      "progress": "Visit Della at the shuttered cottage and Benn at Nameless Yard. Return to Morrow when both have been checked on.",
+      "complete": "“They both told you to check on the other? Of course they did. Good. That is how we will get through the week.” Morrow puts a clean bowl beside the kettle for you.",
+      "objectives": [
+        {
+          "id": "della",
+          "type": "talk",
+          "target": "in_della",
+          "label": "Visit Della with Morrow’s supper",
+          "requireVisit": true,
+          "location": "vr_hollow"
+        },
+        {
+          "id": "benn",
+          "type": "talk",
+          "target": "in_benn",
+          "label": "Visit Benn by the yard",
+          "requireVisit": true,
+          "location": "vr_graves"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.3,
+        "coins": 8,
+        "items": [
+          {
+            "item": "healing_draught",
+            "count": 2
+          }
+        ]
+      },
+      "story": false,
+      "chapter": "Lives in the Hollow"
+    },
+    {
+      "id": "in_dellas_thread",
+      "name": "A Proper Hem",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 4,
+      "giver": "in_della",
+      "turnIn": "in_della",
+      "requires": [
+        "in_soup_round"
+      ],
+      "summary": "Recover the sewing tin beside the old well east of Della’s cottage, then return it to her.",
+      "offer": "“My sewing tin slid off the well bench. There is a blue spool inside. Benn’s coat is coming apart, and I shall not have him buried in that thing. Do stop looking alarmed. He is very much alive. At his age it is sensible to prepare.”",
+      "progress": "Recover the sewing tin beside the old well east of Della’s cottage, then return it to her.",
+      "complete": "Della draws out the blue thread. “That will do. He says he does not feel the cold. Men will say anything to avoid standing still for a fitting.”",
+      "objectives": [
+        {
+          "id": "thread",
+          "type": "collect",
+          "target": "in_spool",
+          "count": 1,
+          "label": "Recover Della’s sewing tin",
+          "location": "in_della_well"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.2,
+        "coins": 10
+      },
+      "story": false,
+      "chapter": "Lives in the Hollow"
+    },
+    {
+      "id": "in_letter_east",
+      "name": "The Road to Lantern Crossing",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 5,
+      "giver": "vr_mayor",
+      "turnIn": "wm_lantern_crossing_lead",
+      "requires": [
+        "vr_crypt"
+      ],
+      "summary": "Carry Alder’s signed account to Merrit Vale at Lantern Crossing, along the east road.",
+      "offer": "“Merrit Vale keeps Lantern Crossing open. Grain wagons pass through her hands before they reach ours. Take her my account. She has a habit of keeping copies. I used to find that tiresome. Experience is a wonderful educator.”",
+      "progress": "Carry Alder’s signed account to Merrit Vale at Lantern Crossing, along the east road.",
+      "complete": "The letter is read twice. A place is cleared at the work table. “Alder put his own name to it. Good. We can begin with something that will stand up when somebody wealthy becomes upset.”",
+      "objectives": [
+        {
+          "id": "letter",
+          "type": "talk",
+          "target": "wm_lantern_crossing_lead",
+          "label": "Deliver Alder’s witness letter",
+          "requireVisit": true,
+          "location": "wm_lantern_crossing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.24,
+        "coins": 12
+      },
+      "story": true,
+      "chapter": "A wider road",
+      "choice": "in_first_road",
+      "lend": [
+        {
+          "item": "in_alder_letter",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "in_letter_west",
+      "name": "The Ferry to Mossreed",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 5,
+      "giver": "vr_mayor",
+      "turnIn": "wm_mossreed_landing_lead",
+      "requires": [
+        "vr_crypt"
+      ],
+      "summary": "Carry Alder’s signed account to Nessa Pike at Mossreed Landing, along the western ferry road.",
+      "offer": "“Nessa Pike keeps Mossreed’s ferry landing. Some of the families named here came downriver. Take her my account. The river folk keep their own records, and they have better reasons than most to distrust a tidy ledger.”",
+      "progress": "Carry Alder’s signed account to Nessa Pike at Mossreed Landing, along the western ferry road.",
+      "complete": "The letter is read twice. A place is cleared at the work table. “Alder put his own name to it. Good. We can begin with something that will stand up when somebody wealthy becomes upset.”",
+      "objectives": [
+        {
+          "id": "letter",
+          "type": "talk",
+          "target": "wm_mossreed_landing_lead",
+          "label": "Deliver Alder’s witness letter",
+          "requireVisit": true,
+          "location": "wm_mossreed_landing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.24,
+        "coins": 12
+      },
+      "story": true,
+      "chapter": "A wider road",
+      "choice": "in_first_road",
+      "lend": [
+        {
+          "item": "in_alder_letter",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "in_crossing_timber",
+      "name": "Sound Timber",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 5,
+      "giver": "in_ada",
+      "turnIn": "in_ada",
+      "requires": [
+        "wm_lantern_crossing_work"
+      ],
+      "summary": "Take four dry bundles from Ada’s stack and examine the bridge brace, then return to her.",
+      "offer": "“Four dry bundles from the stack and a look at the brace marks. I will cut the boards. You do not become a carpenter by carrying wood, whatever Beren’s invoices say.”",
+      "progress": "Take four dry bundles from Ada’s stack and examine the bridge brace, then return to her.",
+      "complete": "Ada sets the chosen timber aside. “Sound enough. Tell Merrit I have what I need. We can stop charging travellers for walking round a puddle.”",
+      "objectives": [
+        {
+          "id": "wood",
+          "type": "collect",
+          "target": "firewood",
+          "count": 4,
+          "label": "Bring four bundles of sound wood",
+          "location": "in_cart_shed"
+        },
+        {
+          "id": "brace",
+          "type": "examine",
+          "target": "poi:in_bridge_brace",
+          "label": "Check Ada’s brace marks",
+          "location": "in_bridge_brace"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.2,
+        "coins": 14
+      },
+      "story": true,
+      "chapter": "The crossing keeps its word"
+    },
+    {
+      "id": "in_crossing_witnesses",
+      "name": "What the Driver Saw",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 6,
+      "giver": "in_ada",
+      "turnIn": "wm_lantern_crossing_lead",
+      "requires": [
+        "in_crossing_timber"
+      ],
+      "summary": "Speak to Beren and Kit around Lantern Crossing, then take both accounts to Merrit.",
+      "offer": "“Beren paid the fee. Kit saw the relief cart return empty. Ask both before you call anyone a liar. People remember different parts of a bad day, particularly when they have had to explain it to family.”",
+      "progress": "Speak to Beren and Kit around Lantern Crossing, then take both accounts to Merrit.",
+      "complete": "Merrit writes the two accounts on separate pages. “Beren paid for grain. The collector entered it as labour. The driver’s copy has the proof. We will recover it before he takes another household’s winter.”",
+      "objectives": [
+        {
+          "id": "beren",
+          "type": "talk",
+          "target": "wm_lantern_crossing_worker",
+          "label": "Ask Beren about the paid toll",
+          "requireVisit": true,
+          "location": "wm_lantern_crossing"
+        },
+        {
+          "id": "kit",
+          "type": "talk",
+          "target": "in_kit",
+          "label": "Ask Kit which cart returned empty",
+          "requireVisit": true,
+          "location": "wm_lantern_crossing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
+      },
+      "story": true,
+      "chapter": "The crossing keeps its word"
+    },
+    {
+      "id": "in_crossing_bill",
+      "name": "Paid in Full",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 6,
+      "giver": "wm_lantern_crossing_lead",
+      "turnIn": "wm_lantern_crossing_lead",
+      "requires": [
+        "in_crossing_witnesses"
+      ],
+      "summary": "Find the abandoned toll cart west of the cartway. Defeat four toll runners and bring the original bill to Merrit.",
+      "offer": "“The collector parked his spare cart beyond the old toll notice. His runners guard it. Recover the driver’s bill and put four of them off the road. Bring the original to me. I can argue about copies all winter; a thumbprint makes the conversation much shorter.”",
+      "progress": "Find the abandoned toll cart west of the cartway. Defeat four toll runners and bring the original bill to Merrit.",
+      "complete": "“Paid in full.” Merrit reads it aloud so Beren can hear. “There is a useful sentence. We should encourage it.” She starts a clean witness file, with the original safely inside.",
+      "objectives": [
+        {
+          "id": "bill",
+          "type": "collect",
+          "target": "in_crossing_bill",
+          "count": 1,
+          "label": "Recover the driver’s bill",
+          "location": "in_toll_cart"
+        },
+        {
+          "id": "men",
+          "type": "kill",
+          "target": "in_toll_runner",
+          "count": 4,
+          "label": "Toll runners defeated",
+          "location": "in_toll_cart"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 4.0,
+        "coins": 22
+      },
+      "story": true,
+      "chapter": "The crossing keeps its word"
+    },
+    {
+      "id": "in_crossing_supper",
+      "name": "Another Place at the Table",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 6,
+      "giver": "wm_lantern_crossing_lead",
+      "turnIn": "wm_lantern_crossing_inn",
+      "requires": [
+        "in_crossing_bill"
+      ],
+      "summary": "Bring three trail loaves to Anwen at the Bent Nail. You can use bread already in your bags or buy it at her counter.",
+      "offer": "“Anwen has drivers sleeping above the shop. Take her three loaves. Your own bread will do, or buy some from her counter. This is supper, not a test of where you found a particular loaf.”",
+      "progress": "Bring three trail loaves to Anwen at the Bent Nail. You can use bread already in your bags or buy it at her counter.",
+      "complete": "Anwen puts another bowl on the table. “Merrit sent you. Sit before she remembers another urgent piece of paper. You can rent a bed here or make the crossing your home while you work.”",
+      "objectives": [
+        {
+          "id": "bread",
+          "type": "collect",
+          "target": "trail_bread",
+          "count": 3,
+          "label": "Bring three loaves for the stranded drivers",
+          "location": "wm_lantern_crossing"
+        },
+        {
+          "id": "anwen",
+          "type": "talk",
+          "target": "wm_lantern_crossing_inn",
+          "label": "Check in at the Bent Nail",
+          "requireVisit": true,
+          "location": "wm_lantern_crossing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.88,
+        "coins": 12,
+        "items": [
+          {
+            "item": "roast_boar",
+            "count": 3
+          }
+        ]
+      },
+      "story": true,
+      "chapter": "The crossing keeps its word"
+    },
+    {
+      "id": "in_bank_lamps",
+      "name": "Light Along the Bank",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 5,
+      "giver": "wm_mossreed_landing_worker",
+      "turnIn": "in_hale",
+      "requires": [
+        "wm_mossreed_landing_work"
+      ],
+      "summary": "Gather three waxed wicks beside the landing stores, then speak to Hale on the southern bank path.",
+      "offer": "“Three wicks from the dry boxes. Take them to Hale by the bank lamps. He frightens visitors, but he has never once forgotten to light the way home. That is better than half the living boatmen manage.”",
+      "progress": "Gather three waxed wicks beside the landing stores, then speak to Hale on the southern bank path.",
+      "complete": "Hale takes the wicks with careful, bare fingers. “Thank you. A man should keep doing something useful while everyone decides what he is.” He points to the depth marker. “Nessa will want that sluice checked next.”",
+      "objectives": [
+        {
+          "id": "wicks",
+          "type": "collect",
+          "target": "in_lamp_wick",
+          "count": 3,
+          "label": "Gather three waxed wicks",
+          "location": "wm_mossreed_landing"
+        },
+        {
+          "id": "hale",
+          "type": "talk",
+          "target": "in_hale",
+          "label": "Bring the wicks to Hale",
+          "requireVisit": true,
+          "location": "wm_mossreed_landing_worksite"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.2,
+        "coins": 14
+      },
+      "story": true,
+      "chapter": "The river keeps its people"
+    },
+    {
+      "id": "in_ferry_flow",
+      "name": "A Little Give and Take",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 6,
+      "giver": "in_hale",
+      "turnIn": "wm_mossreed_landing_lead",
+      "requires": [
+        "in_bank_lamps"
+      ],
+      "summary": "Read the red depth marker. At the nearby sluice, set Bank to Trickle and Ferry to Full, then test the flow.",
+      "offer": "“The bank needs a trickle. The ferry needs the full channel. Nessa painted it on the marker after Jory’s third unsuccessful experiment. Turn the two handles, test the flow and tell her how it stands. Nothing will explode. This is plumbing.”",
+      "progress": "Read the red depth marker. At the nearby sluice, set Bank to Trickle and Ferry to Full, then test the flow.",
+      "complete": "Nessa checks the float. “Good. A straightforward answer to a straightforward question. I am beginning to miss those.” She lays out a passenger list with Hale’s name crossed through twice.",
+      "objectives": [
+        {
+          "id": "mark",
+          "type": "examine",
+          "target": "poi:in_reed_marker",
+          "label": "Read the depth marker",
+          "location": "in_reed_marker"
+        },
+        {
+          "id": "flow",
+          "type": "puzzle",
+          "target": "in_ferry_sluice",
+          "label": "Set the bank to trickle and the ferry channel to full",
+          "location": "in_ferry_lock"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
+      },
+      "story": true,
+      "chapter": "The river keeps its people"
+    },
+    {
+      "id": "in_river_names",
+      "name": "The Man on Both Lists",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 6,
+      "giver": "wm_mossreed_landing_lead",
+      "turnIn": "wm_mossreed_landing_lead",
+      "requires": [
+        "in_ferry_flow"
+      ],
+      "summary": "Speak to Hale on the bank and Tess near the landing’s herb shed. Bring both accounts to Nessa.",
+      "offer": "“Hale is on the living passengers’ list and the burial levy. Somebody has managed to charge him on both. Ask him when he paid, then ask Tess where she kept the receipt. Let them finish speaking. This has been an unpleasant week.”",
+      "progress": "Speak to Hale on the bank and Tess near the landing’s herb shed. Bring both accounts to Nessa.",
+      "complete": "Nessa rules one line through the duplicate charge. “He paid once while alive. He does not owe us a second fare for being difficult to classify.” She asks you to recover the receipt before the collector can burn it.",
+      "objectives": [
+        {
+          "id": "hale",
+          "type": "talk",
+          "target": "in_hale",
+          "label": "Ask Hale about the old crossing fee",
+          "requireVisit": true,
+          "location": "wm_mossreed_landing_worksite"
+        },
+        {
+          "id": "tess",
+          "type": "talk",
+          "target": "in_tess",
+          "label": "Ask Tess about her father’s receipt",
+          "requireVisit": true,
+          "location": "wm_mossreed_landing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
+      },
+      "story": true,
+      "chapter": "The river keeps its people"
+    },
+    {
+      "id": "in_river_receipt",
+      "name": "One Fare Is Plenty",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 6,
+      "giver": "wm_mossreed_landing_lead",
+      "turnIn": "wm_mossreed_landing_lead",
+      "requires": [
+        "in_river_names"
+      ],
+      "summary": "Search the reed cache west of the lamps. Lay four bound collectors to rest and bring the paid receipt to Nessa.",
+      "offer": "“The waterproof case is under the fallen willow west of the bank lamps. Four bound collectors guard it. They were boatmen once. Put them to rest and bring Hale’s receipt. We will stop the next name being added.”",
+      "progress": "Search the reed cache west of the lamps. Lay four bound collectors to rest and bring the paid receipt to Nessa.",
+      "complete": "Nessa smooths the receipt flat. “Paid. Witnessed. Recorded. My father would say that should be enough. I shall endeavour to make him right.”",
+      "objectives": [
+        {
+          "id": "receipt",
+          "type": "collect",
+          "target": "in_ferry_receipt",
+          "count": 1,
+          "label": "Recover Hale’s paid receipt",
+          "location": "in_reed_cache"
+        },
+        {
+          "id": "bound",
+          "type": "kill",
+          "target": "in_reed_collector",
+          "count": 4,
+          "label": "Bound collectors laid to rest",
+          "location": "in_reed_cache"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 4.0,
+        "coins": 22
+      },
+      "story": true,
+      "chapter": "The river keeps its people"
+    },
+    {
+      "id": "in_last_oar_supper",
+      "name": "Supper at the Last Oar",
+      "map": "new",
+      "zone": "mirefen",
+      "level": 6,
+      "giver": "wm_mossreed_landing_lead",
+      "turnIn": "wm_mossreed_landing_inn",
+      "requires": [
+        "in_river_receipt"
+      ],
+      "summary": "Bring three trail loaves to Jory at the Last Oar. You may use your own bread or buy it at his counter.",
+      "offer": "“Jory has boatmen waiting out the damp. Take three loaves to the Last Oar. Bread from your bag is bread enough. Then sit down before he tells everyone I have been forgetting to eat again.”",
+      "progress": "Bring three trail loaves to Jory at the Last Oar. You may use your own bread or buy it at his counter.",
+      "complete": "Jory finds a dry stool. “You have met the family, then. Yes, all of us. There are beds upstairs, and you can make this your home while you are working the river. The roof leaks in one highly traditional place.”",
+      "objectives": [
+        {
+          "id": "bread",
+          "type": "collect",
+          "target": "trail_bread",
+          "count": 3,
+          "label": "Bring three loaves to the waiting boatmen",
+          "location": "wm_mossreed_landing"
+        },
+        {
+          "id": "jory",
+          "type": "talk",
+          "target": "wm_mossreed_landing_inn",
+          "label": "Speak to Jory at the Last Oar",
+          "requireVisit": true,
+          "location": "wm_mossreed_landing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.88,
+        "coins": 12,
+        "items": [
+          {
+            "item": "roast_boar",
+            "count": 3
+          }
+        ]
+      },
+      "story": true,
+      "chapter": "The river keeps its people"
+    },
+    {
+      "id": "in_lamplighter_handoff",
+      "name": "A Fire Between Two Roads",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 7,
+      "giver": "in_sella",
+      "turnIn": "in_sella",
+      "requires": [],
+      "summary": "Follow the ridge lamps to Sergeant Sella at Lamplighter’s Rest, between the crossing and ferry roads.",
+      "offer": "“Merrit’s crossing or Nessa’s landing. Either account tells me enough to act. Come closer to the fire and tell me what you saw. The collectors have moved from fares to mine wages, and the men keeping the lamps have started disappearing.”",
+      "progress": "Follow the ridge lamps to Sergeant Sella at Lamplighter’s Rest, between the crossing and ferry roads.",
+      "complete": "Sella marks the copied seal. “That will stand up. We will get the miners out, collect the original accounts and send a witness to Rillbank. One job at a time. I am told that is a Thornford tradition.”",
+      "objectives": [
+        {
+          "id": "sella",
+          "type": "talk",
+          "target": "in_sella",
+          "label": "Bring the local witness account to Sella",
+          "requireVisit": true,
+          "location": "in_lamplighters"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.6,
+        "coins": 18
+      },
+      "story": true,
+      "chapter": "What a signature is worth",
+      "requiresAny": [
+        "wm_lantern_crossing_record",
+        "wm_mossreed_landing_record"
+      ]
+    },
+    {
+      "id": "in_miners_supplies",
+      "name": "For the People Still Waiting",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 7,
+      "giver": "in_sella",
+      "turnIn": "in_edda",
+      "requires": [
+        "in_lamplighter_handoff"
+      ],
+      "summary": "Gather four bundles beside Sella’s camp, then follow the short east path to Edda at the miners’ rest.",
+      "offer": "“Four bundles of dry wood from our reserve. Edda is keeping the miners’ families at the next camp east. Take them there and ask her for the shift tally. They need a warm evening before they need another speech.”",
+      "progress": "Gather four bundles beside Sella’s camp, then follow the short east path to Edda at the miners’ rest.",
+      "complete": "Edda takes the wood first. “Useful. You can ask me anything now.” She finds a folded tally. “These are the shifts they worked. These are the wages they received. You will notice I have needed much less paper for the second list.”",
+      "objectives": [
+        {
+          "id": "wood",
+          "type": "collect",
+          "target": "firewood",
+          "count": 4,
+          "label": "Gather four dry bundles for the miners’ camp",
+          "location": "in_lamplighters"
+        },
+        {
+          "id": "edda",
+          "type": "talk",
+          "target": "in_edda",
+          "label": "Bring the supplies to Edda",
+          "requireVisit": true,
+          "location": "in_mine_camp"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.78,
+        "coins": 20
+      },
+      "story": true,
+      "chapter": "What a signature is worth"
+    },
+    {
+      "id": "in_hold_the_lane",
+      "name": "Room to Turn",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 8,
+      "giver": "in_edda",
+      "turnIn": "in_edda",
+      "requires": [
+        "in_miners_supplies"
+      ],
+      "summary": "Use the broad lime-cut path toward Blackpick. Defeat four wardens and return to Edda. Move out of their marked heavy swings.",
+      "offer": "“The wardens block the lime cut. Four of them. Their heavy swing is easy to see coming if you have room to move. Take the broad shelf, step clear when they draw back, then return here. A clever fight is one you can still walk away from.”",
+      "progress": "Use the broad lime-cut path toward Blackpick. Defeat four wardens and return to Edda. Move out of their marked heavy swings.",
+      "complete": "Edda checks your hands for shaking. “Good. A road we can use. We should have hired you before they hired a bailiff.” She gives you a work cloak from the dry chest.",
+      "objectives": [
+        {
+          "id": "wardens",
+          "type": "kill",
+          "target": "in_mine_warden",
+          "count": 4,
+          "label": "Mine wardens defeated",
+          "location": "in_lime_cut"
+        },
+        {
+          "id": "shelf",
+          "type": "examine",
+          "target": "poi:in_lime_cut",
+          "label": "Find the broad quarry shelf",
+          "location": "in_lime_cut"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 4.95,
+        "coins": 25,
+        "items": [
+          {
+            "item": "in_workers_cloak",
+            "count": 1
+          }
+        ]
+      },
+      "story": true,
+      "chapter": "What a signature is worth"
+    },
+    {
+      "id": "in_cut_the_claim",
+      "name": "Work Already Done",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 8,
+      "giver": "in_edda",
+      "turnIn": "in_sella",
+      "requires": [
+        "in_hold_the_lane"
+      ],
+      "summary": "Recover the three marked wage tags along the quarry approach, then take them to Sella’s fire.",
+      "offer": "“The old tags are tied along the cut. Three with settled wages, if Corven has not burned them. Bring those to Sella. They are proof our people were workers, not debtors handed down with the tools.”",
+      "progress": "Recover the three marked wage tags along the quarry approach, then take them to Sella’s fire.",
+      "complete": "Sella lays the tags in a row. “Settled. Settled. Settled. There is very little ambiguity here. Corven has kept the original ledger at his desk. We are finished asking him politely.”",
+      "objectives": [
+        {
+          "id": "tags",
+          "type": "collect",
+          "target": "in_miner_tag",
+          "count": 3,
+          "label": "Recover three settled wage tags",
+          "location": "in_lime_cut"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 4.32,
+        "coins": 24
+      },
+      "story": true,
+      "chapter": "What a signature is worth"
+    },
+    {
+      "id": "in_foreman",
+      "name": "The Bailiff’s Last Shift",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 9,
+      "giver": "in_sella",
+      "turnIn": "in_edda",
+      "requires": [
+        "in_cut_the_claim"
+      ],
+      "summary": "Prepare at camp, then confront Bailiff Corven on Blackpick’s outer approach. Step clear of his marked swing, read the ledger and return to Edda.",
+      "offer": "“Corven is at the mine’s outer desk. Defeat him and read the altered ledger, then report to Edda. Watch his marked swing and keep a way back to the open shelf. You have food, a draught and time to prepare. Use them.”",
+      "progress": "Prepare at camp, then confront Bailiff Corven on Blackpick’s outer approach. Step clear of his marked swing, read the ledger and return to Edda.",
+      "complete": "Edda closes her eyes for a moment. “Then my people can come home.” She straightens the wage tags. “I will see them paid. That part was always my job.”",
+      "objectives": [
+        {
+          "id": "bailiff",
+          "type": "kill",
+          "target": "in_bailiff_corven",
+          "count": 1,
+          "label": "Bailiff Corven defeated",
+          "location": "in_bailiff_desk"
+        },
+        {
+          "id": "desk",
+          "type": "examine",
+          "target": "poi:in_bailiff_desk",
+          "label": "Read Corven’s altered ledger",
+          "location": "in_bailiff_desk"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 7.2,
+        "coins": 40,
+        "items": [
+          {
+            "item": "strong_healing_draught",
+            "count": 2
+          }
+        ]
+      },
+      "story": true,
+      "chapter": "What a signature is worth",
+      "setsFlag": "in_bailiff_removed"
+    },
+    {
+      "id": "in_testimony",
+      "name": "A Name Beneath the Statement",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 9,
+      "giver": "in_edda",
+      "turnIn": "wm_lantern_crossing_lead",
+      "requires": [
+        "in_foreman"
+      ],
+      "summary": "Recover the ledger from the cleared desk, then take it to Merrit at Lantern Crossing.",
+      "offer": "“The book is still at his desk. Take it to Merrit with my name beneath the statement. I signed the old wage agreement because my people were hungry. I am signing this because I mean to answer for what happens next.”",
+      "progress": "Recover the ledger from the cleared desk, then take it to Merrit at Lantern Crossing.",
+      "complete": "Merrit reads Edda’s signature. “We have witnesses from Thornford, a local account and the original book. Rillbank cannot call this a misplaced invoice. There is a place for your name too, if you are willing to carry it.”",
+      "objectives": [
+        {
+          "id": "ledger",
+          "type": "collect",
+          "target": "in_original_ledger",
+          "count": 1,
+          "label": "Recover Corven’s original ledger",
+          "location": "in_bailiff_desk"
+        },
+        {
+          "id": "merrit",
+          "type": "talk",
+          "target": "wm_lantern_crossing_lead",
+          "label": "Lodge the account with Merrit",
+          "requireVisit": true,
+          "location": "wm_lantern_crossing"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 5.4,
+        "coins": 35
+      },
+      "story": true,
+      "chapter": "What a signature is worth",
+      "setsFlag": "in_testimony_lodged"
+    },
+    {
+      "id": "in_road_to_rillbank",
+      "name": "Beyond the Last Familiar Lamp",
+      "map": "new",
+      "zone": "rillbank",
+      "level": 9,
+      "giver": "wm_lantern_crossing_lead",
+      "turnIn": "wm_rillbank_quays_lead",
+      "requires": [
+        "in_testimony"
+      ],
+      "summary": "Follow the trade road southeast from Lantern Crossing to Rillbank Quays. Deliver the sealed account to the quay officer.",
+      "offer": "“Take this to the quay office in Rillbank, southeast along the trade road. You arrived in Thornford looking for a meal. Now three communities have put their names beside yours. That is how a reputation begins. Try to keep it useful.”",
+      "progress": "Follow the trade road southeast from Lantern Crossing to Rillbank Quays. Deliver the sealed account to the quay officer.",
+      "complete": "The quay officer breaks the seal. “Thornford. Mossreed or the crossing. Blackpick.” A second chair is pulled up to the desk. “We have heard rumours. This is considerably better than a rumour. Welcome to Rillbank. We have work worthy of a witness.”",
+      "objectives": [
+        {
+          "id": "clerk",
+          "type": "talk",
+          "target": "wm_rillbank_quays_lead",
+          "label": "Deliver the witness account at Rillbank Quays",
+          "requireVisit": true,
+          "location": "wm_rillbank_quays"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.2,
+        "coins": 45,
+        "items": [
+          {
+            "item": "travellers_satchel",
+            "count": 1
+          }
+        ]
+      },
+      "story": true,
+      "chapter": "A reputation earned",
+      "setsFlag": "in_intro_complete"
+    },
+    {
+      "id": "in_boundary_agreement",
+      "name": "An Agreement Between Neighbours",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 2,
+      "giver": "vr_mayor",
+      "turnIn": "vr_mayor",
+      "requires": [
+        "vr_fence_dispute"
+      ],
+      "summary": "Hear Heda and Osric at the orchard boundary, then return to Alder to settle the dispute.",
+      "offer": "“Hear both neighbours. Then, if you can get them to share the repair, I will witness their agreement. We can spend the saved coin on something less argumentative.”",
+      "progress": "Hear Heda and Osric at the orchard boundary, then return to Alder to settle the dispute.",
+      "complete": "“We split the repair timber and leave the old stone where it stood.” Heda offers her hand. Osric takes it. Neither looks delighted, which Alder considers encouraging.",
+      "objectives": [
+        {
+          "id": "heda",
+          "type": "talk",
+          "target": "vr_heda",
+          "label": "Hear Heda’s account",
+          "requireVisit": true,
+          "location": "tf_orchard"
+        },
+        {
+          "id": "osric",
+          "type": "talk",
+          "target": "vr_osric",
+          "label": "Hear Osric’s account",
+          "requireVisit": true,
+          "location": "tf_orchard"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.2,
+        "coins": 10
+      },
+      "story": false,
+      "chapter": "Small matters, long memories",
+      "choice": "in_boundary_resolution",
+      "setsFlag": "in_boundary_agreed"
+    },
+    {
+      "id": "in_boundary_ruling",
+      "name": "The Mayor’s Measure",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 2,
+      "giver": "vr_mayor",
+      "turnIn": "vr_mayor",
+      "requires": [
+        "vr_fence_dispute"
+      ],
+      "summary": "Hear Heda and Osric at the orchard boundary, then return to Alder to settle the dispute.",
+      "offer": "“Hear both neighbours. Then bring the matter back to my measure. The village will pay for the repair, and both households will receive a written boundary.”",
+      "progress": "Hear Heda and Osric at the orchard boundary, then return to Alder to settle the dispute.",
+      "complete": "Alder sets his stamped measure against the old stone. “The boundary stays here. The repair costs go on the village account.” Heda accepts the ruling. Osric asks for his copy in writing.",
+      "objectives": [
+        {
+          "id": "heda",
+          "type": "talk",
+          "target": "vr_heda",
+          "label": "Hear Heda’s account",
+          "requireVisit": true,
+          "location": "tf_orchard"
+        },
+        {
+          "id": "osric",
+          "type": "talk",
+          "target": "vr_osric",
+          "label": "Hear Osric’s account",
+          "requireVisit": true,
+          "location": "tf_orchard"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 2.2,
+        "coins": 18
+      },
+      "story": false,
+      "chapter": "Small matters, long memories",
+      "choice": "in_boundary_resolution",
+      "setsFlag": "in_boundary_ruled"
+    },
+    {
+      "id": "sf_calling_wizard",
+      "name": "A Calling",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 5,
+      "giver": "vr_mayor",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "tf_lanterns"
+      ],
+      "summary": "Speak to Morrow Finch outside Mourning Hollow’s apothecary.",
+      "offer": "“Morrow teaches spellcraft as well as medicine. He says both trades suffer from people rushing the important bit. Find him in Mourning Hollow if you would like a proper lesson.”",
+      "progress": "Speak to Morrow Finch outside Mourning Hollow’s apothecary.",
+      "complete": "“A Wizard. Good. Someone who may yet learn that a frozen kettle is not the end of a cook’s problems.”",
+      "objectives": [
+        {
+          "id": "mentor",
+          "type": "talk",
+          "target": "vr_morrow",
+          "label": "Ask Morrow about practical spellcraft",
+          "requireVisit": true,
+          "location": "vr_hollow"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.5,
+        "coins": 3
+      },
+      "story": false,
+      "chapter": "A place at the table",
+      "minLevel": 5,
+      "classes": [
+        "wizard"
+      ]
+    },
+    {
+      "id": "sf_class_wizard",
+      "name": "A Proper Thaw",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": 5,
+      "giver": "vr_morrow",
+      "turnIn": "vr_morrow",
+      "requires": [
+        "sf_calling_wizard"
+      ],
+      "summary": "Practise Frost Lance followed by Firebolt twice in Nameless Yard, then return to Morrow.",
+      "offer": "“In the yard, cast Frost Lance, then Firebolt on the same target. Do that twice. The steam is the lesson. Return when you can explain what changed. I will accept a concise answer; I still have the surgery to open.”",
+      "progress": "Practise Frost Lance followed by Firebolt twice in Nameless Yard, then return to Morrow.",
+      "complete": "“You changed what the second spell found. Keep thinking that way.” Morrow offers a balanced athame. “A tool worth looking after. Open your bags and equip it before your next experiment.”",
+      "objectives": [
+        {
+          "id": "frost",
+          "type": "use",
+          "target": "frostLance",
+          "count": 2,
+          "at": "vr_graves",
+          "radius": 35,
+          "label": "Chill two targets with Frost Lance",
+          "location": "vr_graves"
+        },
+        {
+          "id": "fire",
+          "type": "use",
+          "target": "firebolt",
+          "count": 2,
+          "at": "vr_graves",
+          "radius": 35,
+          "label": "Follow with Firebolt",
+          "location": "vr_graves"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 3.0,
+        "coins": 10,
+        "items": [
+          {
+            "item": "in_apprentice_athame",
+            "count": 1
+          }
+        ]
+      },
+      "story": false,
+      "chapter": "A place at the table",
+      "minLevel": 5,
+      "classes": [
+        "wizard"
+      ]
     }
   ]
 }

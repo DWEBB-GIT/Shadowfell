@@ -102,12 +102,17 @@ var resting: String:
 	get:
 		var c = game.world_state.camp
 		var player = game.player
-		if player.dead or enemies_near:
+		if player.dead:
 			return ""
+		# where first: the enemy sweep (every enemy in the world) only runs
+		# when there is somewhere to rest
 		var indoors = game.world.indoors if game.world else null
+		var where := ""
 		if indoors != null and indoors.def.get("rest"):
-			return "inn"
-		return "camp" if c != null and U.hyp(player.position.x - c.x, player.position.z - c.z) <= DB.CONFIG.camp.restRadius else ""
+			where = "inn"
+		elif c != null and U.hyp(player.position.x - c.x, player.position.z - c.z) <= DB.CONFIG.camp.restRadius:
+			where = "camp"
+		return "" if where == "" or enemies_near else where
 
 
 func update(dt: float, time: float) -> void:

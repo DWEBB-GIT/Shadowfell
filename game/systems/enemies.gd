@@ -71,6 +71,9 @@ func reset_engaged() -> void:
 ## always has), and its body is in the scene only near the player or while
 ## it is fighting (WorldStream.VIEW_IN / VIEW_OUT). A multiplayer server
 ## would run update() for every enemy near any player and attach no bodies.
+var _tick := 0
+
+
 func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)
@@ -78,12 +81,22 @@ func update(dt: float) -> void:
 	if _hours_check <= 0.0:
 		_hours_check = 1.0
 		_keep_hours()
+	_tick += 1
 	for e in list:
 		var d2: float = e.position.distance_squared_to(player.position)
 		var near: bool = d2 < 180.0 * 180.0
 		_show(e, d2)
-		if near or e.state != "idle":
-			e.update(dt, player)
+		if e.state != "idle" or (near and e.group.get_parent() != null):
+			e.update(dt + e.idle_dt, player)
+			e.idle_dt = 0.0
+		elif near:
+			# idle and out of sight (far past any aggro reach): looked at a
+			# quarter as often, with the time saved up, so the browser's one
+			# thread is not spent on bodies nobody sees
+			e.idle_dt += dt
+			if (_tick + e.get_instance_id()) % 4 == 0:
+				e.update(e.idle_dt, player)
+				e.idle_dt = 0.0
 	_separate()
 	# a body with loot stays down until looted; then it sinks away
 	for e in list.duplicate():
@@ -160,7 +173,10 @@ func _respawn(dt: float) -> void:
 
 
 func _separate() -> void:
-	var living := list.filter(func(e): return e.alive)
+	# only bodies in view can be seen to overlap; idle ones far off stand still
+	var pp: Vector3 = game.player.position
+	var view2 := WorldStream.VIEW_OUT * WorldStream.VIEW_OUT
+	var living := list.filter(func(e): return e.alive and (e.state != "idle" or e.position.distance_squared_to(pp) < view2))
 	# sweep along x: once the next enemy is further off in x than any two
 	# could reach, none after it can touch this one (was every pair: 5 ms
 	# a frame for 85 enemies)

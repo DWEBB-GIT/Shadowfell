@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+[sub_resource type="SphereMesh" id="Rock"]
+radius = 0.5
+height = 1.1
+radial_segments = 9
+rings = 5
+[node name="Meteor" type="Node3D"]
+[node name="Rock" type="MeshInstance3D" parent="."]
+mesh = SubResource("Rock")

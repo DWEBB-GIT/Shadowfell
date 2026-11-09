@@ -682,7 +682,7 @@
       "name": "Briarwood Wolf",
       "level": 2,
       "pack": 0,
-      "detection": 7,
+      "detection": 6,
       "respawn": 100
     },
     {
@@ -749,7 +749,9 @@
       "tint": "#ffffff",
       "detection": 5,
       "roam": 2.5,
-      "respawn": 60
+      "respawn": 60,
+      "attitude": "passive",
+      "flees": false
     },
     {
       "id": "vr_watchman",
@@ -780,7 +782,19 @@
       "name": "Keeper of the Lost Names",
       "level": 5,
       "detection": 8,
-      "respawn": 300
+      "respawn": 300,
+      "block": 0,
+      "damage": 4,
+      "special": {
+        "name": "Grave Slam",
+        "damage": 12,
+        "windup": 1.8,
+        "cooldown": 9,
+        "trigger": 3.4,
+        "range": 3.8,
+        "arc": 100,
+        "interruptible": true
+      }
     },
     {
       "id": "vr_farm_pig",
@@ -1395,6 +1409,81 @@
       "elite": true,
       "noXp": true,
       "respawn": 240
+    },
+    {
+      "id": "in_toll_runner",
+      "base": "blackhedge_cutthroat",
+      "name": "Toll Runner",
+      "level": 6,
+      "respawn": 65,
+      "detection": 5.5,
+      "pack": 0,
+      "type": "skirmisher",
+      "windup": 0.65,
+      "coins": 4
+    },
+    {
+      "id": "in_reed_collector",
+      "base": "ghoul",
+      "name": "Bound Ferry Collector",
+      "level": 6,
+      "respawn": 65,
+      "detection": 5.5,
+      "pack": 0,
+      "type": "normal",
+      "windup": 0.75,
+      "coins": 4
+    },
+    {
+      "id": "in_mine_warden",
+      "base": "blackhedge_cutthroat",
+      "name": "Blackpick Mine Warden",
+      "level": 8,
+      "respawn": 65,
+      "detection": 5.5,
+      "pack": 0,
+      "type": "armoured",
+      "block": 0,
+      "windup": 0.75,
+      "telegraph": true,
+      "coins": 6,
+      "special": {
+        "name": "Quarry Sweep",
+        "damage": 12,
+        "windup": 1.7,
+        "cooldown": 9,
+        "trigger": 3.2,
+        "range": 3.4,
+        "arc": 100,
+        "interruptible": true
+      }
+    },
+    {
+      "id": "in_bailiff_corven",
+      "base": "blackhedge_cutthroat",
+      "name": "Bailiff Corven",
+      "level": 9,
+      "respawn": 120,
+      "detection": 5.5,
+      "pack": 0,
+      "type": "elite",
+      "elite": true,
+      "block": 0,
+      "damage": 5,
+      "windup": 0.8,
+      "attackInterval": 1.6,
+      "coins": 20,
+      "telegraph": true,
+      "special": {
+        "name": "Final Notice",
+        "damage": 18,
+        "windup": 1.9,
+        "cooldown": 10,
+        "trigger": 4.0,
+        "range": 3.8,
+        "arc": 100,
+        "interruptible": true
+      }
     }
   ]
 }
