@@ -233,6 +233,10 @@ func for_npc(npc_id: String) -> Array:
 	for q in _quests_of(npc_id):
 		var s := status(q.id)
 		if (s == "ready" and q.get("turnIn") == npc_id) or (s == "available" and q.get("giver") == npc_id) or (s == "active" and q.get("turnIn") == npc_id):
+			# "go and speak to X": once only that talk is left, X shows the gold
+			# hand-in ?, not the grey one (Dan 2026-11-09)
+			if s == "active" and only_talk_left(q.id, npc_id):
+				s = "ready"
 			out.append({"id": q.id, "status": s})
 	var order := {"ready": 0, "available": 1, "active": 2}
 	out.sort_custom(func(a, b): return order[a.status] < order[b.status])
@@ -256,6 +260,13 @@ func _quests_of(npc_id: String) -> Array:
 	return _by_npc.get(npc_id, [])
 
 
+## Is speaking to this npc all that is left of an active quest?
+func only_talk_left(id: String, npc_id: String) -> bool:
+	var objs := objectives(id)
+	var left := objs.filter(func(o): return not o.done)
+	return not left.is_empty() and left.all(func(o): return o.type == "talk" and o.target == npc_id)
+
+
 ## What floats over an npc: 'ready' gold ?, 'available' gold !, 'active' grey ?.
 ## The floating marks and the minimap ask for every npc in view each frame,
 ## so the answer is kept for MARK_TTL_MS (bags, levels and kills move a quest
@@ -273,7 +284,7 @@ func marker_for(npc_id: String) -> String:
 		if _marks[npc_id] == "":
 			for quest_id in active:
 				if DB.quests[quest_id].objectives.any(func(o): return o.type == "talk" and o.get("requireVisit", false) and o.target == npc_id and not kills.get(quest_id, {}).get(o.id, 0)):
-					_marks[npc_id] = "active"
+					_marks[npc_id] = "ready" if only_talk_left(quest_id, npc_id) else "active"
 					break
 	return _marks[npc_id]
 
