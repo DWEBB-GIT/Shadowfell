@@ -30,6 +30,7 @@ var facing := 0.0 ## radians; 0 faces +z (south)
 ## while walking, so the blow is seen to go where it was aimed
 const AIM_HOLD := 0.45
 var aim_hold := 0.0
+var root := 0.0 ## seconds an attack on the move holds you in place (Lost Ark / D4)
 var radius: float = DB.CONFIG.player.radius
 var max_health := 100
 var health := 100.0
@@ -441,6 +442,7 @@ func update(dt: float, controls) -> void:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
 	aim_hold = maxf(0, aim_hold - dt)
+	root = maxf(0, root - dt)
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
@@ -520,6 +522,8 @@ func update(dt: float, controls) -> void:
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
 		else:
 			mv = _melee_steer(mv, dt)
+		if root > 0:
+			mv = {"x": 0.0, "z": 0.0}
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
@@ -628,7 +632,7 @@ func try_strike(aim) -> bool:
 	var windup: float = stats.swing_windup
 	if cooldowns.attack > windup:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
+	if aim != null and not _swing_facing(aim):
 		return false
 	var anim: float = stats.swing_animation
 	if bow_in_hand or sheathed:
@@ -660,7 +664,7 @@ func try_strike_off(aim) -> bool:
 	var windup: float = stats.swing_windup_for("off")
 	if cooldowns.attackOff > windup:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
+	if aim != null and not _swing_facing(aim):
 		return false
 	var gap: float = DB.attack.staggerGap
 	var anim: float = stats.swing_animation_for("off")
@@ -721,8 +725,8 @@ func try_shoot(aim) -> bool:
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
 	if cooldowns.ranged > draw:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
-		return false
+	if aim != null:
+		face_towards(aim.x, aim.z)
 	var t := maxf(cooldowns.ranged, draw)
 	pending_shot = {"t": t,"total":t}
 	if not bow_in_hand or sheathed:draw_weapons("ranged")
@@ -741,11 +745,12 @@ func _release(p: Dictionary, dt: float) -> void:
 	var tg = game.targeting
 	var inv = game.inventory
 	var ammo = inv.ammo
-	if not tg.attacking or not tg.target_in_shot or not ammo or not facing_point(tg.current.position.x,tg.current.position.z,DB.attack.coneDegrees/2.0):
+	if not tg.attacking or not tg.target_in_shot or not ammo:
 		if rig.action != null and rig.action.type == "shoot":
 			rig.action = null
 		hold_bow(weapon_stance=="ranged" and not sheathed)
 		return
+	face_towards(tg.current.position.x, tg.current.position.z)
 	inv.spend_arrow(ammo)
 	var late := minf(minf(-p.t, dt), DB.attack.catchUp)
 	cooldowns.ranged = maxf(0, game.stats.attack_cooldown_for("ranged") - late)
@@ -789,6 +794,28 @@ func bow_muzzle() -> Vector3:
 	if bow != null and bow.has_method("muzzle_local"):
 		return bow.global_transform*bow.call("muzzle_local")
 	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
+
+
+## Every swing, shot and ability at a foe turns you to it at once, and one
+## started on the move holds you in place for `rootSeconds` (Dan picked
+## Lost Ark / Diablo 4 style, 2026-11-09): facing never gets in the way,
+## and attacking costs ground, so nobody shoots on while outrunning a foe
+## (the anti-kite rule, PvP-safe: it is all positions and timers).
+func square_up(x: float, z: float) -> void:
+	face_towards(x, z)
+	if moving and not rig.airborne:
+		root = maxf(root, DB.attack.get("rootSeconds", 0.25))
+
+
+## Auto attack is not a key you press, so it never roots you: standing,
+## a swing snaps you to your foe; running, it only swings at a foe in your
+## front half (the upper body swings, the legs keep running), so you can
+## still run from a fight with auto attack on.
+func _swing_facing(aim) -> bool:
+	if moving:
+		return facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0)
+	face_towards(aim.x, aim.z)
+	return true
 
 
 ## The enemy you are fighting, while it is in melee reach (else null).
