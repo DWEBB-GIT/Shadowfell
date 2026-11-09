@@ -134,7 +134,12 @@ static func add_sockets(model: Node3D) -> void:
 			var x := (middle-wrist.origin).normalized()
 			var z := x.cross(y).normalized()
 			x = y.cross(z).normalized()
-			var grip := Transform3D(Basis(x,y,z), wrist.origin.lerp(middle,0.65)-z*0.018)
+			# The handle runs through the middle of the curled fingers: the
+			# fingers' joints wrap a circle ~2 cm towards the knuckles and
+			# 3 cm to the palm side of the hand bones (measured, both hands).
+			# On the bone line, handles and pommels came out of the back of
+			# the hand (Dan, 2026-11-09).
+			var grip := Transform3D(Basis(x,y,z), wrist.origin.lerp(middle,0.65)+x*0.021-z*0.03)
 			var local_grip := wrist.affine_inverse()*grip
 			model.set_meta("palm_grip_"+side, local_grip)
 			model.set_meta("held_grip_"+side, frame.transform.affine_inverse()*local_grip)
@@ -155,11 +160,17 @@ static func add_sockets(model: Node3D) -> void:
 	shield_frame.transform = (reference[forearm] as Transform3D).affine_inverse()*Transform3D(Basis(Vector3.UP,PI/2),center)
 	shield_at.add_child(shield_frame)
 
+## Where the middle of each model's handle sits along its blade axis, so
+## the fist closes on the handle with the guard just clear of the index
+## finger (measured from the meshes' pommel/guard positions).
+const HANDLE_CENTER := {
+	"oak_club": 0.04, "ironwood_club": 0.04,
+	"stylized_dagger": 0.03, "dirk": -0.02, "bone_knife": -0.01,
+	"stylized_sword": 0.04, "witchbane": 0.02, "watchmans_edge": 0.02,
+	"blackwood_cleaver": 0.03, "greatsword": 0.02,
+}
 static func handle_center(definition: Dictionary) -> float:
-	match definition.get("model", ""):
-		"oak_club", "ironwood_club": return 0.04
-		"greatsword": return -0.05
-	return 0.0
+	return HANDLE_CENTER.get(definition.get("model", ""), 0.0)
 
 static func held_transform(model: Node3D, side: String, definition: Dictionary) -> Transform3D:
 	return model.get_meta("held_grip_"+side)*Transform3D(Basis.IDENTITY,Vector3(0,-handle_center(definition),0))

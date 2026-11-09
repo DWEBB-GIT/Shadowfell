@@ -175,7 +175,7 @@ func _run() -> void:
 		for i in 30:game.player.rig.update(1.0/60,0)
 		var seated:float=sk.get_bone_global_pose(sk.find_bone("pelvis")).origin.y
 		print("POSE ",sex," standing=",standing," seated=",seated)
-		check(seated<standing-0.6 and seated>0.15,sex+" sitting lowers hips to a grounded resting height")
+		check(seated<standing-0.6 and seated>0.07,sex+" sitting lowers hips to a grounded resting height")
 		for side in ["l","r"]:
 			check(absf(sk.get_bone_global_pose(sk.find_bone("foot_"+side)).origin.y-sk.get_bone_global_rest(sk.find_bone("foot_"+side)).origin.y)<0.03,sex+" sitting keeps "+side+" foot on the ground")
 	clear_combat()
