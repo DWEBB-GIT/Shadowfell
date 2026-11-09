@@ -704,6 +704,11 @@ func _click(button: String) -> bool:
 		"point":
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
+			# a caster with no bow or wand only selects on the walk button, so
+			# she can pick a target and cast from range (Dan, 2026-11-09)
+			if walk and button == "left" and not settings.get_value("leftInteract") and stats.archetype.get("mainStat", "") == "intellect" and not stats.has_ranged:
+				acts = false
+				walk = false
 			if acts:
 				targeting.engage(o)
 				# click to move follows the enemy until it is in reach
