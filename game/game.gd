@@ -674,6 +674,9 @@ func _click(button: String) -> bool:
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
 	var acts: bool = button == "right" or settings.get_value("leftInteract")
+	# with click to move the walk button walks in and acts, as in Diablo,
+	# Lost Ark and Path of Exile; without it a left click only selects
+	acts = acts or walk
 	# a left click on the ground lets go of the target; a right click does not.
 	# With mouse aim a left click there attacks whoever is near the cursor.
 	if pick == null:
