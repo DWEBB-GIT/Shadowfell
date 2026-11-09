@@ -7,6 +7,22 @@ func _initialize() -> void: _run.call_deferred()
 func check(ok: bool,message: String) -> void:
 	print("ok: " if ok else "FAIL: ",message)
 	if not ok:failures+=1
+
+func possessions(data: Dictionary) -> Dictionary:
+	# A material-pouch upgrade can move stacks between bags on load.
+	# Compare actual possessions independently of their slot positions.
+	var totals:Dictionary={}
+	var stacks:Array=data.get("bank",[]).duplicate()
+	for socket in data.sockets:
+		if socket!=null:stacks.append_array(socket.slots)
+	stacks.append_array(data.equipment.values())
+	for item in stacks:
+		if item==null:continue
+		var identity:Dictionary=item.duplicate(true)
+		identity.erase("count")
+		var key:=JSON.stringify(JSON.parse_string(JSON.stringify(identity)),"",true)
+		totals[key]=totals.get(key,0)+int(item.count)
+	return JSON.parse_string(JSON.stringify({"coins":data.coins,"ammo":data.get("ammo"),"items":totals}))
 func _run() -> void:
 	var original := Store.dir
 	var folder := "user://existing_character_copy_%d" % Time.get_ticks_usec()
@@ -32,7 +48,7 @@ func _run() -> void:
 	check(game.progression.level==int(before.progression.level),"existing level is retained")
 	var after:Dictionary=game.save.serialize()
 	# Sort keys and normalise JSON numbers before comparing nested inventory data.
-	check(IO.same(JSON.parse_string(JSON.stringify(after.inventory)),JSON.parse_string(JSON.stringify(before.inventory))),"existing possessions are retained")
+	check(JSON.stringify(possessions(after.inventory),"",true)==JSON.stringify(possessions(before.inventory),"",true),"existing possessions are retained through bag-layout upgrades")
 	check(game.quests.done.size()==before.get("quests",{}).get("done",[]).size(),"finished quests are retained")
 	check(Terrain.walkable(game.player.position.x,game.player.position.z),"existing character arrives on walkable ground")
 	var start:Array=DB.world.playerStart.position

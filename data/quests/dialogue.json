@@ -1406,8 +1406,24 @@
           }
         }
       ],
-      "topics": [],
-      "nodes": []
+      "topics": [
+        {
+          "id": "old_bank",
+          "prompt": "Do you know any quiet places around here?",
+          "node": "old_bank"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "old_bank",
+          "text": "“Three flat stones above the north bank of Willow Pond. My father kept tackle there, where the floods would not take it. You can use what is left.” Tobin lowers his voice. “Behind that bank, a little path climbs to three old bells. Folks say Avel won the valley alone. My father said that was a story told by people who never had to hold a lamp for anyone.”",
+          "replies": [
+            {
+              "text": "I might have a look."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "vr_rogue",
@@ -3680,8 +3696,24 @@
           }
         }
       ],
-      "topics": [],
-      "nodes": []
+      "topics": [
+        {
+          "id": "road_reserve",
+          "prompt": "What is the sword carved on that milestone?",
+          "node": "road_reserve"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "road_reserve",
+          "text": "“Avel the Dawnbearer. Held the crossing alone, they say, back when the night had teeth.” Abel nods toward Thornford. “Roadwardens still use the old mark. Three little cairns just off the road beyond the milestone mark a traveller’s reserve. Take something if you need it. Bread keeps a person alive more reliably than a stirring speech.”",
+          "replies": [
+            {
+              "text": "I will keep an eye out."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

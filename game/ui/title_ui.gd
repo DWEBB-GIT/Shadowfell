@@ -933,7 +933,7 @@ func _preview_selected(c: Dictionary) -> void:
 		for slot in arch.get("startingGear",{}):
 			if slot!="ammo":
 				gear[slot]={"id":arch.startingGear[slot],"count":1}
-	sel.preview.show_character(gear, saved.data.player.get("appearance", c.get("appearance")) if saved.status == "ok" else c.get("appearance"))
+	sel.preview.show_character(gear, saved.data.player.get("appearance", c.get("appearance")) if saved.status == "ok" else c.get("appearance"),c.classId=="ranger")
 
 
 func _refresh_creator_preview() -> void:
@@ -941,7 +941,7 @@ func _refresh_creator_preview() -> void:
 	var arch: Dictionary = DB.archetypes.get(class_id, DB.archetypes.warden)
 	for slot in arch.get("startingGear", {}):
 		if slot != "ammo": gear[slot] = {"id":arch.startingGear[slot], "count":1}
-	create.preview.show_character(gear, creator_appearance)
+	create.preview.show_character(gear, creator_appearance,class_id=="ranger")
 
 
 func show_deleted() -> void:
