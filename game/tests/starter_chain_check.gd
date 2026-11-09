@@ -95,6 +95,10 @@ func _extra() -> void:
 	game.progression.level = 3
 	game.quests.done.in_watchmans_word = true
 	game.quests.done.tf_lanterns = true
+	# each trainer opens one step on (Dan 2026-11-09): Iren after her gauge,
+	# Agna after the boars, Morrow once you have met him and done his soup round
+	for id in ["in_farm_introduction", "vr_first_hunt", "nr_gauge", "in_hollow_introduction", "in_soup_round"]:
+		game.quests.done[id] = true
 	var inv = game.inventory
 	for pair in [["sf_ore_for_the_forge", "mining", "mining_pick"], ["sf_hides_for_agna", "skinning", "skinning_knife"], ["sf_bitter_roots", "herbalism", "herb_knife"]]:
 		var had: int = inv.count(pair[2])

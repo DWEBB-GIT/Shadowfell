@@ -1366,7 +1366,7 @@
         ]
       },
       "requires": [
-        "in_watchmans_word"
+        "sf_bitter_roots"
       ],
       "zone": "nr_briar"
     },
@@ -1723,7 +1723,7 @@
       "giver": "tf_iren",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "nr_gauge"
       ],
       "summary": "Iren lends you her spare mining pick. Bring her two lumps of tin ore from the pale outcrops east of Holt Meadow.",
       "offer": "That belt looks lonely. Here, my spare pick; it has a chip in it and a temper, like its owner. There is tin in the pale rock out east, past Heda's meadow where Agna keeps her drying racks. Bring me two lumps and I will show you what the stuff is for. Then give the pick back. I know how many I own.",
@@ -1766,7 +1766,7 @@
       "giver": "agna",
       "turnIn": "agna",
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "summary": "Agna the tanner lends you a skinning knife. Skin two wild boars near her racks and bring her the hides.",
       "offer": "You have hands and you have not fainted yet. That puts you ahead of the last three. Take this knife. Kill a wild boar, loot it, then work the hide off before the crows do. Two hides. Bring them and the knife back, and I will tell you whether you ruined them.",
@@ -1809,8 +1809,7 @@
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
       "requires": [
-        "sf_odd_jobs",
-        "in_watchmans_word"
+        "in_soup_round"
       ],
       "summary": "Morrow Finch lends you an herb knife. Cut three ditchbell from the marked patches along the Briarwood path and bring them to Morrow at Mourning Hollow.",
       "offer": "Everyone wants a draught. Nobody wants to kneel in a ditch for one. Take my herb knife: cut, do not pull, or the root dies and next year there is nothing. Ditchbell grows along the Briarwood path, blue and sulking. Three sprigs, and the knife back.",
@@ -2469,7 +2468,7 @@
         "size": "errand"
       },
       "requires": [
-        "in_watchmans_word"
+        "sf_bitter_roots"
       ],
       "level": [
         3,
@@ -2501,7 +2500,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "nr_timber"
       ],
       "level": [
         1,
@@ -2537,7 +2536,7 @@
         "size": "standard"
       },
       "requires": [
-        "sf_odd_jobs"
+        "vr_reed_message"
       ],
       "level": 2,
       "setsFlag": "vr_pigs_safe",
@@ -2567,7 +2566,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "level": [
         1,
@@ -2601,7 +2600,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "sf_a_meal_earned"
       ],
       "level": [
         1,
@@ -2622,7 +2621,7 @@
       "giver": "tf_iren",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "in_farm_introduction"
       ],
       "summary": "Compare the two stamped measures just east of Iren’s forge. Recover the gauge case and return it to Iren.",
       "offer": "Someone says my axe heads are short. Someone used a gauge that thinks an inch grows with age. Compare the master stamp beside my forge with the rejected gauge south of it. Bring the gauge’s case back. If I am wrong, I will say so. Do not look so alarmed; it has happened before.",
@@ -2671,7 +2670,7 @@
       "giver": "vr_osric",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "summary": "Take the two tagged billets beside Osric’s woodlot to Iren at the Thornford smithy. Iren receives the delivery.",
       "offer": "Two dry handle billets, from the tagged stack beside me, for Iren’s smithy. I spent a year seasoning them. Last week someone called them kindling. Please deliver them before I commit a small, very well-documented crime.",
@@ -2705,7 +2704,7 @@
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
       "requires": [
-        "sf_odd_jobs"
+        "sf_borrowed_rod"
       ],
       "summary": "Read the observation boards at Willow Pond’s northwestern reed edge and Miller’s Pool’s north bank. Report to Tobin.",
       "offer": "Willow’s reeds, Miller’s open bank. Have a proper look at both and tell me where the fish shelter. You need not catch anything. An angler who can only describe the one that got away is a man with a rod, not a source.",
@@ -2786,7 +2785,7 @@
       "giver": "vr_lyra",
       "turnIn": "vr_lyra",
       "requires": [
-        "sf_odd_jobs"
+        "sf_hungry_work"
       ],
       "summary": "Collect Elsie’s two marked bedding rolls outside the inn’s west door and bring them to Sister Lyra beside the chapel.",
       "offer": "Two travellers came in soaked. The chapel has a roof; the inn has spare bedding. Elsie has set two clean rolls outside her west door for us. Bring them here. No relic hunt, I am afraid. Holiness is mostly carrying things after everyone else has gone to bed.",
@@ -2821,7 +2820,7 @@
       "giver": "tf_scout",
       "turnIn": "tf_scout",
       "requires": [
-        "in_watchmans_word"
+        "fen_gathering_quiver"
       ],
       "summary": "Inspect the bootprints and borrowed-kettle note at the small shelter south of Briarwood Camp. Return to Fen.",
       "offer": "Smoke by the old shelter. Someone at the inn called it bandits. Could be a family trying to keep warm. Check the tracks and the note box south of camp. Tell me what is there before anyone goes out to make a hero of himself.",
@@ -2860,7 +2859,9 @@
       ],
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
-      "requires": [],
+      "requires": [
+        "nr_quiet_hours"
+      ],
       "summary": "Read Morrow’s shelf list just west of the apothecary and collect both loose labels nearby. Return to Morrow.",
       "offer": "The shelf list is sound. The labels have deserted. Read the list beside my door, gather the two loose tags from the sorting trays, and bring them to me. I will reattach them. My customers deserve sleep without unexpectedly waterproof feet.",
       "progress": "Read Morrow’s shelf list just west of the apothecary and collect both loose labels nearby. Return to Morrow.",
@@ -2899,7 +2900,7 @@
       "giver": "vr_heda",
       "turnIn": "vr_heda",
       "requires": [
-        "sf_odd_jobs"
+        "vr_pig_wolf"
       ],
       "summary": "Inspect the quiet bee box on the orchard’s north edge and the eastern blossom branch. Return to Heda.",
       "offer": "The blossoms look healthy, but there are hardly any bees. Check the little bee box by the north fence and the flowering branch east of the pen. Boars are loud problems. This one can empty a pantry without making a sound.",
@@ -2940,7 +2941,7 @@
       "giver": "tf_rowan",
       "turnIn": "tf_rowan",
       "requires": [
-        "tf_lanterns"
+        "tf_bell"
       ],
       "summary": "Lay two Fallen Watch Sentries to rest around Old Watch, north of the lantern cart. Return to Rowan.",
       "offer": "Two fallen sentries still march round Old Watch. They are saluting people who cannot see them and attacking the ones who can. Put both down. I have their families’ names. This is not a bounty on strangers.",
@@ -2974,7 +2975,7 @@
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
       "requires": [
-        "tf_bell"
+        "vr_hollow_story"
       ],
       "summary": "Defeat the two Hollow Watch Archers at Nameless Yard. Return to Morrow at the Mourning Hollow apothecary.",
       "offer": "The two dead archers in Nameless Yard loose arrows whenever a shutter moves. I cannot ask a neighbour to collect medicine through that. Deal with them, please. I used to write “avoid strenuous activity” on prescriptions. I did not mean incoming arrows.",
@@ -3008,7 +3009,8 @@
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
       "requires": [
-        "vr_reed_message"
+        "vr_reed_message",
+        "nr_water_notes"
       ],
       "summary": "Read the allocation board just south of Willow Lane, west of Willow Pond. Set the Orchard, Mill and Pond handles, then test the flow. Report to Tobin.",
       "offer": "Osric wants more water, the mill wants all of it, and my pond would like to remain a pond. The regulator is just south of Willow Lane, west of my landing. Read its allocation board. Turn the three handles to the agreed shares, then test the float. No wet feet, no injured parties, and ideally no committee.",
@@ -3274,7 +3276,7 @@
       "giver": "wm_mossreed_landing_worker",
       "turnIn": "wm_mossreed_landing_worker",
       "requires": [
-        "wm_mossreed_landing_work"
+        "in_bank_lamps"
       ],
       "summary": "The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely.",
       "offer": "“I lost my locket pulling the first boat in. Father says he remembers the day he gave it to Mother. Mother says he got the date wrong. If you find it by the bank stores, I should like to keep the argument going.”",
