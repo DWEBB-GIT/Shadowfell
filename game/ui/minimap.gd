@@ -73,10 +73,9 @@ func _init(g) -> void:
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var north_art := Icons.art("ui", "minimap_north")
-	if north_art:
-		north.draw.connect(func(): north.draw_texture_rect(north_art, Rect2(Vector2(2, 2), north.size - Vector2(4, 4)), false))
-	var n := UI.label(north, "" if north_art else "N", 12, UI.GOLD)
+	# a plain gold N, so north reads at a glance (Dan, 2026-11-04); the arrow
+	# art is kept for the player marker and the tracker's way pointer
+	var n := UI.label(north, "N", 12, UI.GOLD)
 	n.add_theme_font_override("font", UI.bold)
 	n.set_anchors_preset(Control.PRESET_FULL_RECT)
 	n.grow_vertical = Control.GROW_DIRECTION_BOTH

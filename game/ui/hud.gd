@@ -891,6 +891,7 @@ func hide_title() -> void:
 ## the loading screen over the world while Game.load_world() warms it up
 func show_loading() -> void:
 	modal = "loading"
+	root.move_child(loading, -1) # over any modal that raised itself
 	loading.open()
 
 
@@ -1100,8 +1101,7 @@ func open_document(id: String) -> void:
 	var body = doc.body
 	doc_body.text = ""
 	UI.set_rich(doc_body, html_to_bbcode("".join(body) if typeof(body) == TYPE_ARRAY else str(body)))
-	backdrop.visible = true
-	document.visible = true
+	_over_backdrop(document)
 
 
 ## the few tags the documents use, as BBCode
@@ -1113,13 +1113,23 @@ static func html_to_bbcode(h: String) -> String:
 	return re.sub(s, "", true).strip_edges()
 
 
+## Show a modal window over the dark backdrop. The confirm box and the main
+## menu move the backdrop to the top when they open, and it stays there, so
+## every modal raises the backdrop and then itself (Dan, 2026-11-04: after
+## a confirm or the menu, the backdrop covered the Release spirit button).
+func _over_backdrop(win: Control) -> void:
+	backdrop.visible = true
+	root.move_child(backdrop, -1)
+	root.move_child(win, -1)
+	win.visible = true
+
+
 func show_death(_coins_lost: int, destination: String) -> void:
 	close_modal(true)
 	modal = "death"
 	var where := "by your camp" if destination == "camp" else "at the last shrine you rested at" if destination == "shrine" else "at the road's end"
 	death_text.text = "Your spirit will rise %s. What you carried lies in a grave by your body: reach it within %d minutes, before scavengers do. Walk back to your body, or return to life where you rise; either way you come back wounded." % [where, roundi(DB.CONFIG.death.graveSeconds / 60.0)]
-	backdrop.visible = true
-	death.visible = true
+	_over_backdrop(death)
 
 
 ## Ask a yes/no question in a box over the game; `on_yes` runs on Yes.
@@ -1130,10 +1140,7 @@ func confirm(text: String, on_yes: Callable) -> void:
 	confirm_text.text = text
 	confirm_yes = on_yes
 	game.audio.sfx("panel", 0.6)
-	backdrop.visible = true
-	root.move_child(backdrop, -1)
-	root.move_child(confirm_box, -1)
-	confirm_box.visible = true
+	_over_backdrop(confirm_box)
 
 
 func answer_confirm(yes: bool) -> void:

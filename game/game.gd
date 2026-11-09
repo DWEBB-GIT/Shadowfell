@@ -136,6 +136,9 @@ var _region_from := Vector2.ZERO
 func _ready() -> void:
 	DB.ensure()
 	scene = self
+	# the player-facing name (window title, browser tab); the Godot project
+	# keeps its old name so user:// and existing saves stay where they are
+	get_window().title = str(DB.text.title.get("name", "Mythkeep"))
 	_init_renderer()
 	add_child(preload("res://game/ui/perf_overlay.gd").new())
 	input = GameInput.new()
@@ -743,21 +746,27 @@ func _click(button: String) -> bool:
 	if _over_bob():
 		return fishing.strike()
 	var pick = _pick_under_cursor()
-	# With click to move (Settings, off by default) one button walks, as in
-	# WoW and Diablo 4 (Dan, 2026-10-28): the right in classic controls, the
-	# left with mouse aim. It walks to the ground clicked, or up to whoever
-	# or whatever was clicked and then acts. Without it nothing walks you.
-	var walk: bool = settings.get_value("clickToMove") and button == ("left" if mouse_aim else "right")
+	# With click to move (Settings, off by default) the left button walks, as
+	# in Diablo 4, in both control schemes (Dan, 2026-11-04: a right click to
+	# attack must never run a caster into the enemy). It walks to the ground
+	# clicked, or up to whatever was clicked and then acts. Without it nothing
+	# walks you.
+	var walk: bool = settings.get_value("clickToMove") and button == "left"
 	move_to = null
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
-	var acts: bool = button == "right" or settings.get_value("leftInteract")
-	# a left click on the ground lets go of the target; a right click does not.
-	# With mouse aim a left click there attacks whoever is near the cursor.
+	# right click acts and never moves you. With click to move a left click
+	# also acts: it walks you up to whoever you clicked (into your attack's
+	# reach for an enemy, talking range for a townsperson), then attacks or
+	# talks, the same for every class (Dan, 2026-11-04).
+	var acts: bool = button == "right" or walk or settings.get_value("leftInteract")
+	# a left click on the ground lets go of the target (unless it walks you
+	# there: a caster keeps their target while repositioning); a right click
+	# does not. With mouse aim a left click there attacks whoever is near.
 	if pick == null:
 		if button == "left" and mouse_aim:
 			_engage_near_cursor()
-		elif button == "left":
+		elif button == "left" and not walk:
 			targeting.clear()
 		var at = _aim_point() if walk and input.mouse.onCanvas else null
 		if at != null:
@@ -1055,14 +1064,14 @@ func _handle_input(dt: float):
 		if right or clicked:
 			# click to move works for a spirit too: the walk button walks
 			# there, or up to your body and then acts
-			var walk: bool = settings.get_value("clickToMove") and ((clicked and mouse_aim) or (right and not mouse_aim))
+			var walk: bool = settings.get_value("clickToMove") and clicked
 			move_to = null
 			if hover != null:
 				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), walk)
 			elif walk and input.mouse.onCanvas:
 				var at = _aim_point()
 				if at != null:
-					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left" if mouse_aim else "right"}
+					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left"}
 					fx.move_marker(at.x, at.z)
 		var gm := input.move_axis()
 		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)

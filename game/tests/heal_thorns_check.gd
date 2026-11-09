@@ -18,7 +18,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Heal Tester", "paladin")
+		var made: Dictionary = game.roster.create("Heal", "paladin")
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_run()
@@ -50,6 +50,9 @@ func _run() -> void:
 	var sp = game.spells
 	var pl = game.player
 	game.random = func() -> float: return 0.99 # never crit, top of every roll
+	# Quick Mend comes from Sister Lyra's class quest (Dan, 2026-11-04)
+	_ok(not game.skills.knows_ability("quickMend"), "Quick Mend waits for the class quest")
+	game.skills.grant_spell("quickMend")
 	for id in ["mendingPrayer", "quickMend", "renewingLight", "swiftRenewal", "circleOfMending", "radiantNova", "thornedVow"]:
 		_ok(DB.spells.has(id) and game.skills.knows_ability(id), "the paladin knows %s" % id)
 

@@ -30,6 +30,7 @@
     "credits": "meta/credits.json",
     "enemies": "npcs/enemies.json",
     "model_colliders": "world/model_colliders.json",
-    "renames": "meta/renames.json"
+    "renames": "meta/renames.json",
+    "blocked_names": "meta/blocked_names.json"
   }
 }

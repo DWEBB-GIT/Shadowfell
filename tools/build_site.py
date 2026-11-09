@@ -75,7 +75,7 @@ def main():
              '<li><a href="guide.html">Getting Started</a></li><li><a href="classes.html">Character</a></li></ul>'
              '<div class="crests">%s</div></div></aside>' % crests)
     stamp = " &middot; build %s, %s" % (e(build["commit"]), e(build["time"])) if build.get("commit") else ""
-    footer = '<footer class="wrap">Shadowfall %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
+    footer = '<footer class="wrap">Mythkeep %s%s &middot; still on the anvil</footer>' % (e(text["build"]), stamp)
 
     cards = []
     icons = set()

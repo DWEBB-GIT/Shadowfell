@@ -24,12 +24,12 @@ func _run() -> void:
 	var title: TitleScreen = game.hud.title
 	title.main.new.pressed.emit()
 	check(title.view == "create","New character opens character creation")
-	title.create.name.text = "Lantern Tester"
+	title.create.name.text = "Lantern"
 	title.create.confirm.pressed.emit()
 	await _loaded()
 	await process_frame
 	await process_frame
-	check(game.started and game.character.name == "Lantern Tester","Create and enter reaches the playable world")
+	check(game.started and game.character.name == "Lantern","Create and enter reaches the playable world")
 	if DisplayServer.get_name() != "headless":
 		check(game.hud.icons.find_children("*","SubViewport",true,false).is_empty(),"one-shot icon and portrait rendering worlds are released")
 	check(game.atmosphere.sources.size() > 100,"village lamps, hearths and windows have light sources")

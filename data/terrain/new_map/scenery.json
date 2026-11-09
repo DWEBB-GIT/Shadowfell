@@ -53944,6 +53944,39 @@
       ],
       "rotation": -90,
       "scale": 1.0
+    },
+    {
+      "id": "fen_hawthorn_blind",
+      "model": "camp",
+      "position": [
+        -535,
+        -352
+      ],
+      "rotation": 0,
+      "scale": 0.7,
+      "examine": "fen_hawthorn_blind"
+    },
+    {
+      "id": "fen_hawthorn_cache",
+      "model": "crate",
+      "position": [
+        -566,
+        -347
+      ],
+      "rotation": 0,
+      "scale": 0.45,
+      "examine": "fen_hawthorn_cache"
+    },
+    {
+      "id": "fen_hawthorn_cairn",
+      "model": "standing_stone",
+      "position": [
+        -557,
+        -378
+      ],
+      "rotation": 0,
+      "scale": 0.6,
+      "examine": "fen_hawthorn_cairn"
     }
   ],
   "lights": [

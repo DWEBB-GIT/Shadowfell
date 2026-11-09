@@ -85,10 +85,14 @@
     "nr_water_board": "COMMON WATER AGREEMENT. Orchard: only a trickle for the roots. Mill: full flow while the wheel turns. Pond: a trickle must always remain. No household receives a private river. A smaller hand adds: THIS INCLUDES YOU, OSRIC.",
     "nr_memorial_verse": "“From the hearth we first are carried; by the sheaf our days are fed. By the lantern we come homeward; then in rest we name our dead.” Four small bells bear these same symbols. Lyra has pencilled: One verse. No speed required.",
     "poi:nr_water_place": "Three handles divide a shared supply. The board northwest of Willow Pond sets out the agreement.",
-    "poi:nr_memorial_place": "Four small memorial bells stand beside a verse. The collector used the great bell; these belong to the families."
+    "poi:nr_memorial_place": "Four small memorial bells stand beside a verse. The collector used the great bell; these belong to the families.",
+    "fen_hawthorn_blind": "A blind of woven hazel, half fallen in. Under an oilcloth: a fletcher's knife, a pot of hide glue gone hard, and a dozen cut shafts waiting for fletching. Someone has scratched a small closed eye into the post by the door.",
+    "fen_hawthorn_cache": "A crate wedged under a root, its lid pegged shut. Inside, wrapped in waxed linen, forty grey-fletched arrows, every one marked with a hawthorn leaf. You bundle them up for Fen.",
+    "fen_hawthorn_cairn": "Bones under the moss, picked clean long ago, and the rotted ruin of a quiver. A scrap of its lining has survived, stitched all over with a tight looping pattern. Someone has cut a closed eye into the stone above her, deep and careful. Wolves do not carve."
   },
   "title": {
     "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "name": "Mythkeep",
     "build": "Alpha 0.1",
     "tagline": "The Fallen Road",
     "maxCharacters": 10,
@@ -101,7 +105,7 @@
         "blurb": "Steel, shield and stubbornness. The last one standing.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
+          "Plate, leather, cloth",
           "Resolve",
           "Strong: area damage, long fights. Weak: escaping, ranged foes"
         ]
@@ -153,7 +157,7 @@
         "blurb": "Holy fury in heavy plate. Unmoving. Unbreakable.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
+          "Plate, leather, cloth",
           "Mana",
           "Strong: big crits, toughness. Weak: speed, chasing"
         ]

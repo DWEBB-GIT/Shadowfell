@@ -666,6 +666,10 @@ func _render_sockets(inv) -> void:
 	# the tool pack's own slot comes first, left of the bags (empty until earned)
 	for i in range(Items.TOOL_SOCKET, 0, -1):
 		var s = inv.sockets[i] if i < inv.sockets.size() else null
+		# no belt slot until the utility belt is earned (Dan, 2026-11-04)
+		if i == Items.TOOL_SOCKET and not s:
+			_material_socket(inv)
+			continue
 		var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1} if s else null, 40, "⚒" if i == Items.TOOL_SOCKET else "")
 		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
@@ -675,7 +679,7 @@ func _render_sockets(inv) -> void:
 			slot.lit = hud.belt != null and hud.belt.visible
 			slot.on_hover = func(_s: ISlot, on: bool):
 				if on and drag == null:
-					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
+					cursor_tip("Tool belt (%s)" % game.keys.label("toolbelt"))
 				elif not on:
 					cursor_tip_off()
 			# the tool belt is its own system: a divider and a gap keep it
@@ -766,7 +770,7 @@ func _render_bags(inv) -> void:
 				used += 1
 		UI.label(head, "%d/%d" % [used, s.slots.size()], 13, UI.TEXT_DIM)
 		var bag: int = i
-		UI.square_button(head, "×", func(): toggle_bag(bag))
+		UI.close_button(head, func(): toggle_bag(bag))
 		UI.rule(v)
 		var grid := GridContainer.new()
 		grid.columns = 4

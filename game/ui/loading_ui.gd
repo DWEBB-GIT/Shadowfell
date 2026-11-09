@@ -26,12 +26,7 @@ func _init() -> void:
 	add_child(centre)
 	var v := UI.vbox(centre, 14)
 	v.custom_minimum_size = Vector2(360, 0)
-	title_label = UI.label(v, "SHADOWFALL", 34, UI.GOLD)
-	var f := FontVariation.new()
-	f.base_font = UI.font
-	f.spacing_glyph = 10
-	title_label.add_theme_font_override("font", f)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label = UI.logo(v, DB.text.title.name.to_upper(), 42)
 	stage = UI.label(v, "Lighting the lamps…", 14, UI.TEXT_DIM)
 	stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var track := Panel.new()

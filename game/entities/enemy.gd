@@ -39,6 +39,8 @@ var flash := 0.0
 var flash_colour := Rig.FLASH_RED
 var engaged := 0.0 ## seconds to keep showing the health bar
 var since_struck := INF ## seconds since the player last hurt it
+var calm := 0.0 ## a fresh spawn's seconds left before it notices anyone
+var charge := 0.0 ## seconds into this chase (alert pause, then the run builds)
 
 ## While the player keeps hurting it, an enemy chases past its leash: it
 ## gives up only after this long without being struck.
@@ -456,6 +458,7 @@ func update(dt: float, player) -> void:
 		Rig.set_emissive(materials, Rig.FLASH_WHITE if white else flash_colour, flash * (0.5 if white else 0.6))
 		_flash_shown = flash > 0
 	engaged = maxf(0, engaged - dt)
+	calm = maxf(0, calm - dt)
 
 	if dead or cfg.get("dummy", false):
 		# the dummy just stands there, and mends a few seconds after the last hit
@@ -507,7 +510,7 @@ func update(dt: float, player) -> void:
 		match state:
 			"idle":
 				# a passive beast (yellow) pays you no mind until struck
-				if dist < cfg.detection and not hidden and not passive:
+				if dist < cfg.detection and not hidden and not passive and calm <= 0:
 					state = "chase"
 					game.events.emit("enemyAlert", {"enemy": self})
 					_wake_pack()
@@ -545,6 +548,7 @@ func update(dt: float, player) -> void:
 	if player.dead and casting != null:
 		_cancel_cast()
 	var fighting := state == "chase" or state == "attack"
+	charge = charge + dt if fighting else 0.0
 	var rg = cfg.get("ranged")
 	var can_shoot: bool = rg != null and mana >= rg.get("mana", 0)
 	var cc = cfg.get("circle")
@@ -574,8 +578,14 @@ func update(dt: float, player) -> void:
 			elif attack_timer <= 0:
 				_start_shot(player)
 		elif state == "chase":
-			_steer_towards(player.position.x, player.position.z, chase_speed, dt, reach * 0.85)
-			speed01 = 1.0
+			var c: Dictionary = DB.CONFIG.chase
+			if charge < c.alertSeconds:
+				# it has just seen you: turns to look before it comes
+				facing = atan2(dx, dz)
+			else:
+				var k := clampf((charge - c.alertSeconds) / maxf(0.01, c.rampSeconds), 0.0, 1.0)
+				_steer_towards(player.position.x, player.position.z, lerpf(minf(move_speed, chase_speed), chase_speed, k), dt, reach * 0.85)
+				speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
 			# a fleeing player still within a stride gets hit on the run

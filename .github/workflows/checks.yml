@@ -36,6 +36,9 @@ jobs:
       - name: Check scripts compile
         run: ./godot --headless --path . --script res://game/tests/check_scripts.gd
 
+      - name: Character name rules
+        run: ./godot --headless --path . --script res://game/tests/name_rules_check.gd
+
       - name: Saves survive renamed and removed content
         run: ./godot --headless --path . --script res://game/tests/save_renames_check.gd
 

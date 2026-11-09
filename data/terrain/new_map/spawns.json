@@ -2064,6 +2064,590 @@
 		132.0,
 		1024.0
 	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-521.0,
+		-265.0
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-519.38,
+		-263.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-521.68,
+		-262.91
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-523.38,
+		-263.92
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-523.76,
+		-265.51
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-522.3,
+		-267.37
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_7",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-520.1,
+		-267.04
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-503.0,
+		-274.0
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-501.25,
+		-271.26
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-503.71,
+		-271.69
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-506.42,
+		-274.26
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-504.22,
+		-276.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-501.43,
+		-275.49
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-508.61,
+		-267.68
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-506.86,
+		-260.94
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-518.27,
+		-279.48
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-515.83,
+		-273.18
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-505.24,
+		-269.34
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-520.38,
+		-269.46
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_7",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-526.78,
+		-274.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_8",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-505.54,
+		-262.87
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_1",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-400.03,
+		-249.55
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_2",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-395.44,
+		-244.53
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_3",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-404.64,
+		-249.16
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_4",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-409.29,
+		-243.55
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_5",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-393.71,
+		-250.49
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_6",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-412.26,
+		-237.15
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_7",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-409.4,
+		-250.14
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_8",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-397.74,
+		-245.72
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-542.0,
+		-343.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-540.31,
+		-340.48
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-542.65,
+		-340.33
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-544.22,
+		-342.55
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-544.25,
+		-345.24
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-541.27,
+		-345.34
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-505.0,
+		-379.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-503.16,
+		-376.24
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-505.73,
+		-376.37
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-508.34,
+		-379.1
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-506.08,
+		-382.13
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-503.98,
+		-381.48
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-378.0,
+		-331.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-376.09,
+		-328.26
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-379.66,
+		-329.39
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-380.46,
+		-331.13
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-379.97,
+		-332.83
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-376.75,
+		-333.61
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.0,
+		-404.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-352.63,
+		-400.77
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.78,
+		-400.7
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-356.34,
+		-403.16
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-356.82,
+		-406.32
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.0,
+		-407.68
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-352.26,
+		-406.49
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-372.0,
+		-418.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-369.3,
+		-415.91
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-371.9,
+		-415.49
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-374.16,
+		-416.45
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-374.33,
+		-418.86
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-373.32,
+		-420.29
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-370.75,
+		-420.71
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.0,
+		-385.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-441.89,
+		-382.81
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.76,
+		-382.47
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-447.44,
+		-383.34
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-447.42,
+		-385.93
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.06,
+		-388.99
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-443.07,
+		-387.52
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_1",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-570.16,
+		-370.7
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_2",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-577.96,
+		-366.98
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_3",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-571.33,
+		-377.95
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_4",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-560.49,
+		-371.03
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_5",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-574.59,
+		-364.54
+	  ]
 	}
   ],
   "chests": [
@@ -2146,6 +2730,8 @@
 	  ],
 	  "facing": 180
 	},
+	{"npc": "tf_cook", "position": [-466.5, -209.5], "facing": 90},
+	{"npc": "vr_dunn", "position": [-461.5, -297.5], "facing": 0},
 	{
 	  "npc": "tf_iren",
 	  "position": [
@@ -3044,6 +3630,13 @@
 	}
   ],
   "placedLoot": [
+	{"id": "sf_firewood_0", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-381.5, -277.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_1", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-379, -280.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_2", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-375.5, -278], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_garlic_0", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-346, -252], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_1", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-338.5, -251], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_2", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-343.5, -260.5], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_3", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-351, -258], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
 	{
 	  "id": "spring_water",
 	  "model": "draught",
@@ -5012,7 +5605,7 @@
 	],
 	"facing": 180
   },
-  "openingText": "Thornford has a warm inn, an overdue grain bill, and a watch that no longer comes home. Begin with Heda’s boars in Holt Meadow. Mayor Alder pays at the town hall. The rest of the village has problems of its own; you are allowed to leave some for tomorrow.",
+  "openingText": "Thornford has a warm inn, an overdue grain bill, and a watch that no longer comes home. Elsie at the Lantern Inn has odd jobs for empty pockets, and Heda’s boars are loose in Holt Meadow. Mayor Alder pays at the town hall. The rest of the village has problems of its own; you are allowed to leave some for tomorrow.",
   "trainerOverrides": {
 	"brask": "tf_rowan",
 	"nell": "vr_rogue",
@@ -5025,7 +5618,7 @@
 	"pell": "tf_rowan",
 	"orrin": "tf_iren",
 	"tam": "vr_tobin",
-	"hester": "tf_elsie",
+	"hester": "tf_cook",
 	"briony": "vr_morrow"
   },
   "regions": [

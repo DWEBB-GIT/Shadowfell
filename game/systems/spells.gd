@@ -293,6 +293,10 @@ func _facing_to(enemy) -> float:
 
 
 func _cast_effects(spell: Dictionary) -> void:
+	# a class quest counts the ability going off (`use` objectives)
+	if game.quests:
+		var on = game.targeting.current if game.targeting else null
+		game.quests.count_use(spell.id, on.type if on != null and is_instance_valid(on) else "")
 	if not game.builds:
 		return
 	for e in game.builds.effects("critBuild"):
@@ -812,7 +816,7 @@ func _shoot(spell: Dictionary, target) -> void:
 	var inventory = game.inventory
 	var ammo = inventory.ammo
 	if ammo:
-		inventory.remove_count(ammo, 1)
+		inventory.spend_arrow(ammo)
 	player.pending_shot = null
 	player.hold_bow(true)
 	_anim(spell, "shoot", 0.45, 0.25)
@@ -1035,7 +1039,7 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	opts.knockback = float(t.get("knockback", 0.0))
 	enemy.hurt(hit.amount, opts)
 	var events: Events = game.events
-	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main"})
+	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main", "ability": true})
 	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else "main"})
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":

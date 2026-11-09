@@ -313,7 +313,8 @@ func projectile(p: Dictionary) -> void:
 
 ## What an arrow leaves in the air behind it (Dan 2026-11-03): embers from a
 ## fire arrow (an ability of the fire school, or the look's `trail`) or a
-## runed bow in its rune's colour, else a faint pale streak.
+## runed bow in its rune's colour, else a tiny faint wisp, just the air
+## cutting behind the shaft (Dan 2026-11-04: no glow on a plain arrow).
 const TRAIL_EVERY := 0.022
 
 
@@ -330,7 +331,7 @@ func arrow_trail(p: Dictionary) -> Dictionary:
 	if rune != "":
 		var g = Runes.def(rune).get("glow", {})
 		return {"colour": g.get("colour", "#ffd090"), "embers": true}
-	return {"colour": "#fff2dc", "embers": false}
+	return {"colour": "#f4f0e840", "embers": false}
 
 
 var _trail_mats := {}
@@ -344,11 +345,11 @@ func trail_bit(pos: Vector3, tr: Dictionary) -> void:
 		_trail_mats[c] = Tex.fx_material(Tex.glint(), Color(c), true, true)
 	var mote := Tex.sprite(_trail_mats[c])
 	mote.name = "ArrowMote"
-	var size := (0.2 + randf() * 0.12) if embers else 0.11
+	var size := (0.2 + randf() * 0.12) if embers else 0.045
 	mote.scale = Vector3.ONE * size
 	mote.position = pos + (Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 0.08 if embers else Vector3.ZERO)
 	var drift := Vector3(randf() - 0.5, 1.0, randf() - 0.5) * (0.7 if embers else 0.0)
-	_add(mote, 0.4 if embers else 0.16, func(it, k, dt):
+	_add(mote, 0.4 if embers else 0.1, func(it, k, dt):
 		it.obj.scale = Vector3.ONE * size * (1.0 - k)
 		it.obj.position += drift * dt)
 

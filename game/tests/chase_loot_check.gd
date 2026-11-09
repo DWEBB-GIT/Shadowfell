@@ -18,7 +18,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Chase Tester", "warden")
+		var made: Dictionary = game.roster.create("Chase", "warden")
 		game.enter_world(made.character.id)
 	if frame <= 2:
 		return false
@@ -96,6 +96,32 @@ func _run() -> void:
 		foe.since_struck = 0.0
 		foe.update(dt, pl)
 		check(foe.attack_timer > 0.0, "a foe in chase still swings at a player just out of reach")
+		# taking up a chase: it stops to look, then builds from its walk to its run
+		var c: Dictionary = DB.CONFIG.chase
+		foe.reset()
+		pl.position = foe.position + Vector3(6, 0, 0)
+		var start: Vector3 = foe.position
+		foe.update(dt, pl)
+		check(foe.state == "chase", "an aggressive foe in range notices the player")
+		check(foe.position.distance_to(start) < 0.001, "and first stops to look")
+		var t := dt
+		while t < c.alertSeconds + 0.05:
+			foe.update(dt, pl)
+			t += dt
+		var p0: Vector3 = foe.position
+		foe.update(dt, pl)
+		var early: float = foe.position.distance_to(p0) / dt
+		check(early > 0.0 and early < foe.chase_speed * 0.6, "its run starts near its walk (%.1f m/s, full run %.1f)" % [early, foe.chase_speed])
+		# a fresh respawn leaves the player be for its grace
+		foe.reset()
+		foe.calm = c.spawnGrace
+		pl.position = foe.position + Vector3(3, 0, 0)
+		for i in int((c.spawnGrace - 0.5) / dt):
+			foe.update(dt, pl)
+		check(foe.state == "idle", "a fresh spawn ignores a player in range for %.0f s" % c.spawnGrace)
+		for i in int(1.0 / dt):
+			foe.update(dt, pl)
+		check(foe.state == "chase", "and then comes for them")
 
 	# coins fall as a purse on the ground
 	var victim = null

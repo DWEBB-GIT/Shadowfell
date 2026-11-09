@@ -72,8 +72,6 @@ const FOREST_DAY := "amb_forest_day.ogg" ## Pixabay "Morning Forest Ambiance", m
 const FOREST_NIGHT := "amb_forest_night.ogg" ## Pixabay "Sounds of the Forest (Night)"
 ## Night by the player's own clock, as WoW follows the realm's clock: from
 ## 21:00 until 06:00. The game has no day/night cycle of its own yet.
-const NIGHT_FROM := 21
-const NIGHT_TO := 6
 const AMB_DB := -8.0
 const MUSIC := "music_loop.ogg" ## Dan's background track
 ## The music as WoW plays it (Dan, 2026-11-02): silent when you arrive, it
@@ -620,7 +618,7 @@ func _later(delay: float, fn: Callable) -> void:
 ## Sounds turned down from what their callers ask, in one place: running
 ## footsteps, panels and bags opening, drawing and sheathing (Dan
 ## 2026-11-02: too loud).
-const TRIM := {"step_dirt": 0.35, "step_stone": 0.35, "step_wood": 0.35,
+const TRIM := {"step_dirt": 0.2, "step_stone": 0.2, "step_wood": 0.2,
 	"panel": 0.35, "bag": 0.35, "quest_log": 0.35, "sheathe": 0.3, "unsheathe": 0.3}
 
 
@@ -711,10 +709,11 @@ func _amb_for(region_id: String) -> String:
 	return FOREST_NIGHT if is_night() else FOREST_DAY
 
 
-## night on the player's clock
-static func is_night() -> bool:
-	var h: int = Time.get_datetime_dict_from_system().hour
-	return h >= NIGHT_FROM or h < NIGHT_TO
+## night on the world clock (DayNight's "Night", 21:00 to 05:00)
+func is_night() -> bool:
+	if game == null or game.world_state == null:
+		return false
+	return DayNight.part_of_day(game.world_state.hour) == "Night"
 
 
 func _amb_switch() -> void:
@@ -728,11 +727,11 @@ func _amb_switch() -> void:
 	amb_loop.play()
 
 
-## crossing between loops, and day turning to night (checked twice a minute)
+## crossing between loops, and day turning to night (checked every few seconds)
 func _update_ambience(dt: float) -> void:
 	amb_check -= dt
 	if amb_check <= 0:
-		amb_check = 30.0
+		amb_check = 5.0
 		amb_want = _amb_for(amb_region)
 	if amb_want != amb_file:
 		amb_level = move_toward(amb_level, 0.0, dt / 2.0)
@@ -775,7 +774,9 @@ func _music_done() -> void:
 
 
 ## footsteps as the player's feet come down in the walk and run (Rig.steps):
-## wood indoors, stone in town, dirt elsewhere
+## wood indoors, stone in town, dirt elsewhere. Only every other footfall
+## sounds (one per stride, Dan 2026-11-04: too fast) and softly, with a
+## little pitch wobble so the strides do not tick like a clock.
 func _footsteps(_dt: float) -> void:
 	var pl = game.player
 	if pl == null or pl.rig == null:
@@ -785,14 +786,14 @@ func _footsteps(_dt: float) -> void:
 		return
 	var fresh := n < step_seen # a new rig counts from 0
 	step_seen = n
-	if fresh or pl.rig.airborne:
+	if fresh or pl.rig.airborne or n % 2 == 1:
 		return
 	var surface := "step_dirt"
 	if game.world.indoors != null:
 		surface = "step_wood"
 	elif amb_file == "amb_town.mp3":
 		surface = "step_stone"
-	sfx(surface, 0.35)
+	sfx(surface, 0.25, rng.randf_range(0.92, 1.05))
 
 
 ## Plays a rendered sound (made the first time it is asked for) at a level.

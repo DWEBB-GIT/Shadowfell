@@ -22,7 +22,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Cap Tester", "warden")
+	var made: Dictionary = game.roster.create("Cap", "warden")
 	game.enter_world(made.character.id)
 	var frames := 0
 	while not game.started or game.hud.blocks_gameplay or game.hud.loading.visible:

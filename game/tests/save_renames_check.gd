@@ -20,7 +20,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Rename Tester", "warden")
+		var made: Dictionary = game.roster.create("Rename", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		game.save.autosave_enabled = false

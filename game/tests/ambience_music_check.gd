@@ -24,14 +24,18 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Amb Tester", "warrior")
+		var made: Dictionary = game.roster.create("Amb", "warrior")
 		game.enter_world(made.character.id)
 	elif frame == 30:
 		var a = game.audio
 		_ok(not a.music.playing, "no music on arrival")
 		_ok(a.music_wait >= a.MUSIC_FIRST[0] - 1, "music waits a few minutes first")
-		var want: String = a.FOREST_NIGHT if a.is_night() else a.FOREST_DAY
-		_ok(a._amb_for("blackwood") == want, "open country plays the forest for the hour")
+		game.world_state.hour = 12.0
+		_ok(not a.is_night() and a._amb_for("blackwood") == a.FOREST_DAY, "open country by day plays the day forest")
+		game.world_state.hour = 23.0
+		_ok(a.is_night() and a._amb_for("blackwood") == a.FOREST_NIGHT, "world clock at night plays the night loop")
+		game.world_state.hour = 3.0
+		_ok(a.is_night(), "small hours are night")
 		_ok(a._amb_for("brackenford") == "amb_town.mp3", "town keeps its loop")
 		_ok(a._stream(a.FOREST_DAY) != null and a._stream(a.FOREST_NIGHT) != null, "both forest loops load")
 		# day to night: the old loop fades, the new one comes in

@@ -19,7 +19,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var who: Dictionary = game.roster.create("Behaviour Tester", "warden")
+		var who: Dictionary = game.roster.create("Behaviour", "warden")
 		game.enter_world(who.character.id)
 	elif frame == 4:
 		_separation()
@@ -51,11 +51,7 @@ func _separation() -> void:
 			var b = living[j]
 			worst = maxf(worst, a.radius + b.radius - U.hyp(a.position.x - b.position.x, a.position.z - b.position.z))
 	check(worst < 0.05, "a pile of six enemies spreads out (worst overlap %.3f m)" % worst)
-	var near_player := 0.0
-	for i in 6:
-		var e = living[i]
-		near_player = maxf(near_player, game.player.radius + e.radius - U.hyp(e.position.x - game.player.position.x, e.position.z - game.player.position.z))
-	check(near_player < 0.05, "and off the player (worst overlap %.3f m)" % near_player)
+	# (the player walks through enemies since PR #184: no player check)
 	# a lone pair far from the rest: one step matches push_apart
 	var a = living[0]
 	var b = living[1]

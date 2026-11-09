@@ -11,19 +11,57 @@ var list: Array = []
 var last = null
 
 
+## Names are one word of 2 to 12 letters, first letter capital, the rest
+## small (Dan, 2026-11-04). Anything else typed is dropped here, so the name
+## box and create() agree on what the name will be.
+const NAME_MIN := 2
+const NAME_MAX := 12
+
+static var _blocked = null
+
+
 static func tidy_name(raw) -> String:
-	var s := str(raw if raw != null else "").strip_edges()
-	var re := RegEx.create_from_string("\\s+")
-	s = re.sub(s, " ", true)
-	var words := []
-	for w in s.split(" "):
-		words.append(w.substr(0, 1).to_upper() + w.substr(1).to_lower() if w != "" else w)
-	return " ".join(words)
+	var s := str(raw if raw != null else "")
+	var re := RegEx.create_from_string("[^A-Za-z]")
+	s = re.sub(s, "", true)
+	return s.substr(0, 1).to_upper() + s.substr(1).to_lower()
 
 
 static func _name_ok(name: String) -> bool:
-	var re := RegEx.create_from_string("^[A-Z][a-z]{1,11}( [A-Z][a-z]{1,11})?$")
+	var re := RegEx.create_from_string("^[A-Z][a-z]{%d,%d}$" % [NAME_MIN - 1, NAME_MAX - 1])
 	return re.search(name) != null
+
+
+## Swear words and slurs (data/meta/blocked_names.json): `words` are refused
+## when the whole name is that word or that word plus a short ending (s, es,
+## er, ers, y, ie...), `contains` are refused anywhere inside the name.
+## Kept apart so ordinary names that happen to hold a short bad word
+## (Scunthorpe, Cassandra) still pass.
+static func blocked_words() -> Dictionary:
+	if _blocked == null:
+		var path := DataPaths.path_for("blocked_names")
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		_blocked = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return _blocked
+
+
+static func is_offensive(raw) -> bool:
+	var n := str(raw).to_lower()
+	var re := RegEx.create_from_string("[^a-z]")
+	n = re.sub(n, "", true)
+	if n == "":
+		return false
+	var b := blocked_words()
+	for w in b.get("contains", []):
+		if n.contains(str(w)):
+			return true
+	for w in b.get("words", []):
+		var word := str(w)
+		if n == word:
+			return true
+		if n.begins_with(word) and n.substr(word.length()) in ["s", "es", "er", "ers", "y", "ie", "ies", "ed", "ing", "z", "a", "o"]:
+			return true
+	return false
 
 
 var max: int:
@@ -69,7 +107,9 @@ func name_problem(raw) -> String:
 	if name == "":
 		return "Your character needs a name."
 	if not _name_ok(name):
-		return "Use letters only: one or two words of 2 to 12 letters."
+		return "Use one word of %d to %d letters, with no spaces or symbols." % [NAME_MIN, NAME_MAX]
+	if is_offensive(name):
+		return "That name is not allowed. Please choose another."
 	if list.any(func(c): return c.name.to_lower() == name.to_lower()):
 		return "There is already a character called %s." % name
 	return ""
@@ -78,7 +118,7 @@ func name_problem(raw) -> String:
 func random_name() -> String:
 	var names: Dictionary = DB.text.title.names
 	for i in 40:
-		var name := "%s %s" % [names.first[randi() % names.first.size()], names.last[randi() % names.last.size()]]
+		var name: String = names.first[randi() % names.first.size()]
 		if name_problem(name) == "":
 			return name
 	return ""

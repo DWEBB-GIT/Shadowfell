@@ -19,7 +19,7 @@ const S := {
 		"wrists": 0.5, "back": 0.5, "neck": 0.5, "finger": 0.5, "offHand": 0.5,
 		"trinket": 0.0,
 	},
-	"armourFactors": {"cloth": 3, "leather": 6, "mail": 9, "plate": 12},
+	"armourFactors": {"cloth": 3, "leather": 6, "plate": 12},
 	"shieldArmour": 20,
 	"shieldBlock": 10,
 	"weaponDps": 0.4,

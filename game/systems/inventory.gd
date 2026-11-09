@@ -63,10 +63,9 @@ func reset() -> void:
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
-	# everyone starts with a small belt pouch, so the tool belt is its own
-	# place from the start and a bought rod never shows in the bags too
-	# (Dan, 2026-11-02); the Warden's tool pack replaces it
-	sockets[Items.TOOL_SOCKET] = {"id": STARTER_POUCH, "slots": _empty_slots(int(Items.get_def(STARTER_POUCH).bagSlots))}
+	# no tool belt at the start: the utility belt (belt_pouch) is the first
+	# quest's reward, and the belt's button and key appear once it is worn
+	# (Dan, 2026-11-04); the Warden's tool pack replaces it later
 	# and a materials pouch in its own slot: ores, gems, fish, hides and
 	# stones go there first, so they leave the bags free (Dan, 2026-11-03)
 	_give_material_pouch()
@@ -241,6 +240,25 @@ var quiver_haste: float:
 				best = maxf(best, Items.get_def(s.id).get("rangedHaste", 0))
 		return best
 
+## a gathering quiver in a bag slot brings back some of the arrows you
+## loose (percent; the best one counts)
+var ammo_recover: float:
+	get:
+		var best := 0.0
+		for s in sockets:
+			if s:
+				best = maxf(best, Items.get_def(s.id).get("ammoRecover", 0))
+		return best
+
+## Loose one arrow: it leaves the bags unless a gathering quiver brings it
+## back (a chance of ammoRecover percent each shot).
+func spend_arrow(id: String) -> void:
+	var keep := ammo_recover
+	if keep > 0 and game.random.call() * 100.0 < keep:
+		game.events.emit("log", {"text": "Your quiver gathers back a spent arrow.", "kind": "muted", "throttle": "ammo-recover"})
+		return
+	remove_count(id, 1)
+
 ## a working bow in the ranged slot, else null
 var ranged_weapon:
 	get:
@@ -351,6 +369,9 @@ func _fit_tool_pack(id: String) -> void:
 					_insert(st.id, st.get("count", 1), st.get("rolls"))
 	_stow_tools()
 	game.events.emit("log", {"text": "Your tools go into the %s, out of your bags." % Items.get_def(id).name.to_lower(), "kind": "loot"})
+	# the first belt opens the tool belt (Dan, 2026-11-04)
+	if not old and game.hud:
+		game.hud.toast("Tool belt unlocked: press %s" % game.keys.label("toolbelt").split(" / ")[0])
 
 
 ## The fixed materials pouch everyone carries in its own socket.

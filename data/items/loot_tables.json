@@ -107,7 +107,14 @@
             }
           ]
         }
-      }
+      },
+      "questDrops": [
+        {
+          "item": "wolf_sinew",
+          "quest": "fen_sinew_and_shafts",
+          "chance": 0.5
+        }
+      ]
     },
     {
       "id": "archer",

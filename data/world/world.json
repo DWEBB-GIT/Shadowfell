@@ -1597,6 +1597,33 @@
         1320.0
       ],
       "radius": 14
+    },
+    {
+      "id": "fen_hawthorn_blind",
+      "name": "Hawthorn's blind",
+      "position": [
+        -535,
+        -352
+      ],
+      "radius": 3
+    },
+    {
+      "id": "fen_hawthorn_cache",
+      "name": "Hawthorn's arrow cache",
+      "position": [
+        -566,
+        -347
+      ],
+      "radius": 3
+    },
+    {
+      "id": "fen_hawthorn_cairn",
+      "name": "The stone where Hawthorn fell",
+      "position": [
+        -557,
+        -378
+      ],
+      "radius": 3
     }
   ],
   "npcSpawns": [

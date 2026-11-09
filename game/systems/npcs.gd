@@ -47,7 +47,6 @@ class Npc:
 	var rest_timer := 0.0 ## a smith's break between bouts at the anvil
 	var bout := 6 ## blows left in this bout
 	var work_timer: float
-	var collider: Dictionary
 	var present := true
 	# ---- the daily routine
 	var routine: Array = [] ## blocks {from, at}, by `from`
@@ -95,7 +94,7 @@ class Npc:
 		board = d.get("board", false)
 		work_timer = 1 + randf()
 		group.position = position
-		collider = game.collision.add(position.x, position.z, radius)
+		# no collider: the player (and enemies) walk straight through townsfolk (Dan, 2026-11-04)
 		places.work = {"at": Vector2(post.x, post.z), "via": [], "inside": false, "facing": rest_facing}
 
 	## Is this person here, given the story so far?
@@ -184,7 +183,7 @@ class Npc:
 			speed = 0.0
 		return false
 
-	## standing at their post (the only place their collider is)
+	## standing at their post
 	func at_post() -> bool:
 		return place == "work" and not walking and not waiting
 
@@ -372,7 +371,6 @@ func update(dt: float) -> void:
 		_route(_paths.pop_front())
 	var player = game.player
 	for n in all:
-		n.collider.off = not (n.present and n.at_post())
 		var d2: float = n.position.distance_squared_to(player.position)
 		var shown: bool = n.group.get_parent() != null
 		var want: bool = n.present and not n.inside and (d2 < WorldStream.VIEW_IN * WorldStream.VIEW_IN

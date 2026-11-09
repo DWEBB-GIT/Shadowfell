@@ -66,7 +66,7 @@ func _process(_dt: float) -> bool:
 		root.add_child(game)
 	elif frame == 2:
 		check(game.hud.modal == "title", "the title screen opens first")
-		var made: Dictionary = game.roster.create("Test Warden", "warden")
+		var made: Dictionary = game.roster.create("Testwarden", "warden")
 		check(made.ok, "a character is created")
 		game.enter_world(made.character.id)
 		check(game.started, "a character enters the world")

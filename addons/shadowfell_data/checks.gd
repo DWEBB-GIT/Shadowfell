@@ -319,8 +319,16 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 				"puzzle":
 					if q.get("map", "act1") == s.map_id and DataStore.find(s.files.world.get("puzzles", []), o.get("target")).is_empty():
 						bad.call("%s names unknown world puzzle %s" % [label, o.get("target")])
+				"use":
+					# use an ability (on a targeted enemy type, at a map area)
+					if DataStore.find(s.abilities, o.get("target")).is_empty():
+						bad.call("%s names unknown ability %s" % [label, o.get("target")])
+					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty():
+						bad.call("%s: on names unknown enemy %s" % [label, o.on])
+					if o.has("at") and DataStore.find(s.locations, o.at).is_empty():
+						bad.call("%s: at names unknown map area %s" % [label, o.at])
 				_:
-					bad.call("%s: type must be kill, collect, examine, talk or puzzle" % label)
+					bad.call("%s: type must be kill, collect, examine, talk, puzzle or use" % label)
 			if o.has("count") and not (_is_int(o.count) and o.count >= 1):
 				bad.call("%s: count must be a whole number of at least 1" % label)
 			if o.has("location") and DataStore.find(s.locations, o.location).is_empty():
@@ -339,6 +347,29 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("reward names unknown item %s" % e.get("item"))
 			if not (_is_int(e.get("count", 1)) and e.get("count", 1) >= 1):
 				bad.call("reward %s needs a count of at least 1" % e.get("item"))
+		# a trainer's quest teaches (Dan, 2026-11-04): lent items, a lesson on
+		# taking it, and a skill, recipe or spell as the reward
+		for e in q.get("lend", []):
+			if s.item(e.get("item")).is_empty():
+				bad.call("lends unknown item %s" % e.get("item"))
+		for c in q.get("classes", []):
+			if DataStore.find(s.archetypes, c).is_empty():
+				bad.call("classes names unknown class %s" % c)
+		for sk in q.get("acceptLearn", []):
+			if DataStore.find(s.skills, sk).is_empty() and DataStore.find(s.abilities, sk).is_empty():
+				bad.call("teaches unknown skill or ability %s" % sk)
+		for sk in r.get("learnSkill", []):
+			if DataStore.find(s.skills, sk).is_empty():
+				bad.call("teaches unknown skill %s" % sk)
+		for rc in r.get("learnRecipe", []):
+			var rec := DataStore.find(s.recipes, rc)
+			if rec.is_empty():
+				bad.call("teaches unknown recipe %s" % rc)
+			elif not rec.get("trainer"):
+				bad.call("recipe %s comes with its skill; only a trained recipe can be a reward" % rc)
+		for ab in r.get("learnSpell", []):
+			if DataStore.find(s.abilities, ab).is_empty():
+				bad.call("teaches unknown ability %s" % ab)
 		for f in r.get("reputation", {}):
 			if DataStore.find(s.factions, f).is_empty():
 				bad.call("reward names unknown faction %s" % f)

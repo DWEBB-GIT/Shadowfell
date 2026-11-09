@@ -131,7 +131,7 @@ func _build_main() -> void:
 	else:
 		var crest := UI.label(col, "✠", 30, Color(UI.GOLD, 0.7))
 		crest.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var h1 := UI.label(col, "S H A D O W F E L L", 46, UI.GOLD, 4)
+	var h1 := UI.logo(col, DB.text.title.name.to_upper(), 64)
 	h1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	main.h1 = h1
 	var t: Dictionary = DB.text.title
@@ -210,7 +210,7 @@ func _controls_table(parent: Node) -> Control:
 	var row := UI.hbox(parent, 22)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	# the mouse rows follow the control scheme (Settings: Classic controls)
-	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot"], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
+	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot (Click to move: walk up, then attack or talk)"], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
 	var tables := [
 		["Keyboard and mouse", [["WASD / arrow keys", "Move"]] + mouse_rows + [["Shift-1 to Shift-4", "The four utility slots (draught, torch, fishing...)"], ["F (G with mouse aim)", "Interact / loot everything nearby"], ["Space", "Jump"], ["Tab", "Next target"], ["Mouse wheel", "Zoom the camera"], ["B · C · P · L", "Bags · Character · Spellbook · Quest log"], ["K · O · Esc", "Save · Settings (keys, sound, click to move) · Close / clear target"]]],
 		["Gamepad", [["Left stick", "Move"], ["Right stick", "Aim"], ["RT", "Auto attack the target (or who is ahead)"], ["R3 (stick click)", "Next target"], ["X · Y · RB", "Lunge · Shield Break · Healing draught"], ["LB · LT", "Spell-bar slots 4 and 5"], ["B", "Brace"], ["A", "Interact / loot / confirm"], ["Start · View", "Bags · Character"], ["D-pad up · down · right", "Spellbook · Save · Quest log"]]],
@@ -294,14 +294,14 @@ func _build_create() -> void:
 	var row := UI.hbox(c, 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var name_edit := LineEdit.new()
-	name_edit.max_length = 25
+	name_edit.max_length = Roster.NAME_MAX
 	name_edit.placeholder_text = "Name"
 	name_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_edit.custom_minimum_size = Vector2(260, 0)
 	name_edit.add_theme_font_size_override("font_size", 18)
 	name_edit.set_meta("nav", true)
 	name_edit.text_submitted.connect(func(_t): do_create())
-	name_edit.text_changed.connect(func(_t): create.error.text = "")
+	name_edit.text_changed.connect(func(t): _tidy_name_box(name_edit, t))
 	name_edit.focus_entered.connect(func(): focus_el = name_edit)
 	row.add_child(name_edit)
 	create.name = name_edit
@@ -382,7 +382,7 @@ func _render_main() -> void:
 				break
 	main.note.text = n
 	main.note.visible = n != ""
-	main.foot.text = "Shadowfall %s · saves are kept on this computer · %s" % [DB.text.title.build, "D-pad · A" if game.hud.pad_mode else "↑↓ Enter"]
+	main.foot.text = "%s %s · saves are kept on this computer · %s" % [DB.text.title.name, DB.text.title.build, "D-pad · A" if game.hud.pad_mode else "↑↓ Enter"]
 	focus(main["continue"] if can_continue else main.new)
 
 
@@ -556,6 +556,18 @@ func pick_class(id: String, move_focus := true) -> void:
 func random_name() -> void:
 	create.name.text = game.roster.random_name()
 	create.error.text = ""
+
+
+## One word, letters only, first letter capital, as it is typed.
+func _tidy_name_box(edit: LineEdit, t: String) -> void:
+	create.error.text = ""
+	var tidy := Roster.tidy_name(t)
+	if tidy == t:
+		return
+	var caret := edit.caret_column
+	var dropped := t.length() - tidy.length()
+	edit.text = tidy
+	edit.caret_column = clampi(caret - dropped, 0, tidy.length())
 
 
 func do_create() -> void:

@@ -165,15 +165,16 @@ func _respawn(dt: float) -> void:
 		ws.corpses.erase(id)
 		ws.defeated.erase(id)
 		var e := Enemy.new(game, spawn)
+		# back from a respawn, it lets you be for a moment (Dan, 2026-11-04)
+		e.calm = DB.CONFIG.chase.spawnGrace
 		list.append(e)
 		game.scene.add_child(e.group)
 		game.events.emit("enemyRespawned", {"enemy": e})
 
 
 func _separate() -> void:
-	var player = game.player
 	# only bodies in view can be seen to overlap; idle ones far off stand still
-	var pp: Vector3 = player.position
+	var pp: Vector3 = game.player.position
 	var view2 := WorldStream.VIEW_OUT * WorldStream.VIEW_OUT
 	var living := list.filter(func(e): return e.alive and (e.state != "idle" or e.position.distance_squared_to(pp) < view2))
 	# sweep along x: once the next enemy is further off in x than any two
@@ -200,12 +201,7 @@ func _separate() -> void:
 			var r := push_apart(a.position, a.radius, b.position, b.radius, 1.0 if a_dummy else 0.0 if b.cfg.get("dummy", false) else 0.5)
 			a.position = r[0]
 			b.position = r[1]
-		if not player.dead:
-			var mp: float = player.radius + a.radius
-			if absf(player.position.x - a.position.x) < mp and absf(player.position.z - a.position.z) < mp:
-				var r := push_apart(player.position, player.radius, a.position, a.radius, 0.0 if a_dummy else 0.85)
-				player.position = r[0]
-				a.position = r[1]
+		# the player walks straight through enemies: no shove either way (Dan, 2026-11-04)
 
 
 ## Move two circles apart; `bias` is the share of the correction given to b.

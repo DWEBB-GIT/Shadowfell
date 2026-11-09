@@ -51,6 +51,7 @@ const EXTRAS := {
 	"bagSlots": ["Bag slots", "int", ["bag"]],
 	"toolPack": ["Tool pack (holds tools)", "bool", ["bag"]],
 	"rangedHaste": ["Quiver haste % (up to 30)", "float", ["bag"]],
+	"ammoRecover": ["Arrows gathered back % (a chance each shot)", "float", ["bag"]],
 	"ammoDps": ["Damage a second it adds", "float", ["ammo"]],
 	"buyCount": ["Sold in stacks of", "int", ["ammo", "consumable", "material"]],
 	"light": ["Light (metres)", "float", ["torch"]],

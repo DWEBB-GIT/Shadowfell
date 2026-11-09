@@ -26,8 +26,13 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Release Tester", "warrior")
+		var made: Dictionary = game.roster.create("Release", "warrior")
 		game.enter_world(made.character.id)
+	elif frame == 50:
+		# a yes/no box (and with it the backdrop) raised earlier in the session
+		game.hud.confirm("Test?", func(): pass)
+	elif frame == 52:
+		game.hud.close_modal()
 	elif frame == 55:
 		# die far from the rest point, so the spirit rises somewhere unbuilt
 		var r: Dictionary = game.respawn_point()
