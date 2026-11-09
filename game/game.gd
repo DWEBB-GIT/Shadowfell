@@ -674,9 +674,6 @@ func _click(button: String) -> bool:
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
 	var acts: bool = button == "right" or settings.get_value("leftInteract")
-	# with click to move the walk button walks in and acts, as in Diablo,
-	# Lost Ark and Path of Exile; without it a left click only selects
-	acts = acts or walk
 	# a left click on the ground lets go of the target; a right click does not.
 	# With mouse aim a left click there attacks whoever is near the cursor.
 	if pick == null:
@@ -704,11 +701,12 @@ func _click(button: String) -> bool:
 		"point":
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
+			# left click selects; right click walks you into reach and starts
+			# auto attack, the same for every class (Dan, 2026-11-09)
 			if acts:
 				targeting.engage(o)
-				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
-					if walk:
+					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}
 					else:
 						hud.error("Out of range")
