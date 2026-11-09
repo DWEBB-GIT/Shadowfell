@@ -12,9 +12,10 @@ var play_count := 0
 var secondary_grip_error := 0.0
 var air_time := 0.0
 var gait_rate := 1.0
-const TAKEOFF_TIME := 0.12
-const LAND_TIME := 0.18
+const TAKEOFF_TIME := 0.22
+const LAND_TIME := 0.36
 const RUN_REFERENCE_SPEED := 4.1
+var last_off_clip := ""
 
 func revive() -> void:
 	super()
@@ -31,7 +32,43 @@ func _init(m: Node3D, owner_player = null) -> void:
 	actor = owner_player
 	_skel = m.find_children("*", "Skeleton3D", true, false)[0]
 
+func weapon_clip(hand: String="main") -> String:
+	if actor==null:return "Sword_Attack"
+	var item=actor.game.inventory.equipment.get("offHand" if hand=="off" else "mainHand")
+	var kind:String=Items.get_def(item.id).get("weaponType","") if item else ""
+	if kind=="dagger":return "Dagger_Stab"
+	if kind=="twoHand":return "Sword_Heavy_Combo"
+	return "Sword_Attack"
+
+func _make_dagger_clip() -> void:
+	if anim.has_animation("Dagger_Stab"):return
+	var track_root:=_track_root(anim.get_animation("Sword_Attack"))
+	var height:=1.23 if model.get_meta("forge_appearance").sex=="male" else 1.18
+	for side in ["r","l"]:
+		var result:=Animation.new()
+		result.length=0.65
+		result.loop_mode=Animation.LOOP_NONE
+		var tracks:Dictionary={}
+		for part in ["clavicle_","upperarm_","lowerarm_","hand_"]:
+			var bone:=_skel.find_bone(part+side)
+			var track:=result.add_track(Animation.TYPE_ROTATION_3D)
+			result.track_set_path(track,NodePath(track_root+":"+part+side))
+			tracks[bone]=track
+		var sign_:float=-1 if side=="r" else 1
+		for key in [[0.0,Vector3(sign_*0.2,height,0.08)],[0.25,Vector3(sign_*0.22,height,0.02)],[0.5,Vector3(sign_*0.13,height+0.04,0.55)],[0.65,Vector3(sign_*0.13,height+0.04,0.55)],[1.0,Vector3(sign_*0.2,height,0.08)]]:
+			anim.play("Idle")
+			anim.seek(0,true)
+			anim.advance(0)
+			_reach_grip(side,Transform3D(Basis(Vector3.RIGHT,PI/2),key[1]),Vector3(sign_*0.55,height-0.1,-0.1))
+			for bone in tracks:
+				result.rotation_track_insert_key(tracks[bone],key[0]*result.length,_skel.get_bone_pose_rotation(bone))
+		anim.get_animation_library("").add_animation("Dagger_Stab" if side=="r" else "Dagger_Stab_L",result)
+	clip=""
+	_clip("Idle",1.0,true)
+
 func resolve_action(type: String) -> String:
+	if type in ["strike","diagonal","overhead","thrust","jab","upstab","rip","quickStrike","slam","cleave","sweep","spinStrike","scissor","heavyOverhead","gavel"]:
+		return weapon_clip()
 	match type:
 		"shoot", "snapShot", "twistDraw", "fanShot", "longDraw", "loose": return "Spell_Simple_Shoot"
 		"guard", "brace", "liftShield", "shieldSlam", "shieldThrust": return "Shield_OneShot"
@@ -49,7 +86,7 @@ func resolve_action(type: String) -> String:
 
 func _locomotion() -> String:
 	if airborne: return "Jump_Start" if air_time < TAKEOFF_TIME else "Jump"
-	if landing > 0 and move < 0.12: return "Jump_Land"
+	if landing > 0: return "Jump_Land"
 	if pose in ["sit", "rest"]: return "Sitting_Idle"
 	if pose == "fish": return "Idle_Lantern"
 	if move > 0.9: return "Jog_Fwd"
@@ -57,6 +94,7 @@ func _locomotion() -> String:
 	return "Idle"
 
 func _update_anim(dt: float, speed01: float) -> void:
+	_make_dagger_clip()
 	move = move_toward(move, speed01, dt * 10)
 	if death >= 0:
 		death += dt
@@ -71,7 +109,6 @@ func _update_anim(dt: float, speed01: float) -> void:
 	if airborne:
 		air_time += dt
 	was_airborne = airborne
-	landing = maxf(0, landing - dt)
 	if flinch > 0 and action == null:
 		flinch = maxf(0, flinch - dt * 4)
 		_upper = {"name":"Hit_Chest", "t":(1.0 - flinch) * anim.get_animation("Hit_Chest").length, "speed":0.0, "hit":true}
@@ -88,11 +125,13 @@ func _update_anim(dt: float, speed01: float) -> void:
 	elif base_clip == "Jump":
 		anim.seek(fmod(maxf(0,air_time-TAKEOFF_TIME),anim.get_animation(base_clip).length),true)
 	elif base_clip == "Jump_Land":
-		anim.seek(anim.get_animation(base_clip).length*(1-landing/LAND_TIME),true)
+		anim.seek(anim.get_animation(base_clip).length*clampf(1-(landing-dt)/LAND_TIME,0,1),true)
 	else:
 		anim.advance(dt)
 	if seek_pose:
 		anim.advance(0)
+	if base_clip=="Sitting_Idle":
+		_ground_sit()
 	if airborne:
 		# Physics owns vertical travel. Source pelvis/root translations must
 		# not add another authored leap on top of the gameplay trajectory.
@@ -138,6 +177,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 		if off_action.t >= off_action.duration:
 			off_action = null
 	_fit_hands()
+	if base_clip=="Jump_Land":landing=maxf(0,landing-dt)
 	if track_steps and move > 0.12 and not airborne:
 		var previous := phase
 		phase += dt * (TAU/anim.get_animation("Jog_Fwd").length if move > 0.9 else 7.0) * gait_rate
@@ -159,11 +199,16 @@ func _sample(name: String, at: float, weight: float, upper_only: bool) -> void:
 					_skel.set_bone_pose_position(bone, _skel.get_bone_pose_position(bone).lerp(a.position_track_interpolate(i, at), weight))
 
 func _mirror_off() -> void:
-	var a := anim.get_animation("Sword_Attack")
+	last_off_clip=weapon_clip("off")
+	var clip_name:= "Dagger_Stab_L" if last_off_clip=="Dagger_Stab" else last_off_clip
+	var a := anim.get_animation(clip_name)
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
 	var impact := clampf(off_action.impact, 0.01, 0.99)
 	var at := (k / impact * 0.5 if k < impact else 0.5 + (k - impact) / (1 - impact) * 0.5) * a.length
 	var weight := minf(1, minf(k, 1-k) * 8)
+	if clip_name=="Dagger_Stab_L":
+		_sample(clip_name,at,weight,true)
+		return
 	for part in ["clavicle", "upperarm", "lowerarm", "hand"]:
 		var right := _skel.find_bone(part + "_r")
 		var left := _skel.find_bone(part + "_l")
@@ -175,16 +220,66 @@ func _mirror_off() -> void:
 		var mirrored := Quaternion(delta.x, -delta.y, -delta.z, delta.w) * rest_l
 		_skel.set_bone_pose_rotation(left, _skel.get_bone_pose_rotation(left).slerp(mirrored, weight))
 
+
+func _ground_sit() -> void:
+	# The supplied sitting clip expects a chair. Lower the hips to the
+	# ground and fold the legs forward without burying the feet.
+	var pelvis:=_skel.find_bone("pelvis")
+	var parent:=_skel.get_bone_parent(pelvis)
+	var up:=(_skel.global_basis.inverse()*model.global_basis*Vector3.UP).normalized()
+	var local_up:=(_skel.get_bone_global_pose(parent).basis.inverse()*up).normalized()
+	_skel.set_bone_pose_position(pelvis,_skel.get_bone_pose_position(pelvis)-local_up*0.34)
+	for side in ["l","r"]:
+		var sign_:float=1 if side=="l" else -1
+		var thigh:=_skel.find_bone("thigh_"+side)
+		var calf:=_skel.find_bone("calf_"+side)
+		var foot:=_skel.find_bone("foot_"+side)
+		var hip:=_skel.get_bone_global_pose(thigh).origin
+		var knee:=_skel.get_bone_global_pose(calf).origin
+		var ankle:=_skel.get_bone_global_pose(foot).origin
+		var foot_basis:=_skel.get_bone_global_pose(foot).basis
+		var a:=hip.distance_to(knee)
+		var b:=knee.distance_to(ankle)
+		var target:=Vector3(sign_*0.23,_skel.get_bone_global_rest(foot).origin.y,0.55)
+		var direction:Vector3=(target-hip).normalized()
+		var distance:=clampf(hip.distance_to(target),absf(a-b)+0.001,a+b-0.001)
+		var along:float=(a*a-b*b+distance*distance)/(2*distance)
+		var hint:=Vector3(sign_*0.4,0.5,0.4)-hip
+		var bend:Vector3=(hint-direction*hint.dot(direction)).normalized()
+		var desired:=hip+direction*along+bend*sqrt(maxf(0,a*a-along*along))
+		_turn_bone(thigh,knee-hip,desired-hip)
+		knee=_skel.get_bone_global_pose(calf).origin
+		ankle=_skel.get_bone_global_pose(foot).origin
+		_turn_bone(calf,ankle-knee,hip+direction*distance-knee)
+		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*foot_basis).orthonormalized().get_rotation_quaternion())
+
 func _fit_hands() -> void:
 	if actor == null or actor.sheathed:
 		return
 	if actor.bow_in_hand:
 		var height := 1.38 if actor.appearance.sex == "male" else 1.33
-		_reach_grip("l",Transform3D(Basis(Vector3.UP,PI),Vector3(0.08,height,0.47)),Vector3(0.65,height-0.1,0.1))
-		var draw := 1.0
-		if action != null:
-			draw = clampf(action.t / maxf(0.01, action.duration * action.impact), 0, 1)
-		_reach_grip("r",Transform3D(Basis.IDENTITY,Vector3(-0.06,height+0.02,lerpf(0.4,0.04,draw))),Vector3(-0.65,height+0.1,0.05))
+		var drawing:bool=actor.pending_shot != null or (action != null and (action.type in ["shoot","snapShot","twistDraw","longDraw","fanShot","loose"] or action.get("ranged",false))) or (actor.casting != null and actor.casting.spell.get("ranged",false))
+		if _moving() and not drawing:
+			# Carry the bow with the authored arm swing while travelling.
+			# Only a deliberate draw should pin the hand in an aiming pose.
+			if actor.bow!=null and actor.bow.has_method("set_draw"):actor.bow.call("set_draw",0,false)
+			_curl_fingers("l")
+			return
+		var draw := 0.0
+		var nocked := false
+		if actor.casting != null and actor.casting.spell.get("ranged",false):
+			draw=clampf(actor.casting.t/maxf(0.01,actor.casting.total),0,1)
+			nocked=true
+		elif action != null and drawing:
+			var k:float=action.t/maxf(0.01,action.duration)
+			draw=clampf(k/maxf(0.01,action.impact),0,1) if k<=action.impact else maxf(0,1-(k-action.impact)/0.12)
+			nocked=k<=action.impact
+		var grip:=Vector3(0.08,height,0.47) if drawing else Vector3(0.32,height-0.37,0.12)
+		_reach_grip("l",Transform3D(Basis.IDENTITY,grip),Vector3(0.65,height-0.1,0.1))
+		if drawing:
+			_reach_grip("r",Transform3D(Basis(Vector3.UP,PI/2),grip-Vector3(0,0,0.08+0.34*draw)),Vector3(-0.65,height+0.1,0.05))
+		if actor.bow != null and actor.bow.has_method("set_draw"):
+			actor.bow.call("set_draw",draw,nocked)
 		_curl_fingers("l")
 		return
 	var equipment: Dictionary = actor.game.inventory.equipment
@@ -193,6 +288,10 @@ func _fit_hands() -> void:
 		if item:_curl_fingers("r")
 		if equipment.get("offHand"):_curl_fingers("l")
 		return
+	if action!=null and weapon_clip()=="Dagger_Stab" and resolve_action(action.type)=="Dagger_Stab":
+		_fit_dagger_stab("r",action)
+	if off_action!=null and weapon_clip("off")=="Dagger_Stab":
+		_fit_dagger_stab("l",off_action)
 	if item and Items.get_def(item.id).get("weaponType") == "twoHand":
 		var local_grip: Transform3D = model.get_meta("palm_grip_r")
 		var primary := _skel.get_bone_global_pose(_skel.find_bone("hand_r"))*local_grip
@@ -215,6 +314,24 @@ func _fit_hands() -> void:
 	if equipment.get("offHand"):
 		_curl_fingers("l")
 
+func _fit_dagger_stab(side: String, act: Dictionary) -> void:
+	# A simultaneous sword swing rotates the torso. Keep the dagger's
+	# palm target in character space so its stab still points forward.
+	var k:float=clampf(act.t/maxf(0.01,act.duration),0,1)
+	var impact:float=clampf(act.impact,0.01,0.99)
+	var at:float=k/impact*0.5 if k<impact else 0.5+(k-impact)/(1-impact)*0.5
+	var height:=1.23 if actor.appearance.sex=="male" else 1.18
+	var sign_:float=-1 if side=="r" else 1
+	var keys:Array=[[0.0,Vector3(sign_*0.2,height,0.08)],[0.25,Vector3(sign_*0.22,height,0.02)],[0.5,Vector3(sign_*0.13,height+0.04,0.55)],[0.65,Vector3(sign_*0.13,height+0.04,0.55)],[1.0,Vector3(sign_*0.2,height,0.08)]]
+	var position_:Vector3=keys.back()[1]
+	for i in range(1,keys.size()):
+		if at<=keys[i][0]:
+			position_=(keys[i-1][1] as Vector3).lerp(keys[i][1],inverse_lerp(keys[i-1][0],keys[i][0],at))
+			break
+	var palm:Transform3D=_skel.get_bone_global_pose(_skel.find_bone("hand_"+side))*(model.get_meta("palm_grip_"+side) as Transform3D)
+	var desired:=Transform3D(Basis(Vector3.RIGHT,PI/2),position_)
+	_reach_grip(side,palm.interpolate_with(desired,minf(1,minf(k,1-k)*8)),Vector3(sign_*0.55,height-0.1,-0.1))
+
 func _reach_grip(side: String, desired: Transform3D, elbow_hint: Vector3) -> void:
 	var local_grip: Transform3D = model.get_meta("palm_grip_"+side)
 	var hand := desired*local_grip.affine_inverse()
@@ -232,7 +349,9 @@ func _curl_fingers(side: String) -> void:
 			var parent := _skel.get_bone_parent(bone)
 			var axis := (_skel.get_bone_global_pose(parent).basis.inverse()*grip.basis.y).normalized()
 			var angle := 1.0 if segment < 3 else 0.65
-			_skel.set_bone_pose_rotation(bone,Quaternion(axis,angle)*_skel.get_bone_pose_rotation(bone))
+			# Several clips omit finger tracks; accumulating on the previous
+			# frame makes those fingers continuously rotate around the grip.
+			_skel.set_bone_pose_rotation(bone,Quaternion(axis,angle)*_skel.get_bone_rest(bone).basis.get_rotation_quaternion())
 
 func _reach_hand(side: String, target: Vector3, elbow_hint: Vector3) -> void:
 	var upper := _skel.find_bone("upperarm_" + side)

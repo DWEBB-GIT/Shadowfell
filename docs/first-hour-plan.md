@@ -83,3 +83,8 @@ Proposed next deliverable: the first-hour district, with one complete livelihood
 ## Reference boundary
 
 The user specifically identifies the original Fable's grounded zero-to-hero feeling and ancient history as the tonal reference. The design above is original Mythkeep content, rather than an adaptation of the announced Fable reboot. RuneScape's official [skills guide](https://www.runescape.com/game-guide/skills) describes useful connections between gathering, fishing, food and production; that connection informs the proposed livelihood loop. Existing Mythkeep code and design documents are the implementation baseline.
+
+
+## Implementation record
+
+9 November 2026: the first district pass is implemented locally, including the repaired cart opening, independent livelihood path, three discoveries and combat feedback corrections. See [opening-polish-review.md](opening-polish-review.md) for exact changes, test results and remaining review gates. An uninterrupted audible playthrough, unfamiliar-player testing and a real two-player session remain required; the plan above is not evidence that those gates have been passed.

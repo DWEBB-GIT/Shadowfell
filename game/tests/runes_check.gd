@@ -295,8 +295,9 @@ func _procs() -> void:
 	var inv = game.inventory
 	var p: Vector3 = game.player.position
 	var foe = null
+	# a low level foe that lives through a burn (not the intro's grain rats)
 	for e in game.enemies.list:
-		if e.alive and (foe == null or e.cfg.level < foe.cfg.level):
+		if e.alive and e.max_health >= 100 and (foe == null or e.cfg.level < foe.cfg.level):
 			foe = e
 	_ok(foe != null, "there is an enemy to test on")
 	if foe == null:

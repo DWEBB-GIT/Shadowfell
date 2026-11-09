@@ -209,16 +209,43 @@ func reset() -> void:
 	wound_rest = 0.0
 	wound_left = 0.0
 
+func serialize() -> Dictionary:
+	return {"ghost":ghost,"coinLoss":coin_loss,"corpse":{"x":corpse.x,"z":corpse.z,"facing":corpse.get("facing",0.0)} if corpse != null else null}
+
+func apply_saved(dead: bool,data: Dictionary) -> void:
+	coin_loss=maxi(0,int(data.get("coinLoss",0)))
+	if data.get("ghost",false) and data.get("corpse") is Dictionary:
+		var body:Dictionary=data.corpse
+		_place_corpse(float(body.x),float(body.z),float(body.get("facing",0)))
+		ghost=true
+		game.player.dead=true
+		game.player.health=0
+		var facing:float=game.player.facing
+		game.player.become_ghost(game.player.position.x,game.player.position.z)
+		game.player.facing=facing
+		game.player._sync()
+		game.set_ghost_look(true)
+	elif dead:
+		game.player.dead=true
+		game.player.health=0
+		game.player.rig.die()
+		game.pending_death={"loss":0,"timer":0.0}
+
 
 func _place_corpse(x: float, z: float, facing: float) -> void:
-	var mesh := Assets.instance("warden")
-	mesh.rotation_order = EULER_ORDER_YXZ
-	mesh.rotation = Vector3(-(PI / 2) * 0.95, facing, 0)
-	mesh.position = Vector3(x, Terrain.height_at(x, z) + 0.15, z)
+	var mesh:=game.player.model.duplicate() as Node3D
+	Rig.isolate_materials(mesh)
+	mesh.rotation=Vector3(0,facing,0)
+	mesh.position=Vector3(x,Terrain.height_at(x,z),z)
 	mesh.name = "Corpse"
 	game.scene.add_child(mesh)
+	var corpse_rig:=ForgeRig.new(mesh)
+	corpse_rig.die()
+	corpse_rig.update(1.5,0)
+	var ap:=mesh.find_child("AnimationPlayer",true,false) as AnimationPlayer
+	if ap:ap.stop(true)
 	_make_glow(mesh)
-	corpse = {"x": x, "z": z, "mesh": mesh}
+	corpse = {"x": x, "z": z,"facing":facing, "mesh": mesh}
 
 
 ## The body glows and a pale beacon rises over it, so a spirit can find it

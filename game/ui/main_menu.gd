@@ -3,7 +3,7 @@ extends RefCounted
 ## The main menu (Escape, with nothing else to close; Dan, 2026-10-29):
 ## Settings, Logout, Exit Game and Return to Game. Logout and Exit Game wait
 ## COUNTDOWN seconds first, with a Cancel button, as WoW does; a fight,
-## death or Escape cancels the wait too. The world keeps running meanwhile.
+## movement or Escape cancels the wait too. Defeated players may leave.
 
 const COUNTDOWN := 10.0
 
@@ -14,6 +14,9 @@ var wait_panel: PanelContainer
 var wait_label: Label
 var leaving := "" ## "logout" | "exit" while counting down
 var left := 0.0
+var was_sitting := false
+var countdown_position := Vector3.ZERO
+var countdown_stance := "sheathed"
 
 
 func _init(g, h) -> void:
@@ -59,8 +62,9 @@ var is_open: bool:
 
 
 func open() -> void:
-	if hud.modal != null:
+	if hud.modal != null and hud.modal != "death":
 		return
+	hud.death.visible=false
 	game.audio.sfx("panel", 0.6)
 	hud.modal = "menu"
 	hud.root.move_child(hud.backdrop, -1)
@@ -81,6 +85,8 @@ func close() -> bool:
 	hud.backdrop.visible = false
 	if hud.modal == "menu":
 		hud.modal = null
+	if game.player.dead and not game.player.ghost:
+		hud.show_death(0,game.respawn_point().kind)
 	return true
 
 
@@ -90,10 +96,27 @@ func _settings() -> void:
 
 
 func _start(what: String) -> void:
-	if game.player.dead:
-		hud.toast("You cannot leave while defeated.")
+	if game.combat_blocks_logout():
+		hud.error("You must leave combat before logging out.")
+		return
+	if not (game.player.dead and not game.player.ghost) and (game.player.moving or game.player.casting != null or game.player.jump_h>0 or game.player.rig.pose not in [null,"rest"]):
+		hud.error("Stop moving and finish your action before logging out.")
 		return
 	close()
+	if game.player.dead:
+		hud.death.visible=false
+		hud.backdrop.visible=false
+		hud.modal=null
+	was_sitting=game.player.sitting
+	countdown_position=game.player.position
+	game.targeting.stop_attack()
+	game.player.pending=null
+	game.player.pending_off=null
+	game.player.pending_shot=null
+	countdown_stance=game.player.weapon_stance
+	if not (game.player.dead and not game.player.ghost):
+		game.player.draw_weapons("sheathed")
+		game.player.set_sitting(true)
 	leaving = what
 	left = COUNTDOWN
 	hud.root.move_child(wait_panel, -1)
@@ -101,9 +124,14 @@ func _start(what: String) -> void:
 	_show()
 
 
-func cancel() -> void:
+func cancel(restore_pose := true) -> void:
+	var waiting:=leaving!=""
 	leaving = ""
 	wait_panel.visible = false
+	if waiting and restore_pose:
+		if not was_sitting and not (game.player.dead and not game.player.ghost):game.player.set_sitting(false)
+		if game.player.weapon_stance=="sheathed" and countdown_stance!="sheathed":game.player.draw_weapons(countdown_stance)
+		if game.player.dead and not game.player.ghost:hud.show_death(0,game.respawn_point().kind)
 
 
 func _show() -> void:
@@ -113,19 +141,20 @@ func _show() -> void:
 func update(dt: float) -> void:
 	if leaving == "":
 		return
-	if game.player.dead:
-		cancel()
-		return
-	if game.resources.in_combat:
+	if game.combat_blocks_logout():
 		cancel()
 		hud.error("You cannot leave in the middle of a fight.")
+		return
+	if not (game.player.dead and not game.player.ghost) and (not game.player.sitting or game.player.position.distance_to(countdown_position)>0.05):
+		cancel()
+		hud.toast("Logout cancelled.")
 		return
 	left -= dt
 	if left > 0:
 		_show()
 		return
 	var what := leaving
-	cancel()
+	cancel(false)
 	if what == "logout":
 		game.log_out()
 	else:

@@ -47,8 +47,14 @@ func _run() -> void:
 	p.add_xp(1)
 	check(p.level == 50 and p.xp == 0 and p.rested == 0, "one XP crosses 49 to 50 and clears overflow/rested")
 	check(p.add_xp(1000000) == 0 and p.level == 50 and p.xp == 0, "large awards cannot create level 51")
+	# the quest chain before it counts as handed in; a save round trip lets
+	# the load hand over what those quests leave behind (the tool belt)
+	_mark_done_before("vr_reed_message")
+	check(game.save.save().ok, "the chain so far saves")
+	game.save.apply(game.save.read().data)
+	var coins_before: int = game.inventory.coins
 	check(game.quests.accept("vr_reed_message") and game.quests.complete("vr_reed_message"), "quests can still complete at the cap")
-	check(game.inventory.coins == 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
+	check(game.inventory.coins == coins_before + 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
 	check(game.save.save().ok and game.save.read().status == "ok", "a level-50 character saves and reads normally")
 	var saved: Dictionary = game.save.read().data
 	var inventory: Dictionary = saved.inventory.duplicate(true)
@@ -77,3 +83,11 @@ func _run() -> void:
 	game.queue_free()
 	await process_frame
 	quit(1 if failures else 0)
+
+
+## Every quest `id` needs, all the way back, marked handed in.
+func _mark_done_before(id: String) -> void:
+	for need in DB.quests[id].get("requires", []):
+		_mark_done_before(need)
+		game.quests.accepted.erase(need)
+		game.quests.done[need] = true

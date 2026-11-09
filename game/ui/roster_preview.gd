@@ -87,12 +87,13 @@ func _init() -> void:
 	pivot=Node3D.new()
 	viewport.add_child(pivot)
 
-func show_character(gear: Dictionary, appearance = null) -> void:
+func show_character(gear: Dictionary, appearance = null, ranged_first := false) -> void:
 	equipment=gear.duplicate(true)
 	if actor!=null:
 		actor.group.queue_free()
 	actor=Player.new({"inventory":{"equipment":equipment},"time":0.0})
 	pivot.add_child(actor.group)
+	actor.reset_weapon_stance(ranged_first)
 	actor.set_appearance(appearance)
 	actor.group.position=Vector3.ZERO
 	actor.group.rotation=Vector3.ZERO

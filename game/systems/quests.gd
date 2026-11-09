@@ -138,6 +138,16 @@ func start_new() -> void:
 	_snapshot()
 
 
+## Quest instructions use the player's current bindings, including mouse-aim
+## G versus classic F. Authors can use these tokens in quest prose.
+func wording(text: String) -> String:
+	for action in ["interact", "jump", "bar0", "cycleTarget", "toolbelt"]:
+		var labels: Array = game.keys.keys(action).filter(func(key): return not str(key).begins_with("Mouse")) if game.keys else []
+		var label: String = Keybinds.key_label(labels[0]) if not labels.is_empty() else "Interact" if action == "interact" else action
+		text = text.replace("{" + action + "}", label)
+	return text
+
+
 # ------------------------------------------------------------ state
 func status(id: String) -> String:
 	var q = DB.quests.get(id)
@@ -233,6 +243,10 @@ func for_npc(npc_id: String) -> Array:
 	for q in _quests_of(npc_id):
 		var s := status(q.id)
 		if (s == "ready" and q.get("turnIn") == npc_id) or (s == "available" and q.get("giver") == npc_id) or (s == "active" and q.get("turnIn") == npc_id):
+			# "go and speak to X": once only that talk is left, X shows the gold
+			# hand-in ?, not the grey one (Dan 2026-11-09)
+			if s == "active" and only_talk_left(q.id, npc_id):
+				s = "ready"
 			out.append({"id": q.id, "status": s})
 	var order := {"ready": 0, "available": 1, "active": 2}
 	out.sort_custom(func(a, b): return order[a.status] < order[b.status])
@@ -256,6 +270,13 @@ func _quests_of(npc_id: String) -> Array:
 	return _by_npc.get(npc_id, [])
 
 
+## Is speaking to this npc all that is left of an active quest?
+func only_talk_left(id: String, npc_id: String) -> bool:
+	var objs := objectives(id)
+	var left := objs.filter(func(o): return not o.done)
+	return not left.is_empty() and left.all(func(o): return o.type == "talk" and o.target == npc_id)
+
+
 ## What floats over an npc: 'ready' gold ?, 'available' gold !, 'active' grey ?.
 ## The floating marks and the minimap ask for every npc in view each frame,
 ## so the answer is kept for MARK_TTL_MS (bags, levels and kills move a quest
@@ -273,7 +294,7 @@ func marker_for(npc_id: String) -> String:
 		if _marks[npc_id] == "":
 			for quest_id in active:
 				if DB.quests[quest_id].objectives.any(func(o): return o.type == "talk" and o.get("requireVisit", false) and o.target == npc_id and not kills.get(quest_id, {}).get(o.id, 0)):
-					_marks[npc_id] = "active"
+					_marks[npc_id] = "ready" if only_talk_left(quest_id, npc_id) else "active"
 					break
 	return _marks[npc_id]
 
@@ -284,7 +305,7 @@ func followups(completed: String) -> Array:
 	var main := []
 	var local := []
 	for quest in DB.quests.values():
-		if not quest.get("requires", []).has(completed) and not quest.get("requiresAny", []).has(completed):
+		if not (quest.get("requires", []) + quest.get("requiresAny", []) + quest.get("leadsFrom", [])).has(completed):
 			continue
 		if status(quest.id) not in ["available", "active", "ready"]:
 			continue
@@ -355,7 +376,7 @@ func abandon(id: String) -> bool:
 	var s := status(id)
 	if s != "active" and s != "ready":
 		return false
-	if DB.quests[id].get("autoAccept"):
+	if DB.quests[id].get("autoAccept") and not DB.quests[id].get("allowAbandon", false):
 		return false # the story quest cannot be dropped
 	accepted.erase(id)
 	tracked.erase(id)
@@ -396,7 +417,7 @@ func complete(id: String) -> bool:
 	if q.get("setsFlag"):
 		game.world_state.flags[q.setsFlag] = true
 	if q.get("turnInLog"):
-		events.emit("log", {"text": q.turnInLog, "kind": "lore"})
+		events.emit("log", {"text": wording(q.turnInLog), "kind": "lore"})
 	events.emit("log", {"text": "Quest complete: %s." % q.name, "kind": "quest"})
 	var coins := U.roll_coins(r.get("coins"), game.random)
 	if coins:
@@ -474,6 +495,11 @@ func goal(id: String) -> Dictionary:
 			continue
 		if o.type == "talk":
 			return npc_goal(o.target)
+		# Known interactions point to the actual object, rather than a broad zone centre.
+		if o.type == "examine" and game.world:
+			for point in game.world.examine_points:
+				if point.id == o.target:
+					return {"x": point.x, "z": point.z, "r": 1.2, "label": o.label}
 		if o.location and DB.locations.has(o.location):
 			var l: Dictionary = DB.locations[o.location]
 			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}

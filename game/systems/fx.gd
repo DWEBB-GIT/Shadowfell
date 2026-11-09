@@ -40,7 +40,7 @@ func _init(g) -> void:
 		aoe_weight(e))
 	ev.on("enemyHit", func(e):
 		var land := func():
-			if e.get("damage",0) > 0:
+			if e.get("damage",0) > 0 and not e.get("periodic", false):
 				contact_impact(e)
 			_blow_lands(e)
 		# The opening auto-attack resolves early but its visible impact waits
@@ -307,9 +307,15 @@ func projectile(p: Dictionary) -> void:
 	_add(obj, maxf(0.05, time), func(it, k, dt):
 		if trail != null:
 			it.emit -= dt
-			if it.emit <= 0:
-				it.emit = TRAIL_EVERY
+			# Carry the fraction forward: resetting the timer lost emissions
+			# at 60 Hz and made the same arrow look different by frame rate.
+			var emitted := 0
+			while it.emit <= 0 and emitted < 4:
+				it.emit += TRAIL_EVERY
 				trail_bit(it.obj.position, trail)
+				emitted += 1
+			if emitted == 4:
+				it.emit = maxf(0, it.emit)
 		if it.follow:
 			var fp: Vector3 = it.follow.position
 			it.b = Vector3(fp.x, Terrain.height_at(fp.x, fp.z) + 1.0, fp.z)
@@ -770,7 +776,7 @@ func _blow_lands(e: Dictionary) -> void:
 	var hand: String = e.get("hand", "main")
 	var player = game.player
 	var enemy = e.enemy
-	if e.get("kind") != "strike" or hand == "ranged" or e.get("damage", 0) <= 0:
+	if e.get("periodic", false) or e.get("kind") != "strike" or hand == "ranged" or e.get("damage", 0) <= 0:
 		return
 	if player.position.distance_to(enemy.position) > 4.0:
 		return

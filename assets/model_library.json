@@ -42,7 +42,7 @@
     "hound": "res://assets/models/characters/hound.glb",
     "hound_meat": "res://assets/models/items/supplies/hound_meat.glb",
     "hound_pelt": "res://assets/models/items/supplies/hound_pelt.glb",
-    "hunting_bow": "res://assets/models/items/weapons/hunting_bow.glb",
+    "hunting_bow": "res://assets/models/weapons/hunting_bow.tscn",
     "innkeeper": "res://assets/models/characters/innkeeper.glb",
     "inn_front": "res://assets/models/environment/buildings/inn_front.glb",
     "inn_roof": "res://assets/models/environment/buildings/inn_roof.glb",

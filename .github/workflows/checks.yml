@@ -44,3 +44,19 @@ jobs:
 
       - name: Townsfolk routines and the world clock
         run: ./godot --headless --path . --script res://game/tests/routine_check.gd
+
+      - name: Game test run (start, fight, save)
+        run: ./godot --headless --path . --script res://game/tests/run_tests.gd
+
+      # Every other headless check that passes on main. A check that fails is
+      # fixed, never dropped from this list; one that is still red on main is
+      # added once it is green.
+      - name: Gameplay and editor checks
+        run: |
+          failed=""
+          for t in ambience_music_check atmosphere_check audio_check bank_check builds_check camera_movement_check chase_loot_check controls_check data_editor_check death_check death_new_map_check editor_authoring_check ghost_arrive_check heal_thorns_check jump_check level_50_check main_menu_check miss_check new_map_check opening_check playtest_1029_check quest_check quest_log_check quest_mark_check quest_npc_editor_check readability_check release_click_check runes_check scaling_xp_check sculpt_check spell_scaling_check starter_chain_check starter_check stream_check terrain_blend_check xp_orbs_check ; do
+            echo "::group::$t"
+            if ! timeout 300 ./godot --headless --path . --script res://game/tests/$t.gd; then failed="$failed $t"; fi
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then echo "::error::failed:$failed"; exit 1; fi

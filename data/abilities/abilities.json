@@ -12,7 +12,9 @@
       "range": 2.4,
       "desc": "Auto attack. Left-click an enemy (right-click with Classic controls, RT on a pad), or use any ability on it, and you swing at it each time your weapon is ready while it is in reach, until it falls or you pick another. Time between swings = weapon speed ÷ (1 + haste). The blow lands at the swing's impact frame, and only if the target is still in reach then. Dual wielding, each hand swings on its own clock at its weapon's speed; the off hand does half damage and never lands within 0.2 s of the main hand. Not on the spell bar.",
       "tuning": {
-        "range": 2.1,
+        "range": 2.6,
+        "lagGrace": 0.5,
+        "impactGrace": 0.6,
         "coneDegrees": 180,
         "windup": 0.26,
         "swingAnimation": 0.8,
@@ -22,7 +24,10 @@
         "readyWindup": 0.08,
         "openerWindup": 0.2,
         "staggerGap": 0.2,
-        "movingLeeway": 1
+        "movingLeeway": 1.5,
+        "bodyGap": 0.35,
+        "pivotDegrees": 70,
+        "rootSeconds": 0.25
       },
       "bar": false
     },
@@ -604,7 +609,7 @@
       "target": "ground",
       "range": 9,
       "skill": "fishing",
-      "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod on your tool belt.",
+      "desc": "Cast your line into nearby water. When the bob dips, click it or use Interact to strike. The nearby prompt shows your current key. Needs a fishing rod on your tool belt.",
       "tuning": {
         "cooldown": 1
       }

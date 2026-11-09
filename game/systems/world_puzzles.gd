@@ -176,7 +176,7 @@ func refresh() -> void:
 		var root: Node3D = visuals.get(p.id)
 		if not is_instance_valid(root):
 			continue
-		var near: bool = game.player != null and Vector2(game.player.position.x - p.position[0], game.player.position.z - p.position[1]).length() < 14.0
+		var near: bool = game.player != null and Vector2(game.player.position.x - p.position[0], game.player.position.z - p.position[1]).length() < float(p.get("labelRadius", 14.0))
 		for i in p.nodes.size():
 			var node := root.get_node("Dial%d" % i)
 			var label: Label3D = node.get_node("Label")
@@ -190,6 +190,10 @@ func refresh() -> void:
 			else:
 				label.text += "\n%d / %d notes" % [s.progress, p.answer.size()]
 			label.modulate = Color("96e5b2") if s.solved else Color("f6dfaa")
+		for action in ["Check", "Reset"]:
+			var action_label = root.get_node_or_null(action)
+			if action_label:
+				action_label.visible = near
 		var status: Label3D = root.get_node("Status")
 		status.visible = near
 		status.text = "%s\n%s" % [p.name, "Settled" if s.solved else p.get("instruction", "")]
@@ -205,6 +209,10 @@ static func visual(p: Dictionary) -> Node3D:
 		holder.name = "Dial%d" % i
 		holder.position = Vector3(n.offset[0], 0, n.offset[1])
 		root.add_child(holder)
+		if p.get("visual") == "hangingBells":
+			_hanging_bell(holder, Color(n.get("color", "#b49a62")))
+			_label(holder, "Label", n.name, Vector3(0, 1.9, 0))
+			continue
 		var base := CylinderMesh.new()
 		base.top_radius = 0.36
 		base.bottom_radius = 0.47
@@ -244,6 +252,29 @@ static func visual(p: Dictionary) -> Node3D:
 		_label(root, action.capitalize(), "Test flow" if action == "check" else "Reset", Vector3(off[0], 1, off[1]))
 	_label(root, "Status", p.name, Vector3(0, 2.8, -0.5))
 	return root
+
+
+## A small weathered bell rack for the garden; no additional lights or particles.
+static func _hanging_bell(parent: Node3D, colour: Color) -> void:
+	for x in [-0.42, 0.42]:
+		var post := BoxMesh.new()
+		post.size = Vector3(0.12, 1.6, 0.14)
+		_mesh(parent, post, Vector3(x, 0.8, 0), Color("574939"))
+	var beam := BoxMesh.new()
+	beam.size = Vector3(1.05, 0.14, 0.18)
+	_mesh(parent, beam, Vector3(0, 1.55, 0), Color("675442"))
+	var bell := CylinderMesh.new()
+	bell.top_radius = 0.12
+	bell.bottom_radius = 0.32
+	bell.height = 0.48
+	bell.radial_segments = 12
+	_mesh(parent, bell, Vector3(0, 1.18, 0), colour)
+	var clapper := SphereMesh.new()
+	clapper.radius = 0.07
+	clapper.height = 0.14
+	clapper.radial_segments = 8
+	clapper.rings = 4
+	_mesh(parent, clapper, Vector3(0, 0.89, 0), Color("50483c"))
 
 
 static func _mesh(parent: Node3D, mesh: Mesh, at: Vector3, color: Color) -> void:

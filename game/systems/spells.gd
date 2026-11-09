@@ -17,6 +17,7 @@ var ally_hots: Array = [] ## heals over time on someone else: { id, on, left, ne
 var traps: Array = [] ## { id, key, x, z, arm, left }
 var bolts: Array = [] ## { enemy, id, t, ammo, spell }
 var blows: Array = [] ## cleaves and bursts on their way to the impact frame
+var ranged_windups: Array = []
 var queued = null ## a spell pressed in the queue window: { id, left }
 var shadow_grace := 0.0 ## seconds that still count as striking from Shadow
 
@@ -119,6 +120,7 @@ func reset() -> void:
 	traps = []
 	bolts = []
 	blows = []
+	ranged_windups = []
 	queued = null
 	shadow_grace = 0.0
 	reprisal = 0.0
@@ -434,12 +436,9 @@ func _try_cast(id: String) -> bool:
 			return false
 		if not _class_ready(spell, target):
 			return false
-		# running, the target must be in front of you; standing still, a
-		# spell at an enemy turns you to it
-		if not player.can_hit_while_moving(target.position.x, target.position.z):
-			game.hud.error("Target needs to be in front of you.")
-			return false
-		player.face_towards(target.position.x, target.position.z)
+		# Selecting never turns you; using an ability on a foe does, at
+		# once, and holds you a moment if you were moving (Player.square_up)
+		player.square_up(target.position.x, target.position.z)
 		if spell.get("mechanic") != "distract":
 			break_shadow()
 			if not spell.get("applies", {}).get("sleep") and spell.get("mechanic") != "fear":
@@ -468,7 +467,7 @@ func _try_cast(id: String) -> bool:
 			player.pending = null
 		player.pending_off = null
 		player.pending_shot = null
-		player.hold_bow(spell.get("ranged", false))
+		player.draw_weapons("ranged" if spell.get("ranged",false) else "melee")
 		var channel: bool = spell.kind == "channel"
 		player.casting = {"id": id, "spell": spell, "t": 0.0, "total": stats.hasted(t.castTime), "target": target, "pushbacks": 0, "channel": channel, "next": t.tickInterval if channel else 0.0}
 		if spell.kind == "groundCast":
@@ -511,11 +510,16 @@ func _target_for(spell: Dictionary, optional := false):
 	var targeting = game.targeting
 	var player = game.player
 	var range_: float = minf(game.stats.ranged_reach,spell.range) if spell.get("ranged") and spell.get("mechanic") == "interruptArrow" else game.stats.ranged_reach if spell.get("ranged") else spell.range
-	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= range_ + e.radius * 0.6
+	# melee abilities reach as far as a swing does, lag allowance included
+	var melee: bool = not spell.get("ranged", false) and spell.kind != "charge" and range_ <= DB.attack.range + 1
+	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= (Targeting.melee_reach(e, range_) if melee else range_ + e.radius * 0.6)
 	var cur = targeting.current
 	if cur != null and cur.alive:
 		# livestock and the watch: only with the crime key held (Alt)
 		if not game.law.may_attack(cur):
+			return false if optional else null
+		if game.collision.wall_between(player.position.x, player.position.z, cur.position.x, cur.position.z):
+			game.hud.error("Your target is behind cover.")
 			return false if optional else null
 		if in_range.call(cur):
 			return cur
@@ -523,6 +527,9 @@ func _target_for(spell: Dictionary, optional := false):
 		return false if optional else null
 	var soft = targeting.soft_target(game.raw_aim if game.raw_aim != null else player.position, range_)
 	if in_range.call(soft):
+		if game.collision.wall_between(player.position.x, player.position.z, soft.position.x, soft.position.z):
+			game.hud.error("Your target is behind cover.")
+			return false if optional else null
 		targeting.select(soft)
 		return soft
 	if optional:
@@ -591,7 +598,7 @@ func _go(spell: Dictionary, target) -> void:
 	_cast_effects(spell)
 	_show(spell, "cast", player.position, player.facing, player)
 	if spell.get("ranged"):
-		_shoot(spell, target)
+		_queue_shot(spell, target)
 		return
 	if _class_release(spell, target):
 		return
@@ -904,6 +911,24 @@ func _apply_dot(spell: Dictionary, target, ammo = null, quiet := false) -> void:
 ## A bow ability: the bow comes to hand, one arrow is loosed, and the
 ## spell's effect lands when it arrives. Triple Shot looses more arrows at
 ## enemies near the target.
+func cancel_ranged_windup() -> void:
+	ranged_windups.clear()
+	if game.player.casting != null and game.player.casting.spell.get("ranged"):
+		var id: String=game.player.casting.id
+		game.player.casting=null
+		game.events.emit("castEnd",{"id":id,"done":false})
+
+func _queue_shot(spell: Dictionary,target) -> void:
+	var player=game.player
+	player.pending_shot=null
+	player.cooldowns.ranged=maxf(player.cooldowns.ranged,game.stats.attack_cooldown_for("ranged"))
+	player.ranged_ready_at=maxf(player.ranged_ready_at,game.time+player.cooldowns.ranged)
+	player.last_swing_at=game.time
+	player.draw_weapons("ranged")
+	_anim(spell,"shoot",0.45,0.27)
+	if player.rig.action != null:player.rig.action.ranged=true
+	ranged_windups.append({"spell":spell,"target":target,"left":0.12})
+
 func _shoot(spell: Dictionary, target) -> void:
 	var player = game.player
 	var inventory = game.inventory
@@ -912,8 +937,7 @@ func _shoot(spell: Dictionary, target) -> void:
 		inventory.spend_arrow(ammo)
 	player.pending_shot = null
 	player.hold_bow(true)
-	_anim(spell, "shoot", 0.45, 0.25)
-	var from := Vector3(player.position.x + sin(player.facing) * 0.4, player.position.y + 1.35, player.position.z + cos(player.facing) * 0.4)
+	var from: Vector3 = player.bow_muzzle()
 	var speed: float = DB.auto_shot.arrowSpeed
 	var t: Dictionary = spell.tuning
 	var targets := [target]
@@ -1053,7 +1077,6 @@ func _charge_hit(spell: Dictionary) -> Array:
 	if best == null:
 		game.events.emit("playerMiss", {})
 		return []
-	player.face_towards(best.position.x, best.position.z)
 	targeting.engage(best)
 	var hit := _damage(spell, best, Stats.weapon_roll(game.random, game.stats), "", t.damageMultiplier, {"stagger": 0.3, "knockFrom": player.position, "knockback": 0.4})
 	_show(spell, "impact", best.position, player.facing)
@@ -1153,6 +1176,11 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	# halted what it hit) unless the spell's data asks for it: `stagger`
 	# (seconds) and `knockback` in its tuning, as Shield Bash does
 	var opts: Dictionary = hurt_opts.duplicate()
+	# Damage ticks retain their numbers and spell effects without replaying
+	# a weapon contact, flinch, hit-stop or camera kick on every tick.
+	opts.periodic = carry != null or hurt_opts.get("periodic", false)
+	if opts.periodic:
+		opts.quiet = true
 	opts.stagger = float(t.get("stagger", 0.0))
 	opts.knockback = float(t.get("knockback", 0.0))
 	if spell.get("mechanic") == "ordinaryPush" and not _ordinary(enemy):
@@ -1165,7 +1193,8 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	var events: Events = game.events
 	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main", "ability": true})
 	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else hurt_opts.get("hand","main"), "periodic": carry != null or hurt_opts.get("periodic",false)})
-	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
+	if not opts.periodic and hit.amount > 0:
+		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": opts.get("heavy", false) or opts.knockback > 0})
 	if line != "":
 		events.emit("log", {"text": line.replace("{name}", enemy.cfg.name).replace("{n}", str(hit.amount)) + (" A critical blow!" if hit.crit else ""), "kind": "hit"})
 	# a rune answers the spell (a bow's for bow abilities, else the main hand's)
@@ -1246,7 +1275,6 @@ static func _hurts(t: Dictionary) -> bool:
 
 const ALLY_HEAL_RANGE := 30.0 ## metres, for a heal with no range of its own
 
-
 ## Who a heal goes to: your friendly target (a townsperson now, another
 ## player once there is multiplayer), or null for yourself. Only single-
 ## target heals (heal, hot) go to someone else; zones and bursts stay
@@ -1257,7 +1285,6 @@ func heal_target(spell: Dictionary):
 	var f = game.targeting.friendly if game.targeting else null
 	return f if f != null and f.get("position") != null else null
 
-
 ## Heal someone else: the number shows over them. Townsfolk keep no health
 ## of their own yet, so the whole heal counts.
 func _heal_ally(ally, amount: float, periodic := false) -> float:
@@ -1267,7 +1294,6 @@ func _heal_ally(ally, amount: float, periodic := false) -> float:
 	game.events.emit("damageNumber", {"target": ally, "amount": U.jround(amount), "kind": "heal", "crit": crit})
 	game.events.emit("allyHealed", {"target": ally, "amount": amount})
 	return amount
-
 
 ## Heal yourself; a direct heal can crit as a spell does, a tick never does.
 ## Returns what it healed (overhealing is lost).
@@ -1339,19 +1365,31 @@ func update(dt: float) -> void:
 	var enemies: Array = game.enemies.list
 	shadow_grace = maxf(0, shadow_grace - dt)
 	_class_tick(dt)
+	for i in range(ranged_windups.size()-1,-1,-1):
+		var shot: Dictionary=ranged_windups[i]
+		shot.left-=dt
+		if shot.left>0:continue
+		ranged_windups.remove_at(i)
+		if not player.dead and shot.target != null and shot.target.alive and player.position.distance_to(shot.target.position)<=game.stats.ranged_reach+shot.target.radius*0.6 and game.inventory.ammo:
+			_shoot(shot.spell,shot.target)
 	# the cast bar: moving or dying breaks it, as in WoW
 	var c = player.casting
 	if c != null:
 		var gone: bool = c.target != null and not c.target.alive
-		if player.dead or player.moving or gone:
+		# a cast keeps you turned to its target as it moves
+		if c.target != null and c.target.alive and not player.moving:
+			player.face_towards(c.target.position.x, c.target.position.z)
+		var turned := false
+		var covered: bool = c.target != null and c.target.alive and game.collision.wall_between(player.position.x, player.position.z, c.target.position.x, c.target.position.z)
+		if player.dead or player.moving or gone or turned or covered:
 			player.casting = null
 			if c.spell.kind == "groundCast":
 				events.emit("zoneGone", {"key":"meteorWarning"})
 			player.rig.action = null
 			if c.spell.get("ranged"):
-				player.hold_bow(false)
+				player.hold_bow(player.weapon_stance=="ranged" and not player.sheathed)
 			if not player.dead:
-				events.emit("log", {"text": "Your target is gone." if gone else "Interrupted.", "kind": "muted", "throttle": "interrupted"})
+				events.emit("log", {"text": "Your target is gone." if gone else "Your target moved behind cover." if covered else "Interrupted.", "kind": "muted", "throttle": "interrupted"})
 			events.emit("castEnd", {"id": c.id, "done": false})
 		elif c.channel:
 			# a channel ticks as it goes and ends when the bar runs out
@@ -1391,9 +1429,6 @@ func update(dt: float) -> void:
 					if st.has_ranged:
 						player.cooldowns.ranged = maxf(player.cooldowns.ranged, st.attack_cooldown_for("ranged"))
 					events.emit("castEnd", {"id": c.id, "done": true})
-					# it lands facing its target, wherever you turned meanwhile
-					if c.target != null:
-						player.face_towards(c.target.position.x, c.target.position.z)
 					_go(spell, c.target)
 
 	# cleaves and bursts land at their impact frame
@@ -1448,6 +1483,7 @@ func update(dt: float) -> void:
 		if b.left <= 1e-6:
 			buffs.erase(id)
 			events.emit("log", {"text": "%s fades." % b.name, "kind": "muted"})
+
 	# heals over time on someone else
 	for i in range(ally_hots.size() - 1, -1, -1):
 		var h: Dictionary = ally_hots[i]

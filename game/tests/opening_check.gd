@@ -9,6 +9,8 @@ extends SceneTree
 var failures := 0
 var game
 var frame := 0
+var stage := 0
+var since := 0.0 ## game time when the stage began
 
 
 func check(ok: bool, what: String) -> void:
@@ -18,7 +20,10 @@ func check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
+	# the rings belong to the old Act 1 map (the new map has no gates yet)
+	ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 	DB.ensure()
+	check(not Layout.gates.is_empty(), "the Act 1 map has its gates")
 	# data: houses on open ground, nobody standing inside one
 	for h in Layout.houses:
 		check(Terrain.walk_at(h.position[0], h.position[1]) >= 0.5, "%s stands on open ground" % h.id)
@@ -34,7 +39,10 @@ func _gate(id: String) -> Dictionary:
 	for gt in game.world.town.gates:
 		if gt.def.id == id:
 			return gt
-	return {}
+	# a missing gate fails here rather than stopping the script mid-frame
+	# (which would leave the check running for ever)
+	check(false, "gate %s is built" % id)
+	return {"open": false, "def": {"id": id, "line": [[0, 0], [0, 0]]}}
 
 
 ## would a mover standing on the middle of this gate be pushed off it?
@@ -56,7 +64,22 @@ func _process(_dt: float) -> bool:
 	elif frame == 3:
 		var r = game.roster.create("Nobody", "warden")
 		game.enter_world(r.character.id)
-	elif frame == 10:
+	elif frame < 10:
+		pass
+	# the gates check their conditions every Town.CHECK_EVERY seconds of game
+	# time, and a headless frame is far shorter than a real one: each stage
+	# waits a second of game time, not a count of frames
+	elif game.time - since < 1.0:
+		pass
+	else:
+		since = game.time
+		stage += 1
+		_stage()
+	return false
+
+
+func _stage() -> void:
+	if stage == 1:
 		check(game.world.town.group.get_child_count() >= Layout.houses.size() + Layout.gates.size(), "houses, palisades and gates are built")
 		check(_gate("brackenford_east_gate").open, "the east gate into town stands open")
 		check(not _gate("brackenford_north_gate").open and _blocks("brackenford_north_gate"), "a new character's north gate is shut and blocks")
@@ -65,18 +88,17 @@ func _process(_dt: float) -> bool:
 		# walking up to a shut gate says why
 		var gt := _gate("brackenford_north_gate")
 		game.player.place_at((gt.def.line[0][0] + gt.def.line[1][0]) / 2.0, gt.def.line[0][1] + 1.5)
-	elif frame == 20:
+	elif stage == 2:
 		check(game.world.town._nagged.has("brackenford_north_gate"), "a shut gate tells you why")
 		# hand in The Missing Delivery: the town opens
 		game.quests.done["missing_delivery"] = true
-	elif frame == 50:
+	elif stage == 3:
 		check(_gate("brackenford_north_gate").open and not _blocks("brackenford_north_gate"), "the town gates open after The Missing Delivery")
 		check(_gate("brackenford_south_gate").open, "the south gate opens with it")
 		check(not _gate("the_neck_barricade").open, "the Neck stays barred below level 5")
 		game.progression.level = 5
-	elif frame == 80:
+	elif stage == 4:
 		check(_gate("the_neck_barricade").open and not _blocks("the_neck_barricade"), "the Neck opens at level 5")
 		check(not _gate("felled_oak").open and _blocks("felled_oak"), "the felled oak never opens in Act 1")
 		print("opening_check: %s (%d failures)" % ["OK" if failures == 0 else "FAILED", failures])
 		quit(1 if failures else 0)
-	return false
