@@ -19,6 +19,7 @@ const SETTINGS := [
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	# Camera tuning (Dan, 2026-11-09): try angles in the game, then lock the
 	# chosen numbers into CONFIG.camera. Off, the fixed view is used.
+	{"id": "camPreset", "label": "Camera preset (sets the sliders below)", "tab": "controls", "group": "Camera tuning", "default": "Live (now)", "choice": true, "options": "CAMERA_PRESETS"},
 	{"id": "camTune", "label": "Tune the camera myself (test: find the view, then send Claude the numbers)", "tab": "controls", "group": "Camera tuning", "default": false},
 	{"id": "camPitch", "label": "Angle down", "tab": "controls", "group": "Camera tuning", "default": 42, "min": 15, "max": 80, "unit": "°"},
 	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
@@ -41,6 +42,23 @@ const SETTINGS := [
 	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).
 	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": 1, "webDefault": 0, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
 ]
+
+## Camera presets to compare (Dan, 2026-11-09): [angle down, turn,
+## distance m, lens], before the zoom wheel (default zoom 0.94). Picking
+## one turns camera tuning on and sets the four sliders.
+const CAMERA_PRESETS := {
+	"Live (now)": [42, 0, 31, 39],
+	"Live, lower angle": [30, 0, 31, 39],
+	"Before today": [50, 0, 36, 35],
+	"Before today, lower angle": [45, 0, 36, 35],
+	"Claude's pick": [45, 0, 25, 30],
+	"Claude's pick, wider": [45, 0, 28, 30],
+	"Conquer size, paths kept": [45, 0, 16, 30],
+	"Conquer (turned 45°, flat)": [30, 45, 28, 20],
+	"Diablo 2, paths kept": [35, 0, 42, 25],
+	"Diablo 2 (turned 45°)": [35, 45, 42, 25],
+	"RuneScape": [30, 30, 16, 55],
+}
 
 var game
 var values := {}
@@ -97,5 +115,12 @@ func set_value(id: String, v) -> void:
 		return
 	var value = _clean(s, float(v) if s.has("min") else str(v) if s.get("choice") else bool(v))
 	values[id] = value
+	if id == "camPreset" and CAMERA_PRESETS.has(value):
+		var c: Array = CAMERA_PRESETS[value]
+		values.camTune = true
+		values.camPitch = c[0]
+		values.camYaw = c[1]
+		values.camDistance = c[2]
+		values.camFov = c[3]
 	Store.set_item(KEY, JSON.stringify(values))
 	game.events.emit("settingsChanged", {"id": id, "value": value})

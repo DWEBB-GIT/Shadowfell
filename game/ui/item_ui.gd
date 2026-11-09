@@ -262,7 +262,11 @@ func _build_settings() -> void:
 			ob.clip_text = true
 			ob.add_theme_font_size_override("font_size", 12)
 			row.add_child(ob)
-			ob.item_selected.connect(func(i): game.settings.set_value(id, ob.get_item_text(i)))
+			ob.item_selected.connect(func(i):
+				game.settings.set_value(id, ob.get_item_text(i))
+				# a preset moves the sliders: show their new values
+				if id == "camPreset":
+					_render_settings())
 			settings_win.inputs[id] = [ob]
 		elif s.has("min"):
 			var row := UI.hbox(page, 8)
@@ -1394,7 +1398,8 @@ func _render_settings() -> void:
 		if parts[0] is OptionButton:
 			var ob: OptionButton = parts[0]
 			ob.clear()
-			for d in game.audio.output_devices():
+			var opts: Array = Settings.CAMERA_PRESETS.keys() if Settings._def(id).get("options") == "CAMERA_PRESETS" else game.audio.output_devices()
+			for d in opts:
 				ob.add_item(d)
 				if d == v:
 					ob.select(ob.item_count - 1)
