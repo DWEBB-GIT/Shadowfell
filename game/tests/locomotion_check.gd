@@ -51,7 +51,8 @@ func run() -> void:
 			for i in 30:player.rig.update(1.0/60,DB.CONFIG.player.runGait)
 			var max_arm_error:=0.0
 			var max_leg_error:=0.0
-			for i in 36:
+			var feet:=[]
+			for i in 60:
 				player.rig.update(1.0/60,DB.CONFIG.player.runGait)
 				ref_rig.anim.play("Jog_Fwd",0)
 				ref_rig.anim.seek(player.rig.anim.current_animation_position,true)
@@ -59,13 +60,34 @@ func run() -> void:
 				for part in ["clavicle_l","clavicle_r","upperarm_l","upperarm_r","lowerarm_l","lowerarm_r"]:
 					var b:=ref_sk.find_bone(part)
 					max_arm_error=maxf(max_arm_error,ref_sk.get_bone_pose_rotation(b).angle_to(player.rig._skel.get_bone_pose_rotation(b)))
-				for part in ["thigh_l","thigh_r","calf_l","calf_r","foot_l","foot_r"]:
+				# Leg height still follows the authored gait (thighs swing,
+				# feet lift); only the reach forward/back is fitted.
+				for part in ["foot_l","foot_r"]:
 					var b:=ref_sk.find_bone(part)
-					max_leg_error=maxf(max_leg_error,ref_sk.get_bone_pose_rotation(b).angle_to(player.rig._skel.get_bone_pose_rotation(b)))
+					max_leg_error=maxf(max_leg_error,absf(ref_sk.get_bone_global_pose(b).origin.y-player.rig._skel.get_bone_global_pose(b).origin.y))
+				var sk:Skeleton3D=player.rig._skel
+				var basis:=sk.global_basis
+				feet.append([basis*sk.get_bone_global_pose(sk.find_bone("foot_l")).origin,basis*sk.get_bone_global_pose(sk.find_bone("foot_r")).origin])
 				if i in [4,16,28]:await picture(sex+"-"+stance+"-run-%02d"%i)
-			print("RUN ",sex," ",stance," arm_error=",max_arm_error," leg_error=",max_leg_error)
+			# The planted foot (lowest 2 cm of its arc) sweeps back at the
+			# speed the body travels: no skating (Dan, 2026-11-09).
+			var sweep:=0.0
+			var ahead:Vector3=player.rig._skel.global_basis.z.normalized()
+			var samples:=0
+			for f in 2:
+				var low:=INF
+				for row in feet:low=minf(low,row[f].y)
+				for i in range(1,feet.size()):
+					if feet[i][f].y<low+0.02 and feet[i-1][f].y<low+0.02:
+						sweep+=absf((feet[i-1][f]-feet[i][f]).dot(ahead))*60
+						samples+=1
+			sweep/=maxf(1,samples)
+			var stride_time:float=player.rig.anim.get_animation("Jog_Fwd").length/player.rig.gait_rate
+			print("RUN ",sex," ",stance," arm_error=",max_arm_error," foot_height_error=",max_leg_error," planted_foot=",sweep," stride_s=",stride_time)
+			check(absf(sweep-DB.CONFIG.player.speed)<DB.CONFIG.player.speed*0.1,sex+" "+stance+" planted foot keeps pace with the ground")
+			check(stride_time>0.6 and stride_time<0.8,sex+" "+stance+" brisk stride, neither frantic nor loping")
 			check(max_arm_error<0.01,sex+" "+stance+" arms follow the original run, without a held aiming pose")
-			check(max_leg_error<0.01,sex+" "+stance+" legs follow the original authored gait")
+			check(max_leg_error<0.06,sex+" "+stance+" legs keep the authored lift")
 		reference.queue_free()
 		for moving in [false,true]:
 			player.position=origin

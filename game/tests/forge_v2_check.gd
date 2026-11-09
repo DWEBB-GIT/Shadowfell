@@ -23,11 +23,11 @@ func _run() -> void:
 		player.set_appearance(look)
 		var rig = player.rig
 		rig.update(0.2,DB.CONFIG.player.runGait)
-		check(rig.clip == "Jog_Fwd" and rig.gait_rate > 1.4,sex+" running cadence accelerates for full movement speed")
+		check(rig.clip == "Jog_Fwd" and rig.gait_rate > 1.2,sex+" running cadence accelerates for full movement speed")
 		rig.airborne = true
 		rig.update(0.04,0.0)
 		check(rig.clip == "Jump_Start",sex+" takeoff uses supplied start clip")
-		rig.update(0.15,0.0)
+		rig.update(ForgeRig.TAKEOFF_TIME,0.0)
 		check(rig.clip == "Jump",sex+" airborne clip follows takeoff")
 		var sk: Skeleton3D = player.model.find_children("*","Skeleton3D",true,false)[0]
 		var pelvis := sk.find_bone("pelvis")

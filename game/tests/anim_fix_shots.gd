@@ -116,7 +116,7 @@ func _run() -> void:
 			var foot_l:=bone_at("foot_l")
 			var foot_r:=bone_at("foot_r")
 			log_.append("%3d clip=%-12s air=%s land=%.2f move=%.2f px=%.3f footL=%.3f,%.3f footR=%.3f,%.3f" % [i,player.rig.clip,player.rig.airborne,player.rig.landing,player.rig.move,player.position.z,foot_l.z,foot_l.y,foot_r.z,foot_r.y])
-			if i in [10,14,18,22,26] or (i>=40 and i%3==0 and i<=90):
+			if (i>=10 and i<=34 and i%3==1) or (i>=40 and i%3==0 and i<=90):
 				look(player.position+Vector3.UP*1.1,Vector3(-6.5,1.4,0.3))
 				await picture("move-%03d"%i)
 		var f:=FileAccess.open(output.path_join("move-log.txt"),FileAccess.WRITE)

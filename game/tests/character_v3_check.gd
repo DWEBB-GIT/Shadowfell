@@ -167,7 +167,7 @@ func _run() -> void:
 		game.player.rig.action=null
 		game.player.rig.off_action=null
 		for i in 20:game.player.rig.update(0.02,DB.CONFIG.player.runGait)
-		check(is_equal_approx(game.player.rig.gait_rate,clampf(DB.CONFIG.player.speed/ForgeRig.RUN_REFERENCE_SPEED,0.4,2.4)),sex+" original run cadence follows movement speed")
+		check(is_equal_approx(game.player.rig.gait_rate,clampf(DB.CONFIG.player.speed/(ForgeRig.JOG_GROUND_SPEED*sk.global_basis.get_scale().y*ForgeRig.RUN_STRIDE),0.4,2.4)),sex+" run cadence follows movement speed")
 		game.player.rig.pose=null
 		for i in 20:game.player.rig.update(0.02,0)
 		var standing:float=sk.get_bone_global_pose(sk.find_bone("pelvis")).origin.y
