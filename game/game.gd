@@ -778,9 +778,7 @@ func _click(button: String) -> bool:
 	# there: a caster keeps their target while repositioning); a right click
 	# does not. With mouse aim a left click there attacks whoever is near.
 	if pick == null:
-		if button == "left" and mouse_aim:
-			_engage_near_cursor()
-		elif button == "left" and not walk:
+		if button == "left" and not walk:
 			targeting.clear()
 		var at = _aim_point() if walk and input.mouse.onCanvas else null
 		if at != null:
@@ -804,15 +802,16 @@ func _click(button: String) -> bool:
 		"point":
 			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
 		"enemy":
-			if acts or mouse_aim:
+			# left click selects; right click walks you into reach and starts
+			# auto attack, the same for every class (Dan, 2026-11-09)
+			if acts:
 				targeting.engage(o)
 				# attacking (not selecting) squares you up to it, as in WoW,
 				# so a foe you had walked past is hit without a dance
 				if targeting.target_in_reach and not player.moving:
 					player.face_towards(o.position.x, o.position.z)
-				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
-					if walk:
+					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}
 					else:
 						hud.error("Out of range")
@@ -827,23 +826,12 @@ func _click(button: String) -> bool:
 	return true
 
 
-## Mouse aim, left button on open ground (or held): engage the enemy nearest
-## the cursor within reach of your weapon, if you are not already fighting.
-func _engage_near_cursor() -> void:
-	if targeting.attacking and targeting.current != null and targeting.current.alive:
-		return
-	var reach: float = stats.ranged_reach if stats.has_ranged else DB.abilities.strike.range + 1
-	var e = targeting.soft_target(raw_aim, reach)
-	if e != null:
-		targeting.engage(e)
-
-
 ## Mouse aim, right button: on someone or something to use it acts as it
-## always did (talk, loot, the bob); anywhere else it fires spell slot 1.
+## always did (talk, loot, engage an enemy, the bob); anywhere else it fires spell slot 1.
 func _right_click_aim() -> void:
 	if not _over_bob():
 		var pick = _pick_under_cursor()
-		if pick == null or pick.kind == "enemy":
+		if pick == null:
 			input.pressed["MouseRight"] = true
 			return
 	_click("right")
@@ -1130,7 +1118,8 @@ func _handle_input(dt: float):
 		hud.world_tip(hover)
 		_cursor_for(hover)
 	# classic: left click selects, right click attacks, talks or loots.
-	# Mouse aim: left click attacks, talks or loots, right click is slot 1.
+	# Mouse aim: left click selects, right click attacks, talks or loots
+	# (slot 1 on open ground). LMB never starts a fight (Dan, 2026-11-09).
 	if input.consume_click():
 		_click("left")
 	if input.consume_right_click():
@@ -1148,7 +1137,6 @@ func _handle_input(dt: float):
 		if using_pad:
 			face_aim = aim_now if pad_on and pad.right.z > 0.3 else null
 		elif input.mouse.leftHeld and aim_now != null:
-			_engage_near_cursor()
 			face_aim = aim_now
 	# each spell-bar slot has a fixed key; whatever ability sits there fires
 	var util := pad_on and pad.held(B.LEFT)
