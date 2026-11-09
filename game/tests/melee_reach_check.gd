@@ -1,7 +1,7 @@
 extends SceneTree
 ## Dan's 2026-11-09 melee pass: a swing reaches a mob from a step away (lag
 ## allowance), and pushing back towards a foe you walked past turns you to
-## face it without carrying you through it:
+## face it first (then you can walk on through it: bodies are not solid):
 ##   godot --headless --path . --script res://game/tests/melee_reach_check.gd
 
 var failures := 0
@@ -74,12 +74,11 @@ func _run() -> void:
 	check(Vector2(pl.position.x - start.x, pl.position.z - start.z).length() < 0.05, "on the spot, not walking on past it")
 	for i in 30:
 		pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
-	var d: float = Vector2(pl.position.x - at.x, pl.position.z - at.z).length()
-	check(d >= pl.radius + foe.radius and pl.position.x > at.x, "and holding the key you stop at its body (%.2f m), never through it" % d)
-	check(pl.facing_point(at.x, at.z, DB.attack.coneDegrees / 2.0), "still facing it to swing")
+	check(pl.position.x < at.x, "and holding the key you walk on through its body (bodies are not solid, %.2f)" % (pl.position.x - at.x))
 	# moving away is untouched
-	pl.update(dt, {"move": {"x": 1.0, "z": 0.0}, "actions": {}})
-	check(pl.position.x > at.x + d, "stepping away moves you at once")
+	var was: float = pl.position.x
+	pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
+	check(pl.position.x < was, "walking on away from it moves you at once")
 	# Lost Ark / D4 facing (Dan 2026-11-09): standing, a swing snaps you to it
 	pl.position = at + Vector3(1.6, 0, 0)
 	pl.facing = atan2(1.0, 0.0)
