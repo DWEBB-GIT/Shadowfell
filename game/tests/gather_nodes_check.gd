@@ -51,6 +51,13 @@ func _run() -> void:
 	check(Loot.is_node(e.def), "wild garlic counts as a gathering node")
 	var p = game.player
 	p.position = Vector3(e.x + 1.0, p.position.y, e.z)
+	# tied to Hobb's quest: always in sight as a prop, only takeable during it
+	check(e.def.get("quest") == "sf_a_meal_earned", "wild garlic is tied to Hobb's quest")
+	check(e.group.visible and not loot.available(e), "before the quest the garlic stands in the world but can't be taken")
+	for r in DB.quests.sf_a_meal_earned.get("requires", []):
+		game.quests.done[r] = true
+	game.quests.accept("sf_a_meal_earned", true)
+	check(loot.available(e), "with the quest active the garlic can be gathered")
 	var l: Dictionary = loot.lootables().filter(func(x): return x.id == e.def.id)[0]
 	check(not l.area, "wild garlic is never area-looted")
 	var before: int = game.inventory.count("wild_garlic")
