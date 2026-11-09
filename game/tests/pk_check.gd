@@ -43,9 +43,16 @@ func _process(_dt: float) -> bool:
 		_ok(law.pk == 3 * int(cfg.perKill), "three innocents killed: %d PK points" % law.pk)
 		_ok(law.pk_name == "red", "which makes a red name")
 		_ok(law.nameplate_colour() == Color(cfg.nameplates.red), "and a red nameplate")
+		var labels = game.hud.labels
+		labels.update()
+		_ok(labels.skull != null and labels.skull.visible, "and a skull over your head")
+		var head: Vector2 = game.camera.unproject_position(game.player.position + Vector3(0, 2.15 * DB.CONFIG.player.visualScale, 0))
+		_ok(labels.skull != null and labels.skull.position.y + labels.skull.size.y <= head.y, "above your head")
 		_ok(absf(law.infamy - inf0 - 3 * float(cfg.infamy)) < 0.01, "each killing adds Infamy too")
 		law.update(float(cfg.decay.seconds) + 0.5)
 		_ok(law.pk == 29 and law.pk_name == "white", "points fade with time alive (29: white again)")
+		labels.update()
+		_ok(not labels.skull.visible, "and the skull goes")
 		_ok(Law.pk_name_of(100) == "black" and Law.pk_fair_game(30, false) and not Law.pk_fair_game(29, false), "any client can tell a player's name from their points")
 		# gear drops
 		var inv = game.inventory

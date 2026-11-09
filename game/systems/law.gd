@@ -464,6 +464,12 @@ static func pk_name_of(points: float) -> String:
 	return "white"
 
 
+## Does a player with these PK points wear the skull over their head?
+## (red name or worse, Dan 2026-11-09)
+static func pk_skull(points: float) -> bool:
+	return pk_name_of(points) != "white"
+
+
 var pk_name: String:
 	get:
 		return pk_name_of(pk)

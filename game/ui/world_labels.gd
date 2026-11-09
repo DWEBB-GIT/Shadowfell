@@ -13,6 +13,7 @@ const STATION_RANGE := 9.0 ## workplace names show this close
 
 var game
 var pool: Array = [] ## Labels, reused frame to frame
+var skull: Control ## the PK skull over a red or black name (Law.pk_skull)
 
 
 func _init(g) -> void:
@@ -120,3 +121,37 @@ func update(_dt := 0.0) -> void:
 		n += 1
 	for i in range(n, pool.size()):
 		pool[i].visible = false
+	_place_skull(cam, vp)
+
+
+## A little skull over your head once your PK points make a red name
+## (Dan, 2026-11-09), above your name when that shows.
+func _place_skull(cam: Camera3D, vp: Vector2) -> void:
+	var player = game.player
+	var show: bool = game.character != null and not player.dead and Law.pk_skull(game.law.pk)
+	var at: Vector3 = player.position + Vector3(0, 2.15 * DB.CONFIG.player.visualScale, 0)
+	if show and (cam.is_position_behind(at) or (game.world and game.world.roof_over(at.x, at.z))):
+		show = false
+	if not show:
+		if skull:
+			skull.visible = false
+		return
+	if skull == null:
+		var tex = Icons.art("ui", "nemesis")
+		if tex:
+			var r := TextureRect.new()
+			r.texture = tex
+			r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			r.size = Vector2(18, 18)
+			skull = r
+		else:
+			skull = UI.label(self, "☠", 16, Color("#f0e6c8"), 4)
+			skull.size = skull.get_combined_minimum_size()
+		skull.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if skull.get_parent() == null:
+			add_child(skull)
+	var s := cam.unproject_position(at)
+	var lift := 18.0 if game.settings.get_value("playerName") else 0.0 # clear of your name
+	skull.position = (s - Vector2(skull.size.x / 2, skull.size.y + lift)).round()
+	skull.visible = s.x > -vp.x * 0.05 and s.x < vp.x * 1.05 and s.y > -vp.y * 0.05 and s.y < vp.y * 1.05
