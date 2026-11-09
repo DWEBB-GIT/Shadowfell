@@ -4,6 +4,19 @@ extends RefCounted
 const ROOT := "res://assets/characters/forge_v6/"
 const SLOTS := ["helmet", "shoulders", "chest", "bracers", "gloves", "belt", "legs", "feet", "cloak"]
 static var _manifest: Dictionary = {}
+static var _full_detail_meshes := {}
+
+static func full_detail_mesh(source: Mesh) -> Mesh:
+	if _full_detail_meshes.has(source):return _full_detail_meshes[source]
+	if not source is ArrayMesh or source.get_blend_shape_count()>0:return source
+	var mesh:=ArrayMesh.new()
+	# Independent generated LODs shrink scalp and hair by different amounts.
+	# Only the head/hair use this; body, armour and world keep their LODs.
+	for surface in source.get_surface_count():
+		mesh.add_surface_from_arrays(source.surface_get_primitive_type(surface),source.surface_get_arrays(surface),[],{},source.surface_get_format(surface))
+		mesh.surface_set_material(surface,source.surface_get_material(surface))
+	_full_detail_meshes[source]=mesh
+	return mesh
 
 static func manifest() -> Dictionary:
 	if _manifest.is_empty():
@@ -55,9 +68,15 @@ static func build(appearance: Dictionary) -> Node3D:
 	for key in aliases:
 		library.add_animation(key, library.get_animation(aliases[key]))
 	player.add_animation_library("", library)
-	Rig.isolate_materials(model)
 	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		mi.set_meta("forge_body", true)
+		var semantic:=str(mi.name).to_lower()
+		if ["skin_head","hair","eyebrow","eyes","beard","moustache"].any(func(word):return semantic.contains(word)):
+			mi.mesh=full_detail_mesh(mi.mesh)
+			mi.lod_bias=128.0
+			mi.set_meta("forge_head_detail",true)
+	Rig.isolate_materials(model)
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		for surface in mi.mesh.get_surface_count():
 			var mat := mi.get_active_material(surface) as BaseMaterial3D
 			if mat:

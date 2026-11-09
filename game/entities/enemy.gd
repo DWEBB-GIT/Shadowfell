@@ -446,15 +446,15 @@ func _start_cast(kind: String, player) -> void:
 		"onComplete": func(shape):
 			casting = null
 			var hit = game.combat.resolve_telegraph(self, shape, sp.damage if special else cfg.damage, sp.name if special else null)
-			if special:
-				game.events.emit("graveSlam", {"enemy": self, "shape": shape, "hit": hit}),
+			if special and sp.get("impactEvent", "graveSlam") != "":
+				game.events.emit(sp.get("impactEvent", "graveSlam"), {"enemy": self, "shape": shape, "hit": hit}),
 	})
 	casting = {"kind": kind, "telegraph": telegraph, "label": sp.name if special else "Cleave", "interruptible": sp.get("interruptible", true) != false if special else true}
 	if special:
 		special_timer = sp.cooldown
 		attack_timer = maxf(attack_timer, sp.windup + 0.6)
-		rig.play("slam", sp.windup + 0.4, sp.windup / (sp.windup + 0.4))
-		game.events.emit("log", {"text": "The %s raises its cleaver high. Get clear!" % cfg.name, "kind": "hurt", "throttle": "slam-warn"})
+		rig.play(sp.get("anim", "slam"), sp.windup + 0.4, sp.windup / (sp.windup + 0.4))
+		game.events.emit("log", {"text": sp.get("warning", "The %s raises its cleaver high. Get clear!" % cfg.name), "kind": "hurt", "throttle": "slam-warn"})
 	else:
 		attack_timer = cfg.attackInterval
 		rig.play("cleave", duration + 0.3, duration / (duration + 0.3))

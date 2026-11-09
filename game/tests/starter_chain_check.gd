@@ -57,7 +57,7 @@ func _process(_dt: float) -> bool:
 		var start: Array = DB.world.playerStart.position
 		check(Vector2(start[0], start[1]).distance_to(Vector2(-450, -207)) > 60, "a new player starts outside Thornford")
 		check(game.quests.active == ["ni_stretch_your_legs"], "the first quest is Abel's milestone (%s)" % [game.quests.active])
-		check(game.quests.status("sf_odd_jobs") == "locked", "Elsie's odd jobs wait for the road in")
+		check(game.quests.status("sf_odd_jobs") == "available", "Village work is available even when the cart tutorial is skipped")
 		run("ni_stretch_your_legs")
 		run("ni_rats_in_the_grain")
 		run("ni_loose_boar")
