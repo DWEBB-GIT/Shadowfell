@@ -288,7 +288,9 @@ func _init_renderer() -> void:
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.65
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	# the browser draws every shadow caster once more per split: one split
+	# there (the 4096 map over 60 m is sharp enough), two on desktop
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if OS.has_feature("web") else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	# the browser's sun shadow map is 4096 (project.godot) over a shorter
 	# reach, so trees there no longer cast blocky shadows; the camera's view
 	# ends inside about 60 m at the default zoom
