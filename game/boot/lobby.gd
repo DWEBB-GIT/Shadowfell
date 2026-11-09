@@ -114,6 +114,9 @@ func _fetch() -> void:
 	# read up to 4 MB a frame: the default 64 KB caps the download at about
 	# 4 MB/s at 60 fps
 	http.download_chunk_size = 1 << 22
+	# the browser already un-gzips what Pages serves; letting Godot try again
+	# fails with RESULT_BODY_DECOMPRESS_FAILED (error 8)
+	http.accept_gzip = false
 	add_child(http)
 	http.request_completed.connect(_on_fetched)
 	var err := http.request(_pack_url())
