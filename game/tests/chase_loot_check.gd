@@ -81,7 +81,7 @@ func _run() -> void:
 	var pl = game.player
 	var foe = null
 	for e in game.enemies.list:
-		if not e.cfg.get("dummy") and e.cfg.speed > 0 and e.cfg.speed < DB.CONFIG.player.speed and not e.cfg.get("ranged") and not e.cfg.get("telegraph"):
+		if not e.cfg.get("dummy") and e.cfg.get("attitude", "aggressive") == "aggressive" and not game.law.protected(e) and e.cfg.speed > 0 and e.cfg.speed < DB.CONFIG.player.speed and not e.cfg.get("ranged") and not e.cfg.get("telegraph"):
 			foe = e
 			break
 	check(foe != null, "found a slow melee foe")
@@ -118,10 +118,15 @@ func _run() -> void:
 		foe.reset()
 		foe.calm = c.spawnGrace
 		pl.position = foe.position + Vector3(3, 0, 0)
+		# (the player keeps 3 m off it: an idle foe wanders, and could
+		# otherwise roam out of its detection range)
 		for i in int((c.spawnGrace - 0.5) / dt):
+			pl.position = foe.position + Vector3(3, 0, 0)
 			foe.update(dt, pl)
 		check(foe.state == "idle", "a fresh spawn ignores a player in range for %.0f s" % c.spawnGrace)
 		for i in int(1.0 / dt):
+			if foe.state != "chase":
+				pl.position = foe.position + Vector3(3, 0, 0)
 			foe.update(dt, pl)
 		check(foe.state == "chase", "and then comes for them")
 
