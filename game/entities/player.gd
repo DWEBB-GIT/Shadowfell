@@ -829,9 +829,9 @@ func _melee_foe():
 ## Turning in a melee fight (Dan, 2026-11-09): you face where you run, so
 ## stepping back towards a foe you had passed used to carry you through it
 ## and out the other side before you had turned. Now, with your foe in reach,
-## pushing towards it turns you on the spot first, and you never walk into
-## its body: the part of the move into it is dropped, so you stop squared up
-## (or slide round it). Moving away is untouched, so kiting rules hold.
+## pushing towards it turns you on the spot first. Bodies are never solid
+## (Dan, 2026-11-09): once turned you walk on, through it if you hold the
+## key. Moving away is untouched, so kiting rules hold.
 func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
 	var foe = _melee_foe()
 	var ml := U.hyp(mv.x, mv.z)
@@ -850,16 +850,7 @@ func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
 	if not facing_point(foe.position.x, foe.position.z, 30):
 		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
 		return {"x": 0.0, "z": 0.0}
-	var gap: float = radius + foe.radius + DB.attack.get("bodyGap", 0.35)
-	if d > gap + ml * DB.CONFIG.player.speed * dt:
-		return mv
-	# keep only the sideways part: circle the foe, never pass through it
-	var push: float = mv.x * fx + mv.z * fz
-	var side := {"x": mv.x - fx * push, "z": mv.z - fz * push}
-	if U.hyp(side.x, side.z) < 0.15:
-		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
-		return {"x": 0.0, "z": 0.0}
-	return side
+	return mv # facing it: walk on, straight through its body if you hold the key
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
