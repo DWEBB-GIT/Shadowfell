@@ -14,6 +14,7 @@ var copy: Node3D
 var _shape := ""
 var _drag = null
 var _anim: AnimationPlayer ## the copy's own clips, kept on Idle
+var _rig: Rig
 ## The figure is drawn again at most FPS times a second (its own 3D scene
 ## would otherwise render every frame the panel is open), and at once when
 ## it is turned or resized.
@@ -93,11 +94,16 @@ func render() -> void:
 		# rigged model idles on its own clip, a part rig holds the pose it
 		# was copied in
 		_anim = copy.find_child("AnimationPlayer", true, false) as AnimationPlayer
-		if _anim and _anim.has_animation("Idle"):
+		_rig = ForgeRig.new(copy, game.player) if copy.has_meta("forge_appearance") else null
+		if _rig:
+			_anim = null
+		elif _anim and _anim.has_animation("Idle"):
 			_anim.play("Idle")
 		else:
 			_anim = null
-	if _anim:
+	if _rig:
+		_rig.update(minf(step, 0.25), 0.0)
+	elif _anim:
 		_anim.advance(minf(step, 0.25))
 	_sync(model, copy)
 	# The in-world readability scale must not crop the paper doll.

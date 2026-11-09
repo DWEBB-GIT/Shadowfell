@@ -7,6 +7,7 @@ extends RefCounted
 var game
 var group := Node3D.new()
 var model: Node3D
+var appearance: Dictionary = ForgeCharacter.defaults()
 var rig: Rig
 var materials: Array
 var weapon_part: Node3D
@@ -64,15 +65,13 @@ func _init(g) -> void:
 	group.name = "Player"
 	# the imported body (on its own skeleton, with gear sockets) or the
 	# code-built warden, by DB.CONFIG.models
-	var body: String = DB.CONFIG.models.player if DB.CONFIG.models.imported and Assets.has(DB.CONFIG.models.player) else "warden"
-	model = Assets.instance(body)
+	var body := "forge_v6"
+	model = ForgeCharacter.build(appearance)
 	# A readability scale on the body and attached gear. World distances,
 	# collision, attack ranges and movement stay in the same units.
 	model.scale *= DB.CONFIG.player.visualScale
-	if body != "warden":
-		Rig.add_sockets(model)
 	group.add_child(model)
-	rig = Rig.new(model, body)
+	rig = ForgeRig.new(model, self)
 	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
@@ -125,6 +124,34 @@ func _part(name: String) -> Node3D:
 	return model.find_child(name, true, false) as Node3D
 
 
+func set_appearance(value = null) -> void:
+	var next := ForgeCharacter.clean(value)
+	if next == appearance:
+		return
+	appearance = next
+	var previous := model
+	model = ForgeCharacter.build(appearance)
+	model.scale *= DB.CONFIG.player.visualScale
+	group.add_child(model)
+	rig = ForgeRig.new(model, self)
+	rig.track_steps = true
+	materials = Rig.isolate_materials(model)
+	weapon_part = model.find_child("Weapon", true, false)
+	default_weapon_mesh = weapon_part
+	helm = null
+	cloak = null
+	shield = null
+	bow = null
+	rod = null
+	rod_tip = null
+	bow_id = null
+	bow_in_hand = false
+	sheath_parts.clear()
+	group.remove_child(previous)
+	previous.queue_free()
+	show_equipment(game.inventory.equipment)
+
+
 func _free(n: Node) -> void:
 	if n and is_instance_valid(n):
 		n.get_parent().remove_child(n)
@@ -140,6 +167,7 @@ func show_equipment(equipment: Dictionary) -> void:
 
 
 func _show_equipment(equipment: Dictionary) -> void:
+	ForgeCharacter.dress(model, equipment)
 	var arm := _part("Arm_R")
 	var head := _part("Head")
 	if arm and default_weapon_mesh:
@@ -153,7 +181,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 		weapon_part = default_weapon_mesh
 		if id and not built_in:
 			var blade := Assets.instance(Items.get_def(id).get("model", id))
-			blade.transform = default_weapon_mesh.transform
+			blade.transform = ForgeCharacter.held_transform(model, "r", Items.get_def(id))
 			arm.add_child(blade)
 			weapon_part = blade
 			# a rune's glow (runes.json), or the item's own (the test weapons)
@@ -164,11 +192,14 @@ func _show_equipment(equipment: Dictionary) -> void:
 		var hdef := Items.get_def(equipment.head.id) if equipment.get("head") else {}
 		if hdef.get("cosmetic"):
 			helm = FancyGear.build(hdef.cosmetic, hdef.get("glow", {}))
+			if hdef.cosmetic in ["horns", "halo"]:
+				helm.position.y = -0.14
+				if hdef.cosmetic == "horns": helm.scale *= 0.85
 			head.add_child(helm)
-		elif equipment.get("head") and equipment.head.id == "watch_helm":
-			helm = Assets.instance("watch_helm")
-			helm.position = Vector3(0, 0.2, 0.02)
-			helm.scale = Vector3.ONE * 1.15
+		elif equipment.get("head") and equipment.head.id in ["watch_helm", "old_watch_helm"]:
+			helm = Assets.instance(hdef.get("model", "watch_helm"))
+			helm.position = Vector3(0, 0, 0.02)
+			helm.scale = Vector3.ONE * 0.9
 			head.add_child(helm)
 	var torso := _part("Torso")
 	if torso:
@@ -190,22 +221,17 @@ func _show_equipment(equipment: Dictionary) -> void:
 			shield_id = equipment.offHand.id
 		if off.get("kind") == "torch":
 			shield = Assets.instance(off.model)
-			shield.position = Vector3(0, -0.62, 0.02)
-			shield.rotation = Vector3(-0.5, 0, 0)
+			shield.transform = ForgeCharacter.held_transform(model, "l", off)
 			larm.add_child(shield)
 		elif off.get("kind") == "weapon" and default_weapon_mesh:
 			shield = Assets.instance(off.model)
-			shield.transform = default_weapon_mesh.transform
-			shield.position.x *= -1
+			shield.transform = ForgeCharacter.held_transform(model, "l", off)
 			larm.add_child(shield)
 			FancyGear.apply(shield, Runes.glow_for(equipment.offHand))
 		elif off.get("kind") == "shield":
 			shield = Assets.instance(off.model)
-			shield.position = Vector3(0.11, -0.42, 0.04)
-			shield.rotation_order = EULER_ORDER_XYZ
-			shield.rotation = Vector3(0, 1.25, 0)
 			shield.scale = Vector3.ONE * 0.95
-			larm.add_child(shield)
+			_part("ShieldGrip").add_child(shield)
 	hold_bow(false)
 	_show_sheath()
 
@@ -273,8 +299,7 @@ func hold_rod(on: bool) -> void:
 	if on and not rod:
 		rod = Assets.instance("fishing_rod")
 		rod.name = "HeldRod"
-		rod.position = Vector3(0, -0.62, 0.04)
-		rod.rotation = Vector3(1.875, 0, 0)
+		rod.transform = ForgeCharacter.held_transform(model, "r", {})
 		rod_tip = Node3D.new()
 		rod_tip.position = Vector3(0, 1.42, 0)
 		rod.add_child(rod_tip)
@@ -323,6 +348,10 @@ func _reset_jump() -> void:
 	jump_buffer = 0.0
 	flip = -1.0
 	rig.airborne = false
+	if rig is ForgeRig:
+		rig.was_airborne = false
+		rig.air_time = 0.0
+		rig.landing = 0.0
 	position.y = Terrain.height_at(position.x, position.z)
 	ground_shadow.position = position + Vector3(0, 0.03, 0)
 
@@ -334,7 +363,9 @@ func _update_jump(dt: float, requested: bool) -> void:
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
-		flip = 0.0 if not ghost and randf() < FLIP_CHANCE else -1.0
+		# The v6 rig owns its take-off/air/landing poses; whole-body random
+		# flips would rotate that pose and the attached weapons a second time.
+		flip = 0.0 if not rig is ForgeRig and not ghost and randf() < FLIP_CHANCE else -1.0
 		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
@@ -699,8 +730,7 @@ func hold_bow(in_hand: bool) -> void:
 		FancyGear.apply(bow, Runes.glow_for(r))
 		bow_in_hand = in_hand
 		if in_hand and larm:
-			bow.position = Vector3(0, -0.62, 0.02)
-			bow.rotation = Vector3(-PI / 2, 0, 0)
+			bow.transform = ForgeCharacter.held_transform(model, "l", {})
 			larm.add_child(bow)
 		elif torso:
 			bow.position = Vector3(0, 0.25, -0.2)

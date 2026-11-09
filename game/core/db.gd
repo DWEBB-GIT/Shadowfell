@@ -15,7 +15,7 @@ const CONFIG := {
 	# the imported player body, used while `imported` is on ("base_male" is
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
-	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.3, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
 	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
 	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
 	## base move speed (Dan, 2026-11-02).
@@ -99,12 +99,12 @@ const CONFIG := {
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
-		# Stable north-up view: 45 degrees down by default (lowerOffset, Settings "Lower camera angle" on), 50 degrees with it off.
+		# Stable north-up view: 30 degrees down by default, 42 degrees with the lower-angle preference off.
 		# Zoom changes distance, never pitch or player-facing direction.
-		# At 16:9 the default sees roughly 39 m across the player plane.
-		"offset": Vector3(0, 27.6067, 23.1648), "lowerOffset": Vector3(0, 25.5, 25.5),
-		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.98,
-		"indoorZoom": 0.14, "fov": 35.0,
+		# Wider perspective preserves lateral ground coverage while showing taller silhouettes and more distant ground.
+		"offset": Vector3(0, 20.743, 23.037), "lowerOffset": Vector3(0, 15.5, 26.847),
+		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.94,
+		"indoorZoom": 0.14, "fov": 39.0,
 		"followSharpness": 12.0, "renderScale": 1.0, "frame": 0.0,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
