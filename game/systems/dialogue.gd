@@ -219,13 +219,13 @@ var page:
 				var status: String = game.quests.status(v.id)
 				pg.quest = {"id": q.id, "name": q.name, "status": status, "objectives": game.quests.objectives(q.id), "reward": q.get("reward", {}), "choice": q.has("choice")}
 				if status == "available":
-					pg.text = q.offer
+					pg.text = game.quests.wording(q.offer)
 					pg.options.append_array([{"id": "accept", "text": "Accept", "icon": "accept"}, {"id": "menu", "text": "Decline", "icon": "back"}])
 				elif status == "ready":
-					pg.text = q.complete
+					pg.text = game.quests.wording(q.complete)
 					pg.options.append_array([{"id": "complete", "text": "Complete quest", "icon": "accept"}, {"id": "menu", "text": "Back", "icon": "back"}])
 				else:
-					pg.text = q.get("progress", "")
+					pg.text = game.quests.wording(q.get("progress", ""))
 					pg.options.append({"id": "menu", "text": "Back", "icon": "back"})
 		return pg
 
@@ -234,15 +234,16 @@ var page:
 ## A smith's, enchanter's, jeweller's, bard's and reeve's choices on the greeting page.
 func _service_options(def: Dictionary, pg: Dictionary) -> void:
 	if def.get("forge"):
-		pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
-		pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
+		if game.progression.level >= 10:
+			pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
+			pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
 		if game.skills.has("mining"):
 			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
-	if def.get("refiner"):
+	if def.get("refiner") and game.progression.level >= 10:
 		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (stones and gems)", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:runecraft", "text": "Runecraft (bind rune fragments)", "icon": "shop", "group": "service"})
-	if def.get("jeweller"):
+	if def.get("jeweller") and game.progression.level >= 10:
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:remove", "text": "Take gems out (free)", "icon": "shop", "group": "service"})

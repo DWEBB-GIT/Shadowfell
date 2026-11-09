@@ -138,6 +138,16 @@ func start_new() -> void:
 	_snapshot()
 
 
+## Quest instructions use the player's current bindings, including mouse-aim
+## G versus classic F. Authors can use these tokens in quest prose.
+func wording(text: String) -> String:
+	for action in ["interact", "jump", "bar0", "cycleTarget", "toolbelt"]:
+		var labels: Array = game.keys.keys(action).filter(func(key): return not str(key).begins_with("Mouse")) if game.keys else []
+		var label: String = Keybinds.key_label(labels[0]) if not labels.is_empty() else "Interact" if action == "interact" else action
+		text = text.replace("{" + action + "}", label)
+	return text
+
+
 # ------------------------------------------------------------ state
 func status(id: String) -> String:
 	var q = DB.quests.get(id)
@@ -295,7 +305,7 @@ func followups(completed: String) -> Array:
 	var main := []
 	var local := []
 	for quest in DB.quests.values():
-		if not quest.get("requires", []).has(completed) and not quest.get("requiresAny", []).has(completed):
+		if not (quest.get("requires", []) + quest.get("requiresAny", []) + quest.get("leadsFrom", [])).has(completed):
 			continue
 		if status(quest.id) not in ["available", "active", "ready"]:
 			continue
@@ -366,7 +376,7 @@ func abandon(id: String) -> bool:
 	var s := status(id)
 	if s != "active" and s != "ready":
 		return false
-	if DB.quests[id].get("autoAccept"):
+	if DB.quests[id].get("autoAccept") and not DB.quests[id].get("allowAbandon", false):
 		return false # the story quest cannot be dropped
 	accepted.erase(id)
 	tracked.erase(id)
@@ -407,7 +417,7 @@ func complete(id: String) -> bool:
 	if q.get("setsFlag"):
 		game.world_state.flags[q.setsFlag] = true
 	if q.get("turnInLog"):
-		events.emit("log", {"text": q.turnInLog, "kind": "lore"})
+		events.emit("log", {"text": wording(q.turnInLog), "kind": "lore"})
 	events.emit("log", {"text": "Quest complete: %s." % q.name, "kind": "quest"})
 	var coins := U.roll_coins(r.get("coins"), game.random)
 	if coins:
@@ -485,6 +495,11 @@ func goal(id: String) -> Dictionary:
 			continue
 		if o.type == "talk":
 			return npc_goal(o.target)
+		# Known interactions point to the actual object, rather than a broad zone centre.
+		if o.type == "examine" and game.world:
+			for point in game.world.examine_points:
+				if point.id == o.target:
+					return {"x": point.x, "z": point.z, "r": 1.2, "label": o.label}
 		if o.location and DB.locations.has(o.location):
 			var l: Dictionary = DB.locations[o.location]
 			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}

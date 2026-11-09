@@ -50,7 +50,7 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 		if hit.get("holy"):
 			events.emit("spellFlash", {"position": enemy.position, "school": "holy"})
 		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main", "ability": not swing})
-		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or swing})
+		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or (swing and hand == "main" and stats.hand_speed(hand) >= 2.7)})
 	if show > 0:
 		enemy.hurt(hit.amount, {"stagger": 0.0, "quiet": true})
 		shown_later.append({"t": show, "fn": func():
@@ -118,6 +118,8 @@ func _selected_in_reach(range_: float):
 	if t == null or not t.alive:
 		return null
 	var p: Vector3 = game.player.position
+	if game.collision.wall_between(p.x, p.z, t.position.x, t.position.z):
+		return null
 	return t if U.hyp(t.position.x - p.x, t.position.z - p.z) <= range_ + t.radius * 0.6 else null
 
 
@@ -130,7 +132,7 @@ func resolve_telegraph(enemy, shape, damage: float, label, opts = null) -> bool:
 	if opts != null and opts.get("ranged") and game.spells.smoke_blocks(enemy.position, player.position):
 		events.emit("log", {"text":"Smoke swallows the shot.","kind":"muted","throttle":"smoke"})
 		return false
-	if not shape.contains(player.position.x, player.position.z, player.radius):
+	if game.collision.wall_between(enemy.position.x, enemy.position.z, player.position.x, player.position.z) or not shape.contains(player.position.x, player.position.z, player.radius):
 		events.emit("enemyWhiff", {"enemy": enemy})
 		if label:
 			events.emit("log", {"text": "You are clear of the %s." % label, "kind": "muted"})
@@ -177,7 +179,7 @@ func select_strike_target(aim):
 		var dz: float = e.position.z - player.position.z
 		var dist := U.hyp(dx, dz)
 		var reach: float = DB.attack.range + e.radius * 0.6
-		if dist > reach:
+		if dist > reach or game.collision.wall_between(player.position.x, player.position.z, e.position.x, e.position.z):
 			continue
 		var facing_dot := (dx * dir_x + dz * dir_z) / dist if dist > 0.01 else 1.0
 		# very close enemies are hit regardless of angle; others must be in the arc
@@ -219,10 +221,10 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 ## target) and does its damage when it arrives.
 func loose_player_arrow(target, ammo = null) -> void:
 	var player = game.player
-	var from := Vector3(player.position.x + sin(player.facing) * 0.4, player.position.y + 1.35, player.position.z + cos(player.facing) * 0.4)
+	var from:Vector3=player.bow_muzzle()
 	var d := U.hyp(target.position.x - from.x, target.position.z - from.z)
 	var t: float = d / DB.auto_shot.arrowSpeed
-	arrows.append({"target": target, "t": t, "ammo": ammo})
+	arrows.append({"target": target, "t": t, "ammo": ammo, "from": from})
 	game.events.emit("projectile", {"kind": "arrow", "from": from, "to": target.position, "follow": target, "speed": DB.auto_shot.arrowSpeed, "life": t})
 	game.events.emit("playerShot", {})
 
@@ -236,6 +238,10 @@ func update_arrows(dt: float) -> void:
 		arrows.remove_at(i)
 		var e = a.target
 		if not e.alive or game.player.dead:
+			continue
+		var origin: Vector3 = a.get("from", game.player.position)
+		if game.collision.wall_between(origin.x, origin.z, e.position.x, e.position.z):
+			missed(e, "Your arrow strikes cover instead of")
 			continue
 		# the arrow adds its own damage: ammoDps for each second of bow speed
 		var bonus: float = (Items.get_def(a.ammo).get("ammoDps", 0) if a.ammo else 0.0) * game.stats.hand_speed("ranged")
@@ -255,7 +261,7 @@ func resolve_enemy_strike(enemy) -> bool:
 		return false
 	var d := U.hyp(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
 	var reach: float = enemy.cfg.meleeRange + player.radius + enemy.radius * 0.5 + 0.35 # small grace for the swing
-	if d > reach:
+	if d > reach or game.collision.wall_between(enemy.position.x, enemy.position.z, player.position.x, player.position.z):
 		events.emit("enemyWhiff", {"enemy": enemy})
 		return false
 	var guard: String = player.consume_brace()

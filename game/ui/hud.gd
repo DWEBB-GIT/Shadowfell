@@ -830,6 +830,7 @@ func _build_modals() -> void:
 	var bb := UI.hbox(v, 12)
 	bb.alignment = BoxContainer.ALIGNMENT_CENTER
 	UI.button(bb, "Release spirit", func(): game.release_spirit(), 15)
+	UI.button(bb,"Logout",func(): main_menu._start("logout"),15)
 	death.visible = false
 	# a document (.parchment)
 	document = UI.panel(root, 0, Color("2a2219"), Color("8a6d3b"))
@@ -1057,7 +1058,7 @@ func toggle_main_menu() -> void:
 	if main_menu.is_open:
 		main_menu.close()
 		return
-	if modal:
+	if modal and modal!="death":
 		return
 	items.close_all()
 	quests.close_all()

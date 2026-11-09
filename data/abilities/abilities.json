@@ -604,7 +604,7 @@
       "target": "ground",
       "range": 9,
       "skill": "fishing",
-      "desc": "Cast your line into water you are facing. When the bob dips, click it (or press E / A) to strike. Needs a fishing rod on your tool belt.",
+      "desc": "Cast your line into nearby water. When the bob dips, click it or use Interact to strike. The nearby prompt shows your current key. Needs a fishing rod on your tool belt.",
       "tuning": {
         "cooldown": 1
       }

@@ -322,9 +322,18 @@ static func validate_save(data) -> Array:
 	if typeof(p) == TYPE_DICTIONARY:
 		check.call(_in_bounds(p.get("position")), "player position")
 		check.call(_is_num(p.get("facing")), "player facing")
-		check.call(_is_num(p.get("health")) and p.health > 0, "player health")
+		check.call(typeof(p.get("dead",false))==TYPE_BOOL,"player death state")
+		check.call(_is_num(p.get("health")) and (p.health==0 if p.get("dead",false) else p.health>0), "player health")
 		check.call(_is_num(p.get("maxHealth")) and p.maxHealth >= 1 and _is_num(p.get("health")) and p.health <= p.maxHealth, "player max health")
 	var pr = data.get("progression")
+	if data.has("afterlife"):
+		var a=data.afterlife
+		check.call(a is Dictionary,"afterlife state")
+		if a is Dictionary:
+			check.call(typeof(a.get("ghost",false))==TYPE_BOOL,"spirit state")
+			if a.get("ghost",false):
+				var corpse=a.get("corpse")
+				check.call(corpse is Dictionary and _in_bounds(corpse) and _is_num(corpse.get("facing",0)),"corpse position")
 	# Accept the previous cap's valid characters before Progression.apply
 	# clamps them to the new cap. Their inventory/quests remain intact.
 	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level <= maxi(100, DB.CONFIG.progression.maxLevel) and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
@@ -401,6 +410,7 @@ func serialize() -> Dictionary:
 		"worldId": Terrain.chosen_map(),
 		"savedAt": Time.get_datetime_string_from_system(true) + "Z",
 		"player": {
+			"dead": player.dead,
 			"appearance": player.appearance.duplicate(true),
 			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
 			"facing": _round(player.facing),
@@ -410,6 +420,7 @@ func serialize() -> Dictionary:
 			"woundLeft": game.afterlife.wound_left,
 		},
 		"progression": game.progression.serialize(),
+		"afterlife": game.afterlife.serialize(),
 		"inventory": game.inventory.serialize(),
 		"world": game.world_state.serialize(),
 		"bar": game.action_bar.serialize(),
@@ -428,8 +439,8 @@ func serialize() -> Dictionary:
 
 
 ## Returns { ok, reason }. Only reports success once the data reads back.
-func save(manual := false) -> Dictionary:
-	if game.player.dead:
+func save(manual := false, allow_defeated := false) -> Dictionary:
+	if game.player.dead and not game.player.ghost and not allow_defeated:
 		return {"ok": false, "reason": "You cannot save while defeated."}
 	var text := JSON.stringify(serialize())
 	if not Store.set_item(key, text) or Store.get_item(key) != text:
@@ -530,6 +541,8 @@ func apply(data: Dictionary) -> void:
 		player.place_at(start.position[0], start.position[1], deg_to_rad(start.get("facing", 180)))
 	else:
 		player.place_at(data.player.position.x, data.player.position.z, data.player.facing)
+	player.show_equipment(inventory.equipment)
+	game.afterlife.apply_saved(data.player.get("dead",false),data.get("afterlife",{}))
 
 
 func autosave() -> void:

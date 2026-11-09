@@ -143,7 +143,7 @@ func abandon() -> void:
 	var id = selected
 	if id == null:
 		return
-	if DB.quests[id].get("autoAccept"):
+	if DB.quests[id].get("autoAccept") and not DB.quests[id].get("allowAbandon", false):
 		game.events.emit("log", {"text": "That is the road you are on. It cannot be abandoned.", "kind": "muted", "throttle": "abandon"})
 		return
 	if confirm_abandon != id:
@@ -486,7 +486,7 @@ func render_log() -> void:
 				text += "[font_size=12][color=#9a8f78]%s[/color][/font_size]\n" % UI.esc(DB.quests[d].name)
 		UI.set_rich(UI.rich(log_detail, 13, detail_w), text)
 	else:
-		UI.set_rich(UI.rich(log_detail, 13, detail_w), _details(sel_id))
+		UI.set_rich(UI.rich(log_detail, 13, detail_w), game.quests.wording(_details(sel_id)))
 		_log_buttons(sel_id)
 	log_hint.text = "Up/down: choose   A: show the way   X: track (up to %d)   Y: abandon   B: close" % Quests.MAX_TRACKED if hud.pad_mode else "Tracked quests (up to %d) show under the map; click one there to be shown the way. L or Esc closes." % Quests.MAX_TRACKED
 	layout()
@@ -558,7 +558,7 @@ func _log_buttons(id: String) -> void:
 	var q: Dictionary = DB.quests[id]
 	UI.button(log_actions, "Untrack" if ql.tracked.has(id) else "Track", func(): game.quests.set_tracked(id, not game.quests.tracked.has(id)), 13)
 	UI.button(log_actions, "Stop following" if ql.focus == id else "Show the way", func(): game.quests.set_focus("" if game.quests.focus == id else id), 13)
-	if not q.get("autoAccept"):
+	if not q.get("autoAccept") or q.get("allowAbandon", false):
 		var ab := UI.button(log_actions, "Really abandon?" if confirm_abandon == id else "Abandon", abandon, 13)
 		if confirm_abandon == id:
 			ab.add_theme_color_override("font_color", Color("ff9070"))

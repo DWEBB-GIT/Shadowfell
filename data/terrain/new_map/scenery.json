@@ -52514,6 +52514,45 @@
       "scale": 0.45,
       "introChapter": "reputation",
       "collider": 0
+    },
+    {
+      "id": "ni_milestone_stone",
+      "model": "standing_stone",
+      "position": [
+        -593,
+        -193
+      ],
+      "rotation": 24,
+      "scale": 0.65
+    },
+    {"id": "ni_cover_0", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-619, -174], "scale": 0.6, "rotation": 0},
+    {"id": "ni_cover_1", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-613, -174], "scale": 0.6, "rotation": 51},
+    {"id": "ni_cover_2", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-632, -184], "scale": 0.6, "rotation": 102},
+    {"id": "ni_cover_3", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-609, -190], "scale": 0.6, "rotation": 153},
+    {"id": "ni_cover_4", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-601, -185], "scale": 0.6, "rotation": 204},
+    {"id": "ni_cover_5", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-588, -196], "scale": 0.6, "rotation": 255},
+    {"id": "ni_cover_6", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-577, -198], "scale": 0.6, "rotation": 306},
+    {"id": "ni_cover_7", "model": "res://assets/environment/nature/grass/Clover_1.gltf", "position": [-557, -211], "scale": 0.6, "rotation": 357},
+    {"id": "ni_road_tree", "model": "res://assets/environment/nature/trees/CommonTree_2.gltf", "position": [-606, -167], "scale": 0.78, "rotation": 90},
+    {"id": "ni_road_bush", "model": "res://assets/environment/nature/plants/Bush_Common.gltf", "position": [-629, -187], "scale": 0.6, "rotation": 35},
+    {"id": "in_road_cairn_0", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-590, -202], "scale": 0.22, "rotation": 0},
+    {"id": "in_road_cairn_1", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-589.3, -203], "scale": 0.26, "rotation": 40},
+    {"id": "in_road_cairn_2", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-588, -203.6], "scale": 0.3, "rotation": 80},
+    {"id": "in_road_cache_clue", "model": "standing_stone", "position": [-586, -200.5], "scale": 0.3, "rotation": 20, "examine": "poi:in_road_reserve"},
+    {"id": "in_pond_cairn_0", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-400, -181], "scale": 0.22, "rotation": 0},
+    {"id": "in_pond_cairn_1", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-399.3, -182], "scale": 0.26, "rotation": 40},
+    {"id": "in_pond_cairn_2", "model": "res://assets/environment/nature/rocks/Rock_Medium_1.gltf", "position": [-398, -182.6], "scale": 0.3, "rotation": 80},
+    {"id": "in_pond_cache_clue", "model": "standing_stone", "position": [-396, -179.5], "scale": 0.3, "rotation": 20, "examine": "poi:in_fishers_cache"},
+    {
+      "id": "in_garden_verse",
+      "model": "standing_stone",
+      "position": [
+        -426.5,
+        -213
+      ],
+      "scale": 0.75,
+      "rotation": 25,
+      "examine": "poi:in_avel_garden"
     }
   ],
   "lights": [
@@ -53651,5 +53690,12 @@
       "count": 14,
       "color": "#9ac0c8"
     }
+  ]
+,
+  "clearings": [
+    [-622, -177, 22],
+    [-400, -192, 10],
+    [-588, -201, 5],
+    [-398, -180, 4]
   ]
 }

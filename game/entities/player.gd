@@ -43,6 +43,7 @@ var lunge = null
 var pending = null
 var pending_off = null
 var pending_shot = null
+var ranged_ready_at := 0.0
 var casting = null
 var moving := false
 var light_radius := 0.0
@@ -52,6 +53,8 @@ var last_swing_at = null
 var last_main_impact_at = null
 var eating = null
 var sheathed := false ## weapons put away on the back (Z)
+var weapon_stance := "melee" ## melee | ranged | sheathed
+var prefer_ranged := false
 var sheath_parts: Array = [] ## the copies worn on the back while sheathed
 ## where a sheathed blade and shield sit on the torso
 const SHEATH_BLADE := Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0, 0.15, -0.24))
@@ -232,7 +235,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 			shield = Assets.instance(off.model)
 			shield.scale = Vector3.ONE * 0.95
 			_part("ShieldGrip").add_child(shield)
-	hold_bow(false)
+	hold_bow(weapon_stance=="ranged" and not sheathed)
 	_show_sheath()
 
 
@@ -251,15 +254,45 @@ func set_sitting(on: bool) -> void:
 ## Z: put your weapons away on your back, or draw them again. Fighting
 ## draws them on its own.
 func set_sheathed(on: bool) -> void:
-	if on == sheathed:
-		return
-	sheathed = on
-	game.audio.sfx("sheathe" if on else "unsheathe", 0.35, 0.85 if on else 1.0)
-	if on:
-		_show_sheath()
-	else:
-		show_equipment(game.inventory.equipment)
-	game.events.emit("log", {"text": "You sheathe your weapons." if on else "You draw your weapons.", "kind": "muted", "throttle": "sheathe"})
+	draw_weapons("sheathed" if on else primary_stance(),true)
+
+func stance_order() -> Array:
+	var equipment:Dictionary=game.inventory.equipment
+	var order:Array=[]
+	if equipment.get("mainHand") or equipment.get("offHand"):order.append("melee")
+	if equipment.get("ranged"):order.append("ranged")
+	if prefer_ranged:order.reverse()
+	order.append("sheathed")
+	return order
+
+func primary_stance() -> String:
+	return stance_order()[0]
+
+func reset_weapon_stance(ranged_first: bool) -> void:
+	prefer_ranged=ranged_first
+	weapon_stance=primary_stance()
+	sheathed=weapon_stance=="sheathed"
+
+func cycle_weapons() -> void:
+	var order:=stance_order()
+	var index:=order.find("sheathed" if sheathed else weapon_stance)
+	game.targeting.stop_attack()
+	pending=null
+	pending_off=null
+	pending_shot=null
+	game.spells.cancel_ranged_windup()
+	rig.action=null
+	rig.off_action=null
+	draw_weapons(order[(index+1)%order.size()],true)
+
+func draw_weapons(stance: String, sound := false) -> void:
+	if stance=="ranged" and not game.inventory.equipment.get("ranged"):stance="melee"
+	weapon_stance=stance
+	sheathed=stance=="sheathed"
+	show_equipment(game.inventory.equipment)
+	if sound:
+		game.audio.sfx("sheathe" if sheathed else "unsheathe",0.35)
+		game.events.emit("log",{"text":{"sheathed":"You stow your weapons.","ranged":"You draw your bow.","melee":"You draw your melee weapons."}[stance],"kind":"muted","throttle":"sheathe"})
 
 
 ## While sheathed, copies of what is in your hands ride on your back
@@ -269,18 +302,19 @@ func _show_sheath() -> void:
 		_free(n)
 	sheath_parts = []
 	var torso := _part("Torso")
-	if not sheathed or not torso:
+	if (not sheathed and not bow_in_hand) or not torso:
 		return
 	var held := []
-	if weapon_part and weapon_part.visible:
+	if weapon_part and game.inventory.equipment.get("mainHand"):
 		held.append([weapon_part, "weapon"])
 	var off = game.inventory.equipment.get("offHand")
 	var off_kind: String = Items.get_def(off.id).get("kind", "") if off else ""
-	if shield and shield.visible and off_kind != "torch":
+	if shield and off != null and off_kind != "torch":
 		held.append([shield, off_kind])
 	for i in held.size():
 		var n: Node3D = held[i][0]
 		var copy := n.duplicate() as Node3D
+		copy.visible=true
 		torso.add_child(copy)
 		if held[i][1] == "shield":
 			copy.transform = SHEATH_SHIELD
@@ -449,10 +483,8 @@ func update(dt: float, controls) -> void:
 			_impact("off", p, dt)
 	if pending_shot != null:
 		pending_shot.t -= dt
-		if pending_shot.t <= 1e-6:
-			var p: Dictionary = pending_shot
-			pending_shot = null
-			_release(p, dt)
+		# Release after this frame's movement, facing and special input.
+		# A due auto-shot must still cancel if the player starts moving.
 
 	var speed01 := 0.0
 	if lunge != null:
@@ -495,17 +527,15 @@ func update(dt: float, controls) -> void:
 				# (mouse aim) still turns you to the cursor
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
-					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-			elif aim_hold <= 0:
+					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 24)
+			else:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
 				# stop (or turn) to face it. No shooting while kiting backwards.
-				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
+				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 24)
 			speed01 = mag
 		elif turning:
 			pass
-		elif (acts.get("strike") or acts.get("shoot")) and aim != null:
-			facing = U.turn_towards(facing, atan2(aim.x - position.x, aim.z - position.z), dt * DB.attack.turnRate)
 		elif game.mouse_aim and controls.get("faceAim") != null:
 			var fa = controls.faceAim
 			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * 14)
@@ -514,7 +544,7 @@ func update(dt: float, controls) -> void:
 			if acts[id] and DB.spells.has(id):
 				# a spell draws sheathed weapons properly (no copies left on the back)
 				if game.spells.try_cast(id) and sheathed:
-					set_sheathed(false)
+					draw_weapons("ranged" if DB.spells[id].get("ranged") else "melee")
 		# fighting draws your weapons
 		if sheathed and (acts.get("strike") or acts.get("shoot")):
 			set_sheathed(false)
@@ -530,6 +560,12 @@ func update(dt: float, controls) -> void:
 			game.fishing.cast(controls.get("rawAim"))
 		if acts.get("cook"):
 			game.hud.toggle_window("cooking")
+	# A ranged special gets first refusal over an auto-shot due this frame.
+	# If the special failed, the already-drawn auto-shot still releases.
+	if pending_shot != null and pending_shot.t <= 1e-6:
+		var shot: Dictionary = pending_shot
+		pending_shot = null
+		_release(shot,dt)
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
@@ -593,8 +629,8 @@ func try_strike(aim) -> bool:
 	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
 		return false
 	var anim: float = stats.swing_animation
-	if bow_in_hand:
-		hold_bow(false)
+	if bow_in_hand or sheathed:
+		draw_weapons("melee")
 	var aim2 = {"x": aim.x, "z": aim.z} if aim != null else null
 	if opener:
 		opener = false
@@ -672,6 +708,7 @@ func try_shoot(aim) -> bool:
 	if pending_shot != null or casting != null or lunge != null:
 		return false
 	var stats = game.stats
+	cooldowns.ranged=maxf(cooldowns.ranged,ranged_ready_at-game.time)
 	if not game.inventory.ammo:
 		# Red in the middle of the screen
 		if game.hud:
@@ -683,9 +720,9 @@ func try_shoot(aim) -> bool:
 		return false
 	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
 		return false
-	var t := maxf(cooldowns.ranged, minf(draw, DB.attack.readyWindup * 2))
-	pending_shot = {"t": t}
-	hold_bow(true)
+	var t := maxf(cooldowns.ranged, draw)
+	pending_shot = {"t": t,"total":t}
+	if not bow_in_hand or sheathed:draw_weapons("ranged")
 	rig.play("shoot", t + 0.35, t / (t + 0.35))
 	rig.action.auto = true
 	return true
@@ -701,14 +738,15 @@ func _release(p: Dictionary, dt: float) -> void:
 	var tg = game.targeting
 	var inv = game.inventory
 	var ammo = inv.ammo
-	if not tg.attacking or not tg.target_in_shot or not ammo:
+	if not tg.attacking or not tg.target_in_shot or not ammo or not facing_point(tg.current.position.x,tg.current.position.z,DB.attack.coneDegrees/2.0):
 		if rig.action != null and rig.action.type == "shoot":
 			rig.action = null
-		hold_bow(false)
+		hold_bow(weapon_stance=="ranged" and not sheathed)
 		return
 	inv.spend_arrow(ammo)
 	var late := minf(minf(-p.t, dt), DB.attack.catchUp)
 	cooldowns.ranged = maxf(0, game.stats.attack_cooldown_for("ranged") - late)
+	ranged_ready_at=game.time+cooldowns.ranged
 	last_swing_at = game.time
 	game.combat.loose_player_arrow(tg.current, ammo)
 
@@ -719,11 +757,13 @@ func hold_bow(in_hand: bool) -> void:
 	var larm := _part("Arm_L")
 	var r = game.inventory.equipment.get("ranged") if game.inventory else null
 	var want = r.id if r and Items.get_def(r.id).get("kind") == "weapon" else null
+	in_hand=in_hand and want != null
 	# the key carries the rune too, so a new rune rebuilds the bow's glow
 	var key = "%s:%s" % [want, Runes.of(r)] if want else null
 	if bow and (bow_id != key or bow_in_hand != in_hand):
 		_free(bow)
 		bow = null
+	bow_in_hand=in_hand
 	if want and not bow:
 		bow = Assets.instance(Items.get_def(want).model)
 		bow_id = key
@@ -742,19 +782,24 @@ func hold_bow(in_hand: bool) -> void:
 	if shield:
 		shield.visible = not in_hand and not sheathed
 
+func bow_muzzle() -> Vector3:
+	if bow != null and bow.has_method("muzzle_local"):
+		return bow.global_transform*bow.call("muzzle_local")
+	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
+
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
 ## Running, an attack or spell at an enemy needs it in your front half
 ## standing still, it turns you to it.
 func can_hit_while_moving(x: float, z: float) -> bool:
-	return not moving or facing_point(x, z, DB.attack.coneDegrees / 2.0)
+	return facing_point(x, z, DB.attack.coneDegrees / 2.0)
 
 
 func facing_point(x: float, z: float, half_degrees: float) -> bool:
 	var dx := x - position.x
 	var dz := z - position.z
 	var d := U.hyp(dx, dz)
-	if d < 0.8:
+	if d < 0.001:
 		return true
 	return (dx * sin(facing) + dz * cos(facing)) / d >= cos(deg_to_rad(half_degrees))
 
@@ -844,6 +889,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 	health = maxf(1, U.jround(max_health * health_fraction))
 	rig.revive()
 	cooldowns = fresh_cooldowns()
+	ranged_ready_at=0.0
 	if game.spells:
 		game.spells.reset()
 	if game.resources:
