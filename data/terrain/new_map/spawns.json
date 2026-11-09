@@ -3809,8 +3809,8 @@
 	  "id": "copper_ore_10",
 	  "model": "rock1",
 	  "position": [
-		478.47,
-		-103.81
+		476.02,
+		-103.32
 	  ],
 	  "prompt": "Take the copper ore",
 	  "reward": {

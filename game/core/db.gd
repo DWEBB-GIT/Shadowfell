@@ -296,6 +296,10 @@ static func setup(data) -> void:
 		world_map = {}
 		world = new_map_world(world)
 		scenery = new_map_scenery(scenery)
+		# ore outcrops are placed per map too: the old world's stand in the
+		# sea and on cliffs here, so only the new map's own (spawns.json)
+		mining = mining.duplicate()
+		mining.veinGroups = world.get("veinGroups", [])
 		# The district names its resident teachers without changing the old
 		# continent's content or a character's already learned abilities.
 		var teachers: Dictionary = world.get("trainerOverrides", {})
