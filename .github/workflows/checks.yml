@@ -54,7 +54,7 @@ jobs:
       - name: Gameplay and editor checks
         run: |
           failed=""
-          for t in ambience_music_check atmosphere_check audio_check bank_check builds_check camera_movement_check chase_loot_check controls_check data_editor_check death_check death_new_map_check editor_authoring_check gather_nodes_check ghost_arrive_check heal_thorns_check jump_check level_50_check main_menu_check miss_check new_map_check opening_check playtest_1029_check quest_check quest_log_check quest_mark_check quest_npc_editor_check readability_check release_click_check runes_check scaling_xp_check sculpt_check spell_scaling_check starter_chain_check starter_check stream_check terrain_blend_check xp_orbs_check ; do
+          for t in ambience_music_check atmosphere_check audio_check bank_check builds_check camera_movement_check chase_loot_check controls_check data_editor_check death_check death_new_map_check editor_authoring_check gather_nodes_check ghost_arrive_check heal_thorns_check jump_check level_50_check main_menu_check miss_check new_map_check opening_check playtest_1029_check quest_check quest_log_check quest_mark_check quest_npc_editor_check readability_check release_click_check runes_check scaling_xp_check sculpt_check spell_scaling_check starter_chain_check starter_check stream_check terrain_blend_check xp_orbs_check pk_check ; do
             echo "::group::$t"
             if ! timeout 300 ./godot --headless --path . --script res://game/tests/$t.gd; then failed="$failed $t"; fi
             echo "::endgroup::"
