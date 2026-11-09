@@ -29,6 +29,7 @@ var hud: LobbyHud
 var mouse_aim := true
 
 var title: TitleScreen
+var click: AudioStreamPlayer
 var loading: LoadingScreen
 var status: Label
 var http: HTTPRequest
@@ -76,8 +77,32 @@ func _ready() -> void:
 		var rs := save.read(c.key)
 		if rs.status == "invalid":
 			save.quarantine(rs.get("raw"), c.key)
+	# every button clicks, as in the game (game._hook_click, audio.click)
+	click = AudioStreamPlayer.new()
+	click.stream = load(AudioSystem.SFX_DIR + AudioSystem.SFX.click[0])
+	click.volume_db = linear_to_db(0.55)
+	add_child(click)
+	get_tree().node_added.connect(_hook_click)
+	_hook_all(title)
 	title.open(note, "select" if Game.to_select else "main")
 	_fetch()
+
+
+func _hook_all(n: Node) -> void:
+	_hook_click(n)
+	for c in n.get_children():
+		_hook_all(c)
+
+
+func _hook_click(n: Node) -> void:
+	var b := n as BaseButton
+	if b and not b.pressed.is_connected(_play_click):
+		b.pressed.connect(_play_click)
+
+
+func _play_click() -> void:
+	if click and click.stream:
+		click.play()
 
 
 ## Start (or restart) the download of game.pck.

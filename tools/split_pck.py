@@ -31,6 +31,8 @@ GAME_PACK = (
     "assets/environment/",
     "assets/sounds/",
 )
+# kept in the boot pack anyway: the title screen's button click
+BOOT_KEEP = ("assets/sounds/ui_click.wav",)
 # images under these go to game.pck too (the map paintings); the terrain's
 # data files stay in the boot pack because the database reads them at start
 GAME_PACK_IMAGES = ("data/terrain/",)
@@ -94,6 +96,8 @@ def write_pck(path, head, files):
 
 
 def goes_to_game(src):
+    if src in BOOT_KEEP:
+        return False
     if src.startswith(GAME_PACK):
         return True
     return src.startswith(GAME_PACK_IMAGES) and src.lower().endswith(IMAGE_EXT)
