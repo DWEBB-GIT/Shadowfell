@@ -87,7 +87,7 @@ func count_kill(type: String) -> void:
 
 ## You used an ability: every active quest with a `use` objective for it
 ## counts one (a class quest: Cleave the boars, Shadow by the boundary).
-## `on` names the enemy type you must have targeted; `at` a map area you
+## `on` names the enemy type you must have targeted (or the npc you heal); `at` a map area you
 ## must stand in (within `radius`, 15 m by default). Counted with the kills.
 func count_talk(npc_id: String) -> void:
 	var changed := false
