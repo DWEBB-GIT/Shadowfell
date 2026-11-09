@@ -1,10 +1,152 @@
 {
   "_about": "Colour zones (game/world/zone_grade.gd): placed and tuned in the World editor under Colour zones, saved with Ctrl+S.",
   "zones": [
-    {"name": "Thornford", "position": [-450, -207], "radius": 45, "feather": 35, "tint": "#ffd29a", "shadowTint": "#8c6a58", "tintStrength": 0.28, "saturation": 1.02, "contrast": 1.08, "brightness": 1.02},
-    {"name": "Holt Fields", "position": [-355, -290], "radius": 60, "feather": 40, "tint": "#ffd88f", "shadowTint": "#7d6a4e", "tintStrength": 0.3, "saturation": 1.05, "contrast": 1.08, "brightness": 1.02},
+    {
+      "name": "Thornford",
+      "position": [
+        -450,
+        -207
+      ],
+      "radius": 45,
+      "feather": 35,
+      "tint": "#f8dfac",
+      "shadowTint": "#788a72",
+      "tintStrength": 0.18,
+      "saturation": 1.08,
+      "contrast": 1.04,
+      "brightness": 1.05,
+      "fogColor": "#9eafa0",
+      "fogNear": 48,
+      "fogFar": 118,
+      "fogAmount": 0.65,
+      "mist": 0.5,
+      "ambientColor": "#b0b7a1",
+      "ambient": 1.08,
+      "sunlight": 1.0
+    },
+    {
+      "name": "Holt Fields",
+      "position": [
+        -355,
+        -290
+      ],
+      "radius": 60,
+      "feather": 40,
+      "tint": "#efd699",
+      "shadowTint": "#72805a",
+      "tintStrength": 0.2,
+      "saturation": 1.08,
+      "contrast": 1.04,
+      "brightness": 1.04
+    },
     {"name": "Briarwood", "position": [-575, -320], "radius": 60, "feather": 40, "tint": "#e8e0a0", "shadowTint": "#4e5f45", "tintStrength": 0.22, "saturation": 1.0, "contrast": 1.1, "brightness": 1.0},
-    {"name": "The Nameless Yard", "position": [-330, -445], "radius": 55, "feather": 40, "tint": "#c9b0ff", "shadowTint": "#4a3070", "tintStrength": 0.45, "saturation": 0.8, "contrast": 1.15, "brightness": 0.95, "fogColor": "#4e4466", "fogNear": 40, "fogFar": 95, "fogAmount": 1.0, "mist": 2.5, "ambientColor": "#6c5c96", "ambient": 0.9, "sunlight": 0.8},
-    {"name": "Paleweald", "position": [570, -500], "radius": 260, "feather": 80, "tint": "#c4a8f0", "shadowTint": "#3e2c60", "tintStrength": 0.4, "saturation": 0.82, "contrast": 1.14, "brightness": 0.95, "fogColor": "#4a4260", "fogNear": 36, "fogFar": 88, "fogAmount": 1.0, "mist": 4.0, "ambientColor": "#675a90", "ambient": 0.95, "sunlight": 0.8}
+    {
+      "name": "The Nameless Yard",
+      "position": [
+        -327,
+        -426
+      ],
+      "radius": 75,
+      "feather": 35,
+      "tint": "#a9c7b8",
+      "shadowTint": "#344e4a",
+      "tintStrength": 0.28,
+      "saturation": 0.88,
+      "contrast": 1.08,
+      "brightness": 0.98,
+      "fogColor": "#506f69",
+      "fogNear": 30,
+      "fogFar": 88,
+      "fogAmount": 1.0,
+      "mist": 1.45,
+      "ambientColor": "#afc6bb",
+      "ambient": 1.3,
+      "sunlight": 0.82
+    },
+    {"name": "Paleweald", "position": [570, -500], "radius": 260, "feather": 80, "tint": "#c4a8f0", "shadowTint": "#3e2c60", "tintStrength": 0.4, "saturation": 0.82, "contrast": 1.14, "brightness": 0.95, "fogColor": "#4a4260", "fogNear": 36, "fogFar": 88, "fogAmount": 1.0, "mist": 4.0, "ambientColor": "#675a90", "ambient": 0.95, "sunlight": 0.8},
+    {
+      "name": "Lantern Crossing",
+      "position": [
+        -223,
+        -165
+      ],
+      "radius": 55,
+      "feather": 32,
+      "tint": "#e6d6a7",
+      "shadowTint": "#6c7b65",
+      "tintStrength": 0.18,
+      "saturation": 1.05,
+      "contrast": 1.04,
+      "brightness": 1.03,
+      "fogColor": "#a2ad94",
+      "fogNear": 48,
+      "fogFar": 118,
+      "fogAmount": 0.65,
+      "mist": 0.55,
+      "ambientColor": "#b3b5a3",
+      "ambient": 1.04,
+      "sunlight": 1.0
+    },
+    {
+      "name": "Mossreed Landing",
+      "position": [
+        -551,
+        -85
+      ],
+      "radius": 66,
+      "feather": 35,
+      "tint": "#acbf9d",
+      "shadowTint": "#3e5c50",
+      "tintStrength": 0.23,
+      "saturation": 0.95,
+      "contrast": 1.06,
+      "brightness": 1.0,
+      "fogColor": "#6b8f7b",
+      "fogNear": 32,
+      "fogFar": 100,
+      "fogAmount": 0.8,
+      "mist": 1.2,
+      "ambientColor": "#91ab96",
+      "ambient": 1.0,
+      "sunlight": 0.83
+    },
+    {
+      "name": "Lamplighter’s Rest",
+      "position": [
+        -331,
+        -104
+      ],
+      "radius": 45,
+      "feather": 30,
+      "tint": "#e2d1a1",
+      "shadowTint": "#69775e",
+      "tintStrength": 0.18,
+      "saturation": 1.02,
+      "contrast": 1.05,
+      "brightness": 1.03,
+      "fogNear": 44,
+      "fogFar": 110,
+      "mist": 0.7
+    },
+    {
+      "name": "Blackpick Approach",
+      "position": [
+        -280,
+        -256
+      ],
+      "radius": 54,
+      "feather": 22,
+      "tint": "#d2bf96",
+      "shadowTint": "#646957",
+      "tintStrength": 0.16,
+      "saturation": 0.94,
+      "contrast": 1.08,
+      "brightness": 1.0,
+      "fogColor": "#929b88",
+      "fogNear": 42,
+      "fogFar": 108,
+      "fogAmount": 0.7,
+      "mist": 0.65
+    }
   ]
 }

@@ -1,0 +1,14 @@
+{
+  "_note": "Character names refused at creation (game/systems/characters.gd is_offensive). Lower case, letters only. 'contains' blocks the word anywhere in a name; 'words' blocks the whole name being that word or that word with a short ending (s, er, y...), so ordinary names holding a short bad word still pass.",
+  "contains": [
+    "fuck", "fuk", "fck", "shit", "bitch", "whore", "slut", "wank", "bastard", "bollock", "asshole", "arsehole",
+    "motherf", "dickhead", "cocksuck", "jizz", "dildo", "penis", "vagina", "pussy", "porn", "rapist", "pedo", "paedo",
+    "nigger", "nigga", "niga", "negro", "faggot", "fagot", "retard", "tranny", "kike", "chink", "wetback", "beaner",
+    "raghead", "towelhead", "jigaboo", "golliwog", "spastic", "hitler", "nazi", "kkk"
+  ],
+  "words": [
+    "ass", "arse", "cunt", "cunts", "twat", "dick", "cock", "prick", "piss", "crap", "tit", "tits", "boob", "cum",
+    "rape", "fag", "dyke", "homo", "spic", "spick", "gook", "coon", "paki", "sambo", "pikey", "gyppo", "wog", "nonce",
+    "spaz", "bellend", "knob", "minge", "slag", "skank", "hoe", "sex", "anal", "anus", "semen", "testicle", "scrotum"
+  ]
+}

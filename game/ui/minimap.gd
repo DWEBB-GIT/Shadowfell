@@ -16,7 +16,6 @@ const SEGMENTS := 72 ## sides of the round window the map is shown through
 
 var game
 var zoom := 1
-var picture: Texture2D
 var map: Control
 var view: SubViewport ## the square map is drawn here, then shown through a circle
 var location: Label ## where you are, on a bar across the foot of the map
@@ -68,16 +67,15 @@ func _init(g) -> void:
 	location.position = Vector2(SIZE / 2 - 75, -OUT_TOP)
 	coords = UI.label(self, "", 11, UI.TEXT_DIM, 3)
 	coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	coords.size = Vector2(124, 14)
-	coords.position = Vector2(SIZE / 2 - 62, SIZE + 4)
+	coords.size = Vector2(180, 14)
+	coords.position = Vector2(SIZE / 2 - 90, SIZE + 4)
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var north_art := Icons.art("ui", "minimap_north")
-	if north_art:
-		north.draw.connect(func(): north.draw_texture_rect(north_art, Rect2(Vector2(2, 2), north.size - Vector2(4, 4)), false))
-	var n := UI.label(north, "" if north_art else "N", 12, UI.GOLD)
+	# a plain gold N, so north reads at a glance (Dan, 2026-11-04); the arrow
+	# art is kept for the player marker and the tracker's way pointer
+	var n := UI.label(north, "N", 12, UI.GOLD)
 	n.add_theme_font_override("font", UI.bold)
 	n.set_anchors_preset(Control.PRESET_FULL_RECT)
 	n.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -170,17 +168,18 @@ func set_zoom(z: int) -> void:
 
 # ----------------------------------------------- actual overhead world
 ## The same World3D as gameplay, seen by an independent north-up camera.
-## Capture a padded square at low resolution, then composite the existing
-## quest/NPC/player markers over it. No illustrated map or duplicate world.
-const CAPTURE_RESOLUTION := 256
-const CAPTURE_PADDING := 16.0
-const CAPTURE_PIXELS := SIZE + CAPTURE_PADDING * 2.0
-const CAPTURE_INTERVAL := 0.15
+## Each 64 m patch of ground (one Land chunk) is photographed ONCE, the first
+## time its chunk is built, and kept as a still image; the minimap then just
+## slides those stills under the markers as the player moves (Dan,
+## 2026-11-04: capture once, no live re-rendering). Moving bodies are left
+## out of the photo so nobody is frozen into the ground.
+const TILE_M := 64.0 ## metres per still (matches Land.CHUNK, so a built chunk is a finished tile)
+const TILE_PX := 192 ## pixels per still: 3 px/m, as sharp as the closest zoom
+const KEEP_TILES := 4 ## stills further than this many tiles away are dropped (memory)
 var terrain_view: SubViewport
 var overhead_camera: Camera3D
-var _captured_at := Vector2(INF, INF)
-var _capture_scale := 1.0
-var _capture_age := CAPTURE_INTERVAL
+var _tiles := {} ## Vector2i -> ImageTexture
+var _capturing := false
 
 
 func _ensure_overhead() -> void:
@@ -188,7 +187,7 @@ func _ensure_overhead() -> void:
 		return
 	terrain_view = SubViewport.new()
 	terrain_view.name = "WorldOverhead"
-	terrain_view.size = Vector2i(CAPTURE_RESOLUTION, CAPTURE_RESOLUTION)
+	terrain_view.size = Vector2i(TILE_PX, TILE_PX)
 	terrain_view.own_world_3d = false
 	terrain_view.world_3d = game.get_world_3d()
 	terrain_view.gui_disable_input = true
@@ -200,6 +199,8 @@ func _ensure_overhead() -> void:
 	overhead_camera.name = "NorthUpCamera"
 	overhead_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	overhead_camera.rotation = Vector3(-PI / 2.0, 0, 0)
+	overhead_camera.cull_mask = 0xFFFFF ^ World.MOVING_LAYER
+	overhead_camera.size = TILE_M
 	# A separate environment prevents the gameplay camera's depth fog from
 	# hiding the ground when viewed from above.
 	var environment := Environment.new()
@@ -214,34 +215,55 @@ func _ensure_overhead() -> void:
 	overhead_camera.environment = environment
 	terrain_view.add_child(overhead_camera)
 	overhead_camera.make_current()
-	picture = terrain_view.get_texture()
 
 
-func _refresh_overhead(force := false) -> void:
+## Photograph the nearest built chunk that has no still yet (one per frame at
+## most, usually one per 64 m walked), and drop stills far behind.
+func _refresh_overhead(_force := false) -> void:
 	_ensure_overhead()
-	if overhead_camera == null or game.player == null:
+	if overhead_camera == null or game.player == null or _capturing:
+		return
+	var land = game.world.land if game.get("world") else null
+	if land == null:
 		return
 	var p: Vector3 = game.player.position
-	var at := Vector2(p.x, p.z)
-	var scale: float = ZOOMS[zoom]
-	var jumped := at.distance_to(_captured_at) > 8.0
-	if not force and not jumped and is_equal_approx(scale, _capture_scale) and _capture_age < CAPTURE_INTERVAL:
-		return
-	_captured_at = at
-	_capture_scale = scale
-	_capture_age = 0.0
-	var span := CAPTURE_PIXELS / scale
-	# Stay above nearby ridges as well as the player. The orthographic
-	# projection keeps scale identical at every ground height.
-	var peak := p.y
-	for x in [-0.5, 0.0, 0.5]:
-		for z in [-0.5, 0.0, 0.5]:
-			peak = maxf(peak, Terrain.height_at(p.x + x * span, p.z + z * span))
-	overhead_camera.size = span
-	overhead_camera.position = Vector3(p.x, peak + 64.0, p.z)
+	var here := Vector2i(floori(p.x / TILE_M), floori(p.z / TILE_M))
+	for k in _tiles.keys():
+		if maxi(absi(k.x - here.x), absi(k.y - here.y)) > KEEP_TILES:
+			_tiles.erase(k)
+	var best = null
+	var best_d := INF
+	for k in land.chunks:
+		if _tiles.has(k) or maxi(absi(k.x - here.x), absi(k.y - here.y)) > 2:
+			continue
+		# wait until the streamed props on it are built too (WorldStream)
+		var stream = game.world.stream
+		if stream and not stream.covers(k.x * TILE_M, k.y * TILE_M, (k.x + 1) * TILE_M, (k.y + 1) * TILE_M):
+			continue
+		var d := Vector2(k - here).length_squared()
+		if d < best_d:
+			best_d = d
+			best = k
+	if best != null:
+		_capture(best)
+
+
+func _capture(k: Vector2i) -> void:
+	_capturing = true
+	var c := (Vector2(k) + Vector2(0.5, 0.5)) * TILE_M
+	var peak := -INF
+	for x in [0.0, 0.5, 1.0]:
+		for z in [0.0, 0.5, 1.0]:
+			peak = maxf(peak, Terrain.height_at(k.x * TILE_M + x * TILE_M, k.y * TILE_M + z * TILE_M))
+	overhead_camera.position = Vector3(c.x, peak + 64.0, c.y)
 	overhead_camera.near = 0.1
-	overhead_camera.far = maxf(1024.0, overhead_camera.position.y + 256.0)
+	overhead_camera.far = maxf(1024.0, peak + 320.0)
 	terrain_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(terrain_view):
+		_tiles[k] = ImageTexture.create_from_image(terrain_view.get_texture().get_image())
+		map.queue_redraw()
+	_capturing = false
 
 
 ## Shared coordinates for overlay markers: east right, north up.
@@ -258,6 +280,8 @@ func markers() -> Array:
 	var out := []
 	for s in Layout.shrines:
 		out.append({"x": s.position[0], "z": s.position[1], "kind": "shrine"})
+	for st in Layout.stations:
+		out.append({"x": st.position[0], "z": st.position[1], "kind": "station", "station": st.kind, "label": Interaction.title(st.name)})
 	# where open objectives point
 	var areas := {}
 	for id in quests.active:
@@ -280,7 +304,11 @@ func markers() -> Array:
 		var at: Dictionary = quests.goal(id)
 		if not at.is_empty():
 			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
-	for n in game.npcs.list:
+	if quests.focus != "" and quests.status(quests.focus) == "available":
+		var at: Dictionary = quests.goal(quests.focus)
+		if not at.is_empty():
+			out.append({"x": at.x, "z": at.z, "r": 0, "kind": "goal", "label": at.label, "npc": true, "focus": true})
+	for n in game.npcs.here:
 		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
 		# a trade (the inn's tankard) shows even while its keeper has a quest:
@@ -342,7 +370,6 @@ func _process(dt: float) -> void:
 		return
 	if not game.started and not game.hud.showcase:
 		return
-	_capture_age += dt
 	_refresh_overhead()
 	_hover_tip()
 	_since += dt
@@ -353,7 +380,8 @@ func _process(dt: float) -> void:
 		var here := place_name()
 		if location.text != here:
 			location.text = here
-		var xy := "X: %d   Y: %d" % [roundi(p.x), roundi(p.z)]
+		# the world clock (WorldState.hour) beside where you stand
+		var xy := "%s   X: %d   Y: %d" % [DayNight.clock_text(game.world_state.hour), roundi(p.x), roundi(p.z)]
 		if coords.text != xy:
 			coords.text = xy
 		_drawn_at = now
@@ -407,6 +435,10 @@ func place_name() -> String:
 	return game.region.get("name", "") if game.region is Dictionary else ""
 
 
+const MARKS_MS := 80
+var _marks_at := -100000
+
+
 func _moved(now: Vector4) -> bool:
 	var d := (now - _drawn_at).abs()
 	return d.x > 0.05 or d.y > 0.05 or d.z > 0.02 or d.w > 0
@@ -423,15 +455,22 @@ func _draw_map() -> void:
 	var R := SIZE / 2
 	g.fill_style = "#15242b"
 	g.fill_rect(0, 0, SIZE, SIZE)
-	if picture:
-		# Compensate movement between captures so icons remain aligned. Padding
-		# covers the small exposed strip without rendering every frame.
-		var edge := CAPTURE_PIXELS * scale / _capture_scale
-		var offset := Vector2(R, R) + (_captured_at - Vector2(p.x, p.z)) * scale - Vector2.ONE * edge * 0.5
-		g.draw_image(picture, offset.x, offset.y, edge, edge)
+	var tile_px := TILE_M * scale
+	for k in _tiles:
+		var at := Vector2(R, R) + (Vector2(k) * TILE_M - Vector2(p.x, p.z)) * scale
+		if at.x > SIZE or at.y > SIZE or at.x + tile_px < 0 or at.y + tile_px < 0:
+			continue
+		# a hair of overlap hides seams between neighbouring stills
+		map.draw_texture_rect(_tiles[k], Rect2(at, Vector2.ONE * (tile_px + 0.5)), false)
 	var to_map := func(x: float, z: float) -> Vector2: return world_to_map(Vector2(x, z))
-	var all := markers()
-	_marks = all
+	# the map redraws every frame while you walk (smooth scrolling); the
+	# list of what is on it is rebuilt about 12 times a second (it walks every
+	# quest, npc and enemy: ~0.5 ms)
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - _marks_at >= MARKS_MS or _marks.is_empty():
+		_marks_at = now_ms
+		_marks = markers()
+	var all: Array = _marks
 	# objective areas first, under everything else
 	for m in all:
 		if m.kind != "area":
@@ -459,6 +498,23 @@ func _draw_map() -> void:
 			g.line_to(s.x, s.y + 4)
 			g.line_to(s.x - 3, s.y)
 			g.fill()
+		elif m.kind == "station" and inside:
+			# Dan's art when painted (assets/icons/map/station_<kind>.png),
+			# else a coloured disc with the station's letter
+			if _art(g, "station_" + m.station, s.x, s.y, 14):
+				continue
+			var lk := Interaction.look(m.station)
+			g.fill_style = "#000"
+			g.begin_path()
+			g.arc(s.x, s.y, 5.5, 0, TAU)
+			g.fill()
+			g.fill_style = lk.colour
+			g.begin_path()
+			g.arc(s.x, s.y, 4.5, 0, TAU)
+			g.fill()
+			g.font_size = 8
+			g.fill_style = "#000"
+			g.fill_text(lk.letter, s.x, s.y + 0.5)
 		elif m.kind == "npc" and inside:
 			if m.icon:
 				if not _art(g, "npc_" + m.icon, s.x, s.y, 15):
@@ -634,6 +690,11 @@ func _trade_icon(g: Canvas2D, x: float, y: float, icon: String) -> void:
 				g.line_to(pt[0], pt[1])
 			g.close_path()
 			g.fill()
+		"banker":
+			# a strongbox with its lock
+			g.fill_rect(-3.6, -2.4, 7.2, 5.4)
+			g.fill_style = "rgba(12, 10, 8, 0.9)"
+			g.fill_rect(-0.8, -0.6, 1.6, 1.8)
 		"innkeeper":
 			# a tankard
 			g.fill_rect(-3, -2.8, 4.4, 6)

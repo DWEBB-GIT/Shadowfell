@@ -57,6 +57,10 @@ static func _puzzles(s: DataStore, out: PackedStringArray) -> void:
 		if str(p.get("success", "")) == "" or str(p.get("failure", "")) == "":
 			bad.call("needs success and retry feedback")
 
+	for chest in s.files.world.get("chests", []):
+		if chest.get("puzzle") and not seen.has(chest.puzzle):
+			out.append("Chest %s names unknown puzzle %s" % [chest.get("id", ""), chest.puzzle])
+
 
 static func _is_int(v) -> bool:
 	return (v is int or v is float) and v == floorf(v)
@@ -105,11 +109,13 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 			bad.call("price must be a whole number of coins")
 		for k in ["model", "icon"]:
 			var m = d.get(k)
+			if k == "model" and m == null and d.has("cosmetic"):
+				continue # a cosmetic (wings, halo, horns) is drawn by the game
 			if m == null or str(m) == "":
 				bad.call("needs a %s" % k)
 			elif not s.models.has(m):
 				bad.call("%s %s is not in assets/models" % [k, m])
-		if d.has("sprite") and not s.sprites.has(d.sprite):
+		if d.has("sprite") and not s.sprites.has(d.sprite) and not FileAccess.file_exists(DataStore.SPRITES_DIR + "/" + str(d.sprite) + ".png"):
 			bad.call("sprite %s is not in assets/icons" % d.sprite)
 		var equips := DataStore.EQUIPPABLE.has(kind)
 		if equips and not DataStore.SLOTS.has(d.get("slot")):
@@ -143,7 +149,10 @@ static func _items(s: DataStore, out: PackedStringArray) -> void:
 			var food: Dictionary = u.get("food", {})
 			var drink: Dictionary = u.get("drink", {})
 			var elixir: Dictionary = u.get("elixir", {})
-			if not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0) or (elixir.has("stat") and elixir.get("amount", 0) > 0 and elixir.get("seconds", 0) > 0)):
+			if u.has("ability"):
+				if s.ability(u.ability).is_empty():
+					bad.call("its use casts unknown ability %s" % u.ability)
+			elif not (u.get("heal", 0) > 0 or (food.get("heal", 0) > 0 and food.get("seconds", 0) > 0) or (drink.get("mana", 0) > 0 and drink.get("seconds", 0) > 0) or (elixir.has("stat") and elixir.get("amount", 0) > 0 and elixir.get("seconds", 0) > 0)):
 				bad.call("its use must heal, be food that heals over some seconds, a drink that restores mana over some seconds or an elixir that raises a stat for some seconds")
 		for t in d.get("reservedFor", []):
 			if not table_ids.has(t):
@@ -282,6 +291,9 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("requires unknown quest %s" % r)
 			if r == id:
 				bad.call("cannot require itself")
+		for lead in q.get("leadsFrom", []):
+			if s.quest(lead).is_empty() or lead == id:
+				bad.call("suggested handoff names an unknown quest or itself: %s" % lead)
 		var objs: Array = q.get("objectives", [])
 		if objs.is_empty():
 			bad.call("needs at least one objective")
@@ -309,13 +321,24 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					if q.get("map", "act1") == s.map_id and not s.examine_points.has(o.get("target")):
 						bad.call("%s names unknown examine point %s" % [label, o.get("target")])
 				"talk":
-					if o.get("target") != q.get("turnIn"):
+					if o.get("requireVisit", false):
+						if DataStore.find(s.npcs, o.get("target")).is_empty():
+							bad.call("%s names unknown conversation npc %s" % [label, o.get("target")])
+					elif o.get("target") != q.get("turnIn"):
 						bad.call("%s: a talk objective names the hand-in npc (%s)" % [label, q.get("turnIn")])
 				"puzzle":
 					if q.get("map", "act1") == s.map_id and DataStore.find(s.files.world.get("puzzles", []), o.get("target")).is_empty():
 						bad.call("%s names unknown world puzzle %s" % [label, o.get("target")])
+				"use":
+					# use an ability (on a targeted enemy type, at a map area)
+					if DataStore.find(s.abilities, o.get("target")).is_empty():
+						bad.call("%s names unknown ability %s" % [label, o.get("target")])
+					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty() and DataStore.find(s.npcs, o.on).is_empty():
+						bad.call("%s: on names unknown enemy or npc %s" % [label, o.on])
+					if o.has("at") and DataStore.find(s.locations, o.at).is_empty():
+						bad.call("%s: at names unknown map area %s" % [label, o.at])
 				_:
-					bad.call("%s: type must be kill, collect, examine, talk or puzzle" % label)
+					bad.call("%s: type must be kill, collect, examine, talk, puzzle or use" % label)
 			if o.has("count") and not (_is_int(o.count) and o.count >= 1):
 				bad.call("%s: count must be a whole number of at least 1" % label)
 			if o.has("location") and DataStore.find(s.locations, o.location).is_empty():
@@ -323,13 +346,40 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 		var r: Dictionary = q.get("reward", {})
 		if not _coins_ok(r.get("coins")):
 			bad.call("reward coins must be whole silver, or a min to max range")
-		if r.has("xp") and not _is_int(r.xp):
-			bad.call("reward xp must be a whole number")
+		if r.has("xp"):
+			bad.call("reward xp is computed: give a size (errand, standard, chainStep, chainFinale, actFinale) instead")
+		if r.has("size") and not ["errand", "standard", "chainStep", "chainFinale", "actFinale"].has(r.size):
+			bad.call("reward size must be errand, standard, chainStep, chainFinale or actFinale")
+		if r.has("xpScale") and not (r.xpScale is float or r.xpScale is int) :
+			bad.call("reward xpScale must be a number")
 		for e in r.get("items", []):
 			if s.item(e.get("item")).is_empty():
 				bad.call("reward names unknown item %s" % e.get("item"))
 			if not (_is_int(e.get("count", 1)) and e.get("count", 1) >= 1):
 				bad.call("reward %s needs a count of at least 1" % e.get("item"))
+		# a trainer's quest teaches (Dan, 2026-11-04): lent items, a lesson on
+		# taking it, and a skill, recipe or spell as the reward
+		for e in q.get("lend", []):
+			if s.item(e.get("item")).is_empty():
+				bad.call("lends unknown item %s" % e.get("item"))
+		for c in q.get("classes", []):
+			if DataStore.find(s.archetypes, c).is_empty():
+				bad.call("classes names unknown class %s" % c)
+		for sk in q.get("acceptLearn", []):
+			if DataStore.find(s.skills, sk).is_empty() and DataStore.find(s.abilities, sk).is_empty():
+				bad.call("teaches unknown skill or ability %s" % sk)
+		for sk in r.get("learnSkill", []):
+			if DataStore.find(s.skills, sk).is_empty():
+				bad.call("teaches unknown skill %s" % sk)
+		for rc in r.get("learnRecipe", []):
+			var rec := DataStore.find(s.recipes, rc)
+			if rec.is_empty():
+				bad.call("teaches unknown recipe %s" % rc)
+			elif not rec.get("trainer"):
+				bad.call("recipe %s comes with its skill; only a trained recipe can be a reward" % rc)
+		for ab in r.get("learnSpell", []):
+			if DataStore.find(s.abilities, ab).is_empty():
+				bad.call("teaches unknown ability %s" % ab)
 		for f in r.get("reputation", {}):
 			if DataStore.find(s.factions, f).is_empty():
 				bad.call("reward names unknown faction %s" % f)
@@ -366,7 +416,7 @@ static func _loops(s: DataStore, id, path: Array, checked: Dictionary) -> bool:
 
 static func _npcs(s: DataStore, out: PackedStringArray) -> void:
 	var seen := {}
-	var icons := ["vendor", "blacksmith", "fishing", "cooking", "innkeeper", "trainer", "tanner"]
+	var icons := ["vendor", "blacksmith", "fishing", "cooking", "innkeeper", "trainer", "tanner", "banker"]
 	for n in s.npcs:
 		var id := str(n.get("id", ""))
 		var bad := func(msg): out.append("NPC %s: %s" % [id, msg])
@@ -392,6 +442,62 @@ static func _npcs(s: DataStore, out: PackedStringArray) -> void:
 	for sp in s.npc_spawns:
 		if s.npc(sp.get("npc")).is_empty():
 			out.append("NPC %s: placed in the world but not in npcs.json" % sp.get("npc"))
+	_routines(s, out)
+
+
+const ROUTINE_PLACES := ["work", "inn", "home"]
+
+
+## timetables (npcs.json routines) and who keeps them (Npcs)
+static func _routines(s: DataStore, out: PackedStringArray) -> void:
+	var known := {}
+	for r in s.files.npcs.get("routines", []):
+		var id := str(r.get("id", ""))
+		if known.has(id) or id == "" or id != DataStore.slug(id):
+			out.append("Routine %s: needs a unique lower_snake_case id" % id)
+		known[id] = true
+		for msg in _blocks_problems(r.get("blocks"), {}):
+			out.append("Routine %s: %s" % [id, msg])
+	# hours of the world clock: night things and night quests
+	for e in s.enemies:
+		if e.has("activeHours") and not _hours_ok(e.activeHours):
+			out.append("Enemy %s: activeHours must be [from, to], hours 0 to 24" % e.get("id"))
+	for sp in s.enemy_spawns:
+		if sp.has("activeHours") and not _hours_ok(sp.activeHours):
+			out.append("Enemy spawn %s: activeHours must be [from, to], hours 0 to 24" % sp.get("id"))
+	for q in s.quests:
+		if q.has("hours") and not _hours_ok(q.hours):
+			out.append("Quest %s: hours must be [from, to], hours 0 to 24" % q.get("id"))
+	for n in s.npcs:
+		if not n.has("routine"):
+			continue
+		var r = n.routine
+		var places := {}
+		for sp in s.npc_spawns:
+			if sp.get("npc") == n.get("id"):
+				places.merge(sp.get("places", {}))
+		if r is String:
+			if not known.has(r):
+				out.append("NPC %s: unknown routine %s" % [n.get("id"), r])
+		else:
+			for msg in _blocks_problems(r, places):
+				out.append("NPC %s: routine %s" % [n.get("id"), msg])
+
+
+static func _hours_ok(span) -> bool:
+	return span is Array and span.size() == 2 and span.all(func(v): return _is_num(v) and float(v) >= 0 and float(v) <= 24)
+
+
+static func _blocks_problems(blocks, places: Dictionary) -> Array:
+	if not blocks is Array or blocks.is_empty():
+		return ["needs a list of blocks {from, at}"]
+	var out := []
+	for b in blocks:
+		if not b is Dictionary or not _is_num(b.get("from")) or float(b.from) < 0 or float(b.from) >= 24:
+			out.append("each block needs `from`, an hour from 0 to under 24")
+		elif not ROUTINE_PLACES.has(b.get("at")) and not places.has(b.get("at")):
+			out.append("block at %s: a place must be %s or one of the spawn's places" % [b.get("at"), ", ".join(ROUTINE_PLACES)])
+	return out
 
 
 static func _shops(s: DataStore, out: PackedStringArray) -> void:

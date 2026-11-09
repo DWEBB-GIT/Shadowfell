@@ -8,7 +8,7 @@ extends RefCounted
 ## put into it comes back when you scrap it.
 ##
 ## - Refine (a refiner): +1 item level a rank, up to a cap by rarity;
-##   each rank costs more stones (of the item's level band) and coins, and
+##   each rank costs more Fellstones (no coins since 2026-11-03), and
 ##   may fail (losing only those; the item's next try gets easier). In code
 ##   and saves a rank is still called `temper`.
 ## - Scrap (a refiner): break magic gear into stones, `refund` of every
@@ -150,12 +150,12 @@ func temper(loc: String) -> bool:
 	var r := _rolls_of(st)
 	var t: Dictionary = enchant_rules().get("enchant", {})
 	if game.random.call() * 100 >= cost.chance:
-		# a slip: only the stones and coin are lost; the item remembers
+		# a slip: only the stones are lost; the item remembers
 		r.resolve = mini(100, resolve_of(st) + int(t.get("resolvePerFail", 10)))
 		_changed(loc)
 		game.events.emit("refineFailed", {"loc": loc, "rank": cost.rank})
 		game.events.emit("spellFlash", {"position": game.player.position, "colour": "#7a6a90"})
-		game.events.emit("log", {"text": "The weave slips. %s stays as it was; the next try on it is likelier (%d%%)." % [Items.view(st).name, temper_cost(st).get("chance", 100)], "kind": "muted"})
+		game.events.emit("log", {"text": "The refine failed. %s stays as it was; the next try on it is likelier (%d%%)." % [Items.view(st).name, temper_cost(st).get("chance", 100)], "kind": "muted"})
 		return false
 	r.temper = cost.rank
 	r.erase("resolve")
@@ -164,7 +164,7 @@ func temper(loc: String) -> bool:
 	game.events.emit("spellFlash", {"position": game.player.position, "colour": "#ffe6a0"})
 	game.events.emit("log", {"text": "Refined: %s (item level %s)." % [Items.view(st).name, U.n(Items.view(st).itemLevel)], "kind": "level"})
 	if cost.rank >= int(t.get("announceFrom", 99)):
-		game.events.emit("log", {"text": "%s has refined %s to +%d!" % [game.hud.char_name.text if game.hud and game.hud.char_name.text != "" else "You", Items.get_def(st.id).name, cost.rank], "kind": "level"})
+		game.events.emit("log", {"text": "%s has refined %s to Rank +%d!" % [game.hud.char_name.text if game.hud and game.hud.char_name.text != "" else "You", Items.get_def(st.id).name, cost.rank], "kind": "level"})
 	return true
 
 

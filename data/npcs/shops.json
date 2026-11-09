@@ -181,7 +181,10 @@
         "hunting_bow",
         "rough_arrow",
         "travellers_satchel",
-        "torch"
+        "torch",
+        "oak_club",
+        "ironwood_club",
+        "roadwarden_greatsword"
       ],
       "faction": "road_wardens"
     },
@@ -830,6 +833,7 @@
       "id": "test_curios",
       "name": "Fancy gear (test)",
       "vendorType": "curio",
+      "free": true,
       "stock": [
         "test_emberbrand",
         "test_frostbite",
@@ -845,7 +849,15 @@
         "rune_venom",
         "rune_storm",
         "rune_dawn",
-        "rune_dread"
+        "rune_dread",
+        "fellstone",
+        "soulshard",
+        "test_junk_blade",
+        "worn_longsword",
+        "watchmans_edge",
+        "greyjaws_fang",
+        "test_epic_blade",
+        "test_legendary_blade"
       ]
     }
   ]

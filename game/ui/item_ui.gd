@@ -24,7 +24,7 @@ var game
 var hud
 var icons: Icons
 var open_bags := {} ## socket indices whose bag window is open
-var open := {"character": false, "spellbook": false, "skills": false, "settings": false, "talents": false, "cooking": false}
+var open := {"character": false, "spellbook": false, "skills": false, "settings": false, "talents": false, "cooking": false, "runeforge": false, "refining": false}
 var drag = null ## { from, at, moved }
 var focus = null ## gamepad highlight: a location string
 var carry = null ## gamepad: location of the item being carried
@@ -46,8 +46,11 @@ var skills_win: Dictionary
 var settings_win: Dictionary
 var talents: Dictionary
 var cooking: Dictionary
+var runeforge: Dictionary ## the rune forge window (RuneForge)
+var refining: Dictionary ## the refining window (Refinery)
 var craft_skill := "cooking" ## whose recipes the crafting window shows
 var shop: Dictionary
+var bank_win: Dictionary ## the bank vault (Bank)
 var tooltip: HBoxContainer
 var ghost: TextureRect
 var sockets: HBoxContainer ## the bag slots in the bottom-right dock (the HUD makes the box)
@@ -66,6 +69,12 @@ func _init(g, h) -> void:
 	var ev = game.events
 	for e in ["inventoryChanged", "equipmentChanged", "levelUp", "barChanged", "skillsChanged", "reputationChanged", "titlesChanged"]:
 		ev.on(e, func(_e): render())
+	ev.on("runeForgeChanged", func(_e):
+		if open.runeforge:
+			render())
+	ev.on("refineryChanged", func(_e):
+		if open.refining:
+			render())
 	for e in ["craftEnd", "craftStart", "campPitched"]:
 		ev.on(e, func(_e):
 			if open.cooking:
@@ -77,11 +86,27 @@ func _init(g, h) -> void:
 			for i in _sockets():
 				open_bags[i] = true
 		focus = null
+		_solo("shop")
 		_after_change("shop"))
 	ev.on("merchantClosed", func(_e):
 		if shop_opened_bags:
 			open_bags.clear()
 		shop_opened_bags = false
+		_after_change(null))
+	# the bank opens your bags beside it, as a shop does
+	ev.on("bankOpened", func(_e):
+		if not bags_open:
+			shop_opened_bags = true
+			for i in _sockets():
+				open_bags[i] = true
+		focus = null
+		for k in STATIONS:
+			open[k] = false
+		_after_change("bank"))
+	ev.on("bankClosed", func(_e):
+		if shop_opened_bags and game.merchant.current == null:
+			open_bags.clear()
+			shop_opened_bags = false
 		_after_change(null))
 	# so does talking to anyone who sells (Dan, 2026-10-29), before you
 	# pick Browse goods; walking off or Goodbye closes them again
@@ -160,15 +185,18 @@ func _build() -> void:
 	talents.inner = UI.vbox(tsc, 6)
 	talents.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cooking = UI.window(self, "Cooking", 380, func(): close("cooking"))
+	runeforge = UI.window(self, "Rune Forge", 330, func(): close("runeforge"))
+	refining = UI.window(self, "Refining", 420, func(): close("refining"))
 	shop = UI.window(self, "", 330, func(): game.merchant.close())
 	shop.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	shop.head.add_child(shop.sub)
 	shop.head.move_child(shop.sub, 1)
+	bank_win = UI.window(self, "Bank", 0, func(): game.bank.close())
 	_build_settings()
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop, bank_win]:
 		w.panel.visible = false
 	# drag any window by its title bar; it stays where you leave it
-	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}
+	var named := {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop, "bank": bank_win}
 	for id in named:
 		_draggable(id, named[id])
 	var saved_at = Store.get_item(WINDOWS_KEY)
@@ -234,7 +262,11 @@ func _build_settings() -> void:
 			ob.clip_text = true
 			ob.add_theme_font_size_override("font_size", 12)
 			row.add_child(ob)
-			ob.item_selected.connect(func(i): game.settings.set_value(id, ob.get_item_text(i)))
+			ob.item_selected.connect(func(i):
+				game.settings.set_value(id, ob.get_item_text(i))
+				# a preset moves the sliders: show their new values
+				if id == "camPreset":
+					_render_settings())
 			settings_win.inputs[id] = [ob]
 		elif s.has("min"):
 			var row := UI.hbox(page, 8)
@@ -256,7 +288,7 @@ func _build_settings() -> void:
 				val.custom_minimum_size = Vector2(70, 0)
 			sl.value_changed.connect(func(x):
 				game.settings.set_value(id, int(x))
-				val.text = names[int(x)] if not names.is_empty() else "%d%%" % int(x))
+				val.text = names[int(x)] if not names.is_empty() else Settings.shown(s, int(x)))
 			settings_win.inputs[id] = [sl, val]
 		else:
 			var cb := CheckBox.new()
@@ -315,18 +347,20 @@ func _show_settings_tab() -> void:
 # ------------------------------------------------------------------ state
 var any_open: bool:
 	get:
-		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or game.merchant.current != null
+		return not open_bags.is_empty() or open.character or open.spellbook or open.skills or open.settings or open.talents or open.cooking or open.runeforge or open.refining or game.merchant.current != null or game.bank.is_open
 
 var bags_open: bool:
 	get:
 		return not open_bags.is_empty()
 
 
+## the bag windows B (or a shop) opens: every filled socket but the tool
+## pack, whose tools are used only from the tool belt (T), since PR #126
 func _sockets() -> Array:
 	var out := []
 	var s: Array = game.inventory.sockets
 	for i in s.size():
-		if s[i]:
+		if s[i] and i != Items.TOOL_SOCKET:
 			out.append(i)
 	return out
 
@@ -355,7 +389,24 @@ func toggle(which: String) -> void:
 		_after_change("bags")
 		return
 	open[which] = not open[which]
+	if open[which]:
+		_solo(which)
 	_after_change(which)
+
+
+## The rune forge, the refining window, a shop and an npc's talk are one at
+## a time: opening one closes the others (Dan, 2026-11-03).
+const STATIONS := ["runeforge", "refining"]
+func _solo(which: String) -> void:
+	if not STATIONS.has(which) and which != "shop":
+		return
+	for k in STATIONS:
+		if k != which:
+			open[k] = false
+	if which != "shop":
+		game.merchant.close()
+		game.dialogue.close()
+		game.bank.close()
 
 
 func show_window(which: String) -> void:
@@ -370,11 +421,16 @@ func show_window(which: String) -> void:
 			open_bags[i] = true
 	else:
 		open[which] = true
+		_solo(which)
 	_after_change(which)
 
 
 func toggle_bag(i: int) -> void:
 	if i >= game.inventory.sockets.size() or not game.inventory.sockets[i]:
+		return
+	# the tool pack is the tool belt now, not a bag window
+	if i == Items.TOOL_SOCKET:
+		hud.belt.toggle()
 		return
 	game.audio.sfx("bag", 0.6)
 	if open_bags.has(i):
@@ -400,6 +456,7 @@ func close_all() -> bool:
 		open[k] = false
 	shop_opened_bags = false
 	game.merchant.close()
+	game.bank.close()
 	_after_change(null)
 	return was
 
@@ -421,7 +478,7 @@ func _after_change(which) -> void:
 
 ## a window's outer node, to raise it over the others
 func _window_node(which: String) -> Control:
-	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "shop": shop}.get(which)
+	var w = {"character": character, "spellbook": spellbook, "skills": skills_win, "settings": settings_win, "talents": talents, "cooking": cooking, "runeforge": runeforge, "refining": refining, "shop": shop, "bank": bank_win}.get(which)
 	if which == "bags":
 		return bags
 	return w.panel if w != null else null
@@ -432,6 +489,12 @@ func _slot(parent: Node, loc: String, stack, px := 42, ph := "") -> ISlot:
 	var s := ISlot.new(loc, px)
 	s.show_stack(stack, icons, ph)
 	s.carried = carry == loc
+	# a stack placed in the rune forge shows faded in the bags, as if carried
+	if open.runeforge and stack != null and (loc.begins_with("b:") or loc.begins_with("e:")):
+		var rf = game.rune_forge
+		s.carried = s.carried or is_same(stack, rf.weapon) or is_same(stack, rf.rune)
+	if open.refining and stack != null and is_same(stack, game.refinery.item) and (loc.begins_with("b:") or loc.begins_with("e:")):
+		s.carried = true
 	s.on_input = slot_input
 	s.on_hover = slot_hover
 	if parent:
@@ -491,13 +554,43 @@ func _context(loc: String) -> void:
 		return
 	if _shop_click(loc):
 		return
+	# with the bank open, right-click moves a stack across (WoW)
+	if game.bank.is_open and loc.begins_with("v:"):
+		game.inventory.withdraw(loc)
+		return
+	if game.bank.is_open and loc.begins_with("b:"):
+		game.inventory.deposit(loc)
+		return
+	if loc.begins_with("v:"):
+		return
 	# with a shop open, right-clicking something you carry sells it (WoW)
 	if game.merchant.current != null and (loc.begins_with("b:") or loc.begins_with("e:")):
-		game.merchant.sell(loc)
+		_careful(loc, "sell", func(): game.merchant.sell(loc))
 	elif loc.begins_with("s:"):
 		toggle_bag(int(loc.substr(2)))
+	elif loc.begins_with("f:"):
+		game.rune_forge.clear(loc)
+	elif loc == "r:item":
+		game.refinery.clear()
+	elif open.refining and game.inventory.get_at(loc) != null and Items.ROLLED_KINDS.has(Items.get_def(game.inventory.get_at(loc).id).get("kind")):
+		game.refinery.put(loc)
+	elif open.runeforge and (RuneForge.is_weapon(game.inventory.get_at(loc)) or RuneForge.is_rune(game.inventory.get_at(loc))):
+		game.rune_forge.put(loc)
 	elif loc != "":
 		game.inventory.use(loc)
+
+
+## Blue (rare) and better gear asks first before it is sold or dropped.
+func _careful(loc: String, verb: String, act: Callable) -> void:
+	var stack = game.inventory.get_at(loc)
+	if stack == null:
+		return
+	var v := Items.view(stack)
+	var keys: Array = DB.rarities.keys()
+	if keys.find(v.get("rarity", "common")) < keys.find("rare"):
+		act.call()
+		return
+	hud.confirm("Are you sure you want to %s %s?" % [verb, v.name], act)
 
 
 ## a plain tooltip for any button, stat or row: shown in the corner, as items are
@@ -549,8 +642,11 @@ func render() -> void:
 	_render_bags(inv)
 	_render_character(inv)
 	_render_shop(inv)
+	_render_bank(inv)
 	_render_talents()
 	_render_cooking()
+	_render_runeforge()
+	_render_refining()
 	_render_settings()
 	_render_skills()
 	_render_spellbook()
@@ -574,6 +670,10 @@ func _render_sockets(inv) -> void:
 	# the tool pack's own slot comes first, left of the bags (empty until earned)
 	for i in range(Items.TOOL_SOCKET, 0, -1):
 		var s = inv.sockets[i] if i < inv.sockets.size() else null
+		# no belt slot until the utility belt is earned (Dan, 2026-11-04)
+		if i == Items.TOOL_SOCKET and not s:
+			_material_socket(inv)
+			continue
 		var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1} if s else null, 40, "⚒" if i == Items.TOOL_SOCKET else "")
 		slot.ghost = Icons.art("ui", "socket_tool" if i == Items.TOOL_SOCKET else "socket_bag")
 		if i == Items.TOOL_SOCKET:
@@ -583,12 +683,13 @@ func _render_sockets(inv) -> void:
 			slot.lit = hud.belt != null and hud.belt.visible
 			slot.on_hover = func(_s: ISlot, on: bool):
 				if on and drag == null:
-					cursor_tip("Tool belt (%s)%s" % [game.keys.label("toolbelt"), "" if s else ": earn a tool pack from Mara Venn for more room"])
+					cursor_tip("Tool belt (%s)" % game.keys.label("toolbelt"))
 				elif not on:
 					cursor_tip_off()
 			# the tool belt is its own system: a divider and a gap keep it
 			# apart from the bags (Dan, 2026-11-02)
 			sockets.add_child(hud._divider(8))
+			_material_socket(inv)
 			continue
 		# a quiver shows how many arrows it holds
 		# (the tool pack's holds is a list, and Array == String is a script error)
@@ -616,6 +717,28 @@ func _render_sockets(inv) -> void:
 	bp.on_hover = func(s: ISlot, on: bool):
 		if on and drag == null:
 			cursor_tip("Backpack (%s): %d free slot%s\n%s" % [bp.key, free, "" if free == 1 else "s", U.money(inv.coins)])
+		elif not on:
+			cursor_tip_off()
+
+
+## the materials pouch's own slot, left of the bags (Dan, 2026-11-03):
+## ores, gems, fish, hides and stones go in it first
+func _material_socket(inv) -> void:
+	var i := Items.MATERIAL_SOCKET
+	var s = inv.sockets[i] if i < inv.sockets.size() else null
+	if not s:
+		return
+	var slot := _slot(sockets, "s:%d" % i, {"id": s.id, "count": 1}, 40)
+	slot.ghost = Icons.art("ui", "socket_bag")
+	var free: int = s.slots.count(null)
+	slot.count = str(free)
+	slot.count_centre = true
+	slot.count_size = 13
+	slot.count_colour = ISlot.LABEL if free else Color("ff6a50")
+	slot.lit = open_bags.has(i)
+	slot.on_hover = func(_s: ISlot, on: bool):
+		if on and drag == null:
+			cursor_tip("Materials pouch: %d free slot%s\nOres, gems, fish, hides and stones go here." % [free, "" if free == 1 else "s"])
 		elif not on:
 			cursor_tip_off()
 
@@ -651,7 +774,7 @@ func _render_bags(inv) -> void:
 				used += 1
 		UI.label(head, "%d/%d" % [used, s.slots.size()], 13, UI.TEXT_DIM)
 		var bag: int = i
-		UI.square_button(head, "×", func(): toggle_bag(bag))
+		UI.close_button(head, func(): toggle_bag(bag))
 		UI.rule(v)
 		var grid := GridContainer.new()
 		grid.columns = 4
@@ -990,6 +1113,28 @@ func _render_shop(inv) -> void:
 	h.text = "A: buy   Y on a bag item: sell   B: leave" if hud.pad_mode else "Click to buy. Right-click (or drag here) anything in your bags to sell it."
 
 
+## The bank vault: a grid of slots, drag or right-click to move stacks
+## between it and your bags.
+func _render_bank(inv) -> void:
+	var w := bank_win
+	w.panel.visible = game.bank.is_open
+	if not game.bank.is_open:
+		return
+	UI.clear(w.body)
+	var used: int = inv.bank.filter(func(x): return x != null).size()
+	var sub := UI.label(w.body, "%d / %d slots used" % [used, inv.bank.size()], 12, UI.TEXT_DIM)
+	sub.add_theme_constant_override("line_spacing", 0)
+	var grid := GridContainer.new()
+	grid.columns = int(DB.CONFIG.bank.columns)
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	w.body.add_child(grid)
+	for i in inv.bank.size():
+		_slot(grid, "v:%d" % i, inv.bank[i])
+	var h := UI.hint(w.body)
+	h.text = "X: move between bank and bags   A: pick up   B: leave" if hud.pad_mode else "Drag, or right-click, to move items\nbetween your bank and bags."
+
+
 ## what the junk in your bags would fetch here
 func _junk_value(inv) -> int:
 	var total := 0
@@ -1002,6 +1147,165 @@ func _junk_value(inv) -> int:
 
 ## Cooking: every recipe you know, coloured by how much it can still teach
 ## you (WoW's orange / yellow / green / grey), with its ingredients.
+## The rune forge (RuneForge): a weapon slot, a rune slot beside it, and the
+## Fuse button; while it works, a bar fills across the window too.
+func _render_runeforge() -> void:
+	var w := runeforge
+	w.panel.visible = open.runeforge
+	if not open.runeforge:
+		return
+	UI.clear(w.body)
+	var rf = game.rune_forge
+	var intro := UI.label(w.body, "Lay a weapon on the forge and a rune beside it, then fuse them.", 12, UI.TEXT_DIM)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var row := UI.hbox(w.body, 14)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var wk := UI.vbox(row, 4)
+	var ws := _slot(wk, "f:weapon", rf.in_slot("f:weapon"), 56, "Weapon")
+	ws.ghost = Icons.art("slots", "slot_mainHand")
+	UI.label(wk, "Weapon", 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var plus := UI.label(row, "+", 26, UI.GOLD)
+	plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var rk := UI.vbox(row, 4)
+	var r = rf.in_slot("f:rune")
+	var rs := _slot(rk, "f:rune", r, 56, "Rune")
+	UI.label(rk, "Rune", 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# the rune's colour rings both slots once it is placed
+	if r != null:
+		var c := Color(Runes.def(Items.get_def(r.id).rune).glow.colour)
+		rs.glow = Color(c, 0.6)
+		if rf.in_slot("f:weapon") != null:
+			ws.glow = Color(c, 0.35)
+	var wst = rf.in_slot("f:weapon")
+	var info := UI.rich(w.body, 12)
+	var lines := []
+	if wst != null:
+		var had := Runes.of(wst)
+		lines.append("[color=%s]%s[/color]: %s" % [UI.hex(Items.rarity_colour(Items.view(wst).get("rarity", "common"))), UI.esc(Items.view(wst).name), "bears the %s rune" % UI.esc(Runes.def(had).name) if had != "" else "no rune yet"])
+	if r != null:
+		var rid: String = Items.get_def(r.id).rune
+		lines.append("[color=%s]%s[/color]: %s" % [UI.hex(Color(Runes.def(rid).glow.colour)), UI.esc(Runes.def(rid).name), UI.esc(Runes.text(rid))])
+	UI.set_rich(info, "\n".join(lines))
+	if rf.channel != null:
+		var k: float = rf.channel.t / rf.channel.total
+		_skill_bar(w.body, k, 0)
+		UI.label(w.body, "The forge hums...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var why: String = rf.blocked()
+	var b := UI.button(w.body, "Fuse Rune", func(): game.rune_forge.fuse(), 14)
+	b.disabled = why != ""
+	b.custom_minimum_size = Vector2(0, 34)
+	if why != "" and rf.channel == null:
+		UI.label(w.body, why, 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+## Refining (Refinery), like WoW's item upgrade panel: the piece in its slot,
+## its next rank with item level, damage and stats now and after, what the
+## rank costs (icons, have / need), its chance, and the Refine button.
+func _render_refining() -> void:
+	var w := refining
+	w.panel.visible = open.refining
+	if not open.refining:
+		return
+	UI.clear(w.body)
+	var rf = game.refinery
+	var st = rf.stack()
+	var c: Dictionary = rf.cost()
+	# header: the slot, the item's name, its rank and the rank it goes to
+	# (laid out like WoW's Item Upgrade window, Dan 2026-11-03). Plain
+	# labels with fixed widths: a wrapping rich label re-made every frame
+	# of the channel measured itself one letter wide and stretched the
+	# window to the bottom of the screen.
+	var top := UI.hbox(w.body, 12)
+	var sl := _slot(top, "r:item", st, 60, "Gear")
+	var head := UI.vbox(top, 2)
+	head.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if st == null:
+		UI.label(head, "Drag a piece of gear into the slot.", 13, UI.TEXT_DIM)
+		UI.label(head, "Each rank adds an item level.", 12, UI.TEXT_DIM)
+	else:
+		var v := Items.view(st)
+		var col := Items.rarity_colour(v.get("rarity", "common"))
+		var rank := Items.temper_of(st)
+		var cap: int = game.forge.temper_cap(st)
+		sl.glow = Color(col, 0.45)
+		UI.label(head, v.name, 16, col)
+		UI.label(head, "Rank +%d / +%d   Item level %s" % [rank, cap, U.n(v.get("itemLevel", 0))], 12, UI.TEXT)
+		UI.label(head, "Refine to: Rank +%d" % c.rank if not c.is_empty() else "Fully refined", 13, UI.GOLD)
+		var nv: Dictionary = rf.preview()
+		if not nv.is_empty():
+			UI.rule(w.body, Color("2a2218"))
+			var cols := UI.hbox(w.body, 8)
+			_refine_column(cols, "Current:", v, v, rank, cap, col)
+			_refine_column(cols, "Refined:", nv, v, c.rank, cap, col)
+			UI.rule(w.body, Color("2a2218"))
+			var cost := UI.hbox(w.body, 8)
+			cost.alignment = BoxContainer.ALIGNMENT_CENTER
+			UI.label(cost, "Total cost:", 13)
+			for x in c.get("items", []):
+				var have: int = game.inventory.count(x.item)
+				var ic := TextureRect.new()
+				ic.texture = _icon_for(x.item)
+				ic.custom_minimum_size = Vector2(24, 24)
+				ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				ic.tooltip_text = Items.get_def(x.item).get("name", x.item)
+				cost.add_child(ic)
+				UI.label(cost, "%d / %d" % [have, x.count], 13, UI.TEXT if have >= x.count else UI.DOWN)
+			if c.get("coins", 0):
+				UI.label(cost, U.money(c.coins), 13, UI.TEXT if game.inventory.coins >= c.coins else UI.DOWN)
+			var res := Forge.resolve_of(st)
+			UI.label(w.body, "Chance: %d%%%s" % [c.chance, " (+%d%% resolve)" % res if res > 0 else ""], 13, UI.UP if c.chance >= 100 else Color("f0d070")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if rf.last == "ok":
+		UI.label(w.body, "Refined.", 13, UI.UP).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	elif rf.last == "slip":
+		UI.label(w.body, "The refine failed.", 12, Color("b8a0d8")).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if rf.channel != null:
+		_skill_bar(w.body, rf.channel.t / rf.channel.total, 0)
+		UI.label(w.body, "Refining...", 12, UI.GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var why: String = rf.blocked()
+	var btn := UI.button(w.body, "Refine" if c.is_empty() else "Refine to Rank +%d" % c.rank, func(): game.refinery.refine(), 14)
+	btn.disabled = why != ""
+	btn.custom_minimum_size = Vector2(0, 34)
+	if why != "" and rf.channel == null and st != null:
+		UI.label(w.body, why, 11, UI.TEXT_DIM).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+## One side of the refining compare: the item as it is (v == was) or as it
+## will be, every number in the same column, gains in green as (+N).
+func _refine_column(parent: Node, title: String, v: Dictionary, was: Dictionary, rank: int, cap: int, col: Color) -> void:
+	var box := UI.panel(parent, 8, Color("14110c"), Color("3a3020"))
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.custom_minimum_size = Vector2(190, 0)
+	var g := GridContainer.new()
+	g.columns = 2
+	g.add_theme_constant_override("h_separation", 8)
+	g.add_theme_constant_override("v_separation", 2)
+	var inner := UI.vbox(box, 3)
+	UI.label(inner, title, 12, UI.TEXT_DIM)
+	UI.label(inner, v.name, 13, col)
+	inner.add_child(g)
+	var same := is_same(v, was)
+	var row := func(label: String, now: String, gain: String, colour: Color) -> void:
+		UI.label(g, label, 12, Color("9a8f78"))
+		var h := UI.hbox(g, 4)
+		UI.label(h, now, 12, colour)
+		if gain != "":
+			UI.label(h, gain, 12, UI.UP)
+	var dil: int = int(v.get("itemLevel", 0)) - int(was.get("itemLevel", 0))
+	row.call("Item level", U.n(v.get("itemLevel", 0)), "" if same or dil <= 0 else "(+%d)" % dil, UI.GOLD)
+	row.call("Rank", "+%d / +%d" % [rank, cap], "", UI.GOLD)
+	if v.get("damage") and was.get("damage"):
+		var dd: int = int(v.damage[1]) - int(was.damage[1])
+		row.call("Damage", "%s–%s" % [U.n(v.damage[0]), U.n(v.damage[1])], "" if same or dd <= 0 else "(+%d)" % dd, UI.TEXT)
+	var keys: Array = was.get("stats", {}).keys()
+	for k in v.get("stats", {}):
+		if not keys.has(k):
+			keys.append(k)
+	for k in keys:
+		var a = was.get("stats", {}).get(k, 0)
+		var b = v.get("stats", {}).get(k, 0)
+		row.call(String(STAT_LABEL.get(k, k)).capitalize(), U.n(b), "" if same or b <= a else "(+%s)" % U.n(b - a), UI.TEXT)
+
+
 func _render_cooking() -> void:
 	var w := cooking
 	w.panel.visible = open.cooking
@@ -1094,14 +1398,15 @@ func _render_settings() -> void:
 		if parts[0] is OptionButton:
 			var ob: OptionButton = parts[0]
 			ob.clear()
-			for d in game.audio.output_devices():
+			var opts: Array = Settings.CAMERA_PRESETS.keys() if Settings._def(id).get("options") == "CAMERA_PRESETS" else game.audio.output_devices()
+			for d in opts:
 				ob.add_item(d)
 				if d == v:
 					ob.select(ob.item_count - 1)
 		elif parts[0] is HSlider:
 			parts[0].set_value_no_signal(v)
 			var names: Array = Settings._def(id).get("names", [])
-			parts[1].text = names[int(v)] if not names.is_empty() else "%d%%" % int(v)
+			parts[1].text = names[int(v)] if not names.is_empty() else Settings.shown(Settings._def(id), int(v))
 		else:
 			parts[0].set_pressed_no_signal(v)
 	hud.keybind_ui.render()
@@ -1245,7 +1550,7 @@ func _render_spellbook() -> void:
 	w.inner.add_child(grid)
 	for id in ids:
 		_spell_card(grid, id)
-	w.foot.text = "A: pick up / place on the bar   Y: remove from the bar   B: back" if hud.pad_mode else "Drag a spell onto the bar. Drag spells along the bar to rearrange them, or off it to remove them."
+	w.foot.text = "Equip any six learned class spells outside combat. Drag spells onto the bar to change your build."
 
 
 ## What changes a spell now: its Enhanced rank, its fork, legendary powers.
@@ -1371,6 +1676,8 @@ func layout() -> void:
 		_fit(character.panel, Vector2(12, hud.WINDOW_TOP))
 	if shop.panel.visible:
 		_fit(shop.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
+	if bank_win.panel.visible:
+		_fit(bank_win.panel, Vector2(character.panel.size.x + 24 if open.character else 12, hud.WINDOW_TOP))
 	for w in [spellbook, skills_win]:
 		if w.panel.visible:
 			# above the spell bar, scrolling rather than running off the top
@@ -1390,6 +1697,11 @@ func layout() -> void:
 	if cooking.panel.visible:
 		var s := _fit(cooking.panel, Vector2.ZERO)
 		cooking.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(vp.y * 0.22))
+	# in the middle of the screen (Dan, 2026-11-03)
+	for w in [runeforge, refining]:
+		if w.panel.visible:
+			var s := _fit(w.panel, Vector2.ZERO)
+			w.panel.position = Vector2(roundf((vp.x - s.x) / 2), roundf(maxf(12, (vp.y - s.y) / 2)))
 	_place_moved()
 	_layout_bags(vp)
 
@@ -1445,7 +1757,7 @@ func reset_windows() -> void:
 
 
 func _fit(p: Control, at: Vector2) -> Vector2:
-	UI.fit_steady(p)
+	UI.fit_steady(p, p == shop.panel)
 	if at != Vector2.ZERO:
 		p.position = at
 	return p.size
@@ -1542,7 +1854,10 @@ func _tip_box(text: String, width: float) -> void:
 ## The bottom-right corner, above the bag slots (left of the bags when
 ## they are open, so it never covers them).
 func _place_tip() -> void:
-	if not tooltip.visible:
+	# a button can report the mouse over it while the HUD is still joining the
+	# scene; out of the tree there is no viewport (on the web that crashed the
+	# game at load with "null function")
+	if not tooltip.visible or not is_inside_tree():
 		return
 	var vp := get_viewport_rect().size
 	var s := UI.fit_steady(tooltip)
@@ -1570,7 +1885,10 @@ func _cost_line(a: Dictionary) -> String:
 	for k in a.get("cost", {}):
 		parts.append("%s %s" % [U.n(a.cost[k]), r.name_of(k)])
 	if a.get("spendsAll"):
-		parts.append("Spends all %s" % r.name_of(a.spendsAll))
+		var cap: float = a.get("tuning", {}).get("spendCap", INF)
+		parts.append("Spends up to %s %s" % [U.n(cap), r.name_of(a.spendsAll)] if is_finite(cap) else "Spends all %s" % r.name_of(a.spendsAll))
+	for k in a.get("hitGain", {}):
+		parts.append("On hit, gives %s %s" % [U.n(a.hitGain[k]), r.name_of(k)])
 	for k in a.get("gain", {}):
 		parts.append("Gives %s %s" % [U.n(a.gain[k]), r.name_of(k)])
 	return _l(" · ".join(parts), "#8fb4f0", 12) if not parts.is_empty() else ""
@@ -1582,7 +1900,7 @@ func _scaling_line(ab: Dictionary) -> String:
 	var t: Dictionary = ab.get("tuning", {})
 	var tick: float = t.get("tickMultiplier", 1.0)
 	var parts := []
-	if t.has("damageMultiplier"):
+	if t.get("damageMultiplier", 0) > 0:
 		parts.append("%d%% weapon damage" % roundi(t.damageMultiplier * 100))
 	elif t.has("damageMin"):
 		if t.get("weaponDamage", 0):
@@ -1616,7 +1934,7 @@ func _tooltip(loc: String) -> void:
 			var d := Items.get_def(item)
 			_set_tip([_name_line(d.name, UI.hex(Items.rarity_colour(d.get("rarity", "common")))), _l("[i]%s[/i]" % _esc(d.get("description", "")), "#d0b878"), _l("Press to use%s" % (" (again to put it away)" if d.get("slot") == "offHand" else ""), "#8fbf6a", 12)], [])
 			return
-		var ab: Dictionary = DB.abilities.get(id, {})
+		var ab: Dictionary = game.spells.tuned(id) if DB.spells.has(id) else DB.abilities.get(id, {})
 		var req := Spells.requirement_text(ab)
 		var lines := [_name_line(ab.get("name", id), ""), _cost_line(ab)]
 		if req != "":
@@ -1629,6 +1947,18 @@ func _tooltip(loc: String) -> void:
 		_set_tip(lines, [])
 		return
 	var inv = game.inventory
+	if loc == "r:item":
+		var rl: String = game.refinery.loc()
+		if rl == "":
+			_set_tip([_name_line("Gear to refine", ""), _l("Drag a piece of gear here from your bags.", UI.hex(UI.TEXT_DIM), 12)], [])
+			return
+		loc = rl
+	if loc.begins_with("f:"):
+		var real: String = game.rune_forge.slot_loc(loc)
+		if real == "":
+			_set_tip([_name_line("Weapon" if loc == "f:weapon" else "Rune", ""), _l("Drag one here from your bags.", UI.hex(UI.TEXT_DIM), 12)], [])
+			return
+		loc = real
 	var stack = inv.get_at(loc) if loc != "" else null
 	var shop_price = null
 	if loc.begins_with("m:"):
@@ -1663,23 +1993,32 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	var def := Items.view(stack)
 	var rare := ["enhanced", "rare", "epic", "legendary"].has(def.get("rarity"))
 	var kind: String = KIND_LABEL.get(def.kind, def.kind.capitalize())
-	var kind_line: String = (DB.rarities[def.rarity].name + " " + kind.to_lower()) if rare else kind
+	var lines := [_name_line(def.name, UI.hex(Items.rarity_colour(def.get("rarity", "common"))))]
+	if def.get("itemLevel"):
+		lines.append(_l("Item Level %s" % U.n(def.itemLevel), "#e8c860", 12))
 	if def.get("slot"):
+		# WoW layout: where it is worn on the left, what it is made of on the right
 		var slot_name := ""
 		if def.slot == "oneHand":
-			slot_name = "One-hand" + (" " + def.weaponType if def.get("weaponType") else "")
+			slot_name = "One-Hand"
 		else:
 			for s in DB.EQUIP_SLOTS:
 				if s.id == def.slot or s.get("fits") == def.slot:
 					slot_name = s.label
 					break
-		kind_line += " · " + slot_name
-	var lines := [_name_line(def.name, UI.hex(Items.rarity_colour(def.get("rarity", "common")))), _l(_esc(kind_line), "#9a8f78", 12)]
-	if def.get("itemLevel"):
-		lines.append(_l("Item level %s" % U.n(def.itemLevel), "#e8c860", 12))
-	if def.get("armourType"):
-		var ok: bool = inv.can_wear(def)
-		lines.append(_l(DB.armour_types[def.armourType].name + ("" if ok else " (a %s cannot wear this)" % game.stats.archetype.name), "" if ok else UI.hex(UI.DOWN)))
+		var right := ""
+		var right_col := "#c8bca0"
+		if def.get("armourType"):
+			right = DB.armour_types[def.armourType].name
+			if not inv.can_wear(def) and Inventory.required_level(def) <= game.progression.level:
+				right_col = UI.hex(UI.DOWN)
+		elif def.get("weaponType"):
+			right = str(def.weaponType).capitalize()
+		lines.append("[table=2][cell expand=1][color=#c8bca0]%s[/color][/cell][cell][color=%s]%s[/color][/cell][/table]\n" % [_esc(slot_name), right_col, _esc(right)])
+		if def.get("armourType") and not inv.can_wear(def) and Inventory.required_level(def) <= game.progression.level:
+			lines.append(_l("A %s cannot wear this" % game.stats.archetype.name, UI.hex(UI.DOWN), 12))
+	else:
+		lines.append(_l(_esc((DB.rarities[def.rarity].name + " " + kind.to_lower()) if rare else kind), "#9a8f78", 12))
 	if def.get("damage"):
 		# weapons compare by damage per second, as in WoW
 		var st = game.stats
@@ -1691,33 +2030,38 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		lines.append(_l("(%.1f damage per second%s)" % [mine, cmp]))
 	for k in def.get("stats", {}):
 		lines.append(_l("+%s %s" % [U.n(def.stats[k]), STAT_LABEL.get(k, k)], UI.hex(UI.UP)))
-	# forge work: reforged stat, sockets and the gems in them
+	# forge work: reforged stat, then durability, sockets, refining, rune
 	var rf = def.get("reforged")
 	if typeof(rf) == TYPE_DICTIONARY:
 		lines.append(_l("Reforged: %s into %s" % [STAT_LABEL.get(rf.from, rf.from), STAT_LABEL.get(rf.to, rf.to)], "#a0c8e8", 12))
+	var dur := Items.durability(stack)
+	if dur != -1:
+		lines.append(_l("Broken: gives no stats until repaired", UI.hex(UI.DOWN)) if dur == 0 else _l("Durability %d / 100" % dur, UI.hex(UI.DOWN) if dur <= 25 else ""))
 	for g in Items.gems_of(stack):
 		lines.append(_l("◆ %s: %s" % [_esc(Items.get_def(g).name), _esc(Gems.bonus_text(g))], UI.hex(Items.rarity_colour(Items.get_def(g).get("rarity", "common")))) if g != null else _l("◇ Empty socket", "#9a8f78"))
-	if def.get("kind") == "gem":
-		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
 	var cap: int = game.forge.temper_cap(stack) if Items.ROLLED_KINDS.has(def.kind) else 0
 	if cap > 0:
 		lines.append(_l("Refined %d / %d" % [Items.temper_of(stack), cap], "#c8a040", 12))
 	var rune := Runes.def(Runes.of(stack))
 	if not rune.is_empty():
 		lines.append(_l("%s rune: %s" % [_esc(rune.name), _esc(Runes.text(rune.id))], rune.glow.colour))
-	if def.get("rune"):
-		lines.append(_l("Use: put the %s rune on your main-hand weapon. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
-	if def.get("bagSlots"):
-		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	var power := Builds.power_def(Items.power_of(stack))
 	if not power.is_empty():
-		lines.append(_l("%s: %s" % [_esc(power.name), _esc(power.text)], UI.hex(Items.rarity_colour("legendary"))))
-	var dur := Items.durability(stack)
-	if dur != -1:
-		lines.append(_l("Broken: gives no stats until repaired", UI.hex(UI.DOWN)) if dur == 0 else _l("Durability %d / 100" % dur, UI.hex(UI.DOWN) if dur <= 25 else ""))
+		lines.append(_l("Equip: %s: %s" % [_esc(power.name), _esc(power.text)], UI.hex(Items.rarity_colour("legendary"))))
+	if def.get("kind") == "gem":
+		lines.append(_l("In a socket: %s" % _esc(Gems.bonus_text(stack.id)), UI.hex(UI.UP)))
+	# only on the rune item itself, never on a weapon it was fused to
+	if def.get("rune") and not Items.ROLLED_KINDS.has(def.kind) and rune.is_empty():
+		lines.append(_l("Use: fuse the %s rune to a weapon at a rune forge. %s" % [_esc(Runes.def(def.rune).get("name", "")), _esc(Runes.text(def.rune))], UI.hex(UI.UP)))
+	if def.get("bagSlots"):
+		lines.append(_l("%s slots" % U.n(def.bagSlots)))
 	if stack.get("count", 1) > 1:
 		lines.append(_l("%d carried" % stack.count))
-	lines.append(_l("[i]%s[/i]" % _esc(def.get("description", "")), "#d0b878"))
+	if def.get("description", "") != "":
+		lines.append(_l("[i]\"%s\"[/i]" % _esc(def.description), "#d0b878"))
+	var req := Inventory.required_level(def)
+	if req > 1:
+		lines.append(_l("Requires Level %d" % req, UI.hex(UI.DOWN) if req > game.progression.level else ""))
 	var sell := Items.sell_price(stack, DB.CONFIG.shop.sellFraction)
 	if shop_price != null:
 		lines.append(_l("Price: %s" % UI.money(shop_price), "#f0d890", 12))
@@ -1726,7 +2070,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 	elif not sell:
 		lines.append(_l("No sell value", "#9a8f78", 12))
 	else:
-		lines.append(_l("Sell for %s%s" % [UI.money(sell * stack.get("count", 1)), " (%s each)" % UI.money(sell) if stack.get("count", 1) > 1 else ""], "#b8a880", 12))
+		lines.append(_l("Sell Price: %s%s" % [UI.money(sell * stack.get("count", 1)), " (%s each)" % UI.money(sell) if stack.get("count", 1) > 1 else ""], "#b8a880", 12))
 	var hint := ""
 	if shop_price != null:
 		if not hud.pad_mode:
@@ -1740,6 +2084,8 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		var action := ""
 		if def.kind == "ammo":
 			action = "Right-click to use these for Auto Shot"
+		elif loc == "s:%d" % Items.MATERIAL_SOCKET:
+			action = "Click to open"
 		elif loc.begins_with("e:") or loc.begins_with("s:"):
 			action = "Right-click to unequip"
 		elif def.get("slot"):
@@ -1814,14 +2160,21 @@ func world_tip(pick) -> void:
 	if tip_from == "ui" and tooltip.visible:
 		return
 	var key = pick.obj if pick != null and (pick.kind == "enemy" or pick.kind == "npc" or pick.kind == "sign") else null
-	if key == null:
+	# a station, shrine, vein or herb: its name by the cursor, and what a
+	# click does under it (Dan, 2026-11-03: tell the rune forge from the
+	# refining altar without clicking)
+	var thing := _thing_tip(pick)
+	if key == null and thing.is_empty():
 		if tip_from == "world":
 			_hide_tip()
 		return
 	tip_from = "world"
-	tip_cursor = false
+	tip_cursor = key == null
 	var text := ""
-	if pick.kind == "sign":
+	if key == null:
+		key = thing.key
+		text = _name_line(thing.name, thing.colour) + (_l(thing.sub, "#9a8f78", 12) if thing.sub != "" else "")
+	elif pick.kind == "sign":
 		text = _name_line("Signpost", "")
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
@@ -1836,6 +2189,28 @@ func world_tip(pick) -> void:
 	_place_tip()
 
 
+## {key, name, colour, sub} for a hovered station, shrine, vein or herb; {} for none
+func _thing_tip(pick) -> Dictionary:
+	if pick == null:
+		return {}
+	var o = pick.obj
+	match pick.kind:
+		"point":
+			if not o.has("name"):
+				return {}
+			var colour := "#e8d8a0"
+			if o.key.begins_with("station:"):
+				var st = Layout.station(o.key.substr(8))
+				if st != null:
+					colour = Interaction.look(st.kind).colour
+			return {"key": o.key, "name": o.name, "colour": colour, "sub": Interaction.title(o.get("prompt", ""))}
+		"vein":
+			return {"key": "vein:%s" % o.name + str(o.x), "name": o.name, "colour": "#f0d890", "sub": "Mining"}
+		"herb":
+			return {"key": "herb:%s" % o.name + str(o.x), "name": o.name, "colour": "#9fe07a", "sub": DB.skills.get(o.skill, {}).get("name", "")}
+	return {}
+
+
 # ------------------------------------------------------------------ mouse drag
 func _icon_for_loc(loc: String) -> Texture2D:
 	if loc.begins_with("a:"):
@@ -1843,6 +2218,10 @@ func _icon_for_loc(loc: String) -> Texture2D:
 		return _icon_for(ActionBar.item_ref(a)) if ActionBar.item_ref(a) != null else icons.abilities.get(a)
 	if loc.begins_with("k:"):
 		return icons.abilities.get(loc.substr(2))
+	if loc.begins_with("f:"):
+		loc = game.rune_forge.slot_loc(loc)
+	if loc == "r:item":
+		loc = game.refinery.loc()
 	var stack = game.inventory.get_at(loc)
 	return _icon_for(stack.id) if stack != null else null
 
@@ -1864,6 +2243,14 @@ func _down(loc: String, at: Vector2) -> void:
 		return
 	if loc.begins_with("m:") or loc.begins_with("y:"):
 		_shop_click(loc)
+		return
+	if loc.begins_with("f:"):
+		if game.rune_forge.slot_loc(loc) != "":
+			drag = {"from": loc, "at": at, "moved": false}
+		return
+	if loc == "r:item":
+		if game.refinery.loc() != "":
+			drag = {"from": loc, "at": at, "moved": false}
 		return
 	if game.inventory.get_at(loc) == null:
 		if loc.begins_with("s:"):
@@ -1900,15 +2287,24 @@ func _up(at: Vector2) -> void:
 		# used (right click uses it too; a held left click drags it)
 		if d.from.begins_with("s:"):
 			toggle_bag(int(d.from.substr(2)))
+		if d.from.begins_with("f:"):
+			game.rune_forge.clear(d.from)
+		if d.from == "r:item":
+			game.refinery.clear()
 		if d.from.begins_with("a:"):
 			var a = game.action_bar.slots[int(d.from.substr(2))]
 			if a != null:
 				game.action_bar.clicked[a] = true
 		return
 	if game.merchant.current != null and _over(shop.panel, at) and not d.from.begins_with("a:") and not d.from.begins_with("k:"):
-		game.merchant.sell(d.from)
+		var from: String = d.from
+		_careful(from, "sell", func(): game.merchant.sell(from))
 		return
 	var to = _slot_at(at)
+	# dropped on the bank window (not on a slot): into the vault
+	if to == null and game.bank.is_open and _over(bank_win.panel, at) and d.from.begins_with("b:"):
+		game.inventory.deposit(d.from)
+		return
 	dropOn(d.from, to, _over(hud.action_bar, at), _over_window(at))
 
 
@@ -1917,7 +2313,7 @@ func _over(c: Control, at: Vector2) -> bool:
 
 
 func _over_window(at: Vector2) -> bool:
-	for w in [character, spellbook, skills_win, settings_win, talents, cooking, shop]:
+	for w in [character, spellbook, skills_win, settings_win, talents, cooking, runeforge, refining, shop, bank_win]:
 		if _over(w.panel, at):
 			return true
 	for f in bags.get_children():
@@ -1951,6 +2347,24 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 			var text := "%s removed from the bar." % nm if ActionBar.item_ref(ability) != null else "%s removed from the bar. Open %s to put it back." % [nm, "Professions (U)" if DB.abilities.get(ability, {}).get("skill") else "the spellbook (P)"]
 			game.events.emit("log", {"text": text, "kind": "muted", "throttle": "bar-removed"})
 		return
+	# the rune forge: dragged out puts it back down; dropped in slots it
+	if from.begins_with("f:"):
+		if to == null or not to.begins_with("f:"):
+			game.rune_forge.clear(from)
+		return
+	if to != null and to.begins_with("f:"):
+		game.rune_forge.put(from, to)
+		return
+	# the refining slot: the same
+	if from == "r:item":
+		if to != "r:item":
+			game.refinery.clear()
+		return
+	if to == "r:item":
+		game.refinery.put(from)
+		return
+	if to != null and to.begins_with("a:") and from.begins_with("v:"):
+		return # take it out of the bank first
 	if to != null and to.begins_with("a:"):
 		# anything usable (a draught, a torch, lockpicks) goes on as an item
 		var stack = inv.get_at(from)
@@ -1965,11 +2379,11 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 		return
 	# released over the world rather than a window: drop it on the ground
 	if not over_window:
-		game.loot.drop_from_inventory(from)
+		_careful(from, "drop", func(): game.loot.drop_from_inventory(from))
 
 
 # ------------------------------------------------------------------ gamepad
-const _NAV_ORDER := ["m:", "y:", "b:", "e:", "k:", "s:", "a:"]
+const _NAV_ORDER := ["m:", "y:", "v:", "b:", "e:", "k:", "s:", "a:"]
 
 
 ## every slot on screen, windows first and the spell bar last
@@ -1998,6 +2412,8 @@ func _default_focus(which) -> Variant:
 		return pick.call("k:")
 	if which == "shop" and game.merchant.current != null:
 		return pick.call("m:")
+	if which == "bank" and game.bank.is_open:
+		return pick.call("v:")
 	var b = pick.call("b:")
 	if b != null:
 		return b
@@ -2062,7 +2478,7 @@ func gamepad(pad, dt: float) -> void:
 	if pad.pressed(B.LB) or pad.pressed(B.RB):
 		# cycle the highlight between the open windows and the spell bar
 		var locs := _visible_locs()
-		var groups := ["m:", "b:", "e:", "k:", "a:"].filter(func(p): return locs.any(func(l): return l.begins_with(p)))
+		var groups := ["m:", "v:", "b:", "e:", "k:", "a:"].filter(func(p): return locs.any(func(l): return l.begins_with(p)))
 		var cur := -1
 		for i in groups.size():
 			if focus != null and focus.begins_with(groups[i]):
@@ -2095,7 +2511,12 @@ func gamepad(pad, dt: float) -> void:
 		render()
 	if pad.pressed(B.X) and focus != null and not is_spell.call(focus) and not shop_loc.call(focus):
 		carry = null
-		inv.use(focus)
+		if game.bank.is_open and focus.begins_with("v:"):
+			inv.withdraw(focus)
+		elif game.bank.is_open and focus.begins_with("b:"):
+			inv.deposit(focus)
+		elif not focus.begins_with("v:"):
+			inv.use(focus)
 	if pad.pressed(B.Y):
 		var loc = carry if carry != null else focus
 		carry = null
@@ -2121,6 +2542,11 @@ func update(dt: float) -> void:
 		_place_tip()
 	if open.character and char_tab == "main" and preview.is_inside_tree():
 		preview.render()
+	# the forge's bar fills while it works
+	if open.runeforge and game.rune_forge.channel != null:
+		_render_runeforge()
+	if open.refining and game.refinery.channel != null:
+		_render_refining()
 	# cooking changes as you walk to a fire or your bags fill: redraw when it does
 	if open.cooking:
 		_cook_clock -= dt

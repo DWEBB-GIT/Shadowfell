@@ -9,6 +9,19 @@ var title_label: Label
 var stage: Label
 var bar: Dictionary
 var fade := 0.0 ## counts down while fading out
+var tip: Label
+var tip_time := 0.0
+var tip_index := -1
+const TIPS := [
+	"Keep your target in front of you. Selecting an enemy does not turn your character.",
+	"Move to avoid danger. Turning away from a target can interrupt a cast.",
+	"An auto-shot needs time to draw. Moving cancels the draw.",
+	"Your weapon sets the rhythm of combat. Daggers stab; swords swing.",
+	"Use the sheathe key to cycle between melee weapons, your bow and stowing everything.",
+	"You can log out after combat ends. Moving or fighting cancels the logout countdown.",
+	"What you drop on defeat waits at your grave. Logging out does not restore it to your bags.",
+	"Use the mouse wheel to adjust your view. The camera angle stays fixed while you zoom."
+]
 
 
 func _init() -> void:
@@ -26,12 +39,7 @@ func _init() -> void:
 	add_child(centre)
 	var v := UI.vbox(centre, 14)
 	v.custom_minimum_size = Vector2(360, 0)
-	title_label = UI.label(v, "SHADOWFALL", 34, UI.GOLD)
-	var f := FontVariation.new()
-	f.base_font = UI.font
-	f.spacing_glyph = 10
-	title_label.add_theme_font_override("font", f)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label = UI.logo(v, DB.text.title.name.to_upper(), 42)
 	stage = UI.label(v, "Lighting the lamps…", 14, UI.TEXT_DIM)
 	stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var track := Panel.new()
@@ -49,10 +57,17 @@ func _init() -> void:
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
 	bar = {"track": track, "fill": fill}
+	tip=UI.label(v,"",14,UI.TEXT)
+	tip.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size=Vector2(360,66)
+	tip.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	visible = false
 
 
 func open() -> void:
+	tip_time=0
+	tip_index=(tip_index+1)%TIPS.size()
+	tip.text=TIPS[tip_index]
 	fade = 0.0
 	modulate.a = 1.0
 	visible = true
@@ -71,6 +86,12 @@ func close() -> void:
 
 
 func _process(dt: float) -> void:
+	if visible and fade<=0:
+		tip_time+=dt
+		if tip_time>=6:
+			tip_time=0
+			tip_index=(tip_index+1)%TIPS.size()
+			tip.text=TIPS[tip_index]
 	if fade <= 0:
 		return
 	fade -= dt

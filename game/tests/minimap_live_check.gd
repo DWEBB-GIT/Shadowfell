@@ -26,7 +26,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Map Tester", "warden")
+	var made: Dictionary = game.roster.create("Map", "warden")
 	check(made.ok, "test character created in a separate store")
 	if not made.ok:
 		quit(1)
@@ -46,7 +46,11 @@ func _run() -> void:
 	await process_frame
 	check(minimap.terrain_view != null and minimap.overhead_camera != null, "actual-world overhead camera is created")
 	check(minimap.terrain_view.world_3d == game.get_world_3d(), "minimap shares the active gameplay world")
-	check(minimap.picture == minimap.terrain_view.get_texture(), "minimap background is a rendered viewport texture")
+	for i in 4:
+		minimap._refresh_overhead()
+		await RenderingServer.frame_post_draw
+	var here := Vector2i(floori(game.player.position.x / Minimap.TILE_M), floori(game.player.position.z / Minimap.TILE_M))
+	check(minimap._tiles.has(here) and minimap._tiles[here] is ImageTexture, "the ground under the player is captured once as a still")
 	check(minimap.overhead_camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "overhead view uses orthographic projection")
 	check(not minimap.overhead_camera.environment.fog_enabled and game.env.fog_enabled, "map fog is disabled independently of gameplay fog")
 	check(game.get_viewport().get_camera_3d() == game.camera, "minimap does not replace the gameplay camera")
@@ -56,7 +60,7 @@ func _run() -> void:
 		minimap.set_zoom(index)
 		minimap._refresh_overhead(true)
 		var scale: float = Minimap.ZOOMS[index]
-		check(is_equal_approx(minimap.overhead_camera.size, Minimap.CAPTURE_PIXELS / scale), "capture and marker scales agree at zoom %d" % index)
+		check(is_equal_approx(minimap.overhead_camera.size, Minimap.TILE_M), "stills are one tile wide at every zoom (zoom %d)" % index)
 		check(minimap.world_to_map(Vector2(player.x, player.z)).is_equal_approx(centre), "player remains centred at zoom %d" % index)
 		var east := minimap.world_to_map(Vector2(player.x + 10, player.z))
 		var north := minimap.world_to_map(Vector2(player.x, player.z - 10))
@@ -72,10 +76,10 @@ func _run() -> void:
 	minimap.set_zoom(-1)
 	check(minimap.zoom == 0, "zoom-out is bounded")
 	minimap.set_zoom(1)
-	var old_at := minimap._captured_at
-	game.player.place_at(player.x + 20, player.z)
+	var stills: int = minimap._tiles.size()
 	minimap._refresh_overhead()
-	check(minimap._captured_at.distance_to(old_at) > 10, "teleport refreshes the capture immediately")
+	await RenderingServer.frame_post_draw
+	check(minimap._tiles.size() >= stills, "stills are kept, not re-rendered")
 	game.player.place_at(player.x, player.z)
 	minimap._refresh_overhead(true)
 	if DisplayServer.get_name() != "headless":

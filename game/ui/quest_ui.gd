@@ -39,6 +39,9 @@ var tracker_collapsed := false
 const TRACKER_W := 236.0
 var _way: RichTextLabel ## the way to the followed quest, under it in the tracker
 var _way_text := ""
+var _way_arrow: Control ## the small turned arrow in front of the way line
+var _way_angle := 0.0 ## clockwise from north (up the map), radians
+var _way_here := false
 var _way_t := 0.0
 var log_list_scroll: ScrollContainer
 var log_list: VBoxContainer
@@ -140,7 +143,7 @@ func abandon() -> void:
 	var id = selected
 	if id == null:
 		return
-	if DB.quests[id].get("autoAccept"):
+	if DB.quests[id].get("autoAccept") and not DB.quests[id].get("allowAbandon", false):
 		game.events.emit("log", {"text": "That is the road you are on. It cannot be abandoned.", "kind": "muted", "throttle": "abandon"})
 		return
 	if confirm_abandon != id:
@@ -173,22 +176,40 @@ func _objectives(objs: Array) -> String:
 func _steps(objs: Array) -> String:
 	var out := []
 	for o in objs:
-		out.append("[color=#8cbf78]  ✓ %s[/color]" % UI.esc(Quests.line(o)) if o.done else "[color=#6e6250]  ▢[/color] [color=%s]%s[/color]" % [UI.hex(UI.TEXT), UI.esc(Quests.line(o))])
+		out.append("  %s [color=#8cbf78]%s[/color]" % [_tick(), UI.esc(Quests.line(o))] if o.done else "[color=#6e6250]  ▢[/color] [color=%s]%s[/color]" % [UI.hex(UI.TEXT), UI.esc(Quests.line(o))])
 	return "[font_size=12]%s[/font_size]" % "\n".join(out)
+
+
+## a done step's tick: Dan's gold tick (assets/icons/ui/tracker_tick.png)
+func _tick() -> String:
+	return "{art:ui/tracker_tick:13}" if Icons.art("ui", "tracker_tick") else "[color=#8cbf78]✓[/color]"
+
+
+## a ready quest's mark, left of its name like the steps' ticks: the same
+## gold ? that shows over the hand-in NPC
+func _ready_mark() -> String:
+	return "{art:map/quest_ready:15} " if Icons.art("map", "quest_ready") else "[font_size=13][color=#8cbf78]✓ [/color][/font_size]"
+
+
+## the followed quest's mark: the gold goal gem the minimap and world map
+## put on its goal, so the two read as one
+func _follow_mark() -> String:
+	return "{art:map/quest_goal:15} " if Icons.art("map", "quest_goal") else "◆ "
 
 
 func _sub(text: String) -> String:
 	return "[font_size=11][color=#9a8f78]%s[/color][/font_size]\n" % text.to_upper()
 
 
-func _rewards(r: Dictionary) -> String:
+func _rewards(r: Dictionary, id := "") -> String:
 	var parts := []
 	for g in r.get("items", []):
 		var def := Items.get_def(g.item)
 		parts.append("{item:%s:26} [color=%s]%s[/color]%s" % [g.item, UI.hex(Items.rarity_colour(def.get("rarity", "common"))), UI.esc(def.name), " ×%d" % g.count if g.get("count", 1) > 1 else ""])
 	var lines := []
-	if r.get("xp"):
-		lines.append("[color=#c8a0f0]%s experience[/color]" % U.n(r.xp))
+	var xp := Quests.reward_xp(id, game.progression.level) if id != "" else 0
+	if xp > 0:
+		lines.append("[color=#c8a0f0]%s experience[/color]" % U.n(xp))
 	if r.get("coins"):
 		var cr := U.coin_range(r.coins)
 		lines.append(UI.money(cr[0]) if cr[0] == cr[1] else "%s – %s" % [UI.money(cr[0]), UI.money(cr[1])])
@@ -225,7 +246,7 @@ func render_dialogue() -> void:
 		UI.set_rich(UI.rich(w.body, 13), text)
 	UI.wrapped(UI.label(w.body, ("%s %s" % [page.salutation, page.text]) if page.get("salutation", "") != "" else page.text, 14, Color("e6dbc0")))
 	if q != null:
-		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward))
+		UI.set_rich(UI.rich(w.body, 13), _sub("Objectives") + _objectives(q.objectives) + _rewards(q.reward, q.get("id", "")))
 	UI.rule(w.body)
 	var opts := UI.vbox(w.body, 2)
 	var group = null
@@ -465,7 +486,7 @@ func render_log() -> void:
 				text += "[font_size=12][color=#9a8f78]%s[/color][/font_size]\n" % UI.esc(DB.quests[d].name)
 		UI.set_rich(UI.rich(log_detail, 13, detail_w), text)
 	else:
-		UI.set_rich(UI.rich(log_detail, 13, detail_w), _details(sel_id))
+		UI.set_rich(UI.rich(log_detail, 13, detail_w), game.quests.wording(_details(sel_id)))
 		_log_buttons(sel_id)
 	log_hint.text = "Up/down: choose   A: show the way   X: track (up to %d)   Y: abandon   B: close" % Quests.MAX_TRACKED if hud.pad_mode else "Tracked quests (up to %d) show under the map; click one there to be shown the way. L or Esc closes." % Quests.MAX_TRACKED
 	layout()
@@ -517,6 +538,8 @@ func _details(id: String) -> String:
 	var note := "  [color=#ff4a3a](dangerous at your level)[/color]" if danger >= 5 else ("  [color=#ff9a40](hard at your level)[/color]" if danger >= 3 else "")
 	var text := "[font_size=18][color=#e6b85e]%s[/color][/font_size]\n" % UI.esc(q.name)
 	text += "[font_size=12][color=%s]%s[/color]  [color=#9a8f78]·  %s%s[/color]%s[/font_size]\n\n" % [UI.hex(_level_colour(lv)), level_text(lv).replace("Lv", "Level"), "Dungeon: " if z.dungeon else "", UI.esc(z.name), note]
+	if q.has("story"):
+		text += "[font_size=12][color=#c9a45c]%s%s[/color][/font_size]\n\n" % ["Main story" if q.story else "Local story", " · " + UI.esc(q.chapter) if q.get("chapter", "") != "" else ""]
 	text += _sub("Description") + "[color=#d8ccb0]%s[/color]\n\n" % UI.esc(q.get("offer", q.get("summary", "")))
 	text += _sub("Summary")
 	if q.get("summary") and q.get("offer"):
@@ -524,7 +547,7 @@ func _details(id: String) -> String:
 	text += _objectives(ql.objectives(id))
 	var where := Quests.hand_in(id)
 	text += "[font_size=12][color=#ffd23c]Complete: return to %s.[/color][/font_size]\n\n" % UI.esc(where) if s == "ready" else "[font_size=12][color=#9a8f78]Hand in to %s.[/color][/font_size]\n\n" % UI.esc(where)
-	text += _rewards(q.get("reward", {}))
+	text += _rewards(q.get("reward", {}), id)
 	if s == "ready":
 		text += "\n[font_size=14][color=#7fd060]✔ Complete[/color][/font_size]\n"
 	return text
@@ -535,7 +558,7 @@ func _log_buttons(id: String) -> void:
 	var q: Dictionary = DB.quests[id]
 	UI.button(log_actions, "Untrack" if ql.tracked.has(id) else "Track", func(): game.quests.set_tracked(id, not game.quests.tracked.has(id)), 13)
 	UI.button(log_actions, "Stop following" if ql.focus == id else "Show the way", func(): game.quests.set_focus("" if game.quests.focus == id else id), 13)
-	if not q.get("autoAccept"):
+	if not q.get("autoAccept") or q.get("allowAbandon", false):
 		var ab := UI.button(log_actions, "Really abandon?" if confirm_abandon == id else "Abandon", abandon, 13)
 		if confirm_abandon == id:
 			ab.add_theme_color_override("font_color", Color("ff9070"))
@@ -550,7 +573,10 @@ func render_tracker() -> void:
 	var ql = game.quests
 	UI.clear(tracker_box)
 	_way = null
+	_way_arrow = null
 	var ids: Array = ql.active.filter(func(id): return ql.tracked.has(id))
+	if ql.focus != "" and ql.status(ql.focus) == "available":
+		ids.push_front(ql.focus)
 	tracker.visible = not ids.is_empty()
 	var head := UI.hbox(tracker_box, 6)
 	var title := UI.label(head, "%s  OBJECTIVES" % ("▸" if tracker_collapsed else "▾"), 12, UI.GOLD, 4)
@@ -575,9 +601,14 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "[font_size=13][color=%s]%s%s[/color][/font_size]%s\n" % ["#fff0a0" if focused else "#e8d8b0", "◆ " if focused else "", UI.esc(q.name), " [font_size=10][color=#8cbf78](Complete)[/color][/font_size]" if s == "ready" else ""]
-		if s == "ready":
-			text += "[font_size=12][color=#ffd23c]  ➜ Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
+		# a lead (offered, not taken yet) wears the giver's gold ! and a dim
+		# name, so it never reads as a quest already in the log (Dan 2026-11-09)
+		var lead := s == "available"
+		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "[color=#ffd23c][b]![/b][/color] " if lead else "", "#b8ab8c" if lead else "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused and not lead else "", UI.esc(q.name)]
+		if lead:
+			text += "[font_size=12][color=#ffd23c]  Not taken yet · Speak to %s to accept[/color][/font_size]" % UI.esc(DB.npcs[q.giver].name)
+		elif s == "ready":
+			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
 			text += _steps(ql.objectives(id))
 		var row := UI.hbox(tracker_box, 2)
@@ -585,27 +616,40 @@ func render_tracker() -> void:
 		r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_outline(r)
 		# the cross takes the quest off the list (it stays in the quest log)
-		var off := UI.button(row, "✕", func(): game.quests.set_tracked(id, false), 11)
+		var off := UI.button(row, "✕", func():
+			if s == "available":
+				game.quests.set_focus("")
+			else:
+				game.quests.set_tracked(id, false), 11)
 		off.flat = true
 		off.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		off.custom_minimum_size = Vector2(18, 18)
 		off.add_theme_color_override("font_color", UI.TEXT_DIM)
 		off.add_theme_color_override("font_hover_color", UI.GOLD)
-		off.tooltip_text = "Stop tracking this quest"
+		off.tooltip_text = "Stop following this lead" if s == "available" else "Stop tracking this quest"
 		r.mouse_filter = Control.MOUSE_FILTER_STOP
 		r.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		r.tooltip_text = "Click: show the way · Right click: open in the quest log"
+		r.tooltip_text = "Speak to the marked NPC to accept this quest." if s == "available" else "Click: show the way · Right click: open in the quest log"
 		UI.set_rich(r, text)
 		r.gui_input.connect(func(e):
 			if not (e is InputEventMouseButton and e.pressed):
 				return
 			if e.button_index == MOUSE_BUTTON_LEFT:
 				game.quests.set_focus("" if game.quests.focus == id else id)
-			elif e.button_index == MOUSE_BUTTON_RIGHT:
+			elif e.button_index == MOUSE_BUTTON_RIGHT and s != "available":
 				selected = id
 				toggle_log(true))
 		if focused:
-			_way = UI.rich(tracker_box, 12, TRACKER_W - 22)
+			# the way line: the minimap's player arrow, small, turned to the goal
+			var way_row := UI.hbox(tracker_box, 4)
+			UI.gap(way_row, 0, 12)
+			_way_arrow = Control.new()
+			_way_arrow.custom_minimum_size = Vector2(14, 14)
+			_way_arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			_way_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_way_arrow.draw.connect(_draw_way_arrow)
+			way_row.add_child(_way_arrow)
+			_way = UI.rich(way_row, 12, TRACKER_W - 40)
 			_outline(_way)
 			_way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			_way_text = ""
@@ -633,23 +677,46 @@ func _update_way() -> void:
 		return
 	var at: Dictionary = game.quests.goal(game.quests.focus) if game.quests.focus != "" else {}
 	var text := ""
+	if _way_arrow and is_instance_valid(_way_arrow):
+		_way_arrow.visible = not at.is_empty()
 	if at.is_empty():
-		text = "[color=#9a8f78]    No place to point to.[/color]"
+		text = "[color=#9a8f78]No place to point to.[/color]"
 	else:
 		var p: Vector3 = game.player.position
 		var dx: float = at.x - p.x
 		var dz: float = at.z - p.z
 		var d := maxf(0, U.hyp(dx, dz) - at.r)
 		if d < 4:
-			text = "[color=#fff0a0]    ➜ %s · here[/color]" % UI.esc(at.label)
+			text = "[color=#fff0a0]%s · here[/color]" % UI.esc(at.label)
 		else:
 			# north is up the map, which is -z
-			var i := posmod(roundi(atan2(dx, -dz) / (TAU / 8)), 8)
-			text = "[color=#fff0a0]    ➜ %s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+			var ang := atan2(dx, -dz)
+			var i := posmod(roundi(ang / (TAU / 8)), 8)
+			text = "[color=#fff0a0]%s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+			if _way_arrow and is_instance_valid(_way_arrow) and (absf(angle_difference(ang, _way_angle)) > 0.02 or _way_here):
+				_way_angle = ang
+				_way_here = false
+				_way_arrow.queue_redraw()
+		if d < 4 and not _way_here and _way_arrow and is_instance_valid(_way_arrow):
+			_way_here = true
+			_way_arrow.queue_redraw()
 	if text != _way_text:
 		_way_text = text
 		UI.set_rich(_way, "[font_size=12]%s[/font_size]" % text)
 		tracker.size = tracker.get_combined_minimum_size()
+
+
+## the minimap's player arrow (assets/icons/map/player.png), turned to the
+## goal; the quest goal diamond once you are there
+func _draw_way_arrow() -> void:
+	var c := _way_arrow.size / 2
+	var tex := Icons.art("map", "quest_goal" if _way_here else "player")
+	_way_arrow.draw_set_transform(c, 0.0 if _way_here else _way_angle)
+	if tex:
+		_way_arrow.draw_texture_rect(tex, Rect2(-c, _way_arrow.size), false)
+	elif not _way_here:
+		_way_arrow.draw_colored_polygon(PackedVector2Array([Vector2(0, -6), Vector2(4.5, 5), Vector2(0, 2.5), Vector2(-4.5, 5)]), Color("#fff0a0"))
+	_way_arrow.draw_set_transform(Vector2.ZERO)
 
 
 # ------------------------------------------------- ! and ? over heads
@@ -661,6 +728,9 @@ func update_marks() -> void:
 	var cam: Camera3D = game.camera
 	var vp := get_viewport_rect().size
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.6) * 0.5 + 0.5
+	var map_rect := Rect2()
+	if hud.minimap and hud.minimap.visible:
+		map_rect = hud.minimap.get_global_rect().grow_individual(6, Minimap.OUT_TOP, Minimap.OUT_RIGHT, 30)
 	for n in game.npcs.all:
 		if not n.present or n.position.distance_squared_to(game.player.position) > 70.0 * 70.0:
 			if marks.has(n.id): marks[n.id].visible = false
@@ -683,8 +753,14 @@ func update_marks() -> void:
 		var at: Vector3 = n.position + Vector3(0, 2.55, 0)
 		var s := cam.unproject_position(at)
 		var visible := not cam.is_position_behind(at) and s.x > -vp.x * 0.025 and s.x < vp.x * 1.025 and s.y > -vp.y * 0.025 and s.y < vp.y * 1.025
+		var pos := s - Vector2(l.size.x / 2, l.size.y) - Vector2(0, bob * 5)
+		# never over the minimap, and never through a roof or wall (Dan 2026-11-04)
+		if visible and map_rect.intersects(Rect2(pos, l.size)):
+			visible = false
+		if visible and game.world and (game.world.roof_over(n.position.x, n.position.z) or game.world.see_through.hides(cam.global_position, at)):
+			visible = false
 		l.visible = visible
-		l.position = s - Vector2(l.size.x / 2, l.size.y) - Vector2(0, bob * 5)
+		l.position = pos
 
 
 # --------------------------------------------------------- layout

@@ -25,6 +25,12 @@ var time := 0.0 ## seconds of play in this world (respawn timers run on it)
 var respawn_at := {} ## enemy spawn id -> world time it comes back
 var grave = null ## your belongings where you fell (grave.gd)
 var discovered := {} ## POI ids (WorldMap.pois) the player has been to
+## The world clock: the hour of the day (0 to 24) and which day it is. It is a
+## fact about the shared world, not the player (a server would keep one for
+## everyone); DayNight lights the world from it and townsfolk keep their
+## routines by it (Npcs). CONFIG.clock sets how fast it runs.
+var hour := 9.0
+var day := 1
 
 
 func _init(g) -> void:
@@ -52,6 +58,16 @@ func reset() -> void:
 	time = 0.0
 	respawn_at = {}
 	grave = null
+	hour = float(DB.CONFIG.clock.startHour)
+	day = 1
+
+
+## run the clock on by `dt` seconds of play
+func advance_clock(dt: float) -> void:
+	hour += dt * 24.0 / (float(DB.CONFIG.clock.dayMinutes) * 60.0)
+	while hour >= 24.0:
+		hour -= 24.0
+		day += 1
 
 
 func is_defeated(id: String) -> bool:
@@ -105,6 +121,7 @@ func serialize() -> Dictionary:
 		"respawnAt": respawn_at.duplicate(),
 		"discovered": discovered.keys(),
 		"grave": grave.duplicate(true) if grave != null else null,
+		"clock": {"hour": snappedf(hour, 0.001), "day": day},
 	}
 
 
@@ -149,6 +166,13 @@ func apply(data: Dictionary) -> void:
 	nemesis = data.get("nemesis") if typeof(data.get("nemesis")) == TYPE_STRING else null
 	time = float(data.get("time", 0.0))
 	discovered = _set_of(data.get("discovered"))
+	# saves from before the clock start the day at the usual hour
+	var ck = data.get("clock")
+	hour = float(DB.CONFIG.clock.startHour)
+	day = 1
+	if typeof(ck) == TYPE_DICTIONARY:
+		hour = fposmod(float(ck.get("hour", hour)), 24.0)
+		day = maxi(1, int(ck.get("day", 1)))
 	var gv = data.get("grave")
 	grave = null
 	if typeof(gv) == TYPE_DICTIONARY and ["grave", "stolen", "dropped"].has(gv.get("phase")) and typeof(gv.get("items")) == TYPE_ARRAY:

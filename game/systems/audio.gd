@@ -20,6 +20,12 @@ const SFX := {
 	"parry": ["parry_1.wav", "parry_2.wav", "parry_3.wav"],
 	"shot": ["bow_shot_1.wav", "bow_shot_2.wav"],
 	"block": ["shield_block.mp3"],
+	# combat by weapon (Dan's library, 2026-11-03): arrows and daggers land
+	# with their own sound; a blow turned by your shield or armour clanks
+	"hit_bow": ["bow_hit_1.ogg", "bow_hit_2.ogg", "bow_hit_3.ogg"],
+	"hit_dagger": ["dagger_stab.mp3"],
+	"blocked": ["sword_blocked_1.ogg", "sword_blocked_2.ogg", "sword_blocked_3.ogg"],
+	"arrow_blocked": ["bow_blocked_1.ogg", "bow_blocked_2.ogg", "bow_blocked_3.ogg"],
 	"lunge": ["heavy_whoosh.mp3"],
 	"wolf": ["wolf_growl.mp3"],
 	"gold": ["gold.ogg"],
@@ -66,8 +72,6 @@ const FOREST_DAY := "amb_forest_day.ogg" ## Pixabay "Morning Forest Ambiance", m
 const FOREST_NIGHT := "amb_forest_night.ogg" ## Pixabay "Sounds of the Forest (Night)"
 ## Night by the player's own clock, as WoW follows the realm's clock: from
 ## 21:00 until 06:00. The game has no day/night cycle of its own yet.
-const NIGHT_FROM := 21
-const NIGHT_TO := 6
 const AMB_DB := -8.0
 const MUSIC := "music_loop.ogg" ## Dan's background track
 ## The music as WoW plays it (Dan, 2026-11-02): silent when you arrive, it
@@ -126,11 +130,24 @@ func _ready() -> void:
 		func(): growl(55, 1.4), func(): growl(120, 0.35)]
 	for t in [[160, 0.18], [110, 0.25], [90, 0.3], [180, 0.12], [70, 0.6], [60, 0.6], [220, 0.12]]:
 		warm.append(func(): thud(t[0], t[1]))
+	for id in DB.spell_fx:
+		var cue: Dictionary = DB.spell_fx[id].get("sound", {})
+		if not cue.is_empty():
+			for phase in ["cast", "impact"]:
+				warm.append(func(): _ability_cue(id, phase, cue))
+	for sc in SCHOOL_PITCH:
+		warm.append(func(): cast_charge(sc))
+		warm.append(func(): whoosh(0.3, SCHOOL_PITCH[sc] * 1.4))
+	warm.append(func(): whoosh(0.22, 700))
+	warm.append(func(): thud(150, 0.15))
+	warm.append(func(): thud(65, 0.6))
 	for g in GROWL.values():
 		warm.append(func(): growl(g[0], g[1]))
 	for v in VARIANTS:
 		warm.append(func(): bell(1, 180 + v * 10, "Ambience"))
-		for f in [func(): whoosh(0.18, 900), func(): impact(), func(): coins(), func(): crow(), func(): creak()]:
+		for f in [func(): whoosh(0.18, 900), func(): impact(), func(): coins(), func(): crow(), func(): creak(),
+				func(): clank(), func(): bone_crack(), func(): flesh(), func(): rustle(), func(): crit_sting(), func(): kill_crunch(),
+				func(): school_impact("fire"), func(): school_impact("holy"), func(): school_impact("shadow"), func(): school_impact("arcane")]:
 			warm.append(func():
 				_force_variant = v
 				f.call()
@@ -166,6 +183,9 @@ func start() -> void:
 	if started:
 		return
 	started = true
+	# the buses come from default_bus_layout.tres, so they exist from the
+	# first frame (a browser's web audio graph is built when the engine
+	# starts); this only covers a project without that file
 	for bus in ["Effects", "Ambience", "Music"]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
@@ -238,6 +258,10 @@ func output_devices() -> PackedStringArray:
 
 
 func apply_device() -> void:
+	# a browser has only its own default output: setting it anyway restarted
+	# the web audio driver as the game began, and it stayed silent after
+	if OS.has_feature("web"):
+		return
 	var want: String = game.settings.get_value("outputDevice")
 	AudioServer.output_device = want if output_devices().has(want) else "Default"
 
@@ -249,13 +273,33 @@ func _bind() -> void:
 	ev.on("fishCast", func(_e): sfx("fish_cast", 0.8))
 	ev.on("fishReel", func(_e): sfx("fish_out", 0.8))
 	ev.on("fishBite", func(_e): sfx("fish_splash", 1.0))
-	ev.on("enemyHit", func(e):
-		if e.get("kind") != "strike":
-			return
-		sfx("hit")
-		if e.get("crit"):
-			thud(90, 0.3)) # a crit lands with a deeper crunch
-	ev.on("burst", func(_e): shield_break())
+	# a blow is heard when it is seen (the opening swing's impact waits
+	# for the blade, `show`)
+	ev.on("enemyHit", func(e): _later(e.get("show", 0.0), func(): blow(e)))
+	ev.on("burst", func(e): burst_boom(e))
+	ev.on("castStart", func(e):
+		if e.id == "longShot":
+			whoosh(0.52, 240)
+		else:
+			cast_charge(_school_of(e.id)))
+	ev.on("castEnd", func(e):
+		if not e.get("done"):
+			_cast_failure())
+	ev.on("classCastFailed", func(_e): _cast_failure())
+	ev.on("shieldAbsorbed", func(e):
+		chime([784,1175] if e.id == "lightShield" else [520,830],0.08))
+	ev.on("tarIgnited", func(_e): school_impact("fire"))
+	ev.on("classAffliction", func(e):
+		if e.school in ["shadow","nature"]:
+			rustle(0.45))
+	ev.on("spellFx", func(e):
+		var cue: Dictionary = DB.spell_fx.get(e.id,{}).get("sound",{})
+		if not cue.is_empty() and e.phase in ["cast","impact"]:
+			_ability_cue(e.id,e.phase,cue)
+		elif e.phase == "cast":
+			cast_release(_school_of(e.id)))
+	ev.on("enemyMissed", func(_e): whoosh(0.18, 900))
+	ev.on("playerMiss", func(_e): whoosh(0.18, 900))
 	ev.on("playerBrace", func(_e): thud(180, 0.12))
 	ev.on("braceBlock", func(_e):
 		sfx("block"))
@@ -269,8 +313,8 @@ func _bind() -> void:
 			return
 		var g: Array = GROWL.get(e.enemy.type, [120, 0.35])
 		growl(g[0], g[1]))
-	ev.on("playerHurt", func(_e): thud(110, 0.25))
-	ev.on("enemyDefeated", func(e): death(e.enemy.type == "brute"))
+	ev.on("playerHurt", func(e): hurt(e))
+	ev.on("enemyDefeated", func(e): kill(e.enemy))
 	ev.on("lootCollected", func(e):
 		if coin_frame == Engine.get_process_frames():
 			return # a purse: its coins already chimed
@@ -284,7 +328,9 @@ func _bind() -> void:
 		else:
 			sfx("pickup"))
 	ev.on("coins", func(e):
-		if e.get("amount", 0) > 0:
+		if e.get("sold"):
+			sfx("gold") # coins counted across the counter
+		elif e.get("amount", 0) > 0:
 			coin_frame = Engine.get_process_frames()
 			sfx("loot_gold")
 		elif e.get("amount", 0) < 0 and not e.get("bought"):
@@ -337,11 +383,275 @@ func _bind() -> void:
 			sfx("quest_accept", 0.8))
 
 
+# --------------------------------------------------------------- combat
+## How a blow sounds (Dan 2026-11-03: fighting should feel impactful): the
+## weapon's own hit, then what it met (`material` in the enemy's data, else
+## from its `blood`: bone cracks, straw rustles, metal clanks, flesh thumps),
+## a bright sting on a crit, and a spell's school where a spell lands. Blows
+## that land in the same frame (an area spell) rattle in one after another,
+## each a little quieter, as Conquer Online's area hits do.
+const MAX_STACK := 4 ## blows heard from one frame
+const STACK_GAP := 0.035 ## seconds between them
+var _blow_frame := -1
+var _blow_n := 0
+
+
+func blow(e: Dictionary) -> void:
+	var enemy = e.get("enemy")
+	if enemy == null or e.get("damage", 0) <= 0 or e.get("periodic", false):
+		return
+	var f := Engine.get_process_frames()
+	_blow_n = _blow_n + 1 if f == _blow_frame else 0
+	_blow_frame = f
+	var n := _blow_n
+	if n >= MAX_STACK:
+		return
+	var lv := 1.0 / (1.0 + n * 0.4)
+	var crit: bool = e.get("crit", false)
+	var mat := material_of(enemy)
+	_later(n * STACK_GAP, func():
+		if e.get("kind") == "spell":
+			school_impact(str(e.get("school", "arcane")), lv)
+		else:
+			var w := weapon_sound(str(e.get("hand", "main")))
+			if w == "heavy":
+				thud(105 if e.get("hand") == "off" else 78, 0.2)
+			elif w == "":
+				thud(150, 0.15) # fists
+			else:
+				sfx(w, lv, rng.randf_range(0.94, 1.06) * (0.9 if crit else 1.0) * (1.19 if e.get("hand") == "off" else 0.96))
+		material_hit(mat, lv * 0.7)
+		if crit:
+			crit_sting(lv))
+
+
+## the hit sound of the weapon in a hand ("" for bare fists)
+func weapon_sound(hand: String) -> String:
+	if hand == "ranged":
+		return "hit_bow"
+	var w = game.stats.hand_weapon(hand) if game and game.stats else null
+	if w == null:
+		return ""
+	match str(w.get("weaponType", "sword")):
+		"dagger":
+			return "hit_dagger"
+		"bow":
+			return "hit_bow"
+		"club", "twoHand":
+			return "heavy"
+	return "hit"
+
+
+static func material_of(enemy) -> String:
+	var m = enemy.cfg.get("material")
+	if m:
+		return str(m)
+	match Fx.blood_of(enemy):
+		"bone":
+			return "bone"
+		"straw":
+			return "straw"
+	return "flesh"
+
+
+func material_hit(mat: String, level := 1.0) -> void:
+	match mat:
+		"metal":
+			clank(level)
+		"bone":
+			bone_crack(level)
+		"straw":
+			rustle(level)
+		_:
+			flesh(level)
+
+
+## An enemy's blow on you: a thud and its weapon, or a clank off your guard.
+func hurt(e: Dictionary) -> void:
+	if float(e.get("blocked", 0)) > 0:
+		var foe = e.get("enemy")
+		var shot: bool = foe != null and foe.cfg.get("ranged") != null and game.player and foe.position.distance_to(game.player.position) > 3.0
+		sfx("arrow_blocked" if shot else "blocked", 0.8)
+	if e.get("damage", 0) <= 0:
+		return
+	thud(110, 0.25)
+	sfx("hit", 0.45, 0.85)
+	if e.get("crit"):
+		crit_sting(0.7)
+
+
+## The killing blow: the body's death and a last, louder break of what it
+## is made of.
+func kill(enemy) -> void:
+	var heavy: bool = enemy.type == "brute" or str(enemy.cfg.get("type", "")) in ["elite", "heavy"]
+	death(heavy)
+	material_hit(material_of(enemy), 1.0)
+	kill_crunch()
+
+
+func kill_crunch() -> void:
+	var make := func():
+		var b := _buf(0.25)
+		_noise(b, 0, 0.25, Biquad.new("lowpass", 1400, 0.9, RATE), [0.002, 0.45, 0.2])
+		return b
+	_play("killCrunch%d" % _variant(), make, 0.8)
+
+
+## An area spell going off: a boom that grows with how many it caught.
+func burst_boom(e: Dictionary) -> void:
+	var n: int = e.get("hits", []).size()
+	thud(65, 0.6)
+	whoosh(0.35, 300)
+	if n >= 3:
+		shield_break()
+	school_impact(str(e.get("school", "holy")), minf(1.0, 0.6 + n * 0.1))
+
+
+static func _school_of(id: String) -> String:
+	var sp = DB.spells.get(id)
+	return str(sp.get("school", "arcane")) if sp is Dictionary else ""
+
+
+## a cast being drawn: a soft rising hum in the school's pitch
+func cast_charge(school: String) -> void:
+	if school == "" or school == "physical":
+		return
+	var base: float = SCHOOL_PITCH.get(school, 500.0)
+	var make := func():
+		var b := _buf(0.5)
+		_tone(b, 0, 0.5, "sine", func(t): return _expo(base * 0.5, base, t, 0.5), [0.35, 0.12, 0.15])
+		_noise(b, 0, 0.5, Biquad.new("bandpass", base, 2.0, RATE), [0.4, 0.08, 0.1], func(t): return _expo(base, base * 2.5, t, 0.5))
+		return b
+	_play("charge:" + school, make, 1.0)
+
+
+## a spell let go: a rush in the school's pitch
+func cast_release(school: String) -> void:
+	if school == "":
+		return
+	if school == "physical":
+		whoosh(0.22, 700)
+		return
+	whoosh(0.3, SCHOOL_PITCH.get(school, 500.0) * 1.4)
+	if school == "holy":
+		chime([660, 990], 0.12)
+
+
+const SCHOOL_PITCH := {"fire": 380.0, "holy": 880.0, "shadow": 180.0, "nature": 520.0, "frost": 1200.0, "arcane": 760.0, "lightning": 540.0}
+
+
+## where a spell lands, by school
+func school_impact(school: String, level := 1.0) -> void:
+	match school:
+		"fire": # a whump and a crackle
+			var make := func():
+				var b := _buf(0.5)
+				_noise(b, 0, 0.45, Biquad.new("lowpass", 2400, 0.9, RATE), [0.004, 0.55, 0.4], func(t): return _expo(2400, 250, t, 0.4))
+				for i in 6:
+					var at := 0.05 + randf() * 0.35
+					_noise(b, at, 0.02, Biquad.new("highpass", 3000, 0.707, RATE), [0.001, 0.35, 0.015])
+				return b
+			_play("fireHit%d" % _variant(), make, level)
+		"holy": # a struck bell
+			var make := func():
+				var b := _buf(0.6)
+				var f := 990.0 + randf() * 120
+				for r in [1.0, 2.01, 3.0]:
+					var fr: float = f * r
+					_tone(b, 0, 0.6, "sine", func(_t): return fr, [0.002, 0.22 / r, 0.5 / r])
+				_noise(b, 0, 0.08, Biquad.new("highpass", 2500, 0.707, RATE), [0.001, 0.2, 0.06])
+				return b
+			_play("holyHit%d" % _variant(), make, level)
+		"shadow": # a low, sour rip
+			var make := func():
+				var b := _buf(0.5)
+				var f := 95.0 + randf() * 15
+				_tone(b, 0, 0.5, "sawtooth", func(t): return _expo(f * 1.4, f * 0.6, t, 0.45), [0.005, 0.3, 0.42], Biquad.new("lowpass", 600, 1.2, RATE))
+				_noise(b, 0, 0.3, Biquad.new("bandpass", 420, 1.5, RATE), [0.003, 0.35, 0.25])
+				return b
+			_play("shadowHit%d" % _variant(), make, level)
+		"nature": # a crack of wood and a rustle
+			thud(130, 0.15)
+			rustle(level)
+		_: # frost, arcane: a glassy ping
+			var make := func():
+				var b := _buf(0.35)
+				var f := 1500.0 + randf() * 300
+				_tone(b, 0, 0.35, "sine", func(t): return _expo(f, f * 0.4, t, 0.3), [0.002, 0.3, 0.3])
+				_noise(b, 0, 0.12, Biquad.new("highpass", 3500, 0.707, RATE), [0.001, 0.25, 0.1])
+				return b
+			_play("arcaneHit%d" % _variant(), make, level)
+
+
+## metal armour: a short, inharmonic ring and a scrape
+func clank(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.32)
+		var f := 900.0 + randf() * 400
+		for r in [1.0, 2.76, 5.4]:
+			var fr: float = f * r
+			_tone(b, 0, 0.3, "sine", func(_t): return fr, [0.001, 0.2 / r, 0.22 / r])
+		_noise(b, 0, 0.06, Biquad.new("bandpass", 4200, 1.2, RATE), [0.001, 0.3, 0.05])
+		return b
+	_play("clank%d" % _variant(), make, level)
+
+
+## bone: two dry cracks
+func bone_crack(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.18)
+		var f := 2200.0 + randf() * 800
+		_noise(b, 0, 0.05, Biquad.new("bandpass", f, 2.5, RATE), [0.001, 0.9, 0.04])
+		_noise(b, 0.035 + randf() * 0.02, 0.04, Biquad.new("bandpass", f * 0.7, 2.5, RATE), [0.001, 0.5, 0.03])
+		_tone(b, 0, 0.08, "triangle", func(t): return _expo(320, 140, t, 0.08), [0.001, 0.3, 0.07])
+		return b
+	_play("bone%d" % _variant(), make, level)
+
+
+## flesh: a wet, low slap
+func flesh(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.16)
+		_noise(b, 0, 0.14, Biquad.new("bandpass", 520 + randf() * 200, 1.4, RATE), [0.002, 0.6, 0.11])
+		_tone(b, 0, 0.12, "sine", func(t): return _expo(150, 70, t, 0.12), [0.002, 0.4, 0.1])
+		return b
+	_play("flesh%d" % _variant(), make, level)
+
+
+## straw and leaves: a dry rustle
+func rustle(level := 1.0) -> void:
+	var make := func():
+		var b := _buf(0.22)
+		_noise(b, 0, 0.2, Biquad.new("highpass", 2200, 0.707, RATE), [0.004, 0.25, 0.16])
+		return b
+	_play("rustle%d" % _variant(), make, level)
+
+
+## a crit: a bright sting that falls away, over a deeper crunch
+func crit_sting(level := 1.0) -> void:
+	thud(90, 0.3)
+	var make := func():
+		var b := _buf(0.2)
+		var f := 2600.0 + randf() * 400
+		_tone(b, 0, 0.18, "square", func(t): return _expo(f, f * 0.45, t, 0.15), [0.001, 0.12, 0.15], Biquad.new("highpass", 900, 0.707, RATE))
+		_noise(b, 0, 0.05, Biquad.new("highpass", 4000, 0.707, RATE), [0.001, 0.3, 0.04])
+		return b
+	_play("crit%d" % _variant(), make, level)
+
+
+## runs `fn` after `delay` seconds (at once for none)
+func _later(delay: float, fn: Callable) -> void:
+	if delay <= 0.001 or not is_inside_tree():
+		fn.call()
+		return
+	get_tree().create_timer(delay).timeout.connect(fn)
+
+
 # ------------------------------------------------------------- playback
 ## Sounds turned down from what their callers ask, in one place: running
 ## footsteps, panels and bags opening, drawing and sheathing (Dan
 ## 2026-11-02: too loud).
-const TRIM := {"step_dirt": 0.35, "step_stone": 0.35, "step_wood": 0.35,
+const TRIM := {"step_dirt": 0.2, "step_stone": 0.2, "step_wood": 0.2,
 	"panel": 0.35, "bag": 0.35, "quest_log": 0.35, "sheathe": 0.3, "unsheathe": 0.3}
 
 
@@ -432,10 +742,11 @@ func _amb_for(region_id: String) -> String:
 	return FOREST_NIGHT if is_night() else FOREST_DAY
 
 
-## night on the player's clock
-static func is_night() -> bool:
-	var h: int = Time.get_datetime_dict_from_system().hour
-	return h >= NIGHT_FROM or h < NIGHT_TO
+## night on the world clock (DayNight's "Night", 21:00 to 05:00)
+func is_night() -> bool:
+	if game == null or game.world_state == null:
+		return false
+	return DayNight.part_of_day(game.world_state.hour) == "Night"
 
 
 func _amb_switch() -> void:
@@ -449,11 +760,11 @@ func _amb_switch() -> void:
 	amb_loop.play()
 
 
-## crossing between loops, and day turning to night (checked twice a minute)
+## crossing between loops, and day turning to night (checked every few seconds)
 func _update_ambience(dt: float) -> void:
 	amb_check -= dt
 	if amb_check <= 0:
-		amb_check = 30.0
+		amb_check = 5.0
 		amb_want = _amb_for(amb_region)
 	if amb_want != amb_file:
 		amb_level = move_toward(amb_level, 0.0, dt / 2.0)
@@ -496,7 +807,9 @@ func _music_done() -> void:
 
 
 ## footsteps as the player's feet come down in the walk and run (Rig.steps):
-## wood indoors, stone in town, dirt elsewhere
+## wood indoors, stone in town, dirt elsewhere. Only every other footfall
+## sounds (one per stride, Dan 2026-11-04: too fast) and softly, with a
+## little pitch wobble so the strides do not tick like a clock.
 func _footsteps(_dt: float) -> void:
 	var pl = game.player
 	if pl == null or pl.rig == null:
@@ -506,14 +819,14 @@ func _footsteps(_dt: float) -> void:
 		return
 	var fresh := n < step_seen # a new rig counts from 0
 	step_seen = n
-	if fresh or pl.rig.airborne:
+	if fresh or pl.rig.airborne or n % 2 == 1:
 		return
 	var surface := "step_dirt"
 	if game.world.indoors != null:
 		surface = "step_wood"
 	elif amb_file == "amb_town.mp3":
 		surface = "step_stone"
-	sfx(surface, 0.35)
+	sfx(surface, 0.25, rng.randf_range(0.92, 1.05))
 
 
 ## Plays a rendered sound (made the first time it is asked for) at a level.
@@ -808,3 +1121,27 @@ func update(dt: float) -> void:
 	var want := maxf(0, danger) * 0.12
 	rumble_level += (want - rumble_level) * (1 - exp(-dt / 0.5))
 	rumble.volume_db = linear_to_db(maxf(rumble_level, 0.00001))
+
+
+var _last_cast_failure := -1000
+
+func _cast_failure() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_cast_failure < 360:
+		return
+	_last_cast_failure = now
+	thud(140, 0.09)
+
+
+func _ability_cue(id: String, phase: String, cue: Dictionary) -> void:
+	var impact := phase == "impact"
+	var hz: float = cue.pitch * (0.72 if impact else 1.0)
+	var length: float = cue.length
+	if id == "longShot" and not impact and not warming:
+		sfx("shot",0.9,0.8)
+	var make := func():
+		var buffer := _buf(length)
+		_tone(buffer,0,length,"sine",func(t):return _expo(hz*(1.4 if impact else 0.75),hz,t,length),[0.008,0.20,0.08])
+		_noise(buffer,0,length,Biquad.new("bandpass",clampf(hz*2.7,180,3600),1.2,RATE),[0.004,0.24,0.08])
+		return buffer
+	_play("ability:"+id+":"+phase,make,0.7 if impact else 0.48)

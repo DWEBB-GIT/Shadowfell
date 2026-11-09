@@ -212,6 +212,8 @@
     }
   ],
   "locations": [
+    {"id": "ni_roadside", "name": "Abel's Broken Cart", "position": [-626, -170], "radius": 16},
+    {"id": "ni_milestone", "name": "The West Road Milestone", "position": [-594, -191], "radius": 8},
     {
       "id": "cart",
       "name": "The abandoned cart",
@@ -1530,8 +1532,8 @@
       "id": "wm_di_siltwheel_0",
       "name": "Blackpick Mine",
       "position": [
-        -175.0,
-        -204.0
+        -215,
+        -286
       ],
       "radius": 14
     },
@@ -1597,6 +1599,141 @@
         1320.0
       ],
       "radius": 14
+    },
+    {
+      "id": "fen_hawthorn_blind",
+      "name": "Hawthorn's blind",
+      "position": [
+        -535,
+        -352
+      ],
+      "radius": 3
+    },
+    {
+      "id": "fen_hawthorn_cache",
+      "name": "Hawthorn's arrow cache",
+      "position": [
+        -566,
+        -347
+      ],
+      "radius": 3
+    },
+    {
+      "id": "fen_hawthorn_cairn",
+      "name": "The stone where Hawthorn fell",
+      "position": [
+        -557,
+        -378
+      ],
+      "radius": 3
+    },
+    {
+      "id": "in_courier_satchel",
+      "name": "Paige’s Spilled Satchel",
+      "position": [
+        -471,
+        -315
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_della_well",
+      "name": "The Old Well",
+      "position": [
+        -282,
+        -395
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_bridge_brace",
+      "name": "The Crossing Brace",
+      "position": [
+        -231,
+        -161
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_cart_shed",
+      "name": "Ada’s Cart Shed",
+      "position": [
+        -259,
+        -121
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_toll_cart",
+      "name": "The Abandoned Toll Cart",
+      "position": [
+        -274,
+        -154
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_reed_marker",
+      "name": "The Ferry Depth Marker",
+      "position": [
+        -551,
+        -100
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_ferry_lock",
+      "name": "The Ferry Sluice",
+      "position": [
+        -551,
+        -94
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_reed_cache",
+      "name": "The Collector’s Reed Cache",
+      "position": [
+        -590,
+        -112
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_lamplighters",
+      "name": "Lamplighter’s Rest",
+      "position": [
+        -343,
+        -101
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_mine_camp",
+      "name": "The Miners’ Rest",
+      "position": [
+        -275,
+        -96
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_lime_cut",
+      "name": "The Old Lime Cut",
+      "position": [
+        -288,
+        -242
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_bailiff_desk",
+      "name": "The Bailiff’s Desk",
+      "position": [
+        -238,
+        -275
+      ],
+      "radius": 8
     }
   ],
   "npcSpawns": [
@@ -1777,6 +1914,14 @@
         431.0
       ],
       "facing": 225
+    },
+    {
+      "npc": "banker",
+      "position": [
+        -612.0,
+        455.0
+      ],
+      "facing": 180
     }
   ],
   "enemySpawns": [
@@ -3236,6 +3381,16 @@
         445.4
       ],
       "radius": 4.5
+    },
+    {
+      "id": "bf_rune_forge",
+      "name": "the rune forge",
+      "kind": "runeforge",
+      "position": [
+        -619.5,
+        452.0
+      ],
+      "radius": 2.6
     },
     {
       "id": "briony_bench",

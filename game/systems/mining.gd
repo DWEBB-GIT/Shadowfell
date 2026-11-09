@@ -56,7 +56,7 @@ func _build() -> void:
 			node.add_child(glint)
 			node.position = Vector3(p[0], Terrain.height_at(p[0], p[1]), p[1])
 			node.rotation.y = fmod(p[0] * 13.7 + p[1] * 7.1, TAU)
-			game.scene.add_child(node)
+			game.world.stream.add_view(node, game.scene, p[0], p[1])
 			var mats := Rig.isolate_materials(model)
 			for m in mats:
 				if m is BaseMaterial3D:

@@ -28,3 +28,23 @@ func add_house(mi: MeshInstance3D, form: Dictionary) -> void:
 	mi.material_override = _mat
 	houses.append({"mi": mi, "form": form, "fade": 1.0})
 
+
+## true if a house stands between the camera at `from` and the point `to`
+## (quest ! and ? over a townsfolk's head stay hidden behind roofs and
+## walls). Tests the segment against each nearby house's box in its own
+## frame, a little shrunk so a marker at the eaves still shows.
+func hides(from: Vector3, to: Vector3) -> bool:
+	for h in houses:
+		var mi: MeshInstance3D = h.mi
+		if not is_instance_valid(mi) or not mi.is_inside_tree() or not mi.visible:
+			continue
+		var gt := mi.global_transform
+		var d := gt.origin - to
+		if d.x * d.x + d.z * d.z > 900.0:
+			continue
+		var inv := gt.affine_inverse()
+		var box := mi.get_aabb().grow(-0.25)
+		if box.intersects_segment(inv * from, inv * to) != null:
+			return true
+	return false
+

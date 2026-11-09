@@ -24,7 +24,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var character: Dictionary = game.roster.create("Village Tester", "warden")
+	var character: Dictionary = game.roster.create("Village", "warden")
 	check(character.ok, "isolated test character created")
 	game.enter_world(character.character.id)
 	var frames := 0
@@ -45,8 +45,12 @@ func _run() -> void:
 	check(not DB.quests.tf_bell.requires.has("tf_briar"), "wolf side quest is independent of the main story")
 	check(not DB.quests.vr_names.requires.has("vr_perch") and not DB.quests.vr_crypt.requires.has("vr_hollow_story"), "fishing and local tales do not gate the main story")
 	var local_quests := ["vr_fence_dispute", "vr_pig_wolf", "vr_reed_message", "vr_lost_brooch"]
+	# Dan 2026-11-09: local stories open one at a time as you finish the one
+	# before, but none of them may block the main story
+	var main_path: Array = DB.world.introJourney.opening
 	for id in local_quests:
-		check(DB.quests[id].requires.is_empty(), "local story can stand independently: " + id)
+		check(DB.quests[id].requires.size() == 1, "local story opens from one earlier step: " + id)
+		check(not main_path.any(func(m): return DB.quests[m].get("requires", []).has(id)), "local story never gates the main story: " + id)
 	var smith = game.npcs.by_id("tf_iren")
 	var woodcutter = game.npcs.by_id("vr_osric")
 	check(smith != null and smith.def.has("anvil"), "smith works at his actual forge anvil")

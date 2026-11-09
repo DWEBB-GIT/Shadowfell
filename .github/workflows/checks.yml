@@ -1,0 +1,62 @@
+name: Checks
+
+# Runs the data gate on every pull request, so a broken data link or a script
+# that does not compile shows on the PR before it is merged. The same checks
+# run again in deploy-pages.yml before each deploy.
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Data and scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Godot
+        run: |
+          V=4.7-stable
+          curl -sSLo godot.zip https://github.com/godotengine/godot/releases/download/$V/Godot_v${V}_linux.x86_64.zip
+          unzip -q godot.zip && mv Godot_v${V}_linux.x86_64 godot && rm godot.zip
+
+      - name: Import project
+        run: ./godot --headless --path . --import || true
+
+      - name: Check data
+        run: ./godot --headless --path . --script res://game/tests/validate_data.gd
+
+      - name: Check scripts compile
+        run: ./godot --headless --path . --script res://game/tests/check_scripts.gd
+
+      - name: Character name rules
+        run: ./godot --headless --path . --script res://game/tests/name_rules_check.gd
+
+      - name: Saves survive renamed and removed content
+        run: ./godot --headless --path . --script res://game/tests/save_renames_check.gd
+
+      - name: Townsfolk routines and the world clock
+        run: ./godot --headless --path . --script res://game/tests/routine_check.gd
+
+      - name: Game test run (start, fight, save)
+        run: ./godot --headless --path . --script res://game/tests/run_tests.gd
+
+      # Every other headless check that passes on main. A check that fails is
+      # fixed, never dropped from this list; one that is still red on main is
+      # added once it is green.
+      - name: Gameplay and editor checks
+        run: |
+          failed=""
+          for t in ambience_music_check atmosphere_check audio_check bank_check builds_check camera_movement_check chase_loot_check controls_check data_editor_check death_check death_new_map_check editor_authoring_check gather_nodes_check ghost_arrive_check heal_thorns_check jump_check level_50_check main_menu_check miss_check new_map_check opening_check playtest_1029_check quest_check quest_log_check quest_mark_check quest_npc_editor_check readability_check release_click_check runes_check scaling_xp_check sculpt_check spell_scaling_check starter_chain_check starter_check stream_check terrain_blend_check xp_orbs_check pk_check ; do
+            echo "::group::$t"
+            if ! timeout 300 ./godot --headless --path . --script res://game/tests/$t.gd; then failed="$failed $t"; fi
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then echo "::error::failed:$failed"; exit 1; fi

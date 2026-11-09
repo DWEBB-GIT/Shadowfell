@@ -131,6 +131,21 @@ func learn_recipe(id: String) -> bool:
 		events.emit("log", {"text": "You need %s to learn %s." % [U.money(r.cost), name], "kind": "muted", "throttle": "recipe-coins"})
 		return false
 	inventory.lose_coins(r.cost)
+	return _add_recipe(id)
+
+
+## A quest teaches a recipe as its reward: no rank or fee.
+func grant_recipe(id: String) -> bool:
+	var r = DB.recipes.get(id)
+	if r == null or not r.get("trainer") or learned.has(id):
+		return false
+	return _add_recipe(id)
+
+
+func _add_recipe(id: String) -> bool:
+	var r = DB.recipes[id]
+	var events: Events = game.events
+	var name: String = Items.get_def(r.output.item).name
 	learned[id] = true
 	events.emit("log", {"text": "You learn to make %s." % name, "kind": "level"})
 	if game.hud:

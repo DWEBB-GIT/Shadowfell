@@ -26,8 +26,15 @@ var is_open: bool:
 
 func open(n) -> void:
 	game.merchant.close()
+	game.bank.close()
+	# talking closes the rune forge and refining windows (Dan, 2026-11-03)
+	if game.hud and game.hud.items:
+		for k in ["runeforge", "refining"]:
+			if game.hud.items.open.get(k):
+				game.hud.items.close(k)
 	npc = n
 	view = {"kind": "menu"}
+	game.quests.count_talk(n.id)
 	# how they hail you: "Hey you!" while you are nobody, your title once you
 	# have chosen one (the notice board says nothing)
 	salutation = "" if DB.npcs[n.id].get("board") else game.titles.address("greetings")
@@ -148,6 +155,8 @@ var page:
 						pg.options.append({"id": "node:" + t.node, "text": t.prompt, "icon": "talk", "group": "talk"})
 				if def.get("shop"):
 					pg.options.append({"id": "shop", "text": "Browse goods", "icon": "shop", "group": "service"})
+				if def.get("banker"):
+					pg.options.append({"id": "bank", "text": "Open your bank", "icon": "shop", "group": "service"})
 				# a trainer: one way in to the trainer window, saying what is new
 				var rows := train_rows()
 				if not rows.is_empty():
@@ -193,18 +202,30 @@ var page:
 				pg.text = node.text
 				for r in node.replies:
 					pg.options.append({"id": "node:" + r.node if r.get("node") else "menu", "text": r.text, "icon": "talk"})
+			"followups":
+				var completed: Dictionary = DB.quests[v.id]
+				pg.text = "Quest complete: %s.\n\n%s" % [completed.name, completed.complete]
+				for quest_id in game.quests.followups(v.id):
+					var next: Dictionary = DB.quests[quest_id]
+					var status: String = game.quests.status(quest_id)
+					var at: Dictionary = game.quests.goal(quest_id)
+					var who: String = DB.npcs[next.giver].name if status == "available" else str(at.get("label", next.name))
+					var text := "Next quest: %s" % next.name if status == "available" and next.giver == npc.id else "Speak to %s — %s" % [who, next.name] if status == "available" else "Continue %s — %s" % [next.name, who]
+					pg.options.append({"id": "next:" + quest_id, "text": text, "icon": "available" if status == "available" else "talk", "group": "quest"})
+				pg.options.append({"id": "menu", "text": "Other business", "icon": "back"})
+				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})
 			"quest":
 				var q: Dictionary = DB.quests[v.id]
 				var status: String = game.quests.status(v.id)
 				pg.quest = {"id": q.id, "name": q.name, "status": status, "objectives": game.quests.objectives(q.id), "reward": q.get("reward", {}), "choice": q.has("choice")}
 				if status == "available":
-					pg.text = q.offer
+					pg.text = game.quests.wording(q.offer)
 					pg.options.append_array([{"id": "accept", "text": "Accept", "icon": "accept"}, {"id": "menu", "text": "Decline", "icon": "back"}])
 				elif status == "ready":
-					pg.text = q.complete
+					pg.text = game.quests.wording(q.complete)
 					pg.options.append_array([{"id": "complete", "text": "Complete quest", "icon": "accept"}, {"id": "menu", "text": "Back", "icon": "back"}])
 				else:
-					pg.text = q.get("progress", "")
+					pg.text = game.quests.wording(q.get("progress", ""))
 					pg.options.append({"id": "menu", "text": "Back", "icon": "back"})
 		return pg
 
@@ -213,15 +234,16 @@ var page:
 ## A smith's, enchanter's, jeweller's, bard's and reeve's choices on the greeting page.
 func _service_options(def: Dictionary, pg: Dictionary) -> void:
 	if def.get("forge"):
-		pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
-		pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
+		if game.progression.level >= 10:
+			pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
+			pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
 		if game.skills.has("mining"):
 			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
-	if def.get("refiner"):
+	if def.get("refiner") and game.progression.level >= 10:
 		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (stones and gems)", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:runecraft", "text": "Runecraft (bind rune fragments)", "icon": "shop", "group": "service"})
-	if def.get("jeweller"):
+	if def.get("jeweller") and game.progression.level >= 10:
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:remove", "text": "Take gems out (free)", "icon": "shop", "group": "service"})
@@ -255,7 +277,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 	var back := {"id": "menu", "text": "Back", "icon": "back"}
 	match v.kind:
 		"enchant":
-			pg.text = "Each rank I weave in is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring stones for the piece's level, and coin. The weave does not always take; when it slips you lose only the stones, and the piece remembers the try."
+			pg.text = "Each rank I add is worth a level, no more: a fine piece lasts you longer, it doesn't last for ever. Better pieces hold more. Bring me Fellstones. A refine does not always take; when it fails you lose only the stones, and the piece remembers the try."
 			for loc in fg.gear_locations():
 				var st = inv.get_at(loc)
 				var cost: Dictionary = fg.temper_cost(st)
@@ -265,7 +287,7 @@ func _service_page(v: Dictionary, pg: Dictionary) -> void:
 			if pg.options.is_empty():
 				pg.text += "\n\nNothing you carry will take refining. Plain gear has no magic to wake, and the rest holds all it can."
 		"scrap":
-			pg.text = "I'll break it down and draw the stones back out. You get three in four of the Fellstones that took, none of those lost to a slipped weave, and every gem in it. The rest is ash. I'll tell you what you'll get first."
+			pg.text = "I'll break it down and draw the stones back out. You get three in four of the Fellstones that took, none of those lost to a failed refine, and every gem in it. The rest is ash. I'll tell you what you'll get first."
 			for loc in fg.gear_locations():
 				if not fg.scrap_preview(inv.get_at(loc)).is_empty():
 					pg.options.append({"id": "scrap:" + loc, "text": _gear_name(loc), "icon": "talk"})
@@ -345,6 +367,13 @@ func _heal_price() -> int:
 ## A service choice; true if it was one (and was acted on).
 func _service_choose(id: String, v: Dictionary) -> bool:
 	var fg = game.forge
+	# refining has its own window now (Dan, 2026-11-03): an item slot, the
+	# next rank's gain, its cost and chance, and a Refine button
+	if id == "ench:enchant":
+		var n = npc
+		close()
+		game.refinery.open_at_npc(n)
+		return true
 	var views := {"ench:enchant": "enchant", "ench:scrap": "scrap", "ench:runecraft": "runecraft", "smith:reforge": "reforge", "smith:punch": "punch", "jw:make": "gems", "jw:set": "gemSet", "jw:remove": "gemRemove"}
 	if views.has(id):
 		view = {"kind": views[id]}
@@ -517,6 +546,11 @@ func choose(id: String) -> bool:
 		close()
 		game.merchant.open(def.shop, n)
 		return true
+	elif id == "bank":
+		var n = npc
+		close()
+		game.bank.open(n)
+		return true
 	elif id.begins_with("train:"):
 		if not game.skills.learn(id.substr(6)):
 			return false
@@ -549,6 +583,16 @@ func choose(id: String) -> bool:
 		var inn: String = npc.id
 		game.hud.confirm("Are you sure you want to make this inn your home?", func(): make_home(inn))
 		return true
+	elif id.begins_with("next:") and v.kind == "followups":
+		var next_id := id.substr(5)
+		if not game.quests.followups(v.id).has(next_id):
+			return false
+		var next: Dictionary = DB.quests[next_id]
+		if game.quests.status(next_id) == "available" and next.giver == npc.id:
+			view = {"kind": "quest", "id": next_id}
+		else:
+			game.quests.set_focus(next_id)
+			return close()
 	elif id.begins_with("quest:"):
 		view = {"kind": "quest", "id": id.substr(6)}
 		# opening a quest turns the page, from any npc, trainers too (Dan,
@@ -563,7 +607,19 @@ func choose(id: String) -> bool:
 	elif id == "complete" and v.kind == "quest":
 		if not game.quests.complete(v.id):
 			return false
-		view = {"kind": "menu"}
+		var next: Array = game.quests.followups(v.id)
+		if next.is_empty():
+			view = {"kind": "menu"}
+		else:
+			var first: Dictionary = DB.quests[next[0]]
+			# Multiple routes stay a choice. Never accept a quest for the player.
+			var alternatives := next.filter(func(q): return first.get("choice", "") != "" and DB.quests[q].get("choice") == first.choice)
+			if alternatives.size() < 2:
+				game.quests.set_focus(first.id)
+			if game.quests.status(first.id) == "available" and first.giver == npc.id and alternatives.size() < 2:
+				view = {"kind": "quest", "id": first.id}
+			else:
+				view = {"kind": "followups", "id": v.id}
 	else:
 		return false
 	events.emit("dialogueChanged", {})

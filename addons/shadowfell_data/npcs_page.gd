@@ -7,10 +7,10 @@ const DataStore := preload("store.gd")
 const UI := preload("ui.gd")
 
 ## the order keys are written in, so an edited npc reads like the others
-const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "board"]
+const KEY_ORDER := ["id", "mapIcon", "name", "title", "level", "model", "rig", "tint", "shop", "work", "dialogue", "innkeeper", "bedPrice", "banker", "board"]
 const SHOP_ORDER := ["id", "name", "vendorType", "stock", "faction"]
 ## what the minimap can draw for an npc's trade (src/data/schema.js NPC_MAP_ICONS)
-const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"]]
+const MAP_ICONS := [[null, "(none)"], ["vendor", "Vendor"], ["blacksmith", "Blacksmith"], ["fishing", "Fishing"], ["cooking", "Cooking"], ["innkeeper", "Innkeeper"], ["trainer", "Class trainer"], ["tanner", "Tanner"], ["banker", "Banker"]]
 
 ## open another record (a quest) on its own tab
 signal open_record(kind: String, id: String)
@@ -170,6 +170,7 @@ func _build() -> void:
 	tint.add_child(picker)
 	UI.row(g, "Tint", tint, "Colours their model, to tell apart townsfolk who share one.")
 	UI.row(g, "Map icon", UI.choice(MAP_ICONS, n.get("mapIcon"), func(v): _put("mapIcon", v)), "Puts their trade on the minimap.")
+	UI.row(g, "Banker", UI.check(n.get("banker", false), "Keeps the bank (opens your bank vault)", func(on): _put("banker", on)))
 	UI.row(g, "Innkeeper", UI.check(n.get("innkeeper", false), "Keeps an inn (rent a bed to wake whole and rested, or make it your home)", func(on): _put("innkeeper", on)))
 	if n.get("innkeeper", false):
 		UI.row(g, "Bed price", UI.spin(n.get("bedPrice", 5), 0, 100000, 1, func(v): _put("bedPrice", v)), "Coins for a night's sleep: full health and mana, wounds mended, rested experience.")
@@ -183,6 +184,7 @@ func _build() -> void:
 	_trains(n)
 	_quests(n)
 	_world(n)
+	_routine(n)
 
 
 ## the first plain greeting of their dialogue (what they say when you walk up)
@@ -498,3 +500,66 @@ func _delete() -> void:
 	dlg.canceled.connect(dlg.queue_free)
 	add_child(dlg)
 	dlg.popup_centered()
+
+
+# ------------------------------------------------------------ daily routine
+const PLACES := [["work", "Work (their post)"], ["inn", "Inn (a seat in the nearest inn)"], ["home", "Home (in for the night; answers a knock)"]]
+
+
+## the hours they keep by the world clock (game/systems/npcs.gd): a shared
+## timetable from npcs.json `routines`, or their own blocks
+func _routine(n: Dictionary) -> void:
+	UI.heading(form, "Daily routine")
+	if n.get("board", false):
+		UI.note(form, "A notice board stays where it is put up.")
+		return
+	var tables: Array = s.files.npcs.get("routines", [])
+	var opts := [[null, "(none: at their post all day)"]]
+	for r in tables:
+		opts.append([r.id, "Timetable: " + str(r.get("name", r.id))])
+	opts.append(["_own", "Their own hours"])
+	var r = n.get("routine")
+	var g := UI.grid(form)
+	UI.row(g, "Keeps", UI.choice(opts, "_own" if r is Array else r, func(v):
+		if v == "_own":
+			var base: Array = DataStore.find(tables, r).get("blocks", [{"from": 7, "at": "work"}, {"from": 19, "at": "inn"}, {"from": 22.5, "at": "home"}]) if r is String else [{"from": 7, "at": "work"}, {"from": 19, "at": "inn"}, {"from": 22.5, "at": "home"}]
+			_put("routine", base.duplicate(true), true)
+		else:
+			_put("routine", v, true)), "Hours they keep by the world clock: at work, at the inn of an evening, home overnight, walking between.")
+	if r == null:
+		return
+	var blocks: Array
+	if r is Array:
+		blocks = r
+	else:
+		var t := DataStore.find(tables, r)
+		if t.is_empty():
+			UI.note(form, "Unknown timetable %s." % r, Color("d0b070"))
+			return
+		if t.get("about"):
+			UI.note(form, t.about)
+		UI.note(form, "Editing these hours changes everyone who keeps the %s timetable." % t.get("name", r), Color("d0b070"))
+		blocks = t.blocks
+	var sp := s.spawn_of(n.id)
+	var places := PLACES.duplicate()
+	for k in sp.get("places", {}):
+		places.append([k, "%s (their spawn's places)" % k])
+	var rows := UI.grid(form)
+	rows.columns = 3
+	for b in blocks:
+		var block: Dictionary = b
+		rows.add_child(UI.spin(block.get("from", 0), 0, 23.75, 0.25, func(v):
+			block.from = v
+			_changed(), " h"))
+		rows.add_child(UI.choice(places, block.get("at", "work"), func(v):
+			block.at = v
+			_changed()))
+		rows.add_child(UI.button("Remove", func():
+			blocks.erase(block)
+			_changed(true), "Drop this block"))
+	form.add_child(UI.button("+ Add a block", func():
+		blocks.append({"from": 12, "at": "work"})
+		_changed(true), "Another stretch of the day, from an hour until the next block"))
+	var home = sp.get("home")
+	UI.note(form, "Each block runs from its hour until the next (the last runs past midnight to the first). Inn: the nearest inn within %d m of their post. Home: %s. With neither near, they stay at work. Each person keeps the hours a few minutes early or late, so a town does not move as one." % [
+		160, "their spawn's door at x %s, z %s" % [home[0], home[1]] if home is Array else "the nearest house within 70 m (or give their spawn a `home` [x, z] in the World editor's file)"], Color(0.6, 0.6, 0.6))

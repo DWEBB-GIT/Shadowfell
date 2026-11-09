@@ -38,9 +38,10 @@ Engine tuning that is not content, such as the damage formula's constants, camer
 2. **Records refer to each other by id only.**
    - A loot table names item ids, a shop names item ids, an NPC names a shop id, and a spawn names an enemy type id.
    - Nothing is copied between files.
-3. **Never rename or delete an id that has shipped.**
-   - Saves store item ids, enemy spawn ids, placed loot ids, flags and ability ids.
-   - To retire something, stop placing or selling it, and leave the record.
+3. **Renaming or deleting an id that has shipped needs a line in `data/meta/renames.json`.**
+   - Saves store item, ability, quest and recipe ids. On load a renamed id follows `renames.json` (`"items": { "old_id": "new_id" }`), and an id that no longer exists is dropped from the save, so the character still loads.
+   - Retiring is still kinder than deleting: stop placing or selling it, and leave the record, so nobody loses the thing.
+   - Enemy spawn ids, placed loot ids and flags have no renames: keep those stable.
 4. **No logic in data.**
    - Data says *what*: numbers, names, references, and simple conditions such as `{ "examined": "cart" }`.
    - Code says *how*. If content needs a new kind of behaviour, add it to the engine and give it a data field.
@@ -52,6 +53,15 @@ Engine tuning that is not content, such as the damage formula's constants, camer
 `npm run editor` starts a small local server; open the address it prints (http://localhost:5180/tools/quest-editor/). The quest editor lists every quest by giver, edits one at a time with dropdowns of real NPCs, enemies, items, examine points, map areas and factions, draws the quest chains, and runs the same checks as `npm run validate` as you type. **Save** (or Ctrl+S) writes `data/quests.json`; then rebuild and commit as usual. Quest ids lock once saved, because saves store them.
 
 ## Checking your change
+
+The Godot data gate runs on every pull request and before every deploy (`.github/workflows/checks.yml`, `deploy-pages.yml`); a problem stops the deploy:
+
+```
+godot --headless --path . --script res://game/tests/validate_data.gd   # data files and the links between them, ~3 s
+godot --headless --path . --script res://game/tests/check_scripts.gd   # every script compiles
+```
+
+It uses the Game Data editor's checks (`addons/shadowfell_data/checks.gd`), so the editor and the gate agree. The older browser-build checks below are kept for reference and no longer match the Godot data.
 
 ```
 npm run validate    # checks /data on its own, in under a second

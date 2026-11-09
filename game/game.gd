@@ -25,6 +25,7 @@ var started := false
 var time := 0.0
 var events := Events.new()
 var pending_death = null
+var releasing := false ## the spirit is rising behind the loading screen
 var zoom: float = DB.CONFIG.camera.zoomDefault
 
 ## Mouse aim controls (the default; Settings: Classic controls turns it off):
@@ -73,6 +74,7 @@ var enemies: Enemies
 var targeting: Targeting
 var npcs: Npcs
 var merchant: Merchant
+var bank: Bank
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
@@ -81,6 +83,8 @@ var mining: Mining
 var gathering: Gathering
 var forge: Forge
 var runes: Runes
+var rune_forge: RuneForge
+var refinery: Refinery
 var law: Law
 var boons: Boons
 var sparkles: Sparkles
@@ -92,6 +96,9 @@ var hud: Hud
 var audio: AudioSystem
 ## set by Log out: the reloaded scene opens on character select
 static var to_select := false
+## the character the lobby (game/boot/lobby.gd) chose before the world's
+## pack was in: the game goes straight in as them, without its title screen
+static var enter_id := ""
 var fx: Fx
 var save: SaveManager
 var roster := Roster.new()
@@ -118,6 +125,12 @@ var _bwk := -1.0
 var grade := {}
 var _ghost := false
 var _grade_check := 0.0
+var daylight := {} ## DayNight.light at the world clock's hour, laid over the grade
+var _day_hour := -100.0 ## the hour daylight was worked out for
+var _sun_off := Vector3.ZERO ## where the sun stands from the focus now
+var _sun_goal := Vector3.ZERO ## and where its quarter-hour step puts it
+const SUN_STEP := 0.25 ## game hours between steps of the sun's angle
+const SUN_EASE := 1.2 ## how fast a step is eased in (about 3 s)
 var subzone := "" ## the named valley or place the Warden is in (WorldMap.subzone_at)
 var _region_at := Vector2(INF, INF)
 var _region_from := Vector2.ZERO
@@ -126,6 +139,9 @@ var _region_from := Vector2.ZERO
 func _ready() -> void:
 	DB.ensure()
 	scene = self
+	# the player-facing name (window title, browser tab); the Godot project
+	# keeps its old name so user:// and existing saves stay where they are
+	get_window().title = str(DB.text.title.get("name", "Mythkeep"))
 	_init_renderer()
 	add_child(preload("res://game/ui/perf_overlay.gd").new())
 	input = GameInput.new()
@@ -166,6 +182,7 @@ func _ready() -> void:
 	targeting = Targeting.new(self)
 	npcs = Npcs.new(self)
 	merchant = Merchant.new(self)
+	bank = Bank.new(self)
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
@@ -175,6 +192,8 @@ func _ready() -> void:
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
 	runes = Runes.new(self)
+	rune_forge = RuneForge.new(self)
+	refinery = Refinery.new(self)
 	law = Law.new(self)
 	boons = Boons.new(self)
 	sparkles = Sparkles.new(self)
@@ -194,9 +213,25 @@ func _ready() -> void:
 	_show_title()
 
 
+## How finely the 3D world is drawn. A browser on a high-density screen
+## (devicePixelRatio 2 or more) would otherwise draw every device pixel, four
+## times the work of the same window on a plain screen: there the world is
+## drawn at about 1.25x the page's own pixels and scaled up, while the HUD and
+## text stay sharp at full resolution.
+static func render_scale() -> float:
+	var base: float = DB.CONFIG.camera.renderScale
+	if not OS.has_feature("web"):
+		return base
+	var dpr := maxf(1.0, DisplayServer.screen_get_scale())
+	return clampf(base * WEB_PIXELS / dpr, 0.5, base)
+
+
+const WEB_PIXELS := 1.25 ## world pixels per page pixel in the browser
+
+
 func _init_renderer() -> void:
 	var vp := get_viewport()
-	vp.scaling_3d_scale = DB.CONFIG.camera.renderScale
+	vp.scaling_3d_scale = render_scale()
 	vp.msaa_3d = Viewport.MSAA_2X
 	# View-distance fog: clear around the player, swallowing the road ahead.
 	# Things past `far` are not drawn at all.
@@ -256,8 +291,13 @@ func _init_renderer() -> void:
 	sun.shadow_enabled = true
 	sun.shadow_bias = 0.03
 	sun.shadow_normal_bias = 0.65
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 72.0
+	# the browser draws every shadow caster once more per split: one split
+	# there (the 4096 map over 60 m is sharp enough), two on desktop
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL if OS.has_feature("web") else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	# the browser's sun shadow map is 4096 (project.godot) over a shorter
+	# reach, so trees there no longer cast blocky shadows; the camera's view
+	# ends inside about 60 m at the default zoom
+	sun.directional_shadow_max_distance = 60.0 if OS.has_feature("web") else 72.0
 	sun.shadow_opacity = 0.78
 	sun.shadow_blur = 1.5
 	add_child(sun)
@@ -289,6 +329,10 @@ func _show_title() -> void:
 			save.quarantine(rs.get("raw"), c.key)
 			push_warning("Save for %s rejected: %s" % [c.name, rs.get("errors")])
 	hud.show_title(note)
+	if enter_id != "":
+		var id := enter_id
+		enter_id = ""
+		enter_world(id)
 
 
 ## Play as a character from the roster: their own save, or a fresh start.
@@ -332,8 +376,14 @@ func load_world() -> void:
 	hud.loading.show_progress("Raising the world…", 0.45)
 	var shelf := _model_shelf()
 	fx.prewarm(camera_target)
+	# the target rings too: hidden until the first fight, they were compiled then
+	for m in [targeting.marker, targeting.soft_marker]:
+		m.visible = true
+		m.position = camera_target + Vector3(0, 0.1, 0)
 	await tree.process_frame
 	await tree.process_frame
+	for m in [targeting.marker, targeting.soft_marker]:
+		m.visible = false
 	shelf.queue_free()
 	# target-frame portraits for everyone you can meet
 	var models := {}
@@ -366,17 +416,22 @@ func _model_shelf() -> Node3D:
 	var cols := ceili(sqrt(names.size()))
 	for k in names.size():
 		var m := Assets.instance(names[k])
+		# as an enemy or the player wears it (emission on, for the hit flash)
+		Rig.isolate_materials(m)
 		m.position = camera_target + Vector3((k % cols - cols / 2.0) * 1.2, 0, (k / cols - cols / 2.0) * 1.2)
 		shelf.add_child(m)
 	return shelf
 
 
 ## Back to character select: the scene is reloaded for a clean slate.
+func combat_blocks_logout() -> bool:
+	return not player.dead and (resources.in_combat or enemies.list.any(func(e):return Targeting.in_combat_with_player(e)))
+
 func log_out() -> void:
-	if player.dead:
-		hud.toast("You cannot leave while defeated.")
+	if combat_blocks_logout():
+		hud.toast("You must leave combat before logging out.")
 		return
-	var r := save.save(true)
+	var r := save.save(true,true)
 	if not r.ok:
 		hud.toast(r.reason)
 		return
@@ -388,10 +443,10 @@ func log_out() -> void:
 ## Main menu, Exit Game: save, then close the game. In a browser there is
 ## no window to close, so it goes back to the landing page (/play's parent).
 func exit_game() -> void:
-	if player.dead:
-		hud.toast("You cannot leave while defeated.")
+	if combat_blocks_logout():
+		hud.toast("You must leave combat before exiting.")
 		return
-	var r := save.save(true)
+	var r := save.save(true,true)
 	if not r.ok:
 		hud.toast(r.reason)
 		return
@@ -414,12 +469,14 @@ func _ui_click() -> void:
 
 
 func start_game(resume: bool) -> void:
+	player.set_appearance(character.get("appearance") if character != null else null)
 	audio.start()
 	world_state.reset()
 	progression.apply({"level": 1, "xp": 0})
 	inventory.reset()
 	dialogue.close()
 	merchant.close()
+	bank.close()
 	merchant.buyback = []
 	quests.start_new()
 	region = null # named again, quietly, from wherever the Warden stands
@@ -431,6 +488,7 @@ func start_game(resume: bool) -> void:
 	reputation.reset()
 	titles.reset()
 	pending_death = null
+	releasing = false
 	telegraphs.clear()
 	hud.clear_numbers()
 	action_bar.reset()
@@ -446,6 +504,7 @@ func start_game(resume: bool) -> void:
 		resumed = true
 	# the model wears what the class starts with (or the save has on), not
 	# the warden's sword it was built with
+	player.reset_weapon_stance(archetype_id=="ranger")
 	player.show_equipment(inventory.equipment)
 	recompute_max_health()
 	camp.show()
@@ -477,11 +536,19 @@ func on_player_death(killer = null) -> void:
 
 
 ## Leave the body and walk as a spirit (systems/afterlife.gd).
+## The loading screen goes up first, in the same frame as the click, so
+## there is always something to see while the spirit rises; it lifts once
+## the ground round the rest point is built (Dan, 2026-11-04: the death
+## screen seemed to freeze). Any dead, embodied player can release, even if
+## the death screen came up some other way.
 func release_spirit() -> bool:
-	if not player.dead or pending_death == null:
+	if not player.dead or afterlife.ghost or releasing:
 		return false
+	releasing = true
 	pending_death = null
 	hud.hide_death()
+	hud.show_loading()
+	hud.loading.show_progress("Your spirit drifts…", 0.0)
 	afterlife.release()
 	_snap_camera()
 	_arrive("Your spirit drifts…")
@@ -493,23 +560,33 @@ func release_spirit() -> bool:
 ## instead of a long stall in plain view (Dan, 2026-11-02).
 func _arrive(text: String) -> void:
 	var land = world.land
-	if land == null or land.missing(camera_target) == 0:
+	var stream = world.stream
+	var tree := get_tree()
+	if land == null or land.missing(camera_target) + stream.missing(camera_target) == 0:
+		# nothing to build: a short beat under the veil, then lift it
+		await tree.process_frame
+		await tree.process_frame
+		hud.hide_loading()
+		releasing = false
 		return
 	land.gentle = true
+	stream.gentle = true
 	hud.show_loading()
-	var tree := get_tree()
-	var total := maxi(1, land.missing(camera_target))
+	var total := maxi(1, land.missing(camera_target) + stream.missing(camera_target))
 	while true:
-		var left: int = land.missing(camera_target)
+		var left: int = land.missing(camera_target) + stream.missing(camera_target)
 		hud.loading.show_progress(text, 1.0 - float(left) / total)
 		if left == 0:
 			break
 		land.update(camera_target, false, 30.0)
+		stream.update(camera_target, false, 15.0)
 		await tree.process_frame
 	land.gentle = false
+	stream.gentle = false
 	# one more frame so the new ground is drawn before the screen lifts
 	await tree.process_frame
 	hud.hide_loading()
+	releasing = false
 
 
 ## Release and return to life at once at the rest point, wounded.
@@ -541,6 +618,22 @@ func _screen_dist(p: Vector3) -> float:
 		return INF
 	var s := camera.unproject_position(p)
 	return U.hyp(s.x - input.mouse.x, s.y - input.mouse.y)
+
+
+## The hover tooltip and cursor look again 15 times a second, not every
+## frame (a pick unprojects everything near: ~1.5 ms); a click still picks
+## afresh (_click)
+func _hover_pick():
+	var now := Time.get_ticks_msec()
+	if now - _hover_at >= HOVER_MS or (_hover != null and _hover.kind == "enemy" and not _hover.obj.alive):
+		_hover_at = now
+		_hover = _pick_under_cursor()
+	return _hover
+
+
+const HOVER_MS := 66
+var _hover_at := -100000
+var _hover = null
 
 
 ## What is under the cursor: a body or drop to loot, a living enemy, or a
@@ -638,7 +731,9 @@ func _cursor_for(pick) -> void:
 			"vein":
 				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
 			"point":
-				c = "lootFar" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else "loot"
+				# a station shows what it is for: an anvil, a pot, a flask, a gem
+				var base: String = o.get("cursor", "loot")
+				c = base + "Far" if _far(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius)) else base
 	if c != cursor:
 		cursor = c
 		Cursors.show(c)
@@ -665,19 +760,25 @@ func _click(button: String) -> bool:
 	if _over_bob():
 		return fishing.strike()
 	var pick = _pick_under_cursor()
-	# With click to move (Settings, off by default) one button walks, as in
-	# WoW and Diablo 4 (Dan, 2026-10-28): the right in classic controls, the
-	# left with mouse aim. It walks to the ground clicked, or up to whoever
-	# or whatever was clicked and then acts. Without it nothing walks you.
-	var walk: bool = settings.get_value("clickToMove") and button == ("left" if mouse_aim else "right")
+	# With click to move (Settings, off by default) the left button walks, as
+	# in Diablo 4, in both control schemes (Dan, 2026-11-04: a right click to
+	# attack must never run a caster into the enemy). It walks to the ground
+	# clicked, or up to whatever was clicked and then acts. Without it nothing
+	# walks you.
+	var walk: bool = settings.get_value("clickToMove") and button == "left"
 	move_to = null
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
-	var acts: bool = button == "right" or settings.get_value("leftInteract")
-	# a left click on the ground lets go of the target; a right click does not.
-	# With mouse aim a left click there attacks whoever is near the cursor.
+	# right click acts and never moves you. With click to move a left click
+	# also acts: it walks you up to whoever you clicked (into your attack's
+	# reach for an enemy, talking range for a townsperson), then attacks or
+	# talks, the same for every class (Dan, 2026-11-04).
+	var acts: bool = button == "right" or walk or settings.get_value("leftInteract")
+	# a left click on the ground lets go of the target (unless it walks you
+	# there: a caster keeps their target while repositioning); a right click
+	# does not. With mouse aim a left click there attacks whoever is near.
 	if pick == null:
-		if button == "left":
+		if button == "left" and not walk:
 			targeting.clear()
 		var at = _aim_point() if walk and input.mouse.onCanvas else null
 		if at != null:
@@ -705,6 +806,10 @@ func _click(button: String) -> bool:
 			# auto attack, the same for every class (Dan, 2026-11-09)
 			if acts:
 				targeting.engage(o)
+				# attacking (not selecting) squares you up to it, as in WoW,
+				# so a foe you had walked past is hit without a dance
+				if targeting.target_in_reach and not player.moving:
+					player.face_towards(o.position.x, o.position.z)
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}
@@ -742,7 +847,14 @@ func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
 		return null
-	if keys_move.x or keys_move.z or (player.dead and not player.ghost):
+	if player.dead and not player.ghost:
+		move_to = null
+		return null
+	if keys_move.x or keys_move.z:
+		# keys steer while held; a mouse button still held down picks the
+		# walk back up once they let go (Dan, 2026-11-03)
+		if m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld):
+			return null
 		move_to = null
 		return null
 	var p := player.position
@@ -750,7 +862,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 		# stop well inside the real swing reach (no moving leeway), so the
 		# first blow lands once both stand still
 		var f = m.follow
-		var stop: float = DB.attack.range * 0.75 + f.radius * 0.6
+		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
 		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
 			move_to = null
@@ -883,7 +995,7 @@ func _handle_input(dt: float):
 	if input.consume("Escape") and not hud.close_modal():
 		if targeting.current != null or targeting.friendly != null:
 			targeting.clear()
-		elif hud.modal == null:
+		elif hud.modal in [null,"death"]:
 			hud.main_menu.open()
 	if hud.modal == "death":
 		if input.consume("Enter") or keys.pressed("interact") or pad.pressed(B.A):
@@ -958,14 +1070,14 @@ func _handle_input(dt: float):
 		if right or clicked:
 			# click to move works for a spirit too: the walk button walks
 			# there, or up to your body and then acts
-			var walk: bool = settings.get_value("clickToMove") and ((clicked and mouse_aim) or (right and not mouse_aim))
+			var walk: bool = settings.get_value("clickToMove") and clicked
 			move_to = null
 			if hover != null:
 				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), walk)
 			elif walk and input.mouse.onCanvas:
 				var at = _aim_point()
 				if at != null:
-					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left" if mouse_aim else "right"}
+					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left"}
 					fx.move_marker(at.x, at.z)
 		var gm := input.move_axis()
 		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)
@@ -976,7 +1088,7 @@ func _handle_input(dt: float):
 	if player.dead:
 		return null
 	if keys.pressed("sheathe"):
-		player.set_sheathed(not player.sheathed)
+		player.cycle_weapons()
 	if keys.pressed("sit"):
 		player.set_sitting(not player.sitting)
 
@@ -1002,7 +1114,7 @@ func _handle_input(dt: float):
 			hud.error("Out of range")
 	# hovering over anyone in the world shows who they are
 	if not using_pad:
-		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
+		var hover = _hover_pick() if input.mouse.onCanvas else null
 		hud.world_tip(hover)
 		_cursor_for(hover)
 	# classic: left click selects, right click attacks, talks or loots.
@@ -1025,8 +1137,7 @@ func _handle_input(dt: float):
 		if using_pad:
 			face_aim = aim_now if pad_on and pad.right.z > 0.3 else null
 		elif input.mouse.leftHeld and aim_now != null:
-			var t = tg.current
-			face_aim = t.position if tg.attacking and t != null and (tg.target_in_reach or tg.target_in_shot) else aim_now
+			face_aim = aim_now
 	# each spell-bar slot has a fixed key; whatever ability sits there fires
 	var util := pad_on and pad.held(B.LEFT)
 	var slots := [
@@ -1070,6 +1181,7 @@ func step(dt: float) -> void:
 	var paused: bool = not started or hud.blocks_gameplay
 	if not paused:
 		time += dt
+		world_state.advance_clock(dt)
 		player.update(dt, controls)
 		spells.update(dt)
 		runes.update(dt)
@@ -1078,6 +1190,8 @@ func step(dt: float) -> void:
 		camp.update(dt, time)
 		fishing.update(dt)
 		cooking.update(dt)
+		rune_forge.update(dt)
+		refinery.update(dt)
 		mining.update(dt, time)
 		gathering.update(dt, time)
 		law.update(dt)
@@ -1090,6 +1204,7 @@ func step(dt: float) -> void:
 		grave.update(dt)
 		npcs.update(dt)
 		merchant.update()
+		bank.update()
 		dialogue.update()
 		telegraphs.update(dt)
 		targeting.update(dt, raw_aim, DB.abilities.strike.range + 1)
@@ -1099,12 +1214,17 @@ func step(dt: float) -> void:
 		xp_orbs.update(dt)
 		fx.update(dt)
 		audio.update(dt)
-		if pending_death != null and hud.modal != "death":
+		if pending_death != null and hud.modal != "death" and not hud.main_menu.is_open and hud.main_menu.leaving=="":
 			pending_death.timer -= dt
 			if pending_death.timer <= 0:
-				hud.show_death(pending_death.loss, respawn_point().kind)
+				var loss:int=pending_death.loss
+				pending_death=null
+				hud.show_death(loss, respawn_point().kind)
 	world.update(dt, Time.get_ticks_msec() / 1000.0)
 	_update_region(dt)
+	_update_daylight()
+	if _sun_off != _sun_goal and _sun_goal != Vector3.ZERO:
+		_sun_off = _sun_off.lerp(_sun_goal, minf(1.0, dt * SUN_EASE)) if _sun_off.distance_to(_sun_goal) > 0.01 else _sun_goal
 	world.update_indoors(dt, player.position)
 	_update_camera(dt)
 	if started:
@@ -1167,15 +1287,39 @@ static func air(k: float) -> Dictionary:
 		"sunlight": lerpf(1, bw.light, k)}
 
 
+## The light of the hour (DayNight), worked out again each time the world
+## clock moves on a little (about every second of play at CONFIG.clock's
+## pace) or jumps (a night at the inn).
+func _update_daylight() -> void:
+	var h: float = world_state.hour
+	if not daylight.is_empty() and absf(h - _day_hour) < 0.01:
+		return
+	var jumped := absf(h - _day_hour) > 0.5 # a night at the inn, a load
+	_day_hour = h
+	daylight = DayNight.light(h)
+	sun.light_color = daylight.colour
+	# the sun's angle moves on in quarter-hour steps, each eased in over a
+	# few seconds: nudged every second, every shadow in the world hopped once
+	# a second (it looked like trees swaying at 1 fps)
+	_sun_goal = DayNight.light(floorf(h / SUN_STEP) * SUN_STEP).get("offset", Vector3(-22, 17, 9))
+	if jumped or _sun_off == Vector3.ZERO:
+		_sun_off = _sun_goal
+	_place_sun(camera_target)
+	if not grade.is_empty():
+		_apply_grade()
+
+
 func _apply_grade() -> void:
 	var g := grade
+	var day: Dictionary = daylight if not daylight.is_empty() else DayNight.light(world_state.hour)
 	fog_base = {"near": g.fogNear, "far": maxf(g.fogFar, g.fogNear + 1.0)}
-	env.fog_light_color = g.fogColor
-	env.background_color = g.fogColor
+	var fog_colour: Color = (g.fogColor as Color) * (day.fogTint as Color)
+	env.fog_light_color = fog_colour
+	env.background_color = fog_colour
 	env.fog_density = clampf(g.fogAmount, 0.0, 1.0)
-	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient
-	env.ambient_light_color = g.ambientColor
-	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient * day.ambient
+	env.ambient_light_color = (g.ambientColor as Color) * (day.ambientTint as Color)
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight * day.light
 	if not _ghost:
 		ZoneGradeS.apply_colour(env, g)
 
@@ -1204,6 +1348,25 @@ func shake_camera(amount: float) -> void:
 	shake = maxf(shake, amount)
 
 
+## Character select draws a small scene: only the few metres around the
+## character (the rest is fog, past the camera's reach) and a short, sharp
+## sun shadow, instead of the whole view of the world behind them.
+func _showcase_draw(on: bool) -> void:
+	var sh: Dictionary = DB.CONFIG.camera.showcase
+	sun.directional_shadow_max_distance = sh.get("shadow", 16.0) if on else (60.0 if OS.has_feature("web") else 72.0)
+	if on:
+		camera.far = sh.get("far", 34.0)
+		env.fog_depth_begin = sh.get("fogNear", 14.0)
+		env.fog_depth_end = camera.far - 2.0
+	elif fog_base != null:
+		env.fog_depth_begin = fog_base.near
+		env.fog_depth_end = fog_base.far
+		camera.far = fog_base.far + 6
+
+
+var _showcase_view := false
+
+
 ## character select and creation: the camera stands in front of the
 ## character, low, so they fill the middle of the screen
 func _place_showcase() -> void:
@@ -1218,10 +1381,14 @@ func _place_showcase() -> void:
 	world.set_cutaway(camera.position, p + Vector3(0, 1.2, 0))
 
 
-## the sun sits low in the west-southwest (about 37 degrees up), so things
+## the sun (or the moon) where the hour puts it (DayNight); in the late
+## afternoon it sits low in the west-southwest, about 35 degrees up, so things
 ## cast long shadows across the ground and their far sides fall dark
 func _place_sun(t: Vector3) -> void:
-	sun.position = Vector3(t.x - 22, t.y + 17, t.z + 9)
+	if _sun_off == Vector3.ZERO:
+		_sun_off = daylight.get("offset", Vector3(-22, 17, 9))
+	var off: Vector3 = _sun_off
+	sun.position = t + off
 	sun.look_at(t)
 
 
@@ -1237,16 +1404,37 @@ func _zoom_max() -> float:
 ## is no pan, orbit or cursor-driven look-ahead; north stays screen-up.
 func _camera_offset(z: float) -> Vector3:
 	var c: Dictionary = DB.CONFIG.camera
+	if _tuned_camera():
+		# Settings > Camera tuning: angle down, turn and distance by hand
+		var pitch := deg_to_rad(float(settings.get_value("camPitch")))
+		var yaw := deg_to_rad(float(settings.get_value("camYaw")))
+		var d := float(settings.get_value("camDistance"))
+		var flat := cos(pitch) * d
+		return Vector3(sin(yaw) * flat, sin(pitch) * d, cos(yaw) * flat) * z
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
 
 
+func _tuned_camera() -> bool:
+	return settings != null and settings.get_value("camTune")
+
+
+## the lens: the tuned one while camera tuning is on, else CONFIG's
+func _camera_fov() -> float:
+	return float(settings.get_value("camFov")) if _tuned_camera() else DB.CONFIG.camera.fov
+
+
 func _place_camera(dt := 0.0) -> void:
-	if not started and hud and hud.showcase:
+	var show_now: bool = not started and hud and hud.showcase
+	if show_now != _showcase_view:
+		_showcase_view = show_now
+		_showcase_draw(show_now)
+	if show_now:
 		_place_showcase()
 		return
 	# a fixed isometric view: the scenes are composed for this one angle;
 	# indoors the camera closes in a little, under where the roof was
 	zoom = clampf(zoom, DB.CONFIG.camera.zoomMin, _zoom_max())
+	camera.fov = _camera_fov()
 	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
 	var t := camera_target + Vector3(0, 1.0, 0)

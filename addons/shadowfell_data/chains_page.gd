@@ -62,7 +62,7 @@ func refresh_tree() -> void:
 		n.tooltip_text = q.id
 		var info := Label.new()
 		var r: Dictionary = q.get("reward", {})
-		info.text = "%s · %d objective%s\n%d XP%s" % [s.npc_name(q.get("giver")), q.get("objectives", []).size(), "" if q.get("objectives", []).size() == 1 else "s", r.get("xp", 0), "" if r.get("items", []).is_empty() else " · %d item%s" % [r.items.size(), "" if r.items.size() == 1 else "s"]]
+		info.text = "%s · %d objective%s\n%s XP%s" % [s.npc_name(q.get("giver")), q.get("objectives", []).size(), "" if q.get("objectives", []).size() == 1 else "s", r.get("size", "no"), "" if r.get("items", []).is_empty() else " · %d item%s" % [r.items.size(), "" if r.items.size() == 1 else "s"]]
 		if bad.has(q.id):
 			info.add_theme_color_override("font_color", Color("e08070"))
 		n.add_child(info)

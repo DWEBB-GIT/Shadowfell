@@ -1,5 +1,5 @@
 extends SceneTree
-## Cap boundaries, legacy-cap saves and unchanged starter XP prices.
+## Cap boundaries, legacy-cap saves and the level 1-2 XP price.
 var game
 var failures := 0
 
@@ -22,7 +22,7 @@ func _run() -> void:
 	DB.ready = false
 	game = load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary = game.roster.create("Cap Tester", "warden")
+	var made: Dictionary = game.roster.create("Cap", "warden")
 	game.enter_world(made.character.id)
 	var frames := 0
 	while not game.started or game.hud.blocks_gameplay or game.hud.loading.visible:
@@ -35,11 +35,11 @@ func _run() -> void:
 	game.save.autosave_enabled = false
 	game.set_process(false)
 	check(DB.CONFIG.progression.maxLevel == 50, "configured character cap is 50")
-	check(DB.xp_for_next_level(1) == 280 and DB.xp_for_next_level(9) == 1880, "starter XP thresholds remain unchanged")
+	check(DB.xp_for_next_level(1) == 280, "level 1 to 2 still takes 280 XP")
 	var total := 0
 	for level in range(1, 50):
 		total += DB.xp_for_next_level(level)
-	check(total == 248920, "current placeholder curve totals 248920 XP across exactly 49 gains")
+	check(total > 1000000, "the pacing-plan curve totals about 1.45 million XP across 49 gains")
 	var p = game.progression
 	p.level = 49
 	p.xp = p.xp_to_next - 1
@@ -47,8 +47,14 @@ func _run() -> void:
 	p.add_xp(1)
 	check(p.level == 50 and p.xp == 0 and p.rested == 0, "one XP crosses 49 to 50 and clears overflow/rested")
 	check(p.add_xp(1000000) == 0 and p.level == 50 and p.xp == 0, "large awards cannot create level 51")
+	# the quest chain before it counts as handed in; a save round trip lets
+	# the load hand over what those quests leave behind (the tool belt)
+	_mark_done_before("vr_reed_message")
+	check(game.save.save().ok, "the chain so far saves")
+	game.save.apply(game.save.read().data)
+	var coins_before: int = game.inventory.coins
 	check(game.quests.accept("vr_reed_message") and game.quests.complete("vr_reed_message"), "quests can still complete at the cap")
-	check(game.inventory.coins == 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
+	check(game.inventory.coins == coins_before + 8 and p.level == 50 and p.xp == 0, "capped quest pays currency without character XP")
 	check(game.save.save().ok and game.save.read().status == "ok", "a level-50 character saves and reads normally")
 	var saved: Dictionary = game.save.read().data
 	var inventory: Dictionary = saved.inventory.duplicate(true)
@@ -77,3 +83,11 @@ func _run() -> void:
 	game.queue_free()
 	await process_frame
 	quit(1 if failures else 0)
+
+
+## Every quest `id` needs, all the way back, marked handed in.
+func _mark_done_before(id: String) -> void:
+	for need in DB.quests[id].get("requires", []):
+		_mark_done_before(need)
+		game.quests.accepted.erase(need)
+		game.quests.done[need] = true

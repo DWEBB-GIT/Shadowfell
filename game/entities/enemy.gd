@@ -31,6 +31,8 @@ var circle_timer := 2.5
 var stagger := 0.0
 var mods := {}
 var asleep := false
+var root_left := 0.0
+var search_left := 0.0
 var staggered := 0.0
 var dr := {}
 var stagger_bar = null
@@ -39,6 +41,8 @@ var flash := 0.0
 var flash_colour := Rig.FLASH_RED
 var engaged := 0.0 ## seconds to keep showing the health bar
 var since_struck := INF ## seconds since the player last hurt it
+var calm := 0.0 ## a fresh spawn's seconds left before it notices anyone
+var charge := 0.0 ## seconds into this chase (alert pause, then the run builds)
 
 ## While the player keeps hurting it, an enemy chases past its leash: it
 ## gives up only after this long without being struck.
@@ -60,6 +64,7 @@ func _init(g, spawn: Dictionary) -> void:
 	id = spawn.id
 	type = spawn.type
 	cfg = DB.enemy_cfg_at(type, id, int(spawn.get("level", 0)))
+	active_hours = spawn.get("activeHours", DB.enemies.get(type, {}).get("activeHours"))
 	home = Vector3(spawn.position[0], 0, spawn.position[1])
 	position = home
 	position.y = Terrain.height_at(position.x, position.z)
@@ -85,6 +90,11 @@ func _init(g, spawn: Dictionary) -> void:
 	if cfg.get("tint"):
 		Rig.tint(materials, Color(cfg.tint))
 	_sync()
+
+
+## the hours it is abroad ([from, to], e.g. [21, 5] for night only), or null
+## for always: the spawn's `activeHours`, else its enemy type's (Enemies)
+var active_hours = null
 
 
 var alive: bool:
@@ -134,7 +144,7 @@ var is_elite: bool:
 
 var move_speed: float:
 	get:
-		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
+		return 0.0 if root_left > 0 else cfg.speed * (1 - minf(90, mods.slow) / 100.0)
 
 ## running after the player in a fight: a percent of the player's base move
 ## speed (CONFIG.chase: the enemy's `runSpeed`, else its type's), still
@@ -207,12 +217,28 @@ func _hold(seconds: float) -> void:
 
 
 ## the player slipped into Shadow: stop chasing and stand looking about
-func lose_track() -> void:
+func lose_track(seconds := 3.0) -> void:
 	if dead or cfg.get("dummy", false):
 		return
-	state = "idle"
+	state = "search"
+	search_left = seconds
 	windup = 0.0
+	_cancel_cast()
 	wander.target = position
+
+
+func distract_at(at: Vector3) -> void:
+	facing = atan2(at.x-position.x, at.z-position.z)
+	calm = maxf(calm,5.0)
+	wander.target = position
+	wander.t = 5.0
+
+
+func frighten(seconds: float) -> void:
+	state = "flee"
+	flee_left = seconds
+	windup = 0.0
+	_cancel_cast()
 
 
 func _sync() -> void:
@@ -235,6 +261,8 @@ func reset() -> void:
 	special_timer = 3.0
 	circle_timer = 2.5
 	stagger = 0.0
+	root_left = 0.0
+	search_left = 0.0
 	_reset_control()
 	engaged = 0.0
 	since_struck = INF
@@ -283,7 +311,7 @@ func hurt(amount: float, opts := {}) -> float:
 		var dir := Vector3(position.x - from.x, 0, position.z - from.z)
 		if dir.length_squared() > 0.0001:
 			knock = dir.normalized() * kb * 6
-	if not cfg.get("dummy", false) and (state == "idle" or state == "return"):
+	if not cfg.get("dummy", false) and (state in ["idle", "return"] or (state == "search" and not game.spells.hidden)) and not (game.spells.hidden and opts.get("periodic",false)):
 		state = "chase"
 		_wake_pack()
 	if health <= 0 and cfg.get("dummy", false):
@@ -368,7 +396,7 @@ func _start_shot(player) -> void:
 			# the shot stops at the player if it hits, otherwise flies on
 			var to := Vector3(p.x, 0, p.z) if on_line else end
 			game.events.emit("projectile", {"kind": r.get("projectile"), "from": Vector3(position.x, position.y + 1.3, position.z), "to": to, "speed": r.speed})
-			game.combat.resolve_telegraph(self, shape, r.damage, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical")}),
+			game.combat.resolve_telegraph(self, shape, r.damage, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical"), "ranged":true}),
 	})
 	if r.get("mana"):
 		mana -= r.mana
@@ -418,15 +446,15 @@ func _start_cast(kind: String, player) -> void:
 		"onComplete": func(shape):
 			casting = null
 			var hit = game.combat.resolve_telegraph(self, shape, sp.damage if special else cfg.damage, sp.name if special else null)
-			if special:
-				game.events.emit("graveSlam", {"enemy": self, "shape": shape, "hit": hit}),
+			if special and sp.get("impactEvent", "graveSlam") != "":
+				game.events.emit(sp.get("impactEvent", "graveSlam"), {"enemy": self, "shape": shape, "hit": hit}),
 	})
 	casting = {"kind": kind, "telegraph": telegraph, "label": sp.name if special else "Cleave", "interruptible": sp.get("interruptible", true) != false if special else true}
 	if special:
 		special_timer = sp.cooldown
 		attack_timer = maxf(attack_timer, sp.windup + 0.6)
-		rig.play("slam", sp.windup + 0.4, sp.windup / (sp.windup + 0.4))
-		game.events.emit("log", {"text": "The %s raises its cleaver high. Get clear!" % cfg.name, "kind": "hurt", "throttle": "slam-warn"})
+		rig.play(sp.get("anim", "slam"), sp.windup + 0.4, sp.windup / (sp.windup + 0.4))
+		game.events.emit("log", {"text": sp.get("warning", "The %s raises its cleaver high. Get clear!" % cfg.name), "kind": "hurt", "throttle": "slam-warn"})
 	else:
 		attack_timer = cfg.attackInterval
 		rig.play("cleave", duration + 0.3, duration / (duration + 0.3))
@@ -435,6 +463,9 @@ func _start_cast(kind: String, player) -> void:
 
 const ANIMATE_RANGE := 45.0
 var _flash_shown := false
+
+
+var idle_dt := 0.0 ## time saved up while idle out of sight (Enemies.update)
 
 
 func update(dt: float, player) -> void:
@@ -447,6 +478,7 @@ func update(dt: float, player) -> void:
 		Rig.set_emissive(materials, Rig.FLASH_WHITE if white else flash_colour, flash * (0.5 if white else 0.6))
 		_flash_shown = flash > 0
 	engaged = maxf(0, engaged - dt)
+	calm = maxf(0, calm - dt)
 
 	if dead or cfg.get("dummy", false):
 		# the dummy just stands there, and mends a few seconds after the last hit
@@ -483,6 +515,7 @@ func update(dt: float, player) -> void:
 
 	staggered = maxf(0, staggered - dt)
 	since_struck += dt
+	root_left = maxf(0.0,root_left-dt)
 	dr.quiet += dt
 	if dr.quiet >= DB.CONFIG.control.eliteDrReset:
 		dr.n = 0
@@ -498,7 +531,7 @@ func update(dt: float, player) -> void:
 		match state:
 			"idle":
 				# a passive beast (yellow) pays you no mind until struck
-				if dist < cfg.detection and not hidden and not passive:
+				if dist < cfg.detection and not hidden and not passive and calm <= 0:
 					state = "chase"
 					game.events.emit("enemyAlert", {"enemy": self})
 					_wake_pack()
@@ -518,6 +551,11 @@ func update(dt: float, player) -> void:
 				else:
 					state = "attack" if dist <= reach else "chase"
 					engaged = maxf(engaged, 2)
+			"search":
+				search_left -= dt
+				facing += dt * 1.5
+				if search_left <= 0:
+					state = "return"
 			"flee":
 				flee_left -= dt
 				engaged = maxf(engaged, 2)
@@ -536,6 +574,7 @@ func update(dt: float, player) -> void:
 	if player.dead and casting != null:
 		_cancel_cast()
 	var fighting := state == "chase" or state == "attack"
+	charge = charge + dt if fighting else 0.0
 	var rg = cfg.get("ranged")
 	var can_shoot: bool = rg != null and mana >= rg.get("mana", 0)
 	var cc = cfg.get("circle")
@@ -565,8 +604,14 @@ func update(dt: float, player) -> void:
 			elif attack_timer <= 0:
 				_start_shot(player)
 		elif state == "chase":
-			_steer_towards(player.position.x, player.position.z, chase_speed, dt, reach * 0.85)
-			speed01 = 1.0
+			var c: Dictionary = DB.CONFIG.chase
+			if charge < c.alertSeconds:
+				# it has just seen you: turns to look before it comes
+				facing = atan2(dx, dz)
+			else:
+				var k := clampf((charge - c.alertSeconds) / maxf(0.01, c.rampSeconds), 0.0, 1.0)
+				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach * 0.85)
+				speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
 			# a fleeing player still within a stride gets hit on the run

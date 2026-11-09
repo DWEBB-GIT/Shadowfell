@@ -7,6 +7,7 @@ extends RefCounted
 var game
 var group := Node3D.new()
 var model: Node3D
+var appearance: Dictionary = ForgeCharacter.defaults()
 var rig: Rig
 var materials: Array
 var weapon_part: Node3D
@@ -29,6 +30,7 @@ var facing := 0.0 ## radians; 0 faces +z (south)
 ## while walking, so the blow is seen to go where it was aimed
 const AIM_HOLD := 0.45
 var aim_hold := 0.0
+var root := 0.0 ## seconds an attack on the move holds you in place (Lost Ark / D4)
 var radius: float = DB.CONFIG.player.radius
 var max_health := 100
 var health := 100.0
@@ -42,6 +44,7 @@ var lunge = null
 var pending = null
 var pending_off = null
 var pending_shot = null
+var ranged_ready_at := 0.0
 var casting = null
 var moving := false
 var light_radius := 0.0
@@ -51,6 +54,8 @@ var last_swing_at = null
 var last_main_impact_at = null
 var eating = null
 var sheathed := false ## weapons put away on the back (Z)
+var weapon_stance := "melee" ## melee | ranged | sheathed
+var prefer_ranged := false
 var sheath_parts: Array = [] ## the copies worn on the back while sheathed
 ## where a sheathed blade and shield sit on the torso
 const SHEATH_BLADE := Transform3D(Basis(Vector3.RIGHT, PI), Vector3(0, 0.15, -0.24))
@@ -64,20 +69,20 @@ func _init(g) -> void:
 	group.name = "Player"
 	# the imported body (on its own skeleton, with gear sockets) or the
 	# code-built warden, by DB.CONFIG.models
-	var body: String = DB.CONFIG.models.player if DB.CONFIG.models.imported and Assets.has(DB.CONFIG.models.player) else "warden"
-	model = Assets.instance(body)
+	var body := "forge_v6"
+	model = ForgeCharacter.build(appearance)
 	# A readability scale on the body and attached gear. World distances,
 	# collision, attack ranges and movement stay in the same units.
 	model.scale *= DB.CONFIG.player.visualScale
-	if body != "warden":
-		Rig.add_sockets(model)
 	group.add_child(model)
-	rig = Rig.new(model, body)
+	rig = ForgeRig.new(model, self)
 	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
 	ground_shadow = Fx.blob_shadow(1.3)
+	# top level: the group's jump and front flip never lift or turn it
+	ground_shadow.top_level = true
 	group.add_child(ground_shadow)
 	torch_light.light_color = Color("ffa860")
 	torch_light.light_energy = 0
@@ -108,12 +113,47 @@ func _sync() -> void:
 		# a spirit floats a hand above the ground, bobbing
 		group.position.y += 0.15 + sin(game.time * 2) * 0.06
 	group.rotation.y = facing
-	# The contact shadow stays on the ground while the body leaves it.
-	ground_shadow.position.y = 0.03 - jump_h
+	group.rotation.x = 0.0
+	if flip >= 0.0:
+		# a front flip, turned about the waist rather than the feet
+		group.rotation.x = TAU * clampf(flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY), 0.0, 1.0)
+		var pivot := Vector3(0, 0.9 * DB.CONFIG.player.visualScale, 0)
+		group.position += pivot - group.basis * pivot
+	# The contact shadow stays flat on the ground while the body leaves it
+	# (it is top level, so it ignores the group's hop and flip).
+	ground_shadow.position = Vector3(position.x, position.y - jump_h + 0.03, position.z)
 
 
 func _part(name: String) -> Node3D:
 	return model.find_child(name, true, false) as Node3D
+
+
+func set_appearance(value = null) -> void:
+	var next := ForgeCharacter.clean(value)
+	if next == appearance:
+		return
+	appearance = next
+	var previous := model
+	model = ForgeCharacter.build(appearance)
+	model.scale *= DB.CONFIG.player.visualScale
+	group.add_child(model)
+	rig = ForgeRig.new(model, self)
+	rig.track_steps = true
+	materials = Rig.isolate_materials(model)
+	weapon_part = model.find_child("Weapon", true, false)
+	default_weapon_mesh = weapon_part
+	helm = null
+	cloak = null
+	shield = null
+	bow = null
+	rod = null
+	rod_tip = null
+	bow_id = null
+	bow_in_hand = false
+	sheath_parts.clear()
+	group.remove_child(previous)
+	previous.queue_free()
+	show_equipment(game.inventory.equipment)
 
 
 func _free(n: Node) -> void:
@@ -131,6 +171,7 @@ func show_equipment(equipment: Dictionary) -> void:
 
 
 func _show_equipment(equipment: Dictionary) -> void:
+	ForgeCharacter.dress(model, equipment)
 	var arm := _part("Arm_R")
 	var head := _part("Head")
 	if arm and default_weapon_mesh:
@@ -144,7 +185,7 @@ func _show_equipment(equipment: Dictionary) -> void:
 		weapon_part = default_weapon_mesh
 		if id and not built_in:
 			var blade := Assets.instance(Items.get_def(id).get("model", id))
-			blade.transform = default_weapon_mesh.transform
+			blade.transform = ForgeCharacter.held_transform(model, "r", Items.get_def(id))
 			arm.add_child(blade)
 			weapon_part = blade
 			# a rune's glow (runes.json), or the item's own (the test weapons)
@@ -155,11 +196,14 @@ func _show_equipment(equipment: Dictionary) -> void:
 		var hdef := Items.get_def(equipment.head.id) if equipment.get("head") else {}
 		if hdef.get("cosmetic"):
 			helm = FancyGear.build(hdef.cosmetic, hdef.get("glow", {}))
+			if hdef.cosmetic in ["horns", "halo"]:
+				helm.position.y = -0.14
+				if hdef.cosmetic == "horns": helm.scale *= 0.85
 			head.add_child(helm)
-		elif equipment.get("head") and equipment.head.id == "watch_helm":
-			helm = Assets.instance("watch_helm")
-			helm.position = Vector3(0, 0.2, 0.02)
-			helm.scale = Vector3.ONE * 1.15
+		elif equipment.get("head") and equipment.head.id in ["watch_helm", "old_watch_helm"]:
+			helm = Assets.instance(hdef.get("model", "watch_helm"))
+			helm.position = Vector3(0, 0, 0.02)
+			helm.scale = Vector3.ONE * 0.9
 			head.add_child(helm)
 	var torso := _part("Torso")
 	if torso:
@@ -181,23 +225,18 @@ func _show_equipment(equipment: Dictionary) -> void:
 			shield_id = equipment.offHand.id
 		if off.get("kind") == "torch":
 			shield = Assets.instance(off.model)
-			shield.position = Vector3(0, -0.62, 0.02)
-			shield.rotation = Vector3(-0.5, 0, 0)
+			shield.transform = ForgeCharacter.held_transform(model, "l", off)
 			larm.add_child(shield)
 		elif off.get("kind") == "weapon" and default_weapon_mesh:
 			shield = Assets.instance(off.model)
-			shield.transform = default_weapon_mesh.transform
-			shield.position.x *= -1
+			shield.transform = ForgeCharacter.held_transform(model, "l", off)
 			larm.add_child(shield)
 			FancyGear.apply(shield, Runes.glow_for(equipment.offHand))
 		elif off.get("kind") == "shield":
 			shield = Assets.instance(off.model)
-			shield.position = Vector3(0.11, -0.42, 0.04)
-			shield.rotation_order = EULER_ORDER_XYZ
-			shield.rotation = Vector3(0, 1.25, 0)
 			shield.scale = Vector3.ONE * 0.95
-			larm.add_child(shield)
-	hold_bow(false)
+			_part("ShieldGrip").add_child(shield)
+	hold_bow(weapon_stance=="ranged" and not sheathed)
 	_show_sheath()
 
 
@@ -216,15 +255,45 @@ func set_sitting(on: bool) -> void:
 ## Z: put your weapons away on your back, or draw them again. Fighting
 ## draws them on its own.
 func set_sheathed(on: bool) -> void:
-	if on == sheathed:
-		return
-	sheathed = on
-	game.audio.sfx("sheathe" if on else "unsheathe", 0.35, 0.85 if on else 1.0)
-	if on:
-		_show_sheath()
-	else:
-		show_equipment(game.inventory.equipment)
-	game.events.emit("log", {"text": "You sheathe your weapons." if on else "You draw your weapons.", "kind": "muted", "throttle": "sheathe"})
+	draw_weapons("sheathed" if on else primary_stance(),true)
+
+func stance_order() -> Array:
+	var equipment:Dictionary=game.inventory.equipment
+	var order:Array=[]
+	if equipment.get("mainHand") or equipment.get("offHand"):order.append("melee")
+	if equipment.get("ranged"):order.append("ranged")
+	if prefer_ranged:order.reverse()
+	order.append("sheathed")
+	return order
+
+func primary_stance() -> String:
+	return stance_order()[0]
+
+func reset_weapon_stance(ranged_first: bool) -> void:
+	prefer_ranged=ranged_first
+	weapon_stance=primary_stance()
+	sheathed=weapon_stance=="sheathed"
+
+func cycle_weapons() -> void:
+	var order:=stance_order()
+	var index:=order.find("sheathed" if sheathed else weapon_stance)
+	game.targeting.stop_attack()
+	pending=null
+	pending_off=null
+	pending_shot=null
+	game.spells.cancel_ranged_windup()
+	rig.action=null
+	rig.off_action=null
+	draw_weapons(order[(index+1)%order.size()],true)
+
+func draw_weapons(stance: String, sound := false) -> void:
+	if stance=="ranged" and not game.inventory.equipment.get("ranged"):stance="melee"
+	weapon_stance=stance
+	sheathed=stance=="sheathed"
+	show_equipment(game.inventory.equipment)
+	if sound:
+		game.audio.sfx("sheathe" if sheathed else "unsheathe",0.35)
+		game.events.emit("log",{"text":{"sheathed":"You stow your weapons.","ranged":"You draw your bow.","melee":"You draw your melee weapons."}[stance],"kind":"muted","throttle":"sheathe"})
 
 
 ## While sheathed, copies of what is in your hands ride on your back
@@ -234,18 +303,19 @@ func _show_sheath() -> void:
 		_free(n)
 	sheath_parts = []
 	var torso := _part("Torso")
-	if not sheathed or not torso:
+	if (not sheathed and not bow_in_hand) or not torso:
 		return
 	var held := []
-	if weapon_part and weapon_part.visible:
+	if weapon_part and game.inventory.equipment.get("mainHand"):
 		held.append([weapon_part, "weapon"])
 	var off = game.inventory.equipment.get("offHand")
 	var off_kind: String = Items.get_def(off.id).get("kind", "") if off else ""
-	if shield and shield.visible and off_kind != "torch":
+	if shield and off != null and off_kind != "torch":
 		held.append([shield, off_kind])
 	for i in held.size():
 		var n: Node3D = held[i][0]
 		var copy := n.duplicate() as Node3D
+		copy.visible=true
 		torso.add_child(copy)
 		if held[i][1] == "shield":
 			copy.transform = SHEATH_SHIELD
@@ -264,8 +334,7 @@ func hold_rod(on: bool) -> void:
 	if on and not rod:
 		rod = Assets.instance("fishing_rod")
 		rod.name = "HeldRod"
-		rod.position = Vector3(0, -0.62, 0.04)
-		rod.rotation = Vector3(1.875, 0, 0)
+		rod.transform = ForgeCharacter.held_transform(model, "r", {})
 		rod_tip = Node3D.new()
 		rod_tip.position = Vector3(0, 1.42, 0)
 		rod.add_child(rod_tip)
@@ -304,28 +373,72 @@ const JUMP_BUFFER_TIME := 0.12
 var jump_v := 0.0
 var jump_h := 0.0
 var jump_buffer := 0.0
+var flip := -1.0 ## seconds into a front flip, or -1 for a plain hop
+const FLIP_CHANCE := 0.12 ## now and then a jump turns into a front flip (Dan, 2026-11-03)
+## combat hop (CONFIG.player.hop): the way a fighting leap carries you,
+## zero for a plain hop, and the seconds until the next one
+var hop_dir := Vector3.ZERO
+var hop_cd := 0.0
 
 
 func _reset_jump() -> void:
 	jump_v = 0.0
 	jump_h = 0.0
 	jump_buffer = 0.0
+	flip = -1.0
+	hop_dir = Vector3.ZERO
 	rig.airborne = false
+	if rig is ForgeRig:
+		rig.was_airborne = false
+		rig.air_time = 0.0
+		rig.landing = 0.0
 	position.y = Terrain.height_at(position.x, position.z)
-	ground_shadow.position.y = 0.03
+	ground_shadow.position = position + Vector3(0, 0.03, 0)
 
 
-func _update_jump(dt: float, requested: bool) -> void:
+## Which way a jump taken now would leap, or zero for a plain hop: only in
+## a fight (if combatOnly), only while moving, never as a spirit.
+func _hop_direction(controls) -> Vector3:
+	var rule: Dictionary = DB.CONFIG.player.get("hop", {})
+	if rule.is_empty() or ghost or hop_cd > 0 or controls == null or not game.settings.get_value("combatHop"):
+		return Vector3.ZERO
+	if rule.get("combatOnly", true) and not (game.resources.in_combat or game.targeting.attacking):
+		return Vector3.ZERO
+	var tank = controls.get("tank")
+	var d := Vector3.ZERO
+	if tank != null:
+		d = Vector3(sin(facing), 0, cos(facing)) * signf(tank.y)
+	else:
+		var mv: Dictionary = controls.get("move", {"x": 0.0, "z": 0.0})
+		d = Vector3(mv.x, 0, mv.z)
+	return d.normalized() if d.length() > 0.2 else Vector3.ZERO
+
+
+func _update_jump(dt: float, requested: bool, controls = null) -> void:
+	hop_cd = maxf(0.0, hop_cd - dt)
 	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
 	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
 		set_sitting(false)
 		position.y = Terrain.height_at(position.x, position.z)
 		jump_v = JUMP_SPEED
 		jump_buffer = 0.0
+		hop_dir = _hop_direction(controls)
+		if hop_dir != Vector3.ZERO:
+			hop_cd = DB.CONFIG.player.hop.get("cooldown", 1.6)
+		# The v6 rig owns its take-off/air/landing poses; whole-body random
+		# flips would rotate that pose and the attached weapons a second time.
+		flip = 0.0 if not rig is ForgeRig and not ghost and randf() < FLIP_CHANCE else -1.0
 		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
 			rig.clip = ""
+	if hop_dir != Vector3.ZERO and (jump_v != 0.0 or jump_h > 0.0):
+		# a combat hop carries you on, the way you leapt, on top of your
+		# steering: committed, so a foe can read and punish it
+		var extra: float = (DB.CONFIG.player.hop.get("carry", 1.8) - 1.0) * DB.CONFIG.player.speed
+		position.x += hop_dir.x * extra * dt
+		position.z += hop_dir.z * extra * dt
+		position = game.collision.resolve(position, radius, jump_h)
 	var ground := Terrain.height_at(position.x, position.z)
 	if jump_v != 0.0 or jump_h > 0.0:
 		# Integrate world height, so a slope cannot drag an airborne player up
@@ -337,7 +450,11 @@ func _update_jump(dt: float, requested: bool) -> void:
 			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
 			jump_v = 0.0
 			jump_h = 0.0
+			flip = -1.0
+			hop_dir = Vector3.ZERO
 		else:
+			if flip >= 0.0:
+				flip += dt
 			jump_h = maxf(0.0, position.y - ground)
 	else:
 		position.y = ground
@@ -360,6 +477,7 @@ func update(dt: float, controls) -> void:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
 	aim_hold = maxf(0, aim_hold - dt)
+	root = maxf(0, root - dt)
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
@@ -371,7 +489,7 @@ func update(dt: float, controls) -> void:
 			position.z += mv.z * sp * dt
 			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
 		position = game.collision.resolve(position, radius, jump_h)
-		_update_jump(dt, controls != null and controls.get("jump", false))
+		_update_jump(dt, controls != null and controls.get("jump", false), controls)
 		moving = mag > 0 or rig.airborne
 		rig.update(dt, mag)
 		_sync()
@@ -402,10 +520,8 @@ func update(dt: float, controls) -> void:
 			_impact("off", p, dt)
 	if pending_shot != null:
 		pending_shot.t -= dt
-		if pending_shot.t <= 1e-6:
-			var p: Dictionary = pending_shot
-			pending_shot = null
-			_release(p, dt)
+		# Release after this frame's movement, facing and special input.
+		# A due auto-shot must still cancel if the player starts moving.
 
 	var speed01 := 0.0
 	if lunge != null:
@@ -439,17 +555,21 @@ func update(dt: float, controls) -> void:
 				aim_hold = 0
 			var walk: float = tank.y * (DB.CONFIG.player.backpedal if tank.y < 0 else 1.0)
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
+		else:
+			mv = _melee_steer(mv, dt)
+		if root > 0:
+			mv = {"x": 0.0, "z": 0.0}
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
-			position.x += mv.x * DB.CONFIG.player.speed * dt
-			position.z += mv.z * DB.CONFIG.player.speed * dt
+			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
+			position.z += mv.z * DB.CONFIG.player.speed * game.spells.movement_scale * dt
 			if tank != null:
 				# you face where the keys turn you; the left button held
 				# (mouse aim) still turns you to the cursor
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
 					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
-			elif aim_hold <= 0:
+			else:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
 				# stop (or turn) to face it. No shooting while kiting backwards.
@@ -457,8 +577,6 @@ func update(dt: float, controls) -> void:
 			speed01 = mag
 		elif turning:
 			pass
-		elif (acts.get("strike") or acts.get("shoot")) and aim != null:
-			facing = U.turn_towards(facing, atan2(aim.x - position.x, aim.z - position.z), dt * DB.attack.turnRate)
 		elif game.mouse_aim and controls.get("faceAim") != null:
 			var fa = controls.faceAim
 			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * 14)
@@ -467,7 +585,7 @@ func update(dt: float, controls) -> void:
 			if acts[id] and DB.spells.has(id):
 				# a spell draws sheathed weapons properly (no copies left on the back)
 				if game.spells.try_cast(id) and sheathed:
-					set_sheathed(false)
+					draw_weapons("ranged" if DB.spells[id].get("ranged") else "melee")
 		# fighting draws your weapons
 		if sheathed and (acts.get("strike") or acts.get("shoot")):
 			set_sheathed(false)
@@ -483,12 +601,18 @@ func update(dt: float, controls) -> void:
 			game.fishing.cast(controls.get("rawAim"))
 		if acts.get("cook"):
 			game.hud.toggle_window("cooking")
+	# A ranged special gets first refusal over an auto-shot due this frame.
+	# If the special failed, the already-drawn auto-shot still releases.
+	if pending_shot != null and pending_shot.t <= 1e-6:
+		var shot: Dictionary = pending_shot
+		pending_shot = null
+		_release(shot,dt)
 
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
 	# high in a hop you pass over low things (a fence, Collision `h`)
 	position = game.collision.resolve(position, radius, jump_h)
-	_update_jump(dt, controls != null and controls.get("jump", false))
+	_update_jump(dt, controls != null and controls.get("jump", false), controls)
 	# Stationary activities (fishing, eating, gathering and casting) also
 	# see a standing jump as movement, rather than continuing in mid-air.
 	moving = speed01 > 0 or rig.airborne
@@ -543,11 +667,11 @@ func try_strike(aim) -> bool:
 	var windup: float = stats.swing_windup
 	if cooldowns.attack > windup:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
+	if aim != null and not _swing_facing(aim):
 		return false
 	var anim: float = stats.swing_animation
-	if bow_in_hand:
-		hold_bow(false)
+	if bow_in_hand or sheathed:
+		draw_weapons("melee")
 	var aim2 = {"x": aim.x, "z": aim.z} if aim != null else null
 	if opener:
 		opener = false
@@ -575,7 +699,7 @@ func try_strike_off(aim) -> bool:
 	var windup: float = stats.swing_windup_for("off")
 	if cooldowns.attackOff > windup:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
+	if aim != null and not _swing_facing(aim):
 		return false
 	var gap: float = DB.attack.staggerGap
 	var anim: float = stats.swing_animation_for("off")
@@ -606,7 +730,8 @@ func try_strike_off(aim) -> bool:
 func _impact(hand: String, p: Dictionary, dt: float, show := 0.0) -> void:
 	var off := hand == "off"
 	var tg = game.targeting
-	if not tg.attacking or not tg.target_in_reach:
+	# a swing already begun still lands if the target stepped a little out
+	if not tg.attacking or not tg.in_reach(DB.attack.get("impactGrace", 0.0)):
 		if off:
 			rig.off_action = null
 		elif rig.action != null and rig.action.type == "strike":
@@ -625,6 +750,7 @@ func try_shoot(aim) -> bool:
 	if pending_shot != null or casting != null or lunge != null:
 		return false
 	var stats = game.stats
+	cooldowns.ranged=maxf(cooldowns.ranged,ranged_ready_at-game.time)
 	if not game.inventory.ammo:
 		# Red in the middle of the screen
 		if game.hud:
@@ -634,11 +760,11 @@ func try_shoot(aim) -> bool:
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
 	if cooldowns.ranged > draw:
 		return false
-	if aim != null and not facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0):
-		return false
-	var t := maxf(cooldowns.ranged, minf(draw, DB.attack.readyWindup * 2))
-	pending_shot = {"t": t}
-	hold_bow(true)
+	if aim != null:
+		face_towards(aim.x, aim.z)
+	var t := maxf(cooldowns.ranged, draw)
+	pending_shot = {"t": t,"total":t}
+	if not bow_in_hand or sheathed:draw_weapons("ranged")
 	rig.play("shoot", t + 0.35, t / (t + 0.35))
 	rig.action.auto = true
 	return true
@@ -657,11 +783,13 @@ func _release(p: Dictionary, dt: float) -> void:
 	if not tg.attacking or not tg.target_in_shot or not ammo:
 		if rig.action != null and rig.action.type == "shoot":
 			rig.action = null
-		hold_bow(false)
+		hold_bow(weapon_stance=="ranged" and not sheathed)
 		return
-	inv.remove_count(ammo, 1)
+	face_towards(tg.current.position.x, tg.current.position.z)
+	inv.spend_arrow(ammo)
 	var late := minf(minf(-p.t, dt), DB.attack.catchUp)
 	cooldowns.ranged = maxf(0, game.stats.attack_cooldown_for("ranged") - late)
+	ranged_ready_at=game.time+cooldowns.ranged
 	last_swing_at = game.time
 	game.combat.loose_player_arrow(tg.current, ammo)
 
@@ -672,19 +800,20 @@ func hold_bow(in_hand: bool) -> void:
 	var larm := _part("Arm_L")
 	var r = game.inventory.equipment.get("ranged") if game.inventory else null
 	var want = r.id if r and Items.get_def(r.id).get("kind") == "weapon" else null
+	in_hand=in_hand and want != null
 	# the key carries the rune too, so a new rune rebuilds the bow's glow
 	var key = "%s:%s" % [want, Runes.of(r)] if want else null
 	if bow and (bow_id != key or bow_in_hand != in_hand):
 		_free(bow)
 		bow = null
+	bow_in_hand=in_hand
 	if want and not bow:
 		bow = Assets.instance(Items.get_def(want).model)
 		bow_id = key
 		FancyGear.apply(bow, Runes.glow_for(r))
 		bow_in_hand = in_hand
 		if in_hand and larm:
-			bow.position = Vector3(0, -0.62, 0.02)
-			bow.rotation = Vector3(-PI / 2, 0, 0)
+			bow.transform = ForgeCharacter.held_transform(model, "l", {})
 			larm.add_child(bow)
 		elif torso:
 			bow.position = Vector3(0, 0.25, -0.2)
@@ -696,19 +825,81 @@ func hold_bow(in_hand: bool) -> void:
 	if shield:
 		shield.visible = not in_hand and not sheathed
 
+func bow_muzzle() -> Vector3:
+	if bow != null and bow.has_method("muzzle_local"):
+		return bow.global_transform*bow.call("muzzle_local")
+	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
+
+
+## Every swing, shot and ability at a foe turns you to it at once, and one
+## started on the move holds you in place for `rootSeconds` (Dan picked
+## Lost Ark / Diablo 4 style, 2026-11-09): facing never gets in the way,
+## and attacking costs ground, so nobody shoots on while outrunning a foe
+## (the anti-kite rule, PvP-safe: it is all positions and timers).
+func square_up(x: float, z: float) -> void:
+	face_towards(x, z)
+	if moving and not rig.airborne:
+		root = maxf(root, DB.attack.get("rootSeconds", 0.25))
+
+
+## Auto attack is not a key you press, so it never roots you: standing,
+## a swing snaps you to your foe; running, it only swings at a foe in your
+## front half (the upper body swings, the legs keep running), so you can
+## still run from a fight with auto attack on.
+func _swing_facing(aim) -> bool:
+	if moving:
+		return facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0)
+	face_towards(aim.x, aim.z)
+	return true
+
+
+## The enemy you are fighting, while it is in melee reach (else null).
+func _melee_foe():
+	var tg = game.targeting
+	if tg == null or not tg.attacking or not tg.in_reach(DB.attack.movingLeeway):
+		return null
+	return tg.current
+
+
+## Turning in a melee fight (Dan, 2026-11-09): you face where you run, so
+## stepping back towards a foe you had passed used to carry you through it
+## and out the other side before you had turned. Now, with your foe in reach,
+## pushing towards it turns you on the spot first. Bodies are never solid
+## (Dan, 2026-11-09): once turned you walk on, through it if you hold the
+## key. Moving away is untouched, so kiting rules hold.
+func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
+	var foe = _melee_foe()
+	var ml := U.hyp(mv.x, mv.z)
+	if foe == null or ml < 0.01:
+		return mv
+	var fx: float = foe.position.x - position.x
+	var fz: float = foe.position.z - position.z
+	var d := U.hyp(fx, fz)
+	if d < 0.01:
+		return mv
+	fx /= d
+	fz /= d
+	var inward: float = (mv.x * fx + mv.z * fz) / ml
+	if inward < cos(deg_to_rad(DB.attack.get("pivotDegrees", 70))):
+		return mv
+	if not facing_point(foe.position.x, foe.position.z, 30):
+		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
+		return {"x": 0.0, "z": 0.0}
+	return mv # facing it: walk on, straight through its body if you hold the key
+
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)
 ## Running, an attack or spell at an enemy needs it in your front half
 ## standing still, it turns you to it.
 func can_hit_while_moving(x: float, z: float) -> bool:
-	return not moving or facing_point(x, z, DB.attack.coneDegrees / 2.0)
+	return facing_point(x, z, DB.attack.coneDegrees / 2.0)
 
 
 func facing_point(x: float, z: float, half_degrees: float) -> bool:
 	var dx := x - position.x
 	var dz := z - position.z
 	var d := U.hyp(dx, dz)
-	if d < 0.8:
+	if d < 0.001:
 		return true
 	return (dx * sin(facing) + dz * cos(facing)) / d >= cos(deg_to_rad(half_degrees))
 
@@ -798,6 +989,7 @@ func revive(x: float, z: float, health_fraction := 1.0) -> void:
 	health = maxf(1, U.jround(max_health * health_fraction))
 	rig.revive()
 	cooldowns = fresh_cooldowns()
+	ranged_ready_at=0.0
 	if game.spells:
 		game.spells.reset()
 	if game.resources:

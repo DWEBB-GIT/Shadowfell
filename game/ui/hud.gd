@@ -79,6 +79,7 @@ var hp: Dictionary
 var mp: Dictionary
 var gauge: Dictionary
 var pips: HBoxContainer
+var class_resource_hint: Label
 var buffs: HBoxContainer
 var target: Control
 var target_ring: Panel
@@ -526,6 +527,8 @@ func _build_char_panel() -> void:
 	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
 	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
 	pips = UI.hbox(_indented(cv, false), 3)
+	class_resource_hint = UI.label(_indented(cv, false), "", 11, Color("eac674"))
+	class_resource_hint.visible = false
 	buffs = UI.hbox(_indented(cv, false), 4)
 	game.events.on("equipmentChanged", func(_e): _player_portrait.call_deferred())
 
@@ -827,6 +830,7 @@ func _build_modals() -> void:
 	var bb := UI.hbox(v, 12)
 	bb.alignment = BoxContainer.ALIGNMENT_CENTER
 	UI.button(bb, "Release spirit", func(): game.release_spirit(), 15)
+	UI.button(bb,"Logout",func(): main_menu._start("logout"),15)
 	death.visible = false
 	# a document (.parchment)
 	document = UI.panel(root, 0, Color("2a2219"), Color("8a6d3b"))
@@ -847,7 +851,7 @@ func _build_modals() -> void:
 	document.visible = false
 	# a yes/no question over everything (confirm())
 	confirm_box = UI.panel(root, 0, UI.WINDOW, UI.BORDER)
-	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "window", 20))
+	confirm_box.add_theme_stylebox_override("panel", UI.frame(Vector4(22, 16, 22, 16), "panel", 8))
 	confirm_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	var cv := UI.vbox(confirm_box, 12)
 	confirm_text = UI.wrapped(UI.label(cv, "", 16, UI.TEXT))
@@ -891,6 +895,7 @@ func hide_title() -> void:
 ## the loading screen over the world while Game.load_world() warms it up
 func show_loading() -> void:
 	modal = "loading"
+	root.move_child(loading, -1) # over any modal that raised itself
 	loading.open()
 
 
@@ -1053,7 +1058,7 @@ func toggle_main_menu() -> void:
 	if main_menu.is_open:
 		main_menu.close()
 		return
-	if modal:
+	if modal and modal!="death":
 		return
 	items.close_all()
 	quests.close_all()
@@ -1100,8 +1105,7 @@ func open_document(id: String) -> void:
 	var body = doc.body
 	doc_body.text = ""
 	UI.set_rich(doc_body, html_to_bbcode("".join(body) if typeof(body) == TYPE_ARRAY else str(body)))
-	backdrop.visible = true
-	document.visible = true
+	_over_backdrop(document)
 
 
 ## the few tags the documents use, as BBCode
@@ -1113,13 +1117,23 @@ static func html_to_bbcode(h: String) -> String:
 	return re.sub(s, "", true).strip_edges()
 
 
+## Show a modal window over the dark backdrop. The confirm box and the main
+## menu move the backdrop to the top when they open, and it stays there, so
+## every modal raises the backdrop and then itself (Dan, 2026-11-04: after
+## a confirm or the menu, the backdrop covered the Release spirit button).
+func _over_backdrop(win: Control) -> void:
+	backdrop.visible = true
+	root.move_child(backdrop, -1)
+	root.move_child(win, -1)
+	win.visible = true
+
+
 func show_death(_coins_lost: int, destination: String) -> void:
 	close_modal(true)
 	modal = "death"
 	var where := "by your camp" if destination == "camp" else "at the last shrine you rested at" if destination == "shrine" else "at the road's end"
 	death_text.text = "Your spirit will rise %s. What you carried lies in a grave by your body: reach it within %d minutes, before scavengers do. Walk back to your body, or return to life where you rise; either way you come back wounded." % [where, roundi(DB.CONFIG.death.graveSeconds / 60.0)]
-	backdrop.visible = true
-	death.visible = true
+	_over_backdrop(death)
 
 
 ## Ask a yes/no question in a box over the game; `on_yes` runs on Yes.
@@ -1130,10 +1144,7 @@ func confirm(text: String, on_yes: Callable) -> void:
 	confirm_text.text = text
 	confirm_yes = on_yes
 	game.audio.sfx("panel", 0.6)
-	backdrop.visible = true
-	root.move_child(backdrop, -1)
-	root.move_child(confirm_box, -1)
-	confirm_box.visible = true
+	_over_backdrop(confirm_box)
 
 
 func answer_confirm(yes: bool) -> void:
@@ -1209,14 +1220,14 @@ func log_line(text: String, kind := "", throttle = null, rarity = null) -> void:
 			c.queue_free()
 
 
-## which tab a line belongs on: General has everything
+## which tab a line belongs on: General has everything but the combat lines
 static func log_shows(tab: String, kind: String, rarity) -> bool:
 	match tab:
 		"combat":
 			return kind in COMBAT_KINDS
 		"loot":
 			return kind in LOOT_KINDS or rarity != null
-	return true
+	return not kind in COMBAT_KINDS
 
 
 func _log_label(entry: Array) -> void:
@@ -1447,7 +1458,20 @@ func _refresh_resources() -> void:
 			gauge.root.set_meta("colour", g.colour)
 			gauge.fill.tint(Color(g.colour), Color(g.colour).darkened(0.45))
 		var o := " · %s!" % g.overload.name if g.get("overload") and v >= g.max else ""
-		gauge.text.text = "%d %s%s" % [floori(v), g.name, o]
+		if g.id == "corruption":
+			gauge.text.text = "%d/%d%s" % [floori(v), int(g.max), o]
+		else:
+			gauge.text.text = "%d %s%s" % [floori(v), g.name, o]
+	var full: bool = game.spells.reprisal >= game.spells.reprisal_cap
+	class_resource_hint.visible = game.archetype_id in ["paladin", "occultist"]
+	if game.archetype_id == "occultist":
+		var corruption: float = r.amount("corruption")
+		var cost := " · HP -2%/s" if corruption >= 100 else ""
+		class_resource_hint.text = "Curse/drain +%d%%%s" % [floori(corruption*0.35),cost]
+		class_resource_hint.modulate = Color("ce9deb")
+	else:
+		class_resource_hint.text = "✦  FULL REPRISAL  ✦" if full else "Reprisal %d / %d" % [floori(game.spells.reprisal),int(game.spells.reprisal_cap)]
+		class_resource_hint.modulate = Color("ffe46a") if full else Color("d0af79")
 	var p = r.points_cfg
 	pips.visible = p != null
 	if p != null:
@@ -1465,7 +1489,7 @@ func _refresh_resources() -> void:
 			if not c.has_meta("on") or c.get_meta("on") != on:
 				c.set_meta("on", on)
 				# combo points: lit embers under the energy bar
-				var st := UI.box(Color("e8602c") if on else Color("1a1410"), Color("d8a050") if on else Color("5a4630"), 0, 1)
+				var st := UI.box(Color(p.colour) if on else Color("1a1410"), Color("d8a050") if on else Color("5a4630"), 0, 1)
 				st.set_corner_radius_all(6)
 				c.add_theme_stylebox_override("panel", st)
 			i += 1
@@ -1495,14 +1519,18 @@ func _refresh_slots() -> void:
 	var tgt = game.targeting.current
 	for s in slots:
 		var a = game.action_bar.slots[int(s.loc.substr(2))]
-		var cd := _cooldown(a) if a else [0.0, 0.0, false]
+		var active = game.spells.tuned(a) if a in ["quickStrike","shadow","flurry","crosscut"] else DB.spells.get(a)
+		var effective = active.id if active != null else a
+		if active != null:
+			s.icon = icons.abilities.get(effective)
+		var cd := _cooldown(effective) if a else [0.0, 0.0, false]
 		var own: float = cd[0] / cd[1] if cd[1] > 0 else 0.0
 		# whichever finishes later is what the player is waiting on
 		var show_gcd: bool = cd[2] and gcd > cd[0]
 		s.cooldown = 0.0 if show_gcd else own
 		s.cd_left = 0.0 if show_gcd or a == "strike" else cd[0]
 		s.gcd = gcd / game.stats.global_cooldown if show_gcd else 0.0
-		var ab = DB.abilities.get(a) if a else null
+		var ab = active if active != null else DB.abilities.get(a) if a else null
 		var tint := Color.WHITE
 		var overlay := Color(0, 0, 0, 0)
 		if ab != null:
@@ -1518,7 +1546,7 @@ func _refresh_slots() -> void:
 		s.glow = Color(140 / 255.0, 190 / 255.0, 1, 0.55) if a == "brace" and player.is_braced else Color(0, 0, 0, 0)
 		s.border = Color("9cc4ff") if a == "brace" and player.is_braced else Color("2a2218") if cd[0] > 0 or show_gcd else UI.BORDER_DIM
 		# redraw only when something shown changed (sweeps move in 1/90 turns)
-		var sig := [ceili(s.cd_left), snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
+		var sig := [ceili(s.cd_left), snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim, effective]
 		if s.get_meta("sig", []) != sig:
 			s.set_meta("sig", sig)
 			s.queue_redraw()
@@ -1538,6 +1566,12 @@ func _refresh_spells() -> void:
 		var rc: Dictionary = DB.recipes[k.id]
 		c = {"t": k.t, "total": k.total, "name": "%s %s%s" % [Cooking.craft_of(rc.skill).get("window", "Making"), Items.get_def(rc.output.item).name, " (%d)" % k.left if k.left > 1 else ""]}
 		tex = icons.item(rc.output.item)
+	elif game.refinery.channel != null:
+		c = game.refinery.bar()
+		tex = icons.item(game.refinery.item.id) if game.refinery.item != null else null
+	elif game.rune_forge.channel != null:
+		c = game.rune_forge.bar()
+		tex = icons.item(game.rune_forge.rune.id) if game.rune_forge.rune != null else null
 	elif e != null:
 		c = {"t": e.total - e.left, "total": e.total, "name": "Eating %s" % Items.get_def(e.id).name}
 		tex = icons.item(e.id)
@@ -1854,14 +1888,16 @@ func _update_target() -> void:
 		return
 	var elite: bool = shown != null and shown.cfg.get("elite", false)
 	var ring: StyleBoxFlat = target_ring.get_theme_stylebox("panel")
-	ring.border_color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
+	var ring_colour: Color = Color("6a9a4a") if friend != null else Color("e0a040") if elite else Color("b08a4a")
+	if ring.border_color != ring_colour:
+		ring.border_color = ring_colour
 	if friend != null:
 		target_name.text = friend.name
-		target_name.add_theme_color_override("font_color", UI.NAME_FRIENDLY)
+		UI.set_colour(target_name, UI.NAME_FRIENDLY)
 		target_badge.text = U.n(friend.def.get("level", 1))
 		target_label.text = friend.def.get("title", "")
 		target_kind.text = ""
-		target_label.add_theme_color_override("font_color", UI.TEXT_DIM)
+		UI.set_colour(target_label, UI.TEXT_DIM)
 		target_hp.root.visible = false
 		target_mp.root.visible = false
 		target_stagger.root.visible = false
@@ -1869,16 +1905,16 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	target_name.add_theme_color_override("font_color", UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
+	UI.set_colour(target_name, UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
-	target_kind.add_theme_color_override("font_color", KIND_GLYPH[kind][1])
+	UI.set_colour(target_kind, KIND_GLYPH[kind][1])
 	var kind_art := Icons.art("ui", "foe_" + kind)
 	target_kind.set_meta("tip", "%s[b]%s[/b]\nLevel %s · %s" % ["[img=16]%s[/img] " % kind_art.resource_path if kind_art else "", kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
 	var attacking: bool = t != null and tg.attacking
 	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
-	target_label.add_theme_color_override("font_color", Color("ff8a60") if attacking else UI.TEXT_DIM)
+	UI.set_colour(target_label, Color("ff8a60") if attacking else UI.TEXT_DIM)
 	target_hp.root.visible = true
 	set_fill(target_hp, shown.health / shown.max_health)
 	target_hp.text.text = "%d / %d" % [ceili(shown.health), shown.max_health]
@@ -1947,12 +1983,20 @@ func _update_enemy_bars() -> void:
 		bar.name_row.visible = elite or targeted or nemesis
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
-		bar.name.add_theme_color_override("font_color", UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
+		# theme overrides and stylebox colours are set only when they change:
+		# either one makes Godot lay the bar out and draw it again
+		UI.set_colour(bar.name, UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null
-		st.border_color = Color("ff6a40") if targeted else Color("d0a050") if winding else UI.BORDER if elite else UI.BORDER_DIM
+		var edge: Color = Color("ff6a40") if targeted else Color("d0a050") if winding else UI.BORDER if elite else UI.BORDER_DIM
+		if st.border_color != edge:
+			st.border_color = edge
 		bar.fill.anchor_right = clampf(e.health / e.max_health, 0, 1)
+		var poisoned: float = game.spells.poison_remaining(e) / e.max_health
+		bar.poison.visible = poisoned > 0
+		bar.poison.anchor_right = bar.fill.anchor_right
+		bar.poison.anchor_left = maxf(0.0,bar.fill.anchor_right-poisoned)
 		bar.hp.text = "%d / %d" % [ceili(e.health), e.max_health] if targeted else ""
 		# FFXIV-style cast bar under the name while a telegraphed attack winds up
 		var c = e.casting
@@ -1998,6 +2042,14 @@ func _enemy_bar(_e) -> Dictionary:
 	fill.offset_bottom = -1
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
+	var poison := ColorRect.new()
+	poison.color = Color("7ba733")
+	poison.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	poison.anchor_bottom = 1.0
+	poison.offset_top = 1
+	poison.offset_bottom = -1
+	poison.visible = false
+	track.add_child(poison)
 	var hp_text := UI.label(track, "", 10, Color("f4ead0"), 3)
 	hp_text.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2023,4 +2075,4 @@ func _enemy_bar(_e) -> Dictionary:
 	cn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var auras := UI.hbox(v, 2)
 	auras.alignment = BoxContainer.ALIGNMENT_CENTER
-	return {"root": v, "name_row": name_row, "skull": skull, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}
+	return {"root": v, "name_row": name_row, "skull": skull, "name": n, "track": track, "fill": fill, "poison":poison, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}

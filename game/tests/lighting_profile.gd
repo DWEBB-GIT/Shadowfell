@@ -24,7 +24,7 @@ func _run() -> void:
 	Store.dir="user://lighting_profile_%d" % Time.get_ticks_usec()
 	game=load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var c: Dictionary=game.roster.create("Profile Tester","warden")
+	var c: Dictionary=game.roster.create("Profile","warden")
 	game.enter_world(c.character.id)
 	while game.hud.loading.visible: await process_frame
 	game.save.autosave_enabled=false

@@ -85,10 +85,26 @@
     "nr_water_board": "COMMON WATER AGREEMENT. Orchard: only a trickle for the roots. Mill: full flow while the wheel turns. Pond: a trickle must always remain. No household receives a private river. A smaller hand adds: THIS INCLUDES YOU, OSRIC.",
     "nr_memorial_verse": "“From the hearth we first are carried; by the sheaf our days are fed. By the lantern we come homeward; then in rest we name our dead.” Four small bells bear these same symbols. Lyra has pencilled: One verse. No speed required.",
     "poi:nr_water_place": "Three handles divide a shared supply. The board northwest of Willow Pond sets out the agreement.",
-    "poi:nr_memorial_place": "Four small memorial bells stand beside a verse. The collector used the great bell; these belong to the families."
+    "poi:nr_memorial_place": "Four small memorial bells stand beside a verse. The collector used the great bell; these belong to the families.",
+    "fen_hawthorn_blind": "A blind of woven hazel, half fallen in. Under an oilcloth: a fletcher's knife, a pot of hide glue gone hard, and a dozen cut shafts waiting for fletching. Someone has scratched a small closed eye into the post by the door.",
+    "fen_hawthorn_cache": "A crate wedged under a root, its lid pegged shut. Inside, wrapped in waxed linen, forty grey-fletched arrows, every one marked with a hawthorn leaf. You bundle them up for Fen.",
+    "fen_hawthorn_cairn": "Bones under the moss, picked clean long ago, and the rotted ruin of a quiver. A scrap of its lining has survived, stitched all over with a tight looping pattern. Someone has cut a closed eye into the stone above her, deep and careful. Wolves do not carve.",
+    "poi:in_courier_satchel": "A waxed courier bag lies under the broken axle. The envelopes are clean. Paige used her own coat to keep the rain off them.",
+    "poi:in_della_well": "A sewing tin rests on the dry stone rim. Della has tied a ribbon to the handle so she can find it in the mist.",
+    "poi:in_bridge_brace": "Ada’s marks run straight along the timber. Two new boards and sound rope will hold the cartway. A crooked fee notice has been nailed over her measurement.",
+    "poi:in_cart_shed": "Wheel rims, pegged joints and a kettle kept just off the fire. Each unfinished cart carries its owner’s name.",
+    "poi:in_toll_cart": "A collector’s cart stands in the trees. The driver’s original bill is wrapped around a loaf to keep it dry. The loaf has been eaten.",
+    "poi:in_reed_marker": "The scratched red line marks a safe trickle for the bank channel. Nessa’s instruction is plain. Keep the bank shallow and the ferry channel full.",
+    "poi:in_ferry_lock": "Two handles control the shallow bank cut and the ferry channel. The boards are worn by generations of boatmen.",
+    "poi:in_reed_cache": "A waterproof case has been wedged beneath the fallen willow. Several settled accounts have been copied onto a fresh list of debts.",
+    "poi:in_lamplighters": "A shared watch fire keeps the crossing road and ferry ridge connected. Sella’s spare blankets are folded by the kettle.",
+    "poi:in_mine_camp": "Edda has kept every shift tally, including the days the miners were told they had not worked.",
+    "poi:in_lime_cut": "A shallow quarry shelf leads toward Blackpick. The wider turns leave room to step out of a heavy swing.",
+    "poi:in_bailiff_desk": "Fresh invoices lie over old wage tallies. The same name is entered as debtor, worker and deceased."
   },
   "title": {
     "_about": "The title screen and character creation: the build label, the tagline, the classes shown on the create screen (a class with an archetype is playable; one without is shown as coming later), and the name pools for the random name button.",
+    "name": "Mythkeep",
     "build": "Alpha 0.1",
     "tagline": "The Fallen Road",
     "maxCharacters": 10,
@@ -97,21 +113,21 @@
         "id": "warden",
         "name": "Warrior",
         "archetype": "warden",
-        "role": "Weapon master",
-        "blurb": "Steel, shield and stubbornness. The last one standing.",
+        "role": "Berserker and Ravager",
+        "blurb": "Ramp up with a heavy weapon or cut fast with two.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
-          "Resolve",
-          "Strong: area damage, long fights. Weak: escaping, ranged foes"
+          "Plate, leather, cloth",
+          "Fury",
+          "Two-handed power or dual-wield pressure"
         ]
       },
       {
         "id": "rogue",
         "name": "Rogue",
         "archetype": "rogue",
-        "role": "Shadow assassin",
-        "blurb": "Strike from the shadows. Gone before they fall.",
+        "role": "Assassination and venom",
+        "blurb": "Open from Shadow and choose a killing blow or lasting poison.",
         "traits": [
           "Agility",
           "Leather, cloth",
@@ -123,8 +139,8 @@
         "id": "ranger",
         "name": "Ranger",
         "archetype": "ranger",
-        "role": "Trapper and archer",
-        "blurb": "Bow, trap and hound. The wild is your weapon.",
+        "role": "Marksman and Trapper",
+        "blurb": "Draw a precise shot or steer enemies into prepared ground.",
         "traits": [
           "Agility",
           "Leather, cloth",
@@ -136,8 +152,8 @@
         "id": "occultist",
         "name": "Occultist",
         "archetype": "occultist",
-        "role": "Curse-caster",
-        "blurb": "Rot and ruin. Your foes die slowly. You don't.",
+        "role": "Life Drainer and Curse Spreader",
+        "blurb": "Sustain yourself through drains or set a pack up for eruption.",
         "traits": [
           "Intellect",
           "Cloth",
@@ -149,13 +165,26 @@
         "id": "paladin",
         "name": "Paladin",
         "archetype": "paladin",
-        "role": "Holy juggernaut",
-        "blurb": "Holy fury in heavy plate. Unmoving. Unbreakable.",
+        "role": "Defense and burst",
+        "blurb": "Build Conviction, absorb a blow and answer with holy force.",
         "traits": [
           "Strength",
-          "Plate, mail, leather, cloth",
+          "Plate, leather, cloth",
+          "Mana, Conviction and Reprisal",
+          "Shield and holy retaliation"
+        ]
+      },
+      {
+        "id": "wizard",
+        "name": "Wizard",
+        "archetype": "wizard",
+        "role": "Elementalist and Arcanist",
+        "blurb": "Mix fire and frost, or use sigils and force to shape the fight.",
+        "traits": [
+          "Intellect",
+          "Cloth",
           "Mana",
-          "Strong: big crits, toughness. Weak: speed, chasing"
+          "Elemental reactions, wards and positioning"
         ]
       }
     ],

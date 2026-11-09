@@ -7,6 +7,10 @@ extends RefCounted
 
 var game
 var list: Array = []
+## Enemies out of their `activeHours` (night things by day): not in the world
+## at all until their hours come round again, when they wait at home, whole.
+var dormant: Array = []
+var _hours_check := 0.0
 
 
 func _init(g) -> void:
@@ -32,13 +36,14 @@ func spawn_all() -> void:
 			e.rig.death = 2.0
 			e._sync()
 		list.append(e)
-		game.scene.add_child(e.group)
+		_show(e, e.position.distance_squared_to(game.player.position))
 
 
 func clear() -> void:
-	for e in list:
+	for e in list + dormant:
 		e.group.queue_free()
 	list = []
+	dormant = []
 
 
 func by_id(id: String):
@@ -61,14 +66,37 @@ func reset_engaged() -> void:
 			e.reset()
 
 
+## The simulation and the drawing are separate: every enemy's AI runs from
+## its own position and state (an idle one far from anyone waits, as it
+## always has), and its body is in the scene only near the player or while
+## it is fighting (WorldStream.VIEW_IN / VIEW_OUT). A multiplayer server
+## would run update() for every enemy near any player and attach no bodies.
+var _tick := 0
+
+
 func update(dt: float) -> void:
 	var player = game.player
 	_respawn(dt)
+	_hours_check -= dt
+	if _hours_check <= 0.0:
+		_hours_check = 1.0
+		_keep_hours()
+	_tick += 1
 	for e in list:
-		var near: bool = e.position.distance_squared_to(player.position) < 180.0 * 180.0
-		e.group.visible = near
-		if near or e.state != "idle":
-			e.update(dt, player)
+		var d2: float = e.position.distance_squared_to(player.position)
+		var near: bool = d2 < 180.0 * 180.0
+		_show(e, d2)
+		if e.state != "idle" or (near and e.group.get_parent() != null):
+			e.update(dt + e.idle_dt, player)
+			e.idle_dt = 0.0
+		elif near:
+			# idle and out of sight (far past any aggro reach): looked at a
+			# quarter as often, with the time saved up, so the browser's one
+			# thread is not spent on bodies nobody sees
+			e.idle_dt += dt
+			if (_tick + e.get_instance_id()) % 4 == 0:
+				e.update(e.idle_dt, player)
+				e.idle_dt = 0.0
 	_separate()
 	# a body with loot stays down until looted; then it sinks away
 	for e in list.duplicate():
@@ -77,6 +105,46 @@ func update(dt: float) -> void:
 		if e.dead and not e.corpse and e.rig.death > 5.5:
 			e.group.queue_free()
 			list.erase(e)
+
+
+## put an enemy's body in the scene, or take it out, by distance
+func _show(e, d2: float) -> void:
+	var shown: bool = e.group.get_parent() != null
+	var want: bool = e.state != "idle" or d2 < WorldStream.VIEW_IN * WorldStream.VIEW_IN \
+		or (shown and d2 < WorldStream.VIEW_OUT * WorldStream.VIEW_OUT)
+	if want == shown:
+		return
+	if want:
+		game.scene.add_child(e.group)
+	else:
+		e.group.get_parent().remove_child(e.group)
+
+
+## bodies in the scene now (checks and the F3 readout)
+func shown_count() -> int:
+	var n := 0
+	for e in list:
+		if e.group.get_parent() != null:
+			n += 1
+	return n
+
+
+## Night things go at dawn and come back at dusk (`activeHours`, by the world
+## clock). One that is fighting finishes first; a body stays to be looted.
+func _keep_hours() -> void:
+	var h: float = game.world_state.hour
+	for e in list.duplicate():
+		if e.active_hours != null and e.alive and e.state == "idle" and not DayNight.in_hours(h, e.active_hours):
+			list.erase(e)
+			dormant.append(e)
+			if e.group.get_parent():
+				e.group.get_parent().remove_child(e.group)
+	for e in dormant.duplicate():
+		if DayNight.in_hours(h, e.active_hours):
+			dormant.erase(e)
+			e.reset()
+			list.append(e)
+			_show(e, e.position.distance_squared_to(game.player.position))
 
 
 func _respawn(dt: float) -> void:
@@ -97,14 +165,18 @@ func _respawn(dt: float) -> void:
 		ws.corpses.erase(id)
 		ws.defeated.erase(id)
 		var e := Enemy.new(game, spawn)
+		# back from a respawn, it lets you be for a moment (Dan, 2026-11-04)
+		e.calm = DB.CONFIG.chase.spawnGrace
 		list.append(e)
 		game.scene.add_child(e.group)
 		game.events.emit("enemyRespawned", {"enemy": e})
 
 
 func _separate() -> void:
-	var player = game.player
-	var living := list.filter(func(e): return e.alive)
+	# only bodies in view can be seen to overlap; idle ones far off stand still
+	var pp: Vector3 = game.player.position
+	var view2 := WorldStream.VIEW_OUT * WorldStream.VIEW_OUT
+	var living := list.filter(func(e): return e.alive and (e.state != "idle" or e.position.distance_squared_to(pp) < view2))
 	# sweep along x: once the next enemy is further off in x than any two
 	# could reach, none after it can touch this one (was every pair: 5 ms
 	# a frame for 85 enemies)
@@ -129,12 +201,7 @@ func _separate() -> void:
 			var r := push_apart(a.position, a.radius, b.position, b.radius, 1.0 if a_dummy else 0.0 if b.cfg.get("dummy", false) else 0.5)
 			a.position = r[0]
 			b.position = r[1]
-		if not player.dead:
-			var mp: float = player.radius + a.radius
-			if absf(player.position.x - a.position.x) < mp and absf(player.position.z - a.position.z) < mp:
-				var r := push_apart(player.position, player.radius, a.position, a.radius, 0.0 if a_dummy else 0.85)
-				player.position = r[0]
-				a.position = r[1]
+		# the player walks straight through enemies: no shove either way (Dan, 2026-11-04)
 
 
 ## Move two circles apart; `bias` is the share of the correction given to b.

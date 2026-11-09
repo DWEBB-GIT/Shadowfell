@@ -10,9 +10,12 @@ extends RefCounted
 ## Defeated enemies leave a body holding their coins. Looting anything also
 ## loots every body and drop within CONFIG.loot.areaRadius.
 ##
-## Quest gathering nodes (world.json placedLoot with `quest`) are never
-## area-looted, each takes CONFIG.loot.gatherTime to gather (a cast bar shows
-## it; moving or being hit stops it), and they stay in sight at all times.
+## Gathering nodes (placedLoot with `quest` or `respawn`: firewood, wild
+## garlic) are never area-looted, each takes CONFIG.loot.gatherTime to gather
+## (a cast bar shows it; moving or being hit stops it). A picked node is gone
+## from the world until its `respawn` timer grows it back. The timer is the
+## world's (one per node, not per character), so in a shared world everyone
+## sees the same node go and come back.
 ##
 ## Beasts (enemies.json `skin`) can be skinned once their body holds no more
 ## coins, if the player knows Skinning: see skinnables() below.
@@ -75,6 +78,11 @@ func stop_gathering(reason := "") -> void:
 	gathering = null
 	if reason != "" and game.hud:
 		game.hud.error(reason)
+
+
+## a gathering node (gathered over a moment, on its own), not a pick-up
+static func is_node(def: Dictionary) -> bool:
+	return not def.has("ground") and (def.get("quest") != null or def.get("respawn") != null)
 
 
 ## can this entry be taken right now? (a gathered node waits to grow back)
@@ -280,10 +288,9 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 			glint.material_override.albedo_color = Color(Items.rarity_colour(rarity), 0.6)
 			beam = _beam(group, Items.rarity_colour(rarity), rarity)
 	# coins and plain (junk/common) drops lie bare, no glint (Dan 2026-11-02)
-	if coins > 0: # a tiny gold sparkle just above the coins
-		glint.scale = Vector3.ONE * 0.22
-		glint.material_override.albedo_color = Color(Color("fff2b0"), 0.6)
-	var bare: bool = (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
+	# coins keep only their piles' own sparkles in each metal's colour, so
+	# silver no longer shows a yellow glint above it
+	var bare: bool = coins > 0 or (item and DB.items.has(item) and def.has("ground") and ["junk", "common"].has(Items.view({"id": item, "rolls": def.ground.get("rolls")}).rarity))
 	glint.visible = not bare
 	group.add_child(glint)
 	var base_y: float = Terrain.height_at(x, z) + def.get("heightOffset", 0.0)
@@ -308,8 +315,35 @@ func _coin_piles(coins: int) -> Node3D:
 	for p in piles:
 		if p[0] <= 0:
 			continue
-		var face := _coin_mat(p[1], 0.5)
-		var rim := _coin_mat(p[2], 0.25)
+		var face := _coin_mat(p[1], 0.12)
+		var rim := _coin_mat(p[2], 0.05)
+		# tiny sparkles in the metal's colour drifting up off the pile
+		var motes := CPUParticles3D.new()
+		var dot := QuadMesh.new()
+		dot.size = Vector2(0.085, 0.085) # bigger, easy to spot (Dan 2026-11-04)
+		motes.mesh = dot
+		var dm := Tex.fx_material(Tex.glint_white(), Color(p[1].lightened(0.35), 0.9))
+		dm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		motes.material_override = dm
+		motes.amount = 8
+		motes.lifetime = 1.4
+		motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		motes.emission_sphere_radius = 0.1
+		motes.direction = Vector3.UP
+		motes.spread = 15
+		motes.gravity = Vector3.ZERO
+		motes.initial_velocity_min = 0.12
+		motes.initial_velocity_max = 0.25
+		motes.scale_amount_min = 0.5
+		motes.scale_amount_max = 1.0
+		var fade := Gradient.new()
+		fade.set_color(0, Color(1, 1, 1, 0))
+		fade.add_point(0.25, Color(1, 1, 1, 1))
+		fade.set_color(fade.get_point_count() - 1, Color(1, 1, 1, 0))
+		motes.color_ramp = fade
+		motes.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		motes.position = p[3] + Vector3(0, 0.05, 0)
+		root.add_child(motes)
 		var n: int = clampi(3 + int(sqrt(float(p[0])) * 1.5), 4, 14)
 		# a mound: rings of coins, each ring smaller and higher
 		var i := 0
@@ -454,7 +488,7 @@ func lootables() -> Array:
 	# in the world, like the manifest, are taken one at a time
 	for l in active:
 		if available(l):
-			var area: bool = not l.def.get("quest") and (l.def.has("ground") or is_same(unique.get(l.def.id), l.def))
+			var area: bool = not is_node(l.def) and (l.def.has("ground") or is_same(unique.get(l.def.id), l.def))
 			out.append({"kind": "item", "id": l.def.id, "x": l.x, "z": l.z, "entry": l, "area": area})
 	return out
 
@@ -472,8 +506,8 @@ func _area(origin: Dictionary, all = null) -> Array:
 
 ## Loot `origin` and everything else lootable within the area radius of it.
 func loot_area(origin: Dictionary) -> int:
-	# a quest node is gathered on its own, over a moment
-	if origin.kind == "item" and origin.entry.def.get("quest"):
+	# a gathering node is gathered on its own, over a moment
+	if origin.kind == "item" and is_node(origin.entry.def):
 		return 1 if start_gather(origin.entry) else 0
 	var n := 0
 	for l in _area(origin):
@@ -542,13 +576,11 @@ func collect(entry: Dictionary) -> bool:
 	if def.has("ground"):
 		ws.ground.erase(def.ground)
 	elif def.get("respawn"):
-		# a gathering node stays in sight, spent, and grows back; a quest's
-		# (the deadfall logs) keeps its size and only loses its sparkle
+		# a picked node is gone from the world until it grows back (Dan
+		# 2026-11-09), so the next player finds it again on the timer
 		regrow.append({"entry": entry, "at": game.time + def.respawn})
 		entry.depleted = true
-		if not def.get("quest"):
-			entry.group.scale = Vector3.ONE * 0.6
-		entry.glint.visible = false
+		entry.group.visible = false
 		events.emit("lootCollected", {"id": def.id, "item": r.get("item", ""), "node": true})
 		return true
 	else:
@@ -584,7 +616,7 @@ func update(dt: float, time: float) -> void:
 			continue
 		regrow.remove_at(i)
 		r.entry.depleted = false
-		r.entry.group.scale = Vector3.ONE
+		r.entry.group.visible = true
 		r.entry.glint.visible = true # a quest node's follows its quest below
 	var g = gathering
 	if g != null:
@@ -608,6 +640,14 @@ func update(dt: float, time: float) -> void:
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
 		if l.get("beam"):
 			l.beam.material_override.albedo_color.a = 0.75 + sin(time * 1.8 + l.seed) * 0.15
+	# coin sparkles: a short wink every couple of seconds, each pile out of step
+	var k := 0
+	for sp in get_tree_sparkles():
+		var ph := fmod(time * 0.55 + k * 0.37, 1.0)
+		var w := maxf(0.0, 1.0 - absf(ph - 0.5) * 8.0) # on for an eighth of the cycle
+		sp.material_override.albedo_color.a = w * 0.95
+		sp.scale = Vector3.ONE * (0.08 + w * 0.12)
+		k += 1
 	_auto_t -= dt
 	if _auto_t <= 0:
 		_auto_t = 0.25
@@ -725,3 +765,7 @@ func skin(id: String) -> bool:
 func describe(entry: Dictionary) -> String:
 	var r: Dictionary = entry.def.reward
 	return Items.view({"id": r.item, "rolls": r.get("rolls")}).name if r.get("item") else ""
+
+
+func get_tree_sparkles() -> Array:
+	return game.scene.get_tree().get_nodes_in_group("coin_sparkle") if game.scene.is_inside_tree() else []

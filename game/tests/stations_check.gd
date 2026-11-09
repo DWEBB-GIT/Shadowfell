@@ -21,7 +21,7 @@ func _process(_dt: float) -> bool:
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var who: Dictionary = game.roster.create("Station Tester", "warden")
+		var who: Dictionary = game.roster.create("Station", "warden")
 		game.enter_world(who.character.id)
 	elif frame == 3:
 		game.inventory.add_coins(100000)
@@ -83,6 +83,11 @@ func _run(key: String) -> bool:
 func _station(st: Dictionary) -> void:
 	_go(st.position[0], st.position[1])
 	if not _run("station:" + st.id):
+		return
+	if st.kind == RuneForge.KIND or st.kind == Refinery.KIND:
+		queue.push_front(func():
+			check(game.hud.items.open.get(st.kind, false), "%s opens its window" % st.id)
+			game.hud.items.close(st.kind))
 		return
 	var sk: String = game.hud.items.craft_skill
 	queue.push_front(func():

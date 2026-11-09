@@ -19,7 +19,7 @@ const S := {
 		"wrists": 0.5, "back": 0.5, "neck": 0.5, "finger": 0.5, "offHand": 0.5,
 		"trinket": 0.0,
 	},
-	"armourFactors": {"cloth": 3, "leather": 6, "mail": 9, "plate": 12},
+	"armourFactors": {"cloth": 3, "leather": 6, "plate": 12},
 	"shieldArmour": 20,
 	"shieldBlock": 10,
 	"weaponDps": 0.4,
@@ -29,6 +29,7 @@ const S := {
 	"weaponTypes": {
 		"dagger": {"dps": 0.8, "spread": 0.33},
 		"sword": {"dps": 1.0, "spread": 0.6},
+		"club": {"dps": 1.0, "spread": 0.3},
 		"twoHand": {"dps": 1.2, "spread": 0.25},
 		"bow": {"dps": 1.2, "spread": 0.43},
 	},
@@ -49,25 +50,29 @@ const S := {
 	"statCostPerLevel": {"haste": 1.0 / 15.0, "block": 1.0 / 50.0, "accuracy": 1.0 / 15.0},
 	"budgetTolerance": 0.1,
 	"par": {"mainStat": 4, "mainStatPerLevel": 2, "stamina": 13, "staminaPerLevel": 3},
-	## an even-level enemy lasts this long against par damage, and each of its
-	## blows takes 1/enemyHitShare of par health (Dan, 2026-10-27: the world
-	## must feel dangerous; a lone even-level mob costs about 40% of your
-	## health, as in WoW Classic once past the first levels)
-	"enemyHealthSeconds": 14,
-	"enemyHitShare": 20,
-	"earlyHit": [0.75, 0.82, 0.9], ## blows of level 1, 2, 3 foes against the share above; 4+ full
+	## Fight length and danger (Dan, 2026-11-03, "Monster scaling and XP
+	## formulas"): an even-level normal enemy lasts fightSeconds against par
+	## damage, and in that time takes fight_cost(level) of par health. Each type scales
+	## its health, its damage a second (`danger`) and its kill XP (`xp`).
+	"fightSeconds": 14,
+	## share of par health one even normal fight costs, by level, straight
+	## lines between the points (Dan, 2026-11-03): 10-20% at level 1; at 6-10
+	## one mob is fine but two are a struggle; later you pull and cleave groups
+	"fightCost": [[1, 0.15], [3, 0.3], [6, 0.45], [10, 0.45], [20, 0.35], [35, 0.25], [50, 0.2]],
+	## kill XP of a level 1 normal enemy; grows with growth(level) like gear
+	"killXp1": 28,
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
-		## Dan 2026-11-02: an ordinary mob swings every 2.0 s (was 1.35); its
-		## blow grows to match (x2.0/1.35), so the danger per second holds
-		"fodder": {"health": 0.5, "hit": 0.74, "interval": 2.0, "armour": "none"},
-		"pack_beast": {"health": 0.6, "hit": 0.6, "interval": 0.95, "armour": "none"},
-		"normal": {"health": 1.0, "hit": 1.48, "interval": 2.0, "armour": "none"},
-		"skirmisher": {"health": 0.6, "hit": 1.75, "interval": 2.5, "armour": "light"},
-		"armoured": {"health": 1.25, "hit": 1.48, "interval": 2.0, "armour": "heavy"},
-		"elite": {"health": 1.7, "hit": 1.375, "interval": 1.2, "armour": "armoured", "special": 0.25},
-		"heavy": {"health": 4.0, "hit": 3.0, "interval": 2.2, "armour": "armoured", "special": 0.5},
-		"boss": {"health": 15.0, "armour": "armoured", "special": 0.5},
+		## an ordinary mob swings every 2.0 s (Dan 2026-11-02); `danger` is
+		## damage a second against a normal enemy's
+		"fodder": {"health": 0.5, "danger": 0.5, "interval": 2.0, "armour": "none", "xp": 0.4},
+		"pack_beast": {"health": 0.6, "danger": 0.85, "interval": 0.95, "armour": "none", "xp": 0.6},
+		"normal": {"health": 1.0, "danger": 1.0, "interval": 2.0, "armour": "none", "xp": 1.0},
+		"skirmisher": {"health": 0.6, "danger": 0.95, "interval": 2.5, "armour": "light", "xp": 0.7},
+		"armoured": {"health": 1.25, "danger": 1.0, "interval": 2.0, "armour": "heavy", "xp": 1.25},
+		"elite": {"health": 1.7, "danger": 1.55, "interval": 1.2, "armour": "armoured", "special": 0.25, "xp": 2.0},
+		"heavy": {"health": 4.0, "danger": 1.84, "interval": 2.2, "armour": "armoured", "special": 0.5, "xp": 5.0},
+		"boss": {"health": 15.0, "armour": "armoured", "special": 0.5, "xp": 15.0},
 	},
 	"armourClasses": {"none": 0.0, "light": 0.1, "armoured": 0.2, "heavy": 0.4},
 }
@@ -192,16 +197,16 @@ static func par(level: float, stats: Dictionary, weapon_seconds: float) -> Dicti
 ## An enemy record with its numbers filled in from its level and type.
 static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float) -> Dictionary:
 	if not S.enemyTypes.has(e.get("type", "")):
-		return e
+		var plain := e.duplicate()
+		plain.xp = kill_xp_base(e, e.get("level", 1))
+		return plain
 	var t: Dictionary = S.enemyTypes[e.type]
 	var level: float = e.get("level", 1)
 	var p := par(level, stats, weapon_seconds)
-	var health: float = S.enemyHealthSeconds * p.dps * t.health
-	var hit = null if not t.has("hit") else U.jround(p.health / S.enemyHitShare * t.hit)
+	var health: float = S.fightSeconds * p.dps * t.health
+	var hit = null if not t.has("danger") else snappedf(fight_cost(level) * p.health / S.fightSeconds * t.danger * t.interval, 0.1)
 	# foes of levels 1-3 hit softer, tapering to full at 4, so a new
 	# character finds their feet (Dan, 2026-10-28/29)
-	if hit != null and level < 1 + S.earlyHit.size():
-		hit = snappedf(hit * S.earlyHit[maxi(0, int(level) - 1)], 0.1)
 	var out := {
 		"health": U.jround(health),
 		"attackInterval": t.get("interval", 0.0),
@@ -211,6 +216,7 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 		out.damage = hit
 	for k in e:
 		out[k] = e[k]
+	out.xp = kill_xp_base(e, level)
 	if e.has("special") and t.has("special"):
 		var sp := {"damage": U.jround(p.health * t.special)}
 		for k in e.special:
@@ -222,6 +228,29 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 			r[k] = e.ranged[k]
 		out.ranged = r
 	return out
+
+
+## The share of par health an even normal fight costs at a level (fightCost).
+static func fight_cost(level: float) -> float:
+	var pts: Array = S.fightCost
+	if level <= pts[0][0]:
+		return pts[0][1]
+	for i in range(1, pts.size()):
+		if level <= pts[i][0]:
+			var a: Array = pts[i - 1]
+			var b: Array = pts[i]
+			return lerpf(a[1], b[1], (level - a[0]) / float(b[0] - a[0]))
+	return pts[-1][1]
+
+
+## Kill XP of an enemy at its level before the level gap: killXp1 grown with
+## the level, times its type's `xp` and its own `xpScale` (a named rare, say).
+## Every enemy of one level and type pays the same; `noXp` pays nothing.
+static func kill_xp_base(e: Dictionary, level: float) -> int:
+	if e.get("noXp", false):
+		return 0
+	var t: Dictionary = S.enemyTypes.get(e.get("type", ""), S.enemyTypes.normal)
+	return U.jround(S.killXp1 * growth(level) / growth(1) * t.get("xp", 1.0) * e.get("xpScale", 1.0))
 
 
 ## A number from 0 to 1 fixed by a spawn's id (FNV-1a).

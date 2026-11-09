@@ -12,9 +12,9 @@ const UI := preload("ui.gd")
 const Fields := preload("ability_fields.gd")
 
 ## fields shown by the form; the rest are edited as JSON under Other fields
-const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "skill", "bar", "everyone", "requires", "status", "applies", "spreadsOnDeath", "follow", "inShadow", "spreads", "spendsAll", "portal", "execute", "bonusVs", "stacks", "loadouts"]
+const FORM_KEYS := ["id", "name", "kind", "ranged", "school", "target", "range", "desc", "tuning", "cost", "gain", "hitGain", "mechanic", "skill", "bar", "everyone", "requires", "status", "applies", "spreadsOnDeath", "follow", "inShadow", "spreads", "spendsAll", "portal", "execute", "bonusVs", "stacks", "loadouts"]
 ## what an aura (`applies`) can do to its target, besides its name and duration
-const AURA_EFFECTS := [["stun", "Stuns (1 = yes)"], ["sleep", "Puts to sleep (1 = yes; any hit wakes)"], ["slow", "Slows by %"], ["damageTaken", "Damage taken +%"], ["damageDealt", "Damage dealt +% (negative weakens)"]]
+const AURA_EFFECTS := [["root", "Roots ordinary enemies (1 = yes)"], ["stun", "Stuns (1 = yes)"], ["sleep", "Puts to sleep (1 = yes; any hit wakes)"], ["slow", "Slows by %"], ["damageTaken", "Damage taken +%"], ["damageDealt", "Damage dealt +% (negative weakens)"]]
 
 ## open another record (a skill, an npc) on its own tab
 signal open_record(kind: String, id: String)
@@ -180,7 +180,8 @@ func _build() -> void:
 	_scaling(a)
 	_tuning(a)
 	_amounts(a, "cost", "Cost", "What it spends: mana, or a class bar (resolve, energy, focus...).")
-	_amounts(a, "gain", "Gain", "What it gives back: combo points, resolve...")
+	_amounts(a, "gain", "Gain", "What it gives back immediately on cast.")
+	_amounts(a, "hitGain", "Gain on hit", "Resource gained only when the ability lands.")
 	_effects(a)
 	_mechanics(a)
 	_other(a)
@@ -215,7 +216,7 @@ func _set_kind(k: String) -> void:
 
 ## kinds that hit: a weapon blow (cleave, burst, charge) or anything that
 ## may roll a spell or a weapon
-const DAMAGE_KINDS := ["cast", "dot", "instant", "aoe", "cleave", "burst", "charge", "interrupt", "channel", "healZone", "healBurst"]
+const DAMAGE_KINDS := ["groundCast", "cast", "dot", "instant", "aoe", "cleave", "burst", "charge", "interrupt", "channel", "healZone", "healBurst"]
 const HEAL_KINDS := ["heal", "hot", "healZone", "healBurst"]
 const SCALING_KEYS := ["damageMin", "damageMax", "damageMultiplier", "weaponDamage", "spellPower", "healMin", "healMax", "healPower", "thornsMin", "thornsMax"]
 
@@ -321,14 +322,17 @@ func _tuning(a: Dictionary) -> void:
 	if not a.has("tuning"):
 		a.tuning = {}
 	var t: Dictionary = a.tuning
-	if a.get("kind") == "instant" and not a.get("ranged", false):
-		UI.row(UI.grid(form), "Damage source", UI.choice([["fixed", "Fixed spell damage"], ["weapon", "Weapon damage"]], "weapon" if t.has("damageMultiplier") else "fixed", func(value):
+	if a.get("kind") in ["instant", "burst"] and not a.get("ranged", false):
+		UI.row(UI.grid(form), "Damage source", UI.choice([["fixed", "Fixed spell damage"], ["weapon", "Weapon damage"]], "weapon" if DataStore.weapon_ability(a) else "fixed", func(value):
 			if value == "weapon":
 				t.erase("damageMin")
 				t.erase("damageMax")
 				t.damageMultiplier = 1
 			else:
-				t.erase("damageMultiplier")
+				if a.kind == "burst":
+					t.damageMultiplier = 0
+				else:
+					t.erase("damageMultiplier")
 				t.damageMin = 1
 				t.damageMax = 2
 			_changed(true)))
@@ -548,7 +552,8 @@ func _amounts(a: Dictionary, key: String, label: String, tip: String) -> void:
 func _effects(a: Dictionary) -> void:
 	UI.heading(form, "Needs and effects")
 	var g := UI.grid(form)
-	UI.row(g, "Needs equipped", UI.choice([[null, "Nothing"], ["weapon", "A melee weapon in the main hand"], ["shield", "A shield in the off hand"]], a.get("requires"), func(v): _put("requires", v)), "A bow is set with From a bow instead.")
+	UI.row(g, "Class interaction", UI.choice([[null, "Standard spell"]]+[["heavy", "heavy"], ["conviction", "conviction"], ["pair", "pair"], ["mobile", "mobile"], ["berserk", "berserk"], ["venom", "venom"], ["reap", "reap"], ["erupt", "erupt"], ["distract", "distract"], ["fear", "fear"], ["bloodPact", "bloodPact"], ["consumeAim", "consumeAim"], ["ignite", "ignite"], ["ordinaryPush", "ordinaryPush"], ["pierce", "pierce"], ["interruptArrow", "interruptArrow"], ["tripwire", "tripwire"], ["rot", "rot"], ["drain", "drain"], ["soulWard", "soulWard"], ["steam", "steam"], ["chain", "chain"], ["blink", "blink"], ["sigil", "sigil"], ["collapseWard", "collapseWard"]], a.get("mechanic"), func(v): _put("mechanic", v)), "Select an implemented class interaction, then tune its numbers. Weapon and resource requirements still apply.")
+	UI.row(g, "Needs equipped", UI.choice([[null, "Nothing"], ["weapon", "A melee weapon in the main hand"], ["shield", "A shield in the off hand"], ["dualWield", "A one-handed weapon in each hand"]], a.get("requires"), func(v): _put("requires", v)), "A bow is set with From a bow instead.")
 	var statuses := [[null, "(none)"]] + s.statuses().map(func(x): return [x.id, x.get("name", x.id)])
 	UI.row(g, "Status", UI.choice(statuses, a.get("status"), func(v): _put("status", v)), "The status its damage over time counts as (builds.json statuses), for spells and powers that look for it.")
 	var spells := [[null, "(none)"]] + s.ability_choices(func(x): return x.id != a.id and not x.has("skill"))
@@ -649,6 +654,10 @@ func _classes(a: Dictionary) -> void:
 		box.add_child(how)
 		if src == "defensive":
 			how.tooltip_text = "A class has one defensive; choosing it here replaces the old one."
+		if c.get("coreLevels", {}).has(a.id):
+			UI.row(UI.grid(form), "Core ability unlock level", UI.spin(c.coreLevels[a.id], 1, 50, 1, func(v):
+				c.coreLevels[a.id] = int(v)
+				s.touch("archetypes")), "Automatically learned at this level. Existing characters keep learned abilities.")
 		if src != "trained":
 			continue
 		var entry := DataStore.trained_entry(c, a.id)

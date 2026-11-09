@@ -1,6 +1,7 @@
 {
   "_about": "Enemies placed on the new map by hand (the bake does not touch this file), in world.json's enemySpawns shape. For now a few risen dead by the start, to test hits on. Quiet Levy narrative: named local quest zones and original optional stories. puzzles contains physical controls, clues, retry text and solutions; move mechanisms using World → Puzzles.",
   "enemySpawns": [
+	{"id": "ni_loose_boar", "enemy": "ni_loose_boar", "position": [-611, -168]},
 	{
 	  "id": "nm_skeleton_1",
 	  "enemy": "ghoul",
@@ -2064,6 +2065,694 @@
 		132.0,
 		1024.0
 	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-521.0,
+		-265.0
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-519.38,
+		-263.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-521.68,
+		-262.91
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-523.38,
+		-263.92
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-523.76,
+		-265.51
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-522.3,
+		-267.37
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_a_7",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-520.1,
+		-267.04
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-503.0,
+		-274.0
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-501.25,
+		-271.26
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-503.71,
+		-271.69
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-506.42,
+		-274.26
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-504.22,
+		-276.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_pack_b_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-501.43,
+		-275.49
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_1",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-508.61,
+		-267.68
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_2",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-506.86,
+		-260.94
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_3",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-518.27,
+		-279.48
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_4",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-515.83,
+		-273.18
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_5",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-505.24,
+		-269.34
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_6",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-520.38,
+		-269.46
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_7",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-526.78,
+		-274.36
+	  ]
+	},
+	{
+	  "id": "tf_rat_field_8",
+	  "enemy": "tf_field_rat",
+	  "position": [
+		-505.54,
+		-262.87
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_1",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-400.03,
+		-249.55
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_2",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-395.44,
+		-244.53
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_3",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-404.64,
+		-249.16
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_4",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-409.29,
+		-243.55
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_5",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-393.71,
+		-250.49
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_6",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-412.26,
+		-237.15
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_7",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-409.4,
+		-250.14
+	  ]
+	},
+	{
+	  "id": "tf_boar_field_8",
+	  "enemy": "vr_young_boar",
+	  "position": [
+		-397.74,
+		-245.72
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-542.0,
+		-343.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-540.31,
+		-340.48
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-542.65,
+		-340.33
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-544.22,
+		-342.55
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-544.25,
+		-345.24
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_a_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-541.27,
+		-345.34
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-505.0,
+		-379.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-503.16,
+		-376.24
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-505.73,
+		-376.37
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-508.34,
+		-379.1
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-506.08,
+		-382.13
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_b_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-503.98,
+		-381.48
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_1",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-378.0,
+		-331.0
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_2",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-376.09,
+		-328.26
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_3",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-379.66,
+		-329.39
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_4",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-380.46,
+		-331.13
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_5",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-379.97,
+		-332.83
+	  ]
+	},
+	{
+	  "id": "tf_shambler_pack_c_6",
+	  "enemy": "tf_shambler",
+	  "position": [
+		-376.75,
+		-333.61
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.0,
+		-404.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-352.63,
+		-400.77
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.78,
+		-400.7
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-356.34,
+		-403.16
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-356.82,
+		-406.32
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-354.0,
+		-407.68
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_a_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-352.26,
+		-406.49
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-372.0,
+		-418.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-369.3,
+		-415.91
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-371.9,
+		-415.49
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-374.16,
+		-416.45
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-374.33,
+		-418.86
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-373.32,
+		-420.29
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_b_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-370.75,
+		-420.71
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_1",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.0,
+		-385.0
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_2",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-441.89,
+		-382.81
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_3",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.76,
+		-382.47
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_4",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-447.44,
+		-383.34
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_5",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-447.42,
+		-385.93
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_6",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-445.06,
+		-388.99
+	  ]
+	},
+	{
+	  "id": "tf_gnawer_pack_c_7",
+	  "enemy": "tf_barrow_gnawer",
+	  "position": [
+		-443.07,
+		-387.52
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_1",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-576.5,
+		-348
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_2",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-578,
+		-360
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_3",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-559,
+		-379
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_4",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-538,
+		-374
+	  ]
+	},
+	{
+	  "id": "tf_wolf_field_5",
+	  "enemy": "tf_wolf",
+	  "position": [
+		-561.8,
+		-383.8
+	  ]
+	},
+	{
+	  "id": "in_toll_runner_0",
+	  "enemy": "in_toll_runner",
+	  "position": [
+		-288,
+		-143
+	  ]
+	},
+	{
+	  "id": "in_toll_runner_1",
+	  "enemy": "in_toll_runner",
+	  "position": [
+		-276,
+		-165
+	  ]
+	},
+	{
+	  "id": "in_toll_runner_2",
+	  "enemy": "in_toll_runner",
+	  "position": [
+		-263,
+		-169
+	  ]
+	},
+	{
+	  "id": "in_toll_runner_3",
+	  "enemy": "in_toll_runner",
+	  "position": [
+		-289,
+		-161
+	  ]
+	},
+	{
+	  "id": "in_reed_collector_0",
+	  "enemy": "in_reed_collector",
+	  "position": [
+		-582,
+		-123
+	  ]
+	},
+	{
+	  "id": "in_reed_collector_1",
+	  "enemy": "in_reed_collector",
+	  "position": [
+		-600,
+		-108
+	  ]
+	},
+	{
+	  "id": "in_reed_collector_2",
+	  "enemy": "in_reed_collector",
+	  "position": [
+		-591,
+		-97
+	  ]
+	},
+	{
+	  "id": "in_reed_collector_3",
+	  "enemy": "in_reed_collector",
+	  "position": [
+		-607,
+		-121
+	  ]
+	},
+	{
+	  "id": "in_mine_warden_0",
+	  "enemy": "in_mine_warden",
+	  "position": [
+		-300,
+		-231
+	  ]
+	},
+	{
+	  "id": "in_mine_warden_1",
+	  "enemy": "in_mine_warden",
+	  "position": [
+		-284,
+		-244
+	  ]
+	},
+	{
+	  "id": "in_mine_warden_2",
+	  "enemy": "in_mine_warden",
+	  "position": [
+		-266,
+		-260
+	  ]
+	},
+	{
+	  "id": "in_mine_warden_3",
+	  "enemy": "in_mine_warden",
+	  "position": [
+		-246,
+		-278
+	  ]
+	},
+	{
+	  "id": "in_corven",
+	  "enemy": "in_bailiff_corven",
+	  "position": [
+		-232,
+		-279
+	  ]
 	}
   ],
   "chests": [
@@ -2103,24 +2792,86 @@
 		  "id": "healing_draught"
 		}
 	  ]
+	},
+	{
+	  "id": "in_road_reserve",
+	  "name": "Roadwardens’ Reserve",
+	  "position": [
+		-588,
+		-201
+	  ],
+	  "coins": 2,
+	  "items": [
+		{
+		  "id": "trail_bread",
+		  "count": 2
+		},
+		{
+		  "id": "healing_draught",
+		  "count": 1
+		}
+	  ],
+	  "discoverRadius": 5
+	},
+	{
+	  "id": "in_fishers_cache",
+	  "name": "Dry-Stone Tackle Box",
+	  "position": [
+		-398,
+		-180
+	  ],
+	  "coins": 4,
+	  "items": [
+		{
+		  "id": "cut_bait",
+		  "count": 3
+		}
+	  ],
+	  "discoverRadius": 5
+	},
+	{
+	  "id": "in_avel_casket",
+	  "name": "The Lamplighters’ Casket",
+	  "position": [
+		-421,
+		-217
+	  ],
+	  "coins": 8,
+	  "puzzle": "in_avel_bells",
+	  "puzzleHint": "The casket answers the three bells. Read the verse on the stone and ring their names in its order.",
+	  "items": [
+		{
+		  "id": "healing_draught",
+		  "count": 2
+		}
+	  ]
 	}
   ],
   "npcSpawns": [
+	{"npc": "ni_abel", "position": [-622, -179]},
 	{
 	  "npc": "test_vendor",
 	  "position": [
-		-444,
-		-198
+		267,
+		-155
 	  ],
 	  "facing": 225
 	},
 	{
+	  "npc": "banker",
+	  "position": [
+		-442,
+		-214
+	  ],
+	  "facing": 180
+	},
+	{
 	  "npc": "agna",
 	  "position": [
-		266.75,
-		-167.92
+		-441,
+		-187
 	  ],
-	  "facing": 0
+	  "facing": 200
 	},
 	{
 	  "npc": "tf_rowan",
@@ -2138,6 +2889,8 @@
 	  ],
 	  "facing": 180
 	},
+	{"npc": "tf_cook", "position": [-466.5, -209.5], "facing": 90},
+	{"npc": "vr_dunn", "position": [-461.5, -297.5], "facing": 0},
 	{
 	  "npc": "tf_iren",
 	  "position": [
@@ -3033,9 +3786,88 @@
 		1357.0
 	  ],
 	  "facing": 180
+	},
+	{
+	  "npc": "in_paige",
+	  "position": [
+		-473,
+		-317
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_benn",
+	  "position": [
+		-351,
+		-431
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_della",
+	  "position": [
+		-295,
+		-386
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_ada",
+	  "position": [
+		-259,
+		-121
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_kit",
+	  "position": [
+		-223,
+		-153
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_hale",
+	  "position": [
+		-566,
+		-118
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_tess",
+	  "position": [
+		-520,
+		-47
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_sella",
+	  "position": [
+		-343,
+		-101
+	  ],
+	  "facing": 180
+	},
+	{
+	  "npc": "in_edda",
+	  "position": [
+		-275,
+		-96
+	  ],
+	  "facing": 180
 	}
   ],
   "placedLoot": [
+	{"id": "sf_firewood_0", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-381.5, -277.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_1", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-379, -280.5], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_firewood_2", "quest": "sf_a_meal_earned", "model": "crate_broken", "scale": 0.55, "position": [-375.5, -278], "prompt": "Take a bundle of firewood", "respawn": 45, "reward": {"item": "firewood"}},
+	{"id": "sf_garlic_0", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-346, -252], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_1", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-338.5, -251], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_2", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-343.5, -260.5], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
+	{"id": "sf_garlic_3", "quest": "sf_a_meal_earned", "model": "res://assets/environment/nature/plants/Flower_3_Group.gltf", "scale": 0.5, "position": [-351, -258], "prompt": "Gather wild garlic", "respawn": 50, "reward": {"item": "wild_garlic"}},
 	{
 	  "id": "spring_water",
 	  "model": "draught",
@@ -3208,8 +4040,8 @@
 	  "id": "copper_ore_10",
 	  "model": "rock1",
 	  "position": [
-		478.47,
-		-103.81
+		476.02,
+		-103.32
 	  ],
 	  "prompt": "Take the copper ore",
 	  "reward": {
@@ -4195,6 +5027,372 @@
 	  },
 	  "quest": "wm_sunseal_court_record",
 	  "respawn": 30
+	},
+	{
+	  "id": "in_letters_pickup",
+	  "quest": "in_lost_courier",
+	  "model": "manifest",
+	  "position": [
+		-471,
+		-315
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover Paige’s dry letters",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_dry_letters",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_rubbing_0",
+	  "quest": "in_burial_record",
+	  "model": "grave0",
+	  "position": [
+		-350,
+		-449
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Copy a family name",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_burial_rubbing",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_rubbing_1",
+	  "quest": "in_burial_record",
+	  "model": "grave0",
+	  "position": [
+		-338,
+		-451
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Copy a family name",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_burial_rubbing",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_rubbing_2",
+	  "quest": "in_burial_record",
+	  "model": "grave0",
+	  "position": [
+		-325,
+		-452
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Copy a family name",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_burial_rubbing",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_spool_pickup",
+	  "quest": "in_dellas_thread",
+	  "model": "satchel",
+	  "position": [
+		-282,
+		-395
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take Della’s sewing tin",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_spool",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_cross_wood_0",
+	  "quest": "in_crossing_timber",
+	  "model": "crate_broken",
+	  "position": [
+		-264,
+		-119
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take dry cartwright’s wood",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_cross_wood_1",
+	  "quest": "in_crossing_timber",
+	  "model": "crate_broken",
+	  "position": [
+		-263,
+		-126
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take dry cartwright’s wood",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_cross_wood_2",
+	  "quest": "in_crossing_timber",
+	  "model": "crate_broken",
+	  "position": [
+		-255,
+		-125
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take dry cartwright’s wood",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_cross_wood_3",
+	  "quest": "in_crossing_timber",
+	  "model": "crate_broken",
+	  "position": [
+		-251,
+		-120
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take dry cartwright’s wood",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_original_bill",
+	  "quest": "in_crossing_bill",
+	  "model": "manifest",
+	  "position": [
+		-274,
+		-154
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover the driver’s original bill",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_crossing_bill",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wick_0",
+	  "quest": "in_bank_lamps",
+	  "model": "crate",
+	  "position": [
+		-548,
+		-70
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a waxed wick",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_lamp_wick",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wick_1",
+	  "quest": "in_bank_lamps",
+	  "model": "crate",
+	  "position": [
+		-550,
+		-76
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a waxed wick",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_lamp_wick",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wick_2",
+	  "quest": "in_bank_lamps",
+	  "model": "crate",
+	  "position": [
+		-541,
+		-78
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a waxed wick",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_lamp_wick",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_ferry_receipt_pickup",
+	  "quest": "in_river_receipt",
+	  "model": "manifest",
+	  "position": [
+		-590,
+		-112
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover Hale’s paid receipt",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_ferry_receipt",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_camp_wood_0",
+	  "quest": "in_miners_supplies",
+	  "model": "crate_broken",
+	  "position": [
+		-347,
+		-105
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a dry bundle for Edda",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_camp_wood_1",
+	  "quest": "in_miners_supplies",
+	  "model": "crate_broken",
+	  "position": [
+		-350,
+		-100
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a dry bundle for Edda",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_camp_wood_2",
+	  "quest": "in_miners_supplies",
+	  "model": "crate_broken",
+	  "position": [
+		-340,
+		-106
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a dry bundle for Edda",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_camp_wood_3",
+	  "quest": "in_miners_supplies",
+	  "model": "crate_broken",
+	  "position": [
+		-337,
+		-104
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take a dry bundle for Edda",
+	  "respawn": 35,
+	  "reward": {
+		"item": "firewood",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wage_tag_0",
+	  "quest": "in_cut_the_claim",
+	  "model": "manifest",
+	  "position": [
+		-293,
+		-240
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover a settled wage tag",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_miner_tag",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wage_tag_1",
+	  "quest": "in_cut_the_claim",
+	  "model": "manifest",
+	  "position": [
+		-270,
+		-254
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover a settled wage tag",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_miner_tag",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_wage_tag_2",
+	  "quest": "in_cut_the_claim",
+	  "model": "manifest",
+	  "position": [
+		-252,
+		-268
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Recover a settled wage tag",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_miner_tag",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_ledger_pickup",
+	  "quest": "in_testimony",
+	  "model": "manifest",
+	  "position": [
+		-238,
+		-275
+	  ],
+	  "scale": 0.65,
+	  "prompt": "Take the original ledger",
+	  "respawn": 35,
+	  "reward": {
+		"item": "in_original_ledger",
+		"count": 1
+	  }
+	},
+	{
+	  "id": "in_celia_locket",
+	  "quest": "wm_mossreed_landing_local",
+	  "model": "satchel",
+	  "position": [
+		-536,
+		-102
+	  ],
+	  "scale": 0.6,
+	  "prompt": "Take Celia’s locket",
+	  "reward": {
+		"item": "wm_mossreed_landing_keepsake"
+	  }
 	}
   ],
   "signposts": [
@@ -4995,16 +6193,72 @@
 		  "to": "wm_dune_watch"
 		}
 	  ]
+	},
+	{
+	  "id": "in_sign_thornford",
+	  "position": [
+		-444,
+		-184
+	  ],
+	  "name": "The First Roads",
+	  "points": [
+		{
+		  "to": "tf_orchard",
+		  "label": "Holt Fields"
+		},
+		{
+		  "to": "wm_mossreed_landing",
+		  "label": "Mossreed Landing"
+		},
+		{
+		  "to": "wm_lantern_crossing",
+		  "label": "Lantern Crossing"
+		}
+	  ]
+	},
+	{
+	  "id": "in_sign_ridge",
+	  "position": [
+		-356,
+		-111
+	  ],
+	  "name": "A Fire Between Two Roads",
+	  "points": [
+		{
+		  "to": "wm_mossreed_landing",
+		  "label": "Mossreed Landing"
+		},
+		{
+		  "to": "wm_lantern_crossing",
+		  "label": "Lantern Crossing"
+		},
+		{
+		  "to": "in_lime_cut",
+		  "label": "Blackpick — dangerous beyond the camp"
+		}
+	  ]
+	},
+	{
+	  "id": "in_sign_mine",
+	  "position": [
+		-304,
+		-216
+	  ],
+	  "name": "The Lime Cut",
+	  "points": [
+		{
+		  "to": "in_bailiff_desk",
+		  "label": "Blackpick Approach — levels 8–10"
+		},
+		{
+		  "to": "in_lamplighters",
+		  "label": "Lamplighter’s Rest"
+		}
+	  ]
 	}
   ],
-  "playerStart": {
-	"position": [
-	  -450,
-	  -203
-	],
-	"facing": 180
-  },
-  "openingText": "Thornford has a warm inn, an overdue grain bill, and a watch that no longer comes home. Begin with Heda’s boars in Holt Meadow. Mayor Alder pays at the town hall. The rest of the village has problems of its own; you are allowed to leave some for tomorrow.",
+  "playerStart": {"position": [-617, -182], "facing": 100},
+  "openingText": "You came off the boat at Mossreed Landing with no coin and no work, and talked a carrier into letting you ride his grain sacks up to Thornford. A mile short of the village, a wheel comes off. Abel Hurst, the carrier, wants a word.",
   "trainerOverrides": {
 	"brask": "tf_rowan",
 	"nell": "vr_rogue",
@@ -5017,10 +6271,54 @@
 	"pell": "tf_rowan",
 	"orrin": "tf_iren",
 	"tam": "vr_tobin",
-	"hester": "tf_elsie",
+	"hester": "tf_cook",
 	"briony": "vr_morrow"
   },
   "regions": [
+	{
+	  "id": "in_landing_district",
+	  "name": "Mossreed Landing",
+	  "levels": "5–8",
+	  "rect": [
+		-625,
+		-155,
+		125,
+		120
+	  ]
+	},
+	{
+	  "id": "in_crossing_district",
+	  "name": "Lantern Crossing",
+	  "levels": "5–7",
+	  "rect": [
+		-300,
+		-200,
+		130,
+		100
+	  ]
+	},
+	{
+	  "id": "in_blackpick_district",
+	  "name": "Blackpick Approach",
+	  "levels": "8–10",
+	  "rect": [
+		-322,
+		-306,
+		118,
+		92
+	  ]
+	},
+	{
+	  "id": "in_lamplighter_district",
+	  "name": "Lamplighter’s Rest",
+	  "levels": "7–8",
+	  "rect": [
+		-370,
+		-128,
+		115,
+		60
+	  ]
+	},
 	{
 	  "id": "vr_hollow",
 	  "name": "Mourning Hollow",
@@ -22358,9 +23656,363 @@
 		  1320.0
 		]
 	  ]
+	},
+	{
+	  "id": "in_ferry_ridge",
+	  "name": "Ferry Ridge",
+	  "kind": "lane",
+	  "halfWidth": 2.8,
+	  "points": [
+		[
+		  -475,
+		  -203
+		],
+		[
+		  -500,
+		  -176
+		],
+		[
+		  -530,
+		  -145
+		],
+		[
+		  -547,
+		  -110
+		],
+		[
+		  -548,
+		  -82
+		],
+		[
+		  -540,
+		  -60
+		]
+	  ]
+	},
+	{
+	  "id": "in_eastroad",
+	  "name": "The Crossing Road",
+	  "kind": "road",
+	  "halfWidth": 3.1,
+	  "points": [
+		[
+		  -445,
+		  -195
+		],
+		[
+		  -417,
+		  -190
+		],
+		[
+		  -394,
+		  -188
+		],
+		[
+		  -370,
+		  -190
+		],
+		[
+		  -346,
+		  -173
+		],
+		[
+		  -328,
+		  -150
+		],
+		[
+		  -286,
+		  -160
+		],
+		[
+		  -250,
+		  -179
+		],
+		[
+		  -208,
+		  -176
+		]
+	  ]
+	},
+	{
+	  "id": "in_west_ridge",
+	  "name": "The Lamplighters’ Ridge",
+	  "kind": "lane",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -540,
+		  -60
+		],
+		[
+		  -502,
+		  -71
+		],
+		[
+		  -462,
+		  -87
+		],
+		[
+		  -418,
+		  -96
+		],
+		[
+		  -379,
+		  -106
+		],
+		[
+		  -343,
+		  -101
+		]
+	  ]
+	},
+	{
+	  "id": "in_east_ridge",
+	  "name": "The Witness Road",
+	  "kind": "lane",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -208,
+		  -176
+		],
+		[
+		  -240,
+		  -151
+		],
+		[
+		  -274,
+		  -131
+		],
+		[
+		  -308,
+		  -117
+		],
+		[
+		  -343,
+		  -101
+		]
+	  ]
+	},
+	{
+	  "id": "in_mine_rest",
+	  "name": "The Miners’ Path",
+	  "kind": "track",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -343,
+		  -101
+		],
+		[
+		  -317,
+		  -89
+		],
+		[
+		  -292,
+		  -88
+		],
+		[
+		  -275,
+		  -96
+		]
+	  ]
+	},
+	{
+	  "id": "in_quarry_lane",
+	  "name": "The Lime Cut",
+	  "kind": "track",
+	  "halfWidth": 3.0,
+	  "points": [
+		[
+		  -275,
+		  -96
+		],
+		[
+		  -292,
+		  -130
+		],
+		[
+		  -304,
+		  -164
+		],
+		[
+		  -313,
+		  -198
+		],
+		[
+		  -306,
+		  -225
+		],
+		[
+		  -288,
+		  -242
+		],
+		[
+		  -264,
+		  -260
+		],
+		[
+		  -240,
+		  -276
+		],
+		[
+		  -215,
+		  -286
+		]
+	  ]
+	},
+	{
+	  "id": "in_quarry_return",
+	  "name": "The Dry Track",
+	  "kind": "track",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -264,
+		  -260
+		],
+		[
+		  -246,
+		  -236
+		],
+		[
+		  -229,
+		  -208
+		],
+		[
+		  -208,
+		  -176
+		]
+	  ]
+	},
+	{
+	  "id": "in_hollow_path",
+	  "name": "The Gravekeeper’s Walk",
+	  "kind": "lane",
+	  "halfWidth": 2.7,
+	  "points": [
+		[
+		  -317,
+		  -382
+		],
+		[
+		  -327,
+		  -403
+		],
+		[
+		  -335,
+		  -426
+		],
+		[
+		  -351,
+		  -445
+		]
+	  ]
+	},
+	{
+	  "id": "ni_west_road",
+	  "name": "The West Road",
+	  "kind": "lane",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -633,
+		  -179
+		],
+		[
+		  -617,
+		  -182
+		],
+		[
+		  -594,
+		  -191
+		],
+		[
+		  -568,
+		  -201
+		],
+		[
+		  -550,
+		  -204
+		],
+		[
+		  -544,
+		  -203
+		],
+		[
+		  -533,
+		  -202
+		],
+		[
+		  -522,
+		  -205
+		],
+		[
+		  -513,
+		  -210
+		],
+		[
+		  -500,
+		  -215
+		]
+	  ]
+	},
+	{
+	  "id": "in_bell_garden_path",
+	  "name": "The Old Bell Steps",
+	  "kind": "hidden",
+	  "halfWidth": 1.2,
+	  "points": [
+		[
+		  -398,
+		  -180
+		],
+		[
+		  -400,
+		  -187
+		],
+		[
+		  -400,
+		  -194
+		],
+		[
+		  -407,
+		  -199
+		],
+		[
+		  -414,
+		  -205
+		],
+		[
+		  -421,
+		  -209
+		],
+		[
+		  -421,
+		  -213
+		],
+		[
+		  -421,
+		  -217
+		]
+	  ]
 	}
   ],
   "pois": [
+	{"id": "ni_roadside", "name": "Abel's Broken Cart", "kind": "camp", "at": [-624, -175], "noMarker": true, "note": "A carrier's cart with a wheel off, grain sacks split in the grass. Abel Hurst, the Mossreed carrier, waits on a wheelwright.", "region": "tf_reach", "act": "Chapter 1"},
+	{
+	  "id": "ni_milestone",
+	  "name": "The West Road Milestone",
+	  "kind": "landmark",
+	  "at": [
+		-594,
+		-191
+	  ],
+	  "note": "THORNFORD 200 PACES. Below it, in smaller letters: ALE NOT INCLUDED. A long-faded sword and a ring of seven stars have been cut beneath the newer village mark. Someone has kept the older carving clean.",
+	  "region": "tf_reach",
+	  "act": "Chapter 1",
+	  "noMarker": true
+	},
 	{
 	  "id": "tf_town",
 	  "name": "Thornford",
@@ -23710,8 +25362,8 @@
 	  "name": "Blackpick Mine",
 	  "kind": "dungeon",
 	  "at": [
-		-175.0,
-		-204.0
+		-215,
+		-286
 	  ],
 	  "note": "Recommended levels 8–10. The entrance is sealed for now.",
 	  "region": "rillbank",
@@ -23832,9 +25484,169 @@
 	  "dungeon": "di_unwritten",
 	  "dungeonNumber": 7,
 	  "available": false
+	},
+	{
+	  "id": "in_courier_satchel",
+	  "name": "Paige’s Spilled Satchel",
+	  "at": [
+		-471,
+		-315
+	  ],
+	  "note": "A waxed courier bag lies under the broken axle. The envelopes are clean. Paige used her own coat to keep the rain off them.",
+	  "kind": "story",
+	  "region": "tf_reach",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_della_well",
+	  "name": "The Old Well",
+	  "at": [
+		-282,
+		-395
+	  ],
+	  "note": "A sewing tin rests on the dry stone rim. Della has tied a ribbon to the handle so she can find it in the mist.",
+	  "kind": "place",
+	  "region": "vr_hollow",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_bridge_brace",
+	  "name": "The Crossing Brace",
+	  "at": [
+		-231,
+		-161
+	  ],
+	  "note": "Ada’s marks run straight along the timber. Two new boards and sound rope will hold the cartway. A crooked fee notice has been nailed over her measurement.",
+	  "kind": "place",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_cart_shed",
+	  "name": "Ada’s Cart Shed",
+	  "at": [
+		-259,
+		-121
+	  ],
+	  "note": "Wheel rims, pegged joints and a kettle kept just off the fire. Each unfinished cart carries its owner’s name.",
+	  "kind": "place",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_toll_cart",
+	  "name": "The Abandoned Toll Cart",
+	  "at": [
+		-274,
+		-154
+	  ],
+	  "note": "A collector’s cart stands in the trees. The driver’s original bill is wrapped around a loaf to keep it dry. The loaf has been eaten.",
+	  "kind": "story",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_reed_marker",
+	  "name": "The Ferry Depth Marker",
+	  "at": [
+		-551,
+		-100
+	  ],
+	  "note": "The scratched red line marks a safe trickle for the bank channel. Nessa’s instruction is plain. Keep the bank shallow and the ferry channel full.",
+	  "kind": "place",
+	  "region": "mirefen",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_ferry_lock",
+	  "name": "The Ferry Sluice",
+	  "at": [
+		-551,
+		-94
+	  ],
+	  "note": "Two handles control the shallow bank cut and the ferry channel. The boards are worn by generations of boatmen.",
+	  "kind": "place",
+	  "region": "mirefen",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_reed_cache",
+	  "name": "The Collector’s Reed Cache",
+	  "at": [
+		-590,
+		-112
+	  ],
+	  "note": "A waterproof case has been wedged beneath the fallen willow. Several settled accounts have been copied onto a fresh list of debts.",
+	  "kind": "story",
+	  "region": "mirefen",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_lamplighters",
+	  "name": "Lamplighter’s Rest",
+	  "at": [
+		-343,
+		-101
+	  ],
+	  "note": "A shared watch fire keeps the crossing road and ferry ridge connected. Sella’s spare blankets are folded by the kettle.",
+	  "kind": "camp",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_mine_camp",
+	  "name": "The Miners’ Rest",
+	  "at": [
+		-275,
+		-96
+	  ],
+	  "note": "Edda has kept every shift tally, including the days the miners were told they had not worked.",
+	  "kind": "camp",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_lime_cut",
+	  "name": "The Old Lime Cut",
+	  "at": [
+		-288,
+		-242
+	  ],
+	  "note": "A shallow quarry shelf leads toward Blackpick. The wider turns leave room to step out of a heavy swing.",
+	  "kind": "hunt",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{
+	  "id": "in_bailiff_desk",
+	  "name": "The Bailiff’s Desk",
+	  "at": [
+		-238,
+		-275
+	  ],
+	  "note": "Fresh invoices lie over old wage tallies. The same name is entered as debtor, worker and deceased.",
+	  "kind": "story",
+	  "region": "rillbank",
+	  "noMarker": true
+	},
+	{"id": "in_road_reserve", "name": "The Roadwardens’ Reserve", "kind": "secret", "at": [-588, -201], "region": "tf_reach", "note": "Three small cairns mark a roadside reserve. A scratched rule reads: TAKE WHAT GETS YOU HOME. LEAVE WHAT GETS THE NEXT SOUL HOME. Beneath it is the sword-and-stars mark from the milestone."},
+	{"id": "in_fishers_cache", "name": "The Dry-Stone Cache", "kind": "secret", "at": [-398, -180], "region": "tf_reach", "note": "The stones keep the box above the flood line. Tobin’s father wrote inside the lid: Avel did not hold the crossing alone. Ask the stones who kept the lamps. The old bell garden lies uphill, beyond the north bank."},
+	{
+	  "id": "in_avel_garden",
+	  "name": "The Bell Garden",
+	  "kind": "secret",
+	  "at": [
+		-421,
+		-213
+	  ],
+	  "region": "tf_reach",
+	  "note": "FIRST WE CROSSED THE BRIDGE. THEN WE LIT THE HEARTHS. LAST WE KEPT THE WATCH. Three bells bear those names. A later carving shows Avel alone with a drawn sword; beneath it, older hands have carved seven lamps.",
+	  "discoverRadius": 5
 	}
   ],
   "subzones": [
+	{"id": "ni_roadside", "name": "Abel's Broken Cart", "at": [-626, -170], "radius": 16},
+	{"id": "ni_milestone", "name": "The West Road Milestone", "at": [-594, -191], "radius": 8},
 	{
 	  "id": "nr_memorial_place",
 	  "name": "The Four Small Bells",
@@ -24311,6 +26123,33 @@
 		1348.0
 	  ],
 	  "radius": 34
+	},
+	{
+	  "id": "in_lamplighter_place",
+	  "name": "Lamplighter’s Rest",
+	  "at": [
+		-343,
+		-101
+	  ],
+	  "radius": 20
+	},
+	{
+	  "id": "in_lime_cut_place",
+	  "name": "The Old Lime Cut",
+	  "at": [
+		-288,
+		-242
+	  ],
+	  "radius": 22
+	},
+	{
+	  "id": "in_blackpick_place",
+	  "name": "Blackpick’s Outer Desk",
+	  "at": [
+		-238,
+		-275
+	  ],
+	  "radius": 18
 	}
   ],
   "houses": [
@@ -24488,7 +26327,7 @@
 	  ],
 	  "roof": "tile",
 	  "walls": "plaster",
-	  "door": "n"
+	  "door": "s"
 	},
 	{
 	  "id": "wm_mossreed_landing_workshop",
@@ -24517,7 +26356,7 @@
 	  ],
 	  "roof": "thatch",
 	  "walls": "plaster",
-	  "door": "n"
+	  "door": "s"
 	},
 	{
 	  "id": "wm_rillbank_quays_workshop",
@@ -25495,6 +27334,26 @@
 	}
   ],
   "stations": [
+	{
+	  "id": "tf_refining_altar",
+	  "name": "the refining altar",
+	  "kind": "refining",
+	  "position": [
+		-445,
+		-208
+	  ],
+	  "radius": 2.6
+	},
+	{
+	  "id": "tf_rune_forge",
+	  "name": "the rune forge",
+	  "kind": "runeforge",
+	  "position": [
+		-441,
+		-204
+	  ],
+	  "radius": 2.6
+	},
 	{
 	  "id": "tf_forge",
 	  "name": "Iren's forge",
@@ -28009,6 +29868,18 @@
 	  "fishTable": "mere_fish",
 	  "fishLevel": 1,
 	  "color": "#527c83"
+	},
+	{
+	  "id": "in_sluice_pool",
+	  "name": "The Sluice Holding Pool",
+	  "position": [
+		-556,
+		-102
+	  ],
+	  "radius": 5,
+	  "fishTable": "mere_fish",
+	  "fishLevel": 1,
+	  "color": "#547c73"
 	}
   ],
   "puzzles": [
@@ -28417,6 +30288,106 @@
 	  ],
 	  "success": "The marked shares balance. Homes half, work full, reserve half.",
 	  "failure": "The float misses its mark. Read the board and try again."
+	},
+	{
+	  "id": "in_ferry_sluice",
+	  "name": "The Ferry Sluice",
+	  "position": [
+		-551,
+		-94
+	  ],
+	  "kind": "dials",
+	  "quest": "in_ferry_flow",
+	  "states": [
+		"Closed",
+		"Trickle",
+        "Full"
+	  ],
+	  "answer": [
+		1,
+		2
+	  ],
+	  "nodes": [
+		{
+		  "name": "Bank",
+		  "offset": [
+			-1.4,
+			0
+		  ],
+		  "color": "#7d9e72"
+		},
+		{
+		  "name": "Ferry",
+		  "offset": [
+			1.4,
+			0
+		  ],
+		  "color": "#8cabb9"
+		}
+	  ],
+	  "checkOffset": [
+		-0.8,
+		2.4
+	  ],
+	  "resetOffset": [
+		0.8,
+		2.4
+	  ],
+	  "instruction": "Read the marker, turn Bank to Trickle and Ferry to Full, then test the flow.",
+	  "failure": "The float rests below the red line. Keep Bank at Trickle and Ferry at Full. Nothing is broken; turn the handles and test again.",
+	  "resetText": "Both handles close. You can set the flow again.",
+	  "lockedText": "Nessa and Hale tend this sluice. Ask about “A Little Give and Take” first.",
+	  "success": "The float settles against the red line. The shallow bank keeps a trickle and the ferry channel runs full."
+	},
+	{
+	  "id": "in_avel_bells",
+	  "name": "The Old Bells",
+	  "position": [
+		-421,
+		-213
+	  ],
+	  "kind": "sequence",
+	  "answer": [
+		2,
+		0,
+		1
+	  ],
+	  "nodes": [
+		{
+		  "name": "Hearth",
+		  "offset": [
+			-2.6,
+			0
+		  ],
+		  "color": "#dda163"
+		},
+		{
+		  "name": "Watch",
+		  "offset": [
+			0,
+			0
+		  ],
+		  "color": "#a7b7ce"
+		},
+		{
+		  "name": "Bridge",
+		  "offset": [
+			2.6,
+			0
+		  ],
+		  "color": "#91bcab"
+		}
+	  ],
+	  "resetOffset": [
+		0,
+		2.7
+	  ],
+	  "instruction": "Read the verse on the stone.",
+	  "failure": "The notes fade. Nothing is damaged. The verse begins with the crossing; try its three names in order.",
+	  "resetText": "The garden falls quiet. You can begin the verse again.",
+	  "success": "Bridge, hearth, watch. The casket’s latch clicks open. Seven names glow beneath Avel’s sword: ferryman, mason, cook, healer, scout, smith, watchkeeper. Avel’s own words follow: THEY HELD THE CROSSING. I CARRIED THE CHILDREN. Someone became a legend; seven others made sure there was a village left to tell it.",
+	  "visual": "hangingBells",
+	  "labelRadius": 9
 	}
   ],
   "questHubs": [
@@ -29167,6 +31138,32 @@
 		"wm_sunseal_court_record",
         "wm_sunseal_court_local"
 	  ]
+	},
+	{
+	  "id": "in_lamplighters",
+	  "name": "Lamplighter’s Rest",
+	  "region": "rillbank",
+	  "level_band": [
+		7,
+		10
+	  ],
+	  "position": [
+		-343,
+		-101
+	  ],
+	  "worksite": [
+		-288,
+		-242
+	  ],
+	  "quest_ids": [
+		"in_lamplighter_handoff",
+		"in_miners_supplies",
+		"in_hold_the_lane",
+		"in_cut_the_claim",
+		"in_foreman",
+		"in_testimony",
+        "in_road_to_rillbank"
+	  ]
 	}
   ],
   "dungeonEntrances": [
@@ -29175,8 +31172,8 @@
 	  "name": "Blackpick Mine",
 	  "hub": "lantern_crossing",
 	  "position": [
-		-175.0,
-		-204.0
+		-215,
+		-286
 	  ],
 	  "levels": [
 		8,
@@ -29297,5 +31294,81 @@
 	"private_dungeons_implemented": 0,
 	"regional_quest_prototypes": 109,
 	"measured_60_hour_campaign": false
-  }
+  },
+  "introJourney": {
+	"name": "A Reputation Earned",
+	"targetLevel": 10,
+	"baselineMinutes": 120,
+	"opening": [
+	  "ni_stretch_your_legs",
+	  "ni_loose_boar",
+	  "ni_the_road_in",
+	  "sf_odd_jobs",
+	  "sf_hungry_work",
+	  "in_farm_introduction",
+	  "vr_first_hunt",
+	  "sf_a_meal_earned",
+	  "in_watchmans_word",
+	  "tf_lanterns",
+	  "in_lost_courier",
+	  "tf_bell",
+	  "in_hollow_introduction",
+	  "vr_names",
+	  "in_burial_record",
+      "vr_crypt"
+	],
+	"crossingRoute": [
+	  "in_letter_east",
+	  "wm_lantern_crossing_work",
+	  "in_crossing_timber",
+	  "in_crossing_witnesses",
+	  "in_crossing_bill",
+	  "in_crossing_supper",
+      "wm_lantern_crossing_record"
+	],
+	"landingRoute": [
+	  "in_letter_west",
+	  "wm_mossreed_landing_work",
+	  "in_bank_lamps",
+	  "in_ferry_flow",
+	  "in_river_names",
+	  "in_river_receipt",
+	  "in_last_oar_supper",
+      "wm_mossreed_landing_record"
+	],
+	"sharedFinale": [
+	  "in_lamplighter_handoff",
+	  "in_miners_supplies",
+	  "in_hold_the_lane",
+	  "in_cut_the_claim",
+	  "in_foreman",
+	  "in_testimony",
+      "in_road_to_rillbank"
+	],
+	"suggestedSideQuests": [
+	  "nr_gauge",
+	  "vr_pig_wolf",
+	  "in_soup_round",
+	  "in_dellas_thread",
+	  "wm_lantern_crossing_local",
+      "wm_mossreed_landing_local"
+	],
+	"abilityLessons": [
+	  "sf_class_warden",
+	  "sf_class_rogue",
+	  "sf_class_ranger",
+	  "sf_class_occultist",
+	  "sf_class_paladin",
+      "sf_class_wizard"
+	]
+  },
+	"nodeGroups": [
+		{"id": "holt_hedges", "name": "the Holt Fields hedges", "live": 5, "respawn": [45, 90], "kinds": [{"kind": "wild_garlic", "weight": 3}, {"kind": "ditchbell", "weight": 1}], "spots": [[-364.8, -277.5], [-286.9, -339.6], [-287.0, -248.1], [-400.5, -339.8], [-344.7, -334.5], [-314.6, -292.1], [-399.3, -244.4], [-330.6, -249.4], [-286.6, -307.7], [-344.7, -302.5], [-312.5, -323.5], [-286.6, -277.5]]},
+		{"id": "thornford_verges", "name": "the verges round Thornford", "live": 4, "respawn": [45, 90], "kinds": [{"kind": "ditchbell", "weight": 3}, {"kind": "wild_garlic", "weight": 1}], "spots": [[-427.6, -336.0], [-467.7, -148.6], [-498.6, -260.5], [-412.4, -247.8], [-411.9, -168.7], [-485.9, -203.5], [-478.1, -311.8], [-459.6, -371.7], [-457.7, -238.7], [-456.0, -277.8]]},
+		{"id": "briarwood_floor", "name": "the Briarwood", "live": 4, "respawn": [60, 110], "kinds": [{"kind": "woundwort", "weight": 2}, {"kind": "ditchbell", "weight": 1}], "spots": [[-557.1, -370.1], [-583.3, -255.9], [-516.9, -276.0], [-583.6, -315.8], [-517.1, -373.9], [-556.9, -283.5], [-549.4, -336.0], [-590.4, -285.7], [-579.2, -351.7], [-534.4, -356.1]]},
+		{"id": "old_watch_slopes", "name": "the slopes below the Old Watch", "live": 3, "respawn": [60, 120], "kinds": [{"kind": "woundwort", "weight": 1}], "spots": [[-460.3, -384.9], [-406.0, -503.2], [-393.8, -425.1], [-454.3, -450.5], [-408.4, -463.4], [-430.3, -411.0], [-475.7, -421.2], [-434.3, -484.8]]},
+		{"id": "mourning_hollow", "name": "the Mourning Hollow", "live": 3, "respawn": [80, 140], "kinds": [{"kind": "woundwort", "weight": 2}, {"kind": "bloodroot", "weight": 1}], "spots": [[-318.0, -371.9], [-259.9, -521.5], [-395.7, -488.5], [-259.4, -436.6], [-396.5, -351.6], [-334.3, -446.6], [-322.4, -508.0], [-259.6, -348.6], [-386.4, -416.6]]},
+		{"id": "mossreed_banks", "name": "the Mossreed banks", "live": 3, "respawn": [90, 150], "kinds": [{"kind": "bloodroot", "weight": 2}, {"kind": "woundwort", "weight": 1}], "spots": [[-557.5, -79.9], [-621.9, -148.0], [-504.4, -148.2], [-621.4, -40.0], [-504.1, -40.6], [-563.9, -140.4], [-612.5, -93.9], [-503.9, -94.3]]},
+		{"id": "blackpick_scree", "name": "the Blackpick scree", "live": 3, "respawn": [120, 180], "kinds": [{"kind": "bloodroot", "weight": 1}, {"kind": "gravemoss", "weight": 1}], "spots": [[-276.9, -230.9], [-209.0, -302.4], [-315.2, -302.4], [-209.1, -219.4], [-263.2, -284.6], [-319.4, -255.3], [-225.1, -260.5], [-242.6, -223.1]]}
+	]
 }

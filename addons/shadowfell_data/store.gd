@@ -51,6 +51,7 @@ const EXTRAS := {
 	"bagSlots": ["Bag slots", "int", ["bag"]],
 	"toolPack": ["Tool pack (holds tools)", "bool", ["bag"]],
 	"rangedHaste": ["Quiver haste % (up to 30)", "float", ["bag"]],
+	"ammoRecover": ["Arrows gathered back % (a chance each shot)", "float", ["bag"]],
 	"ammoDps": ["Damage a second it adds", "float", ["ammo"]],
 	"buyCount": ["Sold in stacks of", "int", ["ammo", "consumable", "material"]],
 	"light": ["Light (metres)", "float", ["torch"]],
@@ -67,6 +68,7 @@ const EXTRAS := {
 ## targets (enemy, or self, or self or the ground) and the tuning it needs.
 const SPELL_KINDS := {
 	"cast": {"enemy": true, "tuning": ["castTime", "damageMin", "damageMax", "projectileSpeed"], "about": "A cast at an enemy: a bolt flies once the cast ends. Moving interrupts it."},
+	"groundCast": {"enemy": false, "ground": true, "tuning": ["castTime", "radius", "damageMin", "damageMax"], "about": "Commit to a cast on marked ground."},
 	"dot": {"enemy": true, "tuning": ["duration", "tickInterval", "tickMultiplier"], "about": "Damage over time on an enemy (a bleed, poison or curse)."},
 	"instant": {"enemy": true, "tuning": ["damageMin", "damageMax"], "about": "Instant damage to an enemy. With damageMultiplier instead, it rolls your weapon."},
 	"aoe": {"enemy": false, "ground": true, "tuning": ["radius", "duration", "tickInterval", "damageMin", "damageMax"], "about": "Damage every tick to enemies in a circle around you or on the ground."},
@@ -77,7 +79,7 @@ const SPELL_KINDS := {
 	"guard": {"enemy": false, "tuning": ["window"], "about": "Block or dodge hits for a moment (Brace, Guile)."},
 	"interrupt": {"enemy": true, "tuning": ["lockout", "damageMin", "damageMax"], "about": "Breaks an enemy's cast."},
 	"control": {"enemy": true, "tuning": [], "about": "Only its `applies` aura: a sleep, hex or stun."},
-	"buff": {"enemy": false, "tuning": ["duration", "damageBonus"], "about": "More damage for a while."},
+	"buff": {"enemy": false, "ground": true, "tuning": ["duration", "damageBonus"], "about": "More damage for a while."},
 	"stealth": {"enemy": false, "tuning": [], "about": "Hide in shadow."},
 	"trap": {"enemy": false, "tuning": ["armTime", "triggerRadius", "lifetime", "maxTraps", "radius", "duration", "slow"], "about": "A trap on the ground that slows."},
 	"purge": {"enemy": false, "tuning": ["healPerPoint", "extend"], "about": "Spends all of a bar (spendsAll) to heal."},
@@ -91,7 +93,7 @@ const SPELL_KINDS := {
 	"healBurst": {"enemy": false, "ground": true, "tuning": ["radius", "healMin", "healMax", "damageMin", "damageMax"], "about": "An instant burst around you or on the ground: heals you if you are in it, and damages every enemy in it (base damage 0 = heal only)."},
 	"thorns": {"enemy": false, "tuning": ["duration", "thornsMin", "thornsMax"], "about": "Thorns on you for a while: every enemy that lands a blow on you takes damage back."},
 }
-const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire"]
+const SCHOOLS := ["physical", "shadow", "holy", "nature", "fire", "frost", "lightning", "arcane"]
 const TARGETS := ["enemy", "ground", "self"]
 
 var files := {} ## name -> parsed file
@@ -363,6 +365,8 @@ static func needed_tuning(a: Dictionary) -> Array:
 ## or a damage over time with no base roll of its own (Spells._damage)
 static func weapon_ability(a: Dictionary) -> bool:
 	var t: Dictionary = a.get("tuning", {})
+	if a.get("kind") == "burst" and t.get("damageMultiplier", 0) <= 0 and t.has("damageMin"):
+		return false
 	if a.get("ranged") == true or t.has("damageMultiplier"):
 		return true
 	if a.get("kind") in ["cleave", "burst", "charge"]:

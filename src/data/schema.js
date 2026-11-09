@@ -56,7 +56,7 @@ export const DURABLE_KINDS = ['weapon', 'armor', 'shield', 'jewellery'];
 const ABILITY_TARGETS = ['enemy', 'ground', 'self'];
 const SCHOOLS = ['physical', 'shadow', 'holy', 'nature', 'fire'];
 // what an npc's `mapIcon` may be (the minimap draws each, see src/ui/minimap.js)
-export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer', 'tanner'];
+export const NPC_MAP_ICONS = ['vendor', 'blacksmith', 'fishing', 'cooking', 'innkeeper', 'trainer', 'tanner', 'banker'];
 
 // Spells run by the generic spell engine (src/systems/spells.js): the tuning
 // numbers each kind needs, and whether it goes on an enemy.

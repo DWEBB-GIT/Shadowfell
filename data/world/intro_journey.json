@@ -1,0 +1,67 @@
+{
+  "name": "A Reputation Earned",
+  "targetLevel": 10,
+  "baselineMinutes": 120,
+  "opening": [
+    "ni_stretch_your_legs",
+    "ni_loose_boar",
+    "ni_the_road_in",
+    "sf_odd_jobs",
+    "sf_hungry_work",
+    "in_farm_introduction",
+    "vr_first_hunt",
+    "sf_a_meal_earned",
+    "in_watchmans_word",
+    "tf_lanterns",
+    "in_lost_courier",
+    "tf_bell",
+    "in_hollow_introduction",
+    "vr_names",
+    "in_burial_record",
+    "vr_crypt"
+  ],
+  "crossingRoute": [
+    "in_letter_east",
+    "wm_lantern_crossing_work",
+    "in_crossing_timber",
+    "in_crossing_witnesses",
+    "in_crossing_bill",
+    "in_crossing_supper",
+    "wm_lantern_crossing_record"
+  ],
+  "landingRoute": [
+    "in_letter_west",
+    "wm_mossreed_landing_work",
+    "in_bank_lamps",
+    "in_ferry_flow",
+    "in_river_names",
+    "in_river_receipt",
+    "in_last_oar_supper",
+    "wm_mossreed_landing_record"
+  ],
+  "sharedFinale": [
+    "in_lamplighter_handoff",
+    "in_miners_supplies",
+    "in_hold_the_lane",
+    "in_cut_the_claim",
+    "in_foreman",
+    "in_testimony",
+    "in_road_to_rillbank"
+  ],
+  "suggestedSideQuests": [
+    "nr_gauge",
+    "vr_pig_wolf",
+    "in_soup_round",
+    "in_dellas_thread",
+    "wm_lantern_crossing_local",
+    "wm_mossreed_landing_local"
+  ],
+  "abilityLessons": [
+    "sf_class_warden",
+    "sf_class_rogue",
+    "sf_class_ranger",
+    "sf_class_occultist",
+    "sf_class_paladin",
+    "sf_class_wizard"
+  ]
+}

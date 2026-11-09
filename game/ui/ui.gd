@@ -29,6 +29,9 @@ const QUEST_GOLD := Color("ffd23c")
 static var font: Font
 static var bold: Font
 static var italic: Font
+# The game's logo face (Mythkeep wordmark): Cinzel Decorative Black,
+# SIL Open Font Licence, see game/fonts/CinzelDecorative-OFL.txt
+static var logo_font: Font
 ## the Icons node, so rich text can show item and spell icons
 static var icons
 
@@ -64,6 +67,39 @@ static func setup_fonts() -> void:
 	it.base_font = font
 	it.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.2, 1), Vector2.ZERO)
 	italic = it
+	logo_font = _with([load("res://game/fonts/CinzelDecorative-Black.ttf"), serif_bold, sym])
+
+
+## The game's name as a cast-gold wordmark in the logo face: metal gradient
+## and grain (game/ui/logo.gdshader), dark outline, and a bronze shadow
+## under it as the letters' depth.
+static func logo(parent: Node, text: String, size := 56, spacing := 0) -> Label:
+	setup_fonts()
+	var l := label(parent, text, size, Color.WHITE)
+	var f := FontVariation.new()
+	f.base_font = logo_font
+	f.spacing_glyph = spacing
+	l.add_theme_font_override("font", f)
+	l.add_theme_constant_override("outline_size", maxi(4, size / 10))
+	l.add_theme_color_override("font_outline_color", Color(0.13, 0.06, 0.02))
+	l.add_theme_color_override("font_shadow_color", Color(0.33, 0.18, 0.06))
+	l.add_theme_constant_override("shadow_offset_x", 0)
+	l.add_theme_constant_override("shadow_offset_y", maxi(3, size / 14))
+	l.add_theme_constant_override("shadow_outline_size", maxi(4, size / 10))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var m := ShaderMaterial.new()
+	m.shader = load("res://game/ui/logo.gdshader")
+	l.material = m
+	var fit := func():
+		# the caps' height inside the label, so the gradient spans the letters
+		var asc: float = f.get_ascent(size)
+		var cap: float = asc * 0.72
+		var top: float = (l.size.y - f.get_height(size)) * 0.5 + asc - cap
+		m.set_shader_parameter("text_top", top)
+		m.set_shader_parameter("text_height", cap)
+	l.resized.connect(fit)
+	fit.call()
+	return l
 
 
 static func _with(list: Array) -> FontVariation:
@@ -211,7 +247,7 @@ static func bar_track() -> StyleBoxTexture:
 static func panel(parent: Node, pad := 6, bg := PANEL, border := BORDER) -> PanelContainer:
 	var p := PanelContainer.new()
 	if border == BORDER and (bg == PANEL or bg == WINDOW):
-		p.add_theme_stylebox_override("panel", frame(pad, "panel" if bg == PANEL else "window", 8 if bg == PANEL else 20))
+		p.add_theme_stylebox_override("panel", frame(pad, "panel", 8))
 	else:
 		p.add_theme_stylebox_override("panel", box(bg, border, pad))
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -232,6 +268,16 @@ static func label(parent: Node, text := "", size := 15, colour := TEXT, outline 
 	if parent:
 		parent.add_child(l)
 	return l
+
+
+## A font colour set from per-frame code: the override is only written when
+## the colour changes, since each write makes the control lay out again.
+static func set_colour(c: Control, colour: Color, key := "font_color") -> void:
+	var meta := "_colour_" + key
+	# has_meta first: get_meta with a null default still logs an error per call
+	if not c.has_meta(meta) or c.get_meta(meta) != colour:
+		c.set_meta(meta, colour)
+		c.add_theme_color_override(key, colour)
 
 
 static func vbox(parent: Node, gap := 4) -> VBoxContainer:
@@ -277,6 +323,30 @@ static func square_button(parent: Node, text: String, cb := Callable(), px := 22
 		b.add_theme_stylebox_override(st[0], frame(0, st[1], 6))
 		var f: StyleBoxTexture = b.get_theme_stylebox(st[0])
 		f.set_content_margin_all(0)
+	b.custom_minimum_size = Vector2(px, px)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return b
+
+
+## a window's close button: red, with a white × on top so it stands out
+## (Dan, 2026-11-04)
+static func close_button(parent: Node, cb := Callable(), px := 22) -> Button:
+	var b := button(parent, "×", cb, 16)
+	b.add_theme_font_override("font", bold)
+	for st in [["normal", Color("#a8231c")], ["hover", Color("#d0342a")], ["pressed", Color("#7a1712")]]:
+		var f := StyleBoxFlat.new()
+		f.bg_color = st[1]
+		f.border_color = Color("#2a0806")
+		f.set_border_width_all(2)
+		f.set_corner_radius_all(4)
+		f.set_content_margin_all(0)
+		b.add_theme_stylebox_override(st[0], f)
+	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(c, Color.WHITE)
+	b.add_theme_constant_override("outline_size", 3)
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
+	b.tooltip_text = "Close"
 	b.custom_minimum_size = Vector2(px, px)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -339,8 +409,15 @@ static func wrapped(l: Label) -> Label:
 ## that size is still settling (two frames the same): a window or tip with
 ## wrapped text otherwise shows for a frame at the wrong size, very large,
 ## before it shrinks into place (Dan, 2026-10-21).
-static func fit_steady(c: Control) -> Vector2:
+static func fit_steady(c: Control, stay_shown := false) -> Vector2:
 	var s := c.get_combined_minimum_size()
+	# a window already on screen that only reflows (a shop after a purchase)
+	# stays put rather than blinking out for a frame
+	if stay_shown and c.get_meta("fit_f", -1) == Engine.get_process_frames() - 1 and c.modulate.a > 0.0:
+		c.set_meta("fit_last", s)
+		c.set_meta("fit_f", Engine.get_process_frames())
+		c.size = s
+		return s
 	var f := Engine.get_process_frames()
 	var n: int = c.get_meta("fit_n", 0)
 	if c.get_meta("fit_last", Vector2(-1, -1)) != s:
@@ -355,12 +432,13 @@ static func fit_steady(c: Control) -> Vector2:
 	return s
 
 
-const _TOKEN := "\\{(gold|silver|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
+const _TOKEN := "\\{(gold|silver|art:[^}]+|item:[^}]+|ability:[^}]+|model:[^}]+)\\}"
 static var _token_re: RegEx
 
 
 ## Fill rich text from BBCode with icon tokens: {gold} and {silver} coins,
-## {item:<id>:<px>} an item's icon, {ability:<id>:<px>} a spell's.
+## {item:<id>:<px>} an item's icon, {ability:<id>:<px>} a spell's,
+## {art:<group>/<id>:<px>} one of Dan's painted icons (assets/icons).
 static func set_rich(r: RichTextLabel, s: String) -> void:
 	r.clear()
 	if _token_re == null:
@@ -376,6 +454,11 @@ static func set_rich(r: RichTextLabel, s: String) -> void:
 			tex = coin(tok)
 			if Icons.art("ui", "coin_" + tok):
 				px = 14
+		elif tok.begins_with("art:"):
+			var parts := tok.split(":")
+			var gid := parts[1].split("/")
+			px = int(parts[2]) if parts.size() > 2 else 14
+			tex = Icons.art(gid[0], gid[1]) if gid.size() == 2 else null
 		elif icons:
 			var parts := tok.split(":")
 			px = int(parts[2]) if parts.size() > 2 else 26
@@ -442,7 +525,7 @@ static func coin(kind: String) -> Texture2D:
 ## close button, a rule, then the body.
 static func window(parent: Node, title: String, width := 0.0, on_close := Callable()) -> Dictionary:
 	var p := panel(parent, 0, WINDOW, BORDER)
-	p.add_theme_stylebox_override("panel", frame(Vector4(18, 14, 18, 16), "window", 20))
+	p.add_theme_stylebox_override("panel", frame(Vector4(18, 14, 18, 16), "panel", 8))
 	if width > 0:
 		p.custom_minimum_size = Vector2(width, 0)
 	var v := vbox(p, 6)
@@ -451,7 +534,7 @@ static func window(parent: Node, title: String, width := 0.0, on_close := Callab
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var close: Button = null
 	if on_close.is_valid():
-		close = square_button(head, "×", on_close)
+		close = close_button(head, on_close)
 	rule(v)
 	var body := vbox(v, 6)
 	return {"panel": p, "body": body, "head": head, "title": t, "close": close}

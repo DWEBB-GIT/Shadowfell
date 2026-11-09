@@ -13,7 +13,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	game=load("res://game/main.tscn").instantiate()
 	root.add_child(game)
-	var made: Dictionary=game.roster.create("Readability Trial","warden")
+	var made: Dictionary=game.roster.create("Readability","warden")
 	game.enter_world(made.character.id)
 	var began:=Time.get_ticks_msec()
 	while game.hud.loading.visible:
@@ -65,15 +65,19 @@ func _run() -> void:
 	# Check an actual quest conversation/reward page within normal talking reach.
 	game.player.place_at(-450,-165)
 	game._snap_camera()
-	for i in 3:game.quests.count_kill("vr_young_boar")
-	game.interaction.examine("poi:vr_meadow")
+	# the mayor's own errand (the boundary stones), once the quests before it are handed in
+	_mark_done_before("vr_fence_dispute")
+	game.progression.level=2 # (the errand is offered from level 2)
+	check(game.quests.accept("vr_fence_dispute"),"the mayor's errand can be taken")
+	var coins_before: int=game.inventory.coins
+	game.interaction.examine("poi:vr_boundary")
 	game.quests.refresh()
 	game.dialogue.open(game.npcs.by_id("vr_mayor"))
-	game.dialogue.choose("quest:vr_first_hunt")
+	game.dialogue.choose("quest:vr_fence_dispute")
 	game.hud.update(0)
 	await _picture("mayor-quest-page")
 	game.dialogue.choose("complete")
-	check(game.quests.status("vr_first_hunt")=="done" and game.inventory.coins>=25,"visible town hall supports the real dialogue reward action")
+	check(game.quests.status("vr_fence_dispute")=="done" and game.inventory.coins==coins_before+10,"visible town hall supports the real dialogue reward action")
 	game.dialogue.close()
 	var e=game.enemies.by_id("vr_young_boar_1")
 	game.player.place_at(e.position.x,e.position.z+2.0)
@@ -135,3 +139,11 @@ func _picture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output.path_join(label+".png"))
+
+
+## Every quest `id` needs, all the way back, marked handed in.
+func _mark_done_before(id: String) -> void:
+	for need in DB.quests[id].get("requires", []):
+		_mark_done_before(need)
+		game.quests.accepted.erase(need)
+		game.quests.done[need] = true

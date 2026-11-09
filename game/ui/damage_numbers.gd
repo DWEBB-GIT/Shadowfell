@@ -3,6 +3,7 @@ extends Control
 ## Floating damage numbers: serif figures that drift up and fade
 ## (src/ui/damageNumbers.js).
 ##   dealt  parchment white      taken  dull red "-n"
+##   ability  pale yellow: a hit from an ability, not an auto attack
 ##   crit   amber, "!"           block  grey "Block"     heal  green "+n"
 ##   miss   grey "Miss", your blow that missed
 ##   xp     purple "+n XP", over a fallen enemy
@@ -14,7 +15,7 @@ const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
 	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("8cbf78"),
-	"xp": Color("b77cff"),
+	"xp": Color("b77cff"), "ability": Color("f4dc6a"),
 }
 
 var game
@@ -82,6 +83,9 @@ func add(e: Dictionary) -> void:
 		ratio = amount / ref if ref > 0 else 1.0
 	var pulse: bool = crit and ratio >= t.pulseAt
 	var colour: Color = COLOURS.get(cls, COLOURS.dealt)
+	if cls == "dealt" and e.get("ability", false):
+		# ability hits read apart from auto attacks (Dan 2026-11-04)
+		colour = COLOURS.ability
 	if crit:
 		colour = COLOURS.takenCrit if kind == "taken" else COLOURS.big if pulse else COLOURS.crit
 	var scale_ := 0.8 if cls == "block" or cls == "miss" else number_scale(ratio, 1)

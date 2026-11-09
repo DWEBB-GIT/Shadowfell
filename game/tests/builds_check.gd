@@ -12,13 +12,14 @@ var b
 func _process(_dt: float) -> bool:
 	frame += 1
 	if frame == 1:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 		Store.dir = "user://test_store"
 		for f in DirAccess.get_files_at(Store.dir):
 			DirAccess.remove_absolute(Store.dir + "/" + f)
 		game = load("res://game/main.tscn").instantiate()
 		root.add_child(game)
 	elif frame == 2:
-		var made: Dictionary = game.roster.create("Build Tester", "warden")
+		var made: Dictionary = game.roster.create("Build", "warden")
 		game.enter_world(made.character.id)
 	elif frame == 3:
 		_points_and_forks()

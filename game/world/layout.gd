@@ -42,7 +42,10 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 		npcs.append(m)
 	enemies = []
 	for sp in w.enemySpawns:
-		enemies.append({"id": sp.id, "type": sp.enemy, "position": sp.position})
+		var e := {"id": sp.id, "type": sp.enemy, "position": sp.position}
+		if sp.has("activeHours"):
+			e.activeHours = sp.activeHours
+		enemies.append(e)
 	for r in w.roads:
 		if r.id == "fallen_road":
 			road = r.points
@@ -67,6 +70,13 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	danger_zones = []
 	for z in w.dangerZones:
 		danger_zones.append({"position": z.position, "radius": z.radius, "enemy": z.enemySpawn})
+
+
+static func station(id: String):
+	for s in stations:
+		if s.id == id:
+			return s
+	return null
 
 
 static func enemy_spawn(id: String):

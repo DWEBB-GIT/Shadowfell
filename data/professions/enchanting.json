@@ -1,5 +1,5 @@
 {
-  "_about": "Refining (Dan, 2026-11-02; Godot build: game/systems/forge.gd), at any npc with `refiner: true` (a Refiner, a magical trade, not the smith). Each rank counts as +1 item level and the item's stats are worked out again by the item budget (docs/stats-and-damage.md); it extends the life of gear you already have, never makes one source of gear better than another. `caps` by rarity: how many ranks an item can take. `ranks` (one entry a rank, in order): coins, `chance` (percent to succeed), plus a count of Fellstones (`bands`: one material at every level since 2026-11-03; old dust and stone items have `becomes: fellstone` and turn into Fellstones on load), plus `coinsPerItemLevel` x level coins. A failed attempt only costs what was put in, never the item or a rank, and adds `resolvePerFail` percent to that item's next attempt (saved as rolls.resolve, cleared on success). From rank `announceFrom` a success is announced in the chat. An epic or legendary item's last rank (its cap) also needs `lastRank`. `scrap` breaks enhanced gear or better into `stones` of its band (a count by rarity) and `extra` for the rarities listed, gives back `refund` of the Fellstones spent on its successful ranks (failed tries are not refunded), and its gems; the window shows what you get first. Fellstones drop by `fellstoneDrops` (game/systems/loot.gd); Soulshards are end-game only (level 45+ dungeon bosses and rare elites).",
+  "_about": "Refining (Dan, 2026-11-02; Godot build: game/systems/forge.gd), at any npc with `refiner: true` (a Refiner, a magical trade, not the smith). Each rank counts as +1 item level and the item's stats are worked out again by the item budget (docs/stats-and-damage.md); it extends the life of gear you already have, never makes one source of gear better than another. `caps` by rarity: how many ranks an item can take. `ranks` (one entry a rank, in order): `chance` (percent to succeed), plus a count of Fellstones (`bands`: one material at every level since 2026-11-03; old dust and stone items have `becomes: fellstone` and turn into Fellstones on load). No coins (Dan, 2026-11-03: stones only); `coins` / `coinsPerItemLevel` still work if ever wanted. A failed attempt only costs what was put in, never the item or a rank, and adds `resolvePerFail` percent to that item's next attempt (saved as rolls.resolve, cleared on success). From rank `announceFrom` a success is announced in the chat. An epic or legendary item's last rank (its cap) also needs `lastRank`. `scrap` breaks enhanced gear or better into `stones` of its band (a count by rarity) and `extra` for the rarities listed, gives back `refund` of the Fellstones spent on its successful ranks (failed tries are not refunded), and its gems; the window shows what you get first. Fellstones drop by `fellstoneDrops` (game/systems/loot.gd); Soulshards are end-game only (level 45+ dungeon bosses and rare elites).",
   "enchant": {
     "caps": {
       "junk": 0,
@@ -12,42 +12,35 @@
     },
     "ranks": [
       {
-        "coins": 8,
         "stones": 3,
         "chance": 100
       },
       {
-        "coins": 14,
         "stones": 4,
         "chance": 100
       },
       {
-        "coins": 22,
         "stones": 6,
         "chance": 90
       },
       {
-        "coins": 34,
         "stones": 7,
         "chance": 85
       },
       {
-        "coins": 50,
         "stones": 9,
         "chance": 80
       },
       {
-        "coins": 75,
         "stones": 11,
         "chance": 75
       },
       {
-        "coins": 110,
         "stones": 14,
         "chance": 70
       }
     ],
-    "coinsPerItemLevel": 1,
+    "coinsPerItemLevel": 0,
     "lastRank": {
       "item": "soulshard",
       "count": 1,

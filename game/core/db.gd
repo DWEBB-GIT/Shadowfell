@@ -15,7 +15,11 @@ const CONFIG := {
 	# the imported player body, used while `imported` is on ("base_male" is
 	# the plain body it replaced)
 	"models": {"imported": true, "player": "battle_mage"},
-	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.2, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5},
+	"player": {"archetype": "warden", "speed": 6.4, "visualScale": 1.3, "runGait": 1.3, "turnRate": 3.2, "backpedal": 0.55, "radius": 0.4, "startCoins": 0, "startDraughts": 1, "startFood": 5, "startDrinks": 5,
+		# combat hop (experiment, Dan 2026-11-09, Conquer Online style): in a fight,
+		# Space while moving leaps further and faster, to hop in and out of reach.
+		# carry: speed while airborne x run speed; cooldown: seconds between hops.
+		"hop": {"carry": 1.8, "cooldown": 1.6, "combatOnly": true}},
 	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
 	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
 	## base move speed (Dan, 2026-11-02).
@@ -27,11 +31,18 @@ const CONFIG := {
 	## anything within its reach + `reachGrace` m. Wandering and walking home
 	## use the enemy's own `speed` (m/s).
 	"chase": {"default": 115, "byType": {"fodder": 110, "normal": 115, "armoured": 110, "skirmisher": 120, "pack_beast": 135, "elite": 115, "heavy": 100, "boss": 100}, "reachGrace": 0.3,
+		# a fresh spawn ignores you for `spawnGrace` s (Dan, 2026-11-04); taking up a
+		# chase it stops `alertSeconds` to look, then builds from its walk to its run
+		# over `rampSeconds`, so nothing bursts at you at full pelt (Dan, 2026-11-04)
+		"spawnGrace": 5.0, "alertSeconds": 0.4, "rampSeconds": 1.5,
 		# wounded beasts and men break and run, slower than they chase (Dan, 2026-11-02);
 		# the dead never flee. An enemy can set `flees` true/false itself.
 		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
+	# a banker npc (`banker`) opens your bank vault: `slots` places, kept per
+	# character, shared by no one (Dan, 2026-11-03); walking `leaveRange` m off shuts it
+	"bank": {"slots": 28, "columns": 7, "leaveRange": 6.0},
 	"death": {
 		# your bags and coins wait in a grave for graveSeconds of play, then
 		# `scavengers` carry them off; each revival leaves a wound (-woundHealth%
@@ -46,8 +57,31 @@ const CONFIG := {
 	# sleep through a fade, wake whole (health, mana, wounds), with restedShare
 	# of a level of rested experience, and the inn as your rest point
 	"inn": {"bedPrice": 5, "restedShare": 0.25, "fade": 0.7, "hold": 0.6},
+	# The world clock (WorldState.hour, saved with the world): a whole day
+	# passes in `dayMinutes` real minutes of play; a new world starts at
+	# `startHour`. It is a fact of the shared world: nothing one player does
+	# moves it (a bed mends you but the night goes on), so a server can own it
+	# and every client sees the dark fall together. DayNight turns the hour into the light: the sun rises in the
+	# east at 6 and sets in the west at 18; at night a dim blue moon
+	# (`moonlight`, a share of the sun) and `nightAmbient` of the day's fill.
+	"clock": {"dayMinutes": 48.0, "startHour": 9.0, "moonlight": 0.42, "nightAmbient": 0.82},
+	# Townsfolk routines (npcs.json `routine`, Npcs): walk at `walkSpeed`
+	# m/s; the inn they use is the nearest one (a building with `rest`) within
+	# `innRange` metres of their post, home the nearest house within
+	# `homeRange` (a spawn's own `home` [x, z] beats that). Each person keeps
+	# the hours a little early or late, up to `spread` hours, so a town does
+	# not move as one.
+	"routine": {"walkSpeed": 1.5, "innRange": 160.0, "homeRange": 70.0, "spread": 0.4},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
-	"progression": {"maxLevel": 50, "firstLevelXp": 280, "xpGrowthPerLevel": 200, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4},
+	# XP to the next level = the baseline minutes the level 1-50 pacing plan
+	# gives it (docs/quest-design/level-50-pacing.csv, 60 hours) x `pace` x the
+	# kill XP of an even normal enemy at that level. `pace` is the XP a normal
+	# questing session earns a minute in even kills: about half quest rewards,
+	# half kills along the way; tune it from playtest timings (Dan, 2026-11-03).
+	# Quest XP = a share (`questSizes`) of the quest level's bar x `xpScale`.
+	"progression": {"maxLevel": 50, "pace": 2.0, "greyGap": 5, "aboveBonus": 5.0, "aboveCap": 4,
+		"levelMinutes": [5, 8, 10, 12, 14, 16, 17, 18, 20, 30, 45, 55, 65, 70, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 100, 115, 125, 130, 135, 140, 145, 150, 150, 150],
+		"minQuestShare": 0.1, "questSizes": {"errand": 0.04, "standard": 0.07, "chainStep": 0.10, "chainFinale": 0.15, "actFinale": 0.30}},
 	"stats": {
 		"healthBase": 20.0, "healthPerStamina": 6.0, "manaPerIntellect": 10.0, "rangedPowerShare": 0.5,
 		"powerPerMainStat": 0.3, "spellPowerPerIntellect": 0.25, "critBase": 5.0, "critMultiplier": 1.5,
@@ -61,20 +95,25 @@ const CONFIG := {
 	"impact": {"shake": 0.07, "critShake": 0.16, "shakeDecay": 9.0,
 		# hit-stop on a landed melee blow: both bodies hold still this long,
 		# more for slower (heavier) weapons, more again on a crit
-		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5},
+		"hitStop": 0.03, "hitStopPerSecond": 0.02, "hitStopMax": 0.1, "critHitStop": 1.5,
+		# area blows and killing blows (Dan 2026-11-03): an area spell that
+		# catches 2+ kicks the camera harder per foe and holds them all; a
+		# kill holds you a beat and kicks the camera, more for an elite
+		"aoeHitStop": 0.06, "aoeShakePerHit": 0.25, "killHitStop": 0.08, "killShake": 0.06, "eliteKillShake": 0.14},
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
-		# Stable north-up view: 45 degrees down by default (lowerOffset, Settings "Lower camera angle" on), 50 degrees with it off.
+		# Stable north-up view: 30 degrees down by default, 42 degrees with the lower-angle preference off.
 		# Zoom changes distance, never pitch or player-facing direction.
-		# At 16:9 the default sees roughly 39 m across the player plane.
-		"offset": Vector3(0, 27.6067, 23.1648), "lowerOffset": Vector3(0, 25.5, 25.5),
-		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.98,
-		"indoorZoom": 0.14, "fov": 35.0,
+		# Wider perspective preserves lateral ground coverage while showing taller silhouettes and more distant ground.
+		"offset": Vector3(0, 20.743, 23.037), "lowerOffset": Vector3(0, 15.5, 26.847),
+		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.94,
+		"indoorZoom": 0.14, "fov": 39.0,
 		"followSharpness": 12.0, "renderScale": 1.0, "frame": 0.0,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
-	"targeting": {"range": 26.0, "dropRange": 34.0, "clickRadius": 46.0, "softArc": 60.0, "softAimRadius": 2.5, "screenMargin": 0.03},
+	"targeting": {"range": 26.0, "dropRange": 34.0, "clickRadius": 46.0, "softArc": 60.0, "softAimRadius": 2.5, "screenMargin": 0.03,
+		"tabCloseRange": 3.5, "tabBehindWeight": 3.0},
 	"minimap": {"questRange": 90.0},
 	"loot": {"areaRadius": 5.0, "clickRadius": 40.0, "reach": 3.2, "gatherTime": 2.0},
 	"skinning": {"time": 2.2, "freeLevel": 2, "rankPerLevel": 5, "easyAfter": 10, "trivialAfter": 20, "easyChance": 0.5},
@@ -125,6 +164,7 @@ static var loot_tables := {}
 static var world_drops: Array = [] ## level bands of shared gear (WoW's world drops)
 static var rarities := {} ## in order, lowest first (Dictionary keeps insertion order)
 static var npcs := {}
+static var routines := {} ## npcs.json routines: daily timetables townsfolk keep (Npcs)
 static var vendor_types := {}
 static var shops := {}
 static var quests := {}
@@ -213,6 +253,7 @@ static func setup(data) -> void:
 	world_drops = data.table("worldDrops").values()
 	rarities = data.table("rarities")
 	npcs = data.table("npcs")
+	routines = data.table("routines")
 	vendor_types = data.table("vendorTypes")
 	shops = data.table("shops")
 	quests = data.table("quests")
@@ -260,6 +301,13 @@ static func setup(data) -> void:
 		world_map = {}
 		world = new_map_world(world)
 		scenery = new_map_scenery(scenery)
+		# ore outcrops are placed per map too: the old world's stand in the
+		# sea and on cliffs here, so only the new map's own (spawns.json)
+		mining = mining.duplicate()
+		mining.veinGroups = world.get("veinGroups", [])
+		# herb patches likewise: the old world's spots mean nothing here
+		nodes = nodes.duplicate()
+		nodes.nodeGroups = world.get("nodeGroups", [])
 		# The district names its resident teachers without changing the old
 		# continent's content or a character's already learned abilities.
 		var teachers: Dictionary = world.get("trainerOverrides", {})
@@ -340,7 +388,19 @@ static func ensure() -> void:
 
 
 static func xp_for_next_level(level: int) -> int:
-	return CONFIG.progression.firstLevelXp + (level - 1) * CONFIG.progression.xpGrowthPerLevel
+	var pr: Dictionary = CONFIG.progression
+	var mins: Array = pr.levelMinutes
+	var m: float = mins[clampi(level - 1, 0, mins.size() - 1)]
+	return U.jround(m * pr.pace * Scaling.kill_xp_base({}, level))
+
+
+## A quest's experience before the level gap: its `reward.size` share of the
+## quest level's bar, times `reward.xpScale` for a longer or harder quest.
+static func quest_xp_base(reward: Dictionary, quest_level: int) -> int:
+	if not reward.has("size"):
+		return 0
+	var share: float = CONFIG.progression.questSizes.get(reward.size, 0.0)
+	return U.jround(xp_for_next_level(quest_level) * share * reward.get("xpScale", 1.0))
 
 
 ## Experience for killing an enemy of `enemy_level` at `player_level`, WoW
@@ -437,8 +497,6 @@ static func enemy_cfg_at(type: String, spawn_id: String, level := 0) -> Dictiona
 	if not _cfg_at_level.has(key):
 		var at := e.duplicate()
 		at.level = level
-		# a stronger variant pays more, on the same growth line as its health
-		at.xp = U.jround(float(e.get("xp", 0)) * Scaling.growth(level) / Scaling.growth(e.level))
 		_cfg_at_level[key] = Scaling.scaled_enemy(at, CONFIG.stats, attack.abilityWeaponSeconds)
 	return _cfg_at_level[key]
 

@@ -22,13 +22,21 @@ func _init(g) -> void:
 	var ev: Events = game.events
 	ev.on("enemyHit", func(e):
 		since_combat = 0.0
+		if e.get("echo") or e.get("periodic") or e.get("damage", 0) <= 0:
+			return
 		since_hit = 0.0
 		if not e.get("swing"):
 			return
 		var off: float = DB.CONFIG.stats.offHandResolve if e.get("hand") == "off" else 1.0
 		for b in bars:
 			if b.get("perSwing"):
-				add(b.id, b.perSwing * off))
+				var hand: String = e.get("hand", "main")
+				if b.get("weaponCadence"):
+					if hand != "ranged":
+						var share := 0.5 if game.stats.dual_wielding else 1.0
+						add(b.id, b.perSwing * game.stats.attack_cooldown_for(hand) * share)
+				elif b.id != "conviction" or hand != "ranged":
+					add(b.id, b.perSwing if b.id == "conviction" else b.perSwing * off))
 	ev.on("playerHurt", func(e):
 		since_combat = 0.0
 		for b in bars:
@@ -107,8 +115,8 @@ var overload:
 ## extra damage, in %, from an overloaded bar
 var damage_bonus: float:
 	get:
-		var o = overload
-		return o.get("damageBonus", 0) if o else 0.0
+		var fury = bar("resolve")
+		return amount("resolve") / fury.max * fury.get("damageBonusAtMax", 0) if fury else 0.0
 
 
 ## how much of a resource you have now
@@ -195,7 +203,8 @@ func spend(ability: Dictionary, gain = null) -> float:
 		for id in cost:
 			_take(id, cost[id])
 	if ability.get("spendsAll"):
-		all = maxf(1, amount(ability.spendsAll)) if unlimited else _take(ability.spendsAll, amount(ability.spendsAll))
+		var available := minf(amount(ability.spendsAll), ability.tuning.get("spendCap", INF))
+		all = maxf(1, available) if unlimited else _take(ability.spendsAll, available)
 	if gain:
 		for id in gain:
 			add(id, gain[id])

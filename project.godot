@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Shadowfell"
 config/description="Retro-inspired dark fantasy RPG"
-run/main_scene="res://game/main.tscn"
+run/main_scene="res://game/boot/lobby.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
@@ -79,9 +79,12 @@ zoom_out={
 
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method.mobile="gl_compatibility"
-renderer/rendering_method.web="gl_compatibility"
 environment/ssao/quality=1
 environment/volumetric_fog/volume_depth=48
+lights_and_shadows/directional_shadow/size.web=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality.web=1
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality.web=1
+lights_and_shadows/positional_shadow/atlas_size.web=2048
 
 [shader_globals]
 

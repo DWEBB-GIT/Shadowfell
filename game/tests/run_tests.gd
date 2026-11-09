@@ -7,6 +7,7 @@ var failures := 0
 
 
 func _initialize() -> void:
+	ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 	var data = load("res://game/autoload/game_data.gd").new()
 	check(data.problems.is_empty(), "data loads cleanly: %s" % ", ".join(data.problems))
 	for t in ["items", "enemies", "npcs", "quests", "abilities", "archetypes", "enemySpawns", "placedLoot", "chests"]:
@@ -15,15 +16,17 @@ func _initialize() -> void:
 		check(not data.get_record("npcs", s.npc).is_empty(), "npc spawn %s names a known npc" % s.npc)
 	for s in data.section("world", "enemySpawns"):
 		check(not data.get_record("enemies", s.enemy).is_empty(), "enemy spawn %s names a known enemy" % s.id)
-	# the baked ground (tools/world/bake_world.py): everything placed stands
-	# on open ground, and the start is in Act 1
+	# each map's placements stand on open ground of its own baked ground
+	# (tools/world/bake_world.py), and its start is where a game can begin
+	var chosen := Terrain.chosen_map()
+	for map in Terrain.MAPS:
+		ProjectSettings.set_setting(Terrain.MAP_SETTING, map)
+		DB.ready = false
+		DB.ensure()
+		check_ground(map)
+	ProjectSettings.set_setting(Terrain.MAP_SETTING, chosen)
+	DB.ready = false
 	DB.ensure()
-	for list in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "stations", "signposts"]:
-		for s in data.section("world", list):
-			check(Terrain.walk_at(s.position[0], s.position[1]) >= 0.5, "%s %s stands on open ground" % [list, s.get("id", s.get("npc", ""))])
-	for g in data.files.mining.veinGroups:
-		for o in g.outcrops:
-			check(Terrain.walk_at(o[0], o[1]) >= 0.5, "vein outcrop of %s stands on open ground" % g.id)
 	# spell looks (data/abilities/spell_fx.json) name real spells, poses and shapes
 	for id in DB.spell_fx:
 		var look: Dictionary = DB.spell_fx[id]
@@ -44,9 +47,22 @@ func _initialize() -> void:
 			check(part.fx in ["mesh", "ring", "sparks", "dust", "flash", "shake", "light"], "moment look %s part %s is a known effect" % [id, part.fx])
 			if part.fx == "mesh":
 				check(Fx.fx_mesh(part.mesh) != null, "moment look %s shape %s exists" % [id, part.mesh])
-	var start: Array = data.section("world", "playerStart").position
-	check(WorldMap.act1_box.has_point(Vector2(start[0], start[1])), "the player starts in Act 1")
 	data.free()
+
+
+## Everything placed on the map now loaded stands on open ground.
+func check_ground(map: String) -> void:
+	for list in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "stations", "signposts"]:
+		for s in DB.world.get(list, []):
+			check(Terrain.walk_at(s.position[0], s.position[1]) >= 0.5, "%s map: %s %s stands on open ground" % [map, list, s.get("id", s.get("npc", ""))])
+	for g in DB.mining.get("veinGroups", []):
+		for o in g.outcrops:
+			check(Terrain.walk_at(o[0], o[1]) >= 0.5, "%s map: vein outcrop of %s stands on open ground" % [map, g.id])
+	var start: Array = DB.world.playerStart.position
+	if map == "act1":
+		check(WorldMap.act1_box.has_point(Vector2(start[0], start[1])), "the player starts in Act 1")
+	else:
+		check(Terrain.walkable(start[0], start[1]), "%s map: the start is open ground" % map)
 
 
 ## The game itself: start it, play a little, save. Runs over frames, so the
@@ -66,17 +82,25 @@ func _process(_dt: float) -> bool:
 		root.add_child(game)
 	elif frame == 2:
 		check(game.hud.modal == "title", "the title screen opens first")
-		var made: Dictionary = game.roster.create("Test Warden", "warden")
+		var made: Dictionary = game.roster.create("Testwarden", "warden")
 		check(made.ok, "a character is created")
 		game.enter_world(made.character.id)
 		check(game.started, "a character enters the world")
 		check(game.npcs.all.size() == Layout.npcs.size(), "every townsperson is placed")
 		check(game.enemies.list.size() == Layout.enemies.size(), "every enemy is placed")
-		check(game.world.group.find_children("Woodland_*", "", true, false).size() > 0, "the woodland is planted")
+		if Terrain.is_new_map():
+			# no trees are scattered on the new map: Dan places its scenery
+			check(Layout.props.size() > 0, "the placed scenery is loaded")
+		else:
+			check(game.world.group.find_children("Woodland_*", "", true, false).size() > 0, "the woodland is planted")
 		check(game.action_bar.slots.any(func(a): return a != null), "the spell bar has abilities")
 		game.random = func() -> float: return 0.5
-		foe = game.enemies.list[0]
-		for e in game.enemies.list:
+		# the nearest enemy a new character may fight (not the peaceful watch
+		# or livestock, nothing far above its level)
+		var fair: Array = game.enemies.list.filter(func(e): return not game.law.protected(e) and int(e.cfg.level) <= 3)
+		check(not fair.is_empty(), "there is a low level enemy to fight")
+		foe = fair[0]
+		for e in fair:
 			if e.position.distance_to(game.player.position) < foe.position.distance_to(game.player.position):
 				foe = e
 	elif frame < 600:

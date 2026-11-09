@@ -22,12 +22,13 @@ func _init(g) -> void:
 func spawn_all() -> void:
 	for c in list:
 		if c.group:
+			game.world.stream.remove_view(c.group)
 			c.group.queue_free()
 		c.group = Node3D.new()
 		c.group.add_child(Assets.instance("chest"))
 		c.group.position = Vector3(c.x, Terrain.height_at(c.x, c.z), c.z)
 		c.group.rotation.y = deg_to_rad(c.def.get("facing", 0))
-		game.scene.add_child(c.group)
+		game.world.stream.add_view(c.group, game.scene, c.x, c.z)
 		if not c.collider:
 			game.collision.add(c.x, c.z, 0.45)
 		c.collider = true
@@ -47,6 +48,9 @@ func _look(c: Dictionary) -> void:
 
 ## what stops this chest opening: "", or the error
 func _lock_state(c: Dictionary) -> String:
+	var puzzle: String = c.def.get("puzzle", "")
+	if puzzle != "" and not game.puzzles.solved(puzzle):
+		return c.def.get("puzzleHint", "A nearby mechanism holds the latch shut.")
 	var lock = c.def.get("lock")
 	if not lock:
 		return ""

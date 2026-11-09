@@ -19,44 +19,122 @@
         "strength": 2,
         "stamina": 3
       },
-      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "armourTypes": [
+        "cloth",
+        "leather",
+        "plate"
+      ],
       "shields": true,
       "dualWield": true,
       "resources": {
         "bars": [
           {
             "id": "resolve",
-            "name": "Resolve",
+            "name": "Fury",
             "colour": "#c8862e",
             "max": 100,
             "start": "empty",
-            "perSwing": 12,
-            "perHitTaken": 6,
-            "perBlock": 10,
+            "perSwing": 5,
+            "perHitTaken": 0,
+            "perBlock": 0,
             "decayAfter": 10,
             "decayPerSecond": 3,
-            "healPerSpent": 0.2
+            "healPerSpent": 0,
+            "damageBonusAtMax": 18,
+            "weaponCadence": true
           }
         ]
       },
       "trait": {
         "id": "weaponMaster",
         "name": "Weapon Master",
-        "desc": "Heavy Strike, Cleave and Brace change with the weapons you hold: a weapon on its own, two weapons, or a weapon and shield. Spending Resolve heals you for 2% of your health per 10 spent."
+        "desc": "Attack to build Fury. Full Fury adds up to 18% damage. Slow and fast weapons generate comparable Fury over time."
       },
       "defensive": "brace",
-      "abilities": ["heavyStrike", "crushingBlow", "cleave", "lunge", "battleCry", "brace", "shieldBreak", "rend"],
-      "bar": ["heavyStrike", null, null, null, null, null],
-      "trained": [
-        {"ability": "crushingBlow", "trainer": "brask", "level": 3, "cost": 10},
-        {"ability": "brace", "trainer": "brask", "level": 4, "cost": 25},
-        {"ability": "cleave", "trainer": "brask", "level": 6, "cost": 50}
+      "abilities": [
+        "heavyStrike",
+        "crushingBlow",
+        "rend",
+        "cleave",
+        "lunge",
+        "berserk",
+        "twinFang",
+        "flurry",
+        "crosscut",
+        "whirlwind",
+        "battleCry",
+        "brace"
       ],
-      "later": ["lunge", "battleCry", "shieldBreak", "rend"],
+      "bar": [
+        "heavyStrike",
+        "crushingBlow",
+        "rend",
+        "lunge",
+        "cleave",
+        "berserk"
+      ],
+      "trained": [
+        {
+          "ability": "twinFang",
+          "trainer": "brask",
+          "level": 5,
+          "cost": 0
+        },
+        {
+          "ability": "flurry",
+          "trainer": "brask",
+          "level": 8,
+          "cost": 0
+        },
+        {
+          "ability": "crosscut",
+          "trainer": "brask",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "whirlwind",
+          "trainer": "brask",
+          "level": 20,
+          "cost": 0
+        },
+        {
+          "ability": "battleCry",
+          "trainer": "brask",
+          "level": 10,
+          "cost": 0
+        },
+        {
+          "ability": "brace",
+          "trainer": "brask",
+          "level": 4,
+          "cost": 0
+        }
+      ],
+      "later": [],
       "startingGear": {
         "mainHand": "worn_longsword",
         "offHand": "kite_shield",
         "chest": "travelling_clothes"
+      },
+      "legacyAbilities": [
+        "shieldBreak"
+      ],
+      "swapPool": [
+        "twinFang",
+        "flurry",
+        "crosscut",
+        "whirlwind",
+        "battleCry",
+        "brace"
+      ],
+      "coreLevels": {
+        "heavyStrike": 1,
+        "crushingBlow": 2,
+        "rend": 3,
+        "lunge": 4,
+        "cleave": 5,
+        "berserk": 8
       }
     },
     {
@@ -77,7 +155,10 @@
         "agility": 2,
         "stamina": 2
       },
-      "armourTypes": ["cloth", "leather"],
+      "armourTypes": [
+        "cloth",
+        "leather"
+      ],
       "shields": false,
       "dualWield": true,
       "resources": {
@@ -110,18 +191,88 @@
         "desc": "Your attacks from behind your target, or from Shadow, always crit."
       },
       "defensive": "guile",
-      "abilities": ["quickStrike", "doubleCut", "poisonedBlade", "sleep", "shadow", "guile"],
-      "bar": ["quickStrike", null, null, null, null, null],
-      "trained": [
-        {"ability": "doubleCut", "trainer": "nell", "level": 3, "cost": 10},
-        {"ability": "guile", "trainer": "nell", "level": 4, "cost": 25},
-        {"ability": "poisonedBlade", "trainer": "nell", "level": 6, "cost": 50}
+      "abilities": [
+        "shadow",
+        "quickStrike",
+        "poisonedBlade",
+        "assassinate",
+        "deathVenom",
+        "guile",
+        "sleep",
+        "doubleCut",
+        "cripplingCut",
+        "smokeBomb",
+        "distract",
+        "silencingBlade"
       ],
-      "later": ["sleep", "shadow"],
+      "bar": [
+        "quickStrike",
+        "shadow",
+        "poisonedBlade",
+        "guile",
+        "assassinate",
+        "deathVenom"
+      ],
+      "trained": [
+        {
+          "ability": "sleep",
+          "trainer": "nell",
+          "level": 4,
+          "cost": 0
+        },
+        {
+          "ability": "doubleCut",
+          "trainer": "nell",
+          "level": 5,
+          "cost": 0
+        },
+        {
+          "ability": "cripplingCut",
+          "trainer": "nell",
+          "level": 8,
+          "cost": 0
+        },
+        {
+          "ability": "smokeBomb",
+          "trainer": "nell",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "distract",
+          "trainer": "nell",
+          "level": 20,
+          "cost": 0
+        },
+        {
+          "ability": "silencingBlade",
+          "trainer": "nell",
+          "level": 10,
+          "cost": 0
+        }
+      ],
+      "later": [],
       "startingGear": {
         "mainHand": "rusty_dirk",
         "offHand": "rusty_dirk",
         "chest": "travelling_clothes"
+      },
+      "legacyAbilities": [],
+      "swapPool": [
+        "sleep",
+        "doubleCut",
+        "cripplingCut",
+        "smokeBomb",
+        "distract",
+        "silencingBlade"
+      ],
+      "coreLevels": {
+        "quickStrike": 1,
+        "shadow": 2,
+        "poisonedBlade": 3,
+        "guile": 4,
+        "assassinate": 5,
+        "deathVenom": 8
       }
     },
     {
@@ -143,7 +294,10 @@
         "agility": 2,
         "stamina": 2
       },
-      "armourTypes": ["cloth", "leather"],
+      "armourTypes": [
+        "cloth",
+        "leather"
+      ],
       "shields": false,
       "dualWield": false,
       "resources": {
@@ -168,19 +322,92 @@
         "desc": "From level 8 a hound joins you, attacks your target and keeps its attention. (The hound arrives in a later build: until then the Ranger relies on traps and Disengage.)"
       },
       "defensive": "disengage",
-      "abilities": ["quickShot", "flamingArrow", "tarTrap", "tripleShot", "longShot", "disengage", "venomArrow"],
-      "bar": ["quickShot", null, null, null, null, null],
-      "trained": [
-        {"ability": "flamingArrow", "trainer": "odo", "level": 3, "cost": 10},
-        {"ability": "disengage", "trainer": "odo", "level": 4, "cost": 25},
-        {"ability": "tarTrap", "trainer": "odo", "level": 6, "cost": 50}
+      "abilities": [
+        "quickShot",
+        "longShot",
+        "tarTrap",
+        "flamingArrow",
+        "tripleShot",
+        "disengage",
+        "pinningShot",
+        "venomArrow",
+        "concussionArrow",
+        "piercingShot",
+        "scatterShot",
+        "tripwire"
       ],
-      "later": ["tripleShot", "longShot", "venomArrow"],
+      "bar": [
+        "quickShot",
+        "longShot",
+        "tarTrap",
+        "disengage",
+        "flamingArrow",
+        "tripleShot"
+      ],
+      "trained": [
+        {
+          "ability": "pinningShot",
+          "trainer": "odo",
+          "level": 5,
+          "cost": 0
+        },
+        {
+          "ability": "venomArrow",
+          "trainer": "odo",
+          "level": 18,
+          "cost": 0
+        },
+        {
+          "ability": "concussionArrow",
+          "trainer": "odo",
+          "level": 8,
+          "cost": 0
+        },
+        {
+          "ability": "piercingShot",
+          "trainer": "odo",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "scatterShot",
+          "trainer": "odo",
+          "level": 10,
+          "cost": 0
+        },
+        {
+          "ability": "tripwire",
+          "trainer": "odo",
+          "level": 22,
+          "cost": 0
+        }
+      ],
+      "later": [],
       "startingGear": {
         "mainHand": "rusty_dirk",
         "ranged": "hunting_bow",
         "chest": "travelling_clothes",
-        "ammo": ["rough_arrow", 200]
+        "ammo": [
+          "rough_arrow",
+          200
+        ]
+      },
+      "legacyAbilities": [],
+      "swapPool": [
+        "pinningShot",
+        "venomArrow",
+        "concussionArrow",
+        "piercingShot",
+        "scatterShot",
+        "tripwire"
+      ],
+      "coreLevels": {
+        "quickShot": 1,
+        "longShot": 2,
+        "tarTrap": 3,
+        "disengage": 4,
+        "flamingArrow": 6,
+        "tripleShot": 8
       }
     },
     {
@@ -201,7 +428,9 @@
         "intellect": 2,
         "stamina": 2
       },
-      "armourTypes": ["cloth"],
+      "armourTypes": [
+        "cloth"
+      ],
       "shields": false,
       "dualWield": false,
       "resources": {
@@ -218,35 +447,106 @@
             "colour": "#8a4ac8",
             "max": 100,
             "start": "empty",
-            "perDotTick": 1.3333,
             "decayAfter": 6,
             "decayPerSecond": 5,
             "overload": {
-              "name": "Overcorrupted",
+              "name": "OVERCORRUPTED",
               "damageBonus": 20,
               "healthLossPercent": 2
-            }
+            },
+            "damageBonusAtMax": 35
           }
         ]
       },
       "trait": {
         "id": "leech",
-        "name": "Leech",
-        "dotHealPercent": 15,
-        "desc": "15% of all the damage your curses and rots deal over time heals you. Every tick builds Corruption: at 100 you are Overcorrupted, dealing 20% more damage but losing 2% of your health a second until you Purge."
+        "name": "Corruption",
+        "desc": "Rot and Siphon Life build Corruption. Damage from curses and drains increases with Corruption, up to +35%. At full Corruption you lose 2% maximum health per second.",
+        "dotHealPercent": 12
       },
       "defensive": "siphonLife",
-      "abilities": ["blightBolt", "rot", "graveBloom", "hexOfWithering", "purge", "siphonLife"],
-      "bar": ["blightBolt", null, null, null, null, null],
-      "trained": [
-        {"ability": "rot", "trainer": "grue", "level": 3, "cost": 10},
-        {"ability": "siphonLife", "trainer": "grue", "level": 4, "cost": 25},
-        {"ability": "graveBloom", "trainer": "grue", "level": 6, "cost": 50}
+      "abilities": [
+        "blightBolt",
+        "rot",
+        "siphonLife",
+        "soulWard",
+        "hexOfWithering",
+        "purge",
+        "graveBloom",
+        "erupt",
+        "reap",
+        "graspingDead",
+        "bloodPact",
+        "dread"
       ],
-      "later": ["hexOfWithering", "purge"],
+      "bar": [
+        "blightBolt",
+        "rot",
+        "soulWard",
+        "hexOfWithering",
+        "siphonLife",
+        "purge"
+      ],
+      "trained": [
+        {
+          "ability": "graveBloom",
+          "trainer": "grue",
+          "level": 5,
+          "cost": 0,
+          "quest": "sf_class_occultist"
+        },
+        {
+          "ability": "erupt",
+          "trainer": "grue",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "reap",
+          "trainer": "grue",
+          "level": 8,
+          "cost": 0
+        },
+        {
+          "ability": "graspingDead",
+          "trainer": "grue",
+          "level": 18,
+          "cost": 0
+        },
+        {
+          "ability": "bloodPact",
+          "trainer": "grue",
+          "level": 22,
+          "cost": 0
+        },
+        {
+          "ability": "dread",
+          "trainer": "grue",
+          "level": 10,
+          "cost": 0
+        }
+      ],
+      "later": [],
       "startingGear": {
         "mainHand": "ritual_knife",
         "chest": "frayed_robe"
+      },
+      "legacyAbilities": [],
+      "swapPool": [
+        "graveBloom",
+        "erupt",
+        "reap",
+        "graspingDead",
+        "bloodPact",
+        "dread"
+      ],
+      "coreLevels": {
+        "blightBolt": 1,
+        "rot": 2,
+        "soulWard": 3,
+        "hexOfWithering": 4,
+        "siphonLife": 5,
+        "purge": 8
       }
     },
     {
@@ -267,10 +567,16 @@
         "strength": 2,
         "stamina": 3
       },
-      "armourTypes": ["cloth", "leather", "mail", "plate"],
+      "armourTypes": [
+        "cloth",
+        "leather",
+        "plate"
+      ],
       "shields": true,
       "dualWield": false,
-      "bannedWeaponTypes": ["dagger"],
+      "bannedWeaponTypes": [
+        "dagger"
+      ],
       "resources": {
         "mana": {
           "base": 120,
@@ -278,44 +584,232 @@
           "regenPerSecond": 0,
           "regenOutOfCombat": 5
         },
-        "bars": []
+        "bars": [
+          {
+            "id": "conviction",
+            "name": "Conviction",
+            "colour": "#f4ce69",
+            "max": 5,
+            "start": "empty",
+            "points": true,
+            "perSwing": 1
+          }
+        ]
       },
       "trait": {
-        "id": "empoweredLight",
-        "name": "Empowered Light",
-        "echoPercent": 30,
-        "desc": "Your weapon swings echo with a holy hit for 30% extra damage."
+        "id": "echoesOfLight",
+        "name": "Echoes of Light",
+        "desc": "Spend three Conviction on Hammer or Storm to roll for up to three echoes. Each deals 35% of the original hit and inherits its critical result."
       },
       "defensive": "lightShield",
       "abilities": [
         "holyStrike",
+        "lightShield",
         "lightsHammer",
         "divineStorm",
-        "hallowedGround",
         "bringToKneel",
-        "lightShield",
-        "smite",
-        "rebuke",
-        "hallowedBolt",
         "mendingPrayer",
-        "quickMend",
-        "renewingLight",
-        "swiftRenewal",
-        "circleOfMending",
+        "hallowedGround",
         "radiantNova",
+        "rebuke",
+        "quickMend",
+        "hallowedBolt",
         "thornedVow"
       ],
-      "bar": ["holyStrike", null, null, null, null, null],
-      "trained": [
-        {"ability": "lightsHammer", "trainer": "aveline", "level": 3, "cost": 10},
-        {"ability": "lightShield", "trainer": "aveline", "level": 4, "cost": 25},
-        {"ability": "divineStorm", "trainer": "aveline", "level": 6, "cost": 50}
+      "bar": [
+        "holyStrike",
+        "lightShield",
+        "mendingPrayer",
+        "lightsHammer",
+        "bringToKneel",
+        "divineStorm"
       ],
-      "later": ["hallowedGround", "bringToKneel", "smite", "rebuke", "hallowedBolt"],
+      "trained": [
+        {
+          "ability": "hallowedGround",
+          "trainer": "aveline",
+          "level": 5,
+          "cost": 0
+        },
+        {
+          "ability": "radiantNova",
+          "trainer": "aveline",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "rebuke",
+          "trainer": "aveline",
+          "level": 10,
+          "cost": 0
+        },
+        {
+          "ability": "quickMend",
+          "trainer": "aveline",
+          "level": 8,
+          "cost": 0,
+          "quest": "sf_class_paladin"
+        },
+        {
+          "ability": "hallowedBolt",
+          "trainer": "aveline",
+          "level": 18,
+          "cost": 0
+        },
+        {
+          "ability": "thornedVow",
+          "trainer": "aveline",
+          "level": 22,
+          "cost": 0
+        }
+      ],
+      "later": [],
       "startingGear": {
         "mainHand": "worn_longsword",
         "offHand": "kite_shield",
         "chest": "travelling_clothes"
+      },
+      "legacyAbilities": [
+        "smite",
+        "renewingLight",
+        "swiftRenewal",
+        "circleOfMending"
+      ],
+      "swapPool": [
+        "hallowedGround",
+        "radiantNova",
+        "rebuke",
+        "quickMend",
+        "hallowedBolt",
+        "thornedVow"
+      ],
+      "coreLevels": {
+        "holyStrike": 1,
+        "lightShield": 2,
+        "mendingPrayer": 3,
+        "lightsHammer": 4,
+        "bringToKneel": 6,
+        "divineStorm": 8
+      }
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "mainStat": "intellect",
+      "base": {
+        "strength": 1,
+        "agility": 2,
+        "intellect": 9,
+        "stamina": 6,
+        "armour": 0,
+        "resistance": 0,
+        "block": 0,
+        "haste": 0
+      },
+      "perLevel": {
+        "intellect": 2,
+        "stamina": 2
+      },
+      "armourTypes": [
+        "cloth"
+      ],
+      "shields": false,
+      "dualWield": false,
+      "resources": {
+        "mana": {
+          "base": 105,
+          "perIntellect": 9,
+          "regenPerSecond": 2,
+          "regenOutOfCombat": 7
+        },
+        "bars": []
+      },
+      "trait": {
+        "id": "spellweaver",
+        "name": "Spellweaver",
+        "desc": "Firebolt consumes Chill for a steam burst. Arcane magic lets you shape fights with wards, sigils and displacement."
+      },
+      "startingGear": {
+        "mainHand": "ritual_knife",
+        "chest": "frayed_robe"
+      },
+      "legacyAbilities": [],
+      "abilities": [
+        "firebolt",
+        "frostLance",
+        "stormfield",
+        "frostRing",
+        "blink",
+        "arcaneWard",
+        "arcaneBolt",
+        "echoSigil",
+        "forceWave",
+        "collapseWard",
+        "meteor",
+        "chainLightning"
+      ],
+      "bar": [
+        "firebolt",
+        "frostLance",
+        "arcaneWard",
+        "frostRing",
+        "blink",
+        "stormfield"
+      ],
+      "swapPool": [
+        "arcaneBolt",
+        "echoSigil",
+        "forceWave",
+        "collapseWard",
+        "meteor",
+        "chainLightning"
+      ],
+      "trained": [
+        {
+          "ability": "arcaneBolt",
+          "trainer": "grue",
+          "level": 5,
+          "cost": 0
+        },
+        {
+          "ability": "echoSigil",
+          "trainer": "grue",
+          "level": 8,
+          "cost": 0
+        },
+        {
+          "ability": "forceWave",
+          "trainer": "grue",
+          "level": 10,
+          "cost": 0
+        },
+        {
+          "ability": "collapseWard",
+          "trainer": "grue",
+          "level": 14,
+          "cost": 0
+        },
+        {
+          "ability": "meteor",
+          "trainer": "grue",
+          "level": 18,
+          "cost": 0
+        },
+        {
+          "ability": "chainLightning",
+          "trainer": "grue",
+          "level": 22,
+          "cost": 0
+        }
+      ],
+      "later": [],
+      "coreLevels": {
+        "firebolt": 1,
+        "frostLance": 2,
+        "arcaneWard": 3,
+        "frostRing": 4,
+        "blink": 6,
+        "stormfield": 8
       }
     }
   ]

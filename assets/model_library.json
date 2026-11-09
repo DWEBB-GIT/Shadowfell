@@ -42,7 +42,7 @@
     "hound": "res://assets/models/characters/hound.glb",
     "hound_meat": "res://assets/models/items/supplies/hound_meat.glb",
     "hound_pelt": "res://assets/models/items/supplies/hound_pelt.glb",
-    "hunting_bow": "res://assets/models/items/weapons/hunting_bow.glb",
+    "hunting_bow": "res://assets/models/weapons/hunting_bow.tscn",
     "innkeeper": "res://assets/models/characters/innkeeper.glb",
     "inn_front": "res://assets/models/environment/buildings/inn_front.glb",
     "inn_roof": "res://assets/models/environment/buildings/inn_roof.glb",
@@ -90,6 +90,10 @@
     "well": "res://assets/models/environment/props/well.glb",
     "wheel": "res://assets/models/environment/props/wheel.glb",
     "witchbane": "res://assets/models/items/weapons/witchbane.glb",
-    "worn_sword": "res://assets/models/items/supplies/worn_sword.glb"
+    "worn_sword": "res://assets/models/items/supplies/worn_sword.glb",
+    "oak_club": "res://assets/models/weapons/oak_club.tscn",
+    "ironwood_club": "res://assets/models/weapons/ironwood_club.tscn",
+    "greatsword": "res://assets/models/weapons/greatsword.tscn",
+    "fx_meteor": "res://assets/models/fx/fx_meteor.tscn"
   }
 }

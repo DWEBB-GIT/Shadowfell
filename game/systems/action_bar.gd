@@ -39,8 +39,10 @@ var had_bow := false
 
 ## a class's starting bar: its six spells, then on the consumable slots a
 ## draught, food and a drink for a class with mana
-static func default_bar(archetype: Dictionary) -> Array:
-	var out: Array = archetype.bar.duplicate()
+static func default_bar(archetype: Dictionary, level := 1) -> Array:
+	var levels: Dictionary = archetype.get("coreLevels", {})
+	var out: Array = archetype.bar.filter(func(id): return int(levels.get(id, 1)) <= level)
+	out.resize(6)
 	var drink = "item:" + STARTER_DRINK if archetype.get("resources", {}).has("mana") else null
 	out.append_array(["item:healing_draught", "item:" + STARTER_FOOD, drink, null])
 	return out
@@ -94,7 +96,7 @@ static func utility_ok(a) -> bool:
 
 ## may this ability sit on the bar (and show in the spellbook)?
 static func bar_ability(g, id) -> bool:
-	return DB.abilities.has(id) and DB.abilities[id].get("bar", true) != false and not BELT_ABILITIES.has(id) and g.skills.knows_ability(id)
+	return id not in ["strike", "autoShot"] and DB.abilities.has(id) and DB.abilities[id].get("bar", true) != false and not BELT_ABILITIES.has(id) and g.skills.knows_ability(id)
 
 
 func _init(g) -> void:
@@ -118,7 +120,7 @@ func add_bow_abilities() -> void:
 
 
 func reset() -> void:
-	apply(default_bar(game.stats.archetype))
+	apply(default_bar(game.stats.archetype, game.progression.level))
 
 
 ## may `a` go in slot `index`? (says why not if it may not)
@@ -132,7 +134,7 @@ func fits(a, index: int) -> bool:
 
 ## Swap two slots (either may be empty).
 func move(from: int, to: int) -> void:
-	if from == to:
+	if from == to or (from < 6 or to < 6) and not _can_swap_spells():
 		return
 	if not fits(slots[from], to) or not fits(slots[to], from):
 		return
@@ -145,6 +147,8 @@ func move(from: int, to: int) -> void:
 ## Put an ability in a slot; it leaves any slot it was in, and whatever was
 ## in the target slot goes back to the spellbook.
 func place(ability, index: int) -> void:
+	if index < 6 and not _can_swap_spells():
+		return
 	if item_ref(ability) == null and not bar_ability(game, ability):
 		return
 	if not fits(ability, index):
@@ -157,6 +161,8 @@ func place(ability, index: int) -> void:
 
 
 func remove(index: int) -> void:
+	if index < 6 and not _can_swap_spells():
+		return
 	if not slots[index]:
 		return
 	slots[index] = null
@@ -165,6 +171,7 @@ func remove(index: int) -> void:
 
 ## Which abilities fire this frame, given which slots were triggered.
 func actions(triggered: Array) -> Dictionary:
+	game.skills.flush_new_spells()
 	var out := {}
 	for i in triggered.size():
 		if triggered[i] and i < slots.size() and slots[i]:
@@ -188,6 +195,8 @@ func _changed() -> void:
 
 ## Put an item on the bar.
 func place_item(id: String, index: int) -> void:
+	if index < 0 or index >= slots.size() or (index < 6 and not _can_swap_spells()):
+		return
 	if not DB.items.has(id):
 		return
 	var ref := "item:" + id
@@ -218,12 +227,25 @@ func apply(saved: Array) -> void:
 		var a = list[i] if i < list.size() else null
 		if typeof(a) == TYPE_STRING and RENAMED.has(a):
 			a = RENAMED[a]
+		if a == "ambush":
+			a = "quickStrike"
+		elif a == "vanish":
+			a = "shadow"
+		if i < 6 and (game.stats.archetype.get("legacyAbilities", []).has(a) or game.stats.archetype.get("coreLevels", {}).has(a)) and not game.skills.knows_ability(a):
+			game.skills.keep_legacy_ability(a)
 		var ok: bool = _valid_entry(a) and (item_ref(a) != null or bar_ability(game, a)) and (not is_slot_utility(i) or utility_ok(a))
 		slots.append(a if ok else null)
 	# a bar saved before the class kits: its empty spell slots take the base
 	# kit's spells it lacks
 	for a in game.stats.archetype.get("bar", []):
 		var free := free_spell_slot(slots)
-		if a and free >= 0 and not slots.has(a):
+		if a and free >= 0 and not slots.has(a) and bar_ability(game, a):
 			slots[free] = a
 	_changed()
+
+
+func _can_swap_spells() -> bool:
+	if not game.resources.in_combat and not game.targeting.attacking:
+		return true
+	game.hud.error("Change equipped abilities outside combat.")
+	return false

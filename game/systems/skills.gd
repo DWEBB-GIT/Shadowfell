@@ -15,11 +15,13 @@ var tiers := {} ## laddered skill id -> trainer rank reached (0 Novice, 1 Appren
 var perks := {} ## laddered skill id -> { "10": perk id, ... }
 var capped_told := {} ## skills already told they are at their rank's cap (this session)
 var spells: Array = [] ## class spells learned from a trainer
+var pending_core_bar: Array = []
 var all_spells := false ## a test hook: every class spell
 
 
 func _init(g) -> void:
 	game = g
+	game.events.on("levelUp", func(e): _learn_core_at(int(e.level)))
 
 
 func reset() -> void:
@@ -29,6 +31,7 @@ func reset() -> void:
 	perks = {}
 	capped_told = {}
 	spells = []
+	pending_core_bar.clear()
 
 
 func has(id: String) -> bool:
@@ -89,11 +92,21 @@ func knows_ability(ability) -> bool:
 	var book: Array = game.stats.archetype.get("abilities", [])
 	if book.has(ability):
 		return not needs_training(ability)
+	if game.stats.archetype.get("legacyAbilities", []).has(ability):
+		return spells.has(ability)
+	if ability == "vanish":
+		return book.has("shadow") and not needs_training("shadow")
 	for id in book:
 		var b: Dictionary = DB.abilities.get(id, {})
 		if (b.get("inShadow") == ability or b.get("follow") == ability) and not needs_training(id):
 			return true
 	return false
+
+
+func keep_legacy_ability(ability: String) -> void:
+	var archetype: Dictionary = game.stats.archetype
+	if (archetype.get("legacyAbilities", []).has(ability) or archetype.get("coreLevels", {}).has(ability)) and not spells.has(ability):
+		spells.append(ability)
 
 
 ## the class's trainer entry for a spell ({ability, trainer, level, cost,
@@ -110,7 +123,8 @@ func trained_entry(ability) -> Dictionary:
 func needs_training(ability) -> bool:
 	if all_spells or spells.has(ability):
 		return false
-	return not trained_entry(ability).is_empty() or game.stats.archetype.get("later", []).has(ability)
+	var unlock: int = game.stats.archetype.get("coreLevels", {}).get(ability, 1)
+	return game.progression.level < unlock or not trained_entry(ability).is_empty() or game.stats.archetype.get("later", []).has(ability)
 
 
 ## The name of the quest a trainer entry waits on (its `quest`, not yet
@@ -141,10 +155,43 @@ func learn_spell(ability: String) -> bool:
 		events.emit("log", {"text": "You need %s to learn %s." % [U.money(cost), a.name], "kind": "muted", "throttle": "train-coins"})
 		return false
 	game.inventory.lose_coins(cost)
+	return _add_spell(ability)
+
+
+## A class quest teaches a spell outright: no trainer, level or fee.
+func grant_spell(ability: String) -> bool:
+	if not DB.abilities.has(ability) or spells.has(ability):
+		return false
+	return _add_spell(ability)
+
+
+## Core lessons arrive with a level. Existing saved learned spells remain known.
+func _learn_core_at(level: int) -> void:
+	for ability in game.stats.archetype.get("coreLevels", {}):
+		if game.stats.archetype.coreLevels[ability] == level and not spells.has(ability):
+			_add_spell(ability)
+
+
+func flush_new_spells() -> void:
+	if pending_core_bar.is_empty() or game.resources.in_combat or game.targeting.attacking:
+		return
+	for ability in pending_core_bar:
+		var free := ActionBar.free_spell_slot(game.action_bar.slots)
+		if free >= 0 and not game.action_bar.slots.has(ability):
+			game.action_bar.place(ability, free)
+	pending_core_bar.clear()
+
+
+func _add_spell(ability: String) -> bool:
+	var events: Events = game.events
+	var a: Dictionary = DB.abilities[ability]
 	spells.append(ability)
 	var free := ActionBar.free_spell_slot(game.action_bar.slots)
 	if free >= 0:
-		game.action_bar.place(ability, free)
+		if game.resources.in_combat or game.targeting.attacking:
+			pending_core_bar.append(ability)
+		else:
+			game.action_bar.place(ability, free)
 	events.emit("log", {"text": "You learn %s. It is in your spellbook (P)." % a.name, "kind": "level"})
 	if game.hud:
 		game.hud.toast("Learned: %s" % a.name)
@@ -168,6 +215,19 @@ func learn(id: String) -> bool:
 		events.emit("log", {"text": "You need %s to learn %s." % [U.money(s.cost), s.name], "kind": "muted", "throttle": "train-coins"})
 		return false
 	inventory.lose_coins(s.cost)
+	return _add_skill(id)
+
+
+## A trainer's quest teaches the skill as its reward: no fee.
+func grant(id: String) -> bool:
+	if not DB.skills.has(id) or has(id):
+		return false
+	return _add_skill(id)
+
+
+func _add_skill(id: String) -> bool:
+	var s = DB.skills[id]
+	var events: Events = game.events
 	ranks[id] = 1
 	if laddered(id):
 		tiers[id] = 0

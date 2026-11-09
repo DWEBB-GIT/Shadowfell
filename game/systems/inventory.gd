@@ -5,8 +5,10 @@ extends RefCounted
 ## and tests share:
 ##   'b:<socket>:<slot>'  a slot inside a bag
 ##   'e:<slotId>'         a character equipment slot
-##   's:<socket>'         a bag socket (1-3, or 4 for the tool pack)
+##   's:<socket>'         a bag socket (1-3, 4 for the tool pack, 5 for the
+##                        materials pouch)
 ##   'e:ammo'             the ammo slot: which arrows Auto Shot uses
+##   'v:<slot>'           a slot in your bank vault (Bank), kept per character
 
 const AMMO_LOC := "e:ammo"
 
@@ -16,6 +18,7 @@ var sockets: Array = []
 var equipment := {}
 var ammo_choice = null
 var prev_off_hand = null
+var bank: Array = [] ## the bank vault's slots (stacks or null), see Bank
 
 
 func _init(g) -> void:
@@ -31,6 +34,8 @@ static func parse_loc(loc: String) -> Dictionary:
 		return {"type": "equip", "slot": p[1]}
 	if p[0] == "s":
 		return {"type": "socket", "socket": int(p[1])}
+	if p[0] == "v":
+		return {"type": "bank", "slot": int(p[1])}
 	return {}
 
 
@@ -53,14 +58,17 @@ static func _empty_slots(n: int) -> Array:
 
 func reset() -> void:
 	coins = DB.CONFIG.player.startCoins
-	sockets = [{"id": "backpack", "slots": _empty_slots(Items.BACKPACK_SLOTS)}, null, null, null, null]
+	sockets = [{"id": "backpack", "slots": _empty_slots(Items.BACKPACK_SLOTS)}, null, null, null, null, null]
+	bank = _empty_slots(int(DB.CONFIG.bank.slots))
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = null
-	# everyone starts with a small belt pouch, so the tool belt is its own
-	# place from the start and a bought rod never shows in the bags too
-	# (Dan, 2026-11-02); the Warden's tool pack replaces it
-	sockets[Items.TOOL_SOCKET] = {"id": STARTER_POUCH, "slots": _empty_slots(int(Items.get_def(STARTER_POUCH).bagSlots))}
+	# no tool belt at the start: the utility belt (belt_pouch) is the first
+	# quest's reward, and the belt's button and key appear once it is worn
+	# (Dan, 2026-11-04); the Warden's tool pack replaces it later
+	# and a materials pouch in its own slot: ores, gems, fish, hides and
+	# stones go there first, so they leave the bags free (Dan, 2026-11-03)
+	_give_material_pouch()
 	sockets[0].slots[0] = {"id": "healing_draught", "count": DB.CONFIG.player.startDraughts}
 	ammo_choice = null
 	var arch: Dictionary = game.stats.archetype if game.stats else DB.archetypes[DB.CONFIG.player.archetype]
@@ -94,6 +102,8 @@ func get_at(loc: String):
 		return s.slots[p.slot] if s and p.slot < s.slots.size() else null
 	if p.type == "equip":
 		return equipment.get(p.slot)
+	if p.type == "bank":
+		return bank[p.slot] if p.slot >= 0 and p.slot < bank.size() else null
 	if p.type == "socket":
 		var s = sockets[p.socket] if p.socket < sockets.size() else null
 		return {"id": s.id, "count": 1} if s and s.id != "backpack" else null
@@ -230,6 +240,25 @@ var quiver_haste: float:
 				best = maxf(best, Items.get_def(s.id).get("rangedHaste", 0))
 		return best
 
+## a gathering quiver in a bag slot brings back some of the arrows you
+## loose (percent; the best one counts)
+var ammo_recover: float:
+	get:
+		var best := 0.0
+		for s in sockets:
+			if s:
+				best = maxf(best, Items.get_def(s.id).get("ammoRecover", 0))
+		return best
+
+## Loose one arrow: it leaves the bags unless a gathering quiver brings it
+## back (a chance of ammoRecover percent each shot).
+func spend_arrow(id: String) -> void:
+	var keep := ammo_recover
+	if keep > 0 and game.random.call() * 100.0 < keep:
+		game.events.emit("log", {"text": "Your quiver gathers back a spent arrow.", "kind": "muted", "throttle": "ammo-recover"})
+		return
+	remove_count(id, 1)
+
 ## a working bow in the ranged slot, else null
 var ranged_weapon:
 	get:
@@ -264,6 +293,8 @@ func _put(loc: String, stack) -> void:
 		sockets[p.socket].slots[p.slot] = stack
 	elif p.type == "equip":
 		equipment[p.slot] = stack
+	elif p.type == "bank":
+		bank[p.slot] = stack
 	elif p.type == "socket":
 		sockets[p.socket] = {"id": stack.id, "slots": _empty_slots(int(Items.get_def(stack.id).bagSlots))} if stack else null
 
@@ -338,6 +369,51 @@ func _fit_tool_pack(id: String) -> void:
 					_insert(st.id, st.get("count", 1), st.get("rolls"))
 	_stow_tools()
 	game.events.emit("log", {"text": "Your tools go into the %s, out of your bags." % Items.get_def(id).name.to_lower(), "kind": "loot"})
+	# the first belt opens the tool belt (Dan, 2026-11-04)
+	if not old and game.hud:
+		game.hud.toast("Tool belt unlocked: press %s" % game.keys.label("toolbelt").split(" / ")[0])
+
+
+## The fixed materials pouch everyone carries in its own socket.
+func _give_material_pouch() -> void:
+	while sockets.size() <= Items.MATERIAL_SOCKET:
+		sockets.append(null)
+	if sockets[Items.MATERIAL_SOCKET] == null:
+		sockets[Items.MATERIAL_SOCKET] = {"id": Items.MATERIAL_POUCH, "slots": _empty_slots(int(Items.get_def(Items.MATERIAL_POUCH).bagSlots))}
+
+
+## Move materials lying in the ordinary bags into free pouch slots
+## (saves from before the pouch), topping up stacks first.
+func _stow_materials() -> void:
+	var pouch = sockets[Items.MATERIAL_SOCKET] if sockets.size() > Items.MATERIAL_SOCKET else null
+	if not pouch:
+		return
+	var prefix := "b:%d:" % Items.MATERIAL_SOCKET
+	var holds = _bag_holds(Items.MATERIAL_SOCKET)
+	for loc in bag_locations():
+		if loc.begins_with(prefix):
+			continue
+		var s = get_at(loc)
+		if s == null or not holds.has(Items.get_def(s.id).get("kind")):
+			continue
+		var left: int = s.count
+		var cap := int(Items.get_def(s.id).stack)
+		for j in pouch.slots.size():
+			var p = pouch.slots[j]
+			if left <= 0:
+				break
+			if p == null:
+				pouch.slots[j] = s.duplicate(true)
+				pouch.slots[j].count = mini(cap, left)
+				left -= pouch.slots[j].count
+			elif p.id == s.id and p.get("rolls") == null and s.get("rolls") == null and p.count < cap:
+				var k := mini(cap - p.count, left)
+				p.count += k
+				left -= k
+		if left <= 0:
+			_put(loc, null)
+		else:
+			s.count = left
 
 
 ## Move tools lying in the ordinary bags into free tool pack slots.
@@ -462,7 +538,7 @@ func take(loc: String, n := 1 << 30):
 	if s == null:
 		return null
 	var p := parse_loc(loc)
-	if p.type == "socket" and not _bag_empty(p.socket):
+	if p.type == "socket" and (p.socket == Items.MATERIAL_SOCKET or not _bag_empty(p.socket)):
 		return null
 	var k := mini(n, s.count)
 	if k >= s.count:
@@ -500,20 +576,40 @@ func accepts(loc: String, stack) -> bool:
 	if p.type == "socket":
 		if p.socket == Items.TOOL_SOCKET:
 			return def.get("toolPack", false)
+		if p.socket == Items.MATERIAL_SOCKET:
+			return false
 		return p.socket > 0 and p.socket < Items.BAG_SOCKETS and def.kind == "bag" and not def.get("toolPack", false)
 	if p.type == "bag":
 		var h = _bag_holds(p.socket)
 		var bag = sockets[p.socket] if p.socket < sockets.size() else null
-		return not def.get("toolPack", false) and bag != null and p.slot < bag.slots.size() and (h == null or h.has(def.kind))
+		return not def.get("toolPack", false) and not def.get("materialPouch", false) and bag != null and p.slot < bag.slots.size() and (h == null or h.has(def.kind))
+	if p.type == "bank":
+		# anything but quest items, which stay with you (and the tool pack)
+		return p.slot >= 0 and p.slot < bank.size() and not def.get("quest", false) and not def.get("toolPack", false) and not def.get("materialPouch", false)
 	return false
 
 
 ## Armour types, shields and dual wielding are limited by archetype, as in WoW.
+## The level a piece of gear needs: its own `requiredLevel`, else its base
+## item level (refining raises item level but never the requirement).
+static func required_level(def: Dictionary) -> int:
+	if not def.get("slot"):
+		return 0
+	var base: Dictionary = DB.raw_items.get(def.get("id", ""), def)
+	return int(def.get("requiredLevel", base.get("itemLevel", 0)))
+
+
 func can_wear(def: Dictionary, slot = null) -> bool:
 	var a: Dictionary = game.stats.archetype
+	if required_level(def) > game.progression.level:
+		return false
 	if def.has("armourType") and not a.armourTypes.has(def.armourType):
 		return false
 	if def.kind == "shield" and not a.get("shields", false):
+		return false
+	if slot == "mainHand" and def.get("weaponType") == "twoHand" and equipment.get("offHand") != null:
+		return false
+	if slot == "offHand" and weapon != null and weapon.get("weaponType") == "twoHand":
 		return false
 	if slot == "offHand" and def.kind == "weapon" and not a.get("dualWield", false):
 		return false
@@ -534,9 +630,10 @@ func move(from: String, to: String) -> Dictionary:
 	var b = get_at(to)
 	if a == null:
 		return {"ok": false, "reason": ""}
-	# a rune scroll dropped on a weapon (worn or bagged) enchants it
+	# a rune dropped on a weapon: runes are fused at a rune forge now
+	# (Dan, 2026-11-03), so it only says where to go
 	if b != null and Items.get_def(a.id).get("rune") and Items.get_def(b.id).get("kind") == "weapon":
-		return {"ok": game.runes.drop_on(from, to), "reason": ""}
+		return _refuse("Runes are fused to weapons at a rune forge.")
 	var pf := parse_loc(from)
 	var pt := parse_loc(to)
 	# a bag moves between bag sockets with its contents
@@ -557,7 +654,7 @@ func move(from: String, to: String) -> Dictionary:
 	if not accepts(to, a):
 		return _refuse(_why(to, a))
 	var stack_max := int(Items.get_def(a.id).stack)
-	if b and b.id == a.id and stack_max > 1 and pt.type == "bag" and pf.type == "bag":
+	if b and b.id == a.id and stack_max > 1 and ["bag", "bank"].has(pt.type) and ["bag", "bank"].has(pf.type):
 		var k := mini(stack_max - b.count, a.count)
 		b.count += k
 		a.count -= k
@@ -588,20 +685,27 @@ func _why(loc: String, stack: Dictionary) -> String:
 	var def := Items.get_def(stack.id)
 	var arch: Dictionary = game.stats.archetype
 	if p.type == "equip" and DB.slot_fits(p.slot, def.get("slot")) and not can_wear(def, p.slot):
+		if required_level(def) > game.progression.level:
+			return "You must be level %d to use the %s." % [required_level(def), def.name]
 		if def.has("weaponType") and arch.get("bannedWeaponTypes", []).has(def.weaponType):
 			return "A %s cannot use %ss." % [arch.name, def.weaponType]
+		if def.get("weaponType") == "twoHand" or (p.slot == "offHand" and weapon != null and weapon.get("weaponType") == "twoHand"):
+			return "A two-handed weapon needs both hands. Empty the other hand first."
 		if def.kind == "weapon":
 			return "A %s cannot dual wield." % arch.name
 		var what: String = "shields" if def.kind == "shield" else "%s armour" % DB.armour_types[def.armourType].name.to_lower()
 		return "A %s cannot use %s." % [arch.name, what]
 	if p.type == "equip":
 		return "The %s does not go there." % def.name
-	if def.get("toolPack", false):
+	if p.type == "bank" and def.get("quest", false):
+		return "Quest items stay with you."
+	if def.get("toolPack", false) or def.get("materialPouch", false):
 		return "The %s stays in its own slot." % def.name.to_lower()
 	if p.type == "socket":
-		return "The backpack cannot be removed." if p.socket == 0 else "Only a tool pack goes in the tool slot." if p.socket == Items.TOOL_SOCKET else "Only bags go in bag slots."
+		return "The backpack cannot be removed." if p.socket == 0 else "The materials pouch stays in its own slot." if p.socket == Items.MATERIAL_SOCKET else "Only a tool pack goes in the tool slot." if p.socket == Items.TOOL_SOCKET else "Only bags go in bag slots."
 	if p.type == "bag" and _bag_holds(p.socket) != null:
-		return "Only %s go in the %s." % ["arrows" if _bag_holds(p.socket).has("ammo") else "tools", Items.get_def(sockets[p.socket].id).name.to_lower()]
+		var h: Array = _bag_holds(p.socket)
+		return "Only %s go in the %s." % ["arrows" if h.has("ammo") else "materials" if h.has("material") else "tools", Items.get_def(sockets[p.socket].id).name.to_lower()]
 	return "That will not fit there."
 
 
@@ -647,9 +751,10 @@ func use(loc: String) -> bool:
 			_refuse("Your bags are full.")
 			return false
 		return move(loc, free).ok
-	# a rune scroll: its rune goes on the main-hand weapon
+	# a rune: fused at a rune forge (Dan, 2026-11-03)
 	if def.get("rune"):
-		return game.runes.use_scroll(loc)
+		_refuse("Take the rune to a rune forge to fuse it to a weapon.")
+		return false
 	# a charm that casts an ability (the Homeward charm: Return Home)
 	if def.get("use", {}).has("ability"):
 		game.action_bar.clicked[def.use.ability] = true
@@ -851,6 +956,70 @@ func use_draught(loc = null) -> bool:
 	return true
 
 
+# ------------------------------------------------------------ bank
+## Every bank slot's location.
+func bank_locations() -> Array:
+	var out := []
+	for i in bank.size():
+		out.append("v:%d" % i)
+	return out
+
+
+## Move the whole stack at `from` into the place list `to_locs`: topping up
+## stacks of the same item first, then the first empty slot that takes it.
+## Returns true if all of it went.
+func _shift(from: String, to_locs: Array) -> bool:
+	var st = get_at(from)
+	if st == null:
+		return false
+	var stack_max := int(Items.get_def(st.id).get("stack", 1))
+	if stack_max > 1:
+		for l in to_locs:
+			var t = get_at(l)
+			if t != null and t.id == st.id and t.get("rolls") == st.get("rolls") and t.count < stack_max:
+				var k := mini(stack_max - int(t.count), int(st.count))
+				t.count += k
+				st.count -= k
+				if st.count <= 0:
+					_put(from, null)
+					_changed()
+					return true
+	for l in to_locs:
+		if get_at(l) == null and accepts(l, st):
+			_put(l, st)
+			_put(from, null)
+			_changed()
+			return true
+	_changed()
+	return false
+
+
+## Right-click with the bank open: a bag item goes into the vault...
+func deposit(from: String) -> bool:
+	var st = get_at(from)
+	if st == null or not from.begins_with("b:"):
+		return false
+	if Items.get_def(st.id).get("quest", false):
+		_refuse("Quest items stay with you.")
+		return false
+	if not _shift(from, bank_locations()):
+		_refuse("Your bank is full.")
+		return false
+	game.events.emit("bankChanged", {})
+	return true
+
+
+## ...and a vault item comes back to your bags.
+func withdraw(from: String) -> bool:
+	if get_at(from) == null or not from.begins_with("v:"):
+		return false
+	if not _shift(from, _slots_for(get_at(from).id)):
+		_refuse("Your bags are full.")
+		return false
+	game.events.emit("bankChanged", {})
+	return true
+
+
 # ------------------------------------------------------------ saving
 const HOME_CHARM := "homeward_charm" ## the backpack charm that casts Return Home
 
@@ -862,7 +1031,7 @@ func serialize() -> Dictionary:
 	var eq := {}
 	for k in equipment:
 		eq[k] = clone(equipment[k])
-	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice}
+	return {"coins": coins, "sockets": sk, "equipment": eq, "granted": ["kite_shield", HOME_CHARM], "ammo": ammo_choice, "bank": bank.map(func(x): return clone(x))}
 
 
 func apply(data: Dictionary) -> void:
@@ -876,6 +1045,19 @@ func apply(data: Dictionary) -> void:
 		back.pop_back()
 	while sockets.size() <= Items.TOOL_SOCKET:
 		sockets.append(null)
+	_give_material_pouch()
+	# the bank (saves from before it have none); a smaller vault in the
+	# config never loses what was in the slots beyond it
+	bank = _empty_slots(int(DB.CONFIG.bank.slots))
+	var kept: Array = data.get("bank", []) if data.get("bank") is Array else []
+	for i in kept.size():
+		var st = kept[i]
+		if st == null or not DB.items.has(st.get("id", "")):
+			continue
+		if i < bank.size():
+			bank[i] = clone(st)
+		else:
+			bank.append(clone(st))
 	equipment = {}
 	for s in DB.EQUIP_SLOTS:
 		equipment[s.id] = clone(data.equipment.get(s.id))
@@ -900,6 +1082,10 @@ func apply(data: Dictionary) -> void:
 				var st = s.slots[i]
 				if st and Items.get_def(st.id).get("becomes"):
 					st.id = Items.get_def(st.id).becomes
+	for st in bank:
+		if st and Items.get_def(st.id).get("becomes"):
+			st.id = Items.get_def(st.id).becomes
+	_stow_materials()
 	ammo_choice = data.get("ammo") if DB.items.has(data.get("ammo", "")) else null
 	if not data.get("granted", []).has("kite_shield"):
 		if not equipment.offHand:
