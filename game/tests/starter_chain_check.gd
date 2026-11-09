@@ -56,12 +56,13 @@ func _process(_dt: float) -> bool:
 		# the road in (Dan 2026-11-09): start on the west road, outside the town
 		var start: Array = DB.world.playerStart.position
 		check(Vector2(start[0], start[1]).distance_to(Vector2(-450, -207)) > 60, "a new player starts outside Thornford")
-		check(game.quests.active == ["ni_stretch_your_legs"], "the first quest is Bram's milestone (%s)" % [game.quests.active])
+		check(game.quests.active == ["ni_stretch_your_legs"], "the first quest is Abel's milestone (%s)" % [game.quests.active])
 		check(game.quests.status("sf_odd_jobs") == "locked", "Elsie's odd jobs wait for the road in")
 		run("ni_stretch_your_legs")
 		run("ni_rats_in_the_grain")
+		run("ni_loose_boar")
 		run("ni_the_road_in")
-		check(inv.count("ni_bram_note") == 0, "Bram's note is handed to Elsie")
+		check(inv.count("ni_abel_note") == 0, "Abel's note is handed to Elsie")
 		run("sf_odd_jobs")
 		check(inv.tool_pack != null and inv.tool_pack.id == "belt_pouch", "Iren's utility belt worn")
 		check(inv.count("sf_broken_hinge") == 0, "the hinge is handed over")

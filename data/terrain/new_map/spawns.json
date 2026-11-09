@@ -6,7 +6,7 @@
 	{"id": "ni_grain_rat_3", "enemy": "ni_grain_rat", "position": [-622, -162]},
 	{"id": "ni_grain_rat_4", "enemy": "ni_grain_rat", "position": [-633, -163]},
 	{"id": "ni_grain_rat_5", "enemy": "ni_grain_rat", "position": [-627, -157]},
-	{"id": "ni_post_fox", "enemy": "ni_post_fox", "position": [-557, -213]},
+	{"id": "ni_loose_boar", "enemy": "ni_loose_boar", "position": [-611, -168]},
 	{
 	  "id": "nm_skeleton_1",
 	  "enemy": "ghoul",
@@ -2800,7 +2800,7 @@
 	}
   ],
   "npcSpawns": [
-	{"npc": "ni_bram", "position": [-622, -179]},
+	{"npc": "ni_abel", "position": [-622, -179]},
 	{
 	  "npc": "test_vendor",
 	  "position": [
@@ -6210,7 +6210,7 @@
 	}
   ],
   "playerStart": {"position": [-617, -182], "facing": 100},
-  "openingText": "You wake on a carrier’s grain sacks as the cart lurches to a stop. A wheel has come off on the west road, a mile short of Thornford. You own the clothes you stand in and very little else. Bram Wenlock, the carrier, wants a word.",
+  "openingText": "You came off the boat at Mossreed Landing with no coin and no work, and talked a carrier into letting you ride his grain sacks up to Thornford. A mile short of the village, a wheel comes off. Abel Hurst, the carrier, wants a word.",
   "trainerOverrides": {
 	"brask": "tf_rowan",
 	"nell": "vr_rogue",
@@ -23863,9 +23863,8 @@
 	}
   ],
   "pois": [
-	{"id": "ni_roadside", "name": "Bram's Broken Cart", "kind": "camp", "at": [-624, -175], "noMarker": true, "note": "A carrier's cart with a wheel off, grain sacks split in the grass. Bram Wenlock waits on a wheelwright who is not coming.", "region": "tf_reach", "act": "Chapter 1"},
-	{"id": "ni_milestone", "name": "The West Road Milestone", "kind": "landmark", "at": [-594, -191], "note": "THORNFORD I MILE, cut deep. Below it, scratched more recently: AND STILL NO LIGHT.", "region": "tf_reach", "act": "Chapter 1"},
-	{"id": "ni_dark_lantern", "name": "The Dark Lantern Post", "kind": "story", "at": [-553, -207], "noMarker": true, "note": "The glass is whole and the wick is trimmed, but the oil well is dry and someone has wedged a strip of tin inside it, stamped with a closed eye. Whoever stopped lighting it did so on purpose.", "region": "tf_reach", "act": "Chapter 1"},
+	{"id": "ni_roadside", "name": "Abel's Broken Cart", "kind": "camp", "at": [-624, -175], "noMarker": true, "note": "A carrier's cart with a wheel off, grain sacks split in the grass. Abel Hurst, the Mossreed carrier, waits on a wheelwright.", "region": "tf_reach", "act": "Chapter 1"},
+	{"id": "ni_milestone", "name": "The West Road Milestone", "kind": "landmark", "at": [-594, -191], "note": "THORNFORD I MILE, cut deep. Someone has scratched a second, smaller line underneath: AND WORTH IT.", "region": "tf_reach", "act": "Chapter 1"},
 	{
 	  "id": "tf_town",
 	  "name": "Thornford",
@@ -25484,9 +25483,8 @@
 	}
   ],
   "subzones": [
-	{"id": "ni_roadside", "name": "Bram's Broken Cart", "at": [-626, -170], "radius": 16},
+	{"id": "ni_roadside", "name": "Abel's Broken Cart", "at": [-626, -170], "radius": 16},
 	{"id": "ni_milestone", "name": "The West Road Milestone", "at": [-594, -191], "radius": 8},
-	{"id": "ni_dark_lantern", "name": "The Dark Lantern Post", "at": [-553, -208], "radius": 10},
 	{
 	  "id": "nr_memorial_place",
 	  "name": "The Four Small Bells",
@@ -31092,6 +31090,7 @@
 	"opening": [
 	  "ni_stretch_your_legs",
 	  "ni_rats_in_the_grain",
+	  "ni_loose_boar",
 	  "ni_the_road_in",
 	  "sf_odd_jobs",
 	  "sf_hungry_work",

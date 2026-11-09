@@ -127,7 +127,7 @@ func _conversations() -> void:
 	_fresh()
 	var q = game.quests
 	check(q.status("ni_stretch_your_legs") == "active","The road in is in a fresh player's tracker")
-	for id in ["ni_stretch_your_legs","ni_rats_in_the_grain","ni_the_road_in"]:
+	for id in ["ni_stretch_your_legs","ni_rats_in_the_grain","ni_loose_boar","ni_the_road_in"]:
 		q.done[id] = true
 	q.accept("sf_odd_jobs", true)
 	check(q.status("sf_odd_jobs") == "active","Elsie's opening job follows the road in")
@@ -229,7 +229,7 @@ func _finish(id: String) -> void:
 func _choices() -> void:
 	_fresh()
 	game.progression.level=2
-	for id in ["ni_stretch_your_legs","ni_rats_in_the_grain","ni_the_road_in"]: game.quests.done[id]=true
+	for id in ["ni_stretch_your_legs","ni_rats_in_the_grain","ni_loose_boar","ni_the_road_in"]: game.quests.done[id]=true
 	game.quests.done.sf_odd_jobs=true
 	game.quests.done.vr_fence_dispute=true
 	check(game.quests.accept("in_boundary_agreement",true),"A negotiated fence resolution is offered")

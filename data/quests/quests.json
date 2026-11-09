@@ -1379,12 +1379,12 @@
         1,
         1
       ],
-      "giver": "ni_bram",
-      "turnIn": "ni_bram",
-      "summary": "Bram's cart has thrown a wheel on the west road. Walk to the milestone up the road, read it, and come back to him.",
-      "offer": "“Awake at last. You slept through the wheel coming off, which I count as a talent.” Bram Wenlock kicks the cart. “You rode the last forty miles on my grain sacks for nothing, so you can do me a turn. Walk up the road to the milestone and tell me how far we are from Thornford. My knees have opinions about walking.”",
-      "progress": "Walk with W, A, S and D (or the left stick); the road runs east. Press F beside the milestone to read it, then come back to Bram. Space hops over small things.",
-      "complete": "“One mile? Hah. It said one mile when I was a lad, too. Somebody keeps moving it closer to save face.” He spits, thoughtfully. “Good legs, anyway. Better than mine.”",
+      "giver": "ni_abel",
+      "turnIn": "ni_abel",
+      "summary": "Abel's cart has thrown a wheel on the road from Mossreed Landing. Walk on to the milestone, read how far it is to Thornford, and come back to him.",
+      "offer": "“Up you get. Wheel’s off.” Abel Hurst, the carrier, is already sitting in the road with his boots off. “I said you could ride on my sacks from Mossreed if you made yourself useful. Here is useful. Walk on to the milestone and tell me how far we are from Thornford. My feet and I are not speaking.”",
+      "progress": "Walk with W, A, S and D (or the left stick); the road runs east. Press F beside the milestone to read it, then come back to Abel. Space hops over small things.",
+      "complete": "“One mile? It has said one mile since I was a lad. I think somebody keeps moving it.” He wiggles his toes at the sky. “Still, one mile. Elsie will have my hide if her grain sits out here all night.”",
       "objectives": [
         {
           "id": "milestone",
@@ -1412,15 +1412,15 @@
         1,
         1
       ],
-      "giver": "ni_bram",
-      "turnIn": "ni_bram",
+      "giver": "ni_abel",
+      "turnIn": "ni_abel",
       "requires": [
         "ni_stretch_your_legs"
       ],
-      "summary": "Rats have found the sacks that spilled when Bram's wheel came off. Drive off four of them in the grass south of the road.",
-      "offer": "“Now the wheel is off, the rats are on. Listen to them. That is my grain they are chewing, and Elsie at the Lantern Inn has paid for half of it.” He hands you nothing at all. “You have hands and a weapon of sorts. Four of them, and the rest will get the hint.”",
-      "progress": "Left click a rat to choose it as your target (Tab cycles targets). Press 1, or right click it, to attack. Rats will not come to you; you go to them. If you get hurt, rest, or eat Trail Bread from your utility bar.",
-      "complete": "“That is the noise I like. No noise.” Bram knots a split sack shut. “You fight like someone who has never been taught. Thornford has people who teach that, if you can pay them. You cannot. Yet.”",
+      "summary": "Two sacks split when the wheel came off, and rats have found the grain. Drive off four of them in the grass beside the cart.",
+      "offer": "“Hear that? That is my grain being eaten. Two sacks split when the wheel went, and the rats were here before the dust settled.” He nods at whatever you are holding. “You have a weapon of sorts. Four of them, and the rest will take the hint.”",
+      "progress": "Left click a rat to choose it as your target (Tab picks the nearest). Press 1, or right click it, to attack. Rats will not come to you; you go to them. If you get hurt, rest a moment, or eat Trail Bread from your utility bar.",
+      "complete": "“That is the noise I like. No noise.” Abel knots a split sack shut. “You fight like nobody ever taught you. Thornford has people who teach that, if you can pay them. You cannot. Yet.”",
       "objectives": [
         {
           "id": "rats",
@@ -1440,6 +1440,42 @@
       "chapter": "The Road In"
     },
     {
+      "id": "ni_loose_boar",
+      "name": "A Pig With Ideas",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": [
+        1,
+        1
+      ],
+      "giver": "ni_abel",
+      "turnIn": "ni_abel",
+      "requires": [
+        "ni_rats_in_the_grain"
+      ],
+      "summary": "A young boar has wandered up from the farms east of Thornford and is rooting through the spilled grain. Drive it off before it eats Elsie's order.",
+      "offer": "Something large is snuffling in the grain behind the cart. Abel does not get up. “That is not a rat. That is a young boar, loose from the farms past Thornford. Heda Holt’s fence has been down half the summer and her orchard is full of them now.” He waves a boot at it. “It is bigger than a rat and it bites back. Mind it.”",
+      "progress": "Target the young boar in the spilled grain and drive it off. It hits harder than a rat; if your health runs low, step back and let it come to you, then finish it.",
+      "complete": "“Ha! Well, that is supper for somebody.” Abel looks at you differently. “Heda will pay good coin for hands that can do that. Tell her I sent you, once Elsie has fed you.”",
+      "objectives": [
+        {
+          "id": "boar",
+          "type": "kill",
+          "target": "ni_loose_boar",
+          "count": 1,
+          "label": "Drive off the loose boar",
+          "location": "ni_roadside"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.2,
+        "coins": 1
+      },
+      "story": true,
+      "chapter": "The Road In"
+    },
+    {
       "id": "ni_the_road_in",
       "name": "The Road In",
       "map": "new",
@@ -1448,43 +1484,28 @@
         1,
         2
       ],
-      "giver": "ni_bram",
+      "giver": "ni_abel",
       "turnIn": "tf_elsie",
       "requires": [
-        "ni_rats_in_the_grain"
+        "ni_loose_boar"
       ],
-      "summary": "Take Bram's note to Elsie Reed at the Lantern Inn in Thornford. On the way, look at the dark lantern post by Miller's Pool.",
-      "offer": "“I will be here till somebody with a spare wheel takes pity. Take this to Elsie Reed at the Lantern Inn, so she knows her grain is late and not stolen.” He looks east along the road. “And look at the lantern post by Miller's Pool as you pass. It was lit every night of my life. Last three times I came through, dark. Nobody in Thornford will say why.”",
-      "progress": "Follow the road east and down the hill to Miller's Pool. Look at the dark lantern post beside the road (and mind the fox that sleeps under it), then go on into Thornford. The Lantern Inn is on the west side of the square.",
-      "complete": "Elsie reads Bram's note twice, then folds it very small. “Late. Of course he is late. That man would be late to his own wake and then complain about the ale.” She looks you over. “He says you sorted his rats and did not steal anything. In this valley that is a reference.”",
-      "turnInLog": "You have reached Thornford. Elsie Reed runs the Lantern Inn; the village has work for anyone willing to do it.",
+      "summary": "Take Abel's note to Elsie Reed at the Lantern Inn in Thornford, so she knows her grain is late and can send the wheelwright.",
+      "offer": "“I am not leaving the cart for the next rat, or the next pig. Take this to Elsie Reed at the Lantern Inn. It says her grain is late, not stolen, and could she send the wheelwright.” He hesitates, then adds a line at the bottom. “And it says you are not useless. She will want to know that. She has more work than hands in that village.”",
+      "progress": "Follow the road east and down past Miller's Pool into Thornford. The Lantern Inn stands on the west side of the square. Give Abel's note to Elsie Reed.",
+      "complete": "Elsie reads Abel's note twice. “Late. Of course he is late. That man would be late to his own wake and then complain about the ale.” She reads the last line again and looks you over. “He says you dealt with his rats and a pig and did not steal anything. Round here, that is a reference.”",
+      "turnInLog": "You have reached Thornford. Elsie Reed runs the Lantern Inn, and the village has work for anyone willing to do it.",
       "lend": [
         {
-          "item": "ni_bram_note",
+          "item": "ni_abel_note",
           "count": 1
         }
       ],
       "objectives": [
         {
-          "id": "post",
-          "type": "examine",
-          "target": "poi:ni_dark_lantern",
-          "label": "Look at the dark lantern post",
-          "location": "ni_dark_lantern"
-        },
-        {
-          "id": "fox",
-          "type": "kill",
-          "target": "ni_post_fox",
-          "count": 1,
-          "label": "Chase off the fox under the post",
-          "location": "ni_dark_lantern"
-        },
-        {
           "id": "elsie",
           "type": "talk",
           "target": "tf_elsie",
-          "label": "Give Bram's note to Elsie at the Lantern Inn",
+          "label": "Give Abel's note to Elsie at the Lantern Inn",
           "location": "tf_town",
           "requireVisit": true
         }

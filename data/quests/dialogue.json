@@ -3667,13 +3667,13 @@
       ]
     },
     {
-      "id": "ni_bram",
+      "id": "ni_abel",
       "greetings": [
         {
-          "text": "Bram leans on the tilted cart. “Wheel’s off, grain’s out, rats are in. Lovely day for it.”"
+          "text": "Abel sits in the road beside his tilted cart. “Mossreed to Thornford, every week for twenty years, and today the wheel decides it has had enough.”"
         },
         {
-          "text": "“Still here. The wheel is still off. If you see a wheelwright, tell him there is a man by the west road growing old.”",
+          "text": "“Still here. Wheel’s still off. If you see the wheelwright, tell him there is a carrier on the west road growing old.”",
           "when": {
             "quest": "ni_the_road_in",
             "status": "done"

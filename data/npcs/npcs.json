@@ -1638,14 +1638,14 @@
       "routine": "labourer"
     },
     {
-      "id": "ni_bram",
-      "name": "Bram Wenlock",
+      "id": "ni_abel",
+      "name": "Abel Hurst",
       "title": "Carrier",
       "level": 5,
       "model": "innkeeper",
       "rig": "warden",
       "tint": "#8a7458",
-      "dialogue": "ni_bram"
+      "dialogue": "ni_abel"
     }
   ]
 }

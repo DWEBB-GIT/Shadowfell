@@ -7554,8 +7554,8 @@
       "slot": "back"
     },
     {
-      "id": "ni_bram_note",
-      "name": "Bram's note to Elsie",
+      "id": "ni_abel_note",
+      "name": "Abel's note to Elsie",
       "kind": "document",
       "rarity": "quest",
       "quest": true,
@@ -7563,7 +7563,7 @@
       "price": 0,
       "model": "manifest",
       "icon": "manifest",
-      "description": "A carrier's note, folded around a grain tally. The handwriting leans as if the cart was moving. It begins “Elsie, before you shout”."
+      "description": "A carrier's note, folded round a grain tally. The writing leans as if the cart was moving. It begins “Elsie, before you shout”, and someone has squeezed in a last line at the bottom."
     }
   ]
 }
