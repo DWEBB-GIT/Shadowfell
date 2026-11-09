@@ -304,7 +304,7 @@ func projectile(p: Dictionary) -> void:
 	var trail = p.get("trail", arrow_trail(p) if kind == "arrow" else null)
 	if kind == "arrow":
 		release_puff(a, b)
-	_add(obj, maxf(0.05, time), func(it, k, dt):
+	var item := _add(obj, maxf(0.05, time), func(it, k, dt):
 		if trail != null:
 			it.emit -= dt
 			# Carry the fraction forward: resetting the timer lost emissions
@@ -326,6 +326,10 @@ func projectile(p: Dictionary) -> void:
 			o.position.y += sin(k * PI) * minf(1.2, it.a.distance_to(it.b) * 0.04)
 		if aimed:
 			_look(o, it.b), {"a": a, "b": b, "follow": follow, "emit": 0.0})
+	# a skill shot (aimed combat) ends its flight early when it hits
+	var handle = p.get("handle")
+	if handle is Dictionary:
+		handle["it"] = item
 	if aimed:
 		_look(obj, b)
 

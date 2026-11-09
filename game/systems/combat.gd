@@ -206,6 +206,64 @@ func resolve_player_strike(aim, hand := "main", show := 0.0):
 	if target == null:
 		events.emit("playerMiss", {})
 		return null
+	return _strike(target, hand, show)
+
+
+## Aimed combat: the swing goes along the line from you to `aim` and hits
+## one foe inside its arc (`aimConeDegrees`) and reach: your target if it
+## is still there, else the one nearest the middle. Nobody there: a whiff.
+func resolve_aimed_strike(aim, hand := "main", show := 0.0):
+	var player = game.player
+	if player.dead:
+		return null
+	var target = aimed_strike_target(aim)
+	if target == null:
+		game.events.emit("playerMiss", {})
+		return null
+	return _strike(target, hand, show)
+
+
+func aimed_strike_target(aim):
+	var player = game.player
+	var p: Vector3 = player.position
+	var dir_x := sin(player.facing)
+	var dir_z := cos(player.facing)
+	if aim != null:
+		var ax: float = aim.x - p.x
+		var az: float = aim.z - p.z
+		var len := U.hyp(ax, az)
+		if len > 0.3:
+			dir_x = ax / len
+			dir_z = az / len
+	var cos_limit := cos(deg_to_rad(DB.attack.get("aimConeDegrees", 90) / 2.0))
+	var cur = game.targeting.current if game.targeting else null
+	var best = null
+	var best_score := INF
+	for e in game.enemies.list:
+		# livestock and the watch only with the crime key held (no nagging here)
+		if not e.alive or e.protected or (game.law.protected(e) and not game.keys.held("crime")):
+			continue
+		var dx: float = e.position.x - p.x
+		var dz: float = e.position.z - p.z
+		var dist := U.hyp(dx, dz)
+		if dist > Targeting.melee_reach(e) + DB.attack.get("impactGrace", 0.0) or game.collision.wall_between(p.x, p.z, e.position.x, e.position.z):
+			continue
+		var dot := (dx * dir_x + dz * dir_z) / dist if dist > 0.01 else 1.0
+		# someone right on top of you is in any arc
+		if dist > 0.8 and dot < cos_limit:
+			continue
+		if e == cur:
+			return e
+		var score := dist * 0.25 - dot
+		if score < best_score:
+			best_score = score
+			best = e
+	return best
+
+
+func _strike(target, hand: String, show: float):
+	var events: Events = game.events
+	var player = game.player
 	var off := hand == "off"
 	var hit := _player_hit(target, DB.CONFIG.stats.offHandDamage if off else 1.0, {"stagger": 0.0, "knockFrom": player.position, "knockback": 0.0}, {"swing": true, "hand": hand, "show": show, "echo": true})
 	if hit.get("miss"):

@@ -16,6 +16,10 @@ const SETTINGS := [
 	{"id": "targetLock", "label": "Target lock (with nothing selected, abilities lock on to the enemy you face)", "tab": "controls", "default": true},
 	{"id": "classicControls", "label": "Classic controls (left click selects, right click attacks, spells on 1-4 Q E)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "tankControls", "label": "Keyboard turning (A and D turn you on the spot, W walks forward, S backs up slowly)", "tab": "controls", "group": "Scheme and camera", "default": false},
+	# Aimed combat (Dan, 2026-11-09, a trial): swings and bolts go where the
+	# mouse (or right stick) points, so a foe can step out of them; the
+	# target only nudges the aim when the cursor is near it.
+	{"id": "aimedCombat", "label": "Aimed combat (test: swings and bolts go where the mouse points and can be dodged; your target only nudges the aim)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	# Camera tuning (Dan, 2026-11-09): try angles in the game, then lock the
 	# chosen numbers into CONFIG.camera. Off, the fixed view is used.

@@ -695,6 +695,17 @@ func try_strike_off(aim) -> bool:
 func _impact(hand: String, p: Dictionary, dt: float, show := 0.0) -> void:
 	var off := hand == "off"
 	var tg = game.targeting
+	# Aimed combat: the blow falls where it was aimed, on whoever stands in
+	# its arc now; a foe that stepped out of it is missed, and a whiff
+	# still costs the swing
+	if game.aimed_combat:
+		var late_a := minf(minf(-p.t, dt), DB.attack.catchUp)
+		cooldowns["attackOff" if off else "attack"] = maxf(0, game.stats.attack_cooldown_for(hand) - late_a)
+		last_swing_at = game.time
+		if not off:
+			last_main_impact_at = game.time
+		game.combat.resolve_aimed_strike(p.aim, hand, show)
+		return
 	# a swing already begun still lands if the target stepped a little out
 	if not tg.attacking or not tg.in_reach(DB.attack.get("impactGrace", 0.0)):
 		if off:

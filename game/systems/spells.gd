@@ -16,6 +16,9 @@ var zones: Array = [] ## { id, x, z, left, next, radius, slow, damage }
 var ally_hots: Array = [] ## heals over time on someone else: { id, on, left, next }
 var traps: Array = [] ## { id, key, x, z, arm, left }
 var bolts: Array = [] ## { enemy, id, t, ammo, spell }
+## Aimed combat: bolts flying a straight line, hitting the first foe they
+## touch { id, spell, x, z, dx, dz, left, speed, fx }
+var shots: Array = []
 var blows: Array = [] ## cleaves and bursts on their way to the impact frame
 var ranged_windups: Array = []
 var queued = null ## a spell pressed in the queue window: { id, left }
@@ -119,6 +122,7 @@ func reset() -> void:
 	zones = []
 	traps = []
 	bolts = []
+	shots = []
 	blows = []
 	ranged_windups = []
 	queued = null
@@ -430,7 +434,16 @@ func _try_cast(id: String) -> bool:
 	if spell.kind == "leap":
 		game.resources.spend(spell)
 		return _leap(spell, id)
-	if spell.get("target") == "enemy":
+	# Aimed combat: a bolt is a skill shot. It needs no target; it goes where
+	# you aim (bent onto your target near the cursor) and can be dodged.
+	var skillshot: bool = game.aimed_combat and spell.kind == "cast" and not spell.get("ranged", false)
+	if skillshot:
+		if not _class_ready(spell, null):
+			return false
+		var at: Vector3 = game.aim_at(spell.range)
+		player.square_up(at.x, at.z)
+		break_shadow()
+	elif spell.get("target") == "enemy":
 		target = _target_for(spell)
 		if not target:
 			return false
@@ -620,6 +633,9 @@ func _go(spell: Dictionary, target) -> void:
 				spell = spell.duplicate()
 				spell["sigilEcho"] = {"at":sigil.at,"scale":sigil.scale}
 				buffs.erase("echoSigil")
+			if target == null:
+				_skillshot(spell)
+				return
 			var d := U.hyp(target.position.x - player.position.x, target.position.z - player.position.z)
 			bolts.append({"enemy": target, "id": spell.id, "t": d / t.projectileSpeed, "spell": spell})
 			events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": target.position, "speed": t.projectileSpeed, "follow": target, "life": d / t.projectileSpeed, "look": spell.id})
@@ -1379,6 +1395,9 @@ func update(dt: float) -> void:
 		# a cast keeps you turned to its target as it moves
 		if c.target != null and c.target.alive and not player.moving:
 			player.face_towards(c.target.position.x, c.target.position.z)
+		elif c.target == null and c.spell.kind == "cast" and game.aimed_combat and not player.moving:
+			var at: Vector3 = game.aim_at(c.spell.range)
+			player.face_towards(at.x, at.z)
 		var turned := false
 		var covered: bool = c.target != null and c.target.alive and game.collision.wall_between(player.position.x, player.position.z, c.target.position.x, c.target.position.z)
 		if player.dead or player.moving or gone or turned or covered:
@@ -1469,6 +1488,8 @@ func update(dt: float) -> void:
 			_landed(spell, b.enemy, hit)
 			if hit.amount > 0:
 				_projectile_interactions(spell,b.enemy,hit)
+
+	_update_shots(dt)
 
 	for id in buffs.keys():
 		var b: Dictionary = buffs[id]
@@ -1950,3 +1971,70 @@ func _projectile_interactions(spell: Dictionary, enemy, hit: Dictionary) -> void
 		var player = game.player
 		game.events.emit("projectile", {"kind":"bolt", "from":player.position+Vector3.UP, "to":enemy.position, "follow":enemy, "speed":30.0, "life":0.32, "look":spell.id})
 		echoes.append({"spell":spell,"hits":[{"enemy":enemy,"amount":hit.amount,"crit":hit.crit}],"left":0.32,"scale":sigil.scale,"school":spell.school,"at":sigil.at,"radius":0.0})
+
+
+## Aimed combat: loose a bolt along the aim; it flies its range in a straight
+## line and lands on the first foe it passes through, or on nothing.
+func _skillshot(spell: Dictionary) -> void:
+	var player = game.player
+	var t: Dictionary = spell.tuning
+	var at: Vector3 = game.aim_at(spell.range)
+	var dx: float = at.x - player.position.x
+	var dz: float = at.z - player.position.z
+	var len := U.hyp(dx, dz)
+	if len < 0.01:
+		dx = sin(player.facing)
+		dz = cos(player.facing)
+		len = 1.0
+	dx /= len
+	dz /= len
+	player.face_towards(player.position.x + dx, player.position.z + dz)
+	var range_: float = spell.range
+	var shot := {"id": spell.id, "spell": spell, "x": player.position.x, "z": player.position.z, "dx": dx, "dz": dz, "left": range_, "speed": float(t.projectileSpeed), "fx": {}}
+	shots.append(shot)
+	var to := Vector3(player.position.x + dx * range_, player.position.y, player.position.z + dz * range_)
+	game.events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": to, "speed": shot.speed, "life": range_ / shot.speed, "look": spell.id, "handle": shot.fx})
+	if DB.spell_fx.get(spell.id, {}).has("anim"):
+		_anim(spell, "cast", 0.4, 0.3)
+
+
+func _update_shots(dt: float) -> void:
+	for i in range(shots.size() - 1, -1, -1):
+		var b: Dictionary = shots[i]
+		var step: float = minf(b.left, b.speed * dt)
+		var nx: float = b.x + b.dx * step
+		var nz: float = b.z + b.dz * step
+		var hit_e = null
+		var best := INF
+		for e in game.enemies.list:
+			if not e.alive or e.protected or (game.law.protected(e) and not game.keys.held("crime")):
+				continue
+			# how far along this step the bolt passes the foe, and how close
+			var ex: float = e.position.x - b.x
+			var ez: float = e.position.z - b.z
+			var along := clampf(ex * b.dx + ez * b.dz, 0.0, step)
+			var off := U.hyp(ex - b.dx * along, ez - b.dz * along)
+			if off <= e.radius + DB.attack.get("boltRadius", 0.35) and along < best:
+				best = along
+				hit_e = e
+		var wall: bool = game.collision.wall_between(b.x, b.z, nx, nz)
+		b.x = nx
+		b.z = nz
+		b.left -= step
+		if hit_e == null and not wall and b.left > 1e-4:
+			continue
+		shots.remove_at(i)
+		var it = b.fx.get("it")
+		if it != null:
+			it.obj.visible = false
+			it.life = minf(it.life, it.age)
+		if hit_e == null or game.player.dead:
+			continue
+		var spell: Dictionary = b.spell
+		if game.targeting.current == null:
+			game.targeting.select(hit_e)
+		_show(spell, "impact", hit_e.position, _facing_to(hit_e))
+		var hit := _damage(spell, hit_e, _spell_base(spell.tuning), "Your %s hits the {name} for {n}." % spell.name)
+		_landed(spell, hit_e, hit)
+		if hit.amount > 0:
+			_projectile_interactions(spell, hit_e, hit)

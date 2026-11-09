@@ -40,6 +40,13 @@ var mouse_aim: bool:
 var tank_controls: bool:
 	get:
 		return settings != null and settings.get_value("tankControls")
+## Aimed combat (Settings: aimedCombat, a trial, Dan 2026-11-09): swings
+## and bolts go towards the cursor (or right stick) and hit whoever is there
+## when they land, so they can be dodged. Your target is a soft aim helper:
+## with the cursor near it the aim bends onto it (aim_at).
+var aimed_combat: bool:
+	get:
+		return settings != null and settings.get_value("aimedCombat")
 var random := func() -> float: return randf() ## every combat roll goes through this (tests pin it)
 
 var scene: Node3D
@@ -827,6 +834,29 @@ func _click(button: String) -> bool:
 	return true
 
 
+## Aimed combat: the point an aimed swing or bolt goes at. The cursor (or
+## the right stick); with your target alive, in reach and within
+## `softAimDegrees` of the cursor's direction, the aim bends onto it.
+func aim_at(range_: float) -> Vector3:
+	var p: Vector3 = player.position
+	var aim = raw_aim
+	var ax: float = aim.x - p.x if aim != null else sin(player.facing)
+	var az: float = aim.z - p.z if aim != null else cos(player.facing)
+	var len := U.hyp(ax, az)
+	if len < 0.3:
+		ax = sin(player.facing)
+		az = cos(player.facing)
+		len = 1.0
+	var t = targeting.current if targeting else null
+	if t != null and t.alive:
+		var tx: float = t.position.x - p.x
+		var tz: float = t.position.z - p.z
+		var td := U.hyp(tx, tz)
+		if td < 0.01 or (td <= range_ + t.radius + 1.0 and (ax * tx + az * tz) / (len * td) >= cos(deg_to_rad(DB.attack.get("softAimDegrees", 25)))):
+			return t.position
+	return Vector3(p.x + ax / len * range_, p.y, p.z + az / len * range_)
+
+
 ## Mouse aim, left button on open ground (or held): engage the enemy nearest
 ## the cursor within reach of your weapon, if you are not already fighting.
 func _engage_near_cursor() -> void:
@@ -1169,11 +1199,15 @@ func _handle_input(dt: float):
 	# Auto attack (WoW): once engaged the Warden swings whenever the target
 	# is in reach, in front of him, and his weapon is ready. It is not on the bar.
 	actions.strike = tg.attacking and tg.target_in_reach
+	# Aimed combat: holding the left button swings at the cursor too, at
+	# nobody in particular (Mouse aim already engages a foe near it)
+	if aimed_combat and mouse_aim and not using_pad and input.mouse.leftHeld:
+		actions.strike = true
 	# beyond it, with a bow in the ranged slot, Auto Shot
 	actions.shoot = tg.attacking and tg.target_in_shot
 	return {
 		"move": move,
-		"aim": tg.current.position if actions.strike or actions.shoot else tg.aim_for(aim_now, DB.abilities.strike.range),
+		"aim": aim_at(DB.attack.range) if aimed_combat and actions.strike else tg.current.position if actions.strike or actions.shoot else tg.aim_for(aim_now, DB.abilities.strike.range),
 		"rawAim": aim_now,
 		"faceAim": face_aim,
 		"tank": tank,
