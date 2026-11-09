@@ -3665,6 +3665,23 @@
           ]
         }
       ]
+    },
+    {
+      "id": "ni_bram",
+      "greetings": [
+        {
+          "text": "Bram leans on the tilted cart. “Wheel’s off, grain’s out, rats are in. Lovely day for it.”"
+        },
+        {
+          "text": "“Still here. The wheel is still off. If you see a wheelwright, tell him there is a man by the west road growing old.”",
+          "when": {
+            "quest": "ni_the_road_in",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [],
+      "nodes": []
     }
   ]
 }

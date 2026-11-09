@@ -1636,6 +1636,16 @@
       "dialogue": "in_edda",
       "tint": "#c7b193",
       "routine": "labourer"
+    },
+    {
+      "id": "ni_bram",
+      "name": "Bram Wenlock",
+      "title": "Carrier",
+      "level": 5,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#8a7458",
+      "dialogue": "ni_bram"
     }
   ]
 }

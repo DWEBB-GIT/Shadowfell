@@ -56,6 +56,7 @@ func _talk(npc_id: String) -> void:
 	game.dialogue.open(npc)
 
 func _hungry_work() -> void:
+	for id in ["ni_stretch_your_legs","ni_rats_in_the_grain","ni_the_road_in"]: game.quests.done[id]=true
 	game.quests.done.sf_odd_jobs=true
 	_talk("tf_elsie")
 	check(game.dialogue.choose("quest:sf_hungry_work"),"Elsie offers Hungry Work")

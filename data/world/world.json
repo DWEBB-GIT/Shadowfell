@@ -212,6 +212,9 @@
     }
   ],
   "locations": [
+    {"id": "ni_roadside", "name": "Bram's Broken Cart", "position": [-626, -170], "radius": 16},
+    {"id": "ni_milestone", "name": "The West Road Milestone", "position": [-594, -191], "radius": 8},
+    {"id": "ni_dark_lantern", "name": "The Dark Lantern Post", "position": [-553, -208], "radius": 10},
     {
       "id": "cart",
       "name": "The abandoned cart",

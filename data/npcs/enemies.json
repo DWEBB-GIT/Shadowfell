@@ -696,6 +696,26 @@
       "respawn": 25
     },
     {
+      "id": "ni_grain_rat",
+      "base": "granary_rat",
+      "name": "Grain Rat",
+      "attitude": "passive",
+      "level": 1,
+      "maxLevel": 1,
+      "pack": 2,
+      "detection": 4,
+      "respawn": 15
+    },
+    {
+      "id": "ni_post_fox",
+      "base": "hedge_fox",
+      "name": "Hedge Fox",
+      "level": 1,
+      "maxLevel": 1,
+      "roam": 3,
+      "respawn": 30
+    },
+    {
       "id": "tf_shambler",
       "base": "ghoul",
       "name": "Barrow Shambler",
