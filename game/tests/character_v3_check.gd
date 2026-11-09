@@ -167,7 +167,7 @@ func _run() -> void:
 		game.player.rig.action=null
 		game.player.rig.off_action=null
 		for i in 20:game.player.rig.update(0.02,DB.CONFIG.player.runGait)
-		check(is_equal_approx(game.player.rig.gait_rate,clampf(DB.CONFIG.player.speed/ForgeRig.RUN_REFERENCE_SPEED,0.4,2.4)),sex+" original run cadence follows movement speed")
+		check(is_equal_approx(game.player.rig.gait_rate,clampf(DB.CONFIG.player.speed/(ForgeRig.JOG_GROUND_SPEED*sk.global_basis.get_scale().y*ForgeRig.RUN_STRIDE),0.4,2.4)),sex+" run cadence follows movement speed")
 		game.player.rig.pose=null
 		for i in 20:game.player.rig.update(0.02,0)
 		var standing:float=sk.get_bone_global_pose(sk.find_bone("pelvis")).origin.y
@@ -175,7 +175,7 @@ func _run() -> void:
 		for i in 30:game.player.rig.update(1.0/60,0)
 		var seated:float=sk.get_bone_global_pose(sk.find_bone("pelvis")).origin.y
 		print("POSE ",sex," standing=",standing," seated=",seated)
-		check(seated<standing-0.6 and seated>0.15,sex+" sitting lowers hips to a grounded resting height")
+		check(seated<standing-0.6 and seated>0.07,sex+" sitting lowers hips to a grounded resting height")
 		for side in ["l","r"]:
 			check(absf(sk.get_bone_global_pose(sk.find_bone("foot_"+side)).origin.y-sk.get_bone_global_rest(sk.find_bone("foot_"+side)).origin.y)<0.03,sex+" sitting keeps "+side+" foot on the ground")
 	clear_combat()

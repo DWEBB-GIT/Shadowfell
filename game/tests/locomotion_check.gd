@@ -51,7 +51,8 @@ func run() -> void:
 			for i in 30:player.rig.update(1.0/60,DB.CONFIG.player.runGait)
 			var max_arm_error:=0.0
 			var max_leg_error:=0.0
-			for i in 36:
+			var feet:=[]
+			for i in 60:
 				player.rig.update(1.0/60,DB.CONFIG.player.runGait)
 				ref_rig.anim.play("Jog_Fwd",0)
 				ref_rig.anim.seek(player.rig.anim.current_animation_position,true)
@@ -59,13 +60,34 @@ func run() -> void:
 				for part in ["clavicle_l","clavicle_r","upperarm_l","upperarm_r","lowerarm_l","lowerarm_r"]:
 					var b:=ref_sk.find_bone(part)
 					max_arm_error=maxf(max_arm_error,ref_sk.get_bone_pose_rotation(b).angle_to(player.rig._skel.get_bone_pose_rotation(b)))
-				for part in ["thigh_l","thigh_r","calf_l","calf_r","foot_l","foot_r"]:
+				# Leg height still follows the authored gait (thighs swing,
+				# feet lift); only the reach forward/back is fitted.
+				for part in ["foot_l","foot_r"]:
 					var b:=ref_sk.find_bone(part)
-					max_leg_error=maxf(max_leg_error,ref_sk.get_bone_pose_rotation(b).angle_to(player.rig._skel.get_bone_pose_rotation(b)))
+					max_leg_error=maxf(max_leg_error,absf(ref_sk.get_bone_global_pose(b).origin.y-player.rig._skel.get_bone_global_pose(b).origin.y))
+				var sk:Skeleton3D=player.rig._skel
+				var basis:=sk.global_basis
+				feet.append([basis*sk.get_bone_global_pose(sk.find_bone("foot_l")).origin,basis*sk.get_bone_global_pose(sk.find_bone("foot_r")).origin])
 				if i in [4,16,28]:await picture(sex+"-"+stance+"-run-%02d"%i)
-			print("RUN ",sex," ",stance," arm_error=",max_arm_error," leg_error=",max_leg_error)
+			# The planted foot (lowest 2 cm of its arc) sweeps back at the
+			# speed the body travels: no skating (Dan, 2026-11-09).
+			var sweep:=0.0
+			var ahead:Vector3=player.rig._skel.global_basis.z.normalized()
+			var samples:=0
+			for f in 2:
+				var low:=INF
+				for row in feet:low=minf(low,row[f].y)
+				for i in range(1,feet.size()):
+					if feet[i][f].y<low+0.02 and feet[i-1][f].y<low+0.02:
+						sweep+=absf((feet[i-1][f]-feet[i][f]).dot(ahead))*60
+						samples+=1
+			sweep/=maxf(1,samples)
+			var stride_time:float=player.rig.anim.get_animation("Jog_Fwd").length/player.rig.gait_rate
+			print("RUN ",sex," ",stance," arm_error=",max_arm_error," foot_height_error=",max_leg_error," planted_foot=",sweep," stride_s=",stride_time)
+			check(absf(sweep-DB.CONFIG.player.speed)<DB.CONFIG.player.speed*0.1,sex+" "+stance+" planted foot keeps pace with the ground")
+			check(stride_time>0.6 and stride_time<0.8,sex+" "+stance+" brisk stride, neither frantic nor loping")
 			check(max_arm_error<0.01,sex+" "+stance+" arms follow the original run, without a held aiming pose")
-			check(max_leg_error<0.01,sex+" "+stance+" legs follow the original authored gait")
+			check(max_leg_error<0.06,sex+" "+stance+" legs keep the authored lift")
 		reference.queue_free()
 		for moving in [false,true]:
 			player.position=origin
@@ -76,10 +98,14 @@ func run() -> void:
 			var landing_frames:=0
 			var max_landing_progress:=0.0
 			var moving_land:=false
+			var dipped:=false
 			for i in 90:
 				game.time+=1.0/60
 				player.update(1.0/60,{"move":{"x":1.0 if moving else 0.0,"z":0.0},"jump":i==0})
 				if player.rig.clip=="Jump_Start":takeoff_frames+=1
+				if player.rig.land_dip>0:
+					dipped=true
+					moving_land=moving_land or player.moving
 				if player.rig.clip=="Jump_Land":
 					landing_frames+=1
 					max_landing_progress=maxf(max_landing_progress,player.rig.anim.current_animation_position/player.rig.anim.get_animation("Jump_Land").length)
@@ -87,7 +113,12 @@ func run() -> void:
 				if not moving and i in [2,10,22,36,42,48,58,76]:await picture(sex+"-jump-%02d"%i)
 			print("JUMP ",sex," moving=",moving," takeoff_frames=",takeoff_frames," landing_frames=",landing_frames," completed=",max_landing_progress)
 			check(takeoff_frames>=10,sex+" takeoff has time to read")
-			check(landing_frames>=20 and max_landing_progress>0.999,sex+" landing plays through its final pose, moving="+str(moving))
+			if moving:
+				# A planted landing crouch at run speed slides along the ground
+				# (Dan, 2026-11-09): the legs run on, the upper body dips.
+				check(landing_frames==0 and dipped,sex+" a running landing goes straight into the stride with an upper-body dip")
+			else:
+				check(landing_frames>=20 and max_landing_progress>0.999,sex+" landing plays through its final pose")
 			check(not player.rig.airborne and player.rig.landing==0,sex+" jump returns to locomotion")
 			if moving:check(moving_land and player.rig.clip=="Jog_Fwd",sex+" moving landing preserves control and returns to running")
 		player.position=origin

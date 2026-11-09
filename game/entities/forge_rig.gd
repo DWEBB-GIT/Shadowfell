@@ -15,12 +15,29 @@ var gait_rate := 1.0
 const TAKEOFF_TIME := 0.22
 const LAND_TIME := 0.36
 const RUN_REFERENCE_SPEED := 4.1
+## The run (Dan, 2026-11-09: "no skating, no loping, WoW pace"). As
+## authored, Jog_Fwd's planted foot sweeps back at JOG_GROUND_SPEED (skeleton
+## metres/s, calibrated with locomotion_check), far more than one step's
+## worth at a brisk step rate. So the feet's forward/back reach is cut to
+## RUN_STRIDE, and the clip plays at the rate where the planted foot moves
+## with the ground: ~0.73 s per full stride at full speed. Foot lift, pelvis
+## and arms stay as authored.
+const JOG_GROUND_SPEED := 6.4
+const RUN_STRIDE := 0.6
+## Landing on the run: the legs carry straight on in the run (a planted
+## landing crouch would slide along the ground), and the upper body takes
+## a short dip from the landing clip instead.
+const LAND_DIP_TIME := 0.24
+const JOG_TOUCHDOWN := 0.55 ## Jog_Fwd time with the right foot under the body
+const TAKEOFF_FROM := 0.067 ## Jump_Start's push-off, after its ground crouch
+var land_dip := 0.0
 var last_off_clip := ""
 
 func revive() -> void:
 	super()
 	air_time = 0
 	landing = 0
+	land_dip = 0
 	was_airborne = false
 
 func play(type: String, duration: float, impact := 0.5) -> void:
@@ -86,7 +103,7 @@ func resolve_action(type: String) -> String:
 
 func _locomotion() -> String:
 	if airborne: return "Jump_Start" if air_time < TAKEOFF_TIME else "Jump"
-	if landing > 0: return "Jump_Land"
+	if landing > 0 and move < 0.12: return "Jump_Land"
 	if pose in ["sit", "rest"]: return "Sitting_Idle"
 	if pose == "fish": return "Idle_Lantern"
 	if move > 0.9: return "Jog_Fwd"
@@ -106,6 +123,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 		landing = 0
 	if was_airborne and not airborne:
 		landing = LAND_TIME
+		land_dip = LAND_DIP_TIME if move >= 0.12 else 0.0
 	if airborne:
 		air_time += dt
 	was_airborne = airborne
@@ -113,15 +131,25 @@ func _update_anim(dt: float, speed01: float) -> void:
 		flinch = maxf(0, flinch - dt * 4)
 		_upper = {"name":"Hit_Chest", "t":(1.0 - flinch) * anim.get_animation("Hit_Chest").length, "speed":0.0, "hit":true}
 	var base_clip := _locomotion()
+	if landing > 0 and base_clip != "Jump_Land":
+		# Moving on (or setting off mid-landing) ends the planted crouch.
+		landing = 0
+	var from_air := clip in ["Jump_Start", "Jump"] and base_clip == "Jog_Fwd"
 	var magnitude := clampf(move / DB.CONFIG.player.runGait,0,1)
 	var speed: float = magnitude*DB.CONFIG.player.speed
 	if actor != null and not actor.game is Dictionary:
 		speed *= actor.game.spells.movement_scale
-	gait_rate = clampf(speed/RUN_REFERENCE_SPEED,0.4,2.4) if base_clip == "Jog_Fwd" else maxf(0.4,move)
+	gait_rate = clampf(speed/(JOG_GROUND_SPEED*_skel.global_basis.get_scale().y*RUN_STRIDE),0.4,2.4) if base_clip == "Jog_Fwd" else maxf(0.4,move)
 	var seek_pose := base_clip in ["Jump_Start","Jump","Jump_Land"]
+	if from_air:
+		# Land into the stride with the landing foot under the body.
+		anim.play(base_clip, 0.08)
+		anim.seek(JOG_TOUCHDOWN, false)
+		clip = base_clip
 	_clip(base_clip, gait_rate if base_clip in ["Walk","Jog_Fwd"] else 1.0,seek_pose and clip != base_clip)
 	if base_clip == "Jump_Start":
-		anim.seek(anim.get_animation(base_clip).length*clampf(air_time/TAKEOFF_TIME,0,1),true)
+		var take_len := anim.get_animation(base_clip).length
+		anim.seek(lerpf(TAKEOFF_FROM, take_len, clampf(air_time/TAKEOFF_TIME,0,1)),true)
 	elif base_clip == "Jump":
 		anim.seek(fmod(maxf(0,air_time-TAKEOFF_TIME),anim.get_animation(base_clip).length),true)
 	elif base_clip == "Jump_Land":
@@ -132,6 +160,8 @@ func _update_anim(dt: float, speed01: float) -> void:
 		anim.advance(0)
 	if base_clip=="Sitting_Idle":
 		_ground_sit()
+	elif base_clip=="Jog_Fwd":
+		_fit_stride(RUN_STRIDE)
 	if airborne:
 		# Physics owns vertical travel. Source pelvis/root translations must
 		# not add another authored leap on top of the gameplay trajectory.
@@ -143,6 +173,10 @@ func _update_anim(dt: float, speed01: float) -> void:
 			if parent >= 0:up=(_skel.get_bone_global_pose(parent).basis.inverse()*up).normalized()
 			p -= up*(p-_skel.get_bone_rest(b).origin).dot(up)
 			_skel.set_bone_pose_position(b,p)
+	if land_dip > 0:
+		land_dip = maxf(0, land_dip - dt)
+		var k := 1.0 - land_dip/LAND_DIP_TIME
+		_sample("Jump_Land", 0.3*k, 0.65*sin(PI*k), true)
 	var active := action != null
 	if active:
 		action.t += dt
@@ -221,14 +255,51 @@ func _mirror_off() -> void:
 		_skel.set_bone_pose_rotation(left, _skel.get_bone_pose_rotation(left).slerp(mirrored, weight))
 
 
+## Pulls each foot's forward/back offset from the pelvis in to `scale`,
+## bending the leg to reach it. Height and sideways spread are kept.
+func _fit_stride(scale: float) -> void:
+	var pelvis:=_skel.find_bone("pelvis")
+	var center:=_skel.get_bone_global_pose(pelvis).origin
+	for side in ["l","r"]:
+		var thigh:=_skel.find_bone("thigh_"+side)
+		var calf:=_skel.find_bone("calf_"+side)
+		var foot:=_skel.find_bone("foot_"+side)
+		var foot_pose:=_skel.get_bone_global_pose(foot)
+		var target:=foot_pose.origin
+		target.z=center.z+(target.z-center.z)*scale
+		var hip:=_skel.get_bone_global_pose(thigh).origin
+		var knee:=_skel.get_bone_global_pose(calf).origin
+		var ankle:=foot_pose.origin
+		var a:=hip.distance_to(knee)
+		var b:=knee.distance_to(ankle)
+		var direction:Vector3=(target-hip).normalized()
+		var distance:=clampf(hip.distance_to(target),absf(a-b)+0.001,a+b-0.001)
+		var along:float=(a*a-b*b+distance*distance)/(2*distance)
+		# Knee keeps bending the way it already bends (always forward).
+		var hint:=knee-hip+Vector3(0,0,0.1)
+		var bend:Vector3=(hint-direction*hint.dot(direction)).normalized()
+		var desired:=hip+direction*along+bend*sqrt(maxf(0,a*a-along*along))
+		_turn_bone(thigh,knee-hip,desired-hip)
+		knee=_skel.get_bone_global_pose(calf).origin
+		ankle=_skel.get_bone_global_pose(foot).origin
+		_turn_bone(calf,ankle-knee,hip+direction*distance-knee)
+		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*foot_pose.basis).orthonormalized().get_rotation_quaternion())
+
+## Sitting on the ground: seat on the ground, knees drawn up, feet flat in
+## front and forearms resting on the knees. The supplied sitting clip is
+## for a chair, so only its spine/head are kept and the rest is placed.
+const SIT_PELVIS := 0.1 ## pelvis height above the soles, skeleton metres
+const SIT_FOOT := Vector3(0.17, 0.0, 0.5) ## foot spot (x mirrored per side)
 func _ground_sit() -> void:
-	# The supplied sitting clip expects a chair. Lower the hips to the
-	# ground and fold the legs forward without burying the feet.
 	var pelvis:=_skel.find_bone("pelvis")
 	var parent:=_skel.get_bone_parent(pelvis)
 	var up:=(_skel.global_basis.inverse()*model.global_basis*Vector3.UP).normalized()
-	var local_up:=(_skel.get_bone_global_pose(parent).basis.inverse()*up).normalized()
-	_skel.set_bone_pose_position(pelvis,_skel.get_bone_pose_position(pelvis)-local_up*0.34)
+	var sole:=_skel.get_bone_global_rest(_skel.find_bone("foot_l")).origin.dot(up)
+	var now:=_skel.get_bone_global_pose(pelvis).origin
+	var drop:=now.dot(up)-SIT_PELVIS
+	# Lean the seat back a little, so the torso sits over the hips.
+	var to_parent:=_skel.get_bone_global_pose(parent).basis.inverse()
+	_skel.set_bone_pose_position(pelvis,_skel.get_bone_pose_position(pelvis)-to_parent*(up*drop+Vector3(0,0,now.z+0.04)))
 	for side in ["l","r"]:
 		var sign_:float=1 if side=="l" else -1
 		var thigh:=_skel.find_bone("thigh_"+side)
@@ -237,21 +308,28 @@ func _ground_sit() -> void:
 		var hip:=_skel.get_bone_global_pose(thigh).origin
 		var knee:=_skel.get_bone_global_pose(calf).origin
 		var ankle:=_skel.get_bone_global_pose(foot).origin
-		var foot_basis:=_skel.get_bone_global_pose(foot).basis
 		var a:=hip.distance_to(knee)
 		var b:=knee.distance_to(ankle)
-		var target:=Vector3(sign_*0.23,_skel.get_bone_global_rest(foot).origin.y,0.55)
+		var target:=Vector3(sign_*SIT_FOOT.x,sole,SIT_FOOT.z)
 		var direction:Vector3=(target-hip).normalized()
 		var distance:=clampf(hip.distance_to(target),absf(a-b)+0.001,a+b-0.001)
 		var along:float=(a*a-b*b+distance*distance)/(2*distance)
-		var hint:=Vector3(sign_*0.4,0.5,0.4)-hip
+		# Knees up and a little apart.
+		var hint:=Vector3(sign_*0.12,1.0,0.25)
 		var bend:Vector3=(hint-direction*hint.dot(direction)).normalized()
 		var desired:=hip+direction*along+bend*sqrt(maxf(0,a*a-along*along))
 		_turn_bone(thigh,knee-hip,desired-hip)
 		knee=_skel.get_bone_global_pose(calf).origin
 		ankle=_skel.get_bone_global_pose(foot).origin
 		_turn_bone(calf,ankle-knee,hip+direction*distance-knee)
-		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*foot_basis).orthonormalized().get_rotation_quaternion())
+		# Sole flat on the ground, toes forward.
+		var rest_foot:=_skel.get_bone_global_rest(foot).basis
+		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*rest_foot).orthonormalized().get_rotation_quaternion())
+	# Forearms over the knees, hands hanging loose in front of the shins.
+	for side in ["l","r"]:
+		var sign_:float=1 if side=="l" else -1
+		var knee:=_skel.get_bone_global_pose(_skel.find_bone("calf_"+side)).origin
+		_reach_hand(side,knee+Vector3(-sign_*0.04,-0.02,0.2),Vector3(sign_*0.5,knee.y,-0.1))
 
 func _fit_hands() -> void:
 	if actor == null or actor.sheathed:
