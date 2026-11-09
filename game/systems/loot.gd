@@ -10,9 +10,12 @@ extends RefCounted
 ## Defeated enemies leave a body holding their coins. Looting anything also
 ## loots every body and drop within CONFIG.loot.areaRadius.
 ##
-## Quest gathering nodes (world.json placedLoot with `quest`) are never
-## area-looted, each takes CONFIG.loot.gatherTime to gather (a cast bar shows
-## it; moving or being hit stops it), and they stay in sight at all times.
+## Gathering nodes (placedLoot with `quest` or `respawn`: firewood, wild
+## garlic) are never area-looted, each takes CONFIG.loot.gatherTime to gather
+## (a cast bar shows it; moving or being hit stops it). A picked node is gone
+## from the world until its `respawn` timer grows it back. The timer is the
+## world's (one per node, not per character), so in a shared world everyone
+## sees the same node go and come back.
 ##
 ## Beasts (enemies.json `skin`) can be skinned once their body holds no more
 ## coins, if the player knows Skinning: see skinnables() below.
@@ -75,6 +78,11 @@ func stop_gathering(reason := "") -> void:
 	gathering = null
 	if reason != "" and game.hud:
 		game.hud.error(reason)
+
+
+## a gathering node (gathered over a moment, on its own), not a pick-up
+static func is_node(def: Dictionary) -> bool:
+	return not def.has("ground") and (def.get("quest") != null or def.get("respawn") != null)
 
 
 ## can this entry be taken right now? (a gathered node waits to grow back)
@@ -480,7 +488,7 @@ func lootables() -> Array:
 	# in the world, like the manifest, are taken one at a time
 	for l in active:
 		if available(l):
-			var area: bool = not l.def.get("quest") and (l.def.has("ground") or is_same(unique.get(l.def.id), l.def))
+			var area: bool = not is_node(l.def) and (l.def.has("ground") or is_same(unique.get(l.def.id), l.def))
 			out.append({"kind": "item", "id": l.def.id, "x": l.x, "z": l.z, "entry": l, "area": area})
 	return out
 
@@ -498,8 +506,8 @@ func _area(origin: Dictionary, all = null) -> Array:
 
 ## Loot `origin` and everything else lootable within the area radius of it.
 func loot_area(origin: Dictionary) -> int:
-	# a quest node is gathered on its own, over a moment
-	if origin.kind == "item" and origin.entry.def.get("quest"):
+	# a gathering node is gathered on its own, over a moment
+	if origin.kind == "item" and is_node(origin.entry.def):
 		return 1 if start_gather(origin.entry) else 0
 	var n := 0
 	for l in _area(origin):
@@ -568,13 +576,11 @@ func collect(entry: Dictionary) -> bool:
 	if def.has("ground"):
 		ws.ground.erase(def.ground)
 	elif def.get("respawn"):
-		# a gathering node stays in sight, spent, and grows back; a quest's
-		# (the deadfall logs) keeps its size and only loses its sparkle
+		# a picked node is gone from the world until it grows back (Dan
+		# 2026-11-09), so the next player finds it again on the timer
 		regrow.append({"entry": entry, "at": game.time + def.respawn})
 		entry.depleted = true
-		if not def.get("quest"):
-			entry.group.scale = Vector3.ONE * 0.6
-		entry.glint.visible = false
+		entry.group.visible = false
 		events.emit("lootCollected", {"id": def.id, "item": r.get("item", ""), "node": true})
 		return true
 	else:
@@ -610,7 +616,7 @@ func update(dt: float, time: float) -> void:
 			continue
 		regrow.remove_at(i)
 		r.entry.depleted = false
-		r.entry.group.scale = Vector3.ONE
+		r.entry.group.visible = true
 		r.entry.glint.visible = true # a quest node's follows its quest below
 	var g = gathering
 	if g != null:
