@@ -7552,6 +7552,18 @@
         "stamina": 1
       },
       "slot": "back"
+    },
+    {
+      "id": "ni_abel_note",
+      "name": "Abel's note to Elsie",
+      "kind": "document",
+      "rarity": "quest",
+      "quest": true,
+      "stack": 1,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "description": "A carrier's note, folded round a grain tally. The writing leans as if the cart was moving. It begins “Elsie, before you shout”, and someone has squeezed in a last line at the bottom."
     }
   ]
 }

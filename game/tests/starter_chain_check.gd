@@ -27,6 +27,8 @@ func run(id: String) -> void:
 				q.count_kill(o.target)
 		elif o.type == "talk":
 			q.count_talk(o.target)
+		elif o.type == "examine":
+			game.world_state.examined[o.target] = true
 		elif o.type == "use":
 			for n in int(o.get("count", 1)):
 				q.count_use(o.target, o.get("on", ""))
@@ -51,6 +53,16 @@ func _process(_dt: float) -> bool:
 		game.hud.belt.toggle()
 		check(not game.hud.belt.visible, "the belt stays shut without a belt")
 		check(game.quests.status("vr_perch") == "locked", "Elsie's perch waits for Tobin's lesson")
+		# the road in (Dan 2026-11-09): start on the west road, outside the town
+		var start: Array = DB.world.playerStart.position
+		check(Vector2(start[0], start[1]).distance_to(Vector2(-450, -207)) > 60, "a new player starts outside Thornford")
+		check(game.quests.active == ["ni_stretch_your_legs"], "the first quest is Abel's milestone (%s)" % [game.quests.active])
+		check(game.quests.status("sf_odd_jobs") == "locked", "Elsie's odd jobs wait for the road in")
+		run("ni_stretch_your_legs")
+		run("ni_rats_in_the_grain")
+		run("ni_loose_boar")
+		run("ni_the_road_in")
+		check(inv.count("ni_abel_note") == 0, "Abel's note is handed to Elsie")
 		run("sf_odd_jobs")
 		check(inv.tool_pack != null and inv.tool_pack.id == "belt_pouch", "Iren's utility belt worn")
 		check(inv.count("sf_broken_hinge") == 0, "the hinge is handed over")
@@ -83,6 +95,10 @@ func _extra() -> void:
 	game.progression.level = 3
 	game.quests.done.in_watchmans_word = true
 	game.quests.done.tf_lanterns = true
+	# each trainer opens one step on (Dan 2026-11-09): Iren after her gauge,
+	# Agna after the boars, Morrow once you have met him and done his soup round
+	for id in ["in_farm_introduction", "vr_first_hunt", "nr_gauge", "in_hollow_introduction", "in_soup_round"]:
+		game.quests.done[id] = true
 	var inv = game.inventory
 	for pair in [["sf_ore_for_the_forge", "mining", "mining_pick"], ["sf_hides_for_agna", "skinning", "skinning_knife"], ["sf_bitter_roots", "herbalism", "herb_knife"]]:
 		var had: int = inv.count(pair[2])

@@ -601,9 +601,12 @@ func render_tracker() -> void:
 		var q: Dictionary = DB.quests[id]
 		var s: String = ql.status(id)
 		var focused: bool = ql.focus == id
-		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "", "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused else "", UI.esc(q.name)]
-		if s == "available":
-			text += "[font_size=12][color=#ffd23c]  Next quest · Speak to %s[/color][/font_size]" % UI.esc(DB.npcs[q.giver].name)
+		# a lead (offered, not taken yet) wears the giver's gold ! and a dim
+		# name, so it never reads as a quest already in the log (Dan 2026-11-09)
+		var lead := s == "available"
+		var text := "%s[font_size=13][color=%s]%s%s[/color][/font_size]\n" % [_ready_mark() if s == "ready" else "[color=#ffd23c][b]![/b][/color] " if lead else "", "#b8ab8c" if lead else "#fff0a0" if focused else "#e8d8b0", _follow_mark() if focused and not lead else "", UI.esc(q.name)]
+		if lead:
+			text += "[font_size=12][color=#ffd23c]  Not taken yet · Speak to %s to accept[/color][/font_size]" % UI.esc(DB.npcs[q.giver].name)
 		elif s == "ready":
 			text += "[font_size=12][color=#ffd23c]  Return to %s[/color][/font_size]" % UI.esc(Quests.hand_in(id))
 		else:
