@@ -36,30 +36,22 @@ func _run():
 	game.dialogue.choose("quest:ni_stretch_your_legs")
 	game.dialogue.choose("complete")
 	check(game.quests.status("ni_stretch_your_legs")=="done","First quest hands in normally")
-	check(game.dialogue.view.get("id")=="ni_rats_in_the_grain","Rat follow-up opens immediately")
-	game.dialogue.choose("accept")
-	check(game.quests.status("ni_rats_in_the_grain")=="active","Next quest requires explicit acceptance")
-	game.dialogue.close()
-	var rats=game.enemies.list.filter(func(e):return e.type=="ni_grain_rat")
-	for i in 4:
-		var rat=rats[i]
-		walk(rat.position.x,rat.position.z,1.6)
-		fight(rat)
-	check(game.quests.status("ni_rats_in_the_grain")=="ready","Four real rat fights grant quest credit")
-	walk(-622,-179,2.0)
-	game.interaction.interact()
-	game.dialogue.choose("quest:ni_rats_in_the_grain")
-	game.dialogue.choose("complete")
 	check(game.dialogue.view.get("id")=="ni_loose_boar","Boar follow-up opens immediately")
 	game.dialogue.choose("accept")
 	game.dialogue.close()
 	var boar=game.enemies.list.filter(func(e):return e.type=="ni_loose_boar")[0]
 	walk(boar.position.x,boar.position.z,1.6)
 	fight(boar)
+	# its meat falls as loot; picked up (or handed over here) it ends the quest
+	if game.inventory.count("boar_meat")==0:
+		check(game.quests.status("ni_loose_boar")=="active","Boar kill alone does not finish the quest")
+		game.inventory.add_item("boar_meat",1)
+	check(game.quests.status("ni_loose_boar")=="ready","Carrying the boar meat finishes the boar quest")
 	walk(-622,-179,2.0)
 	game.interaction.interact()
 	game.dialogue.choose("quest:ni_loose_boar")
 	game.dialogue.choose("complete")
+	check(game.inventory.count("boar_meat")>=1,"Abel lets you keep the boar meat")
 	check(game.dialogue.view.get("id")=="ni_the_road_in","Letter quest follows boar hand-in")
 	game.dialogue.choose("accept")
 	game.dialogue.close()
@@ -139,7 +131,7 @@ func fight(foe):
 func _skip_and_gates():
 	game.quests.start_new()
 	check(game.quests.status("sf_odd_jobs")=="available","Walking past the cart does not lock village work")
-	check(game.quests.status("ni_loose_boar")=="locked","Skipping rats does not silently finish the boar chain")
+	check(game.quests.status("ni_loose_boar")=="locked","Skipping the milestone does not silently finish the boar chain")
 	game.quests.done.sf_odd_jobs=true
 	check(game.quests.status("sf_borrowed_rod")=="available","Fishing opens without hunting or cooking")
 	check(game.quests.status("sf_a_meal_earned")=="locked","Cook's actual chain still requires meeting Hobb")

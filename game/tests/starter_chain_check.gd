@@ -59,7 +59,6 @@ func _process(_dt: float) -> bool:
 		check(game.quests.active == ["ni_stretch_your_legs"], "the first quest is Abel's milestone (%s)" % [game.quests.active])
 		check(game.quests.status("sf_odd_jobs") == "available", "Village work is available even when the cart tutorial is skipped")
 		run("ni_stretch_your_legs")
-		run("ni_rats_in_the_grain")
 		run("ni_loose_boar")
 		run("ni_the_road_in")
 		check(inv.count("ni_abel_note") == 0, "Abel's note is handed to Elsie")
