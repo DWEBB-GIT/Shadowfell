@@ -181,7 +181,10 @@
         "hunting_bow",
         "rough_arrow",
         "travellers_satchel",
-        "torch"
+        "torch",
+        "oak_club",
+        "ironwood_club",
+        "roadwarden_greatsword"
       ],
       "faction": "road_wardens"
     },

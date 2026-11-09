@@ -1545,7 +1545,7 @@ func _render_spellbook() -> void:
 	w.inner.add_child(grid)
 	for id in ids:
 		_spell_card(grid, id)
-	w.foot.text = "A: pick up / place on the bar   Y: remove from the bar   B: back" if hud.pad_mode else "Drag a spell onto the bar. Drag spells along the bar to rearrange them, or off it to remove them."
+	w.foot.text = "Equip any six learned class spells outside combat. Drag spells onto the bar to change your build."
 
 
 ## What changes a spell now: its Enhanced rank, its fork, legendary powers.
@@ -1880,7 +1880,10 @@ func _cost_line(a: Dictionary) -> String:
 	for k in a.get("cost", {}):
 		parts.append("%s %s" % [U.n(a.cost[k]), r.name_of(k)])
 	if a.get("spendsAll"):
-		parts.append("Spends all %s" % r.name_of(a.spendsAll))
+		var cap: float = a.get("tuning", {}).get("spendCap", INF)
+		parts.append("Spends up to %s %s" % [U.n(cap), r.name_of(a.spendsAll)] if is_finite(cap) else "Spends all %s" % r.name_of(a.spendsAll))
+	for k in a.get("hitGain", {}):
+		parts.append("On hit, gives %s %s" % [U.n(a.hitGain[k]), r.name_of(k)])
 	for k in a.get("gain", {}):
 		parts.append("Gives %s %s" % [U.n(a.gain[k]), r.name_of(k)])
 	return _l(" · ".join(parts), "#8fb4f0", 12) if not parts.is_empty() else ""
@@ -1892,7 +1895,7 @@ func _scaling_line(ab: Dictionary) -> String:
 	var t: Dictionary = ab.get("tuning", {})
 	var tick: float = t.get("tickMultiplier", 1.0)
 	var parts := []
-	if t.has("damageMultiplier"):
+	if t.get("damageMultiplier", 0) > 0:
 		parts.append("%d%% weapon damage" % roundi(t.damageMultiplier * 100))
 	elif t.has("damageMin"):
 		if t.get("weaponDamage", 0):
@@ -1926,7 +1929,7 @@ func _tooltip(loc: String) -> void:
 			var d := Items.get_def(item)
 			_set_tip([_name_line(d.name, UI.hex(Items.rarity_colour(d.get("rarity", "common")))), _l("[i]%s[/i]" % _esc(d.get("description", "")), "#d0b878"), _l("Press to use%s" % (" (again to put it away)" if d.get("slot") == "offHand" else ""), "#8fbf6a", 12)], [])
 			return
-		var ab: Dictionary = DB.abilities.get(id, {})
+		var ab: Dictionary = game.spells.tuned(id) if DB.spells.has(id) else DB.abilities.get(id, {})
 		var req := Spells.requirement_text(ab)
 		var lines := [_name_line(ab.get("name", id), ""), _cost_line(ab)]
 		if req != "":

@@ -1269,6 +1269,13 @@
       "greetings": [
         {
           "text": "“Elsie Reed. Hot food, dry beds. If you start a fight, take it outside and settle your tab first.”"
+        },
+        {
+          "when": {
+            "quest": "vr_crypt",
+            "status": "done"
+          },
+          "text": "“There is a chair by the fire. You have earned the right to let somebody else fetch the next bundle.”"
         }
       ],
       "topics": [
@@ -1276,6 +1283,11 @@
           "id": "nr_regulars",
           "prompt": "How is the village holding up?",
           "node": "nr_regulars"
+        },
+        {
+          "id": "in_work_and_bed",
+          "prompt": "I am looking for work and a bed.",
+          "node": "in_work_and_bed"
         }
       ],
       "nodes": [
@@ -1285,6 +1297,15 @@
           "replies": [
             {
               "text": "I will leave you to it."
+            }
+          ]
+        },
+        {
+          "id": "in_work_and_bed",
+          "text": "“Then you have chosen a sensible order. Iren needs this hinge, Hobb needs supper ingredients and Heda needs her pigs to remain pigs. Do something useful and there will be a dry place for you here.”",
+          "replies": [
+            {
+              "text": "I understand."
             }
           ]
         }
@@ -1461,6 +1482,13 @@
             "quest": "nr_bottle_labels",
             "status": "done"
           }
+        },
+        {
+          "when": {
+            "quest": "in_soup_round",
+            "status": "done"
+          },
+          "text": "“Della and Benn have both eaten. A small victory. We collect those.”"
         }
       ],
       "topics": [
@@ -1500,6 +1528,19 @@
             "quest": "nr_pollinator_notes",
             "status": "done"
           }
+        },
+        {
+          "when": {
+            "quest": "vr_first_hunt",
+            "status": "done"
+          },
+          "text": "“The pig count is holding steady. I could get used to this.”"
+        },
+        {
+          "when": {
+            "flag": "in_boundary_agreed"
+          },
+          "text": "“Osric brought his half of the timber. He complained the entire way. We are making excellent progress.”"
         }
       ],
       "topics": [],
@@ -1523,6 +1564,12 @@
             "quest": "nr_timber",
             "status": "done"
           }
+        },
+        {
+          "when": {
+            "flag": "in_boundary_ruled"
+          },
+          "text": "“I have the mayor’s ruling in writing. A man should keep his paperwork. Apparently the dead are learning this as well.”"
         }
       ],
       "topics": [],
@@ -1540,10 +1587,33 @@
             "quest": "wm_lantern_crossing_record",
             "status": "done"
           }
+        },
+        {
+          "when": {
+            "quest": "in_testimony",
+            "status": "done"
+          },
+          "text": "“Edda’s statement is safe. Anwen has kept a room ready if the road brings you back.”"
         }
       ],
-      "topics": [],
-      "nodes": []
+      "topics": [
+        {
+          "id": "in_crossing_people",
+          "prompt": "Who depends on this crossing?",
+          "node": "in_crossing_people"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "in_crossing_people",
+          "text": "“Ada’s carts, Beren’s horses, Anwen’s rooms and every farm that sends grain through them. People look at a bridge and see timber. I see the week’s wages.”",
+          "replies": [
+            {
+              "text": "I understand."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "wm_lantern_crossing_worker",
@@ -1593,8 +1663,24 @@
           }
         }
       ],
-      "topics": [],
-      "nodes": []
+      "topics": [
+        {
+          "id": "in_river_people",
+          "prompt": "Is Hale safe to talk to?",
+          "node": "in_river_people"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "in_river_people",
+          "text": "“Hale has kept these lamps for thirty years. I trust him to show a stranger the bank. I trust him considerably less to admit he needs company. Talk to him as you would anyone else.”",
+          "replies": [
+            {
+              "text": "I understand."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "wm_mossreed_landing_worker",
@@ -3331,6 +3417,254 @@
       ],
       "topics": [],
       "nodes": []
+    },
+    {
+      "id": "in_paige",
+      "greetings": [
+        {
+          "text": "“If you are the relief patrol, you are late. If you are another corpse, please form a queue.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Why did you stay?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“Dunn hurt his ankle. I had the faster horse. Then the horse discovered a private religious objection to skeletons. I am taking that up with the stable when we get home.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_benn",
+      "greetings": [
+        {
+          "text": "“Mind the stones. Somebody has already shown them enough disrespect.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Did you know the watchmen?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“I buried two. One had a daughter who kept asking whether her father would be cold. I promised he could rest. I would appreciate the chance to keep that promise.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_della",
+      "greetings": [
+        {
+          "text": "“Come in out of the damp. The dead can wait five minutes. They have had considerable practice.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Why stay in the Hollow?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“My garden is here. My husband is here. My knee would prefer somewhere flatter, but my knee has never paid the rent.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_ada",
+      "greetings": [
+        {
+          "text": "“Put it down gently. If it is already broken, you may put it down angrily.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "What happened to the wagons?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“A broken axle is an honest problem. You can point to the broken bit. These new fees charge a man for the possibility that his grandfather once owned a cart. I do not have a tool for that.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_kit",
+      "greetings": [
+        {
+          "text": "“The horses have eaten. The people are still being discussed.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Do you like working here?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“I like the horses. Aunt Merrit says that is half the business. Uncle Beren says the other half is arguing over who fed them last.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_hale",
+      "greetings": [
+        {
+          "text": "“If you have come about the lamps, good evening. If you have come about my condition, I have had the conversation.”"
+        },
+        {
+          "when": {
+            "quest": "wm_mossreed_landing_record",
+            "status": "done"
+          },
+          "text": "“Nessa filed my receipt. Tess has been down with supper. The lamps are trimmed. A man could call that a good evening.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Do people mind you keeping watch?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“Jory minds when I bring river mud into his inn. My daughter minds when I miss supper. You will find that a great many complaints survive the complainant.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_tess",
+      "greetings": [
+        {
+          "text": "“Tell my father the lamps can wait until he has eaten. He is remarkably stubborn for a man with no stomach.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "What brought the dead back?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“Some rose angry. Some rose frightened. Father rose and finished trimming the lamps. We are working out the rest one day at a time.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_sella",
+      "greetings": [
+        {
+          "text": "“You can stand by the fire while we talk. A cold witness is a distracted witness.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "What is this camp for?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“A safe fire between two roads. Travellers think that is a small thing until they need one. The mine used to pay for the lamps. Now it charges the lamplighters for the oil.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "in_edda",
+      "greetings": [
+        {
+          "text": "“I know what my people signed. Ask me before you ask the men with swords.”"
+        },
+        {
+          "when": {
+            "quest": "in_foreman",
+            "status": "done"
+          },
+          "text": "“There you are. The families are making plans again. You should hear how noisy a camp becomes when people can think past tomorrow.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "life_0",
+          "prompt": "Why did the miners sign?",
+          "node": "life_0"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_0",
+          "text": "“Winter food and a wage advance. They had children to feed. A hungry person can read a contract perfectly well and still have only one choice.”",
+          "replies": [
+            {
+              "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

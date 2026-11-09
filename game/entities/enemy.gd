@@ -31,6 +31,8 @@ var circle_timer := 2.5
 var stagger := 0.0
 var mods := {}
 var asleep := false
+var root_left := 0.0
+var search_left := 0.0
 var staggered := 0.0
 var dr := {}
 var stagger_bar = null
@@ -142,7 +144,7 @@ var is_elite: bool:
 
 var move_speed: float:
 	get:
-		return cfg.speed * (1 - minf(90, mods.slow) / 100.0)
+		return 0.0 if root_left > 0 else cfg.speed * (1 - minf(90, mods.slow) / 100.0)
 
 ## running after the player in a fight: a percent of the player's base move
 ## speed (CONFIG.chase: the enemy's `runSpeed`, else its type's), still
@@ -215,12 +217,28 @@ func _hold(seconds: float) -> void:
 
 
 ## the player slipped into Shadow: stop chasing and stand looking about
-func lose_track() -> void:
+func lose_track(seconds := 3.0) -> void:
 	if dead or cfg.get("dummy", false):
 		return
-	state = "idle"
+	state = "search"
+	search_left = seconds
 	windup = 0.0
+	_cancel_cast()
 	wander.target = position
+
+
+func distract_at(at: Vector3) -> void:
+	facing = atan2(at.x-position.x, at.z-position.z)
+	calm = maxf(calm,5.0)
+	wander.target = position
+	wander.t = 5.0
+
+
+func frighten(seconds: float) -> void:
+	state = "flee"
+	flee_left = seconds
+	windup = 0.0
+	_cancel_cast()
 
 
 func _sync() -> void:
@@ -243,6 +261,8 @@ func reset() -> void:
 	special_timer = 3.0
 	circle_timer = 2.5
 	stagger = 0.0
+	root_left = 0.0
+	search_left = 0.0
 	_reset_control()
 	engaged = 0.0
 	since_struck = INF
@@ -291,7 +311,7 @@ func hurt(amount: float, opts := {}) -> float:
 		var dir := Vector3(position.x - from.x, 0, position.z - from.z)
 		if dir.length_squared() > 0.0001:
 			knock = dir.normalized() * kb * 6
-	if not cfg.get("dummy", false) and (state == "idle" or state == "return"):
+	if not cfg.get("dummy", false) and (state in ["idle", "return"] or (state == "search" and not game.spells.hidden)) and not (game.spells.hidden and opts.get("periodic",false)):
 		state = "chase"
 		_wake_pack()
 	if health <= 0 and cfg.get("dummy", false):
@@ -376,7 +396,7 @@ func _start_shot(player) -> void:
 			# the shot stops at the player if it hits, otherwise flies on
 			var to := Vector3(p.x, 0, p.z) if on_line else end
 			game.events.emit("projectile", {"kind": r.get("projectile"), "from": Vector3(position.x, position.y + 1.3, position.z), "to": to, "speed": r.speed})
-			game.combat.resolve_telegraph(self, shape, r.damage, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical")}),
+			game.combat.resolve_telegraph(self, shape, r.damage, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical"), "ranged":true}),
 	})
 	if r.get("mana"):
 		mana -= r.mana
@@ -492,6 +512,7 @@ func update(dt: float, player) -> void:
 
 	staggered = maxf(0, staggered - dt)
 	since_struck += dt
+	root_left = maxf(0.0,root_left-dt)
 	dr.quiet += dt
 	if dr.quiet >= DB.CONFIG.control.eliteDrReset:
 		dr.n = 0
@@ -527,6 +548,11 @@ func update(dt: float, player) -> void:
 				else:
 					state = "attack" if dist <= reach else "chase"
 					engaged = maxf(engaged, 2)
+			"search":
+				search_left -= dt
+				facing += dt * 1.5
+				if search_left <= 0:
+					state = "return"
 			"flee":
 				flee_left -= dt
 				engaged = maxf(engaged, 2)
@@ -581,7 +607,7 @@ func update(dt: float, player) -> void:
 				facing = atan2(dx, dz)
 			else:
 				var k := clampf((charge - c.alertSeconds) / maxf(0.01, c.rampSeconds), 0.0, 1.0)
-				_steer_towards(player.position.x, player.position.z, lerpf(minf(move_speed, chase_speed), chase_speed, k), dt, reach * 0.85)
+				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach * 0.85)
 				speed01 = 1.0
 			if windup > 0:
 				windup = 0.0

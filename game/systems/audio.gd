@@ -130,6 +130,11 @@ func _ready() -> void:
 		func(): growl(55, 1.4), func(): growl(120, 0.35)]
 	for t in [[160, 0.18], [110, 0.25], [90, 0.3], [180, 0.12], [70, 0.6], [60, 0.6], [220, 0.12]]:
 		warm.append(func(): thud(t[0], t[1]))
+	for id in DB.spell_fx:
+		var cue: Dictionary = DB.spell_fx[id].get("sound", {})
+		if not cue.is_empty():
+			for phase in ["cast", "impact"]:
+				warm.append(func(): _ability_cue(id, phase, cue))
 	for sc in SCHOOL_PITCH:
 		warm.append(func(): cast_charge(sc))
 		warm.append(func(): whoosh(0.3, SCHOOL_PITCH[sc] * 1.4))
@@ -265,10 +270,27 @@ func _bind() -> void:
 	# for the blade, `show`)
 	ev.on("enemyHit", func(e): _later(e.get("show", 0.0), func(): blow(e)))
 	ev.on("burst", func(e): burst_boom(e))
-	ev.on("castStart", func(e): cast_charge(_school_of(e.get("id", ""))))
+	ev.on("castStart", func(e):
+		if e.id == "longShot":
+			whoosh(0.52, 240)
+		else:
+			cast_charge(_school_of(e.id)))
+	ev.on("castEnd", func(e):
+		if not e.get("done"):
+			_cast_failure())
+	ev.on("classCastFailed", func(_e): _cast_failure())
+	ev.on("shieldAbsorbed", func(e):
+		chime([784,1175] if e.id == "lightShield" else [520,830],0.08))
+	ev.on("tarIgnited", func(_e): school_impact("fire"))
+	ev.on("classAffliction", func(e):
+		if e.school in ["shadow","nature"]:
+			rustle(0.45))
 	ev.on("spellFx", func(e):
-		if e.get("phase") == "cast":
-			cast_release(_school_of(e.get("id", ""))))
+		var cue: Dictionary = DB.spell_fx.get(e.id,{}).get("sound",{})
+		if not cue.is_empty() and e.phase in ["cast","impact"]:
+			_ability_cue(e.id,e.phase,cue)
+		elif e.phase == "cast":
+			cast_release(_school_of(e.id)))
 	ev.on("enemyMissed", func(_e): whoosh(0.18, 900))
 	ev.on("playerMiss", func(_e): whoosh(0.18, 900))
 	ev.on("playerBrace", func(_e): thud(180, 0.12))
@@ -385,10 +407,12 @@ func blow(e: Dictionary) -> void:
 			school_impact(str(e.get("school", "arcane")), lv)
 		else:
 			var w := weapon_sound(str(e.get("hand", "main")))
-			if w == "":
+			if w == "heavy":
+				thud(105 if e.get("hand") == "off" else 78, 0.2)
+			elif w == "":
 				thud(150, 0.15) # fists
 			else:
-				sfx(w, lv, rng.randf_range(0.94, 1.06) * (0.9 if crit else 1.0))
+				sfx(w, lv, rng.randf_range(0.94, 1.06) * (0.9 if crit else 1.0) * (1.19 if e.get("hand") == "off" else 0.96))
 		material_hit(mat, lv * 0.7)
 		if crit:
 			crit_sting(lv))
@@ -406,6 +430,8 @@ func weapon_sound(hand: String) -> String:
 			return "hit_dagger"
 		"bow":
 			return "hit_bow"
+		"club", "twoHand":
+			return "heavy"
 	return "hit"
 
 
@@ -504,7 +530,7 @@ func cast_release(school: String) -> void:
 		chime([660, 990], 0.12)
 
 
-const SCHOOL_PITCH := {"fire": 380.0, "holy": 880.0, "shadow": 180.0, "nature": 520.0, "frost": 1200.0, "arcane": 760.0}
+const SCHOOL_PITCH := {"fire": 380.0, "holy": 880.0, "shadow": 180.0, "nature": 520.0, "frost": 1200.0, "arcane": 760.0, "lightning": 540.0}
 
 
 ## where a spell lands, by school
@@ -1088,3 +1114,27 @@ func update(dt: float) -> void:
 	var want := maxf(0, danger) * 0.12
 	rumble_level += (want - rumble_level) * (1 - exp(-dt / 0.5))
 	rumble.volume_db = linear_to_db(maxf(rumble_level, 0.00001))
+
+
+var _last_cast_failure := -1000
+
+func _cast_failure() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_cast_failure < 360:
+		return
+	_last_cast_failure = now
+	thud(140, 0.09)
+
+
+func _ability_cue(id: String, phase: String, cue: Dictionary) -> void:
+	var impact := phase == "impact"
+	var hz: float = cue.pitch * (0.72 if impact else 1.0)
+	var length: float = cue.length
+	if id == "longShot" and not impact and not warming:
+		sfx("shot",0.9,0.8)
+	var make := func():
+		var buffer := _buf(length)
+		_tone(buffer,0,length,"sine",func(t):return _expo(hz*(1.4 if impact else 0.75),hz,t,length),[0.008,0.20,0.08])
+		_noise(buffer,0,length,Biquad.new("bandpass",clampf(hz*2.7,180,3600),1.2,RATE),[0.004,0.24,0.08])
+		return buffer
+	_play("ability:"+id+":"+phase,make,0.7 if impact else 0.48)

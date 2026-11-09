@@ -175,8 +175,11 @@ func _draw() -> void:
 	elif not DB.world_map.is_empty():
 		_draw_design_map()
 	var ql = game.quests
-	for id in ql.active:
-		if not ql.tracked.has(id):
+	var followed: Array = ql.active.duplicate()
+	if ql.focus != "" and ql.status(ql.focus) == "available":
+		followed.append(ql.focus)
+	for id in followed:
+		if not ql.tracked.has(id) and id != ql.focus:
 			continue
 		var at: Dictionary = ql.goal(id)
 		if at.is_empty():

@@ -36,6 +36,8 @@ func _init() -> void:
 	# Dan's painted icons (assets/icons/spells/<ability id>.png) win over the glyphs
 	for id in DB.abilities:
 		var path := SPELLS % id
+		if not ResourceLoader.exists(path):
+			path = path.get_basename() + ".svg"
 		if ResourceLoader.exists(path):
 			abilities[id] = load(path)
 
@@ -46,6 +48,8 @@ static func art(group: String, id: String) -> Texture2D:
 	var key := group + "/" + id
 	if not _art.has(key):
 		var path := ART % [group, id]
+		if not ResourceLoader.exists(path):
+			path = path.get_basename() + ".svg"
 		_art[key] = load(path) if ResourceLoader.exists(path) else null
 	return _art[key]
 

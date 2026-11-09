@@ -232,6 +232,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 	anim.advance(dt)
 	_apply_upper(dt)
 	_apply_off_mirror()
+	_apply_live_spell_pose()
 	_apply_snap(dt)
 	if track_steps:
 		_watch_feet(dt)
@@ -287,6 +288,8 @@ func _pick_clip(dt: float, speed01: float) -> void:
 		action.t += dt
 		# a spell's own pose is a clip of its name; else the kind's clip
 		var name: String = action.type if anim.has_animation(action.type) else ACTION_CLIPS.get(action.type, "Attack")
+		if DB.spell_poses.has(action.type) and not anim.has_animation(action.type):
+			name = ""
 		if name != "" and not anim.has_animation(name):
 			name = "Attack" # a creature without a Cast clip bites instead
 		var done: bool = action.t >= action.duration
@@ -776,3 +779,32 @@ static func tint(materials: Array, colour: Color) -> void:
 
 const FLASH_RED := Color(0.9, 0.25, 0.15)
 const FLASH_WHITE := Color(1, 0.9, 0.75)
+
+
+const SPELL_BONES := {"Arm_L":"LeftArm","Arm_R":"RightArm","Torso":"Spine2","Head":"Head","Leg_L":"LeftUpLeg","Leg_R":"RightUpLeg"}
+var _live_spell_bones := {}
+
+func _apply_live_spell_pose() -> void:
+	if action == null or death >= 0 or anim.has_animation(action.type):
+		return
+	var gesture = DB.spell_poses.get(action.type)
+	if gesture == null or not _find_upper():
+		return
+	var k := clampf(action.t / maxf(0.01, action.duration),0,1)
+	var impact: float = action.impact
+	var holder: Node3D = model.get_parent() if model.get_parent() is Node3D else model
+	var axes := _skel.global_basis.inverse() * holder.global_basis
+	for key in gesture.keys:
+		var part: String = key[0]
+		if not SPELL_BONES.has(part) or (_moving() and part.begins_with("Leg")):
+			continue
+		if not _live_spell_bones.has(part):
+			_live_spell_bones[part] = _skel.find_bone("mixamorig_"+SPELL_BONES[part])
+		var bone: int = _live_spell_bones[part]
+		if bone < 0:
+			continue
+		var parent := _skel.get_bone_parent(bone)
+		var base := _skel.get_bone_global_pose(parent).basis if parent >= 0 else Basis.IDENTITY
+		var axis := (base.inverse()*axes[key[1]]).normalized()
+		var angle := _key3(k,impact*gesture.up,impact,key[2],key[3])*0.55
+		_skel.set_bone_pose_rotation(bone,Quaternion(axis,angle)*_skel.get_bone_pose_rotation(bone))

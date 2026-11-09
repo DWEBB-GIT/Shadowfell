@@ -5,12 +5,13 @@ extends RefCounted
 ## Each effect is a node with a life and an update; it is freed when done.
 
 ## the colour of each school of magic (and of a Ranger's tar)
-const SCHOOL_COLOURS := {"holy": Color("ffd070"), "shadow": Color("9a5ae0"), "nature": Color("8ad04a"), "fire": Color("ff8030"), "physical": Color("e8dcc0"), "tar": Color("5a4630")}
+const SCHOOL_COLOURS := {"holy": Color("ffd070"), "shadow": Color("9a5ae0"), "nature": Color("8ad04a"), "fire": Color("ff8030"), "physical": Color("e8dcc0"), "tar": Color("7c6040"), "frost":Color("a7e7ff"), "lightning":Color("83baff"), "arcane":Color("bc9bff"), "steam":Color("d8e9e9")}
 
 var game
 var items := []
 var move_mark = null
 var traps := {}
+var keyed_zones := {}
 var dust_mesh: BoxMesh
 var dust_mat: StandardMaterial3D
 
@@ -122,7 +123,19 @@ func _init(g) -> void:
 	ev.on("darkCircle", func(e): shockwave(Vector3(e.x, Terrain.height_at(e.x, e.z), e.z), e.radius, Color("9a7cff")))
 	# spells (game/systems/spells.gd)
 	ev.on("spellFlash", func(e): flash(e.position, Color(e.colour) if e.has("colour") else SCHOOL_COLOURS.get(e.get("school"), Color("ffe08a"))))
-	ev.on("zone", func(e): zone(e.x, e.z, e.radius, e.duration, SCHOOL_COLOURS.get(e.get("school"), Color("ffd070"))))
+	ev.on("zone", func(e):
+		var field := zone(e.x,e.z,e.radius,e.duration,SCHOOL_COLOURS.get(e.get("school"),Color("ffd070")))
+		if e.has("key"):
+			keyed_zones[e.key] = field)
+	ev.on("zoneGone", func(e):
+		var field = keyed_zones.get(e.key)
+		if field != null:
+			field.life = maxf(0.001, field.age)
+			keyed_zones.erase(e.key))
+	ev.on("classImpact", func(e): shockwave(e.position,e.radius,SCHOOL_COLOURS.get(e.school,Color.WHITE)))
+	ev.on("classAffliction", func(e): flash(e.position,SCHOOL_COLOURS.get(e.school,Color.WHITE)))
+	ev.on("shieldAbsorbed", func(e): flash(e.position,Color("f5d780") if e.id == "lightShield" else Color("a592ff")))
+	ev.on("tarIgnited", func(e): shockwave(e.position,2.0,Color("ff8030")))
 	# a set trap is a small dull ring until it is sprung or wears out
 	ev.on("trap", func(e): traps[e.key] = zone(e.x, e.z, e.radius, e.duration, Color("8a7050"), 0.35))
 	ev.on("trapGone", func(e):
@@ -513,11 +526,14 @@ static func fx_mesh(name: String) -> Mesh:
 	if not _fx_meshes.has(name):
 		var mesh: Mesh = null
 		var path := "res://assets/models/fx/%s.glb" % name
+		if Assets.has(name):
+			path = Assets.model_path(name)
 		if ResourceLoader.exists(path):
 			var n: Node = load(path).instantiate()
 			var found := n.find_children("*", "MeshInstance3D", true, false)
 			if not found.is_empty():
-				mesh = Assets._srgb_mesh(found[0].mesh)
+				var source: Mesh = found[0].mesh
+				mesh = Assets._srgb_mesh(source) if source is ArrayMesh else source
 			n.free()
 		_fx_meshes[name] = mesh
 	return _fx_meshes[name]
@@ -865,14 +881,18 @@ func _trail_ends(w: Node3D) -> Array:
 func weapon_trail(dt: float) -> void:
 	var p = game.player
 	var rig = p.rig if p else null
-	var w: Node3D = p.weapon_part if p else null
-	var swinging: bool = rig != null and rig.action != null and (rig.action.type == "strike" or rig.action.get("trail", false)) \
+	var off := false
+	if rig != null and game.stats.dual_wielding:
+		off = (rig.action != null and rig.action.get("trailHand") == "off") or (rig.off_action != null and (rig.action == null or rig.off_action.t < rig.action.t))
+	var w: Node3D = (p.shield if off else p.weapon_part) if p else null
+	var swinging: bool = rig != null and (off or (rig.action != null and (rig.action.type == "strike" or rig.action.get("trail", false)))) \
 		and not p.bow_in_hand and w != null and w.is_visible_in_tree() and game.settings.get_value("weaponTrails") != false
 	for pt in trail_pts:
 		pt[2] += dt
 	trail_pts = trail_pts.filter(func(pt): return pt[2] < TRAIL_LIFE)
 	if swinging:
 		if w != trail_weapon:
+			trail_pts.clear()
 			trail_weapon = w
 			trail_local = _trail_ends(w)
 		var g := w.global_transform
@@ -901,7 +921,7 @@ func weapon_trail(dt: float) -> void:
 	trail_mesh.clear_surfaces()
 	if trail_pts.size() < 2:
 		return
-	var col: Color = Color("fff0d8")
+	var col: Color = Color("b9d7ff") if off else Color("fff0d8")
 	trail_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
 	for i in trail_pts.size():
 		var pt: Array = trail_pts[i]
@@ -923,3 +943,7 @@ func update(dt: float) -> void:
 			RenderCleanup.detach(it.obj)
 			it.obj.queue_free()
 			items.erase(it)
+	for key in keyed_zones.keys():
+		var field: Dictionary = keyed_zones[key]
+		if field.age >= field.life:
+			keyed_zones.erase(key)
