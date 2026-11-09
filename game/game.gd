@@ -797,6 +797,10 @@ func _click(button: String) -> bool:
 		"enemy":
 			if acts or mouse_aim:
 				targeting.engage(o)
+				# attacking (not selecting) squares you up to it, as in WoW,
+				# so a foe you had walked past is hit without a dance
+				if targeting.target_in_reach and not player.moving:
+					player.face_towards(o.position.x, o.position.z)
 				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if walk:
@@ -861,7 +865,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 		# stop well inside the real swing reach (no moving leeway), so the
 		# first blow lands once both stand still
 		var f = m.follow
-		var stop: float = DB.attack.range * 0.75 + f.radius * 0.6
+		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
 		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
 			move_to = null

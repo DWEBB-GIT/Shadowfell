@@ -120,7 +120,7 @@ func _selected_in_reach(range_: float):
 	var p: Vector3 = game.player.position
 	if game.collision.wall_between(p.x, p.z, t.position.x, t.position.z):
 		return null
-	return t if U.hyp(t.position.x - p.x, t.position.z - p.z) <= range_ + t.radius * 0.6 else null
+	return t if U.hyp(t.position.x - p.x, t.position.z - p.z) <= Targeting.melee_reach(t, range_) + DB.attack.get("impactGrace", 0.0) else null
 
 
 ## Ground-telegraphed attacks hit whoever stands inside the marked area.
@@ -178,7 +178,7 @@ func select_strike_target(aim):
 		var dx: float = e.position.x - player.position.x
 		var dz: float = e.position.z - player.position.z
 		var dist := U.hyp(dx, dz)
-		var reach: float = DB.attack.range + e.radius * 0.6
+		var reach: float = Targeting.melee_reach(e)
 		if dist > reach or game.collision.wall_between(player.position.x, player.position.z, e.position.x, e.position.z):
 			continue
 		var facing_dot := (dx * dir_x + dz * dir_z) / dist if dist > 0.01 else 1.0

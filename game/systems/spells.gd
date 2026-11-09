@@ -512,7 +512,9 @@ func _target_for(spell: Dictionary, optional := false):
 	var targeting = game.targeting
 	var player = game.player
 	var range_: float = minf(game.stats.ranged_reach,spell.range) if spell.get("ranged") and spell.get("mechanic") == "interruptArrow" else game.stats.ranged_reach if spell.get("ranged") else spell.range
-	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= range_ + e.radius * 0.6
+	# melee abilities reach as far as a swing does, lag allowance included
+	var melee: bool = not spell.get("ranged", false) and spell.kind != "charge" and range_ <= DB.attack.range + 1
+	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= (Targeting.melee_reach(e, range_) if melee else range_ + e.radius * 0.6)
 	var cur = targeting.current
 	if cur != null and cur.alive:
 		# livestock and the watch: only with the crime key held (Alt)

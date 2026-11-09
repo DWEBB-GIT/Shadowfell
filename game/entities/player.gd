@@ -518,6 +518,8 @@ func update(dt: float, controls) -> void:
 				aim_hold = 0
 			var walk: float = tank.y * (DB.CONFIG.player.backpedal if tank.y < 0 else 1.0)
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
+		else:
+			mv = _melee_steer(mv, dt)
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
@@ -689,7 +691,8 @@ func try_strike_off(aim) -> bool:
 func _impact(hand: String, p: Dictionary, dt: float, show := 0.0) -> void:
 	var off := hand == "off"
 	var tg = game.targeting
-	if not tg.attacking or not tg.target_in_reach:
+	# a swing already begun still lands if the target stepped a little out
+	if not tg.attacking or not tg.in_reach(DB.attack.get("impactGrace", 0.0)):
 		if off:
 			rig.off_action = null
 		elif rig.action != null and rig.action.type == "strike":
@@ -786,6 +789,50 @@ func bow_muzzle() -> Vector3:
 	if bow != null and bow.has_method("muzzle_local"):
 		return bow.global_transform*bow.call("muzzle_local")
 	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
+
+
+## The enemy you are fighting, while it is in melee reach (else null).
+func _melee_foe():
+	var tg = game.targeting
+	if tg == null or not tg.attacking or not tg.in_reach(DB.attack.movingLeeway):
+		return null
+	return tg.current
+
+
+## Turning in a melee fight (Dan, 2026-11-09): you face where you run, so
+## stepping back towards a foe you had passed used to carry you through it
+## and out the other side before you had turned. Now, with your foe in reach,
+## pushing towards it turns you on the spot first, and you never walk into
+## its body: the part of the move into it is dropped, so you stop squared up
+## (or slide round it). Moving away is untouched, so kiting rules hold.
+func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
+	var foe = _melee_foe()
+	var ml := U.hyp(mv.x, mv.z)
+	if foe == null or ml < 0.01:
+		return mv
+	var fx: float = foe.position.x - position.x
+	var fz: float = foe.position.z - position.z
+	var d := U.hyp(fx, fz)
+	if d < 0.01:
+		return mv
+	fx /= d
+	fz /= d
+	var inward: float = (mv.x * fx + mv.z * fz) / ml
+	if inward < cos(deg_to_rad(DB.attack.get("pivotDegrees", 70))):
+		return mv
+	if not facing_point(foe.position.x, foe.position.z, 30):
+		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
+		return {"x": 0.0, "z": 0.0}
+	var gap: float = radius + foe.radius + DB.attack.get("bodyGap", 0.35)
+	if d > gap + ml * DB.CONFIG.player.speed * dt:
+		return mv
+	# keep only the sideways part: circle the foe, never pass through it
+	var push: float = mv.x * fx + mv.z * fz
+	var side := {"x": mv.x - fx * push, "z": mv.z - fz * push}
+	if U.hyp(side.x, side.z) < 0.15:
+		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
+		return {"x": 0.0, "z": 0.0}
+	return side
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)

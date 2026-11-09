@@ -187,15 +187,28 @@ func stop_attack() -> void:
 	game.events.emit("autoAttack", {"on": false})
 
 
+## How far a melee blow reaches an enemy, centre to centre: the swing's
+## range, the enemy's whole body, and `lagGrace` so a blow still lands once
+## lag and ping come in (Dan, 2026-11-09: you had to stand inside a mob).
+static func melee_reach(e, base := -1.0) -> float:
+	var r: float = DB.attack.range if base < 0 else maxf(base, DB.attack.range)
+	return r + e.radius + DB.attack.get("lagGrace", 0.0)
+
+
 ## Is the target close enough to hit with a swing? Melee reach stretches a
 ## little (`movingLeeway`) while you and it are both moving.
 var target_in_reach: bool:
 	get:
-		var t = current
-		if t == null or not t.alive:
-			return false
-		var leeway: float = DB.attack.movingLeeway if game.player.moving and target_moving else 0.0
-		return _dist(t) <= DB.attack.range + t.radius * 0.6 + leeway
+		return in_reach(0.0)
+
+
+## `extra`: more slack, e.g. at a blow's impact frame for a swing already begun
+func in_reach(extra: float) -> bool:
+	var t = current
+	if t == null or not t.alive:
+		return false
+	var leeway: float = DB.attack.movingLeeway if game.player.moving and target_moving else 0.0
+	return _dist(t) <= melee_reach(t) + leeway + extra
 
 ## Beyond melee reach but within the bow's: Auto Shot's turn.
 var target_in_shot: bool:
