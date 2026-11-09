@@ -57,6 +57,10 @@ static func _puzzles(s: DataStore, out: PackedStringArray) -> void:
 		if str(p.get("success", "")) == "" or str(p.get("failure", "")) == "":
 			bad.call("needs success and retry feedback")
 
+	for chest in s.files.world.get("chests", []):
+		if chest.get("puzzle") and not seen.has(chest.puzzle):
+			out.append("Chest %s names unknown puzzle %s" % [chest.get("id", ""), chest.puzzle])
+
 
 static func _is_int(v) -> bool:
 	return (v is int or v is float) and v == floorf(v)
@@ -287,6 +291,9 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 				bad.call("requires unknown quest %s" % r)
 			if r == id:
 				bad.call("cannot require itself")
+		for lead in q.get("leadsFrom", []):
+			if s.quest(lead).is_empty() or lead == id:
+				bad.call("suggested handoff names an unknown quest or itself: %s" % lead)
 		var objs: Array = q.get("objectives", [])
 		if objs.is_empty():
 			bad.call("needs at least one objective")
@@ -326,8 +333,8 @@ static func _quests(s: DataStore, out: PackedStringArray) -> void:
 					# use an ability (on a targeted enemy type, at a map area)
 					if DataStore.find(s.abilities, o.get("target")).is_empty():
 						bad.call("%s names unknown ability %s" % [label, o.get("target")])
-					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty():
-						bad.call("%s: on names unknown enemy %s" % [label, o.on])
+					if o.has("on") and DataStore.find(s.enemies, o.on).is_empty() and DataStore.find(s.npcs, o.on).is_empty():
+						bad.call("%s: on names unknown enemy or npc %s" % [label, o.on])
 					if o.has("at") and DataStore.find(s.locations, o.at).is_empty():
 						bad.call("%s: at names unknown map area %s" % [label, o.at])
 				_:

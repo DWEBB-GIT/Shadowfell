@@ -398,7 +398,7 @@ var _blow_n := 0
 
 func blow(e: Dictionary) -> void:
 	var enemy = e.get("enemy")
-	if enemy == null or e.get("damage", 0) <= 0:
+	if enemy == null or e.get("damage", 0) <= 0 or e.get("periodic", false):
 		return
 	var f := Engine.get_process_frames()
 	_blow_n = _blow_n + 1 if f == _blow_frame else 0

@@ -25,6 +25,7 @@ var views := {}
 var main: Dictionary = {}
 var sel: Dictionary = {}
 var create: Dictionary = {}
+var creator_appearance: Dictionary = ForgeCharacter.defaults()
 var hints: Array = [] ## [Label, keyboard text, pad text]
 
 
@@ -346,15 +347,60 @@ func _build_select() -> void:
 
 func _build_create() -> void:
 	var v := _view("create")
+	create.preview = preload("res://game/ui/roster_preview.gd").new()
+	create.preview.center_character()
+	v.add_child(create.preview)
 	var side := _side(v, "Create a character")
 	UI.label(side, "CLASS", 12, UI.TEXT_DIM)
 	create.list = UI.vbox(side, 6)
 	var detail := UI.panel(v, 0)
 	detail.add_theme_stylebox_override("panel", UI.frame(Vector4(16, 12, 16, 12)))
 	detail.custom_minimum_size = Vector2(320, 0)
-	detail.set_meta("detail", true)
-	create.detail = UI.rich(detail, 14, 288)
+	create.panel = detail
+	var detail_scroll := ScrollContainer.new()
+	detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	detail.add_child(detail_scroll)
+	var detail_column := UI.vbox(detail_scroll, 8)
+	detail_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	create.detail = UI.rich(detail_column, 13, 288)
+	create.detail.custom_minimum_size.y = 80
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(288, 300)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	detail_column.add_child(scroll)
+	var options := UI.vbox(scroll, 5)
+	options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(options, "APPEARANCE", 12, UI.GOLD)
+	create.appearance_selectors = {}
+	for key in ["sex", "face", "hair", "beard", "moustache", "skin_colour", "hair_colour", "eye_colour"]:
+		var row_option := UI.hbox(options, 8)
+		var text := UI.label(row_option, {"sex":"Body", "skin_colour":"Skin tone", "hair_colour":"Hair colour", "eye_colour":"Eye colour"}.get(key, key.capitalize()), 12, UI.TEXT_DIM)
+		text.custom_minimum_size.x = 88
+		var choice := OptionButton.new()
+		choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		choice.set_meta("nav", true)
+		var values := ForgeCharacter.choices(key)
+		choice.set_meta("values", values)
+		for value in values:
+			choice.add_item(str(value).replace("_", " ").capitalize())
+		choice.select(values.find(creator_appearance[key]))
+		choice.item_selected.connect(func(index):
+			creator_appearance[key] = choice.get_meta("values")[index]
+			_refresh_creator_preview()
+		)
+		row_option.add_child(choice)
+		create.appearance_selectors[key] = choice
+	_nav(options, "Randomise appearance", func():
+		for key in creator_appearance:
+			if key != "version": creator_appearance[key] = ForgeCharacter.choices(key, creator_appearance.sex).pick_random()
+		for key in create.appearance_selectors:
+			var choice: OptionButton = create.appearance_selectors[key]
+			choice.select(choice.get_meta("values").find(creator_appearance[key]))
+		_refresh_creator_preview()
+	, 13)
 	var c := _centre(v)
+	c.set_meta("centre", false)
+	create.footer = c
 	var row := UI.hbox(c, 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var name_edit := LineEdit.new()
@@ -616,11 +662,15 @@ func do_delete() -> void:
 
 # ------------------------------------------------------------ create
 func _render_create() -> void:
+	_refresh_creator_preview()
 	UI.clear(create.list)
 	create.cards = {}
 	for c in DB.text.title.classes:
 		var id: String = c.id
 		var card := _card(create.list, [c.name, c.role if c.get("archetype") else "Coming later"], func(): pick_class(id), id == class_id, not c.get("archetype"))
+		var words := card.get_child(0) as RichTextLabel
+		if words:
+			UI.set_rich(words, "[font_size=16][color=%s]%s[/color][/font_size]\n[color=#c9a45c]%s[/color]" % [CLASS_COLOURS.get(id, "#efe2bf"), UI.esc(c.name), UI.esc(c.role if c.get("archetype") else "Coming later")])
 		card.set_meta("class", id)
 		# Dan's class crest on the card's right (the Warden's is the warrior's)
 		var crest := Icons.art("ui", "class_" + ("warrior" if id == "warden" else id))
@@ -659,6 +709,7 @@ func pick_class(id: String, move_focus := true) -> void:
 	UI.set_rich(create.detail, "[font_size=20][color=#c9a45c]%s[/color][/font_size]   [font_size=12][color=#9a8f78]%s[/color][/font_size]\n\n%s\n\n%s%s" % [UI.esc(c.name), UI.esc(c.role).to_upper(), UI.esc(c.blurb), traits, "" if c.get("archetype") else "\n[color=#d8a070][font_size=13]This class arrives in a later build.[/font_size][/color]"])
 	if c.get("archetype"):
 		class_id = id
+		_refresh_creator_preview()
 	create.confirm.disabled = not c.get("archetype") or game.roster.full
 	if move_focus and create.cards.has(id):
 		focus(create.cards[id])
@@ -689,7 +740,7 @@ func do_create() -> void:
 			cls = k
 	if cls == null or not cls.get("archetype"):
 		return
-	var r: Dictionary = game.roster.create(Roster.tidy_name(create.name.text), cls.id)
+	var r: Dictionary = game.roster.create(Roster.tidy_name(create.name.text), cls.id, creator_appearance)
 	if not r.ok:
 		create.error.text = r.reason
 		return
@@ -787,6 +838,13 @@ func _labels() -> void:
 ## .select-center, #class-detail).
 func layout() -> void:
 	var vp := get_viewport_rect().size
+	if create.has("preview"):
+		create.preview.position = Vector2.ZERO
+		create.preview.size = vp
+		create.panel.position = Vector2(vp.x - 328, 24)
+		create.panel.size = Vector2(300, maxf(200, vp.y - 170))
+		create.footer.position = Vector2(320, vp.y - 165)
+		create.footer.size = Vector2(maxf(300, vp.x - 640), 150)
 	if sel.has("panel"):
 		var width := clampf(vp.x*0.28,300,380)
 		sel.preview.position=Vector2.ZERO
@@ -879,7 +937,15 @@ func _preview_selected(c: Dictionary) -> void:
 		for slot in arch.get("startingGear",{}):
 			if slot!="ammo":
 				gear[slot]={"id":arch.startingGear[slot],"count":1}
-	sel.preview.show_character(gear)
+	sel.preview.show_character(gear, saved.data.player.get("appearance", c.get("appearance")) if saved.status == "ok" else c.get("appearance"),c.classId=="ranger")
+
+
+func _refresh_creator_preview() -> void:
+	var gear := {}
+	var arch: Dictionary = DB.archetypes.get(class_id, DB.archetypes.warden)
+	for slot in arch.get("startingGear", {}):
+		if slot != "ammo": gear[slot] = {"id":arch.startingGear[slot], "count":1}
+	create.preview.show_character(gear, creator_appearance,class_id=="ranger")
 
 
 func show_deleted() -> void:

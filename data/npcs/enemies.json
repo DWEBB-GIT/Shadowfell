@@ -674,7 +674,9 @@
       "name": "Lantern-road Revenant",
       "level": 2,
       "detection": 7,
-      "respawn": 90
+      "respawn": 90,
+      "telegraph": true,
+      "windup": 0.9
     },
     {
       "id": "tf_wolf",
@@ -694,6 +696,28 @@
       "pack": 6,
       "detection": 5,
       "respawn": 25
+    },
+    {
+      "id": "ni_loose_boar",
+      "base": "vr_young_boar",
+      "name": "Loose Young Boar",
+      "level": 1,
+      "maxLevel": 1,
+      "roam": 2,
+      "respawn": 90,
+      "special": {
+        "name": "Tusk Sweep",
+        "windup": 1.2,
+        "cooldown": 8,
+        "trigger": 3.2,
+        "range": 2.8,
+        "arc": 65,
+        "damage": 8,
+        "interruptible": true,
+        "anim": "bite",
+        "impactEvent": "",
+        "warning": "The young boar lowers its tusks. Step out of the marked wedge before it fills!"
+      }
     },
     {
       "id": "tf_shambler",

@@ -1406,8 +1406,24 @@
           }
         }
       ],
-      "topics": [],
-      "nodes": []
+      "topics": [
+        {
+          "id": "old_bank",
+          "prompt": "Do you know any quiet places around here?",
+          "node": "old_bank"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "old_bank",
+          "text": "“Three flat stones above the north bank of Willow Pond. My father kept tackle there, where the floods would not take it. You can use what is left.” Tobin lowers his voice. “Behind that bank, a little path climbs to three old bells. Folks say Avel won the valley alone. My father said that was a story told by people who never had to hold a lamp for anyone.”",
+          "replies": [
+            {
+              "text": "I might have a look."
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "vr_rogue",
@@ -1553,16 +1569,16 @@
           "text": "“Seasoned timber. Straight grain. Opinions available while you wait.”"
         },
         {
-          "text": "Three paces. I moved it back. Heda has her hedge, I have the timber trail, and perhaps we can all get on with our work.",
-          "when": {
-            "flag": "vr_boundary_settled"
-          }
-        },
-        {
           "text": "Iren has the dry handles. Good. A tool should outlive a bad mood.",
           "when": {
             "quest": "nr_timber",
             "status": "done"
+          }
+        },
+        {
+          "text": "Three paces. I moved it back. Heda has her hedge, I have the timber trail, and perhaps we can all get on with our work.",
+          "when": {
+            "flag": "vr_boundary_settled"
           }
         },
         {
@@ -3661,6 +3677,39 @@
           "replies": [
             {
               "text": "Thank you. I will leave you to your work."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ni_abel",
+      "greetings": [
+        {
+          "text": "Abel sits in the road beside his tilted cart. “Mossreed to Thornford, every week for twenty years, and today the wheel decides it has had enough.”"
+        },
+        {
+          "text": "“Still here. Wheel’s still off. If you see the wheelwright, tell him there is a carrier on the west road growing old.”",
+          "when": {
+            "quest": "ni_the_road_in",
+            "status": "done"
+          }
+        }
+      ],
+      "topics": [
+        {
+          "id": "road_reserve",
+          "prompt": "What is the sword carved on that milestone?",
+          "node": "road_reserve"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "road_reserve",
+          "text": "“Avel the Dawnbearer. Held the crossing alone, they say, back when the night had teeth.” Abel nods toward Thornford. “Roadwardens still use the old mark. Three little cairns just off the road beyond the milestone mark a traveller’s reserve. Take something if you need it. Bread keeps a person alive more reliably than a stirring speech.”",
+          "replies": [
+            {
+              "text": "I will keep an eye out."
             }
           ]
         }

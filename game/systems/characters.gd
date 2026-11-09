@@ -133,7 +133,7 @@ func random_name() -> String:
 	return ""
 
 
-func create(raw_name, class_id: String) -> Dictionary:
+func create(raw_name, class_id: String, appearance = null) -> Dictionary:
 	var name := tidy_name(raw_name)
 	var problem := "You can keep %d characters. Delete one to make room." % max if full else name_problem(name)
 	if problem != "":
@@ -144,6 +144,7 @@ func create(raw_name, class_id: String) -> Dictionary:
 	var key := "%s.%s" % [SaveManager.SAVE_KEY, id] if taken else SaveManager.SAVE_KEY
 	var now := Time.get_unix_time_from_system() * 1000
 	var c := {"id": id, "name": name, "classId": class_id, "key": key, "createdAt": now, "lastPlayed": now}
+	c.appearance = ForgeCharacter.clean(appearance)
 	list.append(c)
 	last = id
 	if not _write():

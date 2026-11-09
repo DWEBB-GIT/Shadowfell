@@ -30,7 +30,9 @@ func _run() -> void:
 	game.save.autosave_enabled = false
 	game.set_process(false)
 	game.random = func(): return 0.5
-	check(game.player.position.distance_to(Vector3(-450,Terrain.height_at(-450,-203),-203)) < 2,"A new player enters Thornford")
+	var start: Array = DB.world.playerStart.position
+	check(game.player.position.distance_to(Vector3(start[0],Terrain.height_at(start[0],start[1]),start[1])) < 2,"A new player starts on the road in")
+	check(Vector2(start[0],start[1]).distance_to(Vector2(-450,-207)) > 60,"The road in starts outside Thornford")
 	_abilities()
 	_map()
 	_conversations()
@@ -124,7 +126,11 @@ func _map() -> void:
 func _conversations() -> void:
 	_fresh()
 	var q = game.quests
-	check(q.status("sf_odd_jobs") == "active","The opening job is in a fresh player's tracker")
+	check(q.status("ni_stretch_your_legs") == "active","The road in is in a fresh player's tracker")
+	for id in ["ni_stretch_your_legs","ni_loose_boar","ni_the_road_in"]:
+		q.done[id] = true
+	q.accept("sf_odd_jobs", true)
+	check(q.status("sf_odd_jobs") == "active","Elsie's opening job follows the road in")
 	check(not q.objectives("sf_odd_jobs")[0].done,"The opening conversation is not completed merely by accepting")
 	game.dialogue.open(game.npcs.by_id("tf_cook"))
 	check(not q.objectives("sf_odd_jobs")[0].done,"The wrong resident does not count")
@@ -223,6 +229,7 @@ func _finish(id: String) -> void:
 func _choices() -> void:
 	_fresh()
 	game.progression.level=2
+	for id in ["ni_stretch_your_legs","ni_loose_boar","ni_the_road_in"]: game.quests.done[id]=true
 	game.quests.done.sf_odd_jobs=true
 	game.quests.done.vr_fence_dispute=true
 	check(game.quests.accept("in_boundary_agreement",true),"A negotiated fence resolution is offered")

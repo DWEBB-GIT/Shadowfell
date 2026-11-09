@@ -3,6 +3,9 @@
   "targetLevel": 10,
   "baselineMinutes": 120,
   "opening": [
+    "ni_stretch_your_legs",
+    "ni_loose_boar",
+    "ni_the_road_in",
     "sf_odd_jobs",
     "sf_hungry_work",
     "in_farm_introduction",

@@ -1194,7 +1194,7 @@
       "giver": "tf_rowan",
       "turnIn": "tf_rowan",
       "summary": "Inspect the fallen lantern on the north road and put three road revenants to rest. Return to Captain Rowan at the Thornford watch house.",
-      "offer": "My patrol signed out at dusk. Their relief found men who had been buried for twenty years, carrying winter-work chits. Follow Lantern Road to the fallen cart. Read what is caught in the lantern, and put three revenants down before another traveller joins them. I would rather be wrong about all of this.",
+      "offer": "“I need help on the north road,” Captain Rowan says. “My patrol went out at dusk. Their relief found men buried twenty years ago, still carrying work orders. Follow Lantern Road to the fallen cart. Read the scrap caught in the lantern and put three road revenants to rest. Watch their slow swings: when a warning appears on the ground, step clear before it fills. Come back to me. I would rather be wrong about this.”",
       "progress": "The broken lantern is beside the cart on the north road. Three revenants, then bring me what you can read. Keep clear of the deeper graveyard for now.",
       "complete": "A stamped chit reads ROOK & SONS — CONTINUANCE OF SERVICE. Rowan’s jaw tightens. “Their winter grain came with a labour clause. Before we follow that seal to Old Watch, find Dunn by the fallen lantern. Paige was carrying letters through there. Bring her and the post home if you can.”",
       "objectives": [
@@ -1225,14 +1225,16 @@
         ],
         "xpScale": 2.72
       },
-      "requires": [
-        "in_watchmans_word"
-      ],
+      "requires": [],
       "autoAccept": false,
       "level": 3,
       "zone": "nr_lantern",
       "story": true,
-      "chapter": "The watch that never came home"
+      "chapter": "The watch that never came home",
+      "minLevel": 2,
+      "leadsFrom": [
+        "in_watchmans_word"
+      ]
     },
     {
       "id": "tf_briar",
@@ -1366,9 +1368,139 @@
         ]
       },
       "requires": [
-        "in_watchmans_word"
+        "sf_bitter_roots"
       ],
       "zone": "nr_briar"
+    },
+    {
+      "id": "ni_stretch_your_legs",
+      "name": "Stretch Your Legs",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": [
+        1,
+        1
+      ],
+      "giver": "ni_abel",
+      "turnIn": "ni_abel",
+      "summary": "Speak to Abel beside the broken cart. Read the milestone just east along the road, then return to him.",
+      "offer": "“Up you get. Wheel’s off.” Abel Hurst, the carrier, is already sitting in the road with his boots off. “I said you could ride on my sacks from Mossreed if you made yourself useful. Here is useful. Walk on to the milestone and tell me how far we are from Thornford. My feet and I are not speaking.”",
+      "progress": "“Read the milestone up the road,” Abel says. “My feet and I are not speaking.”\n\nMove with W, A, S and D or click the ground. Follow the road east. Press {interact} beside the milestone to read it, then return to Abel. {jump} jumps over low obstacles.",
+      "complete": "“Two hundred paces? Good. That gives Elsie plenty of time to start being cross.” Abel pulls a sack over the loose wheel. “And somebody has carved ALE NOT INCLUDED on it? Sensible. People expect miracles from a milestone.” Something grunts behind the cart. Abel does not look round. “Speaking of expectations, something thinks I brought it breakfast.”",
+      "objectives": [
+        {
+          "id": "abel",
+          "type": "talk",
+          "target": "ni_abel",
+          "requireVisit": true,
+          "label": "Speak to Abel by the broken cart",
+          "location": "ni_roadside"
+        },
+        {
+          "id": "milestone",
+          "type": "examine",
+          "target": "poi:ni_milestone",
+          "label": "Read the milestone up the road",
+          "location": "ni_milestone"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 0.6
+      },
+      "requires": [],
+      "autoAccept": true,
+      "story": true,
+      "chapter": "The Road In",
+      "allowAbandon": true
+    },
+    {
+      "id": "ni_loose_boar",
+      "name": "A Pig With Ideas",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": [
+        1,
+        1
+      ],
+      "giver": "ni_abel",
+      "turnIn": "ni_abel",
+      "requires": [
+        "ni_stretch_your_legs"
+      ],
+      "summary": "Kill the loose young boar eating the spilled grain east of Abel's cart, take its meat, then return to Abel.",
+      "offer": "Something large is snuffling in the grain behind the cart. Abel does not get up. “Two sacks split when the wheel went, and that is a young boar eating them. Loose from the farms past Thornford. Heda Holt’s fence has been down half the summer and her orchard is full of them now.” He waves a boot at it. “You have a weapon of sorts. It bites back, so mind it. And do not leave the meat in the road. Nobody walks into Thornford empty-handed.”",
+      "progress": "Click the boar or press {cycleTarget} to select it. Press {bar0} for your first class ability; right-click it to keep attacking. Turn toward your target before attacking, and hover over your ability icon to see its resource cost. The loose young boar is east of the cart. Its Tusk Sweep shows a wedge on the ground: step out before it fills. The boar commits to that direction, so circle behind it. Eat Trail Bread between fights if you need to recover; moving or taking damage interrupts eating.",
+      "complete": "“Ha! Well, that is supper for somebody. Keep that meat, it is your fare into town.” Abel looks at you differently. “Heda will pay good coin for hands that can do that. Tell her I sent you, once Elsie has fed you.”",
+      "objectives": [
+        {
+          "id": "boar",
+          "type": "kill",
+          "target": "ni_loose_boar",
+          "count": 1,
+          "label": "Drive off the loose boar",
+          "location": "ni_roadside"
+        },
+        {
+          "id": "meat",
+          "type": "collect",
+          "target": "boar_meat",
+          "count": 1,
+          "keep": true,
+          "label": "Take the boar's meat",
+          "location": "ni_roadside"
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.2,
+        "coins": 1
+      },
+      "story": true,
+      "chapter": "The Road In"
+    },
+    {
+      "id": "ni_the_road_in",
+      "name": "The Road In",
+      "map": "new",
+      "zone": "tf_reach",
+      "level": [
+        1,
+        2
+      ],
+      "giver": "ni_abel",
+      "turnIn": "tf_elsie",
+      "requires": [
+        "ni_loose_boar"
+      ],
+      "summary": "Take Abel's note to Elsie Reed at the Lantern Inn in Thornford, so she knows her grain is late and can send the wheelwright.",
+      "offer": "“I am not leaving the cart for the next pig. Take this to Elsie Reed at the Lantern Inn. It says her grain is late, not stolen, and could she send the wheelwright.” He hesitates, then adds a line at the bottom. “And it says you are not useless. She will want to know that. She has more work than hands in that village. And take the boar meat with you. Elsie’s kitchen will know what to do with it.”",
+      "progress": "Follow the road east and down past Miller's Pool into Thornford. The Lantern Inn stands on the west side of the square. Give Abel's note to Elsie Reed.",
+      "complete": "Elsie reads Abel's note twice. “Late. Of course he is late. That man would be late to his own wake and then complain about the ale.” She reads the last line again and looks you over. “He says you dealt with a pig in his grain and did not steal anything. Round here, that is a reference.”",
+      "turnInLog": "You have reached Thornford. Elsie Reed runs the Lantern Inn, and the village has work for anyone willing to do it.",
+      "lend": [
+        {
+          "item": "ni_abel_note",
+          "count": 1
+        }
+      ],
+      "objectives": [
+        {
+          "id": "elsie",
+          "type": "talk",
+          "target": "tf_elsie",
+          "label": "Give Abel's note to Elsie at the Lantern Inn",
+          "location": "tf_town",
+          "requireVisit": true
+        }
+      ],
+      "reward": {
+        "size": "chainStep",
+        "xpScale": 1.2,
+        "coins": 2
+      },
+      "story": true,
+      "chapter": "The Road In"
     },
     {
       "id": "sf_odd_jobs",
@@ -1385,7 +1517,7 @@
       "offer": "You have the look of someone whose purse is mostly hope. I know it well; half my regulars wear it. Here. This hinge broke on the back door last night. Take it to Iren at the forge. She owes me for a winter of soup, and she will pretend she does not. Tell her I said so, and tell her I said it kindly.",
       "progress": "Iren's forge is across the square. Give her the hinge and Elsie's kind words. Mostly the hinge.",
       "complete": "Iren turns the hinge over. “Soup. She means the soup.” She sighs and tosses it on the mend pile, then looks at you properly. “You have nothing to hang a tool on, have you? Here. Offcuts. It is a belt now. Rods, knives, a pick if you ever earn one. Keep them on that and your bags stay for the things you are going to lose.”",
-      "turnInLog": "Iren hands you a plain leather belt. Your tools have somewhere to live now. Press T to open your tool belt.",
+      "turnInLog": "Iren hands you a plain leather belt. Your tools have somewhere to live now. Press {toolbelt} to open your tool belt.",
       "lend": [
         {
           "item": "sf_broken_hinge",
@@ -1414,9 +1546,12 @@
         "xpScale": 1.28
       },
       "requires": [],
-      "autoAccept": true,
+      "autoAccept": false,
       "story": true,
-      "chapter": "A place at the table"
+      "chapter": "A place at the table",
+      "leadsFrom": [
+        "ni_the_road_in"
+      ]
     },
     {
       "id": "sf_hungry_work",
@@ -1527,13 +1662,13 @@
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
       "requires": [
-        "sf_a_meal_earned"
+        "sf_odd_jobs"
       ],
       "summary": "Tobin lends you his old rod and shows you how to cast. Catch a Gloomwater perch in Willow Pond and bring it to him.",
-      "offer": "Hobb sent you? Then you can cook a fish and cannot catch one. That is the wrong way round, but it is a start. Take my old rod. Do not lose it, it was my father's and he did not lose it either. Cast where the water is still, wait for the bob to dip, and strike. Bring me a perch and we will see if you have the patience.",
-      "progress": "Use the old rod from your tool belt at Willow Pond. When the bob dips, strike. One Gloomwater perch for Tobin.",
-      "complete": "Tobin weighs the perch in his hand and nods as if it has told him something. Then he holds out his other hand for the rod. “It goes home with me. Buy your own; I sell them, by coincidence.” He scribbles on a scrap. “And take this to the fire: perch fried in its own fat with Hobb's garlic. My mother's. She caught better fish than me and never let me forget it.”",
-      "turnInLog": "You hand back Tobin's old rod. Buy a fishing rod from him to fish again; his pan-perch recipe is in your Cooking book.",
+      "offer": "“Looking for work that does not bite back? Mostly?” Tobin holds out an old rod. “This was my father's. He never lost it, and I would prefer not to break the family record. Cast into Willow Pond, wait for the bob to dip, then strike. Bring me a perch and I will pay for your patience.”",
+      "progress": "Use Tobin’s old rod from your tool belt at Willow Pond. Aim a cast into nearby water, wait for the bob to dip, then press {interact} or click the bob to strike. Bring one Gloomwater perch back to Tobin.",
+      "complete": "Tobin weighs the perch and nods. “An honest fish. No complaints about the roads.” He holds out his other hand for the rod. “That comes home with me. Buy your own; I sell them, by coincidence.” He gives you his mother's pan-perch recipe. “Hobb at the inn can teach you to cook, if you fancy making something of it.” “Ten silver for the catch and an honest morning’s work. Enough for a plain rod, if you want to keep at it. Hobb needs fish for the lunch shift.”",
+      "turnInLog": "Tobin pays ten silver and takes back his old rod. A plain fishing rod costs ten silver in his shop. Hobb offers a hands-on cooking lesson at the Lantern Inn; no hunting required.",
       "lend": [
         {
           "item": "old_rod",
@@ -1554,12 +1689,15 @@
         }
       ],
       "reward": {
-        "coins": 3,
+        "coins": 10,
         "size": "standard",
         "learnRecipe": [
           "pan_fried_perch"
         ]
-      }
+      },
+      "leadsFrom": [
+        "sf_a_meal_earned"
+      ]
     },
     {
       "id": "sf_ore_for_the_forge",
@@ -1573,7 +1711,7 @@
       "giver": "tf_iren",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "nr_gauge"
       ],
       "summary": "Iren lends you her spare mining pick. Bring her two lumps of tin ore from the pale outcrops east of Holt Meadow.",
       "offer": "That belt looks lonely. Here, my spare pick; it has a chip in it and a temper, like its owner. There is tin in the pale rock out east, past Heda's meadow where Agna keeps her drying racks. Bring me two lumps and I will show you what the stuff is for. Then give the pick back. I know how many I own.",
@@ -1616,7 +1754,7 @@
       "giver": "agna",
       "turnIn": "agna",
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "summary": "Agna the tanner lends you a skinning knife. Skin two wild boars near her racks and bring her the hides.",
       "offer": "You have hands and you have not fainted yet. That puts you ahead of the last three. Take this knife. Kill a wild boar, loot it, then work the hide off before the crows do. Two hides. Bring them and the knife back, and I will tell you whether you ruined them.",
@@ -1659,8 +1797,7 @@
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
       "requires": [
-        "sf_odd_jobs",
-        "in_watchmans_word"
+        "in_soup_round"
       ],
       "summary": "Morrow Finch lends you an herb knife. Cut three ditchbell from the marked patches along the Briarwood path and bring them to Morrow at Mourning Hollow.",
       "offer": "Everyone wants a draught. Nobody wants to kneel in a ditch for one. Take my herb knife: cut, do not pull, or the root dies and next year there is nothing. Ditchbell grows along the Briarwood path, blue and sulking. Three sprigs, and the knife back.",
@@ -2319,7 +2456,7 @@
         "size": "errand"
       },
       "requires": [
-        "in_watchmans_word"
+        "sf_bitter_roots"
       ],
       "level": [
         3,
@@ -2351,7 +2488,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "nr_timber"
       ],
       "level": [
         1,
@@ -2387,7 +2524,7 @@
         "size": "standard"
       },
       "requires": [
-        "sf_odd_jobs"
+        "vr_reed_message"
       ],
       "level": 2,
       "setsFlag": "vr_pigs_safe",
@@ -2417,7 +2554,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "level": [
         1,
@@ -2451,7 +2588,7 @@
         "size": "errand"
       },
       "requires": [
-        "sf_odd_jobs"
+        "sf_a_meal_earned"
       ],
       "level": [
         1,
@@ -2472,7 +2609,7 @@
       "giver": "tf_iren",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "in_farm_introduction"
       ],
       "summary": "Compare the two stamped measures just east of Iren’s forge. Recover the gauge case and return it to Iren.",
       "offer": "Someone says my axe heads are short. Someone used a gauge that thinks an inch grows with age. Compare the master stamp beside my forge with the rejected gauge south of it. Bring the gauge’s case back. If I am wrong, I will say so. Do not look so alarmed; it has happened before.",
@@ -2521,7 +2658,7 @@
       "giver": "vr_osric",
       "turnIn": "tf_iren",
       "requires": [
-        "sf_odd_jobs"
+        "vr_first_hunt"
       ],
       "summary": "Take the two tagged billets beside Osric’s woodlot to Iren at the Thornford smithy. Iren receives the delivery.",
       "offer": "Two dry handle billets, from the tagged stack beside me, for Iren’s smithy. I spent a year seasoning them. Last week someone called them kindling. Please deliver them before I commit a small, very well-documented crime.",
@@ -2555,7 +2692,7 @@
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
       "requires": [
-        "sf_odd_jobs"
+        "sf_borrowed_rod"
       ],
       "summary": "Read the observation boards at Willow Pond’s northwestern reed edge and Miller’s Pool’s north bank. Report to Tobin.",
       "offer": "Willow’s reeds, Miller’s open bank. Have a proper look at both and tell me where the fish shelter. You need not catch anything. An angler who can only describe the one that got away is a man with a rod, not a source.",
@@ -2636,7 +2773,7 @@
       "giver": "vr_lyra",
       "turnIn": "vr_lyra",
       "requires": [
-        "sf_odd_jobs"
+        "sf_hungry_work"
       ],
       "summary": "Collect Elsie’s two marked bedding rolls outside the inn’s west door and bring them to Sister Lyra beside the chapel.",
       "offer": "Two travellers came in soaked. The chapel has a roof; the inn has spare bedding. Elsie has set two clean rolls outside her west door for us. Bring them here. No relic hunt, I am afraid. Holiness is mostly carrying things after everyone else has gone to bed.",
@@ -2671,7 +2808,7 @@
       "giver": "tf_scout",
       "turnIn": "tf_scout",
       "requires": [
-        "in_watchmans_word"
+        "fen_gathering_quiver"
       ],
       "summary": "Inspect the bootprints and borrowed-kettle note at the small shelter south of Briarwood Camp. Return to Fen.",
       "offer": "Smoke by the old shelter. Someone at the inn called it bandits. Could be a family trying to keep warm. Check the tracks and the note box south of camp. Tell me what is there before anyone goes out to make a hero of himself.",
@@ -2710,7 +2847,9 @@
       ],
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
-      "requires": [],
+      "requires": [
+        "nr_quiet_hours"
+      ],
       "summary": "Read Morrow’s shelf list just west of the apothecary and collect both loose labels nearby. Return to Morrow.",
       "offer": "The shelf list is sound. The labels have deserted. Read the list beside my door, gather the two loose tags from the sorting trays, and bring them to me. I will reattach them. My customers deserve sleep without unexpectedly waterproof feet.",
       "progress": "Read Morrow’s shelf list just west of the apothecary and collect both loose labels nearby. Return to Morrow.",
@@ -2749,7 +2888,7 @@
       "giver": "vr_heda",
       "turnIn": "vr_heda",
       "requires": [
-        "sf_odd_jobs"
+        "vr_pig_wolf"
       ],
       "summary": "Inspect the quiet bee box on the orchard’s north edge and the eastern blossom branch. Return to Heda.",
       "offer": "The blossoms look healthy, but there are hardly any bees. Check the little bee box by the north fence and the flowering branch east of the pen. Boars are loud problems. This one can empty a pantry without making a sound.",
@@ -2790,7 +2929,7 @@
       "giver": "tf_rowan",
       "turnIn": "tf_rowan",
       "requires": [
-        "tf_lanterns"
+        "tf_bell"
       ],
       "summary": "Lay two Fallen Watch Sentries to rest around Old Watch, north of the lantern cart. Return to Rowan.",
       "offer": "Two fallen sentries still march round Old Watch. They are saluting people who cannot see them and attacking the ones who can. Put both down. I have their families’ names. This is not a bounty on strangers.",
@@ -2824,7 +2963,7 @@
       "giver": "vr_morrow",
       "turnIn": "vr_morrow",
       "requires": [
-        "tf_bell"
+        "vr_hollow_story"
       ],
       "summary": "Defeat the two Hollow Watch Archers at Nameless Yard. Return to Morrow at the Mourning Hollow apothecary.",
       "offer": "The two dead archers in Nameless Yard loose arrows whenever a shutter moves. I cannot ask a neighbour to collect medicine through that. Deal with them, please. I used to write “avoid strenuous activity” on prescriptions. I did not mean incoming arrows.",
@@ -2858,7 +2997,8 @@
       "giver": "vr_tobin",
       "turnIn": "vr_tobin",
       "requires": [
-        "vr_reed_message"
+        "vr_reed_message",
+        "nr_water_notes"
       ],
       "summary": "Read the allocation board just south of Willow Lane, west of Willow Pond. Set the Orchard, Mill and Pond handles, then test the flow. Report to Tobin.",
       "offer": "Osric wants more water, the mill wants all of it, and my pond would like to remain a pond. The regulator is just south of Willow Lane, west of my landing. Read its allocation board. Turn the three handles to the agreed shares, then test the float. No wet feet, no injured parties, and ideally no committee.",
@@ -3124,7 +3264,7 @@
       "giver": "wm_mossreed_landing_worker",
       "turnIn": "wm_mossreed_landing_worker",
       "requires": [
-        "wm_mossreed_landing_work"
+        "in_bank_lamps"
       ],
       "summary": "The local reedbank prowler are keeping workers off their route. Deal with three near the marked worksite. The committee has already suggested asking them politely.",
       "offer": "“I lost my locket pulling the first boat in. Father says he remembers the day he gave it to Mother. Mother says he got the date wrong. If you find it by the bank stores, I should like to keep the argument going.”",
@@ -7259,7 +7399,7 @@
         "sf_odd_jobs"
       ],
       "summary": "Follow Orchard Lane east from Thornford. Heda waits by the farm gate, before the meadow.",
-      "offer": "“Elsie can feed you once. Heda can keep the village fed if her orchard survives. Take the east lane to her farm. Tell her the hinge is mended and I have not forgotten her gate. A useful pair of hands will earn more than sympathy there.”",
+      "offer": "“Heda needs help keeping boars out of her orchard. Take Orchard Lane east to her farm gate. Tell her I have not forgotten her repairs. If hunting is not your trade, Hobb has kitchen work at the inn and Tobin lends a fishing rod down by Willow Pond.”",
       "progress": "Follow Orchard Lane east from Thornford. Heda waits by the farm gate, before the meadow.",
       "complete": "“Iren sent you? Good. I need someone who can tell a wild boar from a pig. There is a distressing amount of disagreement about this among my helpers.”",
       "objectives": [
@@ -7289,11 +7429,10 @@
       "giver": "vr_heda",
       "turnIn": "tf_rowan",
       "requires": [
-        "vr_first_hunt",
-        "sf_a_meal_earned"
+        "vr_first_hunt"
       ],
       "summary": "Return along Orchard Lane and speak to Captain Rowan by Thornford’s watch house.",
-      "offer": "“We have supper again. Now find out why the watch stopped bringing timber. Rowan keeps his promises, even the ones that inconvenience him. The watch house is back in Thornford, beside the inn. Ask about the north patrol.”",
+      "offer": "“The orchard can breathe again. Now find out why the watch stopped bringing timber. Rowan keeps his promises, even the awkward ones. He is by the watch house in Thornford, beside the inn. Ask him about the missing north patrol.”",
       "progress": "Return along Orchard Lane and speak to Captain Rowan by Thornford’s watch house.",
       "complete": "Rowan unfolds a patrol list. “Five names went out. None came back. The timber was their last errand. I have held this road for sixteen years, and this morning I cannot tell a farmer when her gate will be fixed.”",
       "objectives": [
@@ -8436,6 +8575,7 @@
       "classes": [
         "wizard"
       ]
-    }
+    },
+    {"id": "in_pond_to_pot", "name": "From Pond to Pot", "map": "new", "zone": "tf_reach", "level": [1, 3], "giver": "tf_cook", "turnIn": "tf_cook", "requires": ["sf_borrowed_rod"], "story": false, "chapter": "An honest living", "summary": "Hobb will teach you basic Cooking. Catch and grill three perch at the inn hearth, then bring him the meals for the lunch shift.", "offer": "“Tobin says you can catch a fish. That puts you ahead of several people I employ.” Hobb sets a clean pan by the fire. “I will show you the basics now. Buy your own rod from Tobin, catch three perch at Willow Pond, then use this hearth to grill them. No garlic, no fancy sauces. Let us first establish that you can be trusted with heat. Bring the three meals to me and I will pay twelve silver.”", "progress": "Buy a fishing rod from Tobin if you need one. Catch Gloomwater perch at Willow Pond. At the inn hearth, open Cooking and make three Grilled Perch. Bring the cooked meals to Hobb. His lesson is available as soon as you accept this job.", "complete": "Hobb checks the fish. “Cooked through. No charcoal. We may yet have a future.” He wraps the meals for the lunch shift and counts out your pay. “There is good work here, if you want it. You do not have to solve every alarming noise in the woods.”", "acceptLearn": ["cooking"], "objectives": [{"id": "meals", "type": "collect", "target": "grilled_perch", "count": 3, "label": "Grill three perch for Hobb", "location": "tf_town"}], "reward": {"coins": 12, "size": "standard", "learnRecipe": ["pan_fried_perch"]}, "turnInLog": "The lunch order is delivered. Fishing and Cooking now give you a way to earn supplies and prepare food without following the watch story."}
   ]
 }

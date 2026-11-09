@@ -26,8 +26,9 @@ func _process(_dt: float) -> bool:
 		_ok(n != null, "the banker is in the world")
 		if n == null:
 			return _end()
-		var p: Vector3 = game.player.position
-		_ok(Vector2(p.x - n.position.x, p.z - n.position.z).length() < 30, "and stands in the starting town")
+		# the starting town is where the intro road leads: Elsie's inn
+		var p: Vector3 = game.npcs.by_id("tf_elsie").position
+		_ok(Vector2(p.x - n.position.x, p.z - n.position.z).length() < 60, "and stands in the starting town")
 		game.player.position = Vector3(n.position.x + 2, p.y, n.position.z)
 		game.dialogue.open(n)
 		var opts: Array = game.dialogue.page.options.map(func(o): return o.id)

@@ -417,11 +417,14 @@ func _model_shelf() -> Node3D:
 
 
 ## Back to character select: the scene is reloaded for a clean slate.
+func combat_blocks_logout() -> bool:
+	return not player.dead and (resources.in_combat or enemies.list.any(func(e):return Targeting.in_combat_with_player(e)))
+
 func log_out() -> void:
-	if player.dead:
-		hud.toast("You cannot leave while defeated.")
+	if combat_blocks_logout():
+		hud.toast("You must leave combat before logging out.")
 		return
-	var r := save.save(true)
+	var r := save.save(true,true)
 	if not r.ok:
 		hud.toast(r.reason)
 		return
@@ -433,10 +436,10 @@ func log_out() -> void:
 ## Main menu, Exit Game: save, then close the game. In a browser there is
 ## no window to close, so it goes back to the landing page (/play's parent).
 func exit_game() -> void:
-	if player.dead:
-		hud.toast("You cannot leave while defeated.")
+	if combat_blocks_logout():
+		hud.toast("You must leave combat before exiting.")
 		return
-	var r := save.save(true)
+	var r := save.save(true,true)
 	if not r.ok:
 		hud.toast(r.reason)
 		return
@@ -459,6 +462,7 @@ func _ui_click() -> void:
 
 
 func start_game(resume: bool) -> void:
+	player.set_appearance(character.get("appearance") if character != null else null)
 	audio.start()
 	world_state.reset()
 	progression.apply({"level": 1, "xp": 0})
@@ -493,6 +497,7 @@ func start_game(resume: bool) -> void:
 		resumed = true
 	# the model wears what the class starts with (or the save has on), not
 	# the warden's sword it was built with
+	player.reset_weapon_stance(archetype_id=="ranger")
 	player.show_equipment(inventory.equipment)
 	recompute_max_health()
 	camp.show()
@@ -794,6 +799,10 @@ func _click(button: String) -> bool:
 		"enemy":
 			if acts or mouse_aim:
 				targeting.engage(o)
+				# attacking (not selecting) squares you up to it, as in WoW,
+				# so a foe you had walked past is hit without a dance
+				if targeting.target_in_reach and not player.moving:
+					player.face_towards(o.position.x, o.position.z)
 				# click to move follows the enemy until it is in reach
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if walk:
@@ -858,7 +867,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 		# stop well inside the real swing reach (no moving leeway), so the
 		# first blow lands once both stand still
 		var f = m.follow
-		var stop: float = DB.attack.range * 0.75 + f.radius * 0.6
+		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
 		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
 			move_to = null
@@ -991,7 +1000,7 @@ func _handle_input(dt: float):
 	if input.consume("Escape") and not hud.close_modal():
 		if targeting.current != null or targeting.friendly != null:
 			targeting.clear()
-		elif hud.modal == null:
+		elif hud.modal in [null,"death"]:
 			hud.main_menu.open()
 	if hud.modal == "death":
 		if input.consume("Enter") or keys.pressed("interact") or pad.pressed(B.A):
@@ -1084,7 +1093,7 @@ func _handle_input(dt: float):
 	if player.dead:
 		return null
 	if keys.pressed("sheathe"):
-		player.set_sheathed(not player.sheathed)
+		player.cycle_weapons()
 	if keys.pressed("sit"):
 		player.set_sitting(not player.sitting)
 
@@ -1133,8 +1142,7 @@ func _handle_input(dt: float):
 			face_aim = aim_now if pad_on and pad.right.z > 0.3 else null
 		elif input.mouse.leftHeld and aim_now != null:
 			_engage_near_cursor()
-			var t = tg.current
-			face_aim = t.position if tg.attacking and t != null and (tg.target_in_reach or tg.target_in_shot) else aim_now
+			face_aim = aim_now
 	# each spell-bar slot has a fixed key; whatever ability sits there fires
 	var util := pad_on and pad.held(B.LEFT)
 	var slots := [
@@ -1211,10 +1219,12 @@ func step(dt: float) -> void:
 		xp_orbs.update(dt)
 		fx.update(dt)
 		audio.update(dt)
-		if pending_death != null and hud.modal != "death":
+		if pending_death != null and hud.modal != "death" and not hud.main_menu.is_open and hud.main_menu.leaving=="":
 			pending_death.timer -= dt
 			if pending_death.timer <= 0:
-				hud.show_death(pending_death.loss, respawn_point().kind)
+				var loss:int=pending_death.loss
+				pending_death=null
+				hud.show_death(loss, respawn_point().kind)
 	world.update(dt, Time.get_ticks_msec() / 1000.0)
 	_update_region(dt)
 	_update_daylight()

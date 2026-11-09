@@ -103,8 +103,16 @@ var skill: int:
 		return game.skills.effective("fishing") + (int(DB.items[bait].bait) if bait else 0)
 
 
+## Tobin's first Willow Pond lesson rewards a correct strike reliably.
+## Outside this lesson, normal skill, bait and water rules apply.
+func _first_lesson() -> bool:
+	return game.quests != null and game.quests.status("sf_borrowed_rod") == "active" and Vector2(game.player.position.x + 383.0, game.player.position.z + 171.0).length() < 24.0
+
+
 ## percent chance that a cast gets a bite
 func bite_chance_for(sk: float) -> float:
+	if _first_lesson():
+		return 100.0
 	var cfg: Dictionary = DB.CONFIG.fishing
 	return minf(cfg.biteCap, cfg.biteBase + sk * cfg.bitePerSkill + game.skills.perk("fishing", "biteChance"))
 
@@ -112,9 +120,12 @@ func bite_chance_for(sk: float) -> float:
 ## The catch chance in percent for a timely strike.
 var chance: float:
 	get:
+		if _first_lesson():
+			return 100.0
 		var cfg: Dictionary = DB.CONFIG.fishing
 		var sk: float = state.skill if state != null else skill
-		return minf(100, cfg.baseChance + sk * cfg.chancePerRank + game.skills.perk("fishing", "landChance"))
+		var base: float = 90.0 if state != null and int(state.water.get("fishLevel", 1)) <= 1 else cfg.baseChance
+		return minf(100, base + sk * cfg.chancePerRank + game.skills.perk("fishing", "landChance"))
 
 
 ## the best bait in your bags
@@ -152,6 +163,8 @@ func strike() -> bool:
 		_reel(s, false)
 		return true
 	var caught := Items.roll_loot(_table(s.water), game.random)
+	if _first_lesson():
+		caught = [{"id": "gloomwater_perch", "count": 1, "rarity": "common"}]
 	# Double Haul (perk): now and then two at once
 	if not caught.is_empty() and game.random.call() < game.skills.perk("fishing", "doubleCatch"):
 		caught[0].count += 1

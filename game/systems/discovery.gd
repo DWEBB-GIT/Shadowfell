@@ -105,7 +105,7 @@ func update(dt: float) -> void:
 	for p in WorldMap.pois:
 		if ws.discovered.has(p.id):
 			continue
-		if Vector2(pos.x - p.at[0], pos.z - p.at[1]).length() <= (REACH * 0.5 if p.kind == "secret" else REACH):
+		if Vector2(pos.x - p.at[0], pos.z - p.at[1]).length() <= float(p.get("discoverRadius", REACH * 0.5 if p.kind == "secret" else REACH)):
 			discover(p)
 
 

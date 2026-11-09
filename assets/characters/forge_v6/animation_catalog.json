@@ -1,0 +1,767 @@
+{
+  "A_TPose": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": false,
+    "key": "A_TPose",
+    "label": "A TPose",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Chest_Open": {
+    "category": "Actions & poses",
+    "duration": 1.36666667461395,
+    "dynamic": true,
+    "key": "Chest_Open",
+    "label": "Chest Open",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "ClimbUp_1m": {
+    "category": "Traversal",
+    "duration": 0.666666686534882,
+    "dynamic": true,
+    "key": "ClimbUp_1m",
+    "label": "ClimbUp 1m",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Consume": {
+    "category": "Actions & poses",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Consume",
+    "label": "Consume",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Crouch_Fwd": {
+    "category": "Movement",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "Crouch_Fwd",
+    "label": "Crouch Fwd",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Crouch_Idle": {
+    "category": "Movement",
+    "duration": 2.93333339691162,
+    "dynamic": true,
+    "key": "Crouch_Idle",
+    "label": "Crouch Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Dance": {
+    "category": "Actions & poses",
+    "duration": 1.0,
+    "dynamic": true,
+    "key": "Dance",
+    "label": "Dance",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Death01": {
+    "category": "Combat",
+    "duration": 2.40000009536743,
+    "dynamic": true,
+    "key": "Death01",
+    "label": "Death01",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Driving": {
+    "category": "Actions & poses",
+    "duration": 1.66666662693024,
+    "dynamic": true,
+    "key": "Driving",
+    "label": "Driving",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Farm_Harvest": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Farm_Harvest",
+    "label": "Farm Harvest",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Farm_PlantSeed": {
+    "category": "Actions & poses",
+    "duration": 2.76666665077209,
+    "dynamic": true,
+    "key": "Farm_PlantSeed",
+    "label": "Farm PlantSeed",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Farm_Watering": {
+    "category": "Actions & poses",
+    "duration": 3.79999995231628,
+    "dynamic": true,
+    "key": "Farm_Watering",
+    "label": "Farm Watering",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Fixing_Kneeling": {
+    "category": "Actions & poses",
+    "duration": 5.19999980926514,
+    "dynamic": true,
+    "key": "Fixing_Kneeling",
+    "label": "Fixing Kneeling",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Hit_Chest": {
+    "category": "Combat",
+    "duration": 0.333333343267441,
+    "dynamic": true,
+    "key": "Hit_Chest",
+    "label": "Hit Chest",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Hit_Head": {
+    "category": "Combat",
+    "duration": 0.433333337306976,
+    "dynamic": true,
+    "key": "Hit_Head",
+    "label": "Hit Head",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Hit_Knockback": {
+    "category": "Combat",
+    "duration": 0.833333313465118,
+    "dynamic": true,
+    "key": "Hit_Knockback",
+    "label": "Hit Knockback",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle",
+    "label": "Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Idle_FoldArms": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_FoldArms",
+    "label": "Idle FoldArms",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Lantern": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_Lantern",
+    "label": "Idle Lantern",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_No": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_No",
+    "label": "Idle No",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Rail": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_Rail",
+    "label": "Idle Rail",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Rail_Call": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_Rail_Call",
+    "label": "Idle Rail Call",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Shield": {
+    "category": "Combat",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Idle_Shield",
+    "label": "Idle Shield",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Shield_Break": {
+    "category": "Combat",
+    "duration": 1.06666672229767,
+    "dynamic": true,
+    "key": "Idle_Shield_Break",
+    "label": "Idle Shield Break",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Talking": {
+    "category": "Actions & poses",
+    "duration": 2.93333339691162,
+    "dynamic": true,
+    "key": "Idle_Talking",
+    "label": "Idle Talking",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Idle_TalkingPhone": {
+    "category": "Actions & poses",
+    "duration": 2.93333339691162,
+    "dynamic": true,
+    "key": "Idle_TalkingPhone",
+    "label": "Idle TalkingPhone",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Idle_Torch": {
+    "category": "Actions & poses",
+    "duration": 1.26666665077209,
+    "dynamic": true,
+    "key": "Idle_Torch",
+    "label": "Idle Torch",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Interact": {
+    "category": "Actions & poses",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "Interact",
+    "label": "Interact",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Jog_Fwd": {
+    "category": "Movement",
+    "duration": 0.933333337306976,
+    "dynamic": true,
+    "key": "Jog_Fwd",
+    "label": "Jog Fwd",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Jump": {
+    "category": "Traversal",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Jump",
+    "label": "Jump",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Jump_Land": {
+    "category": "Traversal",
+    "duration": 1.26666665077209,
+    "dynamic": true,
+    "key": "Jump_Land",
+    "label": "Jump Land",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Jump_Start": {
+    "category": "Traversal",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Jump_Start",
+    "label": "Jump Start",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "LayToIdle": {
+    "category": "Actions & poses",
+    "duration": 1.53333330154419,
+    "dynamic": true,
+    "key": "LayToIdle",
+    "label": "LayToIdle",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Melee_Hook": {
+    "category": "Combat",
+    "duration": 0.466666668653488,
+    "dynamic": true,
+    "key": "Melee_Hook",
+    "label": "Melee Hook",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Melee_Hook_Rec": {
+    "category": "Combat",
+    "duration": 0.600000023841858,
+    "dynamic": true,
+    "key": "Melee_Hook_Rec",
+    "label": "Melee Hook Rec",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "NinjaJump_Idle": {
+    "category": "Traversal",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "NinjaJump_Idle",
+    "label": "NinjaJump Idle",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "NinjaJump_Land": {
+    "category": "Traversal",
+    "duration": 1.26666665077209,
+    "dynamic": true,
+    "key": "NinjaJump_Land",
+    "label": "NinjaJump Land",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "NinjaJump_Start": {
+    "category": "Traversal",
+    "duration": 0.966666638851166,
+    "dynamic": true,
+    "key": "NinjaJump_Start",
+    "label": "NinjaJump Start",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "OverhandThrow": {
+    "category": "Actions & poses",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "OverhandThrow",
+    "label": "OverhandThrow",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "PickUp_Table": {
+    "category": "Actions & poses",
+    "duration": 0.833333313465118,
+    "dynamic": true,
+    "key": "PickUp_Table",
+    "label": "PickUp Table",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Aim_Down": {
+    "category": "Combat",
+    "duration": 0.16666667163372,
+    "dynamic": false,
+    "key": "Pistol_Aim_Down",
+    "label": "Pistol Aim Down",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Aim_Neutral": {
+    "category": "Combat",
+    "duration": 0.16666667163372,
+    "dynamic": false,
+    "key": "Pistol_Aim_Neutral",
+    "label": "Pistol Aim Neutral",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Aim_Up": {
+    "category": "Combat",
+    "duration": 0.16666667163372,
+    "dynamic": false,
+    "key": "Pistol_Aim_Up",
+    "label": "Pistol Aim Up",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Idle": {
+    "category": "Combat",
+    "duration": 1.66666662693024,
+    "dynamic": true,
+    "key": "Pistol_Idle",
+    "label": "Pistol Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Reload": {
+    "category": "Combat",
+    "duration": 1.66666662693024,
+    "dynamic": true,
+    "key": "Pistol_Reload",
+    "label": "Pistol Reload",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Pistol_Shoot": {
+    "category": "Combat",
+    "duration": 0.633333325386047,
+    "dynamic": true,
+    "key": "Pistol_Shoot",
+    "label": "Pistol Shoot",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Punch_Cross": {
+    "category": "Combat",
+    "duration": 1.0,
+    "dynamic": true,
+    "key": "Punch_Cross",
+    "label": "Punch Cross",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Punch_Jab": {
+    "category": "Combat",
+    "duration": 0.866666674613953,
+    "dynamic": true,
+    "key": "Punch_Jab",
+    "label": "Punch Jab",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Push": {
+    "category": "Actions & poses",
+    "duration": 2.66666674613953,
+    "dynamic": true,
+    "key": "Push",
+    "label": "Push",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Roll": {
+    "category": "Traversal",
+    "duration": 1.46666669845581,
+    "dynamic": true,
+    "key": "Roll",
+    "label": "Roll",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Shield_Dash": {
+    "category": "Combat",
+    "duration": 1.10000002384186,
+    "dynamic": true,
+    "key": "Shield_Dash",
+    "label": "Shield Dash",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Shield_OneShot": {
+    "category": "Combat",
+    "duration": 0.833333313465118,
+    "dynamic": true,
+    "key": "Shield_OneShot",
+    "label": "Shield OneShot",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sitting_Enter": {
+    "category": "Actions & poses",
+    "duration": 1.29999995231628,
+    "dynamic": true,
+    "key": "Sitting_Enter",
+    "label": "Sitting Enter",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sitting_Exit": {
+    "category": "Actions & poses",
+    "duration": 1.03333330154419,
+    "dynamic": true,
+    "key": "Sitting_Exit",
+    "label": "Sitting Exit",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sitting_Idle": {
+    "category": "Actions & poses",
+    "duration": 1.66666662693024,
+    "dynamic": true,
+    "key": "Sitting_Idle",
+    "label": "Sitting Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sitting_Talking": {
+    "category": "Actions & poses",
+    "duration": 2.93333339691162,
+    "dynamic": true,
+    "key": "Sitting_Talking",
+    "label": "Sitting Talking",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Slide": {
+    "category": "Traversal",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "Slide",
+    "label": "Slide",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Slide_Exit": {
+    "category": "Traversal",
+    "duration": 0.5,
+    "dynamic": true,
+    "key": "Slide_Exit",
+    "label": "Slide Exit",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Slide_Start": {
+    "category": "Traversal",
+    "duration": 0.833333313465118,
+    "dynamic": true,
+    "key": "Slide_Start",
+    "label": "Slide Start",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Spell_Simple_Enter": {
+    "category": "Combat",
+    "duration": 0.533333361148834,
+    "dynamic": true,
+    "key": "Spell_Simple_Enter",
+    "label": "Spell Simple Enter",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Spell_Simple_Exit": {
+    "category": "Combat",
+    "duration": 0.433333337306976,
+    "dynamic": true,
+    "key": "Spell_Simple_Exit",
+    "label": "Spell Simple Exit",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Spell_Simple_Idle": {
+    "category": "Combat",
+    "duration": 2.09999990463257,
+    "dynamic": true,
+    "key": "Spell_Simple_Idle",
+    "label": "Spell Simple Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Spell_Simple_Shoot": {
+    "category": "Combat",
+    "duration": 0.5,
+    "dynamic": true,
+    "key": "Spell_Simple_Shoot",
+    "label": "Spell Simple Shoot",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sprint": {
+    "category": "Movement",
+    "duration": 0.666666686534882,
+    "dynamic": true,
+    "key": "Sprint",
+    "label": "Sprint",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Swim_Fwd": {
+    "category": "Movement",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Swim_Fwd",
+    "label": "Swim Fwd",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Swim_Idle": {
+    "category": "Movement",
+    "duration": 3.33333325386047,
+    "dynamic": true,
+    "key": "Swim_Idle",
+    "label": "Swim Idle",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sword_Attack": {
+    "category": "Combat",
+    "duration": 1.53333330154419,
+    "dynamic": true,
+    "key": "Sword_Attack",
+    "label": "Sword Attack",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sword_Block": {
+    "category": "Combat",
+    "duration": 1.23333334922791,
+    "dynamic": true,
+    "key": "Sword_Block",
+    "label": "Sword Block",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Dash": {
+    "category": "Combat",
+    "duration": 1.56666672229767,
+    "dynamic": true,
+    "key": "Sword_Dash",
+    "label": "Sword Dash",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Heavy_Combo": {
+    "category": "Combat",
+    "duration": 4.33333349227905,
+    "dynamic": true,
+    "key": "Sword_Heavy_Combo",
+    "label": "Sword Heavy Combo",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Idle": {
+    "category": "Combat",
+    "duration": 1.66666662693024,
+    "dynamic": true,
+    "key": "Sword_Idle",
+    "label": "Sword Idle",
+    "loop": false,
+    "source": "UAL1_Standard.glb"
+  },
+  "Sword_Regular_A": {
+    "category": "Combat",
+    "duration": 0.433333337306976,
+    "dynamic": true,
+    "key": "Sword_Regular_A",
+    "label": "Sword Regular A",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Regular_A_Rec": {
+    "category": "Combat",
+    "duration": 0.966666638851166,
+    "dynamic": true,
+    "key": "Sword_Regular_A_Rec",
+    "label": "Sword Regular A Rec",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Regular_B": {
+    "category": "Combat",
+    "duration": 0.533333361148834,
+    "dynamic": true,
+    "key": "Sword_Regular_B",
+    "label": "Sword Regular B",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Regular_B_Rec": {
+    "category": "Combat",
+    "duration": 1.03333330154419,
+    "dynamic": true,
+    "key": "Sword_Regular_B_Rec",
+    "label": "Sword Regular B Rec",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Regular_C": {
+    "category": "Combat",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "Sword_Regular_C",
+    "label": "Sword Regular C",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Sword_Regular_Combo": {
+    "category": "Combat",
+    "duration": 3.0,
+    "dynamic": true,
+    "key": "Sword_Regular_Combo",
+    "label": "Sword Regular Combo",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "TreeChopping": {
+    "category": "Actions & poses",
+    "duration": 0.966666638851166,
+    "dynamic": true,
+    "key": "TreeChopping",
+    "label": "TreeChopping",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Walk": {
+    "category": "Movement",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Walk",
+    "label": "Walk",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Walk_Carry": {
+    "category": "Movement",
+    "duration": 2.0,
+    "dynamic": true,
+    "key": "Walk_Carry",
+    "label": "Walk Carry",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Walk_Formal": {
+    "category": "Movement",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Walk_Formal",
+    "label": "Walk Formal",
+    "loop": true,
+    "source": "UAL1_Standard.glb"
+  },
+  "Yes": {
+    "category": "Actions & poses",
+    "duration": 2.5,
+    "dynamic": true,
+    "key": "Yes",
+    "label": "Yes",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Zombie_Idle": {
+    "category": "Actions & poses",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Zombie_Idle",
+    "label": "Zombie Idle",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  },
+  "Zombie_Scratch": {
+    "category": "Actions & poses",
+    "duration": 1.79999995231628,
+    "dynamic": true,
+    "key": "Zombie_Scratch",
+    "label": "Zombie Scratch",
+    "loop": false,
+    "source": "UAL2_Standard.glb"
+  },
+  "Zombie_Walk_Fwd": {
+    "category": "Movement",
+    "duration": 1.33333337306976,
+    "dynamic": true,
+    "key": "Zombie_Walk_Fwd",
+    "label": "Zombie Walk Fwd",
+    "loop": true,
+    "source": "UAL2_Standard.glb"
+  }
+}
