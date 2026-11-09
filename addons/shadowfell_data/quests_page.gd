@@ -12,7 +12,7 @@ const UI := preload("ui.gd")
 const KEY_ORDER := ["id", "name", "giver", "turnIn", "autoAccept", "requires", "choice", "summary", "offer", "progress", "complete", "objectives", "reward", "setsFlag", "turnInLog"]
 const OBJECTIVE_ORDER := ["id", "type", "target", "count", "keep", "label", "location"]
 const REWARD_ORDER := ["coins", "xp", "items", "reputation", "infamy"]
-const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Talk to the hand-in npc"], ["puzzle", "Solve a world mechanism"]]
+const TYPES := [["kill", "Kill"], ["collect", "Collect"], ["examine", "Examine"], ["talk", "Speak to an NPC"], ["puzzle", "Solve a world mechanism"]]
 
 ## open another record (an npc) on its own tab
 signal open_record(kind: String, id: String)
@@ -195,7 +195,7 @@ func _build() -> void:
 			q[key] = v
 			if key == "turnIn":
 				for o2 in q.get("objectives", []):
-					if o2.get("type") == "talk":
+					if o2.get("type") == "talk" and not o2.get("requireVisit", false):
 						o2.target = v
 			_changed(true))
 		o.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -207,6 +207,8 @@ func _build() -> void:
 	UI.row(g, "Auto accept", UI.check(q.get("autoAccept", false), "Starts by itself, without an offer", func(on): _put(q, "autoAccept", on)))
 	UI.row(g, "Choice", UI.line(str(q.get("choice", "")), func(t): _put(q, "choice", t.strip_edges())), "Optional. Quests with the same choice name are one decision: taking one locks the others.")
 
+	UI.row(g, "Main story", UI.check(q.get("story", false), "Part of the main journey", func(on): _put(q, "story", on)))
+	UI.row(g, "Chapter", UI.line(str(q.get("chapter", "")), func(t): _put(q, "chapter", t.strip_edges())))
 	UI.note(form, "Requires (offered once all of these are done):")
 	var chips := HFlowContainer.new()
 	form.add_child(chips)
@@ -385,7 +387,17 @@ func _objective(q: Dictionary, o: Dictionary, i: int) -> void:
 				o.target = v
 				_changed()), "A point in the world to look at (text.json examine).")
 		"talk":
-			UI.note(box, "Go and speak to %s (the hand-in npc)." % s.npc_name(q.get("turnIn")))
+			UI.row(g, "Visit required", UI.check(o.get("requireVisit", false), "Count an actual conversation", func(on):
+				o.requireVisit = on
+				if not on:
+					o.target = q.get("turnIn")
+				_changed(true)))
+			if o.get("requireVisit", false):
+				UI.row(g, "Speak to", UI.choice(s.npc_choices(), o.get("target"), func(v):
+					o.target = v
+					_changed(true)))
+			else:
+				UI.note(box, "Go and speak to %s (the hand-in npc)." % s.npc_name(q.get("turnIn")))
 		"puzzle":
 			UI.row(g, "Mechanism", UI.choice(s.files.world.get("puzzles", []).map(func(p): return [p.id, p.name]), o.get("target"), func(v):
 				o.target = v

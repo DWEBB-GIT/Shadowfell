@@ -1530,8 +1530,8 @@
       "id": "wm_di_siltwheel_0",
       "name": "Blackpick Mine",
       "position": [
-        -175.0,
-        -204.0
+        -215,
+        -286
       ],
       "radius": 14
     },
@@ -1624,6 +1624,114 @@
         -378
       ],
       "radius": 3
+    },
+    {
+      "id": "in_courier_satchel",
+      "name": "Paige’s Spilled Satchel",
+      "position": [
+        -471,
+        -315
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_della_well",
+      "name": "The Old Well",
+      "position": [
+        -282,
+        -395
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_bridge_brace",
+      "name": "The Crossing Brace",
+      "position": [
+        -231,
+        -161
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_cart_shed",
+      "name": "Ada’s Cart Shed",
+      "position": [
+        -259,
+        -121
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_toll_cart",
+      "name": "The Abandoned Toll Cart",
+      "position": [
+        -274,
+        -154
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_reed_marker",
+      "name": "The Ferry Depth Marker",
+      "position": [
+        -551,
+        -100
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_ferry_lock",
+      "name": "The Ferry Sluice",
+      "position": [
+        -551,
+        -94
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_reed_cache",
+      "name": "The Collector’s Reed Cache",
+      "position": [
+        -590,
+        -112
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_lamplighters",
+      "name": "Lamplighter’s Rest",
+      "position": [
+        -343,
+        -101
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_mine_camp",
+      "name": "The Miners’ Rest",
+      "position": [
+        -275,
+        -96
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_lime_cut",
+      "name": "The Old Lime Cut",
+      "position": [
+        -288,
+        -242
+      ],
+      "radius": 8
+    },
+    {
+      "id": "in_bailiff_desk",
+      "name": "The Bailiff’s Desk",
+      "position": [
+        -238,
+        -275
+      ],
+      "radius": 8
     }
   ],
   "npcSpawns": [

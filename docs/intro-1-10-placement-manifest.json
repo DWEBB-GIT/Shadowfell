@@ -1,0 +1,682 @@
+{
+  "npcs": [
+    {
+      "npc": "in_paige",
+      "position": [
+        -473,
+        -317
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_benn",
+      "position": [
+        -351,
+        -431
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_della",
+      "position": [
+        -295,
+        -386
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_ada",
+      "position": [
+        -259,
+        -121
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_kit",
+      "position": [
+        -223,
+        -153
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_hale",
+      "position": [
+        -566,
+        -118
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_tess",
+      "position": [
+        -520,
+        -47
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_sella",
+      "position": [
+        -343,
+        -101
+      ],
+      "facing": 180
+    },
+    {
+      "npc": "in_edda",
+      "position": [
+        -275,
+        -96
+      ],
+      "facing": 180
+    }
+  ],
+  "pois": [
+    {
+      "id": "in_courier_satchel",
+      "name": "Paige’s Spilled Satchel",
+      "at": [
+        -471,
+        -315
+      ],
+      "note": "A waxed courier bag lies under the broken axle. The envelopes are clean. Paige used her own coat to keep the rain off them.",
+      "kind": "story",
+      "region": "tf_reach",
+      "noMarker": true
+    },
+    {
+      "id": "in_della_well",
+      "name": "The Old Well",
+      "at": [
+        -282,
+        -395
+      ],
+      "note": "A sewing tin rests on the dry stone rim. Della has tied a ribbon to the handle so she can find it in the mist.",
+      "kind": "place",
+      "region": "vr_hollow",
+      "noMarker": true
+    },
+    {
+      "id": "in_bridge_brace",
+      "name": "The Crossing Brace",
+      "at": [
+        -231,
+        -161
+      ],
+      "note": "Ada’s marks run straight along the timber. Two new boards and sound rope will hold the cartway. A crooked fee notice has been nailed over her measurement.",
+      "kind": "place",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_cart_shed",
+      "name": "Ada’s Cart Shed",
+      "at": [
+        -259,
+        -121
+      ],
+      "note": "Wheel rims, pegged joints and a kettle kept just off the fire. Each unfinished cart carries its owner’s name.",
+      "kind": "place",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_toll_cart",
+      "name": "The Abandoned Toll Cart",
+      "at": [
+        -274,
+        -154
+      ],
+      "note": "A collector’s cart stands in the trees. The driver’s original bill is wrapped around a loaf to keep it dry. The loaf has been eaten.",
+      "kind": "story",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_reed_marker",
+      "name": "The Ferry Depth Marker",
+      "at": [
+        -551,
+        -100
+      ],
+      "note": "The scratched red line marks a safe trickle for the bank channel. Nessa’s instruction is plain. Keep the bank shallow and the ferry channel full.",
+      "kind": "place",
+      "region": "mirefen",
+      "noMarker": true
+    },
+    {
+      "id": "in_ferry_lock",
+      "name": "The Ferry Sluice",
+      "at": [
+        -551,
+        -94
+      ],
+      "note": "Two handles control the shallow bank cut and the ferry channel. The boards are worn by generations of boatmen.",
+      "kind": "place",
+      "region": "mirefen",
+      "noMarker": true
+    },
+    {
+      "id": "in_reed_cache",
+      "name": "The Collector’s Reed Cache",
+      "at": [
+        -590,
+        -112
+      ],
+      "note": "A waterproof case has been wedged beneath the fallen willow. Several settled accounts have been copied onto a fresh list of debts.",
+      "kind": "story",
+      "region": "mirefen",
+      "noMarker": true
+    },
+    {
+      "id": "in_lamplighters",
+      "name": "Lamplighter’s Rest",
+      "at": [
+        -343,
+        -101
+      ],
+      "note": "A shared watch fire keeps the crossing road and ferry ridge connected. Sella’s spare blankets are folded by the kettle.",
+      "kind": "camp",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_mine_camp",
+      "name": "The Miners’ Rest",
+      "at": [
+        -275,
+        -96
+      ],
+      "note": "Edda has kept every shift tally, including the days the miners were told they had not worked.",
+      "kind": "camp",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_lime_cut",
+      "name": "The Old Lime Cut",
+      "at": [
+        -288,
+        -242
+      ],
+      "note": "A shallow quarry shelf leads toward Blackpick. The wider turns leave room to step out of a heavy swing.",
+      "kind": "hunt",
+      "region": "rillbank",
+      "noMarker": true
+    },
+    {
+      "id": "in_bailiff_desk",
+      "name": "The Bailiff’s Desk",
+      "at": [
+        -238,
+        -275
+      ],
+      "note": "Fresh invoices lie over old wage tallies. The same name is entered as debtor, worker and deceased.",
+      "kind": "story",
+      "region": "rillbank",
+      "noMarker": true
+    }
+  ],
+  "pickups": [
+    {
+      "id": "in_letters_pickup",
+      "quest": "in_lost_courier",
+      "model": "manifest",
+      "position": [
+        -471,
+        -315
+      ],
+      "scale": 0.65,
+      "prompt": "Recover Paige’s dry letters",
+      "respawn": 35,
+      "reward": {
+        "item": "in_dry_letters",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_rubbing_0",
+      "quest": "in_burial_record",
+      "model": "grave0",
+      "position": [
+        -350,
+        -449
+      ],
+      "scale": 0.65,
+      "prompt": "Copy a family name",
+      "respawn": 35,
+      "reward": {
+        "item": "in_burial_rubbing",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_rubbing_1",
+      "quest": "in_burial_record",
+      "model": "grave0",
+      "position": [
+        -338,
+        -451
+      ],
+      "scale": 0.65,
+      "prompt": "Copy a family name",
+      "respawn": 35,
+      "reward": {
+        "item": "in_burial_rubbing",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_rubbing_2",
+      "quest": "in_burial_record",
+      "model": "grave0",
+      "position": [
+        -325,
+        -452
+      ],
+      "scale": 0.65,
+      "prompt": "Copy a family name",
+      "respawn": 35,
+      "reward": {
+        "item": "in_burial_rubbing",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_spool_pickup",
+      "quest": "in_dellas_thread",
+      "model": "satchel",
+      "position": [
+        -282,
+        -395
+      ],
+      "scale": 0.65,
+      "prompt": "Take Della’s sewing tin",
+      "respawn": 35,
+      "reward": {
+        "item": "in_spool",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_cross_wood_0",
+      "quest": "in_crossing_timber",
+      "model": "crate_broken",
+      "position": [
+        -264,
+        -119
+      ],
+      "scale": 0.65,
+      "prompt": "Take dry cartwright’s wood",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_cross_wood_1",
+      "quest": "in_crossing_timber",
+      "model": "crate_broken",
+      "position": [
+        -263,
+        -126
+      ],
+      "scale": 0.65,
+      "prompt": "Take dry cartwright’s wood",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_cross_wood_2",
+      "quest": "in_crossing_timber",
+      "model": "crate_broken",
+      "position": [
+        -255,
+        -125
+      ],
+      "scale": 0.65,
+      "prompt": "Take dry cartwright’s wood",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_cross_wood_3",
+      "quest": "in_crossing_timber",
+      "model": "crate_broken",
+      "position": [
+        -251,
+        -120
+      ],
+      "scale": 0.65,
+      "prompt": "Take dry cartwright’s wood",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_original_bill",
+      "quest": "in_crossing_bill",
+      "model": "manifest",
+      "position": [
+        -274,
+        -154
+      ],
+      "scale": 0.65,
+      "prompt": "Recover the driver’s original bill",
+      "respawn": 35,
+      "reward": {
+        "item": "in_crossing_bill",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wick_0",
+      "quest": "in_bank_lamps",
+      "model": "crate",
+      "position": [
+        -548,
+        -70
+      ],
+      "scale": 0.65,
+      "prompt": "Take a waxed wick",
+      "respawn": 35,
+      "reward": {
+        "item": "in_lamp_wick",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wick_1",
+      "quest": "in_bank_lamps",
+      "model": "crate",
+      "position": [
+        -550,
+        -76
+      ],
+      "scale": 0.65,
+      "prompt": "Take a waxed wick",
+      "respawn": 35,
+      "reward": {
+        "item": "in_lamp_wick",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wick_2",
+      "quest": "in_bank_lamps",
+      "model": "crate",
+      "position": [
+        -541,
+        -78
+      ],
+      "scale": 0.65,
+      "prompt": "Take a waxed wick",
+      "respawn": 35,
+      "reward": {
+        "item": "in_lamp_wick",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_ferry_receipt_pickup",
+      "quest": "in_river_receipt",
+      "model": "manifest",
+      "position": [
+        -590,
+        -112
+      ],
+      "scale": 0.65,
+      "prompt": "Recover Hale’s paid receipt",
+      "respawn": 35,
+      "reward": {
+        "item": "in_ferry_receipt",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_camp_wood_0",
+      "quest": "in_miners_supplies",
+      "model": "crate_broken",
+      "position": [
+        -347,
+        -105
+      ],
+      "scale": 0.65,
+      "prompt": "Take a dry bundle for Edda",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_camp_wood_1",
+      "quest": "in_miners_supplies",
+      "model": "crate_broken",
+      "position": [
+        -350,
+        -100
+      ],
+      "scale": 0.65,
+      "prompt": "Take a dry bundle for Edda",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_camp_wood_2",
+      "quest": "in_miners_supplies",
+      "model": "crate_broken",
+      "position": [
+        -340,
+        -106
+      ],
+      "scale": 0.65,
+      "prompt": "Take a dry bundle for Edda",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_camp_wood_3",
+      "quest": "in_miners_supplies",
+      "model": "crate_broken",
+      "position": [
+        -337,
+        -104
+      ],
+      "scale": 0.65,
+      "prompt": "Take a dry bundle for Edda",
+      "respawn": 35,
+      "reward": {
+        "item": "firewood",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wage_tag_0",
+      "quest": "in_cut_the_claim",
+      "model": "manifest",
+      "position": [
+        -293,
+        -240
+      ],
+      "scale": 0.65,
+      "prompt": "Recover a settled wage tag",
+      "respawn": 35,
+      "reward": {
+        "item": "in_miner_tag",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wage_tag_1",
+      "quest": "in_cut_the_claim",
+      "model": "manifest",
+      "position": [
+        -270,
+        -254
+      ],
+      "scale": 0.65,
+      "prompt": "Recover a settled wage tag",
+      "respawn": 35,
+      "reward": {
+        "item": "in_miner_tag",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_wage_tag_2",
+      "quest": "in_cut_the_claim",
+      "model": "manifest",
+      "position": [
+        -252,
+        -268
+      ],
+      "scale": 0.65,
+      "prompt": "Recover a settled wage tag",
+      "respawn": 35,
+      "reward": {
+        "item": "in_miner_tag",
+        "count": 1
+      }
+    },
+    {
+      "id": "in_ledger_pickup",
+      "quest": "in_testimony",
+      "model": "manifest",
+      "position": [
+        -238,
+        -275
+      ],
+      "scale": 0.65,
+      "prompt": "Take the original ledger",
+      "respawn": 35,
+      "reward": {
+        "item": "in_original_ledger",
+        "count": 1
+      }
+    }
+  ],
+  "enemies": [
+    {
+      "id": "in_toll_runner_0",
+      "enemy": "in_toll_runner",
+      "position": [
+        -288,
+        -143
+      ]
+    },
+    {
+      "id": "in_toll_runner_1",
+      "enemy": "in_toll_runner",
+      "position": [
+        -276,
+        -165
+      ]
+    },
+    {
+      "id": "in_toll_runner_2",
+      "enemy": "in_toll_runner",
+      "position": [
+        -263,
+        -169
+      ]
+    },
+    {
+      "id": "in_toll_runner_3",
+      "enemy": "in_toll_runner",
+      "position": [
+        -289,
+        -161
+      ]
+    },
+    {
+      "id": "in_reed_collector_0",
+      "enemy": "in_reed_collector",
+      "position": [
+        -582,
+        -123
+      ]
+    },
+    {
+      "id": "in_reed_collector_1",
+      "enemy": "in_reed_collector",
+      "position": [
+        -600,
+        -108
+      ]
+    },
+    {
+      "id": "in_reed_collector_2",
+      "enemy": "in_reed_collector",
+      "position": [
+        -591,
+        -97
+      ]
+    },
+    {
+      "id": "in_reed_collector_3",
+      "enemy": "in_reed_collector",
+      "position": [
+        -607,
+        -121
+      ]
+    },
+    {
+      "id": "in_mine_warden_0",
+      "enemy": "in_mine_warden",
+      "position": [
+        -300,
+        -231
+      ]
+    },
+    {
+      "id": "in_mine_warden_1",
+      "enemy": "in_mine_warden",
+      "position": [
+        -284,
+        -244
+      ]
+    },
+    {
+      "id": "in_mine_warden_2",
+      "enemy": "in_mine_warden",
+      "position": [
+        -266,
+        -260
+      ]
+    },
+    {
+      "id": "in_mine_warden_3",
+      "enemy": "in_mine_warden",
+      "position": [
+        -246,
+        -278
+      ]
+    },
+    {
+      "id": "in_corven",
+      "enemy": "in_bailiff_corven",
+      "position": [
+        -232,
+        -279
+      ]
+    }
+  ]
+}

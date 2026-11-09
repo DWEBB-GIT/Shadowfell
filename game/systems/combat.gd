@@ -127,6 +127,9 @@ func resolve_telegraph(enemy, shape, damage: float, label, opts = null) -> bool:
 	var events: Events = game.events
 	if enemy.dead or player.dead:
 		return false
+	if opts != null and opts.get("ranged") and game.spells.smoke_blocks(enemy.position, player.position):
+		events.emit("log", {"text":"Smoke swallows the shot.","kind":"muted","throttle":"smoke"})
+		return false
 	if not shape.contains(player.position.x, player.position.z, player.radius):
 		events.emit("enemyWhiff", {"enemy": enemy})
 		if label:

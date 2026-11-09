@@ -29,6 +29,8 @@ static func requirement_text(ability) -> String:
 	var need = ability.get("requires")
 	if not need:
 		return ""
+	if need == "dualWield":
+		return "Requires a one-handed weapon in each hand"
 	if need == "shield":
 		return "Requires a shield in your off hand"
 	if need == "weapon":
@@ -48,6 +50,8 @@ static func missing_gear(g, ability) -> String:
 	if not need:
 		return ""
 	var inv = g.inventory
+	if need == "dualWield":
+		return "" if g.stats.dual_wielding else requirement_text(ability)
 	if need == "shield":
 		var s = inv.equipment.offHand
 		if s != null and Items.get_def(s.id).get("kind") == "shield" and not Items.view(s).get("broken", false):
@@ -94,7 +98,12 @@ func _init(g) -> void:
 		c.pushbacks += 1
 		game.events.emit("castPushback", {"id": c.id}))
 	# any blow you deal brings you out of Shadow
-	game.events.on("enemyHit", func(_e): break_shadow())
+	game.events.on("enemyHit", func(e):
+		if not e.get("periodic") and not e.get("echo"):
+			break_shadow()
+		if buffs.has("berserk") and e.get("damage",0) > 0 and not e.get("periodic") and not e.get("echo"):
+			var b: Dictionary = buffs.berserk
+			b.left = minf(b.total - b.age, b.left + DB.spells.berserk.tuning.extension))
 	game.events.on("autoAttack", func(e):
 		if e.on:
 			break_shadow())
@@ -110,6 +119,10 @@ func reset() -> void:
 	blows = []
 	queued = null
 	shadow_grace = 0.0
+	reprisal = 0.0
+	reprisal_cap = 14.0
+	mobile.clear()
+	echoes.clear()
 	if game.get("runes"):
 		game.runes.reset()
 
@@ -186,6 +199,8 @@ func _spread_target(from, id: String):
 ## the spell as it is now: Weapon Master's loadout changes, and the Shadow
 ## version of an ability (Strike becomes Ambush)
 func tuned(id):
+	if id == "shadow" and not hidden and (game.resources.in_combat or game.targeting.attacking):
+		id = "vanish"
 	var spell = DB.spells.get(id)
 	if spell == null:
 		return null
@@ -200,6 +215,9 @@ func tuned(id):
 	if game.builds:
 		for c in game.builds.changes_for(spell.id):
 			spell = Builds.apply_change(spell, c)
+	if id in ["flurry", "crosscut"] and buffs.has("twinOpening"):
+		spell = spell.duplicate(true)
+		spell.cost.resolve *= 1.0 - buffs.twinOpening.discount / 100.0
 	return spell
 
 
@@ -311,6 +329,13 @@ func _cast_effects(spell: Dictionary) -> void:
 ## Try to use a spell; false (with a word in the log, where WoW would say
 ## one) if it cannot go off now.
 func try_cast(id: String) -> bool:
+	var cast := _try_cast(id)
+	if not cast and queued == null and game.player.casting == null and DB.spells.has(id) and not game.player.dead:
+		game.events.emit("classCastFailed", {"id": id})
+	return cast
+
+
+func _try_cast(id: String) -> bool:
 	var player = game.player
 	var events: Events = game.events
 	var stats = game.stats
@@ -320,6 +345,9 @@ func try_cast(id: String) -> bool:
 		return false
 	# pressed in the last moments of a cast or a charge, it waits in the
 	# spell queue and goes the instant that ends (Dan, 2026-11-02)
+	if not mobile.is_empty() and mobile.spell.id == id:
+		mobile.clear()
+		return true
 	var busy = player.casting if player.casting != null else player.lunge
 	if busy != null:
 		var left: float = (busy.get("total", busy.get("duration", 0.0)) - busy.t) if not busy.get("channel", false) else INF
@@ -332,6 +360,8 @@ func try_cast(id: String) -> bool:
 	if not game.skills.knows_ability(id):
 		return false
 	var spell: Dictionary = tuned(id)
+	if id == "shadow" and spell.id == "vanish":
+		id = "vanish"
 	var t: Dictionary = spell.tuning
 	if spell.kind == "stealth" and hidden:
 		# casting Shadow again steps out of it
@@ -362,7 +392,7 @@ func try_cast(id: String) -> bool:
 		return false
 	if spell.kind == "portal" and not game.camp.portal_ok(spell.portal):
 		return false
-	var casts: bool = spell.kind == "cast" or spell.kind == "camp" or spell.kind == "portal" or spell.kind == "channel" or (spell.kind == "heal" and t.get("castTime", 0) > 0)
+	var casts: bool = spell.kind in ["cast", "groundCast"] or spell.kind == "camp" or spell.kind == "portal" or spell.kind == "channel" or (spell.kind == "heal" and t.get("castTime", 0) > 0)
 	if casts and player.moving:
 		game.hud.error("You can't do that while moving")
 		return false
@@ -382,6 +412,8 @@ func try_cast(id: String) -> bool:
 		target = _target_for(spell)
 		if not target:
 			return false
+		if not _class_ready(spell, target):
+			return false
 		game.resources.spend(spell)
 		return _charge(spell, target, id)
 	if spell.kind == "leap":
@@ -391,19 +423,22 @@ func try_cast(id: String) -> bool:
 		target = _target_for(spell)
 		if not target:
 			return false
+		if not _class_ready(spell, target):
+			return false
 		# running, the target must be in front of you; standing still, a
 		# spell at an enemy turns you to it
 		if not player.can_hit_while_moving(target.position.x, target.position.z):
 			game.hud.error("Target needs to be in front of you.")
 			return false
 		player.face_towards(target.position.x, target.position.z)
-		# striking from Shadow: the blow still counts as from Shadow (Opportunist)
-		break_shadow()
-		# a spell at an enemy engages it (not Sleep: a swing would wake it)
-		if not spell.get("applies", {}).get("sleep"):
-			game.targeting.engage(target)
-		elif game.targeting.current == target:
-			game.targeting.stop_attack()
+		if spell.get("mechanic") != "distract":
+			break_shadow()
+			if not spell.get("applies", {}).get("sleep") and spell.get("mechanic") != "fear":
+				game.targeting.engage(target)
+			elif game.targeting.current == target:
+				game.targeting.stop_attack()
+	elif not _class_ready(spell, null):
+		return false
 	if not off_gcd:
 		player.cooldowns.gcd = stats.global_cooldown
 	# a cast pays when it finishes (WoW); everything else pays now
@@ -413,8 +448,10 @@ func try_cast(id: String) -> bool:
 			spell = spell.duplicate()
 			spell.points = points
 			spell.tuning = t.duplicate()
-			spell.tuning.damageMultiplier = t.get("damageMultiplier", 0) + t.get("perPoint", 0) * points
-			t = spell.tuning
+			if t.has("damageMultiplier") or t.has("perPoint"):
+				spell.tuning.damageMultiplier = t.get("damageMultiplier", 0) + t.get("perPoint", 0) * points
+		spell = _prepare_class_cast(spell, points)
+		t = spell.tuning
 	if casts:
 		# casting stops the swing: a swing or shot on its way is dropped, and
 		# the timers start again when the cast ends (WoW Classic)
@@ -425,6 +462,12 @@ func try_cast(id: String) -> bool:
 		player.hold_bow(spell.get("ranged", false))
 		var channel: bool = spell.kind == "channel"
 		player.casting = {"id": id, "spell": spell, "t": 0.0, "total": stats.hasted(t.castTime), "target": target, "pushbacks": 0, "channel": channel, "next": t.tickInterval if channel else 0.0}
+		if spell.kind == "groundCast":
+			var at := _ground_point(spell.range)
+			spell = spell.duplicate()
+			spell["groundAt"] = at
+			player.casting.spell = spell
+			game.events.emit("zone", {"id":spell.id,"x":at.x,"z":at.z,"radius":t.radius,"duration":player.casting.total,"school":"fire","key":"meteorWarning"})
 		if channel:
 			player.cooldowns[id] = t.cooldown
 		_anim(spell, "shoot" if spell.get("ranged") else "brace", player.casting.total, 0.9, true, "windupAnim")
@@ -458,7 +501,7 @@ func try_cast(id: String) -> bool:
 func _target_for(spell: Dictionary, optional := false):
 	var targeting = game.targeting
 	var player = game.player
-	var range_: float = game.stats.ranged_reach if spell.get("ranged") else spell.range
+	var range_: float = minf(game.stats.ranged_reach,spell.range) if spell.get("ranged") and spell.get("mechanic") == "interruptArrow" else game.stats.ranged_reach if spell.get("ranged") else spell.range
 	var in_range := func(e): return e != null and e.alive and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= range_ + e.radius * 0.6
 	var cur = targeting.current
 	if cur != null and cur.alive:
@@ -541,13 +584,28 @@ func _go(spell: Dictionary, target) -> void:
 	if spell.get("ranged"):
 		_shoot(spell, target)
 		return
+	if _class_release(spell, target):
+		return
 	# kinds with no pose of their own take a look's pose
 	if spell.kind in ["stealth", "purge"] and DB.spell_fx.get(spell.id, {}).has("anim"):
 		_anim(spell, "brace", 0.5, 0.4)
 	match spell.kind:
+		"groundCast":
+			var at: Vector3 = spell.groundAt
+			at.y = Terrain.height_at(at.x,at.z)
+			_anim(spell, "slam", 0.55, 0.4)
+			for enemy in _near_enemies(at,t.radius):
+				_damage(spell,enemy,_spell_base(t),"",1.0,{"periodic":true})
+			game.events.emit("classImpact", {"position":at,"radius":t.radius,"school":spell.school})
+			_show(spell,"impact",at,player.facing)
 		"cast":
+			var sigil = buffs.get("echoSigil")
+			if sigil != null and game.archetype_id == "wizard" and U.hyp(player.position.x-sigil.at.x,player.position.z-sigil.at.z) <= sigil.radius:
+				spell = spell.duplicate()
+				spell["sigilEcho"] = {"at":sigil.at,"scale":sigil.scale}
+				buffs.erase("echoSigil")
 			var d := U.hyp(target.position.x - player.position.x, target.position.z - player.position.z)
-			bolts.append({"enemy": target, "id": spell.id, "t": d / t.projectileSpeed})
+			bolts.append({"enemy": target, "id": spell.id, "t": d / t.projectileSpeed, "spell": spell})
 			events.emit("projectile", {"kind": "holy" if spell.get("school") == "holy" else "bolt", "from": player.position + Vector3(0, 1.3, 0), "to": target.position, "speed": t.projectileSpeed, "follow": target, "life": d / t.projectileSpeed, "look": spell.id})
 			# the release: a look's own pose as the bolt leaves the hands
 			if DB.spell_fx.get(spell.id, {}).has("anim"):
@@ -563,6 +621,8 @@ func _go(spell: Dictionary, target) -> void:
 			events.emit("spellFlash", {"position": target.position, "school": spell.get("school")})
 			var hit := _damage(spell, target, _spell_base(t), "Your %s hits the {name} for {n}." % spell.name)
 			_landed(spell, target, hit)
+			if spell.get("mechanic") == "conviction" and hit.amount > 0:
+				_schedule_holy_echoes(spell,[{"enemy":target,"amount":hit.amount,"crit":hit.crit}])
 		"dot":
 			_anim(spell, "strike", 0.45, 0.4)
 			_show(spell, "impact", target.position, _facing_to(target))
@@ -634,7 +694,8 @@ func _go(spell: Dictionary, target) -> void:
 			var points: float = spell.get("points", 0)
 			var healed: float = player.heal(player.max_health * t.healPerPoint * points / 100.0)
 			for d in dots:
-				d.left += t.extend
+				if d.id == "rot":
+					d.left += t.extend
 			for a in auras:
 				if not a.stun and not a.sleep:
 					a.left += t.extend
@@ -694,7 +755,9 @@ func _go(spell: Dictionary, target) -> void:
 		"shield":
 			_anim(spell, "brace", 0.5, 0.4)
 			var absorb := U.jround(player.max_health * t.absorbPercent / 100.0)
-			buffs[spell.id] = {"name": spell.name, "left": t.duration, "total": t.duration, "absorb": absorb}
+			if spell.id == "lightShield":
+				reprisal_cap = t.get("reprisalCap",14.0)
+			buffs[spell.id] = {"name": spell.name, "icon":spell.id, "left": t.duration, "total": t.duration, "absorb": absorb, "reprisalStore":t.get("reprisalStore",0.0)}
 			events.emit("buff", {"id": spell.id})
 			events.emit("log", {"text": "%s will absorb %d damage." % [spell.name, absorb], "kind": "hit"})
 
@@ -717,7 +780,8 @@ func _weapon_base(t: Dictionary) -> float:
 	var stats = game.stats
 	var base := Stats.weapon_roll(game.random, stats)
 	if t.get("bothHands") and stats.dual_wielding:
-		base += Stats.weapon_roll(game.random, stats) * DB.CONFIG.stats.offHandDamage
+		var off_normalization: float = DB.attack.abilityWeaponSeconds / stats.hand_speed("off")
+		base += Stats.swing_roll(game.random, stats, "off") * off_normalization * DB.CONFIG.stats.offHandDamage
 	return base + _gear_extra(t, t.get("damageMultiplier", 1.0))
 
 
@@ -743,6 +807,9 @@ func _bonus_vs(spell: Dictionary, enemy) -> float:
 ## what follows a spell's hit on its target: its aura, a follow-up effect,
 ## and the stacks it gives you
 func _landed(spell: Dictionary, enemy, hit) -> void:
+	if hit != null and hit.amount > 0:
+		for resource in spell.get("hitGain",{}):
+			game.resources.add(resource, spell.hitGain[resource])
 	if not enemy.alive and hit != null or hit != null and hit.get("miss"):
 		return
 	if spell.get("applies"):
@@ -766,6 +833,10 @@ func apply_aura(id: String, enemy, aura: Dictionary, spreads := false) -> void:
 	if not enemy.alive:
 		return
 	var left: float = aura.duration
+	if aura.get("root"):
+		if not _ordinary(enemy):
+			return
+		enemy.root_left = maxf(enemy.root_left, left)
 	if aura.get("stun") or aura.get("sleep"):
 		left = enemy.control("sleep" if aura.get("sleep") else "stun", aura.duration)
 		if left <= 0:
@@ -796,10 +867,12 @@ func _apply_dot(spell: Dictionary, target, ammo = null, quiet := false) -> void:
 	if had != null:
 		had.left = t.duration
 		had.ammo = ammo
+		had.erase("strength")
 	else:
 		dots.append({"enemy": target, "id": spell.id, "left": t.duration, "next": t.tickInterval, "ammo": ammo})
 	if spell.get("applies"):
 		apply_aura(spell.id, target, spell.applies)
+	game.events.emit("classAffliction", {"position":target.position,"school":spell.get("school","nature")})
 	if quiet:
 		return
 	target.hurt(0, {"stagger": 0.1}) # they notice
@@ -827,6 +900,11 @@ func _shoot(spell: Dictionary, target) -> void:
 	if t.get("maxTargets", 1) > 1:
 		var dist := func(e): return U.hyp(e.position.x - target.position.x, e.position.z - target.position.z)
 		var near: Array = game.enemies.list.filter(func(e): return e.alive and not e.protected and e != target and dist.call(e) <= t.spread)
+		if spell.get("mechanic") == "pierce":
+			var axis := Vector2(target.position.x-from.x,target.position.z-from.z).normalized()
+			near = near.filter(func(e):
+				var offset := Vector2(e.position.x-target.position.x,e.position.z-target.position.z)
+				return offset.dot(axis) > 0.0 and absf(offset.cross(axis)) <= 0.8 + e.radius)
 		near.sort_custom(func(a, b): return dist.call(a) < dist.call(b))
 		targets.append_array(near.slice(0, int(t.maxTargets) - 1))
 	for e in targets:
@@ -847,10 +925,14 @@ func _arrow_lands(spell: Dictionary, enemy, ammo) -> void:
 	game.events.emit("spellFlash", {"position": enemy.position, "school": spell.get("school")})
 	_show(spell, "impact", enemy.position, _facing_to(enemy))
 	if spell.kind == "dot":
-		_apply_dot(spell, enemy, ammo)
+		if spell.get("mechanic") != "ignite" or not _ignite_tar(enemy):
+			_apply_dot(spell, enemy, ammo)
 		return
 	var hit := _damage(spell, enemy, _bow_roll(ammo) + _gear_extra(spell.tuning, spell.tuning.damageMultiplier), "Your %s hits the {name} for {n}." % spell.name, spell.tuning.damageMultiplier, {"stagger": 0.15, "knockFrom": game.player.position, "knockback": 0.1})
 	_landed(spell, enemy, hit)
+	if hit.amount > 0 and enemy.alive and spell.get("mechanic") == "interruptArrow":
+		if enemy.interrupt(spell.tuning.lockout) is String:
+			game.hud.toast("Interrupted!")
 
 
 ## Called by the player when a pending spell blow lands (cleave, burst, charge).
@@ -905,10 +987,20 @@ func _burst(spell: Dictionary) -> Array:
 	var t: Dictionary = spell.tuning
 	var hits: Array = game.enemies.list.filter(func(e): return e.alive and not e.protected and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius)
 	var most := 0
+	var initial_hits := []
 	for e in hits:
-		var hit := _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": t.stagger, "knockFrom": player.position, "knockback": t.knockback, "heavy": bool(t.get("interrupts", false))})
+		if spell.get("mechanic") == "erupt":
+			_cash_out(spell, e)
+			continue
+		var base: float = spell.get("wardDamage", _weapon_base(t) if t.damageMultiplier > 0 else _spell_base(t))
+		var multiplier: float = t.damageMultiplier if t.damageMultiplier > 0 else 1.0
+		var hit := _damage(spell, e, base, "", multiplier, {"stagger": t.stagger, "knockFrom": player.position, "knockback": t.knockback, "heavy": bool(t.get("interrupts", false))})
 		most = maxi(most, hit.amount)
 		_landed(spell, e, hit)
+		if hit.amount > 0:
+			initial_hits.append({"enemy":e,"amount":hit.amount,"crit":hit.crit})
+	if spell.get("mechanic") == "conviction":
+		_schedule_holy_echoes(spell,initial_hits)
 	# Healing Storm: a share of your health for each enemy hit
 	if t.get("healPerHit") and not hits.is_empty():
 		_heal_number(player.heal(player.max_health * t.healPerHit * hits.size() / 100.0))
@@ -1015,14 +1107,20 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	var t: Dictionary = spell.tuning
 	var weapon: bool = spell.get("ranged", false) or t.has("damageMultiplier") or (t.has("tickMultiplier") and not t.has("damageMin"))
 	var m := hit_mods(enemy, weapon)
-	mult *= _execute_scale(spell, enemy)
+	mult *= _execute_scale(spell, enemy) * _class_damage_scale(spell) * spell.get("classMultiplier",1.0)
+	if spell.get("mechanic") == "consumeAim":
+		for a in auras:
+			if a.enemy == enemy and a.id == "quickShot":
+				mult *= 1.0 + t.aimBonus
+				auras.erase(a)
+				break
 	var school: String = spell.get("school", "physical")
-	if carry == null and not hurt_opts.get("periodic", false) and Stats.rolls_miss(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), m.accuracy):
+	if carry == null and not hurt_opts.get("periodic", false) and not spell.get("fullReprisal", false) and Stats.rolls_miss(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), m.accuracy):
 		var miss: Dictionary = game.combat.missed(enemy, "Your %s misses" % spell.name)
 		if not (spell.kind in ["dot", "thorns"]) and not game.targeting.attacking:
 			game.targeting.engage(enemy)
 		return miss
-	var o := {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit}
+	var o := {"base": base, "mult": mult * m.mult * damage_scale * game.afterlife.damage_scale_against(enemy), "school": school, "critBonus": m.critBonus, "forceCrit": m.forceCrit or spell.get("fullReprisal",false)}
 	if carry != null:
 		o.carry = carry.get("carry", 0.0)
 	var hit := Stats.compute_hit(game.random, game.stats.stat_block, Stats.enemy_block(enemy.cfg), o)
@@ -1037,10 +1135,16 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	var opts: Dictionary = hurt_opts.duplicate()
 	opts.stagger = float(t.get("stagger", 0.0))
 	opts.knockback = float(t.get("knockback", 0.0))
+	if spell.get("mechanic") == "ordinaryPush" and not _ordinary(enemy):
+		opts.knockback = 0.0
+	if spell.get("mechanic") == "ordinaryPush":
+		opts.knockFrom = game.player.position
+	if spell.get("mechanic") == "heavy":
+		opts.heavy = true
 	enemy.hurt(hit.amount, opts)
 	var events: Events = game.events
 	events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "kind": "dealt", "hand": "ranged" if spell.get("ranged") else "main", "ability": true})
-	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else "main"})
+	events.emit("enemyHit", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "kind": "strike" if school == "physical" else "spell", "school": school, "hand": "ranged" if spell.get("ranged") else hurt_opts.get("hand","main"), "periodic": carry != null or hurt_opts.get("periodic",false)})
 	events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("knockback", 0) > 0})
 	if line != "":
 		events.emit("log", {"text": line.replace("{name}", enemy.cfg.name).replace("{n}", str(hit.amount)) + (" A critical blow!" if hit.crit else ""), "kind": "hit"})
@@ -1050,7 +1154,7 @@ func _damage(spell: Dictionary, enemy, base: float, line: String, mult := 1.0, h
 	if enemy.dead:
 		game.combat.on_enemy_defeated(enemy)
 	# hitting an enemy with nothing engaged starts auto attack on it
-	elif not (spell.kind in ["dot", "thorns"]) and not game.targeting.attacking:
+	elif not (spell.kind in ["dot", "thorns"]) and not (hidden and hurt_opts.get("periodic",false)) and not game.targeting.attacking:
 		game.targeting.engage(enemy)
 	return hit
 
@@ -1093,7 +1197,7 @@ func _enter_shadow(spell: Dictionary) -> void:
 	# whoever was after you loses you
 	for e in game.enemies.list:
 		if e.alive and (e.state == "chase" or e.state == "attack" or e.state == "flee"):
-			e.lose_track()
+			e.lose_track(spell.tuning.get("searchTime", 3.0))
 	player.set_hidden(true)
 	game.events.emit("log", {"text": "You slip into Shadow.", "kind": "muted"})
 
@@ -1169,6 +1273,9 @@ func absorb(amount: int) -> int:
 		var take := mini(int(b.absorb), amount)
 		b.absorb -= take
 		amount -= take
+		if take > 0:
+			reprisal = minf(reprisal_cap, reprisal + take * b.get("reprisalStore",0.0))
+			game.events.emit("shieldAbsorbed", {"id":id,"amount":take,"position":game.player.position})
 		if b.absorb <= 0:
 			buffs.erase(id)
 			game.events.emit("log", {"text": "%s breaks." % b.name, "kind": "muted"})
@@ -1186,12 +1293,15 @@ func update(dt: float) -> void:
 	var events: Events = game.events
 	var enemies: Array = game.enemies.list
 	shadow_grace = maxf(0, shadow_grace - dt)
+	_class_tick(dt)
 	# the cast bar: moving or dying breaks it, as in WoW
 	var c = player.casting
 	if c != null:
 		var gone: bool = c.target != null and not c.target.alive
 		if player.dead or player.moving or gone:
 			player.casting = null
+			if c.spell.kind == "groundCast":
+				events.emit("zoneGone", {"key":"meteorWarning"})
 			player.rig.action = null
 			if c.spell.get("ranged"):
 				player.hold_bow(false)
@@ -1209,6 +1319,11 @@ func update(dt: float) -> void:
 					break
 				var hit := _damage(spell, c.target, _spell_base(t), "", 1, {"stagger": 0.0, "periodic": true})
 				_heal_number(player.heal(hit.amount * t.healPercent / 100.0))
+				if hit.amount > 0 and t.get("corruptionGain"):
+					game.resources.add("corruption", t.corruptionGain)
+					_show(spell,"impact",c.target.position,_facing_to(c.target))
+					var distance: float = c.target.position.distance_to(player.position)
+					events.emit("projectile", {"kind":"bolt", "from":c.target.position+Vector3.UP, "to":player.position, "follow":player, "speed":18.0, "life":distance/18.0, "look":spell.id})
 			if c.t >= c.total:
 				player.casting = null
 				events.emit("castEnd", {"id": c.id, "done": true})
@@ -1270,7 +1385,10 @@ func update(dt: float) -> void:
 			_arrow_lands(spell, b.enemy, b.get("ammo"))
 		else:
 			_show(spell, "impact", b.enemy.position, _facing_to(b.enemy))
-			_landed(spell, b.enemy, _damage(spell, b.enemy, _spell_base(spell.tuning), "Your %s hits the {name} for {n}." % spell.name))
+			var hit := _damage(spell, b.enemy, _spell_base(spell.tuning), "Your %s hits the {name} for {n}." % spell.name)
+			_landed(spell, b.enemy, hit)
+			if hit.amount > 0:
+				_projectile_interactions(spell,b.enemy,hit)
 
 	for id in buffs.keys():
 		var b: Dictionary = buffs[id]
@@ -1317,8 +1435,11 @@ func update(dt: float) -> void:
 				base = _spell_base(t)
 			else:
 				base = Stats.weapon_roll(game.random, game.stats) + _gear_extra(t, 1.0)
-			var hit := _damage(spell, d.enemy, base, "", t.tickMultiplier, {"stagger": 0.0}, d)
+			var hit := _damage(spell, d.enemy, base, "", t.tickMultiplier * d.get("strength",1.0), {"stagger": 0.0,"periodic":true}, d)
 			events.emit("dotTick", {"id": d.id, "damage": hit.amount})
+			if d.id == "rot" and hit.amount > 0:
+				var targets := dots.filter(func(dot): return dot.id == "rot" and dot.enemy.alive).size()
+				game.resources.add("corruption", t.corruptionGain / sqrt(maxi(1, targets)))
 			# Leech: a share of every tick heals you
 			var leech: float = trait_.get("dotHealPercent", 0) if trait_.get("id") == "leech" else 0.0
 			if leech and hit.amount > 0:
@@ -1351,15 +1472,19 @@ func update(dt: float) -> void:
 		var prey = null
 		if tr.arm <= 0:
 			for e in enemies:
-				if e.alive and U.hyp(e.position.x - tr.x, e.position.z - tr.z) - e.radius * 0.5 <= t.triggerRadius:
+				if e.alive and not e.protected and U.hyp(e.position.x - tr.x, e.position.z - tr.z) - e.radius * 0.5 <= t.triggerRadius:
 					prey = e
 					break
 		if prey != null or tr.left <= 0:
 			traps.remove_at(i)
 			events.emit("trapGone", {"key": tr.key})
 		if prey != null:
-			zones.append({"id": tr.id, "x": tr.x, "z": tr.z, "left": t.duration, "next": INF, "radius": t.radius, "slow": t.slow, "damage": false})
-			events.emit("zone", {"id": tr.id, "x": tr.x, "z": tr.z, "radius": t.radius, "duration": t.duration, "school": "tar"})
+			if spell.get("mechanic") == "tripwire":
+				apply_aura(tr.id,prey,{"name":"Tripped","duration":t.duration,"root":1})
+				_show(spell,"impact",prey.position,_facing_to(prey))
+				continue
+			zones.append({"id": tr.id, "key":tr.key, "x": tr.x, "z": tr.z, "left": t.duration, "next": INF, "radius": t.radius, "slow": t.slow, "damage": false})
+			events.emit("zone", {"id": tr.id, "x": tr.x, "z": tr.z, "radius": t.radius, "duration": t.duration, "school": "tar", "key":tr.key})
 			events.emit("log", {"text": "The %s springs your %s." % [prey.cfg.name, spell.name], "kind": "hit"})
 			_show(spell, "impact", Vector3(tr.x, Terrain.height_at(tr.x, tr.z), tr.z), game.player.facing)
 			for e in (game.builds.effects("trap") if game.builds else []):
@@ -1380,8 +1505,8 @@ func update(dt: float) -> void:
 					continue
 				if z.damage:
 					_damage(spell, e, _spell_base(t), "", 1, {"stagger": 0.0, "periodic": true})
-				if spread != null and e.alive:
-					_apply_dot(spread, e, null, dots.any(func(d): return d.enemy == e and d.id == spread.id))
+				if spread != null and e.alive and _find_dot(e, spread.id).is_empty():
+					_apply_dot(spread, e)
 			# Hallowed Ground heals you while you stand in it
 			var inside: bool = U.hyp(player.position.x - z.x, player.position.z - z.z) <= z.radius
 			if t.get("healPercent") and inside:
@@ -1410,3 +1535,326 @@ func update(dt: float) -> void:
 		for e in enemies:
 			if e.alive and U.hyp(e.position.x - z.x, e.position.z - z.z) - e.radius * 0.5 <= z.radius:
 				e.mods.slow = maxf(e.mods.slow, z.slow)
+
+
+# Class interactions share the normal spell resolution and damage paths.
+var reprisal := 0.0
+var reprisal_cap := 14.0
+var mobile := {}
+var echoes: Array = []
+
+var movement_scale: float:
+	get:
+		return mobile.get("spell", {}).get("tuning", {}).get("movementScale", 1.0)
+
+
+func _class_ready(spell: Dictionary, target) -> bool:
+	var reason := ""
+	match spell.get("mechanic", ""):
+		"berserk":
+			if game.resources.amount("resolve") < 100 and not game.resources.unlimited:
+				reason = "Berserk needs full Fury."
+		"venom", "reap":
+			var dot_id := "poisonedBladeToxin" if spell.mechanic == "venom" else "rot"
+			if _find_dot(target, dot_id).is_empty():
+				reason = "Your poison must already be on the target." if dot_id == "poisonedBladeToxin" else "The target needs your Rot."
+		"distract":
+			if target == null or target.state != "idle" or target.engaged > 0:
+				reason = "Distract needs an unaware enemy."
+		"fear":
+			if not _ordinary(target):
+				reason = "That enemy cannot be frightened."
+		"collapseWard":
+			if buffs.get("arcaneWard", {}).get("absorb", 0) <= 0:
+				reason = "Raise Arcane Ward first."
+		"bloodPact":
+			if game.player.health <= 1 + game.player.max_health * spell.tuning.healthCost / 100.0:
+				reason = "You are too wounded for Blood Pact."
+	if reason != "":
+		game.hud.error(reason)
+	return reason == ""
+
+
+func _ordinary(enemy) -> bool:
+	return enemy != null and enemy.alive and not enemy.protected and not enemy.is_elite and enemy.stagger_bar == null and not enemy.cfg.get("dummy", false)
+
+
+func _prepare_class_cast(spell: Dictionary, points: float) -> Dictionary:
+	var mechanic: String = spell.get("mechanic", "")
+	if mechanic == "conviction" or mechanic == "soulWard":
+		spell = spell.duplicate(true)
+		if spell.kind == "shield":
+			spell.tuning.absorbPercent += spell.tuning.perCharge * points
+		else:
+			spell["classMultiplier"] = 1.0 + spell.tuning.perCharge * points + spell.tuning.reprisalBonus * reprisal / reprisal_cap
+			spell["fullReprisal"] = reprisal >= reprisal_cap
+			reprisal = 0.0
+	elif mechanic == "collapseWard":
+		spell = spell.duplicate()
+		spell["wardDamage"] = buffs.arcaneWard.absorb * spell.tuning.wardScale
+		buffs.erase("arcaneWard")
+	if spell.id in ["flurry", "crosscut"]:
+		buffs.erase("twinOpening")
+	return spell
+
+
+func _class_release(spell: Dictionary, target) -> bool:
+	var t: Dictionary = spell.tuning
+	var player = game.player
+	match spell.get("mechanic", ""):
+		"pair":
+			_anim(spell, "strike", 0.5, 0.35)
+			var landed := 0
+			for hand in ["main", "off"]:
+				if not target.alive:
+					break
+				var hit := _damage(spell, target, Stats.swing_roll(game.random, game.stats, hand), "", t.damageMultiplier, {"hand": hand})
+				if hit.amount > 0:
+					landed += 1
+					_show(spell, "impact", target.position, _facing_to(target) + (0.35 if hand == "off" else -0.35))
+			if landed == 2 and t.has("comboDiscount"):
+				buffs["twinOpening"] = {"name":"Twin Opening", "icon":spell.id, "left":6.0, "total":6.0, "discount":t.comboDiscount}
+		"mobile":
+			mobile = {"spell":spell, "next":0.0, "pulse":0}
+			_anim(spell, "sweep", t.tickInterval, 0.35)
+		"berserk":
+			buffs[spell.id] = {"name":spell.name,"icon":spell.id,"left":t.duration,"total":t.maxDuration,"damageBonus":t.damageBonus,"age":0.0}
+			_anim(spell, "brace", 0.65, 0.4)
+			game.events.emit("buff", {"id":spell.id})
+		"venom":
+			var poison := _find_dot(target, "poisonedBladeToxin")
+			if not poison.is_empty():
+				poison["strength"] = 1.0 + t.venomPerPoint * spell.points
+				poison.left += t.extend
+				_show(spell, "impact", target.position, _facing_to(target))
+			_anim(spell, "strike", 0.4, 0.4)
+		"reap":
+			_anim(spell, "cast", 0.45, 0.4)
+			_cash_out(spell, target)
+		"distract":
+			var at := _ground_point(spell.range)
+			target.distract_at(at)
+			_anim(spell, "brace", 0.35, 0.4)
+			_show(spell, "impact", target.position, 0.0)
+		"fear":
+			target.frighten(t.get("fearTime", 3.0))
+			_anim(spell, "cast", 0.5, 0.4)
+			_show(spell, "impact", target.position, _facing_to(target))
+		"bloodPact":
+			player.health -= player.max_health * t.healthCost / 100.0
+			buffs[spell.id] = {"name":spell.name,"icon":spell.id,"left":t.duration,"total":t.duration,"drainBonus":t.drainBonus}
+			_anim(spell, "brace", 0.55, 0.4)
+		"blink":
+			var start: Vector3 = player.position
+			var at := _ground_point(t.distance)
+			var direction := Vector3(at.x - start.x, 0, at.z - start.z)
+			var landing := start
+			for i in range(1, 25):
+				var step := start + direction * float(i) / 24.0
+				if Terrain.walk_at(step.x, step.z) < 0.5 or game.collision.wall_between(landing.x, landing.z, step.x, step.z):
+					break
+				if game.collision.resolve(step, player.radius).distance_to(step) > 0.15:
+					break
+				landing = step
+			player.place_at(landing.x, landing.z, player.facing)
+			game.move_to = null
+			_anim(spell, "brace", 0.35, 0.45)
+			_show(spell, "impact", player.position, player.facing)
+		"sigil":
+			var at := _ground_point(spell.range)
+			buffs[spell.id] = {"name":spell.name,"icon":spell.id,"left":t.duration,"total":t.duration,"at":at,"radius":t.radius,"scale":t.echoScale}
+			game.events.emit("zone", {"id":spell.id,"x":at.x,"z":at.z,"radius":t.radius,"duration":t.duration,"school":"arcane"})
+			_anim(spell, "cast", 0.5, 0.4)
+		_:
+			return false
+	return true
+
+
+func _class_tick(dt: float) -> void:
+	if game.player.dead:
+		mobile.clear()
+		echoes.clear()
+		return
+	if buffs.has("berserk"):
+		var b: Dictionary = buffs.berserk
+		b.age += dt
+		game.resources._take("resolve", DB.spells.berserk.tuning.drain * dt)
+		if b.age >= b.total or game.resources.amount("resolve") <= 0:
+			buffs.erase("berserk")
+	if not mobile.is_empty():
+		mobile.next -= dt
+		if mobile.next <= 0:
+			_mobile_pulse()
+	for i in range(echoes.size() - 1, -1, -1):
+		var wave: Dictionary = echoes[i]
+		wave.left -= dt
+		if wave.left > 0:
+			continue
+		echoes.remove_at(i)
+		if wave.get("radius", 0.0) > 0:
+			game.events.emit("classImpact", {"position":wave.at,"radius":wave.radius,"school":wave.school})
+		for record in wave.hits:
+			if record.enemy.alive and not record.enemy.protected:
+				_echo_hit(wave, record)
+
+
+func _mobile_pulse() -> void:
+	var spell: Dictionary = mobile.spell
+	var t: Dictionary = spell.tuning
+	var pulse: int = mobile.pulse
+	var cost: float = t.get("pulseCost", 0.0)
+	if missing_gear(game, spell) != "" or (pulse > 0 and game.resources.amount("resolve") < cost and not game.resources.unlimited):
+		mobile.clear()
+		return
+	if pulse > 0 and cost and not game.resources.unlimited:
+		game.resources._take("resolve", cost)
+	var player = game.player
+	var hand := "off" if spell.id == "flurry" and pulse % 2 else "main"
+	var near := _near_enemies(player.position, t.radius)
+	if spell.id == "flurry":
+		var target = game.targeting.current
+		near = [target] if target != null and near.has(target) else near.slice(0, 1)
+	_anim(spell, "sweep" if spell.id == "whirlwind" else "strike", t.tickInterval, 0.4)
+	if hand == "off":
+		player.rig.play_off(t.tickInterval, 0.4)
+	if player.rig.action != null:
+		player.rig.action["trailHand"] = hand
+	for enemy in near:
+		_damage(spell, enemy, Stats.swing_roll(game.random, game.stats, hand), "", t.damageMultiplier, {"hand":hand})
+		_show(spell, "impact", enemy.position, _facing_to(enemy) + (0.35 if hand == "off" else -0.35))
+	if spell.id == "whirlwind":
+		game.events.emit("classImpact", {"position":player.position,"radius":t.radius,"school":"physical"})
+	mobile.pulse += 1
+	mobile.next += t.tickInterval
+	if mobile.pulse >= int(t.pulses):
+		mobile.clear()
+
+
+func _find_dot(enemy, id: String) -> Dictionary:
+	for d in dots:
+		if d.enemy == enemy and d.id == id:
+			return d
+	return {}
+
+
+func _dot_remaining(dot: Dictionary) -> float:
+	var spell: Dictionary = tuned(dot.id)
+	var t: Dictionary = spell.tuning
+	var count := maxi(0, 1 + floori((dot.left - dot.next) / t.tickInterval + 0.0001))
+	var base: float
+	if t.has("damageMin"):
+		base = (t.damageMin + t.get("damageMax",t.damageMin)) * 0.5 + t.get("spellPower",1.0) * game.stats.spell_power
+	else:
+		base = game.stats.ability_average()
+	return count * base * t.tickMultiplier * dot.get("strength",1.0) * _class_damage_scale(spell)
+
+
+func poison_remaining(enemy) -> float:
+	var dot := _find_dot(enemy, "poisonedBladeToxin")
+	return _dot_remaining(dot) if not dot.is_empty() else 0.0
+
+
+func _cash_out(spell: Dictionary, enemy) -> void:
+	var dot := _find_dot(enemy, "rot")
+	if dot.is_empty() or not enemy.alive:
+		return
+	var amount := minf(spell.tuning.cashoutCap, _dot_remaining(dot) * spell.tuning.cashoutScale)
+	dots.erase(dot)
+	if amount > 0:
+		_damage(spell, enemy, amount, "", 1.0, {"periodic":true})
+		_show(spell, "impact", enemy.position, _facing_to(enemy))
+
+
+func _class_damage_scale(spell: Dictionary) -> float:
+	if spell.get("mechanic", "") not in ["rot", "drain"]:
+		return 1.0
+	var corruption: float = game.resources.amount("corruption")
+	var pact: float = buffs.get("bloodPact", {}).get("drainBonus",0.0) if spell.mechanic == "drain" else 0.0
+	return (1.0 + corruption * 0.0035) * (1.0 + pact / 100.0)
+
+
+func _near_enemies(at: Vector3, radius: float) -> Array:
+	return game.enemies.list.filter(func(e): return e.alive and not e.protected and U.hyp(e.position.x - at.x, e.position.z - at.z) <= radius + e.radius * 0.5)
+
+
+func _ignite_tar(enemy) -> bool:
+	for z in zones:
+		if z.id != "tarTrap" or U.hyp(enemy.position.x-z.x,enemy.position.z-z.z) > z.radius:
+			continue
+		z.id = "burningTar"
+		z.slow = 0.0
+		z.damage = true
+		z.next = 0.0
+		game.events.emit("zoneGone", {"key":z.get("key", "")})
+		game.events.emit("zone", {"id":z.id,"x":z.x,"z":z.z,"radius":z.radius,"duration":z.left,"school":"fire"})
+		game.events.emit("tarIgnited", {"position":Vector3(z.x,Terrain.height_at(z.x,z.z),z.z)})
+		return true
+	return false
+
+
+func smoke_blocks(from: Vector3, to: Vector3) -> bool:
+	var a := Vector2(from.x,from.z)
+	var b := Vector2(to.x,to.z)
+	for z in zones:
+		if z.id == "smokeBomb":
+			var centre := Vector2(z.x,z.z)
+			if centre.distance_to(Geometry2D.get_closest_point_to_segment(centre,a,b)) <= z.radius:
+				return true
+	return false
+
+
+func _schedule_holy_echoes(spell: Dictionary, hits: Array) -> void:
+	if spell.get("points",0.0) < 3 or hits.is_empty():
+		return
+	var chance := 0.50 if spell.get("fullReprisal",false) else 0.25
+	var at: Vector3 = game.player.position
+	for i in range(1,4):
+		if game.random.call() >= chance:
+			break
+		echoes.append({"spell":spell,"hits":hits,"left":0.35*i,"scale":0.35,"school":"holy","at":at,"radius":spell.tuning.get("radius",0.0)})
+
+
+func _echo_hit(wave: Dictionary, record: Dictionary) -> void:
+	var enemy = record.enemy
+	var amount := maxi(1,roundi(record.amount * wave.scale))
+	enemy.hurt(amount, {"stagger":0.0,"periodic":true})
+	game.events.emit("damageNumber", {"target":enemy,"amount":amount,"crit":record.crit,"kind":"dealt","ability":true})
+	game.events.emit("enemyHit", {"enemy":enemy,"damage":amount,"crit":record.crit,"kind":"spell","school":wave.school,"echo":true})
+	if wave.get("radius",0.0) == 0:
+		_show(wave.spell, "impact", enemy.position, _facing_to(enemy))
+	if enemy.dead:
+		game.combat.on_enemy_defeated(enemy)
+
+
+
+func _projectile_interactions(spell: Dictionary, enemy, hit: Dictionary) -> void:
+	var t: Dictionary = spell.tuning
+	var mechanic: String = spell.get("mechanic", "")
+	if mechanic == "steam":
+		for a in auras:
+			if a.enemy != enemy or a.id != "frostLance":
+				continue
+			auras.erase(a)
+			for nearby in _near_enemies(enemy.position,2.5):
+				_damage(spell,nearby,2.0+game.stats.spell_power*0.3,"",1.0,{"periodic":true})
+			game.events.emit("classImpact", {"position":enemy.position,"radius":2.5,"school":"steam"})
+			break
+	elif mechanic == "chain":
+		var visited := [enemy]
+		var from = enemy
+		for jump in range(1,int(t.maxTargets)):
+			var near := _near_enemies(from.position,t.spread).filter(func(other): return not visited.has(other))
+			if near.is_empty():
+				break
+			near.sort_custom(func(a,b): return a.position.distance_squared_to(from.position) < b.position.distance_squared_to(from.position))
+			var to = near[0]
+			visited.append(to)
+			game.events.emit("projectile", {"kind":"bolt","from":from.position+Vector3.UP,"to":to.position,"follow":to,"speed":37.0,"life":0.12,"look":spell.id})
+			_damage(spell,to,_spell_base(t),"",pow(t.jumpScale,jump),{"periodic":true})
+			_show(spell,"impact",to.position,_facing_to(to))
+			from = to
+	var sigil: Dictionary = spell.get("sigilEcho", {})
+	if not sigil.is_empty() and enemy.alive:
+		var player = game.player
+		game.events.emit("projectile", {"kind":"bolt", "from":player.position+Vector3.UP, "to":enemy.position, "follow":enemy, "speed":30.0, "life":0.32, "look":spell.id})
+		echoes.append({"spell":spell,"hits":[{"enemy":enemy,"amount":hit.amount,"crit":hit.crit}],"left":0.32,"scale":sigil.scale,"school":spell.school,"at":sigil.at,"radius":0.0})

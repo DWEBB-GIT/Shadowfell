@@ -34,6 +34,7 @@ func open(n) -> void:
 				game.hud.items.close(k)
 	npc = n
 	view = {"kind": "menu"}
+	game.quests.count_talk(n.id)
 	# how they hail you: "Hey you!" while you are nobody, your title once you
 	# have chosen one (the notice board says nothing)
 	salutation = "" if DB.npcs[n.id].get("board") else game.titles.address("greetings")
@@ -201,6 +202,18 @@ var page:
 				pg.text = node.text
 				for r in node.replies:
 					pg.options.append({"id": "node:" + r.node if r.get("node") else "menu", "text": r.text, "icon": "talk"})
+			"followups":
+				var completed: Dictionary = DB.quests[v.id]
+				pg.text = "Quest complete: %s.\n\n%s" % [completed.name, completed.complete]
+				for quest_id in game.quests.followups(v.id):
+					var next: Dictionary = DB.quests[quest_id]
+					var status: String = game.quests.status(quest_id)
+					var at: Dictionary = game.quests.goal(quest_id)
+					var who: String = DB.npcs[next.giver].name if status == "available" else str(at.get("label", next.name))
+					var text := "Next quest: %s" % next.name if status == "available" and next.giver == npc.id else "Speak to %s — %s" % [who, next.name] if status == "available" else "Continue %s — %s" % [next.name, who]
+					pg.options.append({"id": "next:" + quest_id, "text": text, "icon": "available" if status == "available" else "talk", "group": "quest"})
+				pg.options.append({"id": "menu", "text": "Other business", "icon": "back"})
+				pg.options.append({"id": "bye", "text": "Goodbye", "icon": "bye", "group": "bye"})
 			"quest":
 				var q: Dictionary = DB.quests[v.id]
 				var status: String = game.quests.status(v.id)
@@ -569,6 +582,16 @@ func choose(id: String) -> bool:
 		var inn: String = npc.id
 		game.hud.confirm("Are you sure you want to make this inn your home?", func(): make_home(inn))
 		return true
+	elif id.begins_with("next:") and v.kind == "followups":
+		var next_id := id.substr(5)
+		if not game.quests.followups(v.id).has(next_id):
+			return false
+		var next: Dictionary = DB.quests[next_id]
+		if game.quests.status(next_id) == "available" and next.giver == npc.id:
+			view = {"kind": "quest", "id": next_id}
+		else:
+			game.quests.set_focus(next_id)
+			return close()
 	elif id.begins_with("quest:"):
 		view = {"kind": "quest", "id": id.substr(6)}
 		# opening a quest turns the page, from any npc, trainers too (Dan,
@@ -583,7 +606,19 @@ func choose(id: String) -> bool:
 	elif id == "complete" and v.kind == "quest":
 		if not game.quests.complete(v.id):
 			return false
-		view = {"kind": "menu"}
+		var next: Array = game.quests.followups(v.id)
+		if next.is_empty():
+			view = {"kind": "menu"}
+		else:
+			var first: Dictionary = DB.quests[next[0]]
+			# Multiple routes stay a choice. Never accept a quest for the player.
+			var alternatives := next.filter(func(q): return first.get("choice", "") != "" and DB.quests[q].get("choice") == first.choice)
+			if alternatives.size() < 2:
+				game.quests.set_focus(first.id)
+			if game.quests.status(first.id) == "available" and first.giver == npc.id and alternatives.size() < 2:
+				view = {"kind": "quest", "id": first.id}
+			else:
+				view = {"kind": "followups", "id": v.id}
 	else:
 		return false
 	events.emit("dialogueChanged", {})

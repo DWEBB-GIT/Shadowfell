@@ -7,6 +7,7 @@ var failures := 0
 
 
 func _initialize() -> void:
+	ProjectSettings.set_setting(Terrain.MAP_SETTING, "act1")
 	var data = load("res://game/autoload/game_data.gd").new()
 	check(data.problems.is_empty(), "data loads cleanly: %s" % ", ".join(data.problems))
 	for t in ["items", "enemies", "npcs", "quests", "abilities", "archetypes", "enemySpawns", "placedLoot", "chests"]:

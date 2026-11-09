@@ -79,6 +79,7 @@ var hp: Dictionary
 var mp: Dictionary
 var gauge: Dictionary
 var pips: HBoxContainer
+var class_resource_hint: Label
 var buffs: HBoxContainer
 var target: Control
 var target_ring: Panel
@@ -526,6 +527,8 @@ func _build_char_panel() -> void:
 	mp = _unit_bar(cv, Color("5a8ad8"), Color("24407e"), 12, false, 10)
 	gauge = _unit_bar(cv, Color("e0a84a"), Color("9a5a1c"), 12, false, 10)
 	pips = UI.hbox(_indented(cv, false), 3)
+	class_resource_hint = UI.label(_indented(cv, false), "", 11, Color("eac674"))
+	class_resource_hint.visible = false
 	buffs = UI.hbox(_indented(cv, false), 4)
 	game.events.on("equipmentChanged", func(_e): _player_portrait.call_deferred())
 
@@ -1454,7 +1457,20 @@ func _refresh_resources() -> void:
 			gauge.root.set_meta("colour", g.colour)
 			gauge.fill.tint(Color(g.colour), Color(g.colour).darkened(0.45))
 		var o := " · %s!" % g.overload.name if g.get("overload") and v >= g.max else ""
-		gauge.text.text = "%d %s%s" % [floori(v), g.name, o]
+		if g.id == "corruption":
+			gauge.text.text = "%d/%d%s" % [floori(v), int(g.max), o]
+		else:
+			gauge.text.text = "%d %s%s" % [floori(v), g.name, o]
+	var full: bool = game.spells.reprisal >= game.spells.reprisal_cap
+	class_resource_hint.visible = game.archetype_id in ["paladin", "occultist"]
+	if game.archetype_id == "occultist":
+		var corruption: float = r.amount("corruption")
+		var cost := " · HP -2%/s" if corruption >= 100 else ""
+		class_resource_hint.text = "Curse/drain +%d%%%s" % [floori(corruption*0.35),cost]
+		class_resource_hint.modulate = Color("ce9deb")
+	else:
+		class_resource_hint.text = "✦  FULL REPRISAL  ✦" if full else "Reprisal %d / %d" % [floori(game.spells.reprisal),int(game.spells.reprisal_cap)]
+		class_resource_hint.modulate = Color("ffe46a") if full else Color("d0af79")
 	var p = r.points_cfg
 	pips.visible = p != null
 	if p != null:
@@ -1472,7 +1488,7 @@ func _refresh_resources() -> void:
 			if not c.has_meta("on") or c.get_meta("on") != on:
 				c.set_meta("on", on)
 				# combo points: lit embers under the energy bar
-				var st := UI.box(Color("e8602c") if on else Color("1a1410"), Color("d8a050") if on else Color("5a4630"), 0, 1)
+				var st := UI.box(Color(p.colour) if on else Color("1a1410"), Color("d8a050") if on else Color("5a4630"), 0, 1)
 				st.set_corner_radius_all(6)
 				c.add_theme_stylebox_override("panel", st)
 			i += 1
@@ -1502,14 +1518,18 @@ func _refresh_slots() -> void:
 	var tgt = game.targeting.current
 	for s in slots:
 		var a = game.action_bar.slots[int(s.loc.substr(2))]
-		var cd := _cooldown(a) if a else [0.0, 0.0, false]
+		var active = game.spells.tuned(a) if a in ["quickStrike","shadow","flurry","crosscut"] else DB.spells.get(a)
+		var effective = active.id if active != null else a
+		if active != null:
+			s.icon = icons.abilities.get(effective)
+		var cd := _cooldown(effective) if a else [0.0, 0.0, false]
 		var own: float = cd[0] / cd[1] if cd[1] > 0 else 0.0
 		# whichever finishes later is what the player is waiting on
 		var show_gcd: bool = cd[2] and gcd > cd[0]
 		s.cooldown = 0.0 if show_gcd else own
 		s.cd_left = 0.0 if show_gcd or a == "strike" else cd[0]
 		s.gcd = gcd / game.stats.global_cooldown if show_gcd else 0.0
-		var ab = DB.abilities.get(a) if a else null
+		var ab = active if active != null else DB.abilities.get(a) if a else null
 		var tint := Color.WHITE
 		var overlay := Color(0, 0, 0, 0)
 		if ab != null:
@@ -1525,7 +1545,7 @@ func _refresh_slots() -> void:
 		s.glow = Color(140 / 255.0, 190 / 255.0, 1, 0.55) if a == "brace" and player.is_braced else Color(0, 0, 0, 0)
 		s.border = Color("9cc4ff") if a == "brace" and player.is_braced else Color("2a2218") if cd[0] > 0 or show_gcd else UI.BORDER_DIM
 		# redraw only when something shown changed (sweeps move in 1/90 turns)
-		var sig := [ceili(s.cd_left), snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim]
+		var sig := [ceili(s.cd_left), snappedf(s.cooldown, 0.011), snappedf(s.gcd, 0.011), tint, overlay, s.glow, s.border, s.count, s.dim, effective]
 		if s.get_meta("sig", []) != sig:
 			s.set_meta("sig", sig)
 			s.queue_redraw()
@@ -1972,6 +1992,10 @@ func _update_enemy_bars() -> void:
 		if st.border_color != edge:
 			st.border_color = edge
 		bar.fill.anchor_right = clampf(e.health / e.max_health, 0, 1)
+		var poisoned: float = game.spells.poison_remaining(e) / e.max_health
+		bar.poison.visible = poisoned > 0
+		bar.poison.anchor_right = bar.fill.anchor_right
+		bar.poison.anchor_left = maxf(0.0,bar.fill.anchor_right-poisoned)
 		bar.hp.text = "%d / %d" % [ceili(e.health), e.max_health] if targeted else ""
 		# FFXIV-style cast bar under the name while a telegraphed attack winds up
 		var c = e.casting
@@ -2017,6 +2041,14 @@ func _enemy_bar(_e) -> Dictionary:
 	fill.offset_bottom = -1
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	track.add_child(fill)
+	var poison := ColorRect.new()
+	poison.color = Color("7ba733")
+	poison.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	poison.anchor_bottom = 1.0
+	poison.offset_top = 1
+	poison.offset_bottom = -1
+	poison.visible = false
+	track.add_child(poison)
 	var hp_text := UI.label(track, "", 10, Color("f4ead0"), 3)
 	hp_text.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2042,4 +2074,4 @@ func _enemy_bar(_e) -> Dictionary:
 	cn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var auras := UI.hbox(v, 2)
 	auras.alignment = BoxContainer.ALIGNMENT_CENTER
-	return {"root": v, "name_row": name_row, "skull": skull, "name": n, "track": track, "fill": fill, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}
+	return {"root": v, "name_row": name_row, "skull": skull, "name": n, "track": track, "fill": fill, "poison":poison, "hp": hp_text, "cast": cast_box, "cast_fill": cf, "cast_name": cn, "auras": auras}

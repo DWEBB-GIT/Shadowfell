@@ -7294,6 +7294,264 @@
       "model": "quiver",
       "icon": "quiver",
       "description": "Hawthorn Ide's own quiver, rebound by Scout Fen. Place it in a bag slot: it holds only arrows (six stacks), Auto Shot fires 10% faster, and about one arrow in four you loose finds its way back into it."
+    },
+    {
+      "id": "oak_club",
+      "name": "Oak Cudgel",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "club",
+      "itemLevel": 1,
+      "speed": 2.2,
+      "stack": 1,
+      "price": 12,
+      "model": "oak_club",
+      "icon": "oak_club",
+      "description": "A road-tested weapon from Iren's forge."
+    },
+    {
+      "id": "ironwood_club",
+      "name": "Ironwood Knobkerrie",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "oneHand",
+      "weaponType": "club",
+      "itemLevel": 1,
+      "speed": 1.7,
+      "stack": 1,
+      "price": 15,
+      "model": "ironwood_club",
+      "icon": "ironwood_club",
+      "description": "A road-tested weapon from Iren's forge."
+    },
+    {
+      "id": "roadwarden_greatsword",
+      "name": "Roadwarden Greatsword",
+      "kind": "weapon",
+      "rarity": "common",
+      "slot": "mainHand",
+      "weaponType": "twoHand",
+      "itemLevel": 1,
+      "speed": 3.3,
+      "stack": 1,
+      "price": 28,
+      "model": "greatsword",
+      "icon": "greatsword",
+      "description": "A road-tested weapon from Iren's forge."
+    },
+    {
+      "id": "in_dry_letters",
+      "name": "Paige’s Dry Letters",
+      "description": "Ordinary family letters, rescued from a very poor delivery route.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_burial_rubbing",
+      "name": "Burial Rubbing",
+      "description": "A charcoal copy of a family name, made with the gravekeeper’s permission.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_spool",
+      "name": "Della’s Sewing Tin",
+      "description": "Needles, a blue spool and several very firm opinions.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "quest": true
+    },
+    {
+      "id": "in_alder_letter",
+      "name": "Alder’s Witness Letter",
+      "description": "A signed account of the Thornford burial fraud. The seal is deliberately plain.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_crossing_bill",
+      "name": "The Driver’s Original Bill",
+      "description": "Grain delivered, toll paid. The driver’s thumbprint crosses both lines.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_lamp_wick",
+      "name": "Waxed Lamp Wick",
+      "description": "Good wick from the ferrymen’s stores. It will burn in the river damp.",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 20,
+      "price": 0,
+      "model": "clothes",
+      "icon": "clothes"
+    },
+    {
+      "id": "in_ferry_receipt",
+      "name": "Hale’s Ferry Receipt",
+      "description": "A well-worn receipt, signed when Hale’s hands were warmer.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "wm_mossreed_landing_keepsake",
+      "name": "Celia’s Locket",
+      "description": "A small brass locket, still clasped against the river damp.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "satchel",
+      "icon": "satchel",
+      "quest": true
+    },
+    {
+      "id": "in_miner_tag",
+      "name": "A Settled Wage Tag",
+      "description": "A miner’s name, a worked shift and a settled account. All three belong together.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_original_ledger",
+      "name": "Corven’s Original Ledger",
+      "description": "The altered book and the settled wage tags, wrapped together for the inquiry.",
+      "kind": "document",
+      "rarity": "quest",
+      "stack": 20,
+      "price": 0,
+      "model": "manifest",
+      "icon": "manifest",
+      "quest": true
+    },
+    {
+      "id": "in_watch_sword",
+      "name": "Rowan’s Service Sword",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "sword",
+      "itemLevel": 5,
+      "speed": 2.4,
+      "stack": 1,
+      "price": 0,
+      "model": "arming_sword",
+      "icon": "arming_sword",
+      "description": "A practical weapon earned from a local mentor.",
+      "statSplit": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "in_watch_dirk",
+      "name": "A Quiet Road Dirk",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "itemLevel": 5,
+      "speed": 1.6,
+      "stack": 1,
+      "price": 0,
+      "model": "dirk",
+      "imported": {
+        "model": "stylized_dagger"
+      },
+      "icon": "dirk",
+      "description": "A practical weapon earned from a local mentor.",
+      "statSplit": {
+        "agility": 1
+      }
+    },
+    {
+      "id": "in_waywatch_bow",
+      "name": "Fen’s Waywatch Bow",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "ranged",
+      "weaponType": "bow",
+      "itemLevel": 5,
+      "speed": 2.5,
+      "range": 20,
+      "stack": 1,
+      "price": 0,
+      "model": "hunting_bow",
+      "icon": "hunting_bow",
+      "description": "A practical weapon earned from a local mentor.",
+      "statSplit": {
+        "agility": 1
+      }
+    },
+    {
+      "id": "in_apprentice_athame",
+      "name": "Finch’s Apprentice Athame",
+      "kind": "weapon",
+      "rarity": "enhanced",
+      "slot": "oneHand",
+      "weaponType": "dagger",
+      "caster": true,
+      "itemLevel": 5,
+      "speed": 1.8,
+      "stack": 1,
+      "price": 0,
+      "model": "dirk",
+      "icon": "dirk",
+      "description": "A practical weapon earned from a local mentor.",
+      "statSplit": {
+        "intellect": 1
+      }
+    },
+    {
+      "id": "in_workers_cloak",
+      "name": "A Miner’s Dry Cloak",
+      "description": "A sound wool cloak from Edda’s dry chest. It smells faintly of coal and soap.",
+      "kind": "armor",
+      "rarity": "enhanced",
+      "stack": 1,
+      "price": 0,
+      "model": "clothes",
+      "icon": "clothes",
+      "armourType": "cloth",
+      "itemLevel": 8,
+      "statSplit": {
+        "stamina": 1
+      },
+      "slot": "back"
     }
   ]
 }
