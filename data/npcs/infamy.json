@@ -110,5 +110,27 @@
       "Thatch Corrow, Twice-Scarred",
       "Thatch Corrow, the Unkillable"
     ]
+  },
+  "pk": {
+    "_about": "PK points for player killing, after Conquer Online (Law.pk_*). Killing an innocent player (white name, not flashing) adds `perKill` points and `infamy` Infamy. Striking an innocent makes you flash (blue) for `flashSeconds`: anyone may hit or kill you then without PK points. Red and black names are fair game too. Points fade by `decay.points` every `decay.seconds` you are alive in the world. Names: red at `red`, black at `black`. On death a red name drops each worn piece with `drops.red` chance (at most `drops.max`), a black name with `drops.black`; quest items, tool packs and cosmetics never drop. The watch attacks a black name on sight.",
+    "perKill": 10,
+    "infamy": 5,
+    "red": 30,
+    "black": 100,
+    "flashSeconds": 60,
+    "decay": {
+      "points": 1,
+      "seconds": 360
+    },
+    "drops": {
+      "red": 0.15,
+      "black": 0.4,
+      "max": 2
+    },
+    "nameplates": {
+      "flashing": "#4aa0ff",
+      "red": "#e8322a",
+      "black": "#3a2a2a"
+    }
   }
 }

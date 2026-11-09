@@ -16,6 +16,15 @@ extends RefCounted
 ##
 ## No accidental crimes: livestock and the watch (`lawful` enemies) can only
 ## be attacked while the crime key (Alt) is held.
+##
+## PK points, after Conquer Online (infamy.json `pk`): killing an innocent
+## player adds points; 30 makes a red name, 100 a black one, and a red or
+## black name may drop worn gear on death. Striking an innocent makes you
+## flash (blue) for a while: anyone may hit you then without PK points. The
+## rules are worked out from a player's points alone (pk_name_of,
+## pk_fair_game), so any client can colour another player's name; the
+## multiplayer server calls pk_struck / pk_killed when one player hits or
+## kills another.
 
 var game
 var bounty := {} ## jurisdiction id -> coins owed
@@ -29,6 +38,10 @@ var hunter = null ## the hunter (Enemy) while he is out
 var scars := 0 ## times the hunter has been beaten
 var hunter_at := -1.0 ## world time the hunter next comes (-1: not yet set)
 var talk = null ## Talk while a watchman has his say
+var pk := 0.0 ## PK points (player kills)
+var flash := 0.0 ## seconds left flashing (struck an innocent player)
+var pk_clock := 0.0 ## seconds alive towards the next PK point fading
+var rng := RandomNumberGenerator.new() ## gear drop rolls (tests seed it)
 
 
 ## A watchman in the conversation window (the dialogue system talks to it
@@ -74,6 +87,9 @@ func reset() -> void:
 	scars = 0
 	hunter_at = -1.0
 	talk = null
+	pk = 0.0
+	flash = 0.0
+	pk_clock = 0.0
 
 
 static func crime_def(id: String) -> Dictionary:
@@ -119,6 +135,11 @@ var status: String:
 
 
 func nameplate_colour() -> Color:
+	var p: Dictionary = pk_cfg().get("nameplates", {})
+	if flash > 0 and p.has("flashing"):
+		return Color(p.flashing)
+	if pk_name != "white" and p.has(pk_name):
+		return Color(p[pk_name])
 	return Color(file().get("nameplates", {}).get(status, "#f0e6c8"))
 
 
@@ -133,6 +154,13 @@ var aura:
 				return {"id": "wanted", "icon": "rebuke", "name": "Wanted in %s" % j.name, "left": INF, "text": "Bounty %s. The watch attacks on sight. Pay the reeve, or fall and wake in %s." % [U.money(bounty.get(j.id, 0)), j.get("gaolName", "the lock-up")]}
 			"amber":
 				return {"id": "seen", "icon": "rebuke", "name": "Seen", "left": amber, "text": "Someone saw what you did. The watch is coming for a word."}
+		if flash > 0:
+			return {"id": "flashing", "icon": "rebuke", "name": "Flashing", "left": flash, "text": "You struck an innocent. Anyone may attack you now without blame."}
+		match pk_name:
+			"black":
+				return {"id": "black_name", "icon": "shadow", "name": "Black name", "left": INF, "text": "PK points %s. The watch attacks on sight, and you may drop your gear when you fall." % U.n(floorf(pk))}
+			"red":
+				return {"id": "red_name", "icon": "shadow", "name": "Red name", "left": INF, "text": "PK points %s. You may drop your gear when you fall. Points fade with time." % U.n(floorf(pk))}
 		return null
 
 
@@ -170,7 +198,7 @@ func guard_jurisdiction(e) -> Dictionary:
 
 ## Will this watchman fight you on sight?
 func hostile(e) -> bool:
-	return is_guard(e) and (outlaw or wanted_in(guard_jurisdiction(e).get("id", "")))
+	return is_guard(e) and (outlaw or pk_name == "black" or wanted_in(guard_jurisdiction(e).get("id", "")))
 
 
 ## A lawful enemy you did not mean to attack cannot be harmed.
@@ -421,8 +449,103 @@ func atone(points: float) -> bool:
 	return true
 
 
+# ------------------------------------------------------------ PK points
+static func pk_cfg() -> Dictionary:
+	return file().get("pk", {})
+
+
+## "white" | "red" | "black" for a player's PK points.
+static func pk_name_of(points: float) -> String:
+	var c := pk_cfg()
+	if points >= float(c.get("black", 100)):
+		return "black"
+	if points >= float(c.get("red", 30)):
+		return "red"
+	return "white"
+
+
+var pk_name: String:
+	get:
+		return pk_name_of(pk)
+
+
+## May a player with these PK points, flashing or not, be struck without
+## blame? (red and black names, and anyone flashing)
+static func pk_fair_game(points: float, flashing: bool) -> bool:
+	return flashing or pk_name_of(points) != "white"
+
+
+static func _victim_fair(victim: Dictionary) -> bool:
+	return pk_fair_game(float(victim.get("pk", 0)), float(victim.get("flash", 0)) > 0)
+
+
+## You struck another player, `victim` {"pk": points, "flash": seconds}.
+## Striking an innocent makes you flash.
+func pk_struck(victim: Dictionary) -> void:
+	if _victim_fair(victim):
+		return
+	if flash <= 0:
+		game.events.emit("log", {"text": "You struck an innocent. You are flashing: anyone may attack you.", "kind": "hurt"})
+	flash = float(pk_cfg().get("flashSeconds", 60))
+	_changed()
+
+
+## You killed another player. An innocent's death adds PK points (and
+## Infamy). Returns the points added.
+func pk_killed(victim: Dictionary) -> int:
+	if _victim_fair(victim):
+		return 0
+	var c := pk_cfg()
+	var n := int(c.get("perKill", 10))
+	var was := pk_name
+	pk += n
+	game.events.emit("log", {"text": "You killed an innocent. PK points +%d (%s)." % [n, U.n(floorf(pk))], "kind": "hurt"})
+	add_infamy(float(c.get("infamy", 0)), "for the killing")
+	if pk_name != was:
+		game.events.emit("log", {"text": "Your name burns %s. %s" % [pk_name, "The watch will cut you down on sight." if pk_name == "black" else "Fall now and you may drop your gear."], "kind": "hurt"})
+		if game.hud:
+			game.hud.toast("%s name" % pk_name.capitalize(), "bad")
+	_changed()
+	return n
+
+
+## Worn pieces a red or black name drops on death, onto the ground where
+## they fell (the world's ground, so anyone may take them). Returns the
+## stacks dropped.
+func pk_drop_gear() -> Array:
+	var chance: float = pk_cfg().get("drops", {}).get(pk_name, 0.0)
+	if chance <= 0:
+		return []
+	var most := int(pk_cfg().get("drops", {}).get("max", 2))
+	var inv = game.inventory
+	var out := []
+	for slot in inv.equipment.keys():
+		if out.size() >= most:
+			break
+		var s = inv.equipment[slot]
+		if s == null:
+			continue
+		var d := Items.get_def(s.id)
+		if d.get("quest") or d.get("toolPack") or d.get("cosmetic"):
+			continue
+		if rng.randf() >= chance:
+			continue
+		var taken = inv.take("e:" + slot)
+		if taken == null:
+			continue
+		var p: Vector3 = game.player.position
+		var a := rng.randf() * TAU
+		game.loot.drop_at(taken, Vector3(p.x + sin(a) * 1.1, 0, p.z + cos(a) * 1.1))
+		out.append(taken)
+	if not out.is_empty():
+		var names: Array = out.map(func(t): return Items.view(t).name)
+		game.events.emit("log", {"text": "Your %s name costs you: %s, left where you fell." % [pk_name, ", ".join(names)], "kind": "hurt"})
+	return out
+
+
 # ------------------------------------------------------------ the hunter
 func _player_fell() -> void:
+	pk_drop_gear()
 	# the hunter takes his win and goes; he will be back
 	if hunter != null and hunter.alive:
 		hunter.group.queue_free()
@@ -470,6 +593,21 @@ func _hunter_beaten() -> void:
 
 # ------------------------------------------------------------ each frame
 func update(dt: float) -> void:
+	if flash > 0:
+		flash = maxf(0, flash - dt)
+		if flash == 0:
+			_changed()
+	if pk > 0 and not game.player.dead:
+		var d: Dictionary = pk_cfg().get("decay", {})
+		var every := float(d.get("seconds", 360))
+		pk_clock += dt
+		if every > 0 and pk_clock >= every:
+			pk_clock -= every
+			var was := pk_name
+			pk = maxf(0, pk - float(d.get("points", 1)))
+			if pk_name != was:
+				game.events.emit("log", {"text": "Your name cools to %s." % pk_name, "kind": "rep"})
+			_changed()
 	if amber > 0:
 		amber = maxf(0, amber - dt)
 		if amber == 0:
@@ -491,7 +629,7 @@ func _changed() -> void:
 
 # ------------------------------------------------------------ saving
 func serialize() -> Dictionary:
-	return {"bounty": bounty.duplicate(), "wanted": wanted.keys(), "warned": warned.keys(), "infamy": snappedf(infamy, 0.01), "crimes": crimes.duplicate(), "scars": scars}
+	return {"bounty": bounty.duplicate(), "wanted": wanted.keys(), "warned": warned.keys(), "infamy": snappedf(infamy, 0.01), "crimes": crimes.duplicate(), "scars": scars, "pk": snappedf(pk, 0.01), "pkClock": snappedf(pk_clock, 0.1), "flash": snappedf(flash, 0.1)}
 
 
 func apply(data) -> void:
@@ -518,3 +656,10 @@ func apply(data) -> void:
 			if not crime_def(k).is_empty():
 				crimes[k] = int(c[k])
 	scars = int(data.get("scars", 0))
+	pk = _num(data.get("pk", 0))
+	pk_clock = _num(data.get("pkClock", 0))
+	flash = _num(data.get("flash", 0))
+
+
+static func _num(v) -> float:
+	return maxf(0, float(v)) if typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT else 0.0
