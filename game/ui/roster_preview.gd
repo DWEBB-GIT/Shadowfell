@@ -66,7 +66,9 @@ func _init() -> void:
 	soil.roughness=1.0
 	ground.material_override=soil
 	viewport.add_child(ground)
-	for spec in [[-2.8,-3.2,0.8],[2.7,-3.7,0.9],[-3.8,-5.5,1.0],[4.1,-6.0,1.2]]:
+	# the pines come with the world's pack (game.pck): the lobby has none yet
+	var pines := ResourceLoader.exists("res://assets/environment/nature/trees/Pine_1.gltf")
+	for spec in ([[-2.8,-3.2,0.8],[2.7,-3.7,0.9],[-3.8,-5.5,1.0],[4.1,-6.0,1.2]] if pines else []):
 		var tree := Assets.instance("res://assets/environment/nature/trees/Pine_1.gltf")
 		tree.position=Vector3(spec[0],-0.1,spec[1])
 		tree.scale=Vector3.ONE*spec[2]

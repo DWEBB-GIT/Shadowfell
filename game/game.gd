@@ -96,6 +96,9 @@ var hud: Hud
 var audio: AudioSystem
 ## set by Log out: the reloaded scene opens on character select
 static var to_select := false
+## the character the lobby (game/boot/lobby.gd) chose before the world's
+## pack was in: the game goes straight in as them, without its title screen
+static var enter_id := ""
 var fx: Fx
 var save: SaveManager
 var roster := Roster.new()
@@ -324,6 +327,10 @@ func _show_title() -> void:
 			save.quarantine(rs.get("raw"), c.key)
 			push_warning("Save for %s rejected: %s" % [c.name, rs.get("errors")])
 	hud.show_title(note)
+	if enter_id != "":
+		var id := enter_id
+		enter_id = ""
+		enter_world(id)
 
 
 ## Play as a character from the roster: their own save, or a fresh start.

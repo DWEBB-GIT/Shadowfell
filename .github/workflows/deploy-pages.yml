@@ -63,6 +63,14 @@ jobs:
           ./godot --headless --path . --export-release "Web" _site/play/index.html
           test -f _site/play/index.wasm
 
+      # Two downloads instead of one: a boot pack for the title screen and
+      # character select (index.pck), and the world (game.pck), which the
+      # lobby fetches while you pick a character (game/boot/lobby.gd).
+      - name: Split the web pack
+        run: |
+          python3 tools/split_pck.py _site/play
+          test -f _site/play/game.pck
+
       - name: Build landing site
         run: |
           python3 tools/build_site.py _site
