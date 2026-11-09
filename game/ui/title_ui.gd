@@ -443,6 +443,7 @@ func open(n := "", which := "main") -> void:
 
 func close() -> void:
 	visible = false
+	get_viewport().disable_3d = false
 	view = null
 	game.hud.showcase = false
 
@@ -453,6 +454,9 @@ func show_view(v: String) -> void:
 	for id in views:
 		views[id].visible = id == v
 	game.hud.showcase = v != "main"
+	# the title's own backdrop covers the screen: the world behind it is not
+	# drawn at all (it was ~1,000 draw calls nobody saw)
+	get_viewport().disable_3d = v == "main"
 	bg.queue_redraw()
 	if v == "main":
 		_render_main()

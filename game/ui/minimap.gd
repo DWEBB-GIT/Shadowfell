@@ -435,6 +435,10 @@ func place_name() -> String:
 	return game.region.get("name", "") if game.region is Dictionary else ""
 
 
+const MARKS_MS := 80
+var _marks_at := -100000
+
+
 func _moved(now: Vector4) -> bool:
 	var d := (now - _drawn_at).abs()
 	return d.x > 0.05 or d.y > 0.05 or d.z > 0.02 or d.w > 0
@@ -459,8 +463,14 @@ func _draw_map() -> void:
 		# a hair of overlap hides seams between neighbouring stills
 		map.draw_texture_rect(_tiles[k], Rect2(at, Vector2.ONE * (tile_px + 0.5)), false)
 	var to_map := func(x: float, z: float) -> Vector2: return world_to_map(Vector2(x, z))
-	var all := markers()
-	_marks = all
+	# the map redraws every frame while you walk (smooth scrolling); the
+	# list of what is on it is rebuilt about 12 times a second (it walks every
+	# quest, npc and enemy: ~0.5 ms)
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - _marks_at >= MARKS_MS or _marks.is_empty():
+		_marks_at = now_ms
+		_marks = markers()
+	var all: Array = _marks
 	# objective areas first, under everything else
 	for m in all:
 		if m.kind != "area":
