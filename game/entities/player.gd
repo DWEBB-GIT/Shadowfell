@@ -529,12 +529,12 @@ func update(dt: float, controls) -> void:
 				# (mouse aim) still turns you to the cursor
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
-					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 24)
+					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
 			else:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
 				# stop (or turn) to face it. No shooting while kiting backwards.
-				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 24)
+				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
 			speed01 = mag
 		elif turning:
 			pass
