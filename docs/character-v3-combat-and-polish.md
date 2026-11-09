@@ -5,9 +5,10 @@ Implemented in the local Shadowfell Godot project on 2026-11-09. Builds on the v
 ## Behavior
 
 - New settings profiles start with **Lower camera angle off**. Explicit saved camera preferences are respected.
-- Selecting or attacking a target no longer automatically rotates the character. Movement, turning controls and deliberate mouse aiming control facing. Hostile attacks require the forward cone; turning away interrupts a hostile cast. Movement reversals complete in approximately 0.13 seconds.
+- Selecting or attacking a target no longer automatically rotates the character. Movement, turning controls and deliberate mouse aiming control facing. Hostile attacks require the forward cone; turning away interrupts a hostile cast. After player feedback, WASD turning uses the previous 14 rad/s rate again: a full reversal takes approximately 0.23 seconds, instead of the abrupt 0.13-second setting.
 - Melee animation selection follows each hand independently: daggers use authored stab clips, swords swing, two-handed weapons use the heavy clip. Left-hand dagger actions do not replace the right-hand sword action. Finger grips are deterministic, including clips without finger keys.
-- Walking/running reduces foot excursion by 22%, foot lift by 55% and pelvis bounce by 65%. Run cadence compensates for the shorter stride and still follows movement speed. Gameplay movement speed is unchanged.
+- After player feedback, walking/running uses the original authored gait and its previous speed-matched cadence again. The stride-shortening, foot-lift and pelvis-bounce modifications were removed. An undrawn bow follows the run's arm swing rather than pinning the bow arm to a fixed aiming position. Gameplay movement speed is unchanged.
+- Jump take-off now lasts 0.22 seconds, and landing runs through its final pose over 0.36 seconds. Landing is allowed while moving, instead of being skipped whenever movement input is held. Movement controls and jump physics remain active throughout.
 - The hunting bow now uses a packed, locally authored curved model with a leather grip, two animated string segments and a nocked arrow. Static limbs are batched into three material surfaces; the bow has six mesh instances, with no duplicated construction when copied for previews. Hands fit the handle and string; projectiles originate at the arrow tip.
 - Bow specials cancel a pending auto-shot and restart the ranged weapon cadence. Instant specials have a 0.12-second visible release windup; the next auto-shot waits for weapon readiness. Retargeting cannot clear that readiness. Starting to move cancels an auto draw even on its release frame. Cast-time shots still use their cast time.
 - The sheathe key cycles ranger characters through **bow → melee → all stowed**. Other characters carrying both types cycle **melee → bow → all stowed**. Missing weapon categories are skipped. Character creation/selection previews use the same class preference.
@@ -25,6 +26,7 @@ The existing-character regression now compares item identities/counts, coins and
 ## Verification
 
 - `character_v3_check.gd`: **151 checks, 0 failures**, including ranged cadence, same-frame cancellation, cast-facing interruption, both bodies, independent off-hand stab direction, finger stability, bow endpoints, grounded feet, stance cycling, combat logout guards, actual defeated logout/re-entry, grave retention and ghost recovery.
+- `locomotion_check.gd`: **28 checks, 0 failures**, verifying both bodies' run arms/legs against the original authored poses with melee/bow equipped, complete stationary and moving jump landings, and WASD reversal timing at 30/60/120 FPS. Visual evidence for this follow-up is in the mirror workspace's `run-restore` folder.
 - `class_kits_check.gd`: **1553 checks, 0 failures** across all six classes and both bodies.
 - `intro_journey_check.gd`: **1419 checks, 0 failures**.
 - The latest `opening_playthrough_check.gd`: **74 checks, 0 failures**.

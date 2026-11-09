@@ -12,10 +12,9 @@ var play_count := 0
 var secondary_grip_error := 0.0
 var air_time := 0.0
 var gait_rate := 1.0
-const TAKEOFF_TIME := 0.12
-const LAND_TIME := 0.18
+const TAKEOFF_TIME := 0.22
+const LAND_TIME := 0.36
 const RUN_REFERENCE_SPEED := 4.1
-const STRIDE_SCALE := 0.78
 var last_off_clip := ""
 
 func revive() -> void:
@@ -87,7 +86,7 @@ func resolve_action(type: String) -> String:
 
 func _locomotion() -> String:
 	if airborne: return "Jump_Start" if air_time < TAKEOFF_TIME else "Jump"
-	if landing > 0 and move < 0.12: return "Jump_Land"
+	if landing > 0: return "Jump_Land"
 	if pose in ["sit", "rest"]: return "Sitting_Idle"
 	if pose == "fish": return "Idle_Lantern"
 	if move > 0.9: return "Jog_Fwd"
@@ -110,7 +109,6 @@ func _update_anim(dt: float, speed01: float) -> void:
 	if airborne:
 		air_time += dt
 	was_airborne = airborne
-	landing = maxf(0, landing - dt)
 	if flinch > 0 and action == null:
 		flinch = maxf(0, flinch - dt * 4)
 		_upper = {"name":"Hit_Chest", "t":(1.0 - flinch) * anim.get_animation("Hit_Chest").length, "speed":0.0, "hit":true}
@@ -119,7 +117,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 	var speed: float = magnitude*DB.CONFIG.player.speed
 	if actor != null and not actor.game is Dictionary:
 		speed *= actor.game.spells.movement_scale
-	gait_rate = clampf(speed/(RUN_REFERENCE_SPEED*STRIDE_SCALE),0.4,2.4) if base_clip == "Jog_Fwd" else maxf(0.4,move)
+	gait_rate = clampf(speed/RUN_REFERENCE_SPEED,0.4,2.4) if base_clip == "Jog_Fwd" else maxf(0.4,move)
 	var seek_pose := base_clip in ["Jump_Start","Jump","Jump_Land"]
 	_clip(base_clip, gait_rate if base_clip in ["Walk","Jog_Fwd"] else 1.0,seek_pose and clip != base_clip)
 	if base_clip == "Jump_Start":
@@ -127,13 +125,11 @@ func _update_anim(dt: float, speed01: float) -> void:
 	elif base_clip == "Jump":
 		anim.seek(fmod(maxf(0,air_time-TAKEOFF_TIME),anim.get_animation(base_clip).length),true)
 	elif base_clip == "Jump_Land":
-		anim.seek(anim.get_animation(base_clip).length*(1-landing/LAND_TIME),true)
+		anim.seek(anim.get_animation(base_clip).length*clampf(1-(landing-dt)/LAND_TIME,0,1),true)
 	else:
 		anim.advance(dt)
 	if seek_pose:
 		anim.advance(0)
-	if base_clip in ["Walk","Jog_Fwd"]:
-		_shorten_gait()
 	if base_clip=="Sitting_Idle":
 		_ground_sit()
 	if airborne:
@@ -181,6 +177,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 		if off_action.t >= off_action.duration:
 			off_action = null
 	_fit_hands()
+	if base_clip=="Jump_Land":landing=maxf(0,landing-dt)
 	if track_steps and move > 0.12 and not airborne:
 		var previous := phase
 		phase += dt * (TAU/anim.get_animation("Jog_Fwd").length if move > 0.9 else 7.0) * gait_rate
@@ -223,48 +220,6 @@ func _mirror_off() -> void:
 		var mirrored := Quaternion(delta.x, -delta.y, -delta.z, delta.w) * rest_l
 		_skel.set_bone_pose_rotation(left, _skel.get_bone_pose_rotation(left).slerp(mirrored, weight))
 
-func _shorten_gait() -> void:
-	var up:Vector3=(_skel.global_basis.inverse()*model.global_basis*Vector3.UP).normalized()
-	var pelvis:=_skel.find_bone("pelvis")
-	var center:=_skel.get_bone_global_pose(pelvis).origin
-	var targets:Dictionary={}
-	var feet:Dictionary={}
-	for side in ["l","r"]:
-		var foot:=_skel.find_bone("foot_"+side)
-		var pose_foot:=_skel.get_bone_global_pose(foot)
-		var offset:=pose_foot.origin-center
-		var horizontal:=offset-up*offset.dot(up)
-		var rest_height:=_skel.get_bone_global_rest(foot).origin.dot(up)
-		var target:=pose_foot.origin-horizontal*(1-STRIDE_SCALE)
-		target-=up*(target.dot(up)-rest_height)*0.55
-		targets[side]=target
-		feet[side]=pose_foot.basis
-	var parent:=_skel.get_bone_parent(pelvis)
-	var local_up:=(_skel.get_bone_global_pose(parent).basis.inverse()*up).normalized()
-	var pos:=_skel.get_bone_pose_position(pelvis)
-	var neutral:=_skel.get_bone_rest(pelvis).origin.dot(local_up)-0.055
-	pos-=local_up*(pos.dot(local_up)-neutral)*0.65
-	_skel.set_bone_pose_position(pelvis,pos)
-	for side in targets:
-		var thigh:=_skel.find_bone("thigh_"+side)
-		var calf:=_skel.find_bone("calf_"+side)
-		var foot:=_skel.find_bone("foot_"+side)
-		var hip:=_skel.get_bone_global_pose(thigh).origin
-		var knee:=_skel.get_bone_global_pose(calf).origin
-		var ankle:=_skel.get_bone_global_pose(foot).origin
-		var a:=hip.distance_to(knee)
-		var b:=knee.distance_to(ankle)
-		var direction:Vector3=(targets[side]-hip).normalized()
-		var distance:=clampf(hip.distance_to(targets[side]),absf(a-b)+0.001,a+b-0.001)
-		var along:float=(a*a-b*b+distance*distance)/(2*distance)
-		var hint:=knee-hip+Vector3(0,0,0.15)
-		var bend:Vector3=(hint-direction*hint.dot(direction)).normalized()
-		var desired:=hip+direction*along+bend*sqrt(maxf(0,a*a-along*along))
-		_turn_bone(thigh,knee-hip,desired-hip)
-		knee=_skel.get_bone_global_pose(calf).origin
-		ankle=_skel.get_bone_global_pose(foot).origin
-		_turn_bone(calf,ankle-knee,hip+direction*distance-knee)
-		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*feet[side]).orthonormalized().get_rotation_quaternion())
 
 func _ground_sit() -> void:
 	# The supplied sitting clip expects a chair. Lower the hips to the
@@ -304,6 +259,12 @@ func _fit_hands() -> void:
 	if actor.bow_in_hand:
 		var height := 1.38 if actor.appearance.sex == "male" else 1.33
 		var drawing:bool=actor.pending_shot != null or (action != null and (action.type in ["shoot","snapShot","twistDraw","longDraw","fanShot","loose"] or action.get("ranged",false))) or (actor.casting != null and actor.casting.spell.get("ranged",false))
+		if _moving() and not drawing:
+			# Carry the bow with the authored arm swing while travelling.
+			# Only a deliberate draw should pin the hand in an aiming pose.
+			if actor.bow!=null and actor.bow.has_method("set_draw"):actor.bow.call("set_draw",0,false)
+			_curl_fingers("l")
+			return
 		var draw := 0.0
 		var nocked := false
 		if actor.casting != null and actor.casting.spell.get("ranged",false):

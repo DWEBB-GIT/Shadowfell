@@ -2798,59 +2798,59 @@
 		}
 	  ]
 	},
-    {
-      "id": "in_road_reserve",
-      "name": "Roadwardens’ Reserve",
-      "position": [
-        -588,
-        -201
-      ],
-      "coins": 2,
-      "items": [
-        {
-          "id": "trail_bread",
-          "count": 2
-        },
-        {
-          "id": "healing_draught",
-          "count": 1
-        }
-      ],
-      "discoverRadius": 5
-    },
-    {
-      "id": "in_fishers_cache",
-      "name": "Dry-Stone Tackle Box",
-      "position": [
-        -398,
-        -180
-      ],
-      "coins": 4,
-      "items": [
-        {
-          "id": "cut_bait",
-          "count": 3
-        }
-      ],
-      "discoverRadius": 5
-    },
-    {
-      "id": "in_avel_casket",
-      "name": "The Lamplighters’ Casket",
-      "position": [
-        -421,
-        -217
-      ],
-      "coins": 8,
-      "puzzle": "in_avel_bells",
-      "puzzleHint": "The casket answers the three bells. Read the verse on the stone and ring their names in its order.",
-      "items": [
-        {
-          "id": "healing_draught",
-          "count": 2
-        }
-      ]
-    }
+	{
+	  "id": "in_road_reserve",
+	  "name": "Roadwardens’ Reserve",
+	  "position": [
+		-588,
+		-201
+	  ],
+	  "coins": 2,
+	  "items": [
+		{
+		  "id": "trail_bread",
+		  "count": 2
+		},
+		{
+		  "id": "healing_draught",
+		  "count": 1
+		}
+	  ],
+	  "discoverRadius": 5
+	},
+	{
+	  "id": "in_fishers_cache",
+	  "name": "Dry-Stone Tackle Box",
+	  "position": [
+		-398,
+		-180
+	  ],
+	  "coins": 4,
+	  "items": [
+		{
+		  "id": "cut_bait",
+		  "count": 3
+		}
+	  ],
+	  "discoverRadius": 5
+	},
+	{
+	  "id": "in_avel_casket",
+	  "name": "The Lamplighters’ Casket",
+	  "position": [
+		-421,
+		-217
+	  ],
+	  "coins": 8,
+	  "puzzle": "in_avel_bells",
+	  "puzzleHint": "The casket answers the three bells. Read the verse on the stone and ring their names in its order.",
+	  "items": [
+		{
+		  "id": "healing_draught",
+		  "count": 2
+		}
+	  ]
+	}
   ],
   "npcSpawns": [
 	{"npc": "ni_abel", "position": [-622, -179]},
@@ -23914,94 +23914,94 @@
 		]
 	  ]
 	},
-    {
-      "id": "ni_west_road",
-      "name": "The West Road",
-      "kind": "lane",
-      "halfWidth": 2.6,
-      "points": [
-        [
-          -633,
-          -179
-        ],
-        [
-          -617,
-          -182
-        ],
-        [
-          -594,
-          -191
-        ],
-        [
-          -568,
-          -201
-        ],
-        [
-          -550,
-          -204
-        ],
-        [
-          -544,
-          -203
-        ],
-        [
-          -533,
-          -202
-        ],
-        [
-          -522,
-          -205
-        ],
-        [
-          -513,
-          -210
-        ],
-        [
-          -500,
-          -215
-        ]
-      ]
-    },
-    {
-      "id": "in_bell_garden_path",
-      "name": "The Old Bell Steps",
-      "kind": "hidden",
-      "halfWidth": 1.2,
-      "points": [
-        [
-          -398,
-          -180
-        ],
-        [
-          -400,
-          -187
-        ],
-        [
-          -400,
-          -194
-        ],
-        [
-          -407,
-          -199
-        ],
-        [
-          -414,
-          -205
-        ],
-        [
-          -421,
-          -209
-        ],
-        [
-          -421,
-          -213
-        ],
-        [
-          -421,
-          -217
-        ]
-      ]
-    }
+	{
+	  "id": "ni_west_road",
+	  "name": "The West Road",
+	  "kind": "lane",
+	  "halfWidth": 2.6,
+	  "points": [
+		[
+		  -633,
+		  -179
+		],
+		[
+		  -617,
+		  -182
+		],
+		[
+		  -594,
+		  -191
+		],
+		[
+		  -568,
+		  -201
+		],
+		[
+		  -550,
+		  -204
+		],
+		[
+		  -544,
+		  -203
+		],
+		[
+		  -533,
+		  -202
+		],
+		[
+		  -522,
+		  -205
+		],
+		[
+		  -513,
+		  -210
+		],
+		[
+		  -500,
+		  -215
+		]
+	  ]
+	},
+	{
+	  "id": "in_bell_garden_path",
+	  "name": "The Old Bell Steps",
+	  "kind": "hidden",
+	  "halfWidth": 1.2,
+	  "points": [
+		[
+		  -398,
+		  -180
+		],
+		[
+		  -400,
+		  -187
+		],
+		[
+		  -400,
+		  -194
+		],
+		[
+		  -407,
+		  -199
+		],
+		[
+		  -414,
+		  -205
+		],
+		[
+		  -421,
+		  -209
+		],
+		[
+		  -421,
+		  -213
+		],
+		[
+		  -421,
+		  -217
+		]
+	  ]
+	}
   ],
   "pois": [
 	{"id": "ni_roadside", "name": "Abel's Broken Cart", "kind": "camp", "at": [-624, -175], "noMarker": true, "note": "A carrier's cart with a wheel off, grain sacks split in the grass. Abel Hurst, the Mossreed carrier, waits on a wheelwright.", "region": "tf_reach", "act": "Chapter 1"},
@@ -24010,8 +24010,8 @@
 	  "name": "The West Road Milestone",
 	  "kind": "landmark",
 	  "at": [
-	    -594,
-	    -191
+		-594,
+		-191
 	  ],
 	  "note": "THORNFORD 200 PACES. Below it, in smaller letters: ALE NOT INCLUDED. A long-faded sword and a ring of seven stars have been cut beneath the newer village mark. Someone has kept the older carving clean.",
 	  "region": "tf_reach",
@@ -25634,20 +25634,20 @@
 	  "region": "rillbank",
 	  "noMarker": true
 	},
-    {"id": "in_road_reserve", "name": "The Roadwardens’ Reserve", "kind": "secret", "at": [-588, -201], "region": "tf_reach", "note": "Three small cairns mark a roadside reserve. A scratched rule reads: TAKE WHAT GETS YOU HOME. LEAVE WHAT GETS THE NEXT SOUL HOME. Beneath it is the sword-and-stars mark from the milestone."},
-    {"id": "in_fishers_cache", "name": "The Dry-Stone Cache", "kind": "secret", "at": [-398, -180], "region": "tf_reach", "note": "The stones keep the box above the flood line. Tobin’s father wrote inside the lid: Avel did not hold the crossing alone. Ask the stones who kept the lamps. The old bell garden lies uphill, beyond the north bank."},
-    {
-      "id": "in_avel_garden",
-      "name": "The Bell Garden",
-      "kind": "secret",
-      "at": [
-        -421,
-        -213
-      ],
-      "region": "tf_reach",
-      "note": "FIRST WE CROSSED THE BRIDGE. THEN WE LIT THE HEARTHS. LAST WE KEPT THE WATCH. Three bells bear those names. A later carving shows Avel alone with a drawn sword; beneath it, older hands have carved seven lamps.",
-      "discoverRadius": 5
-    }
+	{"id": "in_road_reserve", "name": "The Roadwardens’ Reserve", "kind": "secret", "at": [-588, -201], "region": "tf_reach", "note": "Three small cairns mark a roadside reserve. A scratched rule reads: TAKE WHAT GETS YOU HOME. LEAVE WHAT GETS THE NEXT SOUL HOME. Beneath it is the sword-and-stars mark from the milestone."},
+	{"id": "in_fishers_cache", "name": "The Dry-Stone Cache", "kind": "secret", "at": [-398, -180], "region": "tf_reach", "note": "The stones keep the box above the flood line. Tobin’s father wrote inside the lid: Avel did not hold the crossing alone. Ask the stones who kept the lamps. The old bell garden lies uphill, beyond the north bank."},
+	{
+	  "id": "in_avel_garden",
+	  "name": "The Bell Garden",
+	  "kind": "secret",
+	  "at": [
+		-421,
+		-213
+	  ],
+	  "region": "tf_reach",
+	  "note": "FIRST WE CROSSED THE BRIDGE. THEN WE LIT THE HEARTHS. LAST WE KEPT THE WATCH. Three bells bear those names. A later carving shows Avel alone with a drawn sword; beneath it, older hands have carved seven lamps.",
+	  "discoverRadius": 5
+	}
   ],
   "subzones": [
 	{"id": "ni_roadside", "name": "Abel's Broken Cart", "at": [-626, -170], "radius": 16},
@@ -30344,56 +30344,56 @@
 	  "lockedText": "Nessa and Hale tend this sluice. Ask about “A Little Give and Take” first.",
 	  "success": "The float settles against the red line. The shallow bank keeps a trickle and the ferry channel runs full."
 	},
-    {
-      "id": "in_avel_bells",
-      "name": "The Old Bells",
-      "position": [
-        -421,
-        -213
-      ],
-      "kind": "sequence",
-      "answer": [
-        2,
-        0,
-        1
-      ],
-      "nodes": [
-        {
-          "name": "Hearth",
-          "offset": [
-            -2.6,
-            0
-          ],
-          "color": "#dda163"
-        },
-        {
-          "name": "Watch",
-          "offset": [
-            0,
-            0
-          ],
-          "color": "#a7b7ce"
-        },
-        {
-          "name": "Bridge",
-          "offset": [
-            2.6,
-            0
-          ],
-          "color": "#91bcab"
-        }
-      ],
-      "resetOffset": [
-        0,
-        2.7
-      ],
-      "instruction": "Read the verse on the stone.",
-      "failure": "The notes fade. Nothing is damaged. The verse begins with the crossing; try its three names in order.",
-      "resetText": "The garden falls quiet. You can begin the verse again.",
-      "success": "Bridge, hearth, watch. The casket’s latch clicks open. Seven names glow beneath Avel’s sword: ferryman, mason, cook, healer, scout, smith, watchkeeper. Avel’s own words follow: THEY HELD THE CROSSING. I CARRIED THE CHILDREN. Someone became a legend; seven others made sure there was a village left to tell it.",
-      "visual": "hangingBells",
-      "labelRadius": 9
-    }
+	{
+	  "id": "in_avel_bells",
+	  "name": "The Old Bells",
+	  "position": [
+		-421,
+		-213
+	  ],
+	  "kind": "sequence",
+	  "answer": [
+		2,
+		0,
+		1
+	  ],
+	  "nodes": [
+		{
+		  "name": "Hearth",
+		  "offset": [
+			-2.6,
+			0
+		  ],
+		  "color": "#dda163"
+		},
+		{
+		  "name": "Watch",
+		  "offset": [
+			0,
+			0
+		  ],
+		  "color": "#a7b7ce"
+		},
+		{
+		  "name": "Bridge",
+		  "offset": [
+			2.6,
+			0
+		  ],
+		  "color": "#91bcab"
+		}
+	  ],
+	  "resetOffset": [
+		0,
+		2.7
+	  ],
+	  "instruction": "Read the verse on the stone.",
+	  "failure": "The notes fade. Nothing is damaged. The verse begins with the crossing; try its three names in order.",
+	  "resetText": "The garden falls quiet. You can begin the verse again.",
+	  "success": "Bridge, hearth, watch. The casket’s latch clicks open. Seven names glow beneath Avel’s sword: ferryman, mason, cook, healer, scout, smith, watchkeeper. Avel’s own words follow: THEY HELD THE CROSSING. I CARRIED THE CHILDREN. Someone became a legend; seven others made sure there was a village left to tell it.",
+	  "visual": "hangingBells",
+	  "labelRadius": 9
+	}
   ],
   "questHubs": [
 	{

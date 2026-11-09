@@ -102,8 +102,8 @@ func _run() -> void:
 	check(not game.spells.try_cast("quickShot") and is_equal_approx(game.player.facing,before),"a target behind the facing cone is refused without auto-turn")
 	clear_combat()
 	game.player.facing=PI/2
-	for i in 8:game.player.update(1.0/60,{"move":{"x":-1.0,"z":0.0}})
-	check(absf(wrapf(game.player.facing+PI/2,-PI,PI))<0.15,"a 180-degree movement turn completes in about 0.13 seconds")
+	for i in 14:game.player.update(1.0/60,{"move":{"x":-1.0,"z":0.0}})
+	check(absf(wrapf(game.player.facing+PI/2,-PI,PI))<0.15,"the restored 180-degree movement turn completes in about 0.23 seconds")
 	ranger()
 	arrows.clear()
 	game.targeting.engage(foe)
@@ -167,7 +167,7 @@ func _run() -> void:
 		game.player.rig.action=null
 		game.player.rig.off_action=null
 		for i in 20:game.player.rig.update(0.02,DB.CONFIG.player.runGait)
-		check(game.player.rig.gait_rate>1.5,sex+" shorter gait retains responsive cadence")
+		check(is_equal_approx(game.player.rig.gait_rate,clampf(DB.CONFIG.player.speed/ForgeRig.RUN_REFERENCE_SPEED,0.4,2.4)),sex+" original run cadence follows movement speed")
 		game.player.rig.pose=null
 		for i in 20:game.player.rig.update(0.02,0)
 		var standing:float=sk.get_bone_global_pose(sk.find_bone("pelvis")).origin.y
