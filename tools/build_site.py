@@ -34,7 +34,11 @@ def load(name):
 
 
 def crest(class_id):
-    return "class_" + ("warrior" if class_id == "warden" else class_id)
+    base = "class_" + ("warrior" if class_id == "warden" else class_id)
+    for ext in (".png", ".svg"):
+        if os.path.exists(os.path.join(ROOT, "assets", "icons", "ui", base + ext)):
+            return base + ext
+    return base + ".png"
 
 
 def copy(src, dst):
@@ -65,7 +69,7 @@ def main():
                 '<h1>SHADOWFALL</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
                 % (e(text["tagline"]), e(text["build"]), nav))
 
-    crests = "".join('<a href="classes.html#%s" title="%s"><img src="kit/%s.png" alt="%s"></a>'
+    crests = "".join('<a href="classes.html#%s" title="%s"><img src="kit/%s" alt="%s"></a>'
                      % (c["id"], e(c["name"]), crest(c["id"]), e(c["name"])) for c in classes)
     aside = ('<aside><div class="box panel"><a class="play" href="play/">PLAY NOW<small>Free in your browser</small></a>'
              '<p class="note">Best on a desktop browser with keyboard and mouse, or a gamepad. The first load is about 20 MB.</p></div>'
@@ -97,7 +101,7 @@ def main():
         if sw:
             rows.append(("In a fight", sw))
         dl = "".join("<dt>%s</dt><dd>%s</dd>" % (k, e(v)) for k, v in rows if v)
-        cards.append('<section class="box" id="%s"><div class="class"><img src="kit/%s.png" alt="">'
+        cards.append('<section class="box" id="%s"><div class="class"><img src="kit/%s" alt="">'
                      '<div><h2>%s</h2><div class="role">%s</div><p>%s</p><dl>%s</dl>'
                      '<h3>First abilities</h3><div class="spells">%s</div></div></div></section>'
                      % (c["id"], crest(c["id"]), e(c["name"]), e(c["role"]), e(c["blurb"]), dl, "".join(spells)))
@@ -130,7 +134,7 @@ def main():
         copy(os.path.join(ROOT, "assets", "ui", k + ".png"), os.path.join(OUT, "kit", k + ".png"))
     copy(os.path.join(ROOT, "assets", "icons", "ui", "crest.png"), os.path.join(OUT, "kit", "crest.png"))
     for c in classes:
-        copy(os.path.join(ROOT, "assets", "icons", "ui", crest(c["id"]) + ".png"), os.path.join(OUT, "kit", crest(c["id"]) + ".png"))
+        copy(os.path.join(ROOT, "assets", "icons", "ui", crest(c["id"])), os.path.join(OUT, "kit", crest(c["id"])))
     for sid in icons:
         copy(os.path.join(ROOT, "assets", "icons", "spells", sid + ".png"), os.path.join(OUT, "kit", "spells", sid + ".png"))
     print("site: %d classes, %d spell icons -> %s" % (len(classes), len(icons), OUT))
