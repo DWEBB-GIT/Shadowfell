@@ -503,7 +503,11 @@ func update(dt: float, player) -> void:
 	var dz: float = player.position.z - position.z
 	var dist := U.hyp(dx, dz)
 	var from_home := U.hyp(position.x - home.x, position.z - home.z)
-	var reach: float = cfg.meleeRange + player.radius + radius * 0.5
+	# same allowance the player's blows get (Targeting.melee_reach): both
+	# bodies plus `lagGrace`, so a mob swings from arm's length instead of
+	# walking inside you (Dan, 2026-11-10)
+	var grace: float = DB.attack.get("lagGrace", 0.0)
+	var reach: float = cfg.meleeRange + player.radius + radius + grace
 	var speed01 := 0.0
 
 	# knockback slides, easing out exponentially so the distance is the same
@@ -610,7 +614,7 @@ func update(dt: float, player) -> void:
 				facing = atan2(dx, dz)
 			else:
 				var k := clampf((charge - c.alertSeconds) / maxf(0.01, c.rampSeconds), 0.0, 1.0)
-				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach * 0.85)
+				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach - grace - 0.2)
 				speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
