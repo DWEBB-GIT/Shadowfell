@@ -484,6 +484,8 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 		position.y = ground
 		jump_h = 0.0
 	rig.airborne = jump_h > 0.0 or jump_v > 0.0
+	if "combat" in rig:
+		rig.combat = game.resources.in_combat or game.targeting.attacking
 
 
 ## a red flash on the body as a blow lands, so a hit reads from the
