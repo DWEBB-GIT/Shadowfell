@@ -26,6 +26,7 @@ const SETTINGS := [
 	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
 	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 31, "min": 12, "max": 70, "unit": " m"},
 	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 39, "min": 15, "max": 75, "unit": "°"},
+	{"id": "camOrtho", "label": "Flat lens (true isometric: nothing shrinks with distance)", "tab": "controls", "group": "Camera tuning", "default": false},
 	{"id": "openingCinematic", "label": "Cinematic arrival for new characters", "tab": "controls", "group": "Arrival", "default": true},
 	{"id": "reducedOpeningMotion", "label": "Reduced opening motion (simple fade instead of a camera flight)", "tab": "controls", "default": false},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},
@@ -43,6 +44,7 @@ const SETTINGS := [
 	{"id": "lootNames", "label": "Show names of items on the ground", "tab": "interface", "default": true},
 	# 0 off, 1 the player only, 2 the player, enemies and NPCs. Each step
 	# costs more near lamps (a moving shadow caster redraws the lamp's shadow).
+	{"id": "classicLight", "label": "Classic bright lighting (high sun, bright shade, richer colour, clear air; gloomy places stay gloomy)", "tab": "interface", "group": "Graphics", "default": false},
 	{"id": "lampShadows", "label": "Shadows from lamps and torches (lower it if the game slows near lights)", "tab": "interface", "group": "Graphics", "default": 1, "webDefault": 0, "min": 0, "max": 2, "names": ["Off", "Player", "Everyone"]},
 ]
 
@@ -63,6 +65,8 @@ const CAMERA_PRESETS := {
 	"Diablo 2, paths kept": [35, 0, 42, 25],
 	"Diablo 2 (turned 45°)": [35, 45, 42, 25],
 	"RuneScape": [30, 30, 16, 55],
+	# turned 45° so walls and roads run on screen diagonals, flat lens
+	"Classic isometric (turned 45°, flat)": [35, 45, 30, 35, true],
 }
 
 var game
@@ -127,5 +131,6 @@ func set_value(id: String, v) -> void:
 		values.camYaw = c[1]
 		values.camDistance = c[2]
 		values.camFov = c[3]
+		values.camOrtho = c.size() > 4 and c[4]
 	Store.set_item(KEY, JSON.stringify(values))
 	game.events.emit("settingsChanged", {"id": id, "value": value})

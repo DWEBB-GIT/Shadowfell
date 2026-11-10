@@ -12,6 +12,8 @@ var play_count := 0
 var secondary_grip_error := 0.0
 var air_time := 0.0
 var gait_rate := 1.0
+## in a fight the body stands in a ready stance instead of the calm idle (Dan, 2026-11-10)
+var combat := false
 const TAKEOFF_TIME := 0.22
 const LAND_TIME := 0.36
 const RUN_REFERENCE_SPEED := 4.1
@@ -30,7 +32,15 @@ const RUN_STRIDE := 0.6
 const LAND_DIP_TIME := 0.24
 const JOG_TOUCHDOWN := 0.55 ## Jog_Fwd time with the right foot under the body
 const TAKEOFF_FROM := 0.067 ## Jump_Start's push-off, after its ground crouch
+## The jump pose follows the arc, not the clock (Dan, 2026-11-10: the jump
+## didn't look right). Jump_Start is a 1.33 s leap played inside a 0.68 s
+## hop: before, its whole tuck flashed by in the first 0.22 s and a slow
+## hover loop filled the rest. Now push-off to the knee tuck spans the rise,
+## the tuck peaks at the top, and the legs reach for the ground as you fall;
+## only a longer drop (off a ledge) goes on into the Jump hover loop.
+const TUCK_AT := 0.4 ## Jump_Start time of the highest knee tuck
 var land_dip := 0.0
+var air_fall_from := -1.0 ## air_time when a long drop went into the hover loop
 var last_off_clip := ""
 
 func revive() -> void:
@@ -105,14 +115,27 @@ func resolve_action(type: String, hand: String="main") -> String:
 		return type
 	return "Sword_Attack"
 
+## How far through the hop's arc: 0 at take-off, 0.5 at the top, 1 back at
+## take-off height. Read from the actor's vertical speed when it has one.
+func air_phase() -> float:
+	var a = actor
+	if a != null and "jump_v" in a and (a.jump_v != 0.0 or a.jump_h > 0.0):
+		return clampf((a.JUMP_SPEED - a.jump_v) / (2.0 * a.JUMP_SPEED), 0.0, 1.0)
+	return clampf(air_time / 0.68, 0.0, 1.0)
+
+func _arc_pose_time(k: float, take_len: float) -> float:
+	if k < 0.5:
+		return lerpf(TAKEOFF_FROM, TUCK_AT, k / 0.5)
+	return lerpf(TUCK_AT, take_len, (k - 0.5) / 0.5)
+
 func _locomotion() -> String:
-	if airborne: return "Jump_Start" if air_time < TAKEOFF_TIME else "Jump"
+	if airborne: return "Jump_Start" if air_phase() < 1.0 else "Jump"
 	if landing > 0 and move < 0.12: return "Jump_Land"
 	if pose in ["sit", "rest"]: return "Sitting_Idle"
 	if pose == "fish": return "Idle_Lantern"
 	if move > 0.9: return "Jog_Fwd"
 	if move > 0.12: return "Walk"
-	return "Idle"
+	return "Sword_Idle" if combat else "Idle"
 
 func _update_anim(dt: float, speed01: float) -> void:
 	_make_dagger_clip()
@@ -124,6 +147,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 		return
 	if airborne and not was_airborne:
 		air_time = 0
+		air_fall_from = -1.0
 		landing = 0
 	if was_airborne and not airborne:
 		landing = LAND_TIME
@@ -153,9 +177,10 @@ func _update_anim(dt: float, speed01: float) -> void:
 	_clip(base_clip, gait_rate if base_clip in ["Walk","Jog_Fwd"] else 1.0,seek_pose and clip != base_clip)
 	if base_clip == "Jump_Start":
 		var take_len := anim.get_animation(base_clip).length
-		anim.seek(lerpf(TAKEOFF_FROM, take_len, clampf(air_time/TAKEOFF_TIME,0,1)),true)
+		anim.seek(_arc_pose_time(air_phase(), take_len),true)
 	elif base_clip == "Jump":
-		anim.seek(fmod(maxf(0,air_time-TAKEOFF_TIME),anim.get_animation(base_clip).length),true)
+		if air_fall_from < 0: air_fall_from = air_time
+		anim.seek(fmod(air_time-air_fall_from,anim.get_animation(base_clip).length),true)
 	elif base_clip == "Jump_Land":
 		anim.seek(anim.get_animation(base_clip).length*clampf(1-(landing-dt)/LAND_TIME,0,1),true)
 	else:

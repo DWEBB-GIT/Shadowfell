@@ -72,6 +72,7 @@ func _init(g) -> void:
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
+	_north = north
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# a plain gold N, so north reads at a glance (Dan, 2026-11-04); the arrow
 	# art is kept for the player marker and the tracker's way pointer
@@ -269,7 +270,28 @@ func _capture(k: Vector2i) -> void:
 ## Shared coordinates for overlay markers: east right, north up.
 func world_to_map(at: Vector2) -> Vector2:
 	var p: Vector3 = game.player.position
-	return Vector2.ONE * SIZE * 0.5 + (at - Vector2(p.x, p.z)) * float(ZOOMS[zoom])
+	return Vector2.ONE * SIZE * 0.5 + ((at - Vector2(p.x, p.z)) * float(ZOOMS[zoom])).rotated(_yaw)
+
+
+## The map turns with the camera, so the screen's up (W) is the map's up
+## (Dan, 2026-11-10: with the 45° camera, map-north needed W+D). _yaw is the
+## camera's turn; the N badge slides round the rim to where north now is.
+var _yaw := 0.0
+var _north: Button
+
+
+func _camera_yaw() -> float:
+	var o: Vector3 = game._camera_offset(1.0)
+	return atan2(o.x, o.z)
+
+
+func _place_north() -> void:
+	if _north == null:
+		return
+	var a := deg_to_rad(270.0) + _yaw
+	var r := SIZE / 2
+	var half := _north.size / 2
+	_north.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + ON_RIM) - half
 
 
 # ------------------------------------------------------------ markers
@@ -374,6 +396,11 @@ func _process(dt: float) -> void:
 	_hover_tip()
 	_since += dt
 	var p: Vector3 = game.player.position
+	var yaw := _camera_yaw()
+	if not is_equal_approx(yaw, _yaw):
+		_yaw = yaw
+		_place_north()
+		_drawn_at = Vector4(INF, 0, 0, 0)
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
 	if _since >= 0.2 or _moved(now):
 		_since = 0.0
@@ -403,7 +430,7 @@ func _hover_tip() -> void:
 		for m in _marks:
 			if m.kind in NOT_QUEST:
 				continue
-			var s := Vector2(R + (m.x - p.x) * scale, R + (m.z - p.z) * scale)
+			var s := world_to_map(Vector2(m.x, m.z))
 			var reach: float = m.get("r", 0.0) * scale
 			if s.distance_to(c) - reach > R - 4:
 				s = c + (s - c).normalized() * (R - 9)
@@ -456,12 +483,16 @@ func _draw_map() -> void:
 	g.fill_style = "#15242b"
 	g.fill_rect(0, 0, SIZE, SIZE)
 	var tile_px := TILE_M * scale
+	# the stills are drawn turned with the camera, about the map's centre
+	map.draw_set_transform(Vector2(R, R), _yaw)
+	var reach := R * 1.42 + tile_px
 	for k in _tiles:
-		var at := Vector2(R, R) + (Vector2(k) * TILE_M - Vector2(p.x, p.z)) * scale
-		if at.x > SIZE or at.y > SIZE or at.x + tile_px < 0 or at.y + tile_px < 0:
+		var at := (Vector2(k) * TILE_M - Vector2(p.x, p.z)) * scale
+		if (at + Vector2.ONE * tile_px / 2).length() > reach:
 			continue
 		# a hair of overlap hides seams between neighbouring stills
 		map.draw_texture_rect(_tiles[k], Rect2(at, Vector2.ONE * (tile_px + 0.5)), false)
+	map.draw_set_transform(Vector2.ZERO)
 	var to_map := func(x: float, z: float) -> Vector2: return world_to_map(Vector2(x, z))
 	# the map redraws every frame while you walk (smooth scrolling); the
 	# list of what is on it is rebuilt about 12 times a second (it walks every
@@ -605,7 +636,7 @@ func _draw_map() -> void:
 	g.arc(0, 0, 10, 0, TAU)
 	g.fill_style = "rgba(0, 0, 0, 0.55)"
 	g.fill()
-	g.rotate(PI - game.player.facing)
+	g.rotate(PI - game.player.facing + _yaw)
 	var arrow := Icons.art("map", "player")
 	if arrow:
 		g.draw_image(arrow, -8, -8, 16, 16)

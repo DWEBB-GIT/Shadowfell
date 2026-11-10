@@ -383,6 +383,12 @@ var hop_cd := 0.0
 ## flight ({dir, t, duration, speed}) or null, and seconds until the next
 var roll = null
 var roll_cd := 0.0
+## In the air you keep the way you took off and may change it once (WoW):
+## the steer you jumped with, and whether the one change is spent
+## (Dan, 2026-11-10: tapping keys mid-air zig-zagged and stuttered the jump).
+var air_mv := Vector2.ZERO
+var air_turned := false
+const AIR_TURN_DOT := 0.9 ## a press this far off your line counts as the change
 
 
 func _reset_jump() -> void:
@@ -399,6 +405,24 @@ func _reset_jump() -> void:
 		rig.landing = 0.0
 	position.y = Terrain.height_at(position.x, position.z)
 	ground_shadow.position = position + Vector3(0, 0.03, 0)
+
+
+## Steering while airborne: the move you took off with carries on, keys
+## let go or not, and the first new direction you press replaces it, once.
+func _air_steer(mv: Dictionary) -> Dictionary:
+	var v := Vector2(mv.x, mv.z)
+	if not rig.airborne:
+		air_mv = v.limit_length(1.0)
+		air_turned = false
+		return mv
+	if not air_turned and v.length() > 0.2:
+		var off := air_mv.length() < 0.2 or v.normalized().dot(air_mv.normalized()) < AIR_TURN_DOT
+		if off:
+			air_mv = v.limit_length(1.0)
+			air_turned = true
+			if hop_dir != Vector3.ZERO:
+				hop_dir = Vector3(air_mv.x, 0, air_mv.y).normalized()
+	return {"x": air_mv.x, "z": air_mv.y}
 
 
 ## Which way a jump taken now would leap, or zero for a plain hop: only in
@@ -506,6 +530,8 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 		position.y = ground
 		jump_h = 0.0
 	rig.airborne = jump_h > 0.0 or jump_v > 0.0
+	if "combat" in rig:
+		rig.combat = game.resources.in_combat or game.targeting.attacking
 
 
 ## a red flash on the body as a blow lands, so a hit reads from the
@@ -527,7 +553,7 @@ func update(dt: float, controls) -> void:
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
-		var mv: Dictionary = controls.move if controls else {"x": 0.0, "z": 0.0}
+		var mv: Dictionary = _air_steer(controls.move if controls else {"x": 0.0, "z": 0.0})
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			var sp: float = DB.CONFIG.player.speed * DB.CONFIG.death.ghostSpeed
@@ -614,6 +640,7 @@ func update(dt: float, controls) -> void:
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
 		else:
 			mv = _melee_steer(mv, dt)
+		mv = _air_steer(mv)
 		if root > 0:
 			mv = {"x": 0.0, "z": 0.0}
 		var mag := minf(1, U.hyp(mv.x, mv.z))

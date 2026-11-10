@@ -170,6 +170,10 @@ func _ready() -> void:
 	grave = Grave.new(self)
 	skills = Skills.new(self)
 	settings = Settings.new(self)
+	events.on("settingsChanged", func(e):
+		if e.id == "classicLight" and not grade.is_empty():
+			_place_sun(camera_target)
+			_apply_grade())
 	keys = Keybinds.new(self)
 	input.is_bound = func(code): return keys.is_bound(code)
 	reputation = Reputation.new(self)
@@ -1363,11 +1367,22 @@ func _apply_grade() -> void:
 	env.fog_light_color = fog_colour
 	env.background_color = fog_colour
 	env.fog_density = clampf(g.fogAmount, 0.0, 1.0)
-	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient * day.ambient
+	var bright := _classic_light()
+	if bright:
+		# Classic: clear air around the player (the haze only at the edge
+		# of the view), so gloomy zones with near fog keep their murk
+		fog_base.near = maxf(fog_base.near, fog_base.far - CLASSIC.fogBand)
+	env.ambient_light_energy = HEMI * Tex.LIGHT_SCALE * AMBIENT_K * g.ambient * day.ambient * (CLASSIC.ambient if bright else 1.0)
 	env.ambient_light_color = (g.ambientColor as Color) * (day.ambientTint as Color)
-	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight * day.light
+	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight * day.light * (CLASSIC.sun if bright else 1.0)
 	if not _ghost:
-		ZoneGradeS.apply_colour(env, g)
+		if bright:
+			var cg := g.duplicate()
+			cg.saturation = g.saturation * CLASSIC.saturation
+			cg.contrast = g.contrast * CLASSIC.contrast
+			ZoneGradeS.apply_colour(env, cg)
+		else:
+			ZoneGradeS.apply_colour(env, g)
 
 
 func _snap_camera() -> void:
@@ -1434,8 +1449,19 @@ func _place_sun(t: Vector3) -> void:
 	if _sun_off == Vector3.ZERO:
 		_sun_off = daylight.get("offset", Vector3(-22, 17, 9))
 	var off: Vector3 = _sun_off
+	if _classic_light():
+		off.y *= CLASSIC.sunLift # a higher sun: short shadows, lit fronts
 	sun.position = t + off
 	sun.look_at(t)
+
+
+## Settings > Graphics "Classic bright lighting": the high-key retro
+## isometric look (bright shade, short shadows, richer colour, clear air)
+const CLASSIC := {"ambient": 1.9, "sun": 1.1, "sunLift": 2.2, "saturation": 1.18, "contrast": 1.06, "fogBand": 12.0}
+
+
+func _classic_light() -> bool:
+	return settings != null and settings.get_value("classicLight")
 
 
 func _classic_camera() -> bool:
@@ -1483,6 +1509,12 @@ func _place_camera(dt := 0.0) -> void:
 	camera.fov = _camera_fov()
 	var z: float = zoom * (1 - DB.CONFIG.camera.indoorZoom * world.indoor_blend)
 	var o := _camera_offset(z)
+	# Camera tuning "Flat lens": orthographic, sized to show what the lens
+	# would show at the player, so zoom and distance still work the same
+	var flat: bool = _tuned_camera() and settings.get_value("camOrtho")
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL if flat else Camera3D.PROJECTION_PERSPECTIVE
+	if flat:
+		camera.size = 2.0 * o.length() * tan(deg_to_rad(camera.fov) * 0.5)
 	var t := camera_target + Vector3(0, 1.0, 0)
 	var sx := 0.0
 	var sy := 0.0
