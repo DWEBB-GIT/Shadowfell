@@ -66,7 +66,7 @@ def main():
                  ("story.html", "Game Guide", "guide"), ("play/", "Play", "")]
         nav = "".join('<a class="btn%s" href="%s">%s</a>' % (" on" if p == page else "", h, t) for h, t, p in links)
         return ('<header class="banner wrap"><a href="index.html" class="logo"><img src="kit/crest.png" alt="">'
-                '<h1>SHADOWFALL</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
+                '<h1>MYTHKEEP</h1></a><div class="tag">%s &middot; %s</div><nav class="top">%s</nav></header>'
                 % (e(text["tagline"]), e(text["build"]), nav))
 
     crests = "".join('<a href="classes.html#%s" title="%s"><img src="kit/%s" alt="%s"></a>'
