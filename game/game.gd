@@ -852,10 +852,10 @@ func _click(button: String) -> bool:
 			# auto attack, the same for every class (Dan, 2026-11-09)
 			if acts:
 				targeting.engage(o)
-				# attacking (not selecting) squares you up to it, as in WoW,
-				# so a foe you had walked past is hit without a dance
-				if targeting.target_in_reach and not player.moving:
-					player.face_towards(o.position.x, o.position.z)
+				# attacking (not selecting) nudges you onto it when it is
+				# roughly ahead (aim assist, no forced snap)
+				if targeting.target_in_reach:
+					player.square_up(o.position.x, o.position.z)
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}

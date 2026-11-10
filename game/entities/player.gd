@@ -30,7 +30,6 @@ var facing := 0.0 ## radians; 0 faces +z (south)
 ## while walking, so the blow is seen to go where it was aimed
 const AIM_HOLD := 0.45
 var aim_hold := 0.0
-var root := 0.0 ## seconds an attack on the move holds you in place (Lost Ark / D4)
 var radius: float = DB.CONFIG.player.radius
 var max_health := 100
 var health := 100.0
@@ -501,7 +500,6 @@ func update(dt: float, controls) -> void:
 		cooldowns[k] = maxf(0, cooldowns[k] - dt)
 	braced = maxf(0, braced - dt)
 	aim_hold = maxf(0, aim_hold - dt)
-	root = maxf(0, root - dt)
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
@@ -511,7 +509,7 @@ func update(dt: float, controls) -> void:
 			var sp: float = DB.CONFIG.player.speed * DB.CONFIG.death.ghostSpeed
 			position.x += mv.x * sp * dt
 			position.z += mv.z * sp * dt
-			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
+			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * DB.CONFIG.player.turnSpeed)
 		position = game.collision.resolve(position, radius, jump_h)
 		_update_jump(dt, controls != null and controls.get("jump", false), controls)
 		moving = mag > 0 or rig.airborne
@@ -582,8 +580,6 @@ func update(dt: float, controls) -> void:
 		else:
 			mv = _melee_steer(mv, dt)
 		mv = _air_steer(mv)
-		if root > 0:
-			mv = {"x": 0.0, "z": 0.0}
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
@@ -593,18 +589,18 @@ func update(dt: float, controls) -> void:
 				# (mouse aim) still turns you to the cursor
 				var face_aim = controls.get("faceAim")
 				if face_aim != null and not turning:
-					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * 14)
+					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * DB.CONFIG.player.turnSpeed)
 			else:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
 				# stop (or turn) to face it. No shooting while kiting backwards.
-				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * 14)
+				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * DB.CONFIG.player.turnSpeed)
 			speed01 = mag
 		elif turning:
 			pass
 		elif game.mouse_aim and controls.get("faceAim") != null:
 			var fa = controls.faceAim
-			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * 14)
+			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * DB.CONFIG.player.turnSpeed)
 		# spells first, so a swing coming due never swallows a key press
 		for id in acts:
 			if acts[id] and DB.spells.has(id):
@@ -785,8 +781,8 @@ func try_shoot(aim) -> bool:
 	var draw := minf(DB.auto_shot.draw, stats.attack_cooldown_for("ranged") * 0.4)
 	if cooldowns.ranged > draw:
 		return false
-	if aim != null:
-		face_towards(aim.x, aim.z)
+	if aim != null and not square_up(aim.x, aim.z):
+		return false
 	var t := maxf(cooldowns.ranged, draw)
 	pending_shot = {"t": t,"total":t}
 	if not bow_in_hand or sheathed:draw_weapons("ranged")
@@ -805,12 +801,11 @@ func _release(p: Dictionary, dt: float) -> void:
 	var tg = game.targeting
 	var inv = game.inventory
 	var ammo = inv.ammo
-	if not tg.attacking or not tg.target_in_shot or not ammo:
+	if not tg.attacking or not tg.target_in_shot or not ammo or not square_up(tg.current.position.x, tg.current.position.z):
 		if rig.action != null and rig.action.type == "shoot":
 			rig.action = null
 		hold_bow(weapon_stance=="ranged" and not sheathed)
 		return
-	face_towards(tg.current.position.x, tg.current.position.z)
 	inv.spend_arrow(ammo)
 	var late := minf(minf(-p.t, dt), DB.attack.catchUp)
 	cooldowns.ranged = maxf(0, game.stats.attack_cooldown_for("ranged") - late)
@@ -856,26 +851,21 @@ func bow_muzzle() -> Vector3:
 	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
 
 
-## Every swing, shot and ability at a foe turns you to it at once, and one
-## started on the move holds you in place for `rootSeconds` (Dan picked
-## Lost Ark / Diablo 4 style, 2026-11-09): facing never gets in the way,
-## and attacking costs ground, so nobody shoots on while outrunning a foe
-## (the anti-kite rule, PvP-safe: it is all positions and timers).
-func square_up(x: float, z: float) -> void:
-	face_towards(x, z)
-	if moving and not rig.airborne:
-		root = maxf(root, DB.attack.get("rootSeconds", 0.25))
-
-
-## Auto attack is not a key you press, so it never roots you: standing,
-## a swing snaps you to your foe; running, it only swings at a foe in your
-## front half (the upper body swings, the legs keep running), so you can
-## still run from a fight with auto attack on.
-func _swing_facing(aim) -> bool:
-	if moving:
-		return facing_point(aim.x, aim.z, DB.attack.coneDegrees / 2.0)
-	face_towards(aim.x, aim.z)
+## Aim assist, not a forced snap (Dan 2026-11-10): an attack at a foe in
+## your front half is allowed, and one within `assistDegrees` of where you
+## face is nudged straight onto it. A foe beside or behind you is not hit
+## until you turn yourself, so getting behind someone still pays off, and
+## nobody shoots back while running away (the anti-kite rule).
+func square_up(x: float, z: float) -> bool:
+	if not facing_point(x, z, DB.attack.coneDegrees / 2.0):
+		return false
+	if facing_point(x, z, DB.attack.get("assistDegrees", 45)):
+		face_towards(x, z)
 	return true
+
+
+func _swing_facing(aim) -> bool:
+	return square_up(aim.x, aim.z)
 
 
 ## The enemy you are fighting, while it is in melee reach (else null).
@@ -908,7 +898,7 @@ func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
 	if inward < cos(deg_to_rad(DB.attack.get("pivotDegrees", 70))):
 		return mv
 	if not facing_point(foe.position.x, foe.position.z, 30):
-		facing = U.turn_towards(facing, atan2(fx, fz), dt * 24)
+		facing = U.turn_towards(facing, atan2(fx, fz), dt * DB.CONFIG.player.turnSpeed)
 		return {"x": 0.0, "z": 0.0}
 	return mv # facing it: walk on, straight through its body if you hold the key
 

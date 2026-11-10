@@ -436,9 +436,11 @@ func _try_cast(id: String) -> bool:
 			return false
 		if not _class_ready(spell, target):
 			return false
-		# Selecting never turns you; using an ability on a foe does, at
-		# once, and holds you a moment if you were moving (Player.square_up)
-		player.square_up(target.position.x, target.position.z)
+		# Selecting never turns you; an ability needs its target in your
+		# front half, and aim assist nudges you onto it (Player.square_up)
+		if not player.square_up(target.position.x, target.position.z):
+			game.hud.error("Target needs to be in front of you.")
+			return false
 		if spell.get("mechanic") != "distract":
 			break_shadow()
 			if not spell.get("applies", {}).get("sleep") and spell.get("mechanic") != "fear":
@@ -1370,16 +1372,14 @@ func update(dt: float) -> void:
 		shot.left-=dt
 		if shot.left>0:continue
 		ranged_windups.remove_at(i)
-		if not player.dead and shot.target != null and shot.target.alive and player.position.distance_to(shot.target.position)<=game.stats.ranged_reach+shot.target.radius*0.6 and game.inventory.ammo:
+		if not player.dead and shot.target != null and shot.target.alive and player.can_hit_while_moving(shot.target.position.x,shot.target.position.z) and player.position.distance_to(shot.target.position)<=game.stats.ranged_reach+shot.target.radius*0.6 and game.inventory.ammo:
 			_shoot(shot.spell,shot.target)
 	# the cast bar: moving or dying breaks it, as in WoW
 	var c = player.casting
 	if c != null:
 		var gone: bool = c.target != null and not c.target.alive
-		# a cast keeps you turned to its target as it moves
-		if c.target != null and c.target.alive and not player.moving:
-			player.face_towards(c.target.position.x, c.target.position.z)
-		var turned := false
+		# a cast tracks its target within aim assist; behind you, it breaks
+		var turned: bool = c.target != null and c.target.alive and not player.square_up(c.target.position.x, c.target.position.z)
 		var covered: bool = c.target != null and c.target.alive and game.collision.wall_between(player.position.x, player.position.z, c.target.position.x, c.target.position.z)
 		if player.dead or player.moving or gone or turned or covered:
 			player.casting = null
