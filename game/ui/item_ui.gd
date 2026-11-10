@@ -1398,7 +1398,8 @@ func _render_settings() -> void:
 		if parts[0] is OptionButton:
 			var ob: OptionButton = parts[0]
 			ob.clear()
-			var opts: Array = Settings.CAMERA_PRESETS.keys() if Settings._def(id).get("options") == "CAMERA_PRESETS" else game.audio.output_devices()
+			var src = Settings._def(id).get("options")
+			var opts: Array = Settings.CAMERA_PRESETS.keys() if src == "CAMERA_PRESETS" else Settings.COMBAT_MOVES if src == "COMBAT_MOVES" else game.audio.output_devices()
 			for d in opts:
 				ob.add_item(d)
 				if d == v:

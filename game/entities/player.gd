@@ -379,6 +379,10 @@ const FLIP_CHANCE := 0.12 ## now and then a jump turns into a front flip (Dan, 2
 ## zero for a plain hop, and the seconds until the next one
 var hop_dir := Vector3.ZERO
 var hop_cd := 0.0
+## dodge roll (CONFIG.player.roll), the other Combat move: the tumble in
+## flight ({dir, t, duration, speed}) or null, and seconds until the next
+var roll = null
+var roll_cd := 0.0
 
 
 func _reset_jump() -> void:
@@ -387,6 +391,7 @@ func _reset_jump() -> void:
 	jump_buffer = 0.0
 	flip = -1.0
 	hop_dir = Vector3.ZERO
+	roll = null
 	rig.airborne = false
 	if rig is ForgeRig:
 		rig.was_airborne = false
@@ -400,10 +405,15 @@ func _reset_jump() -> void:
 ## a fight (if combatOnly), only while moving, never as a spirit.
 func _hop_direction(controls) -> Vector3:
 	var rule: Dictionary = DB.CONFIG.player.get("hop", {})
-	if rule.is_empty() or ghost or hop_cd > 0 or controls == null or not game.settings.get_value("combatHop"):
+	if rule.is_empty() or ghost or hop_cd > 0 or controls == null or game.settings.get_value("combatMove") != "Hop":
 		return Vector3.ZERO
 	if rule.get("combatOnly", true) and not (game.resources.in_combat or game.targeting.attacking):
 		return Vector3.ZERO
+	return _move_direction(controls)
+
+
+## the way the move keys point, or zero standing still
+func _move_direction(controls) -> Vector3:
 	var tank = controls.get("tank")
 	var d := Vector3.ZERO
 	if tank != null:
@@ -414,9 +424,45 @@ func _hop_direction(controls) -> Vector3:
 	return d.normalized() if d.length() > 0.2 else Vector3.ZERO
 
 
+## Which way a dodge roll taken now would go, or zero for none: in a fight
+## (if combatOnly), on the ground, the way you move, backwards standing still.
+func _roll_direction(controls) -> Vector3:
+	var rule: Dictionary = DB.CONFIG.player.get("roll", {})
+	if rule.is_empty() or ghost or roll_cd > 0 or roll != null or controls == null or game.settings.get_value("combatMove") != "Roll":
+		return Vector3.ZERO
+	if rule.get("combatOnly", true) and not (game.resources.in_combat or game.targeting.attacking):
+		return Vector3.ZERO
+	var d := _move_direction(controls)
+	return d if d != Vector3.ZERO else -Vector3(sin(facing), 0, cos(facing))
+
+
+func start_roll(d: Vector3) -> void:
+	var rule: Dictionary = DB.CONFIG.player.roll
+	var duration: float = rule.get("duration", 0.45)
+	roll = {"dir": d, "t": 0.0, "duration": duration, "speed": rule.get("distance", 4.0) / duration}
+	roll_cd = rule.get("cooldown", 6.0)
+	facing = atan2(d.x, d.z)
+	set_sitting(false)
+	# a roll calls off a swing or shot winding up (a cast breaks as you move)
+	pending = null
+	pending_off = null
+	if pending_shot != null:
+		_cancel_shot()
+	rig.play("dodge", duration, 0.5)
+	game.events.emit("playerRolled", {"position": position})
+
+
 func _update_jump(dt: float, requested: bool, controls = null) -> void:
 	hop_cd = maxf(0.0, hop_cd - dt)
+	roll_cd = maxf(0.0, roll_cd - dt)
 	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
+	if roll != null:
+		jump_buffer = 0.0 # no jumping out of a tumble
+	elif jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
+		var rd := _roll_direction(controls)
+		if rd != Vector3.ZERO:
+			jump_buffer = 0.0
+			start_roll(rd)
 	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
 		set_sitting(false)
 		position.y = Terrain.height_at(position.x, position.z)
@@ -540,6 +586,17 @@ func update(dt: float, controls) -> void:
 			for id in lacts:
 				if lacts[id] and DB.spells.has(id):
 					game.spells.try_cast(id)
+	elif roll != null:
+		# a dodge roll carries you, committed: no steering, swings or spells
+		var r: Dictionary = roll
+		var step: float = minf(dt, r.duration - r.t)
+		r.t += dt
+		position.x += r.dir.x * r.speed * step
+		position.z += r.dir.z * r.speed * step
+		facing = atan2(r.dir.x, r.dir.z)
+		speed01 = 1.0
+		if r.t >= r.duration:
+			roll = null
 	elif controls:
 		var mv: Dictionary = controls.move
 		var acts: Dictionary = controls.get("actions", {})
@@ -661,7 +718,7 @@ func set_hidden(on: bool) -> void:
 ## Auto attack - each hand has a swing clock that counts down
 ## to the moment the blow lands. See src/entities/player.js for the full story.
 func try_strike(aim) -> bool:
-	if pending != null or casting != null:
+	if pending != null or casting != null or roll != null:
 		return false
 	var stats = game.stats
 	var windup: float = stats.swing_windup
@@ -692,7 +749,7 @@ func try_strike(aim) -> bool:
 ## The off hand when dual wielding: its own clock, staggered from the main hand.
 func try_strike_off(aim) -> bool:
 	var stats = game.stats
-	if not stats.dual_wielding or pending_off != null or casting != null or lunge != null:
+	if not stats.dual_wielding or pending_off != null or casting != null or lunge != null or roll != null:
 		return false
 	if pending != null and pending.type == "spell":
 		return false
@@ -747,7 +804,7 @@ func _impact(hand: String, p: Dictionary, dt: float, show := 0.0) -> void:
 
 ## Auto Shot: with a bow, while the target is beyond melee reach.
 func try_shoot(aim) -> bool:
-	if pending_shot != null or casting != null or lunge != null:
+	if pending_shot != null or casting != null or lunge != null or roll != null:
 		return false
 	var stats = game.stats
 	cooldowns.ranged=maxf(cooldowns.ranged,ranged_ready_at-game.time)

@@ -19,7 +19,12 @@ const CONFIG := {
 		# combat hop (experiment, Dan 2026-11-09, Conquer Online style): in a fight,
 		# Space while moving leaps further and faster, to hop in and out of reach.
 		# carry: speed while airborne x run speed; cooldown: seconds between hops.
-		"hop": {"carry": 1.8, "cooldown": 1.6, "combatOnly": true}},
+		"hop": {"carry": 1.8, "cooldown": 1.6, "combatOnly": true},
+		# dodge roll (experiment, Dan 2026-11-10): the other Combat move. In a
+		# fight, Space tumbles you `distance` m over `duration` s the way you
+		# move (backwards standing still). No invulnerability: it only gets
+		# you out of a telegraph or out of reach. Can't attack or cast mid-roll.
+		"roll": {"distance": 4.0, "duration": 0.45, "cooldown": 6.0, "combatOnly": true}},
 	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
 	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
 	## base move speed (Dan, 2026-11-02).

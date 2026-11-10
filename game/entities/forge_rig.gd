@@ -201,7 +201,20 @@ func _update_anim(dt: float, speed01: float) -> void:
 			at = fmod(action.t, a.length)
 			last_action_clip = name
 		var weight := minf(1, minf(k * 15, (1 - k) * 10))
-		_sample(name, at, weight, _moving())
+		# a dodge roll tumbles the whole body, even on the move
+		var roll := name == "Roll"
+		_sample(name, at, weight, _moving() and not roll)
+		if roll:
+			# Player.roll owns the travel: drop the clip's own forward slide
+			for bone_name in ["root","pelvis"]:
+				var b := _skel.find_bone(bone_name)
+				if b < 0: continue
+				var p := _skel.get_bone_pose_position(b)
+				var r := _skel.get_bone_rest(b).origin
+				var up := (_skel.global_basis.inverse()*model.global_basis*Vector3.UP).normalized()
+				var parent := _skel.get_bone_parent(b)
+				if parent >= 0:up=(_skel.get_bone_global_pose(parent).basis.inverse()*up).normalized()
+				_skel.set_bone_pose_position(b, r + up*(p-r).dot(up))
 		if action.t >= action.duration:
 			action = null
 	elif _upper != null:

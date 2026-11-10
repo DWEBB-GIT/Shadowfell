@@ -347,7 +347,7 @@ func _try_cast(id: String) -> bool:
 	var stats = game.stats
 	# Nothing about auto attack blocks an ability: only another cast, a
 	# charge in flight, or the global cooldown does.
-	if not DB.spells.has(id) or player.dead:
+	if not DB.spells.has(id) or player.dead or player.roll != null:
 		return false
 	# pressed in the last moments of a cast or a charge, it waits in the
 	# spell queue and goes the instant that ends (Dan, 2026-11-02)
