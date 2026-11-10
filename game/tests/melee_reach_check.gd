@@ -79,28 +79,28 @@ func _run() -> void:
 	var was: float = pl.position.x
 	pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
 	check(pl.position.x < was, "walking on away from it moves you at once")
-	# Lost Ark / D4 facing (Dan 2026-11-09): standing, a swing snaps you to it
-	pl.position = at + Vector3(1.6, 0, 0)
-	pl.facing = atan2(1.0, 0.0)
+	# aim assist, no forced snap (Dan 2026-11-10)
 	pl.moving = false
 	pl.pending = null
 	pl.cooldowns.attack = 0.0
-	check(pl.try_strike(at), "standing with the foe behind you, a swing still starts")
-	check(pl.facing_point(at.x, at.z, 10), "and turns you to face it at once")
-	# running away, auto attack does not turn you back or hold you
+	pl.position = at + Vector3(1.6, 0, 0)
+	pl.facing = atan2(1.0, 0.0)
+	check(not pl.try_strike(at), "a foe right behind you is not hit until you turn")
+	check(not pl.facing_point(at.x, at.z, 90), "and you are not snapped round to it")
+	pl.facing = atan2(-1.0, 0.0) + deg_to_rad(30)
+	check(pl.try_strike(at), "a foe roughly ahead is hit")
+	check(pl.facing_point(at.x, at.z, 2), "and aim assist nudges you onto it")
 	pl.pending = null
 	pl.cooldowns.attack = 0.0
-	pl.facing = atan2(1.0, 0.0)
-	pl.moving = true
-	check(not pl.try_strike(at), "running away, auto attack does not swing at a foe behind you")
-	check(pl.root == 0.0, "and never roots you")
-	# an ability pressed on the move snaps you round and holds you briefly
-	pl.square_up(at.x, at.z)
-	check(pl.facing_point(at.x, at.z, 10) and pl.root > 0.0, "an attack used on the move faces the foe and roots you (%.2f s)" % pl.root)
-	var p0: Vector3 = pl.position
-	pl.update(dt, {"move": {"x": 1.0, "z": 0.0}, "actions": {}})
-	var slid := Vector2(pl.position.x - p0.x, pl.position.z - p0.z).length()
-	check(slid < 0.01, "rooted, you do not move (%.3f m)" % slid)
-	for i in 30:
+	pl.facing = atan2(-1.0, 0.0) + deg_to_rad(70)
+	check(pl.try_strike(at) and not pl.facing_point(at.x, at.z, 45), "off to the side but in front: hit, not turned")
+	# turning is quick: left to right in a few frames
+	pl.pending = null
+	pl.position = at + Vector3(30, 0, 30)
+	tg.select(null)
+	pl.facing = atan2(-1.0, 0.0)
+	var frames := 0
+	while absf(angle_difference(pl.facing, atan2(1.0, 0.0))) > 0.01 and frames < 60:
 		pl.update(dt, {"move": {"x": 1.0, "z": 0.0}, "actions": {}})
-	check(pl.position.x > p0.x + 0.5, "then you run on")
+		frames += 1
+	check(frames <= 8, "running left then right turns you round in %d frames" % frames)

@@ -133,8 +133,11 @@ func run() -> void:
 			largest_step=maxf(largest_step,absf(wrapf(player.facing-before,-PI,PI)))
 			frames+=1
 			if absf(wrapf(player.facing+PI/2,-PI,PI))<0.001:break
-		check(largest_step<=14.0/fps+0.001,"WASD turn stays at the restored angular rate at "+str(fps)+" FPS")
-		check(float(frames)/fps>=0.22 and float(frames)/fps<0.27,"WASD reversal takes a consistent natural interval at "+str(fps)+" FPS")
+		# Dan 2026-11-10: quicker, ARPG-style turning (CONFIG.player.turnSpeed)
+		var rate:float=DB.CONFIG.player.turnSpeed
+		var want:float=PI/rate
+		check(largest_step<=rate/fps+0.001,"WASD turn stays at the set angular rate at "+str(fps)+" FPS")
+		check(float(frames)/fps>=want-0.001 and float(frames)/fps<want+1.0/fps+0.001,"WASD reversal takes a consistent interval (%.2f s) at %s FPS"%[float(frames)/fps,str(fps)])
 	print("locomotion_check: %d checks, %d failures"%[checks,failures])
 	game.queue_free()
 	await process_frame

@@ -26,7 +26,7 @@
         "staggerGap": 0.2,
         "movingLeeway": 1.5,
         "pivotDegrees": 70,
-        "rootSeconds": 0.25
+        "assistDegrees": 45
       },
       "bar": false
     },
