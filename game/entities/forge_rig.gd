@@ -12,6 +12,8 @@ var play_count := 0
 var secondary_grip_error := 0.0
 var air_time := 0.0
 var gait_rate := 1.0
+## in a fight the body stands in a ready stance instead of the calm idle (Dan, 2026-11-10)
+var combat := false
 const TAKEOFF_TIME := 0.22
 const LAND_TIME := 0.36
 const RUN_REFERENCE_SPEED := 4.1
@@ -133,7 +135,7 @@ func _locomotion() -> String:
 	if pose == "fish": return "Idle_Lantern"
 	if move > 0.9: return "Jog_Fwd"
 	if move > 0.12: return "Walk"
-	return "Idle"
+	return "Sword_Idle" if combat else "Idle"
 
 func _update_anim(dt: float, speed01: float) -> void:
 	_make_dagger_clip()
