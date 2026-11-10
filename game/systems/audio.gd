@@ -694,6 +694,45 @@ func _click(frame: int) -> void:
 	click_player.play()
 
 
+## Every sound file the game plays, loaded now. A browser plays sounds as
+## web audio samples, and turning a file into one decodes all of it the first
+## time it plays (seconds for an ambience loop): `prepare` does that behind
+## the loading screen instead (Dan, 2026-11-10: sounds took a while to come).
+func prepare_list() -> Array:
+	var out: Array = []
+	for files in SFX.values():
+		out.append_array(files)
+	out.append_array(AMB_LOOPS.values())
+	out.append_array([FOREST_DAY, FOREST_NIGHT, DEATH_LOOP])
+	return out
+
+
+func prepare(file: String) -> void:
+	var s := _looped(file) if file == DEATH_LOOP or file in [FOREST_DAY, FOREST_NIGHT] or file in AMB_LOOPS.values() else _stream(file)
+	if s != null and OS.has_feature("web") and not AudioServer.is_stream_registered_as_sample(s):
+		AudioServer.register_stream_as_sample(s)
+
+
+## the music's own copy (played once through), made in start()
+func prepare_music() -> void:
+	if music != null and music.stream != null and OS.has_feature("web") and not AudioServer.is_stream_registered_as_sample(music.stream):
+		AudioServer.register_stream_as_sample(music.stream)
+
+
+## a looping copy of a file, made once (a fresh copy each time was a new
+## sample for the browser to decode at every ambience change)
+var _loops := {}
+
+func _looped(file: String) -> AudioStream:
+	if not _loops.has(file):
+		var s = _stream(file)
+		if s != null:
+			s = s.duplicate()
+			s.loop = true
+		_loops[file] = s
+	return _loops[file]
+
+
 func _stream(file: String) -> AudioStream:
 	if not sfx_cache.has(file):
 		sfx_cache[file] = load(SFX_DIR + file)
@@ -712,10 +751,8 @@ func set_dead(on: bool) -> void:
 			death_loop.bus = "Ambience"
 			death_loop.volume_db = -4.0
 			add_child(death_loop)
-			var s = _stream(DEATH_LOOP)
+			var s = _looped(DEATH_LOOP)
 			if s != null:
-				s = s.duplicate()
-				s.loop = true
 				death_loop.stream = s
 		if not death_loop.playing and death_loop.stream != null:
 			death_loop.play()
@@ -751,11 +788,9 @@ func is_night() -> bool:
 
 func _amb_switch() -> void:
 	amb_file = amb_want
-	var s = _stream(amb_file)
+	var s = _looped(amb_file)
 	if s == null:
 		return
-	s = s.duplicate()
-	s.loop = true
 	amb_loop.stream = s
 	amb_loop.play()
 

@@ -374,8 +374,16 @@ func load_world() -> void:
 	var total := maxi(1, audio.warm.size())
 	while not audio.warm.is_empty():
 		audio.warm_some(25000)
-		hud.loading.show_progress("Gathering sounds…", 0.4 * (1.0 - float(audio.warm.size()) / total))
+		hud.loading.show_progress("Gathering sounds…", 0.3 * (1.0 - float(audio.warm.size()) / total))
 		await tree.process_frame
+	# the recorded sounds, decoded for the browser now and not on first play
+	var files: Array = audio.prepare_list()
+	for k in files.size():
+		audio.prepare(files[k])
+		if k % 6 == 5:
+			hud.loading.show_progress("Gathering sounds…", 0.3 + 0.1 * k / files.size())
+			await tree.process_frame
+	audio.prepare_music()
 	# every model and effect drawn once in front of the camera, behind the screen
 	hud.loading.show_progress("Raising the world…", 0.45)
 	var shelf := _model_shelf()
@@ -427,6 +435,33 @@ func _model_shelf() -> Node3D:
 		Rig.isolate_materials(m)
 		m.position = camera_target + Vector3((k % cols - cols / 2.0) * 1.2, 0, (k / cols - cols / 2.0) * 1.2)
 		shelf.add_child(m)
+	# every placed prop as the world stream draws it: a MultiMesh is its own
+	# shader in the renderer, so a prop kind's first batch compiled on sight
+	# and froze a browser for a moment as each new area came in (Dan, 2026-11-10)
+	var seen := {}
+	var at := 0
+	for p in Layout.props:
+		var key := str(p.model) + "|" + str(p.get("tint", ""))
+		if seen.has(key):
+			continue
+		seen[key] = true
+		var kt := WorldStream.kit(p)
+		if not kt.batch:
+			continue
+		var spot := camera_target + Vector3((at % cols - cols / 2.0) * 1.2, 0, (at / cols - cols / 2.0) * 1.2)
+		at += 1
+		for part in kt.parts:
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = part.mesh
+			mm.instance_count = 1
+			mm.set_instance_transform(0, Transform3D(Basis(), spot) * part.xf)
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.cast_shadow = part.shadow
+			if part.mat != null:
+				mmi.material_override = part.mat
+			shelf.add_child(mmi)
 	return shelf
 
 
