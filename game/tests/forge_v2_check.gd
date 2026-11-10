@@ -27,8 +27,10 @@ func _run() -> void:
 		rig.airborne = true
 		rig.update(0.04,0.0)
 		check(rig.clip == "Jump_Start",sex+" takeoff uses supplied start clip")
-		rig.update(ForgeRig.TAKEOFF_TIME,0.0)
-		check(rig.clip == "Jump",sex+" airborne clip follows takeoff")
+		rig.update(0.3,0.0)
+		check(rig.clip == "Jump_Start",sex+" the leap pose follows the arc to the top")
+		rig.update(0.5,0.0)
+		check(rig.clip == "Jump",sex+" a longer drop goes on into the airborne loop")
 		var sk: Skeleton3D = player.model.find_children("*","Skeleton3D",true,false)[0]
 		var pelvis := sk.find_bone("pelvis")
 		var parent:=sk.get_bone_parent(pelvis)
