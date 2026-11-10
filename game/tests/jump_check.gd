@@ -124,7 +124,7 @@ func _run() -> void:
 	var hop: Dictionary = DB.CONFIG.player.hop
 	game.targeting.attacking = true # in a fight (auto attack on)
 	for on in [true, false]:
-		game.settings.set_value("combatHop", on)
+		game.settings.set_value("combatMove", "Hop" if on else "Off")
 		_reset()
 		game.player.hop_cd = 0.0
 		_key(KEY_W, true)
@@ -134,7 +134,7 @@ func _run() -> void:
 		var hm := Vector2(game.player.position.x-hs.x, game.player.position.z-hs.z).length()
 		var want: float = DB.CONFIG.player.speed / 3.0 * (hop.carry if on else 1.0)
 		check(absf(hm - want) < 0.1, "combat hop %s carries %.2f m in 1/3 s (want %.2f)" % [on, hm, want])
-	game.settings.set_value("combatHop", true)
+	game.settings.set_value("combatMove", "Hop")
 	_reset()
 	_key(KEY_W, true)
 	_key(KEY_SPACE, true)
@@ -156,6 +156,48 @@ func _run() -> void:
 	_key(KEY_SPACE, true)
 	_tick()
 	check(game.player.hop_dir == Vector3.ZERO, "out of combat the hop is plain (combatOnly)")
+	# dodge roll (experiment): the other Combat move
+	var roll: Dictionary = DB.CONFIG.player.roll
+	game.settings.set_value("combatMove", "Roll")
+	game.targeting.attacking = true
+	_reset()
+	game.player.roll_cd = 0.0
+	game.player.facing = 0.0
+	_key(KEY_D, true)
+	_key(KEY_SPACE, true)
+	var rs: Vector3 = game.player.position
+	_tick()
+	check(game.player.roll != null and not game.player.rig.airborne, "in a fight Space rolls instead of jumping")
+	check(not game.player.try_strike(null) and not game.spells.try_cast(DB.spells.keys()[0]), "no swing or spell mid-roll")
+	for i in 40: _tick()
+	var rm := Vector2(game.player.position.x-rs.x, game.player.position.z-rs.z).length()
+	check(game.player.roll == null, "the roll ends")
+	check(rm > roll.distance - 0.3, "the roll carries about %.1f m (moved %.2f)" % [roll.distance, rm])
+	_key(KEY_D, false)
+	_key(KEY_SPACE, false)
+	_tick()
+	_key(KEY_SPACE, true)
+	_tick()
+	check(game.player.roll == null and game.player.rig.airborne, "a roll inside its cooldown is a plain jump")
+	_reset()
+	for i in 50: _tick()
+	game.player.roll_cd = 0.0
+	var f0: float = game.player.facing
+	rs = game.player.position
+	_key(KEY_SPACE, true)
+	_tick()
+	_key(KEY_SPACE, false)
+	for i in 40: _tick()
+	var back := Vector3(-sin(f0), 0, -cos(f0))
+	check((game.player.position - rs).dot(back) > roll.distance - 0.3, "standing still you roll backwards")
+	game.targeting.attacking = false
+	_reset()
+	for i in 50: _tick()
+	game.player.roll_cd = 0.0
+	_key(KEY_SPACE, true)
+	_tick()
+	check(game.player.roll == null, "out of combat Space is a plain jump (combatOnly)")
+	game.settings.set_value("combatMove", "Roll")
 	_reset()
 	game.player.set_sitting(true)
 	_key(KEY_SPACE, true)

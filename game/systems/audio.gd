@@ -366,6 +366,7 @@ func _bind() -> void:
 		set_dead(true))
 	ev.on("playerRevived", func(_e): set_dead(false))
 	ev.on("playerLunge", func(_e): sfx("lunge"))
+	ev.on("playerRolled", func(_e): sfx("lunge"))
 	ev.on("graveSlam", func(_e):
 		thud(60, 0.6)
 		shield_break())
