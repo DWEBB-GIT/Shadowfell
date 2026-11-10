@@ -7,6 +7,8 @@ extends Control
 ##   crit   amber, "!"           block  grey "Block"     heal  green "+n"
 ##   miss   grey "Miss", your blow that missed
 ##   xp     purple "+n XP", over a fallen enemy
+##   skill  gold "+n Fishing" with the skill's icon, over your head (a
+##          level gained reads "Fishing 24"), RuneScape's XP drops
 ## Each number is sized against your usual white hit: bigger than usual
 ## reads bigger. Crits stay longer, and a crit of twice your usual hit or
 ## more pulses once as it lands. Tuning in CONFIG.damageNumbers.
@@ -15,7 +17,7 @@ const MAX := 40
 const COLOURS := {
 	"dealt": Color("e6dcc4"), "taken": Color("c8524a"), "crit": Color("e8a84a"), "big": Color("ffc25a"),
 	"takenCrit": Color("e0603c"), "block": Color("a8a8a0"), "miss": Color("a8a8a0"), "heal": Color("8cbf78"),
-	"xp": Color("b77cff"), "ability": Color("f4dc6a"),
+	"xp": Color("b77cff"), "ability": Color("f4dc6a"), "skill": Color("e0c27a"), "skillUp": Color("ffd75a"),
 }
 
 var game
@@ -28,6 +30,43 @@ func _init(g) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	game.events.on("damageNumber", add)
 	game.events.on("xpGained", func(e): add({"target": e.target, "amount": e.amount, "kind": "xp"}))
+	game.events.on("skillXp", _skill_drop)
+
+
+## "+15 Fishing" (and "Fishing 24" on a level) rising over the player
+func _skill_drop(e: Dictionary) -> void:
+	var player = game.player
+	if player == null:
+		return
+	var d: Dictionary = DB.skills.get(e.id, {})
+	var levelled: bool = int(e.get("levels", 0)) > 0
+	if int(e.get("amount", 0)) <= 0 and not levelled:
+		return
+	var t: Dictionary = DB.CONFIG.damageNumbers
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tex: Texture2D = game.hud.icons.profession(e.id) if game.hud else null
+	if tex:
+		var pic := TextureRect.new()
+		pic.texture = tex
+		pic.custom_minimum_size = Vector2(22, 22)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(pic)
+	var l := Label.new()
+	l.text = "%s %d!" % [d.get("name", e.id), int(e.level)] if levelled else "+%d %s" % [int(e.amount), d.get("name", e.id)]
+	l.add_theme_font_size_override("font_size", roundi(t.font * (1.0 if levelled else 0.8)))
+	l.add_theme_color_override("font_color", COLOURS.skillUp if levelled else COLOURS.skill)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 4)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(l)
+	add_child(row)
+	items.append({"label": row, "pos": player.position + Vector3(0, 2.2, 0), "t": 0.0, "dx": 0, "clearance": 10.0, "crit": false, "pulse": false, "life": t.critLife if levelled else t.life})
+	while items.size() > MAX:
+		items.pop_front().label.queue_free()
 
 
 ## how big a number is against the usual hit (1 = the base font)
@@ -133,7 +172,7 @@ func update(dt: float) -> void:
 			items.remove_at(i)
 			continue
 		var k: float = n.t / n.life
-		var l: Label = n.label
+		var l: Control = n.label
 		l.visible = not cam.is_position_behind(n.pos)
 		if not l.visible:
 			continue

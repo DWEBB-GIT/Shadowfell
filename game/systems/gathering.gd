@@ -2,8 +2,11 @@ class_name Gathering
 extends RefCounted
 ## Gathering nodes (data/professions/nodes.json): herb patches now, and whatever else is
 ## picked off the land later (Woodcutting's trees, say). A node kind needs
-## its skill at its level; one gather gives its yield, maybe a rare bonus,
-## and skill experience by the colour of the task (Skills.gain).
+## its skill at its level. A patch holds a few picks (tuning `picks`, or the
+## kind's own): one click keeps picking until it is bare, your bags are full
+## or you have been idle CONFIG.afk.idleStop seconds (semi-AFK, Dan
+## 2026-11-10). Each pick gives its yield and skill experience by the colour
+## of the task (Skills.gain); the last may hold a rare bonus.
 ##
 ## Patches move, as Mining's veins do: each group has a few live nodes among
 ## its spots, and a picked node goes bare until another spot in the group
@@ -11,7 +14,7 @@ extends RefCounted
 ## shared world); the screen draws only what is near.
 
 var game
-var nodes: Array = [] ## { group, i, x, z, node, mats, kind, seed }
+var nodes: Array = [] ## { group, i, x, z, node, mats, kind, picks, seed }
 var regrow: Array = [] ## { group, was, at }
 var picking = null ## { n, t, total, from }
 
@@ -46,7 +49,7 @@ func _build() -> void:
 			node.visible = false
 			game.world.stream.add_view(node, game.scene, p[0], p[1])
 			# the plant itself is made when a kind grows here (_paint)
-			nodes.append({"group": g, "i": i, "x": float(p[0]), "z": float(p[1]), "node": node, "mats": [], "model": "", "kind": "", "seed": randf() * 6})
+			nodes.append({"group": g, "i": i, "x": float(p[0]), "z": float(p[1]), "node": node, "mats": [], "model": "", "kind": "", "picks": 0, "seed": randf() * 6})
 	# a station that names a model (an alchemy bench) stands where it is
 	for st in Layout.stations:
 		if st.has("model"):
@@ -88,6 +91,8 @@ func _grow(g: Dictionary, not_this = null) -> void:
 		if pick < 0:
 			n.kind = k.kind
 			break
+	var pr: Array = kind_def(n.kind).get("picks", tuning().get("picks", [1, 1]))
+	n.picks = int(pr[0]) + int(rand.call() * (int(pr[-1]) - int(pr[0]) + 1))
 	_paint(n)
 
 
@@ -195,7 +200,7 @@ var bar:
 	get:
 		if picking == null:
 			return null
-		return {"t": picking.t, "total": picking.total, "name": "Picking %s" % kind_def(picking.n.kind).get("name", "").to_lower()}
+		return {"t": picking.t, "total": picking.total, "name": "Picking %s (%d)" % [kind_def(picking.n.kind).get("name", "").to_lower(), maxi(1, int(picking.n.get("picks", 1)))]}
 
 
 func update(dt: float, time: float) -> void:
@@ -216,6 +221,12 @@ func update(dt: float, time: float) -> void:
 		return
 	picking = null
 	_pick(p.n, time)
+	# a patch with picks left: keep picking while you stand there
+	if p.n.kind != "" and not player.dead:
+		if game.input != null and game.input.idle_seconds() >= float(DB.CONFIG.afk.idleStop):
+			game.events.emit("log", {"text": "You have been idle a long while and stop picking.", "kind": "muted"})
+		else:
+			start(p.n)
 
 
 ## One gather: the yield, maybe more (Green Thumb) and a rare bonus; the
@@ -230,8 +241,10 @@ func _pick(n: Dictionary, time: float) -> void:
 	if rand.call() < skills.perk(sk, "extraHerb"):
 		count += 1
 	var got := [{"id": y.item, "count": count}]
+	n.picks = int(n.get("picks", 1)) - 1
+	var last: bool = n.picks <= 0
 	var bonus = k.get("bonus")
-	if bonus != null and rand.call() < float(bonus.chance) * maxf(1.0, skills.perk(sk, "bonusChance")):
+	if last and bonus != null and rand.call() < float(bonus.chance) * maxf(1.0, skills.perk(sk, "bonusChance")):
 		got.append({"id": bonus.item, "count": 1})
 		game.events.emit("log", {"text": "Something rare among the leaves: %s." % Items.get_def(bonus.item).name.to_lower(), "kind": "loot", "rarity": Items.get_def(bonus.item).get("rarity", "rare")})
 	for g in got:
@@ -242,6 +255,8 @@ func _pick(n: Dictionary, time: float) -> void:
 		game.player.heal(game.player.max_health * heal / 100.0)
 	skills.gain(sk, skills.colour_for(sk, int(k.get("level", 1))))
 	game.events.emit("gathered", {"kind": n.kind, "items": got})
+	if not last:
+		return
 	n.kind = ""
 	_paint(n)
 	var rs: Array = n.group.get("respawn", [60, 120])

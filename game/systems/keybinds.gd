@@ -43,7 +43,7 @@ const KEY_ACTIONS := [
 	{"id": "settings", "label": "Main menu", "group": "Menus", "keys": ["KeyO"]},
 	{"id": "bags", "label": "Bags", "group": "Menus", "keys": ["KeyB", "KeyI"]},
 	{"id": "toolbelt", "label": "Tool belt", "group": "Menus", "keys": ["KeyT"]},
-	{"id": "skills", "label": "Professions", "group": "Menus", "keys": ["KeyU"]},
+	{"id": "skills", "label": "Skills", "group": "Menus", "keys": ["KeyU"]},
 	{"id": "save", "label": "Save the game", "group": "Menus", "keys": ["KeyK"]},
 ]
 ## keys nobody may take: movement, Escape and the mouse

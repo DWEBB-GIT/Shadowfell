@@ -14,6 +14,9 @@ var xp := {} ## laddered skill id -> skill experience towards the next level
 var tiers := {} ## laddered skill id -> trainer rank reached (0 Novice, 1 Apprentice, ...)
 var perks := {} ## laddered skill id -> { "10": perk id, ... }
 var capped_told := {} ## skills already told they are at their rank's cap (this session)
+var tracked := "" ## the skill pinned to the HUD's experience tracker ("" for none)
+var keep_fishing := false ## Keep fishing (semi-AFK): recast after each catch
+var recent := {} ## skill id -> [[msec, xp], ...] this session, for the tracker's xp per hour
 var spells: Array = [] ## class spells learned from a trainer
 var pending_core_bar: Array = []
 var all_spells := false ## a test hook: every class spell
@@ -30,6 +33,9 @@ func reset() -> void:
 	tiers = {}
 	perks = {}
 	capped_told = {}
+	tracked = ""
+	keep_fishing = false
+	recent = {}
 	spells = []
 	pending_core_bar.clear()
 
@@ -238,7 +244,7 @@ func _add_skill(id: String) -> bool:
 		if free >= 0:
 			game.action_bar.place(ab, free)
 	var names := " and ".join(s.get("teaches", []).map(func(ab): return DB.abilities[ab].name))
-	events.emit("log", {"text": "You learn %s.%s" % [s.name, " %s is under Professions (U)." % names if names != "" else ""], "kind": "level"})
+	events.emit("log", {"text": "You learn %s.%s" % [s.name, " %s is under Skills (U)." % names if names != "" else ""], "kind": "level"})
 	if game.hud:
 		game.hud.toast("Learned: %s" % s.name)
 	events.emit("skillsChanged", {"id": id})
@@ -255,6 +261,8 @@ func raise(id: String) -> bool:
 		return false
 	ranks[id] = rank(id) + 1
 	game.events.emit("log", {"text": "Your skill in %s rises to %d." % [s.name, rank(id)], "kind": "level"})
+	game.events.emit("skillXp", {"id": id, "amount": 0, "level": rank(id), "levels": 1})
+	_milestone(id)
 	game.events.emit("skillsChanged", {"id": id})
 	return true
 
@@ -303,8 +311,9 @@ func colour_for(id: String, need: int) -> String:
 	return "orange" if over < b[0] else "yellow" if over < b[1] else "green" if over < b[2] else "grey"
 
 
-## Skill experience for a task of this colour. Returns the levels gained.
-func gain(id: String, colour: String) -> int:
+## Skill experience for a task of this colour, times `mult` (a semi-AFK
+## catch earns CONFIG.afk.xpMult of it). Returns the levels gained.
+func gain(id: String, colour: String, mult := 1.0) -> int:
 	var s = DB.skills.get(id)
 	if s == null or not has(id):
 		return 0
@@ -313,6 +322,7 @@ func gain(id: String, colour: String) -> int:
 	var amount := int(ladder().get("actionXp", {}).get(colour, 0))
 	if amount <= 0:
 		return 0
+	amount = maxi(1, int(round(amount * mult)))
 	if rank(id) >= cap(id):
 		_tell_capped(id)
 		return 0
@@ -325,6 +335,9 @@ func gain(id: String, colour: String) -> int:
 		_levelled(id)
 	if rank(id) >= cap(id):
 		xp[id] = 0
+	_note_xp(id, amount)
+	# the "+15 Fishing" drop over your head and the HUD tracker (hud.gd)
+	game.events.emit("skillXp", {"id": id, "amount": amount, "level": rank(id), "levels": levels})
 	game.events.emit("skillsChanged", {"id": id})
 	return levels
 
@@ -336,8 +349,9 @@ func _levelled(id: String) -> void:
 	var share: float = ladder().get("charXpShare", 0.0)
 	if share > 0 and game.progression:
 		game.progression.add_xp(int(round(DB.xp_for_next_level(rank(id)) * share)))
+	_milestone(id)
 	if not perk_choices(id).is_empty():
-		events.emit("log", {"text": "A new %s perk is yours to choose. Open Professions (U)." % s.name, "kind": "level"})
+		events.emit("log", {"text": "A new %s perk is yours to choose. Open Skills (U)." % s.name, "kind": "level"})
 		if game.hud:
 			game.hud.toast("%s perk ready" % s.name)
 	if rank(id) >= cap(id):
@@ -452,7 +466,7 @@ func perk(id: String, key: String) -> float:
 
 
 func serialize_ladder() -> Dictionary:
-	return {"xp": xp.duplicate(), "tiers": tiers.duplicate(), "perks": perks.duplicate(true)}
+	return {"xp": xp.duplicate(), "tiers": tiers.duplicate(), "perks": perks.duplicate(true), "tracked": tracked, "keepFishing": keep_fishing}
 
 
 ## After apply(): the ladder's state. An old save (ranks to 50, no tiers)
@@ -460,6 +474,9 @@ func serialize_ladder() -> Dictionary:
 func apply_ladder(data) -> void:
 	var d: Dictionary = data if typeof(data) == TYPE_DICTIONARY else {}
 	var rs: Array = ladder().get("ranks", [])
+	var tr = d.get("tracked", "")
+	tracked = tr if typeof(tr) == TYPE_STRING and has(tr) else ""
+	keep_fishing = d.get("keepFishing", false) == true
 	for id in ranks.keys():
 		if not laddered(id):
 			continue
@@ -503,3 +520,114 @@ func apply(data) -> void:
 		var r = data[id]
 		if DB.skills.has(id) and (typeof(r) == TYPE_INT or (typeof(r) == TYPE_FLOAT and r == floor(r))) and r >= 1:
 			ranks[id] = mini(int(r), int(DB.skills[id].get("maxRank", 60 if DB.skills[id].has("train") else 1)))
+
+
+# ------------------------------------------------------------ the Skills window
+## The Skills window (U, Dan 2026-11-10: RuneScape-style tiles, a WoW-style
+## list of what each level unlocks, a total level, and a pinned tracker).
+
+## a skill that has levels (the ladder, or a maxRank that rises with use)
+func ranked(id: String) -> bool:
+	return laddered(id) or DB.skills.get(id, {}).has("maxRank")
+
+
+## every learned skill's level added up (a skill with no levels counts 1)
+func total_level() -> int:
+	var n := 0
+	for id in ranks:
+		n += rank(id) if ranked(id) else 1
+	return n
+
+
+## the most a skill can ever reach: the ladder's top, or its maxRank
+func top(id: String) -> int:
+	if laddered(id):
+		var rs: Array = ladder().get("ranks", [])
+		return int(rs[-1].cap) if not rs.is_empty() else 60
+	return int(DB.skills.get(id, {}).get("maxRank", 1))
+
+
+func _note_xp(id: String, amount: int) -> void:
+	var now := Time.get_ticks_msec()
+	var list: Array = recent.get(id, [])
+	list.append([now, amount])
+	# ten minutes is enough for a rate
+	while not list.is_empty() and now - int(list[0][0]) > 600000:
+		list.pop_front()
+	recent[id] = list
+
+
+## skill experience per hour over the last few minutes (0 with too little to go on)
+func xp_rate(id: String) -> float:
+	var list: Array = recent.get(id, [])
+	if list.size() < 2:
+		return 0.0
+	var now := Time.get_ticks_msec()
+	var span := maxf(60.0, (now - int(list[0][0])) / 1000.0)
+	var total := 0
+	for e in list:
+		total += int(e[1])
+	return total * 3600.0 / span
+
+
+## Every tenth level, and the top, is a moment (the centred banner).
+func _milestone(id: String) -> void:
+	var lvl := rank(id)
+	if lvl % 10 == 0 or lvl == top(id):
+		game.events.emit("skillMilestone", {"id": id, "level": lvl})
+
+
+## What a skill unlocks, level by level, from the data (WoW's recipe list):
+## [{ level, text, kind }], lowest first. Kinds: recipe, gather, catch,
+## water, tool, perk, rank, note. No place names: where to train is for the
+## player to find (Dan, 2026-11-10). skills.json `unlocks` adds lines the
+## data cannot say ([{ level, text }]).
+func unlocks(id: String) -> Array:
+	var out := []
+	var d: Dictionary = DB.skills.get(id, {})
+	var most := top(id)
+	var add := func(level: int, text: String, kind: String) -> void:
+		if level <= most:
+			out.append({"level": maxi(1, level), "text": text, "kind": kind})
+	for r in DB.recipes.values():
+		if r.get("skill") == id:
+			var out_def: Dictionary = Items.get_def(r.output.item)
+			add.call(int(r.get("rank", 1)), out_def.get("name", r.output.item), "recipe")
+	for k in DB.nodes.get("nodeKinds", []):
+		if k.get("skill", "herbalism") == id:
+			add.call(int(k.get("level", 1)), k.name, "gather")
+	if id == "mining":
+		for r in DB.mining.get("rocks", []):
+			add.call(int(r.get("rank", 1)), r.name, "gather")
+	if id == "fishing":
+		var seen := {}
+		var deep := {}
+		for w in Layout.water:
+			var fl := int(w.get("fishLevel", 1))
+			if fl > 1:
+				deep[fl] = true
+			var t: Dictionary = DB.loot_tables.get(w.get("fishTable", ""), {})
+			for tier in t.get("drops", {}).get("items", {}).values():
+				for e in tier:
+					var req := int(e.get("reqSkill", 0))
+					var item: String = e.get("item", e.get("id", ""))
+					if req > 0 and item != "" and not seen.has(item):
+						seen[item] = true
+						add.call(req, Items.get_def(item).get("name", item), "catch")
+		for fl in deep:
+			add.call(int(fl), "Deeper waters bite for you", "water")
+	var key := id + "Skill"
+	for item in DB.items:
+		var it: Dictionary = DB.items[item]
+		if it.has(key) and it.has("reqSkill"):
+			add.call(int(it.reqSkill), "%s (+%d)" % [it.get("name", item), int(it[key])], "tool")
+	for p in d.get("perks", []):
+		add.call(int(p.level), "Perk: %s" % " or ".join(p.choices.map(func(c): return c.name)), "perk")
+	if laddered(id):
+		var rs: Array = ladder().get("ranks", [])
+		for i in rs.size() - 1:
+			add.call(int(rs[i].cap), "Rank limit: a trainer makes you %s" % rs[i + 1].name, "rank")
+	for u in d.get("unlocks", []):
+		add.call(int(u.get("level", 1)), str(u.get("text", "")), "note")
+	out.sort_custom(func(a, b): return a.level < b.level if a.level != b.level else a.kind < b.kind)
+	return out

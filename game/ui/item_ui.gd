@@ -1,6 +1,6 @@
 class_name ItemUI
 extends Control
-## Bags, the character panel, the spellbook, Professions, Settings, Talents,
+## Bags, the character panel, the spellbook, Skills, Settings, Talents,
 ## Cooking, the shop, the tooltip, and the bag slots and spell bar on the
 ## bottom bar (src/ui/itemUI.js). None of these pause the game.
 ##
@@ -158,7 +158,7 @@ func _build() -> void:
 	# Own the preview even if this character panel is never opened.
 	character.main.add_child(preview)
 	spellbook = UI.window(self, "Spells", 500, func(): close("spellbook"))
-	skills_win = UI.window(self, "Professions", 420, func(): close("skills"))
+	skills_win = UI.window(self, "Skills", 620, func(): close("skills"))
 	# both scroll once they outgrow the screen, with a line of help under
 	for w in [spellbook, skills_win]:
 		w.title.size_flags_horizontal = Control.SIZE_FILL
@@ -1349,6 +1349,8 @@ func _render_cooking() -> void:
 		UI.set_rich(txt, "[font_size=13][color=%s]%s%s%s[/color][/font_size]\n%s" % [UI.hex(RECIPE_COLOUR.get(ck.colour(r), UI.TEXT)), UI.esc(out.name), " ×%d" % r.output.count if r.output.count > 1 else "", " [%d]" % n if n else "", ", ".join(need)])
 		var id: String = r.id
 		UI.button(row, craft.get("button", "Make"), func(): game.cooking.start(id, 1)).disabled = not ok
+		# Make X (RuneScape): 5 at a go, or all you have the makings of
+		UI.button(row, "×5", func(): game.cooking.start(id, 5)).disabled = not (ok and n > 1)
 		UI.button(row, "All", func(): game.cooking.start(id, 1 << 30)).disabled = not (ok and n > 1)
 		UI.rule(w.body, Color("2a2218"))
 
@@ -1412,8 +1414,16 @@ func _render_settings() -> void:
 	hud.keybind_ui.render()
 
 
-## Professions (U), apart from the spellbook (Dan, 2026-10-16): each
-## profession with its rank, and its abilities to drag onto the bar
+## Skills (U; Professions until Dan 2026-11-10), apart from the spellbook.
+## RuneScape style: a tile per skill on the left (level / rank cap, a thin
+## bar to the next level), your character level as the Combat row and the
+## total level under them; on the right the picked skill, with a WoW-style
+## list of what each level unlocks that scrolls on its own. Skills not yet
+## learned stay as "?" tiles: what and where is for the player to find.
+var skill_pick := "" ## the skill shown on the right ("combat" for the character)
+const SKILL_TILE := Vector2(76, 40)
+
+
 func _render_skills() -> void:
 	var w := skills_win
 	w.panel.visible = open.skills
@@ -1421,74 +1431,241 @@ func _render_skills() -> void:
 		return
 	UI.clear(w.inner)
 	var sk = game.skills
-	# only what you have learned: the rest are yours to discover (Dan, 2026-10-27)
 	var learned := DB.skills.values().filter(func(d): return sk.has(d.id))
-	w.sub.text = "%d learned" % learned.size() if not learned.is_empty() else ""
-	if learned.is_empty():
-		UI.wrapped(UI.label(w.inner, "You have no professions yet. Folk who practise a craft may teach you theirs.", 13, UI.TEXT_DIM))
+	var unknown := DB.skills.size() - learned.size()
+	w.sub.text = "%d learned%s" % [learned.size(), " · %d to discover" % unknown if unknown > 0 else ""]
+	if skill_pick == "" or (skill_pick != "combat" and not sk.has(skill_pick)):
+		skill_pick = sk.tracked if sk.tracked != "" else (learned[0].id if not learned.is_empty() else "combat")
+	var h := UI.hbox(w.inner, 10)
+	var left := UI.vbox(h, 5)
+	left.custom_minimum_size.x = SKILL_TILE.x * 3 + 10
+	_combat_tile(left)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
+	left.add_child(grid)
 	for d in learned:
-		_prof_row(w.inner, d)
-	w.foot.text = "Professions are learned from trainers and rise as you use them. Drag an ability onto your bar."
+		_skill_tile(grid, d)
+	for i in unknown:
+		_skill_tile(grid, {})
+	var total := UI.hbox(left, 6)
+	UI.label(total, "Total level", 12, UI.TEXT_DIM).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(total, str(sk.total_level() + game.progression.level), 14, UI.GOLD)
+	tip_on(total, "Every skill's level added up, with your character level.", "Total level")
+	var right := UI.vbox(h, 4)
+	right.custom_minimum_size.x = 330
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if skill_pick == "combat":
+		_combat_detail(right)
+	else:
+		_skill_detail(right, DB.skills[skill_pick])
+	w.foot.text = "Skills rise as you use them. Folk across the world teach the ones you do not know yet. Drag an ability onto your bar."
 
 
-## a small heading over a group of rows
-func _section(parent: Node, text: String) -> void:
-	var l := UI.label(parent, text, 10, UI.GOLD)
-	l.modulate.a = 0.8
+## a tile's frame: gold when it is the one shown
+func _tile_box(c: Control, picked: bool) -> void:
+	c.add_theme_stylebox_override("panel", UI.box(Color("120e09"), UI.GOLD if picked else UI.BORDER_DIM, 0, 1, Vector4(6, 4, 6, 4)))
 
 
-func _prof_row(parent: Node, d: Dictionary) -> void:
-	var sk = game.skills
-	var known: bool = sk.has(d.id)
-	var ladder: bool = sk.laddered(d.id)
-	var ranked: bool = ladder or d.get("maxRank")
-	var mx: int = sk.cap(d.id) if known else int(d.get("maxRank", 60))
-	var bonus: int = sk.tool_bonus(d.id) if known and ranked else 0
-	var level := ("%d%s / %d" % [sk.rank(d.id), "+%d" % bonus if bonus else "", mx] if ranked else "Learned") if known else "Not learned"
-	var row := UI.panel(parent, 0, Color("1a150f"), UI.BORDER_DIM)
-	row.add_theme_stylebox_override("panel", UI.box(Color("1a150f"), UI.BORDER_DIM, 0, 1, Vector4(8, 6, 8, 6)))
-	row.modulate.a = 1.0 if known else 0.55
-	var h := UI.hbox(row, 10)
-	# the icon, or an empty square of its size so the rows line up
+func _pick_on(c: Control, id: String) -> void:
+	c.mouse_filter = Control.MOUSE_FILTER_STOP
+	c.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	c.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			skill_pick = id
+			_after_change("skills"))
+
+
+func _tile_icon(parent: Node, tex: Texture2D, px := 26) -> void:
 	var pic := TextureRect.new()
-	pic.texture = icons.profession(d.id)
-	pic.custom_minimum_size = Vector2(36, 36)
+	pic.texture = tex
+	pic.custom_minimum_size = Vector2(px, px)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	h.add_child(pic)
-	var body := UI.vbox(h, 3)
-	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var top := UI.hbox(body, 6)
-	UI.label(top, "%s %s" % [sk.rank_name(d.id), d.name] if known and ladder else d.name, 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	if bonus:
-		var rl := RichTextLabel.new()
-		rl.bbcode_enabled = true
-		rl.fit_content = true
-		rl.autowrap_mode = TextServer.AUTOWRAP_OFF
-		rl.scroll_active = false
-		rl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		rl.add_theme_font_size_override("normal_font_size", 15)
-		rl.text = "[color=#f0d070]%d[/color][color=#5fd35f]+%d[/color][color=#f0d070] / %d[/color]" % [sk.rank(d.id), bonus, mx]
-		top.add_child(rl)
+	parent.add_child(pic)
+
+
+## level text: "23 /30", a tool's bonus in green
+func _level_text(parent: Node, lvl: int, mx: int, bonus: int, size := 14) -> void:
+	var rl := RichTextLabel.new()
+	rl.bbcode_enabled = true
+	rl.fit_content = true
+	rl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	rl.scroll_active = false
+	rl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rl.add_theme_font_size_override("normal_font_size", size)
+	rl.text = "[color=#f0d070]%d[/color]%s[color=#8a7a5e][font_size=%d] /%d[/font_size][/color]" % [lvl, "[color=#5fd35f]+%d[/color]" % bonus if bonus else "", maxi(9, size - 4), mx]
+	parent.add_child(rl)
+
+
+func _combat_tile(parent: Node) -> void:
+	var pr = game.progression
+	var row := PanelContainer.new()
+	parent.add_child(row)
+	_tile_box(row, skill_pick == "combat")
+	var v := UI.vbox(row, 2)
+	var top := UI.hbox(v, 6)
+	_tile_icon(top, Icons.art("ui", "foe_melee"), 22)
+	UI.label(top, "Combat", 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_level_text(top, pr.level, int(DB.CONFIG.progression.maxLevel), 0)
+	_skill_bar(v, float(pr.xp) / maxf(1, pr.xp_to_next), SKILL_TILE.x * 3 - 4)
+	_pick_on(row, "combat")
+	tip_on(row, "Your character level: fighting, quests and every skill's level-ups raise it.", "Combat")
+
+
+func _skill_tile(parent: Node, d: Dictionary) -> void:
+	var sk = game.skills
+	var tile := PanelContainer.new()
+	tile.custom_minimum_size = SKILL_TILE
+	parent.add_child(tile)
+	if d.is_empty():
+		_tile_box(tile, false)
+		tile.modulate.a = 0.35
+		var q := UI.label(tile, "?", 18, UI.TEXT_DIM)
+		q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tip_on(tile, "A skill you have not found yet. Someone out there practises it.", "Undiscovered")
+		return
+	var id: String = d.id
+	_tile_box(tile, skill_pick == id)
+	var v := UI.vbox(tile, 2)
+	var top := UI.hbox(v, 4)
+	_tile_icon(top, icons.profession(id))
+	if sk.ranked(id):
+		_level_text(top, sk.rank(id), sk.cap(id), sk.tool_bonus(id))
 	else:
-		UI.label(top, level, 15 if known else 12, Color("f0d070") if known else UI.TEXT_DIM)
-	_skill_bar(body, float(sk.rank(d.id)) / mx if known else 0.0, 90, float(bonus) / mx)
-	if known and ladder:
-		_ladder_lines(body, d)
-	var abil := UI.hbox(h, 4)
-	if known:
-		for a in d.get("teaches", []):
-			if ActionBar.bar_ability(game, a):
-				_spell_slot(abil, a, 36)
-		if d.id == "cooking":
-			UI.button(abil, "Cookbook", func(): show_window("cooking"))
-		if d.id == "mining":
-			UI.button(abil, "Smelting", func(): show_window("smelting"))
-		elif d.id != "cooking" and d.has("craft"):
-			UI.button(abil, d.craft.get("window", "Craft"), func(): show_window("craft:" + d.id))
-	tip_on(row, d.get("desc", ""), d.name)
+		UI.label(top, "✓", 14, UI.GOLD)
+	var k := 1.0
+	if sk.laddered(id):
+		k = 1.0 if sk.rank(id) >= sk.cap(id) else float(sk.xp.get(id, 0)) / Skills.xp_needed(sk.rank(id))
+	elif sk.ranked(id):
+		k = float(sk.rank(id)) / sk.cap(id)
+	_skill_bar(v, k, SKILL_TILE.x - 14)
+	_pick_on(tile, id)
+	tip_on(tile, d.get("desc", ""), d.name)
+
+
+## The picked skill: its name, rank and level, experience to the next
+## level (and per hour while you work at it), perks, its abilities and
+## buttons, then what it unlocks.
+func _skill_detail(parent: Node, d: Dictionary) -> void:
+	var sk = game.skills
+	var id: String = d.id
+	var head := UI.hbox(parent, 8)
+	_tile_icon(head, icons.profession(id), 40)
+	var names := UI.vbox(head, 0)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(names, d.name, 17, Color("f0e4c8"))
+	if sk.laddered(id):
+		UI.label(names, sk.rank_name(id), 12, UI.GOLD)
+	if sk.ranked(id):
+		_level_text(head, sk.rank(id), sk.cap(id), sk.tool_bonus(id), 22)
+	if sk.laddered(id):
+		var lvl: int = sk.rank(id)
+		var capped: bool = lvl >= sk.cap(id)
+		_skill_bar(parent, 1.0 if capped else float(sk.xp.get(id, 0)) / Skills.xp_needed(lvl), 330)
+		var nums := UI.hbox(parent, 6)
+		var need := "At the %s's limit" % sk.rank_name(id) if capped else "%d / %d xp to level %d" % [int(sk.xp.get(id, 0)), Skills.xp_needed(lvl), lvl + 1]
+		UI.label(nums, need, 11, UI.TEXT_DIM).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var rate: float = sk.xp_rate(id)
+		if rate > 0 and not capped:
+			UI.label(nums, "%s xp/hr" % U.n(roundi(rate)), 11, UI.TEXT_DIM)
+		_ladder_lines(parent, d)
+	elif sk.ranked(id):
+		_skill_bar(parent, float(sk.rank(id)) / sk.cap(id), 330)
+	# abilities to drag, the crafting windows, the tracker and Keep fishing
+	var row := UI.hbox(parent, 4)
+	for a in d.get("teaches", []):
+		if ActionBar.bar_ability(game, a):
+			_spell_slot(row, a, 34)
+	if id == "cooking":
+		UI.button(row, "Cookbook", func(): show_window("cooking"))
+	elif id == "mining":
+		UI.button(row, "Smelting", func(): show_window("smelting"))
+	elif d.has("craft"):
+		UI.button(row, d.craft.get("window", "Craft"), func(): show_window("craft:" + id))
+	if sk.ranked(id):
+		var tracked: bool = sk.tracked == id
+		var tb = UI.button(row, "Untrack" if tracked else "Track", func():
+			sk.tracked = "" if sk.tracked == id else id
+			_after_change("skills"))
+		tip_on(tb, "Show this skill's experience on the HUD, under the objectives.", "Track on the HUD")
+	if id == "fishing":
+		var kb = UI.button(row, "Keep fishing: %s" % ("on" if sk.keep_fishing else "off"), func():
+			sk.keep_fishing = not sk.keep_fishing
+			if not sk.keep_fishing and game.fishing:
+				game.fishing.again = null
+			_after_change("skills"))
+		tip_on(kb, "Cast again by yourself after each catch. A bite you do not strike still hooks now and then, for less experience and never a rare fish. Moving, a blow or a long idle stops it.", "Keep fishing")
+	_unlock_list(parent, id)
+
+
+## WoW's profession list: what each level brings, in its own scroll.
+## Done lines are dimmed, the next one is green, those past your rank's
+## limit wait in grey.
+func _unlock_list(parent: Node, id: String) -> void:
+	var sk = game.skills
+	var list: Array = sk.unlocks(id)
+	if list.is_empty():
+		return
+	UI.gap(parent, 4)
+	var hd := UI.label(parent, "UNLOCKS", 10, UI.GOLD)
+	hd.modulate.a = 0.85
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.custom_minimum_size = Vector2(330, 180)
+	sc.add_theme_stylebox_override("panel", UI.box(Color("0f0c08"), UI.BORDER_DIM, 4))
+	parent.add_child(sc)
+	var box := UI.vbox(sc, 1)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var lvl: int = sk.rank(id)
+	var next_marked := false
+	var first_next := -1
+	var next_row: Control = null
+	for i in list.size():
+		var u: Dictionary = list[i]
+		var line := UI.hbox(box, 8)
+		var done: bool = u.level <= lvl
+		var next := false
+		if not done and not next_marked:
+			next_marked = true
+			first_next = u.level
+		if not done and u.level == first_next:
+			next = true
+			if next_row == null:
+				next_row = line
+		var beyond: bool = not done and u.level > sk.cap(id)
+		var colour := Color("7c6d55") if beyond else Color("8cd36a") if next else UI.TEXT_DIM if done else Color("e6dcc4")
+		var lv := UI.label(line, str(u.level), 12, colour)
+		lv.custom_minimum_size.x = 26
+		lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		lv.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		var tx := UI.label(line, ("✓ " if done else "") + u.text, 12, colour)
+		tx.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tx.custom_minimum_size.x = 260
+	# open on what is next rather than what you already have: two done
+	# lines above it, once the list is laid out
+	if next_row != null:
+		box.sort_children.connect(func(): sc.scroll_vertical = maxi(0, int(next_row.position.y) - 38), CONNECT_ONE_SHOT)
+
+
+## Combat on the right: your character level and experience.
+func _combat_detail(parent: Node) -> void:
+	var pr = game.progression
+	var head := UI.hbox(parent, 8)
+	_tile_icon(head, Icons.art("ui", "foe_melee"), 40)
+	var names := UI.vbox(head, 0)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UI.label(names, "Combat", 17, Color("f0e4c8"))
+	UI.label(names, "Character level", 12, UI.GOLD)
+	_level_text(head, pr.level, int(DB.CONFIG.progression.maxLevel), 0, 22)
+	_skill_bar(parent, float(pr.xp) / maxf(1, pr.xp_to_next), 330)
+	UI.label(parent, "%s / %s experience to level %d" % [U.n(pr.xp), U.n(pr.xp_to_next), pr.level + 1], 11, UI.TEXT_DIM)
+	UI.wrapped(UI.label(parent, "Your level is your power in a fight. Kills, quests and every skill's level-ups all add to it.", 12, UI.TEXT_DIM))
 
 
 ## A laddered profession's extra lines: skill experience to the next level,
@@ -1498,9 +1675,7 @@ func _ladder_lines(body: Node, d: Dictionary) -> void:
 	var sk = game.skills
 	var id: String = d.id
 	var lvl: int = sk.rank(id)
-	if lvl < sk.cap(id):
-		UI.label(body, "%d / %d skill experience to level %d" % [int(sk.xp.get(id, 0)), Skills.xp_needed(lvl), lvl + 1], 11, UI.TEXT_DIM)
-	else:
+	if lvl >= sk.cap(id):
 		var nxt: Dictionary = sk.next_rank(id)
 		var text := "At the %s's limit." % sk.rank_name(id)
 		if not nxt.is_empty():
@@ -2344,7 +2519,7 @@ func dropOn(from: String, to, over_bar := false, over_window := false) -> void:
 		elif from.begins_with("a:") and not over_bar:
 			bar.remove(int(from.substr(2))) # dragged off the bar
 			var nm := ActionBar.entry_name(ability)
-			var text := "%s removed from the bar." % nm if ActionBar.item_ref(ability) != null else "%s removed from the bar. Open %s to put it back." % [nm, "Professions (U)" if DB.abilities.get(ability, {}).get("skill") else "the spellbook (P)"]
+			var text := "%s removed from the bar." % nm if ActionBar.item_ref(ability) != null else "%s removed from the bar. Open %s to put it back." % [nm, "Skills (U)" if DB.abilities.get(ability, {}).get("skill") else "the spellbook (P)"]
 			game.events.emit("log", {"text": text, "kind": "muted", "throttle": "bar-removed"})
 		return
 	# the rune forge: dragged out puts it back down; dropped in slots it

@@ -3,7 +3,7 @@ extends SceneTree
 ##   BEHIND=3.5 godot --path . --script res://game/tests/hud_shots.gd -- out_dir x z [class]
 ## (x z: a house's middle; BEHIND: metres past it, away from the camera)
 ## DEMO=1 also fills the party frames, the log tabs, a cast on you and your
-## target, and the level-up banner. PROF=1 opens Professions.
+## target, and the level-up banner. PROF=1 opens Skills.
 
 var frames := 0
 var game
@@ -71,8 +71,15 @@ func _process(_delta: float) -> bool:
 		root.warp_mouse(Vector2(120, 780)) # over the log, to show its band
 		game.hud.show_level_up({"level": 5, "gains": [{"id": "strength", "label": "Strength", "from": 12, "to": 14, "diff": 2}, {"id": "stamina", "label": "Stamina", "from": 11, "to": 12, "diff": 1}, {"id": "maxHealth", "label": "Health", "from": 120, "to": 138, "diff": 18}]})
 	if frames == 60 and OS.get_environment("PROF") != "":
-		game.skills.ranks = {"fishing": 12, "lockpicking": 4, "mining": 7}
+		var sk = game.skills
+		sk.ranks = {"fishing": 23, "herbalism": 17, "alchemy": 9, "cooking": 20, "mining": 12, "skinning": 6, "camping": 1}
+		sk.tiers = {"fishing": 2, "herbalism": 1, "alchemy": 0}
+		sk.xp = {"fishing": 161, "herbalism": 40, "alchemy": 90}
+		sk.tracked = "fishing"
+		var now := Time.get_ticks_msec()
+		sk.recent = {"fishing": [[now - 300000, 50], [now - 100000, 50], [now, 3]]}
 		game.hud.show_window("skills")
+		game.events.emit("skillXp", {"id": "fishing", "amount": 15, "level": 23, "levels": 0})
 	if frames == 88 and OS.get_environment("DEMO") != "":
 		var id = DB.spells.keys()[0]
 		for k in DB.spells:
