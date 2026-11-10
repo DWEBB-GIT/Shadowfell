@@ -106,17 +106,22 @@ func _render_check(minimap: Minimap, args: PackedStringArray) -> void:
 		await process_frame
 	for frame in 5:
 		await process_frame
-	minimap._refresh_overhead(true)
-	await RenderingServer.frame_post_draw
-	var before := minimap.terrain_view.get_texture().get_image()
-	check(not before.is_empty(), "overhead viewport produces a rendered image")
+	game.set_process(false)
+	while minimap._capturing:await process_frame
 	var p: Vector3 = game.player.position
+	var tile:=Vector2i(floori((p.x+12)/Minimap.TILE_M),floori(p.z/Minimap.TILE_M))
+	# Production deliberately keeps each still until that tile is discarded.
+	# Render the same tile explicitly in QA; _refresh_overhead(true) no
+	# longer invalidates cached stills after the performance pass.
+	await minimap._capture(tile)
+	var before:Image=minimap._tiles[tile].get_image()
+	check(not before.is_empty(), "overhead viewport produces a rendered image")
 	var tree := World.prop_instance({"model": "res://assets/environment/nature/trees/CommonTree_1.gltf", "position": [p.x + 12, p.z], "scale": 2})
 	game.world.group.add_child(tree)
-	minimap._refresh_overhead(true)
-	await RenderingServer.frame_post_draw
-	await process_frame
-	var after := minimap.terrain_view.get_texture().get_image()
+	for frame in 4:await process_frame
+	check(minimap._tiles[tile].get_image().get_data()==before.get_data(),"an existing still stays cached when a prop is added")
+	await minimap._capture(tile)
+	var after:Image=minimap._tiles[tile].get_image()
 	if not before.is_empty() and not after.is_empty():
 		var point := minimap.overhead_camera.unproject_position(tree.global_position)
 		var differences := 0
@@ -124,12 +129,11 @@ func _render_check(minimap: Minimap, args: PackedStringArray) -> void:
 			for x in range(maxi(0, int(point.x) - 22), mini(after.get_width(), int(point.x) + 22)):
 				if before.get_pixel(x, y) != after.get_pixel(x, y):
 					differences += 1
-		check(differences > 10, "an actual newly placed nature asset appears in the minimap")
+		check(differences > 10, "an actual placed nature asset appears in a newly captured minimap tile")
 	tree.queue_free()
 	await process_frame
-	minimap._refresh_overhead(true)
-	await RenderingServer.frame_post_draw
-	after = minimap.terrain_view.get_texture().get_image()
+	await minimap._capture(tile)
+	after = minimap._tiles[tile].get_image()
 	if args.size() > 1:
 		var output := args[1]
 		DirAccess.make_dir_recursive_absolute(output)

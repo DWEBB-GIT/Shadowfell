@@ -98,8 +98,8 @@ func _run() -> void:
 	game.targeting.engage(foe)
 	var before:float=game.player.facing
 	tick(0.1,{"shoot":true})
-	check(is_equal_approx(game.player.facing,before),"auto attacks do not rotate the player towards a selected target")
-	check(not game.spells.try_cast("quickShot") and is_equal_approx(game.player.facing,before),"a target behind the facing cone is refused without auto-turn")
+	check(not is_equal_approx(game.player.facing,before),"the latest ranged draw turns towards its selected target")
+	check(game.spells.try_cast("quickShot") and game.player.facing_point(foe.position.x,foe.position.z,1),"the latest ability-facing behavior is retained")
 	clear_combat()
 	game.player.facing=PI/2
 	for i in 14:game.player.update(1.0/60,{"move":{"x":-1.0,"z":0.0}})
@@ -134,7 +134,7 @@ func _run() -> void:
 	check(game.spells.try_cast("longShot") and game.player.casting!=null,"Long Shot starts while facing its target")
 	game.player.facing=PI
 	game.spells.update(0.05)
-	check(game.player.casting==null and is_equal_approx(game.player.facing,PI),"turning away interrupts a ranged cast without turning the player back")
+	check(game.player.casting!=null and game.player.facing_point(foe.position.x,foe.position.z,1),"the latest cast-facing behavior follows its target")
 	clear_combat()
 	for sex in ["male","female"]:
 		var look:=ForgeCharacter.defaults()
@@ -147,7 +147,7 @@ func _run() -> void:
 		game.player.rig.play("strike",0.8,0.4)
 		game.player.rig.play_off(0.8,0.4)
 		game.player.rig.update(0.32,0)
-		check(game.player.rig.last_action_clip=="Sword_Attack" and game.player.rig.last_off_clip=="Dagger_Stab",sex+" sword and off-hand dagger choose independent swing/stab clips")
+		check(game.player.rig.last_action_clip=="Sword_Attack" and game.player.rig.last_off_clip=="Sword_Attack",sex+" normal sword and off-hand dagger attacks both slash")
 		var detail:=0
 		var armour_lod:=false
 		for mi:MeshInstance3D in game.player.model.find_children("*","MeshInstance3D",true,false):
@@ -157,6 +157,9 @@ func _run() -> void:
 			elif mi.has_meta("forge_body"):armour_lod=armour_lod or mi.lod_bias<128
 		check(detail>0 and armour_lod,sex+" zoom fix leaves body/armour LOD enabled")
 		var sk:Skeleton3D=game.player.rig._skel
+		game.player.rig.play_off(0.8,0.4)
+		game.player.rig.off_action.type="thrust"
+		game.player.rig.update(0.32,0)
 		var dagger_grip:Transform3D=sk.get_bone_global_pose(sk.find_bone("hand_l"))*(game.player.model.get_meta("palm_grip_l") as Transform3D)
 		check(dagger_grip.basis.y.normalized().dot(Vector3(0,0,1))>0.95,sex+" left dagger points forward independently of the sword's torso twist")
 		var finger:=sk.find_bone("middle_01_l")

@@ -94,6 +94,7 @@ var puzzles: WorldPuzzles
 var action_bar: ActionBar
 var hud: Hud
 var audio: AudioSystem
+var arrival ## The short first-arrival Camera3D scene; normal camera remains intact.
 ## set by Log out: the reloaded scene opens on character select
 static var to_select := false
 ## the character the lobby (game/boot/lobby.gd) chose before the world's
@@ -208,6 +209,9 @@ func _ready() -> void:
 	add_child(audio)
 	fx = Fx.new(self)
 	save = SaveManager.new(self)
+	arrival = preload("res://game/cinematics/arrival_intro.tscn").instantiate()
+	add_child(arrival)
+	arrival.bind(self)
 
 	_snap_camera()
 	_show_title()
@@ -402,7 +406,10 @@ func load_world() -> void:
 	hud.loading.show_progress("Lighting the lamps…", 1.0)
 	await tree.process_frame
 	await tree.process_frame
-	hud.hide_loading()
+	if arrival.should_play(boot_save.status == "ok") and arrival.begin():
+		await arrival.finished
+	else:
+		hud.hide_loading()
 
 
 ## One of every model in assets/models in a grid in front of the camera, so
@@ -1176,6 +1183,10 @@ func _process(delta: float) -> void:
 
 ## One simulation step. Exposed so tests can advance time deterministically.
 func step(dt: float) -> void:
+	if arrival != null and arrival.active:
+		arrival.advance(dt)
+		input.end_frame()
+		return
 	var controls = _handle_input(dt) # also runs on the title screen, for the pad
 	input.end_frame()
 	var paused: bool = not started or hud.blocks_gameplay

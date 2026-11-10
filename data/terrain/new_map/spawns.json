@@ -1,5 +1,14 @@
 {
   "_about": "Enemies placed on the new map by hand (the bake does not touch this file), in world.json's enemySpawns shape. For now a few risen dead by the start, to test hits on. Quiet Levy narrative: named local quest zones and original optional stories. puzzles contains physical controls, clues, retry text and solutions; move mechanisms using World → Puzzles.",
+  "nodeGroups": [
+	{"id":"tf_willow_herbs","name":"the Willow Pond hedges","live":3,"respawn":[45,75],"kinds":[{"kind":"ditchbell","weight":1}],"spots":[[-412,-178],[-409,-185],[-404,-193],[-397,-192],[-391,-184],[-402,-177]]},
+	{"id":"vr_hollow_herbs","name":"Morrow's herb walk","live":3,"respawn":[45,90],"kinds":[{"kind":"ditchbell","weight":3},{"kind":"woundwort","weight":1}],"spots":[[-324,-372],[-329,-378],[-326,-389],[-312,-390],[-306,-381],[-310,-373]]},
+	{"id":"vr_wood_herbs","name":"the Blackwood verge","live":2,"respawn":[75,120],"kinds":[{"kind":"bloodroot","weight":1}],"spots":[[-330,-389],[-311,-394],[-308,-390],[-313,-398]]}
+  ],
+  "veinGroups": [
+	{"id":"tf_copper_ridge","name":"the ridge east of Iren's forge","live":3,"respawn":[45,80],"rocks":[{"rock":"copper_vein","weight":1}],"outcrops":[[-419,-192],[-414,-187],[-410,-179],[-418,-174],[-424,-180],[-424,-189]]},
+	{"id":"vr_hollow_tin","name":"the Hollow's rocky verge","live":2,"respawn":[60,100],"rocks":[{"rock":"tin_vein","weight":1}],"outcrops":[[-335,-395],[-341,-400],[-333,-407],[-325,-402]]}
+  ],
   "enemySpawns": [
 	{"id": "ni_loose_boar", "enemy": "ni_loose_boar", "position": [-611, -168]},
 	{
@@ -27334,6 +27343,7 @@
 	}
   ],
   "stations": [
+	{"id":"vr_morrow_bench","name":"Morrow's alchemy bench","kind":"alchemy","model":"crate","position":[-313,-380],"radius":2.6},
 	{
 	  "id": "tf_refining_altar",
 	  "name": "the refining altar",

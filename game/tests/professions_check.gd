@@ -8,6 +8,12 @@ var game
 var frame := 0
 var failures := 0
 
+func _initialize() -> void:
+	# These fixtures name the legacy Blackpool, Briony and her bench.
+	# Current-map profession coverage lives in core_loop_check.gd.
+	ProjectSettings.set_setting(Terrain.MAP_SETTING,"act1")
+	DB.ready=false
+
 
 func _process(_dt: float) -> bool:
 	frame += 1

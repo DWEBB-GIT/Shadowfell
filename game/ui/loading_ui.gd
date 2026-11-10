@@ -8,6 +8,7 @@ extends Control
 var title_label: Label
 var stage: Label
 var bar: Dictionary
+var arrival_hold := false ## World entry includes the cinematic, even after this veil fades.
 var fade := 0.0 ## counts down while fading out
 var tip: Label
 var tip_time := 0.0
@@ -65,6 +66,7 @@ func _init() -> void:
 
 
 func open() -> void:
+	arrival_hold = false
 	tip_time=0
 	tip_index=(tip_index+1)%TIPS.size()
 	tip.text=TIPS[tip_index]
@@ -86,7 +88,7 @@ func close() -> void:
 
 
 func _process(dt: float) -> void:
-	if visible and fade<=0:
+	if visible and fade<=0 and not arrival_hold:
 		tip_time+=dt
 		if tip_time>=6:
 			tip_time=0
@@ -96,5 +98,5 @@ func _process(dt: float) -> void:
 		return
 	fade -= dt
 	modulate.a = clampf(fade / 0.4, 0, 1)
-	if fade <= 0:
+	if fade <= 0 and not arrival_hold:
 		visible = false
