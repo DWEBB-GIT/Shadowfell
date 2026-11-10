@@ -20,12 +20,12 @@ const SETTINGS := [
 	{"id": "classicCamera", "label": "Lower camera angle (fixed while zooming)", "tab": "controls", "group": "Scheme and camera", "default": false},
 	# Camera tuning (Dan, 2026-11-09): try angles in the game, then lock the
 	# chosen numbers into CONFIG.camera. Off, the fixed view is used.
-	{"id": "camPreset", "label": "Camera preset (sets the sliders below)", "tab": "controls", "group": "Camera tuning", "default": "Live (now)", "choice": true, "options": "CAMERA_PRESETS"},
+	{"id": "camPreset", "label": "Camera preset (sets the sliders below)", "tab": "controls", "group": "Camera tuning", "default": "Default (Dan's pick)", "choice": true, "options": "CAMERA_PRESETS"},
 	{"id": "camTune", "label": "Tune the camera myself (test: find the view, then send Claude the numbers)", "tab": "controls", "group": "Camera tuning", "default": false},
-	{"id": "camPitch", "label": "Angle down", "tab": "controls", "group": "Camera tuning", "default": 42, "min": 15, "max": 80, "unit": "°"},
+	{"id": "camPitch", "label": "Angle down", "tab": "controls", "group": "Camera tuning", "default": 35, "min": 15, "max": 80, "unit": "°"},
 	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
-	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 31, "min": 12, "max": 70, "unit": " m"},
-	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 39, "min": 15, "max": 75, "unit": "°"},
+	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 35, "min": 12, "max": 70, "unit": " m"},
+	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 25, "min": 15, "max": 75, "unit": "°"},
 	{"id": "camOrtho", "label": "Flat lens (true isometric: nothing shrinks with distance)", "tab": "controls", "group": "Camera tuning", "default": false},
 	{"id": "openingCinematic", "label": "Cinematic arrival for new characters", "tab": "controls", "group": "Arrival", "default": true},
 	{"id": "reducedOpeningMotion", "label": "Reduced opening motion (simple fade instead of a camera flight)", "tab": "controls", "default": false},
@@ -54,8 +54,10 @@ const SETTINGS := [
 ## the Combat move setting (Player._update_jump)
 const COMBAT_MOVES := ["Roll", "Hop", "Off"]
 const CAMERA_PRESETS := {
-	"Live (now)": [42, 0, 31, 39],
-	"Live, lower angle": [30, 0, 31, 39],
+	"Default (Dan's pick)": [35, 0, 35, 25],
+	"Default, flat lens": [35, 0, 35, 25, true],
+	"Earlier": [42, 0, 31, 39],
+	"Earlier, lower angle": [30, 0, 31, 39],
 	"Before today": [50, 0, 36, 35],
 	"Before today, lower angle": [45, 0, 36, 35],
 	"Claude's pick": [45, 0, 25, 30],
