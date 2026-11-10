@@ -374,8 +374,16 @@ func load_world() -> void:
 	var total := maxi(1, audio.warm.size())
 	while not audio.warm.is_empty():
 		audio.warm_some(25000)
-		hud.loading.show_progress("Gathering sounds…", 0.4 * (1.0 - float(audio.warm.size()) / total))
+		hud.loading.show_progress("Gathering sounds…", 0.3 * (1.0 - float(audio.warm.size()) / total))
 		await tree.process_frame
+	# the recorded sounds, decoded for the browser now and not on first play
+	var files: Array = audio.prepare_list()
+	for k in files.size():
+		audio.prepare(files[k])
+		if k % 6 == 5:
+			hud.loading.show_progress("Gathering sounds…", 0.3 + 0.1 * k / files.size())
+			await tree.process_frame
+	audio.prepare_music()
 	# every model and effect drawn once in front of the camera, behind the screen
 	hud.loading.show_progress("Raising the world…", 0.45)
 	var shelf := _model_shelf()
