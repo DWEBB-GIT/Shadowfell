@@ -101,8 +101,19 @@ static func is_ground_cover(model: String) -> bool:
 	return false
 
 
+## Trees and bushes: the camera is fixed, so nothing past the fog at the
+## screen edge is ever seen. Stop drawing them there (no mesh LODs, so no
+## leaf popping in view).
+const FOLIAGE_RANGE := 70.0
+const FOLIAGE := ["Tree", "tree", "Pine", "pine", "Bush", "bush", "Birch", "Willow", "Plant"]
+
 static func budget_prop(obj: Node3D, model: String) -> void:
 	if not is_ground_cover(model):
+		for k in FOLIAGE:
+			if model.contains(k):
+				for g: GeometryInstance3D in obj.find_children("*", "GeometryInstance3D", true, false):
+					g.visibility_range_end = FOLIAGE_RANGE
+				break
 		return
 	var meshes: Array = obj.find_children("*", "GeometryInstance3D", true, false)
 	if obj is GeometryInstance3D:
