@@ -331,6 +331,8 @@ func markers() -> Array:
 		if not at.is_empty():
 			out.append({"x": at.x, "z": at.z, "r": 0, "kind": "goal", "label": at.label, "npc": true, "focus": true})
 	for n in game.npcs.here:
+		if n.def.get("ambient"):
+			continue # background folk (town life) would bury the people you look for
 		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
 		# a trade (the inn's tankard) shows even while its keeper has a quest:

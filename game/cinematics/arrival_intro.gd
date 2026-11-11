@@ -102,7 +102,7 @@ func begin() -> bool:
 	game.enemies.update(0)
 	_local_idles.clear()
 	for npc in game.npcs.list:
-		if npc.position.distance_to(game.player.position) < 32: _local_idles.append(npc.rig)
+		if npc.rig != null and npc.position.distance_to(game.player.position) < 32: _local_idles.append(npc.rig)
 	for enemy in game.enemies.list:
 		if not enemy.dead and enemy.position.distance_to(game.player.position) < 32: _local_idles.append(enemy.rig)
 	elapsed = 0.0

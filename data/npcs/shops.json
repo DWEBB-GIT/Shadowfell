@@ -129,6 +129,16 @@
       ]
     },
     {
+      "id": "pedlar_pack",
+      "name": "A pedlar's pack",
+      "vendorType": "outfitter",
+      "stock": [
+        "trail_bread", "spring_water", "mug_of_ale",
+        "healing_draught", "torch", "rough_arrow",
+        "belt_pouch", "travellers_satchel"
+      ]
+    },
+    {
       "id": "agna_tannery",
       "name": "Agna's tannery",
       "vendorType": "tanner",

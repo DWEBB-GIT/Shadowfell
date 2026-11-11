@@ -3790,6 +3790,292 @@
           ]
         }
       ]
+    },
+    {
+      "id": "life_drinker_1",
+      "greetings": [
+        {
+          "text": "Pull up a stool. The ale here tastes of the barrel, but it's wet."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_drinker_1_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_drinker_1_news",
+          "text": "Ashby's lot and the Corricks are at it again. Somebody's fence ends up in somebody's field every spring, and every spring it's war.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_drinker_2",
+      "greetings": [
+        {
+          "text": "Mind the bench, it bites. Like the landlord."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_drinker_2_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_drinker_2_news",
+          "text": "A lad came in last week swearing he'd seen lanterns moving in the Blackwood after dark. No one carries a lantern in there. Not anyone sensible.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_drinker_3",
+      "greetings": [
+        {
+          "text": "Another round? No? Suit yourself."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_drinker_3_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_drinker_3_news",
+          "text": "Prices are up again. The carters won't take the long road past Blackhedge without an escort, and the escort wants paying.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_shopper_1",
+      "greetings": [
+        {
+          "text": "Have you seen what they want for nails these days? Robbery."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_shopper_1_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_shopper_1_news",
+          "text": "The smith says iron's short because the carts keep going missing on the road. Nobody says who's taking them.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_shopper_2",
+      "greetings": [
+        {
+          "text": "Busy, busy. Bread, thread, and something for my husband's back."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_shopper_2_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_shopper_2_news",
+          "text": "There's talk of a watchman in the next town who drew an eye on his door, closed, like it's sleeping. Gave me the shivers.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_shopper_3",
+      "greetings": [
+        {
+          "text": "Don't buy the fish after noon. Trust me."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Any news?",
+          "node": "life_shopper_3_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_shopper_3_news",
+          "text": "My sister's boy swears the Corricks poisoned the Ashby well. I say a dead badger did it. Nobody listens to me.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_traveller_1",
+      "greetings": [
+        {
+          "text": "Long road. Longer with a stone in your boot."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "How's the road?",
+          "node": "life_traveller_1_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_traveller_1_news",
+          "text": "Quiet by day. I keep off it after dark: there's more out there at night than wolves, whatever the watch says.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_traveller_2",
+      "greetings": [
+        {
+          "text": "Going my way? Pity. I'd welcome the company."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "How's the road?",
+          "node": "life_traveller_2_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_traveller_2_news",
+          "text": "Bandits held up a cart near Blackhedge, bold as you like, and let the driver go. Took nothing but the letters. Odd sort of bandit.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_traveller_3",
+      "greetings": [
+        {
+          "text": "Mind the ruts. The road's half mud and half memory."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "How's the road?",
+          "node": "life_traveller_3_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_traveller_3_news",
+          "text": "Watch the waymarkers. Somebody's been scratching a shut eye into them. Kids, I tell myself.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_pedlar_1",
+      "greetings": [
+        {
+          "text": "Bread, water, a dry torch: everything the road forgets to give you."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Where are you headed?",
+          "node": "life_pedlar_1_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_pedlar_1_news",
+          "text": "Town to town, and back, till my knees give out. A pedlar hears everything: buy something and I might remember some of it.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "life_pedlar_2",
+      "greetings": [
+        {
+          "text": "Good wares, fair prices, and I'm gone tomorrow, so buy today."
+        }
+      ],
+      "topics": [
+        {
+          "id": "news",
+          "prompt": "Where are you headed?",
+          "node": "life_pedlar_2_news"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "life_pedlar_2_news",
+          "text": "Wherever there's a road and a purse at the end of it. The Blackhedge stretch I take at a run.",
+          "replies": [
+            {
+              "text": "Take care."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -40,6 +40,12 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 		var n: Dictionary = DB.npcs[sp.npc]
 		var m := U.merged(n, sp)
 		m.id = n.id
+		# one of many people sharing an entry (town life): their own id, so
+		# everything that looks them up by id finds this person
+		if sp.get("person") is String:
+			m.id = sp.person
+			m.erase("person")
+			DB.npcs[m.id] = m
 		npcs.append(m)
 	enemies = []
 	for sp in w.enemySpawns:

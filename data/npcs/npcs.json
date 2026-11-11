@@ -76,6 +76,33 @@
           "at": "home"
         }
       ]
+    },
+    {
+      "id": "drinker",
+      "name": "Inn regular",
+      "about": "Town life: a long morning at home, then the inn from late morning until well after dark, with a breath of air out front now and then.",
+      "blocks": [
+        {
+          "from": 1.5,
+          "at": "home"
+        },
+        {
+          "from": 10,
+          "at": "work"
+        },
+        {
+          "from": 11,
+          "at": "inn"
+        },
+        {
+          "from": 15,
+          "at": "work"
+        },
+        {
+          "from": 15.75,
+          "at": "inn"
+        }
+      ]
     }
   ],
   "npcs": [
@@ -1728,6 +1755,48 @@
       "rig": "warden",
       "tint": "#a4bdc2",
       "dialogue": "hub_captain"
+    },
+    {
+      "id": "life_drinker",
+      "name": "Inn regular",
+      "title": "Regular",
+      "level": 3,
+      "model": "tam",
+      "rig": "warden",
+      "dialogue": "life_drinker_1",
+      "ambient": true,
+      "routine": "drinker"
+    },
+    {
+      "id": "life_shopper",
+      "name": "Townsfolk",
+      "title": "Townsfolk",
+      "level": 3,
+      "model": "mara",
+      "rig": "warden",
+      "dialogue": "life_shopper_1",
+      "ambient": true
+    },
+    {
+      "id": "life_traveller",
+      "name": "Traveller",
+      "title": "Traveller",
+      "level": 3,
+      "model": "tam",
+      "rig": "warden",
+      "dialogue": "life_traveller_1",
+      "ambient": true
+    },
+    {
+      "id": "life_pedlar",
+      "name": "Pedlar",
+      "title": "Wandering merchant",
+      "level": 3,
+      "model": "innkeeper",
+      "rig": "warden",
+      "dialogue": "life_pedlar_1",
+      "ambient": true,
+      "shop": "pedlar_pack"
     }
   ]
 }
