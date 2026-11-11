@@ -455,13 +455,19 @@ func _move_direction(controls) -> Vector3:
 	return d.normalized() if d.length() > 0.2 else Vector3.ZERO
 
 
+## Whether Space is the dodge roll right now (Roll chosen, in a fight if
+## combatOnly): then it never jumps, so one key always does one thing.
+func rolls_now(controls) -> bool:
+	var rule: Dictionary = DB.CONFIG.player.get("roll", {})
+	if rule.is_empty() or ghost or controls == null or game.settings.get_value("combatMove") != "Roll":
+		return false
+	return not rule.get("combatOnly", true) or game.resources.in_combat or game.targeting.attacking
+
+
 ## Which way a dodge roll taken now would go, or zero for none: in a fight
 ## (if combatOnly), on the ground, the way you move, backwards standing still.
 func _roll_direction(controls) -> Vector3:
-	var rule: Dictionary = DB.CONFIG.player.get("roll", {})
-	if rule.is_empty() or ghost or roll_cd > 0 or roll != null or controls == null or game.settings.get_value("combatMove") != "Roll":
-		return Vector3.ZERO
-	if rule.get("combatOnly", true) and not (game.resources.in_combat or game.targeting.attacking):
+	if not rolls_now(controls) or roll_cd > 0 or roll != null:
 		return Vector3.ZERO
 	var d := _move_direction(controls)
 	return d if d != Vector3.ZERO else -Vector3(sin(facing), 0, cos(facing))
@@ -470,7 +476,8 @@ func _roll_direction(controls) -> Vector3:
 func start_roll(d: Vector3) -> void:
 	var rule: Dictionary = DB.CONFIG.player.roll
 	var duration: float = rule.get("duration", 0.45)
-	roll = {"dir": d, "t": 0.0, "duration": duration, "speed": rule.get("distance", 4.0) / duration}
+	# a front-loaded burst: average `speed` x run, 1.5x that at the start
+	roll = {"dir": d, "t": 0.0, "duration": duration, "distance": rule.get("speed", 2.4) * game.player_speed() * duration}
 	roll_cd = rule.get("cooldown", 6.0)
 	facing = atan2(d.x, d.z)
 	set_sitting(false)
@@ -490,10 +497,13 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 	if roll != null:
 		jump_buffer = 0.0 # no jumping out of a tumble
 	elif jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
-		var rd := _roll_direction(controls)
-		if rd != Vector3.ZERO:
-			jump_buffer = 0.0
-			start_roll(rd)
+		if rolls_now(controls):
+			var rd := _roll_direction(controls)
+			if rd != Vector3.ZERO:
+				start_roll(rd)
+			elif roll_cd > 0 and jump_buffer >= JUMP_BUFFER_TIME:
+				game.hud.error("Roll is not ready yet")
+			jump_buffer = 0.0 # in a fight Space rolls or does nothing, never jumps
 	if jump_buffer > 0.0 and jump_h == 0.0 and jump_v == 0.0:
 		set_sitting(false)
 		position.y = Terrain.height_at(position.x, position.z)
@@ -624,10 +634,13 @@ func update(dt: float, controls) -> void:
 	elif roll != null:
 		# a dodge roll carries you, committed: no steering, swings or spells
 		var r: Dictionary = roll
-		var step: float = minf(dt, r.duration - r.t)
-		r.t += dt
-		position.x += r.dir.x * r.speed * step
-		position.z += r.dir.z * r.speed * step
+		var u0: float = r.t / r.duration
+		r.t = minf(r.duration, r.t + dt)
+		var u1: float = r.t / r.duration
+		# eased progress 1.5u - 0.5u^2: a fast push-off that slows into the stand
+		var step: float = r.distance * ((1.5 * u1 - 0.5 * u1 * u1) - (1.5 * u0 - 0.5 * u0 * u0))
+		position.x += r.dir.x * step
+		position.z += r.dir.z * step
 		facing = atan2(r.dir.x, r.dir.z)
 		speed01 = 1.0
 		if r.t >= r.duration:
