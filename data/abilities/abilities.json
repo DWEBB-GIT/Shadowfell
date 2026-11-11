@@ -24,8 +24,7 @@
         "readyWindup": 0.08,
         "openerWindup": 0.2,
         "staggerGap": 0.2,
-        "movingLeeway": 1.5,
-        "pivotDegrees": 70
+        "movingLeeway": 1.5
       },
       "bar": false
     },

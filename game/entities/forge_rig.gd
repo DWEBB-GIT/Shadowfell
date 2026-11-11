@@ -40,8 +40,30 @@ const TAKEOFF_FROM := 0.067 ## Jump_Start's push-off, after its ground crouch
 ## only a longer drop (off a ledge) goes on into the Jump hover loop.
 const TUCK_AT := 0.4 ## Jump_Start time of the highest knee tuck
 var land_dip := 0.0
+## One swing out of each supplied attack clip: [start, contact, end] in
+## clip seconds. The contact is the clip's fastest arm and spine frame
+## (measured 2026-11-11). Before, the blow was pinned to the middle of the
+## whole clip, which in Sword_Attack (two slashes, 1.53 s) is the pause
+## between them: the damage and hit-stop fell on a still pose and the second
+## slash played slowly after the number, so swings felt soft and late. The
+## end sits in the clip's held follow-through, then the stance fades back.
+const SWING_SEGMENTS := {
+	"Sword_Attack": [0.0, 0.42, 0.72],
+	"Sword_Heavy_Combo": [2.0, 2.55, 2.95], # the combo's last, biggest blow
+	"Sword_Regular_Combo": [1.05, 1.55, 1.85], # its biggest sweep
+	"Sword_Regular_B": [0.0, 0.22, 0.45],
+	"Sword_Regular_A": [0.0, 0.1, 0.33],
+	"Sword_Regular_C": [0.3, 0.62, 0.9],
+}
 var air_fall_from := -1.0 ## air_time when a long drop went into the hover loop
 var last_off_clip := ""
+
+## Clip time for an action `k` (0..1) through, its blow at `impact`.
+static func swing_time(clip_name: String, length: float, k: float, impact: float) -> float:
+	var seg: Array = SWING_SEGMENTS.get(clip_name, [0.0, 0.5 * length, length])
+	if k < impact:
+		return lerpf(seg[0], seg[1], k / impact)
+	return lerpf(seg[1], seg[2], (k - impact) / (1 - impact))
 
 func revive() -> void:
 	super()
@@ -217,8 +239,11 @@ func _update_anim(dt: float, speed01: float) -> void:
 		var a := anim.get_animation(name)
 		var k := clampf(action.t / maxf(0.01, action.duration), 0, 1)
 		var impact := clampf(action.impact, 0.01, 0.99)
-		# Keep both the strike and the recovery aligned to the game's clock.
-		var at := (k / impact * 0.5 if k < impact else 0.5 + (k - impact) / (1 - impact) * 0.5) * a.length
+		# Keep both the strike and the recovery aligned to the game's clock:
+		# the clip's own contact frame lands on the blow, so the hit-stop
+		# freezes the blade in the foe, and only one swing of a combo clip
+		# plays per blow (SWING_SEGMENTS).
+		var at := swing_time(name, a.length, k, impact)
 		var casting_now = actor.casting if actor != null else null
 		if casting_now != null:
 			name = "Spell_Simple_Idle"
@@ -280,7 +305,7 @@ func _mirror_off() -> void:
 	var a := anim.get_animation(clip_name)
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
 	var impact := clampf(off_action.impact, 0.01, 0.99)
-	var at := (k / impact * 0.5 if k < impact else 0.5 + (k - impact) / (1 - impact) * 0.5) * a.length
+	var at := swing_time(last_off_clip if clip_name == "Dagger_Stab_L" else clip_name, a.length, k, impact)
 	var weight := minf(1, minf(k, 1-k) * 8)
 	if clip_name=="Dagger_Stab_L":
 		_sample(clip_name,at,weight,true)
