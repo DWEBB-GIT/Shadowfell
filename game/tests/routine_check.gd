@@ -77,6 +77,26 @@ func _light() -> void:
 
 
 func _routine() -> void:
+	_keepers()
+	# the walk itself, for whoever keeps hours: quest folk are let off their
+	# post for the test, so there is always someone with an inn and a home
+	game.npcs.replan(false)
+	_walk()
+	game.npcs.replan(true)
+
+
+func _keepers() -> void:
+	var ws = game.world_state
+	# quest givers and shopkeepers keep their post round the clock (Dan 2026-11-11)
+	var keepers: Array = game.npcs.all.filter(func(c): return c.present and not c.board and Npcs.keeps_post(c.id, c.def) and c.def.get("routine"))
+	check(keepers.size() > 0 and keepers.all(func(c): return c.routine.is_empty()), "%d quest and service folk with a routine keep their post instead" % keepers.size())
+	for h in [20.0, 23.9, 3.0]:
+		ws.hour = h
+		game.npcs.update(0.016)
+		check(keepers.all(func(c): return c.place == "work" and not c.inside and c.position.distance_to(c.post) < 0.01), "quest givers at their post at %.1f h" % h)
+
+
+func _walk() -> void:
 	var n = null
 	for c in game.npcs.all:
 		if c.routine.size() and c.places.has("inn") and c.places.has("home") and c.present:
@@ -127,6 +147,7 @@ func _routine() -> void:
 	game.player.position = n.post + Vector3(2, 0, 0)
 	game.npcs.update(0.016)
 	check(n.place == "work" and not n.inside and n.group.get_parent() != null, "back at work in the morning, drawn near the player")
+
 
 
 func _streaming() -> void:
