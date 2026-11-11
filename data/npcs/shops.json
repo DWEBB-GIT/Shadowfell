@@ -12,7 +12,8 @@
         "material",
         "consumable",
         "bag",
-        "torch"
+        "torch",
+        "tool"
       ],
       "description": "A frontier smith: arms and armour, and the road supplies travellers ask for.",
       "repairs": true
@@ -181,6 +182,8 @@
       "name": "Iren's Forge",
       "vendorType": "smith",
       "stock": [
+        "mining_pick",
+        "hatchet",
         "healing_draught",
         "iron_gloves",
         "hob_boots",
