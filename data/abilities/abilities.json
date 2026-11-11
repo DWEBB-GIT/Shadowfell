@@ -2044,27 +2044,31 @@
     },
     {
       "id": "cripplingCut",
-      "name": "Crippling Cut",
-      "kind": "instant",
+      "name": "Crippling Sweep",
+      "kind": "burst",
       "school": "physical",
-      "target": "enemy",
-      "desc": "Wound and slow a pursuer, building one combo point on a hit.",
+      "target": "self",
+      "desc": "Slash every enemy around you with both blades, slowing them by 45% for five seconds and building one combo point. Does not stop you moving.",
       "tuning": {
-        "cooldown": 6,
-        "damageMultiplier": 0.65
+        "cooldown": 8,
+        "damageMultiplier": 0.55,
+        "bothHands": 1,
+        "radius": 3,
+        "windup": 0.12,
+        "stagger": 0.1,
+        "knockback": 0
       },
-      "range": 2.6,
       "cost": {
         "energy": 25
       },
       "requires": "weapon",
-      "hitGain": {
-        "combo": 1
-      },
       "applies": {
         "name": "Crippled",
         "duration": 5,
         "slow": 45
+      },
+      "gain": {
+        "combo": 1
       }
     },
     {
@@ -2190,6 +2194,52 @@
         "focus": 30
       },
       "ranged": true
+    },
+    {
+      "id": "arrowHail",
+      "name": "Arrow Hail",
+      "kind": "aoe",
+      "school": "physical",
+      "target": "ground",
+      "range": 20,
+      "desc": "Loose a high volley at the ground you aim at: arrows rain on every enemy there for three seconds. Fire while moving; it never stops you.",
+      "tuning": {
+        "cooldown": 12,
+        "radius": 3.5,
+        "duration": 3,
+        "tickInterval": 0.75,
+        "damageMin": 2,
+        "damageMax": 3,
+        "weaponDamage": 0.3,
+        "spellPower": 0
+      },
+      "cost": {
+        "focus": 40
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The hail lasts one second longer.",
+          "add": {
+            "duration": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "fireHail",
+            "name": "Fire Hail",
+            "text": "Every enemy caught is set Burning (Flaming Arrow).",
+            "spreads": "flamingArrow"
+          },
+          {
+            "id": "pinningHail",
+            "name": "Pinning Hail",
+            "text": "Enemies caught are slowed by 40% while the arrows fall.",
+            "tuning": {
+              "slow": 40
+            }
+          }
+        ]
+      }
     },
     {
       "id": "scatterShot",

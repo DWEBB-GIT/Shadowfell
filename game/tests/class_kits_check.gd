@@ -58,6 +58,7 @@ func _run() -> void:
 	_paladin()
 	_rogue()
 	_ranger()
+	_aoe_kits()
 	_occultist()
 	_wizard()
 	_legacy_and_swaps()
@@ -325,6 +326,43 @@ func _ranger() -> void:
 	game.spells.apply_aura("pinningShot", foes[1], DB.spells.pinningShot.applies)
 	check(foes[1].root_left == 0, "Pinning Shot respects elite immunity")
 	foes[1].cfg = cfg
+
+
+## Dan (2026-11-11): every class has an attack that hits a whole pack, and
+## none of them stops the player moving
+func _aoe_kits() -> void:
+	for id in DB.archetypes:
+		var aoe: Array = DB.archetypes[id].abilities.filter(func(a):
+			var s: Dictionary = DB.spells[a]
+			var t: Dictionary = s.tuning
+			var hurts: bool = t.get("damageMultiplier", 0) > 0 or t.get("damageMax", 0) > 0 or t.get("spellPower", 0) > 0 or t.get("weaponDamage", 0) > 0
+			return hurts and (s.kind in ["cleave", "burst", "aoe", "groundCast"] or t.get("maxTargets", 1) > 1))
+		check(not aoe.is_empty(), id + " has an attack that hits several enemies")
+	_select_class("rogue")
+	for i in foes.size():
+		foes[i].position = game.player.position + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 1.5
+	var before := foes.map(func(e): return e.health)
+	game.spells.reset()
+	_ready_cast()
+	_fill_resources()
+	game.skills.all_spells = true
+	game.resources.values.combo = 0.0
+	check(game.spells.try_cast("cripplingCut"), "Crippling Sweep casts with no target needed")
+	check(game.player.casting == null, "Crippling Sweep never roots the Rogue in a cast")
+	for step in 30:
+		game.spells.update(1.0 / 60.0)
+	check(range(foes.size()).all(func(i): return foes[i].health < before[i]), "Crippling Sweep hits every enemy around the Rogue")
+	check(foes.all(func(e): return game.spells.has_aura(e, "cripplingCut")), "Crippling Sweep slows every enemy it hits")
+	check(game.resources.amount("combo") == 1, "Crippling Sweep builds one combo point however many it hits")
+	game.skills.all_spells = false
+	_select_class("ranger")
+	game.spells.zones.clear()
+	var centre: Vector3 = foes[0].position
+	before = foes.map(func(e): return e.health)
+	game.spells.zones.append({"id":"arrowHail","x":centre.x,"z":centre.z,"left":3.0,"next":0.0,"radius":DB.spells.arrowHail.tuning.radius,"slow":0,"damage":true})
+	game.spells.update(0.05)
+	check(range(foes.size()).all(func(i): return foes[i].health < before[i]), "Arrow Hail hits every enemy under it")
+	game.spells.zones.clear()
 
 
 func _occultist() -> void:

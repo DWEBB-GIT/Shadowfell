@@ -5173,6 +5173,32 @@
           "colour": "#a0dd60"
         }
       ]
+    },
+    "arrowHail": {
+      "sound": {
+        "pitch": 170,
+        "length": 0.14
+      },
+      "anim": {
+        "type": "longDraw",
+        "duration": 0.42,
+        "impact": 0.44
+      },
+      "impact": [
+        {
+          "fx": "mesh",
+          "mesh": "fx_streak",
+          "colour": "#e1b478",
+          "glow": 0.82,
+          "life": "duration",
+          "height": 0.9,
+          "size": [
+            3.0,
+            3.5
+          ],
+          "spin": 20
+        }
+      ]
     }
   },
   "moments": {
