@@ -16,6 +16,10 @@ extends RefCounted
 ## their house; they go in and are out of sight, but you can knock and they
 ## still answer), or a name in their spawn's `places` ({name: [x, z]}).
 ## Without an inn or a house near enough, that block keeps them at work.
+## Anyone players come to for something (keeps_post: quests, shops, the
+## forge, the bank, a bed) stays at their post round the clock while
+## CONFIG.routine.servicesKeepPost is on (Dan 2026-11-11: quest givers must be
+## easy to find at any hour), so only ambient townsfolk keep a routine.
 ##
 ## Simulation and drawing are separate, as for enemies (WorldStream): every
 ## routine runs for the whole world (a few sums per person per frame; a path
@@ -238,6 +242,7 @@ var game
 var all: Array = []
 var _paths := [] ## people waiting for a path, first come first served
 var _last_hour := -100.0
+var services_keep_post: bool = DB.CONFIG.routine.get("servicesKeepPost", true)
 
 
 func _init(g) -> void:
@@ -249,9 +254,22 @@ func _init(g) -> void:
 		_plan(n, inn_use)
 
 
+## plan everyone's hours again, quest and service folk kept at their post or not
+func replan(keep_post: bool) -> void:
+	services_keep_post = keep_post
+	var inn_use := {}
+	for n in all:
+		n.routine = []
+		n.places = {"work": n.places.work}
+		_plan(n, inn_use)
+		n.snap_to(n.place_at(game.world_state.hour))
+
+
 ## who keeps what hours, and where their inn and home are
 func _plan(n: Npc, inn_use: Dictionary) -> void:
 	if n.board:
+		return
+	if services_keep_post and keeps_post(n.id, n.def):
 		return
 	var r = n.def.get("routine")
 	var blocks = DB.routines.get(r, {}).get("blocks", []) if r is String else r
@@ -284,6 +302,30 @@ func _plan(n: Npc, inn_use: Dictionary) -> void:
 	for k in n.def.get("places", {}):
 		var q: Array = n.def.places[k]
 		n.places[k] = {"at": Vector2(q[0], q[1]), "via": [], "inside": false, "facing": n.rest_facing}
+
+
+## Does anyone come to this person for something? A quest they give, take in
+## or are asked about, or a service (shop, forge, bank, bed, trade).
+const SERVICES := ["shop", "forge", "banker", "innkeeper", "bedPrice", "jeweller", "refiner", "reeve"]
+static var _quest_folk := {}
+static var _quest_folk_of := {}
+
+
+static func keeps_post(id: String, def: Dictionary) -> bool:
+	for k in SERVICES:
+		if def.get(k):
+			return true
+	if not is_same(_quest_folk_of, DB.quests):
+		_quest_folk = {}
+		for q in DB.quests.values():
+			for who in [q.get("giver"), q.get("turnIn")]:
+				if who is String:
+					_quest_folk[who] = true
+			for o in q.get("objectives", []):
+				if o.get("type") == "talk" and o.get("target") is String:
+					_quest_folk[o.target] = true
+		_quest_folk_of = DB.quests
+	return _quest_folk.has(id)
 
 
 func _nearest_inn(p: Vector2):

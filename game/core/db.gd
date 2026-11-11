@@ -82,8 +82,11 @@ const CONFIG := {
 	# `innRange` metres of their post, home the nearest house within
 	# `homeRange` (a spawn's own `home` [x, z] beats that). Each person keeps
 	# the hours a little early or late, up to `spread` hours, so a town does
-	# not move as one.
-	"routine": {"walkSpeed": 1.5, "innRange": 160.0, "homeRange": 70.0, "spread": 0.4},
+	# not move as one. With `servicesKeepPost` (Dan 2026-11-11, the MMO way: WoW,
+	# OSRS, FFXIV) anyone players come to for something (a quest given, handed
+	# in or asked about, a shop, forge, bank, bed or trade) stays at their post
+	# day and night and ignores their routine; only the rest keep hours.
+	"routine": {"walkSpeed": 1.5, "innRange": 160.0, "homeRange": 70.0, "spread": 0.4, "servicesKeepPost": true},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
 	# XP to the next level = the baseline minutes the level 1-50 pacing plan
 	# gives it (docs/quest-design/level-50-pacing.csv, 60 hours) x `pace` x the
