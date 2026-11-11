@@ -392,6 +392,12 @@ func load_world() -> void:
 		audio.warm_some(25000)
 		hud.loading.show_progress("Gathering sounds…", 0.3 * (1.0 - float(audio.warm.size()) / total))
 		await tree.process_frame
+	# the made sounds, baked to files
+	var n_made: int = audio.made.size()
+	for k in range(0, n_made, 40):
+		audio.load_made(k, 40)
+		hud.loading.show_progress("Gathering sounds…", 0.3 * k / maxf(1, n_made))
+		await tree.process_frame
 	# the recorded sounds, decoded for the browser now and not on first play
 	var files: Array = audio.prepare_list()
 	for k in files.size():

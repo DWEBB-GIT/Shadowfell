@@ -91,6 +91,12 @@ const GROWL := {"brute": [70, 0.5], "hound": [170, 0.25], "archer": [220, 0.2], 
 var game
 var started := false
 var cache := {} ## recipe key -> AudioStreamWAV
+## The made sounds come baked as files (tools: game/tests/bake_sounds.gd),
+## as games ship their audio: making them in script took seconds on the
+## loading screen and froze the browser. recipe key -> file name.
+const MADE_DIR := "res://assets/sounds/made/"
+var made := {}
+var bake := false ## the bake tool: make every sound, ignore the files
 var voices: Array = [] ## AudioStreamPlayer pool
 var next_voice := 0
 var click_player: AudioStreamPlayer
@@ -125,6 +131,10 @@ var step_seen := 0 ## the player rig's footfall count last heard
 ## Every sound the game can play is made ahead, a little each frame from
 ## the title screen on, so no fight or chime stalls a frame to make one.
 func _ready() -> void:
+	if not bake and FileAccess.file_exists(MADE_DIR + "index.json"):
+		made = JSON.parse_string(FileAccess.get_file_as_string(MADE_DIR + "index.json"))
+		set_process(false)
+		return # baked: nothing to make (a recipe not in the files is made on first play)
 	warm = [func(): bell(1, 880), func(): bell(1, 440), func(): bell(1, 660), func(): bell(1, 660),
 		func(): chime([392, 523, 659], 0.25), func(): chime([392, 494, 587, 784], 0.22),
 		func(): chime([660, 990], 0.12), func(): chime([330, 415], 0.15), func(): shield_break(),
@@ -703,6 +713,14 @@ func _click(frame: int) -> void:
 ## web audio samples, and turning a file into one decodes all of it the first
 ## time it plays (seconds for an ambience loop): `prepare` does that behind
 ## the loading screen instead (Dan, 2026-11-10: sounds took a while to come).
+## the baked sounds, loaded ahead (loading screen) so none loads mid-fight
+func load_made(from: int, count: int) -> void:
+	var keys := made.keys()
+	for i in range(from, mini(from + count, keys.size())):
+		if not cache.has(keys[i]):
+			cache[keys[i]] = load(MADE_DIR + made[keys[i]])
+
+
 func prepare_list() -> Array:
 	var out: Array = []
 	for files in SFX.values():
@@ -874,6 +892,9 @@ func _play(key: String, make: Callable, level := 1.0, bus := "Effects") -> void:
 	if not warming and (not started or level <= 0):
 		return
 	var s: AudioStreamWAV = cache.get(key)
+	if s == null and made.has(key):
+		s = load(MADE_DIR + made[key])
+		cache[key] = s
 	if s == null:
 		s = _wav(make.call(), RATE)
 		cache[key] = s

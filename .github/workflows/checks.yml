@@ -42,6 +42,9 @@ jobs:
       - name: Saves survive renamed and removed content
         run: ./godot --headless --path . --script res://game/tests/save_renames_check.gd
 
+      - name: Made sounds are baked (re-run game/tests/bake_sounds.gd)
+        run: ./godot --headless --path . --script res://game/tests/bake_sounds.gd -- --check
+
       - name: Townsfolk routines and the world clock
         run: ./godot --headless --path . --script res://game/tests/routine_check.gd
 
