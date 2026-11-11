@@ -414,7 +414,16 @@ func _build() -> void:
 	toast_label = UI.label(root, "", 18, UI.GOLD)
 	toast_label.add_theme_stylebox_override("normal", UI.frame(Vector4(18, 6, 18, 6)))
 	toast_label.modulate.a = 0
-	error_label = UI.label(root, "", 20, Color("ff3a2a"), 4)
+	# red errors sit on their own layer so they draw above every panel and window
+	var top_layer := CanvasLayer.new()
+	top_layer.layer = 100
+	add_child(top_layer)
+	var top_root := Control.new()
+	top_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	top_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_layer.add_child(top_root)
+	error_label = UI.label(top_root, "", 20, Color("ff3a2a"), 4)
+	error_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	error_label.modulate.a = 0
 	# level up and quest complete: big in the middle, on a smoky band
 	banner_band = Panel.new()
