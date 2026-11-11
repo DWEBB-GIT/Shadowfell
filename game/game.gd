@@ -917,7 +917,7 @@ const STALL_GAIN := 0.1 ## metres closer that count as headway
 
 
 ## a held click this close to a foe's body still counts as on it
-const FOE_CURSOR_SLACK := 1.2
+const FOE_CURSOR_SLACK := 0.4 ## small, so a cursor just past the foe walks you on
 
 
 ## Click to move: the way to walk this frame, or null. Arriving runs the
@@ -954,9 +954,11 @@ func _click_move(keys_move: Dictionary, dt: float):
 		var cursor = _aim_point() if holding else null
 		if holding and cursor != null and (gone or U.hyp(cursor.x - f.position.x, cursor.z - f.position.z) > f.radius + FOE_CURSOR_SLACK):
 			# the held button dragged off the foe (or it fell): walk to the
-			# cursor, never stuck in place because a fight began (Dan, 2026-11-11)
-			if gone:
-				m.erase("follow")
+			# cursor, never stuck in place because a fight began (Dan, 2026-11-11).
+			# From here on it is a plain held walk (Diablo / Lost Ark): the
+			# cursor passing back over the foe never plants you again, and
+			# auto attack still swings as you pass in reach.
+			m.erase("follow")
 			m.x = cursor.x
 			m.z = cursor.z
 			if U.hyp(m.x - p.x, m.z - p.z) <= 0.4:

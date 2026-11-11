@@ -687,7 +687,7 @@ func kill_punch(enemy) -> void:
 		return
 	var c: Dictionary = DB.CONFIG.impact
 	var big: bool = enemy.type == "brute" or str(enemy.cfg.get("type", "")) in ["elite", "heavy"]
-	if p.position.distance_to(enemy.position) <= 4.0 and p.rig:
+	if p.position.distance_to(enemy.position) <= 4.0 and p.rig and not p.moving:
 		p.rig.hold(c.killHitStop)
 	game.shake_camera(c.eliteKillShake if big else c.killShake)
 	if game.settings.get_value("bloodEffects"):
@@ -784,7 +784,10 @@ func _blow_lands(e: Dictionary) -> void:
 	var t := minf(c.hitStopMax, c.hitStop + c.hitStopPerSecond * game.stats.hand_speed(hand))
 	if e.get("crit"):
 		t *= c.critHitStop
-	player.rig.hold(t)
+	# on the move only the foe holds: freezing your body mid-stride read as
+	# the swing stopping you (Diablo / Lost Ark keep the legs going, Dan 2026-11-11)
+	if not player.moving:
+		player.rig.hold(t)
 	enemy.rig.hold(t)
 	if e.get("swing"):
 		var facing := atan2(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
