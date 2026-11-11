@@ -25,6 +25,17 @@ extends RefCounted
 ## routine runs for the whole world (a few sums per person per frame; a path
 ## is found once per walk, a few a frame at most), and a body is in the scene
 ## only near the player (WorldStream.VIEW_IN / VIEW_OUT) and out of doors.
+##
+## Town life (Dan 2026-11-11: "people drinking, shopping, out travelling,
+## wandering merchants"): background folk from the town_life overlay
+## (tools/world/new_map/town_life.py). They share a few `ambient` npcs.json
+## entries; each spawn's `person` gives them their own id and name (Layout).
+## Drinkers and shoppers keep routines like anyone else (a shopper's places
+## are the shop fronts of their town); travellers and pedlars walk a road
+## between two towns (the spawn's `path`), rest a while at each end and stay
+## put overnight. Their bodies are only built the first time they come into
+## view, so a hundred of them cost a few sums a frame until you meet them,
+## and they are left off the minimap.
 
 ## seats in an inn (the walk-in kit's room, 12 x 9 m, door in the south wall),
 ## relative to its middle, clear of the tables, bar and beds
@@ -63,6 +74,11 @@ class Npc:
 	var waiting := false ## a walk is asked for and its path not yet found
 	var inside := false ## gone in at home: out of sight, but answers a knock
 	var speed := 0.0 ## m/s this frame, for the walk cycle
+	# ---- a road walker (town life): back and forth along `path`
+	var path := PackedVector2Array()
+	var path_i := 0 ## the waypoint they are walking to
+	var path_dir := 1
+	var linger := 0.0 ## seconds left resting at the end of the road
 
 	func _init(g, d: Dictionary) -> void:
 		game = g
@@ -77,6 +93,23 @@ class Npc:
 		group = Node3D.new()
 		group.name = "Npc_" + id
 		group.add_to_group(World.MOVING_GROUP)
+		group.position = position
+		# no collider: the player (and enemies) walk straight through townsfolk (Dan, 2026-11-04)
+		places.work = {"at": Vector2(post.x, post.z), "via": [], "inside": false, "facing": rest_facing}
+		board = d.get("board", false)
+		work_timer = 1 + randf()
+		for q in d.get("path", []):
+			path.append(Vector2(q[0], q[1]))
+		if path.size() >= 2:
+			_start_on_road()
+		# background folk get a body when they first come into view
+		if not d.get("ambient"):
+			build_body()
+
+	func build_body() -> void:
+		if model != null:
+			return
+		var d := def
 		model = Assets.instance(d.model)
 		group.add_child(model)
 		if d.get("tool"):
@@ -95,11 +128,60 @@ class Npc:
 		# townsfolk who share a model are told apart by a tint
 		if d.get("tint"):
 			Rig.tint(Rig.isolate_materials(model), Color(d.tint))
-		board = d.get("board", false)
-		work_timer = 1 + randf()
+
+	## somewhere along their road, the same every load: spread out, half of
+	## them each way
+	func _start_on_road() -> void:
+		var hh := absi(hash(id))
+		var n := path.size()
+		var at: int = hh % n
+		path_dir = 1 if (hh / n) % 2 == 0 else -1
+		position = Vector3(path[at].x, 0, path[at].y)
+		position.y = Terrain.height_at(position.x, position.z)
+		path_i = clampi(at + path_dir, 0, n - 1)
+		if path_i == at:
+			path_dir = -path_dir
+			path_i = at + path_dir
+		facing = atan2(path[path_i].x - position.x, path[path_i].y - position.z)
+		post = position
 		group.position = position
-		# no collider: the player (and enemies) walk straight through townsfolk (Dan, 2026-11-04)
-		places.work = {"at": Vector2(post.x, post.z), "via": [], "inside": false, "facing": rest_facing}
+
+	## a road walker's day: along the road, a rest at each end, and no
+	## setting out after dark (they wait for morning where they are)
+	func walk_road(dt: float, hour: float) -> void:
+		var life: Dictionary = DB.CONFIG.life
+		speed = 0.0
+		if busy():
+			return
+		if linger > 0.0:
+			linger -= dt
+			if linger <= 0.0 and (hour >= float(life.nightFrom) or hour < float(life.dawn)):
+				linger = 20.0
+			return
+		var step: float = float(DB.CONFIG.routine.walkSpeed) * dt
+		speed = float(DB.CONFIG.routine.walkSpeed)
+		while step > 0.0:
+			var to: Vector2 = path[path_i]
+			var d := Vector2(to.x - position.x, to.y - position.z)
+			var l := d.length()
+			if l > 0.001:
+				facing = atan2(d.x, d.y)
+			if l > step:
+				position.x += d.x / l * step
+				position.z += d.y / l * step
+				break
+			position.x = to.x
+			position.z = to.y
+			step -= l
+			path_i += path_dir
+			if path_i < 0 or path_i >= path.size():
+				# the end of the road: rest in town, then turn back
+				path_dir = -path_dir
+				path_i = clampi(path_i + path_dir * 2, 0, path.size() - 1)
+				linger = float(life.endRest) * (0.7 + 0.6 * float(absi(hash(id + str(path_dir))) % 100) / 99.0)
+				speed = 0.0
+				break
+		position.y = Terrain.height_at(position.x, position.z)
 
 	## Is this person here, given the story so far?
 	func update_presence() -> void:
@@ -198,19 +280,21 @@ class Npc:
 		# you until you walk off
 		var near: bool = busy() and U.hyp(dx, dz) < 8 and not player.dead
 		var anvil = def.get("anvil", def.get("workAt")) if at_post() else null
-		rig.pose = def.get("idlePose") if not near and not walking else null
+		var moving: bool = walking or speed > 0.0
+		if rig != null:
+			rig.pose = def.get("idlePose") if not near and not moving else null
 		var want: float
 		if board:
 			want = rest_facing
 		elif near:
 			want = atan2(dx, dz)
-		elif walking:
+		elif moving or path.size() >= 2:
 			want = facing
 		elif anvil and rest_timer <= 0:
 			want = atan2(anvil[0] - position.x, anvil[1] - position.z)
 		else:
 			want = places[place].facing
-		if not walking or near:
+		if not moving or near:
 			var d := want - facing
 			d = atan2(sin(d), cos(d))
 			facing += d * minf(1, dt * 5)
@@ -228,11 +312,12 @@ class Npc:
 				bout -= 1
 				if bout <= 0:
 					rest_timer = 8.0 + randf() * 10.0
-				rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
+				if rig != null:
+					rig.play(def.get("workAnimation", "strike"), 0.6, 0.45)
 				if def.has("anvil"):
 					game.events.emit("anvilStrike", {"npc": self, "x": anvil[0], "z": anvil[1]})
 		# limbs only move where the camera could see them
-		if U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
+		if rig != null and U.hyp(dx, dz) < Enemy.ANIMATE_RANGE:
 			rig.update(dt, speed / float(DB.CONFIG.player.speed) * 1.6 if speed > 0 and not near else 0.0)
 		group.position = position
 		group.rotation.y = facing
@@ -290,10 +375,10 @@ func _plan(n: Npc, inn_use: Dictionary) -> void:
 			var seat_i: int = inn_use.get(inn.id, 0)
 			inn_use[inn.id] = seat_i + 1
 			var c := Vector2(inn.position[0], inn.position[1])
-			var front: float = float(inn.size[1]) * 0.5
 			var seat: Array = INN_SEATS[seat_i % INN_SEATS.size()]
 			var at := c + Vector2(seat[0], seat[1]) + Vector2(0.4, 0.3) * float(seat_i / INN_SEATS.size())
-			n.places.inn = {"at": at, "via": [c + Vector2(0, front + 1.6), c + Vector2(0, front - 1.4)], "inside": false,
+			var door := inn_door(inn)
+			n.places.inn = {"at": at, "via": [c + door[0], c + door[1]], "inside": false,
 				"facing": atan2(c.x - at.x, c.y - at.y) + PI * 0.15}
 	if wants.has("home"):
 		var door = _home_door(n, p)
@@ -301,7 +386,43 @@ func _plan(n: Npc, inn_use: Dictionary) -> void:
 			n.places.home = {"at": door.at, "via": [], "inside": true, "facing": door.facing}
 	for k in n.def.get("places", {}):
 		var q: Array = n.def.places[k]
-		n.places[k] = {"at": Vector2(q[0], q[1]), "via": [], "inside": false, "facing": n.rest_facing}
+		# [x, z] or [x, z, facing in degrees]
+		var f: float = deg_to_rad(float(q[2])) if q.size() > 2 else n.rest_facing
+		n.places[k] = {"at": Vector2(q[0], q[1]), "via": [], "inside": false, "facing": f}
+
+
+## The way in to an inn, relative to its middle: [just outside, just
+## inside] the gap in its `walls` (the walk-in kit's door is in the west
+## wall), or the middle of the south wall when it has no wall list.
+static func inn_door(b: Dictionary) -> Array:
+	var hw: float = float(b.size[0]) * 0.5
+	var hd: float = float(b.size[1]) * 0.5
+	var walls = b.get("walls")
+	if walls is Array:
+		# per side, the stretches of wall along it; a side in two or more
+		# pieces has the door in its first gap
+		var sides := {"n": [], "s": [], "w": [], "e": []}
+		for s in walls:
+			if not s is Array or s.size() < 4:
+				continue
+			if is_equal_approx(float(s[0]), float(s[2])):
+				var k := "w" if float(s[0]) < 0 else "e"
+				sides[k].append([minf(s[1], s[3]), maxf(s[1], s[3])])
+			elif is_equal_approx(float(s[1]), float(s[3])):
+				var k := "n" if float(s[1]) < 0 else "s"
+				sides[k].append([minf(s[0], s[2]), maxf(s[0], s[2])])
+		for k in sides:
+			var runs: Array = sides[k]
+			if runs.size() < 2:
+				continue
+			runs.sort_custom(func(a, c): return a[0] < c[0])
+			var mid: float = (float(runs[0][1]) + float(runs[1][0])) * 0.5
+			match k:
+				"w": return [Vector2(-hw - 1.6, mid), Vector2(-hw + 1.4, mid)]
+				"e": return [Vector2(hw + 1.6, mid), Vector2(hw - 1.4, mid)]
+				"n": return [Vector2(mid, -hd - 1.6), Vector2(mid, -hd + 1.4)]
+				_: return [Vector2(mid, hd + 1.6), Vector2(mid, hd - 1.4)]
+	return [Vector2(0, hd + 1.6), Vector2(0, hd - 1.4)]
 
 
 ## Does anyone come to this person for something? A quest they give, take in
@@ -401,7 +522,12 @@ func update(dt: float) -> void:
 	_last_hour = hour
 	for n in all:
 		n.update_presence()
-		if not n.present or n.routine.is_empty():
+		if not n.present:
+			continue
+		if n.path.size() >= 2:
+			n.walk_road(dt, hour)
+			continue
+		if n.routine.is_empty():
 			continue
 		var want: String = n.place_at(hour)
 		if snap:
@@ -419,6 +545,7 @@ func update(dt: float) -> void:
 			or (shown and d2 < WorldStream.VIEW_OUT * WorldStream.VIEW_OUT))
 		if want != shown:
 			if want:
+				n.build_body()
 				game.scene.add_child(n.group)
 			else:
 				n.group.get_parent().remove_child(n.group)

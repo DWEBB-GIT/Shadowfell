@@ -9,6 +9,7 @@
     -155.0
   ],
   "overlays": [
-    "hub_city.json"
+    "hub_city.json",
+    "town_life.json"
   ]
 }

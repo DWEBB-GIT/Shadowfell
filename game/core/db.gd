@@ -87,6 +87,10 @@ const CONFIG := {
 	# in or asked about, a shop, forge, bank, bed or trade) stays at their post
 	# day and night and ignores their routine; only the rest keep hours.
 	"routine": {"walkSpeed": 1.5, "innRange": 160.0, "homeRange": 70.0, "spread": 0.4, "servicesKeepPost": true},
+	# Town life (Npcs, town_life overlay): road walkers rest `endRest`
+	# seconds at each end of their road and set out again only between
+	# `dawn` and `nightFrom`.
+	"life": {"endRest": 90.0, "dawn": 6.0, "nightFrom": 21.0},
 	"camp": {"clearRadius": 14.0, "restRadius": 4.0, "restedFullSeconds": {"camp": 1200.0, "inn": 720.0}, "restedCap": 1.0},
 	# XP to the next level = the baseline minutes the level 1-50 pacing plan
 	# gives it (docs/quest-design/level-50-pacing.csv, 60 hours) x `pace` x the
