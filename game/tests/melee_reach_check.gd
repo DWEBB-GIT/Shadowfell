@@ -62,34 +62,50 @@ func _run() -> void:
 	check(tg.target_in_reach, "a swing reaches from %.1f m (reach %.2f m)" % [pl.position.distance_to(at), Targeting.melee_reach(foe)])
 	pl.position = at + Vector3(Targeting.melee_reach(foe) + 0.3, 0, 0)
 	check(not tg.target_in_reach and tg.in_reach(DB.attack.impactGrace), "a blow already begun lands a little beyond reach")
-	# walked past: the foe is behind, 1.4 m off; push back towards it
+	# walked past: the foe is behind, 1.4 m off; push back towards it. As
+	# in Diablo 3 / Lost Ark you set off at once and turn as you go: no
+	# turn-on-the-spot stop (Dan, 2026-11-11)
 	pl.position = at + Vector3(1.4, 0, 0)
 	pl.facing = atan2(1.0, 0.0) # facing +x, away from it
 	var start: Vector3 = pl.position
-	var steps := 0
+	pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
+	check(start.x - pl.position.x > DB.CONFIG.player.speed * dt * 0.9, "pressing back towards it moves you the first frame")
+	var steps := 1
 	while not pl.facing_point(at.x, at.z, 30) and steps < 60:
 		pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
 		steps += 1
-	check(pl.facing_point(at.x, at.z, 30), "pressing towards it turns you to it (%d frames)" % steps)
-	check(Vector2(pl.position.x - start.x, pl.position.z - start.z).length() < 0.05, "on the spot, not walking on past it")
+	check(steps <= 8, "and you face it within %d frames" % steps)
 	for i in 30:
 		pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
 	check(pl.position.x < at.x, "and holding the key you walk on through its body (bodies are not solid, %.2f)" % (pl.position.x - at.x))
-	# moving away is untouched
-	var was: float = pl.position.x
-	pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
-	check(pl.position.x < was, "walking on away from it moves you at once")
-	# left button held (mouse aim) walking past a foe at your side: the
-	# cursor turn and the pivot used to cancel out and stop you dead
+	# left button held (mouse aim) walking past a foe at your side
 	pl.position = at + Vector3(1.4, 0, 0)
-	pl.facing = atan2(0.3, 1.0) # facing +z, the foe at your side and a bit behind
-	pl.pivoting = false
+	pl.facing = atan2(0.3, 1.0)
 	var walk := Vector2(-1.0, 0.6).normalized()
 	var cursor: Vector3 = pl.position + Vector3(walk.x, 0, walk.y) * 6.0
 	start = pl.position
 	for i in 30:
 		pl.update(dt, {"move": {"x": walk.x, "z": walk.y}, "actions": {}, "faceAim": cursor})
 	check(Vector2(pl.position.x - start.x, pl.position.z - start.z).length() > 1.0, "holding the left button you turn and walk on (%.2f m)" % Vector2(pl.position.x - start.x, pl.position.z - start.z).length())
+	# click to move, the left button held after clicking a foe (Diablo 3):
+	# on the foe in reach you stand and fight; dragged off it you walk to
+	# the cursor (it used to leave you stuck in place, Dan 2026-11-11)
+	pl.position = at + Vector3(1.6, 0, 0)
+	tg.engage(foe)
+	game.input.mouse.leftHeld = true
+	game.move_to = {"follow": foe, "reach": 0.0, "hold": "left"}
+	var on_foe: Vector2 = game.camera.unproject_position(at)
+	game.input.mouse.x = on_foe.x
+	game.input.mouse.y = on_foe.y
+	check(game._click_move({"x": 0.0, "z": 0.0}, dt) == null and game.move_to != null, "held on the foe in reach: stand and swing, the hold stays live")
+	var away: Vector3 = pl.position + Vector3(0, 0, 8)
+	var off_foe: Vector2 = game.camera.unproject_position(away)
+	game.input.mouse.x = off_foe.x
+	game.input.mouse.y = off_foe.y
+	var go = game._click_move({"x": 0.0, "z": 0.0}, dt)
+	check(go != null and go.z > 0.8, "dragged off the foe: you walk to the cursor (%s)" % str(go))
+	game.input.mouse.leftHeld = false
+	game.move_to = null
 	# a right click on a foe behind you, standing: a quick turn, then swings
 	pl.position = at + Vector3(1.6, 0, 0)
 	pl.facing = atan2(1.0, 0.0)

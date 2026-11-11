@@ -43,9 +43,17 @@ const TUCK_AT := 0.4 ## Jump_Start time of the highest knee tuck
 ## Squeezed into one 0.6 s ability they flailed and twisted the whole
 ## model, so an ability plays one blow from each: [start, hit, end] in
 ## clip seconds (measured from the hand and chest in the clips).
+## Auto attack too (2026-11-11): Sword_Attack holds two slashes, and its
+## middle (where the blow used to be pinned) is the pause between them, so
+## the hit-stop froze a still pose and a slow second slash played after the
+## number. Now one slash, its contact (fastest arm/spine frame) on the blow.
 const CLIP_WINDOWS := {
 	"Sword_Heavy_Combo": [2.15, 2.65, 3.9], # the closing overhead slam
 	"Sword_Regular_Combo": [1.4, 1.62, 2.6], # the closing diagonal sweep
+	"Sword_Attack": [0.0, 0.42, 0.72], # the first slash, held follow-through
+	"Sword_Regular_A": [0.0, 0.1, 0.33],
+	"Sword_Regular_B": [0.0, 0.22, 0.45],
+	"Sword_Regular_C": [0.3, 0.62, 0.9],
 }
 var land_dip := 0.0
 var air_fall_from := -1.0 ## air_time when a long drop went into the hover loop
@@ -296,7 +304,7 @@ func _mirror_off() -> void:
 	var a := anim.get_animation(clip_name)
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
 	var impact := clampf(off_action.impact, 0.01, 0.99)
-	var at := clip_time(clip_name, a.length, k, impact)
+	var at := clip_time(last_off_clip if clip_name == "Dagger_Stab_L" else clip_name, a.length, k, impact)
 	var weight := minf(1, minf(k, 1-k) * 8)
 	if clip_name=="Dagger_Stab_L":
 		_sample(clip_name,at,weight,true)

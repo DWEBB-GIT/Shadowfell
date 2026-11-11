@@ -30,11 +30,6 @@ var facing := 0.0 ## radians; 0 faces +z (south)
 ## while walking, so the blow is seen to go where it was aimed
 const AIM_HOLD := 0.45
 var aim_hold := 0.0
-## melee pivot (_melee_steer): turning on the spot towards a foe in reach,
-## kept on until you face it; and whether it held you this frame, so the
-## held left button (mouse aim) does not turn you straight back
-var pivoting := false
-var pivoted := false
 ## a foe a right click engaged while you stood still: you turn to it at
 ## turnSpeed (WoW: attacking squares you up, a quick turn, no snap)
 var face_goal = null
@@ -653,7 +648,6 @@ func update(dt: float, controls) -> void:
 		# breaks a cast; walking goes the way you face, backing up slower
 		var tank = controls.get("tank")
 		var turning := false
-		pivoted = false
 		if tank != null:
 			turning = tank.x != 0
 			if turning:
@@ -661,8 +655,6 @@ func update(dt: float, controls) -> void:
 				aim_hold = 0
 			var walk: float = tank.y * (DB.CONFIG.player.backpedal if tank.y < 0 else 1.0)
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
-		else:
-			mv = _melee_steer(mv, dt)
 		# in the air your path is locked (one change), but you still turn
 		# and spin freely towards what you steer at (Dan, 2026-11-11)
 		var look: Dictionary = mv
@@ -687,7 +679,7 @@ func update(dt: float, controls) -> void:
 				# stop (or turn) to face it. No shooting while kiting backwards.
 				facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
 			speed01 = mag
-		elif turning or pivoted:
+		elif turning:
 			pass
 		elif face_goal != null:
 			_turn_to_goal(dt)
@@ -968,53 +960,6 @@ func _turn_to_goal(dt: float) -> void:
 
 func _swing_facing(aim) -> bool:
 	return square_up(aim.x, aim.z)
-
-
-## The enemy you are fighting, while it is in melee reach (else null).
-func _melee_foe():
-	var tg = game.targeting
-	if tg == null or not tg.attacking or not tg.in_reach(DB.attack.movingLeeway):
-		return null
-	return tg.current
-
-
-## Turning in a melee fight (Dan, 2026-11-09): you face where you run, so
-## stepping back towards a foe you had passed used to carry you through it
-## and out the other side before you had turned. Now, with your foe in reach,
-## pushing towards it turns you on the spot first. Bodies are never solid
-## (Dan, 2026-11-09): once turned you walk on, through it if you hold the
-## key. Moving away is untouched, so kiting rules hold.
-func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
-	pivoted = false
-	var foe = _melee_foe()
-	var ml := U.hyp(mv.x, mv.z)
-	if foe == null or ml < 0.01:
-		pivoting = false
-		return mv
-	var fx: float = foe.position.x - position.x
-	var fz: float = foe.position.z - position.z
-	var d := U.hyp(fx, fz)
-	if d < 0.01:
-		return mv
-	fx /= d
-	fz /= d
-	var inward: float = (mv.x * fx + mv.z * fz) / ml
-	if inward < cos(deg_to_rad(DB.attack.get("pivotDegrees", 70))):
-		pivoting = false
-		return mv
-	# a pivot starts only for a foe beside or behind you and runs until you
-	# face it. Once you do, walking on turns you the way you walk, so a foe
-	# still in your front half never starts another pivot: with the left
-	# button held that used to stop you dead, the pivot and the cursor
-	# turning you against each other every frame (2026-11-11).
-	if not pivoting and not facing_point(foe.position.x, foe.position.z, DB.attack.coneDegrees / 2.0):
-		pivoting = true
-	if pivoting and not facing_point(foe.position.x, foe.position.z, 30):
-		facing = U.turn_towards(facing, atan2(fx, fz), dt * DB.CONFIG.player.turnSpeed)
-		pivoted = true
-		return {"x": 0.0, "z": 0.0}
-	pivoting = false
-	return mv # facing it: walk on, straight through its body if you hold the key
 
 
 ## is (x, z) within `half_degrees` of where you face? (very close counts)

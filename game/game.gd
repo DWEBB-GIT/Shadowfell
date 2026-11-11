@@ -873,8 +873,13 @@ func _click(button: String) -> bool:
 				if targeting.target_in_reach or targeting.target_in_shot:
 					if not player.square_up(o.position.x, o.position.z) and not player.moving:
 						player.face_goal = o
-				if not targeting.target_in_reach and not targeting.target_in_shot:
-					if button == "right" or walk:
+				if walk:
+					# click to move (Diablo 3): the held button keeps acting.
+					# Held on your foe you close in and fight; drag the cursor
+					# off it and you walk there, swinging as you pass in reach
+					move_to = {"follow": o, "reach": 0.0, "hold": button}
+				elif not targeting.target_in_reach and not targeting.target_in_shot:
+					if button == "right":
 						move_to = {"follow": o, "reach": 0.0}
 					else:
 						hud.error("Out of range")
@@ -904,8 +909,13 @@ const STALL_TIME := 0.35 ## seconds a click-walk may make no headway before it s
 const STALL_GAIN := 0.1 ## metres closer that count as headway
 
 
+## a held click this close to a foe's body still counts as on it
+const FOE_CURSOR_SLACK := 1.2
+
+
 ## Click to move: the way to walk this frame, or null. Arriving runs the
 ## action the walk was for; any movement key takes over and ends it.
+
 func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
@@ -927,9 +937,25 @@ func _click_move(keys_move: Dictionary, dt: float):
 		var f = m.follow
 		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
-		if not f.alive or targeting.current != f or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
-			move_to = null
-			return null
+		var gone: bool = not f.alive or targeting.current != f
+		var holding: bool = m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld)
+		var cursor = _aim_point() if holding else null
+		if holding and cursor != null and (gone or U.hyp(cursor.x - f.position.x, cursor.z - f.position.z) > f.radius + FOE_CURSOR_SLACK):
+			# the held button dragged off the foe (or it fell): walk to the
+			# cursor, never stuck in place because a fight began (Dan, 2026-11-11)
+			if gone:
+				m.erase("follow")
+			m.x = cursor.x
+			m.z = cursor.z
+			if U.hyp(m.x - p.x, m.z - p.z) <= 0.4:
+				return null
+			return {"x": (m.x - p.x) / U.hyp(m.x - p.x, m.z - p.z), "z": (m.z - p.z) / U.hyp(m.x - p.x, m.z - p.z)}
+		if not holding:
+			m.erase("hold")
+		if gone or in_shot or U.hyp(f.position.x - p.x, f.position.z - p.z) <= stop:
+			if not holding:
+				move_to = null
+			return null # held on the foe in reach: stand and fight
 		m.x = m.follow.position.x
 		m.z = m.follow.position.z
 	elif m.has("hold"):
