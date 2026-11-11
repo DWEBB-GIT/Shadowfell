@@ -437,7 +437,7 @@ func _try_cast(id: String) -> bool:
 		if not _class_ready(spell, target):
 			return false
 		# Selecting never turns you; an ability needs its target in your
-		# front half, and aim assist nudges you onto it (Player.square_up)
+		# front half (Player.square_up); nothing turns you to it
 		if not player.square_up(target.position.x, target.position.z):
 			game.hud.error("Target needs to be in front of you.")
 			return false
@@ -1378,7 +1378,7 @@ func update(dt: float) -> void:
 	var c = player.casting
 	if c != null:
 		var gone: bool = c.target != null and not c.target.alive
-		# a cast tracks its target within aim assist; behind you, it breaks
+		# a cast needs its target in your front half; behind you, it breaks
 		var turned: bool = c.target != null and c.target.alive and not player.square_up(c.target.position.x, c.target.position.z)
 		var covered: bool = c.target != null and c.target.alive and game.collision.wall_between(player.position.x, player.position.z, c.target.position.x, c.target.position.z)
 		if player.dead or player.moving or gone or turned or covered:
