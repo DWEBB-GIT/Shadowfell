@@ -58,6 +58,7 @@ func _run() -> void:
 	_paladin()
 	_rogue()
 	_ranger()
+	_aoe_kits()
 	_occultist()
 	_wizard()
 	_legacy_and_swaps()
@@ -325,6 +326,62 @@ func _ranger() -> void:
 	game.spells.apply_aura("pinningShot", foes[1], DB.spells.pinningShot.applies)
 	check(foes[1].root_left == 0, "Pinning Shot respects elite immunity")
 	foes[1].cfg = cfg
+
+
+## Dan (2026-11-11): every class has an attack that hits a whole pack, and
+## none of them stops the player moving
+func _aoe_kits() -> void:
+	for id in DB.archetypes:
+		var aoe: Array = DB.archetypes[id].abilities.filter(func(a):
+			var s: Dictionary = DB.spells[a]
+			var t: Dictionary = s.tuning
+			var hurts: bool = t.get("damageMultiplier", 0) > 0 or t.get("damageMax", 0) > 0 or t.get("spellPower", 0) > 0 or t.get("weaponDamage", 0) > 0
+			return hurts and (s.kind in ["cleave", "burst", "aoe", "groundCast"] or t.get("maxTargets", 1) > 1))
+		check(not aoe.is_empty(), id + " has an attack that hits several enemies")
+	_select_class("rogue")
+	for i in foes.size():
+		foes[i].position = game.player.position + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 3.0
+	var before := foes.map(func(e): return e.health)
+	var start: Vector3 = game.player.position
+	game.spells.reset()
+	game.spells.dots.clear()
+	_ready_cast()
+	_fill_resources()
+	game.skills.all_spells = true
+	game.resources.values.combo = 0.0
+	check(game.spells.try_cast("cripplingCut"), "Blade Dance casts with no target needed")
+	check(game.player.casting == null, "Blade Dance never roots the Rogue in a cast")
+	for step in 60:
+		game.spells.update(1.0 / 60.0)
+	check(range(foes.size()).all(func(i): return foes[i].health < before[i]), "Blade Dance cuts every enemy around the Rogue")
+	check(foes.all(func(e): return not game.spells._find_dot(e, "poisonedBladeToxin").is_empty()), "Blade Dance poisons every enemy it cuts")
+	check(game.player.position.distance_to(start) > 1.0, "Blade Dance carries the Rogue between enemies")
+	check(game.resources.amount("combo") == 1, "Blade Dance builds one combo point however many it hits")
+	game.skills.all_spells = false
+	game.spells.dots.clear()
+	_select_class("ranger")
+	game.spells.zones.clear()
+	var centre: Vector3 = foes[0].position
+	before = foes.map(func(e): return e.health)
+	game.spells.zones.append({"id":"arrowHail","x":centre.x,"z":centre.z,"left":3.0,"next":0.0,"radius":DB.spells.arrowHail.tuning.radius,"slow":0,"damage":true})
+	game.spells.update(0.05)
+	check(range(foes.size()).all(func(i): return foes[i].health < before[i]), "Arrow Hail hits every enemy under it")
+	game.spells.zones.clear()
+	game.targeting.current = foes[1]
+	var at: Vector3 = game.spells._ground_point(40.0, DB.spells.arrowHail)
+	check(is_equal_approx(at.x, foes[1].position.x) and is_equal_approx(at.z, foes[1].position.z), "Arrow Hail lands around the selected enemy")
+	game.targeting.current = null
+	_select_class("occultist")
+	game.spells.dots.clear()
+	for e in foes.slice(1):
+		game.spells._apply_dot(DB.spells.rot, e, null, true)
+	var mass: Dictionary = Builds.apply_change(DB.spells.siphonLife, DB.spells.siphonLife.upgrades.forks[1])
+	before = foes.map(func(e): return e.health)
+	game.spells._mass_siphon(mass, foes[0])
+	check(foes[0].health == before[0] and foes[1].health < before[1] and foes[2].health < before[2], "Mass Siphon drains every other enemy carrying Rot")
+	game.spells.dots.clear()
+	_select_class("paladin")
+	check(DB.spells.divineStorm.tuning.get("spins", 1) > 1, "Divine Storm whirls for more than one pulse")
 
 
 func _occultist() -> void:

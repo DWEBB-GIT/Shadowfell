@@ -17,6 +17,7 @@ var ally_hots: Array = [] ## heals over time on someone else: { id, on, left, ne
 var traps: Array = [] ## { id, key, x, z, arm, left }
 var bolts: Array = [] ## { enemy, id, t, ammo, spell }
 var blows: Array = [] ## cleaves and bursts on their way to the impact frame
+var dance = null ## Blade Dance: { spell, hops, t, from, hit } while the Rogue dashes
 var ranged_windups: Array = []
 var queued = null ## a spell pressed in the queue window: { id, left }
 var shadow_grace := 0.0 ## seconds that still count as striking from Shadow
@@ -120,6 +121,7 @@ func reset() -> void:
 	traps = []
 	bolts = []
 	blows = []
+	dance = null
 	ranged_windups = []
 	queued = null
 	shadow_grace = 0.0
@@ -473,7 +475,7 @@ func _try_cast(id: String) -> bool:
 		var channel: bool = spell.kind == "channel"
 		player.casting = {"id": id, "spell": spell, "t": 0.0, "total": stats.hasted(t.castTime), "target": target, "pushbacks": 0, "channel": channel, "next": t.tickInterval if channel else 0.0}
 		if spell.kind == "groundCast":
-			var at := _ground_point(spell.range)
+			var at := _ground_point(spell.range, spell)
 			spell = spell.duplicate()
 			spell["groundAt"] = at
 			player.casting.spell = spell
@@ -491,11 +493,13 @@ func _try_cast(id: String) -> bool:
 		# the blow lands at its animation's impact frame, a moment after the
 		# key press; it locks nothing and leaves the swing timer alone (WoW)
 		var windup: float = stats.hasted(t.windup)
-		var anim := windup + (0.35 if spell.kind == "burst" else 0.3)
+		var anim: float = windup + (0.35 if spell.kind == "burst" else 0.3) + t.get("spinGap", 0.3) * (int(t.get("spins", 1)) - 1)
 		blows.append({"id": spell.id, "t": windup, "spell": spell})
 		# a second spin (Cleave with two weapons) follows the first
+		var later: Dictionary = spell.duplicate()
+		later["laterSpin"] = true
 		for k in range(1, int(t.get("spins", 1))):
-			blows.append({"id": spell.id, "t": windup + 0.3 * k, "spell": spell})
+			blows.append({"id": spell.id, "t": windup + t.get("spinGap", 0.3) * k, "spell": later})
 		_anim(spell, "slam" if spell.kind == "burst" else "strike", anim, windup / anim, true)
 		_show(spell, "cast", player.position, player.facing, player)
 		player.cooldowns[id] = t.cooldown
@@ -652,7 +656,7 @@ func _go(spell: Dictionary, target) -> void:
 			_landed(spell, target, null)
 		"aoe":
 			_anim(spell, "slam", 0.5, 0.5)
-			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
+			var at = _ground_point(spell.range, spell) if spell.get("target") == "ground" else player.position
 			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": t.get("slow", 0), "damage": t.get("damageMax", 0) > 0})
 			events.emit("zone", {"id": spell.id, "x": at.x, "z": at.z, "radius": t.radius, "duration": t.duration, "school": spell.get("school")})
 			_show(spell, "impact", Vector3(at.x, Terrain.height_at(at.x, at.z), at.z), player.facing)
@@ -752,14 +756,14 @@ func _go(spell: Dictionary, target) -> void:
 			events.emit("log", {"text": "%s: you heal every %s seconds for %s seconds." % [spell.name, U.n(t.tickInterval), U.n(t.duration)], "kind": "hit"})
 		"healZone":
 			_anim(spell, "slam", 0.5, 0.5)
-			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
+			var at = _ground_point(spell.range, spell) if spell.get("target") == "ground" else player.position
 			zones.append({"id": spell.id, "x": at.x, "z": at.z, "left": t.duration, "next": 0.0, "radius": t.radius, "slow": t.get("slow", 0), "damage": _hurts(t), "heal": true})
 			events.emit("zone", {"id": spell.id, "x": at.x, "z": at.z, "radius": t.radius, "duration": t.duration, "school": spell.get("school", "holy")})
 			_show(spell, "impact", Vector3(at.x, Terrain.height_at(at.x, at.z), at.z), player.facing)
 			events.emit("log", {"text": "%s blooms on the ground." % spell.name, "kind": "hit"})
 		"healBurst":
 			_anim(spell, "slam", 0.5, 0.5)
-			var at = _ground_point(spell.range) if spell.get("target") == "ground" else player.position
+			var at = _ground_point(spell.range, spell) if spell.get("target") == "ground" else player.position
 			var hits := []
 			if _hurts(t):
 				hits = game.enemies.list.filter(func(e): return e.alive and not e.protected and U.hyp(e.position.x - at.x, e.position.z - at.z) - e.radius * 0.5 <= t.radius)
@@ -792,8 +796,14 @@ func _go(spell: Dictionary, target) -> void:
 
 
 ## where a ground spell lands: the cursor, no further than its range
-func _ground_point(range_: float) -> Vector3:
+## where a ground spell lands: on the selected enemy when it is in range and
+## the spell says `centreOnTarget` (Dan, 2026-11-11: tab target drops the hail
+## around your target), else at the aim point, held within range
+func _ground_point(range_: float, spell = null) -> Vector3:
 	var p: Vector3 = game.player.position
+	var cur = game.targeting.current if spell != null and spell.get("centreOnTarget") else null
+	if cur != null and cur.alive and game.enemies.list.has(cur) and U.hyp(cur.position.x - p.x, cur.position.z - p.z) <= range_ + cur.radius:
+		return Vector3(cur.position.x, 0, cur.position.z)
 	var aim = game.raw_aim
 	if aim == null:
 		aim = Vector3(p.x + sin(game.player.facing) * 4, 0, p.z + cos(game.player.facing) * 4)
@@ -1032,6 +1042,8 @@ func _burst(spell: Dictionary) -> Array:
 	var events: Events = game.events
 	var t: Dictionary = spell.tuning
 	var hits: Array = game.enemies.list.filter(func(e): return e.alive and not e.protected and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) - e.radius * 0.5 <= t.radius)
+	if spell.get("mechanic") == "bladeDance":
+		return _start_dance(spell, hits)
 	var most := 0
 	var initial_hits := []
 	for e in hits:
@@ -1045,10 +1057,10 @@ func _burst(spell: Dictionary) -> Array:
 		_landed(spell, e, hit)
 		if hit.amount > 0:
 			initial_hits.append({"enemy":e,"amount":hit.amount,"crit":hit.crit})
-	if spell.get("mechanic") == "conviction":
+	if spell.get("mechanic") == "conviction" and not spell.get("laterSpin"):
 		_schedule_holy_echoes(spell,initial_hits)
 	# Healing Storm: a share of your health for each enemy hit
-	if t.get("healPerHit") and not hits.is_empty():
+	if t.get("healPerHit") and not hits.is_empty() and not spell.get("laterSpin"):
 		_heal_number(player.heal(player.max_health * t.healPerHit * hits.size() / 100.0))
 	events.emit("burst", {"id": spell.id, "position": player.position, "radius": t.radius, "hits": hits, "school": spell.get("school")})
 	_show(spell, "impact", player.position, player.facing)
@@ -1402,6 +1414,7 @@ func update(dt: float) -> void:
 					break
 				var hit := _damage(spell, c.target, _spell_base(t), "", 1, {"stagger": 0.0, "periodic": true})
 				_heal_number(player.heal(hit.amount * t.healPercent / 100.0))
+				_mass_siphon(spell, c.target)
 				if hit.amount > 0 and t.get("corruptionGain"):
 					game.resources.add("corruption", t.corruptionGain)
 					_show(spell,"impact",c.target.position,_facing_to(c.target))
@@ -1439,6 +1452,8 @@ func update(dt: float) -> void:
 			continue
 		blows.remove_at(i)
 		resolve(b.id, b.spell)
+	if dance != null:
+		_update_dance(dt)
 
 	# the spell queue: a spell pressed just before it was ready goes now
 	if queued != null:
@@ -1950,3 +1965,80 @@ func _projectile_interactions(spell: Dictionary, enemy, hit: Dictionary) -> void
 		var player = game.player
 		game.events.emit("projectile", {"kind":"bolt", "from":player.position+Vector3.UP, "to":enemy.position, "follow":enemy, "speed":30.0, "life":0.32, "look":spell.id})
 		echoes.append({"spell":spell,"hits":[{"enemy":enemy,"amount":hit.amount,"crit":hit.crit}],"left":0.32,"scale":sigil.scale,"school":spell.school,"at":sigil.at,"radius":0.0})
+
+
+# ------------------------------------------------------------ Blade Dance
+## Blade Dance (Rogue): dash from enemy to enemy, nearest first, cutting each
+## one and leaving your poison on it. The dash carries you, like a charge, so
+## you are never stood still (Dan, 2026-11-11).
+func _start_dance(spell: Dictionary, near: Array) -> Array:
+	var player = game.player
+	var t: Dictionary = spell.tuning
+	near.sort_custom(func(a, b): return a.position.distance_squared_to(player.position) < b.position.distance_squared_to(player.position))
+	var hops: Array = near.slice(0, int(t.get("maxTargets", 5)))
+	if hops.is_empty():
+		game.events.emit("log", {"text": "%s cuts only air." % spell.name, "kind": "muted"})
+		return []
+	dance = {"spell": spell, "hops": hops, "t": 0.0, "from": player.position, "hit": []}
+	return []
+
+
+func _update_dance(dt: float) -> void:
+	var player = game.player
+	var spell: Dictionary = dance.spell
+	var t: Dictionary = spell.tuning
+	var hop: float = t.get("hopTime", 0.1)
+	if player.dead or dance.hops.is_empty():
+		_end_dance()
+		return
+	var e = dance.hops[0]
+	if not e.alive:
+		dance.hops.pop_front()
+		return
+	dance.t += dt
+	# arrive at the near side of the enemy, not inside it
+	var to: Vector3 = e.position
+	var away := Vector3(dance.from.x - to.x, 0, dance.from.z - to.z)
+	if away.length() > 0.01:
+		to += away.normalized() * (e.radius + 0.5)
+	var k := clampf(dance.t / hop, 0.0, 1.0)
+	player.position.x = lerpf(dance.from.x, to.x, k)
+	player.position.z = lerpf(dance.from.z, to.z, k)
+	player.face_towards(e.position.x, e.position.z)
+	if k < 1.0:
+		return
+	var hit := _damage(spell, e, _weapon_base(t), "", t.damageMultiplier, {"stagger": 0.15, "knockFrom": player.position, "knockback": 0.2})
+	_landed(spell, e, hit)
+	_show(spell, "impact", e.position, _facing_to(e))
+	_anim(spell, "strike", 0.25, 0.4)
+	dance.hit.append(e)
+	dance.hops.pop_front()
+	dance.t = 0.0
+	dance.from = player.position
+
+
+func _end_dance() -> void:
+	var hit: Array = dance.hit
+	var spell: Dictionary = dance.spell
+	dance = null
+	if hit.is_empty():
+		return
+	game.events.emit("log", {"text": "%s cuts %s." % [spell.name, "the " + hit[0].cfg.name if hit.size() == 1 else "%d foes" % hit.size()], "kind": "hit"})
+	var tg = game.targeting
+	var alive := hit.filter(func(x): return x.alive)
+	if not alive.is_empty():
+		tg.engage(tg.current if tg.current != null and alive.has(tg.current) else alive[-1])
+
+
+## Mass Siphon (Occultist fork): each pulse also drains every other enemy
+## carrying your Rot, up to `massSiphon` in all, for a smaller heal each
+func _mass_siphon(spell: Dictionary, main) -> void:
+	var t: Dictionary = spell.tuning
+	var most: int = int(t.get("massSiphon", 0)) - 1
+	if most <= 0:
+		return
+	var player = game.player
+	var others: Array = game.enemies.list.filter(func(e): return e != main and e.alive and not e.protected and not _find_dot(e, "rot").is_empty() and U.hyp(e.position.x - player.position.x, e.position.z - player.position.z) <= spell.get("range", 20))
+	for e in others.slice(0, most):
+		var hit := _damage(spell, e, _spell_base(t), "", t.get("massDamage", 0.5), {"stagger": 0.0, "periodic": true})
+		_heal_number(player.heal(hit.amount * t.get("massHeal", 30) / 100.0))

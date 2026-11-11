@@ -67,10 +67,10 @@
       ],
       "bar": [
         "heavyStrike",
-        "crushingBlow",
+        "cleave",
         "rend",
         "lunge",
-        "cleave",
+        "crushingBlow",
         "berserk"
       ],
       "trained": [
@@ -130,10 +130,10 @@
       ],
       "coreLevels": {
         "heavyStrike": 1,
-        "crushingBlow": 2,
+        "crushingBlow": 5,
         "rend": 3,
         "lunge": 4,
-        "cleave": 5,
+        "cleave": 2,
         "berserk": 8
       }
     },
@@ -332,7 +332,7 @@
         "pinningShot",
         "venomArrow",
         "concussionArrow",
-        "piercingShot",
+        "arrowHail",
         "scatterShot",
         "tripwire"
       ],
@@ -364,9 +364,9 @@
           "cost": 0
         },
         {
-          "ability": "piercingShot",
+          "ability": "arrowHail",
           "trainer": "odo",
-          "level": 14,
+          "level": 12,
           "cost": 0
         },
         {
@@ -392,12 +392,14 @@
           200
         ]
       },
-      "legacyAbilities": [],
+      "legacyAbilities": [
+        "piercingShot"
+      ],
       "swapPool": [
         "pinningShot",
         "venomArrow",
         "concussionArrow",
-        "piercingShot",
+        "arrowHail",
         "scatterShot",
         "tripwire"
       ],

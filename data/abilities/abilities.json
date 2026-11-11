@@ -1026,13 +1026,13 @@
     },
     {
       "id": "tripleShot",
-      "name": "Triple Shot",
+      "name": "Split Shot",
       "kind": "instant",
       "ranged": true,
       "school": "physical",
       "target": "enemy",
       "range": 20,
-      "desc": "Loose three arrows at once: your target and up to 2 enemies within 6 metres of it each take 80% of a bow shot. Needs a bow and uses one arrow. Triggers the global cooldown. 8 second cooldown.",
+      "desc": "Split your arrow: your target and up to 2 enemies within 6 metres of it each take 80% of a bow shot. Needs a bow and uses one arrow. Triggers the global cooldown. 8 second cooldown.",
       "tuning": {
         "cooldown": 8,
         "damageMultiplier": 0.8,
@@ -1053,9 +1053,10 @@
           {
             "id": "fanOfArrows",
             "name": "Fan of Arrows",
-            "text": "Up to 5 arrows.",
+            "text": "Splits to up to 8 enemies.",
             "add": {
-              "maxTargets": 2
+              "maxTargets": 5,
+              "spread": 2
             }
           },
           {
@@ -1299,7 +1300,8 @@
             }
           }
         ]
-      }
+      },
+      "centreOnTarget": true
     },
     {
       "id": "hexOfWithering",
@@ -1439,11 +1441,13 @@
             }
           },
           {
-            "id": "quickSiphon",
-            "name": "Quick Siphon",
-            "text": "Cooldown 4 seconds shorter.",
-            "add": {
-              "cooldown": -4
+            "id": "massSiphon",
+            "name": "Mass Siphon",
+            "text": "Also drains every enemy carrying your Rot, up to 8 in all, at half strength; each extra one heals you for 30% of what it loses.",
+            "tuning": {
+              "massSiphon": 8,
+              "massDamage": 0.5,
+              "massHeal": 30
             }
           }
         ]
@@ -1575,17 +1579,19 @@
       "kind": "burst",
       "school": "holy",
       "target": "self",
-      "desc": "Spend up to three Conviction to burst around you. Spend Reprisal for bonus damage. Full Reprisal guarantees critical hits.",
+      "desc": "Spend up to three Conviction to whirl a holy storm around you: three pulses over a second. Spend Reprisal for bonus damage. Full Reprisal guarantees critical hits.",
       "tuning": {
         "cooldown": 10,
-        "damageMultiplier": 1.5,
-        "radius": 3.5,
+        "damageMultiplier": 0.75,
+        "radius": 4.5,
         "windup": 0.22,
         "stagger": 0.2,
         "knockback": 0,
         "spendCap": 3,
         "perCharge": 0.24,
-        "reprisalBonus": 0.4
+        "reprisalBonus": 0.4,
+        "spins": 3,
+        "spinGap": 0.35
       },
       "upgrades": {
         "enhanced": {
@@ -2044,27 +2050,58 @@
     },
     {
       "id": "cripplingCut",
-      "name": "Crippling Cut",
-      "kind": "instant",
+      "name": "Blade Dance",
+      "kind": "burst",
       "school": "physical",
-      "target": "enemy",
-      "desc": "Wound and slow a pursuer, building one combo point on a hit.",
+      "target": "self",
+      "desc": "Dash from enemy to enemy around you, nearest first, cutting up to five with both blades and leaving your poison on each one. Builds one combo point.",
       "tuning": {
-        "cooldown": 6,
-        "damageMultiplier": 0.65
+        "cooldown": 10,
+        "damageMultiplier": 0.55,
+        "bothHands": 1,
+        "radius": 6,
+        "maxTargets": 5,
+        "hopTime": 0.1,
+        "windup": 0.08,
+        "stagger": 0.1,
+        "knockback": 0
       },
-      "range": 2.6,
       "cost": {
         "energy": 25
       },
       "requires": "weapon",
-      "hitGain": {
+      "gain": {
         "combo": 1
       },
-      "applies": {
-        "name": "Crippled",
-        "duration": 5,
-        "slow": 45
+      "mechanic": "bladeDance",
+      "follow": "poisonedBladeToxin",
+      "upgrades": {
+        "enhanced": {
+          "text": "Cooldown 2 seconds shorter.",
+          "add": {
+            "cooldown": -2
+          }
+        },
+        "forks": [
+          {
+            "id": "longDance",
+            "name": "Long Dance",
+            "text": "Dashes to up to 8 enemies.",
+            "add": {
+              "maxTargets": 3
+            }
+          },
+          {
+            "id": "cripplingDance",
+            "name": "Crippling Dance",
+            "text": "Every enemy cut is also slowed by 45% for five seconds.",
+            "applies": {
+              "name": "Crippled",
+              "duration": 5,
+              "slow": 45
+            }
+          }
+        ]
       }
     },
     {
@@ -2190,6 +2227,53 @@
         "focus": 30
       },
       "ranged": true
+    },
+    {
+      "id": "arrowHail",
+      "name": "Arrow Hail",
+      "kind": "aoe",
+      "school": "physical",
+      "target": "ground",
+      "range": 20,
+      "desc": "Loose a high volley: arrows rain around your target, or on the ground you aim at with no target, for three seconds. Fire while moving; it never stops you.",
+      "tuning": {
+        "cooldown": 12,
+        "radius": 3.5,
+        "duration": 3,
+        "tickInterval": 0.75,
+        "damageMin": 2,
+        "damageMax": 3,
+        "weaponDamage": 0.3,
+        "spellPower": 0
+      },
+      "cost": {
+        "focus": 40
+      },
+      "upgrades": {
+        "enhanced": {
+          "text": "The hail lasts one second longer.",
+          "add": {
+            "duration": 1
+          }
+        },
+        "forks": [
+          {
+            "id": "fireHail",
+            "name": "Fire Hail",
+            "text": "Every enemy caught is set Burning (Flaming Arrow).",
+            "spreads": "flamingArrow"
+          },
+          {
+            "id": "pinningHail",
+            "name": "Pinning Hail",
+            "text": "Enemies caught are slowed by 40% while the arrows fall.",
+            "tuning": {
+              "slow": 40
+            }
+          }
+        ]
+      },
+      "centreOnTarget": true
     },
     {
       "id": "scatterShot",
@@ -2334,7 +2418,8 @@
       "range": 17,
       "cost": {
         "mana": 22
-      }
+      },
+      "centreOnTarget": true
     },
     {
       "id": "bloodPact",
@@ -2528,7 +2613,8 @@
             }
           }
         ]
-      }
+      },
+      "centreOnTarget": true
     },
     {
       "id": "frostRing",
@@ -2767,7 +2853,7 @@
       "kind": "groundCast",
       "school": "fire",
       "target": "ground",
-      "desc": "Mark an area and commit to a long cast. The meteor hits the marked ground when the cast completes.",
+      "desc": "Call a meteor onto your target, or the ground you aim at, and commit to a long cast. It crashes down when the cast completes and hits everything around the impact.",
       "tuning": {
         "cooldown": 18,
         "castTime": 2.7,
@@ -2779,7 +2865,8 @@
       "range": 18,
       "cost": {
         "mana": 35
-      }
+      },
+      "centreOnTarget": true
     },
     {
       "id": "chainLightning",
