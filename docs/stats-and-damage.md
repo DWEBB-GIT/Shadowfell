@@ -153,7 +153,7 @@ A bow goes in the **ranged** slot (any class, as in WoW; Mara sells a hunting bo
 A one-handed weapon (`slot: "oneHand"`) goes in either hand; the off hand takes one only for a class with `dualWield` in `data/abilities/archetypes.json` (the Warden can). As in modern WoW:
 
 - **Each hand has its own swing clock** (`cooldowns.attack` and `cooldowns.attackOff`), at its own weapon's speed and the same T = W ÷ (1 + H), its own animation (the left arm) and its own impact frame. A sword at 2.4 s and a dirk at 1.6 s swing 25 and 37.5 times a minute.
-- **Staggered:** when a fight opens, the off hand's first blow comes half a main-hand swing after the main hand's. After that, the off hand never lands within 0.2 s of a main-hand blow (`staggerGap` on Attack); if it would, its clock is pushed back to just after that blow. The main hand is never held.
+- **Staggered:** when a fight opens, the off hand's first blow comes half a main-hand swing after the main hand's. That opener also keeps 0.2 s clear of a main-hand blow (`staggerGap` on Attack). After the opener each hand runs on its own clock: a main-hand hit never pushes the off hand back, and the main hand is never held.
 - **Off-hand penalty:** off-hand blows do 50% damage (`offHandDamage` in `src/config.js`), knock back half as far and build half the Resolve.
 - Abilities use the main-hand weapon. Casting drops both swings in progress; charges hold both clocks.
 - **Budget:** a one-hand weapon weighs 0.75 of a slot, so two of them carry the same stat points as a main-hand weapon (1) and a shield (0.5). Damage per second is the same formula as any weapon of its item level.

@@ -711,10 +711,12 @@ func try_strike_off(aim) -> bool:
 	var half: float = minf(stats.attack_cooldown_for("main"), stats.attack_cooldown_for("off")) * 0.5
 	var main: float = pending.t if pending != null and pending.type == "strike" else cooldowns.attack
 	var since: float = game.time - (last_main_impact_at if last_main_impact_at != null else -INF)
-	if absf(main - t) < gap:
+	# Only the opening blow is staggered; after that the off hand runs on its own
+	# clock (WoW style) and a main-hand hit never pushes it back
+	if opener_off and absf(main - t) < gap:
 		cooldowns.attackOff = main + half
 		return false
-	if since + t < half - 1e-3:
+	if opener_off and since + t < half - 1e-3:
 		cooldowns.attackOff = half - since
 		if cooldowns.attackOff > windup:
 			return false
