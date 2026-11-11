@@ -586,19 +586,22 @@ func unlocks(id: String) -> Array:
 	var out := []
 	var d: Dictionary = DB.skills.get(id, {})
 	var most := top(id)
-	var add := func(level: int, text: String, kind: String) -> void:
+	var add := func(level: int, text: String, kind: String, item := "") -> void:
 		if level <= most:
-			out.append({"level": maxi(1, level), "text": text, "kind": kind})
+			var u := {"level": maxi(1, level), "text": text, "kind": kind}
+			if item != "":
+				u["item"] = item
+			out.append(u)
 	for r in DB.recipes.values():
 		if r.get("skill") == id:
 			var out_def: Dictionary = Items.get_def(r.output.item)
-			add.call(int(r.get("rank", 1)), out_def.get("name", r.output.item), "recipe")
+			add.call(int(r.get("rank", 1)), out_def.get("name", r.output.item), "recipe", r.output.item)
 	for k in DB.nodes.get("nodeKinds", []):
 		if k.get("skill", "herbalism") == id:
-			add.call(int(k.get("level", 1)), k.name, "gather")
+			add.call(int(k.get("level", 1)), k.name, "gather", k.get("yields", {}).get("item", ""))
 	if id == "mining":
 		for r in DB.mining.get("rocks", []):
-			add.call(int(r.get("rank", 1)), r.name, "gather")
+			add.call(int(r.get("rank", 1)), r.name, "gather", str(r.get("ore", {}).get("item", "")) if r.get("ore") is Dictionary else "")
 	if id == "fishing":
 		var seen := {}
 		var deep := {}
@@ -613,20 +616,20 @@ func unlocks(id: String) -> Array:
 					var item: String = e.get("item", e.get("id", ""))
 					if req > 0 and item != "" and not seen.has(item):
 						seen[item] = true
-						add.call(req, Items.get_def(item).get("name", item), "catch")
+						add.call(req, Items.get_def(item).get("name", item), "catch", item)
 		for fl in deep:
 			add.call(int(fl), "Deeper waters bite for you", "water")
 	var key := id + "Skill"
 	for item in DB.items:
 		var it: Dictionary = DB.items[item]
 		if it.has(key) and it.has("reqSkill"):
-			add.call(int(it.reqSkill), "%s (+%d)" % [it.get("name", item), int(it[key])], "tool")
+			add.call(int(it.reqSkill), "%s (+%d)" % [it.get("name", item), int(it[key])], "tool", item)
 	for p in d.get("perks", []):
 		add.call(int(p.level), "Perk: %s" % " or ".join(p.choices.map(func(c): return c.name)), "perk")
 	if laddered(id):
 		var rs: Array = ladder().get("ranks", [])
 		for i in rs.size() - 1:
-			add.call(int(rs[i].cap), "Rank limit: a trainer makes you %s" % rs[i + 1].name, "rank")
+			add.call(int(rs[i].cap), "Train to %s" % rs[i + 1].name, "rank")
 	for u in d.get("unlocks", []):
 		add.call(int(u.get("level", 1)), str(u.get("text", "")), "note")
 	out.sort_custom(func(a, b): return a.level < b.level if a.level != b.level else a.kind < b.kind)
