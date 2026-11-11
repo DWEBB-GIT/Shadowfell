@@ -136,7 +136,7 @@ const CONFIG := {
 		"tabCloseRange": 3.5, "tabBehindWeight": 3.0},
 	"minimap": {"questRange": 90.0},
 	"loot": {"areaRadius": 5.0, "clickRadius": 40.0, "reach": 3.2, "gatherTime": 2.0},
-	"skinning": {"time": 2.2, "freeLevel": 2, "rankPerLevel": 5},
+	"skinning": {"time": 2.2, "freeLevel": 2, "rankPerLevel": 10},
 	"draught": {"cooldown": 120.0},
 }
 

@@ -223,7 +223,7 @@
             {
               "item": "ghostfin",
               "weight": 1,
-              "reqSkill": 5
+              "reqSkill": 8
             }
           ]
         }
@@ -531,7 +531,7 @@
             {
               "item": "mirror_pike",
               "weight": 2,
-              "reqSkill": 15
+              "reqSkill": 25
             },
             {
               "item": "barrow_eel",

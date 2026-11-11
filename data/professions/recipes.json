@@ -6,9 +6,9 @@
       "skill": "cooking",
       "rank": 1,
       "skillUp": [
-        15,
-        25,
-        35
+        30,
+        50,
+        70
       ],
       "inputs": [
         {
@@ -27,9 +27,9 @@
       "skill": "cooking",
       "rank": 1,
       "skillUp": [
-        15,
-        25,
-        35
+        30,
+        50,
+        70
       ],
       "inputs": [
         {
@@ -46,11 +46,11 @@
     {
       "id": "hound_steak",
       "skill": "cooking",
-      "rank": 10,
+      "rank": 20,
       "skillUp": [
-        25,
-        35,
-        45
+        50,
+        70,
+        90
       ],
       "inputs": [
         {
@@ -69,11 +69,11 @@
     {
       "id": "travellers_stew",
       "skill": "cooking",
-      "rank": 20,
+      "rank": 40,
       "skillUp": [
-        35,
-        45,
-        55
+        70,
+        90,
+        110
       ],
       "inputs": [
         {
@@ -96,11 +96,11 @@
     {
       "id": "smoked_eel",
       "skill": "cooking",
-      "rank": 30,
+      "rank": 60,
       "skillUp": [
-        45,
-        55,
-        65
+        90,
+        110,
+        130
       ],
       "inputs": [
         {
@@ -119,11 +119,11 @@
     {
       "id": "baked_carp",
       "skill": "cooking",
-      "rank": 15,
+      "rank": 30,
       "skillUp": [
-        30,
-        40,
-        50
+        60,
+        80,
+        100
       ],
       "inputs": [
         {
@@ -142,11 +142,11 @@
     {
       "id": "ghostfin_broth",
       "skill": "cooking",
-      "rank": 35,
+      "rank": 70,
       "skillUp": [
-        50,
-        60,
-        70
+        100,
+        120,
+        140
       ],
       "inputs": [
         {
@@ -166,7 +166,7 @@
       "id": "roast_boar",
       "skill": "cooking",
       "rank": 1,
-      "skillUp": [20, 30, 40],
+      "skillUp": [40, 60, 80],
       "inputs": [
         {
           "item": "boar_meat",
@@ -185,7 +185,7 @@
       "id": "pan_fried_perch",
       "skill": "cooking",
       "rank": 1,
-      "skillUp": [15, 25, 35],
+      "skillUp": [30, 50, 70],
       "inputs": [
         {
           "item": "gloomwater_perch",
@@ -209,9 +209,9 @@
       "skill": "smithing",
       "rank": 1,
       "skillUp": [
-        15,
         25,
-        35
+        42,
+        58
       ],
       "inputs": [
         {
@@ -230,9 +230,9 @@
       "skill": "smithing",
       "rank": 1,
       "skillUp": [
-        10,
-        20,
-        30
+        17,
+        33,
+        50
       ],
       "inputs": [
         {
@@ -249,11 +249,11 @@
     {
       "id": "smelt_bronze",
       "skill": "smithing",
-      "rank": 10,
+      "rank": 17,
       "skillUp": [
-        25,
-        35,
-        45
+        42,
+        58,
+        75
       ],
       "inputs": [
         {
@@ -274,11 +274,11 @@
     {
       "id": "smelt_iron",
       "skill": "smithing",
-      "rank": 20,
+      "rank": 33,
       "skillUp": [
-        35,
-        45,
-        55
+        58,
+        75,
+        92
       ],
       "inputs": [
         {
@@ -295,11 +295,11 @@
     {
       "id": "grind_heavy_whetstone",
       "skill": "smithing",
-      "rank": 30,
+      "rank": 50,
       "skillUp": [
-        40,
-        50,
-        60
+        67,
+        83,
+        100
       ],
       "inputs": [
         {
@@ -318,9 +318,9 @@
       "skill": "alchemy",
       "rank": 1,
       "skillUp": [
-        4,
         7,
-        11
+        12,
+        18
       ],
       "inputs": [
         {
@@ -337,11 +337,11 @@
     {
       "id": "brew_fortifying_tonic",
       "skill": "alchemy",
-      "rank": 4,
+      "rank": 7,
       "skillUp": [
-        7,
-        10,
-        14
+        12,
+        17,
+        23
       ],
       "inputs": [
         {
@@ -364,11 +364,11 @@
     {
       "id": "brew_strong_draught",
       "skill": "alchemy",
-      "rank": 10,
+      "rank": 17,
       "skillUp": [
-        13,
-        16,
-        20
+        22,
+        27,
+        33
       ],
       "inputs": [
         {
@@ -391,11 +391,11 @@
     {
       "id": "brew_boar_elixir",
       "skill": "alchemy",
-      "rank": 12,
+      "rank": 20,
       "skillUp": [
-        15,
-        18,
-        22
+        25,
+        30,
+        37
       ],
       "inputs": [
         {
@@ -418,11 +418,11 @@
     {
       "id": "brew_gravemoss",
       "skill": "alchemy",
-      "rank": 16,
+      "rank": 27,
       "skillUp": [
-        19,
-        22,
-        26
+        32,
+        37,
+        43
       ],
       "inputs": [
         {
@@ -445,11 +445,11 @@
     {
       "id": "burn_charcoal",
       "skill": "smithing",
-      "rank": 5,
+      "rank": 8,
       "skillUp": [
-        15,
         25,
-        35
+        42,
+        58
       ],
       "inputs": [
         {
@@ -466,11 +466,11 @@
     {
       "id": "forge_iron_nails",
       "skill": "smithing",
-      "rank": 20,
+      "rank": 33,
       "skillUp": [
-        30,
-        40,
-        50
+        50,
+        67,
+        83
       ],
       "inputs": [
         {
@@ -487,11 +487,11 @@
     {
       "id": "forge_bronze_arrowheads",
       "skill": "smithing",
-      "rank": 10,
+      "rank": 17,
       "skillUp": [
-        20,
-        30,
-        40
+        33,
+        50,
+        67
       ],
       "inputs": [
         {
@@ -508,11 +508,11 @@
     {
       "id": "forge_iron_tool_head",
       "skill": "smithing",
-      "rank": 22,
+      "rank": 37,
       "skillUp": [
-        32,
-        42,
-        52
+        53,
+        70,
+        87
       ],
       "inputs": [
         {
@@ -529,11 +529,11 @@
     {
       "id": "smelt_steel",
       "skill": "smithing",
-      "rank": 30,
+      "rank": 50,
       "skillUp": [
-        40,
-        50,
-        60
+        67,
+        83,
+        100
       ],
       "inputs": [
         {
@@ -556,9 +556,9 @@
       "skill": "woodcraft",
       "rank": 1,
       "skillUp": [
-        10,
-        20,
-        30
+        17,
+        33,
+        50
       ],
       "inputs": [
         {
@@ -577,9 +577,9 @@
       "skill": "woodcraft",
       "rank": 1,
       "skillUp": [
-        12,
-        22,
-        32
+        20,
+        37,
+        53
       ],
       "inputs": [
         {
@@ -596,11 +596,11 @@
     {
       "id": "assemble_rough_arrows",
       "skill": "woodcraft",
-      "rank": 5,
+      "rank": 8,
       "skillUp": [
-        15,
         25,
-        35
+        42,
+        58
       ],
       "inputs": [
         {
@@ -621,11 +621,11 @@
     {
       "id": "assemble_hatchet",
       "skill": "woodcraft",
-      "rank": 8,
+      "rank": 13,
       "skillUp": [
-        18,
-        28,
-        38
+        30,
+        47,
+        63
       ],
       "inputs": [
         {
@@ -646,11 +646,11 @@
     {
       "id": "shape_timber",
       "skill": "woodcraft",
-      "rank": 10,
+      "rank": 17,
       "skillUp": [
-        20,
-        30,
-        40
+        33,
+        50,
+        67
       ],
       "inputs": [
         {
@@ -667,11 +667,11 @@
     {
       "id": "carve_oak_staff",
       "skill": "woodcraft",
-      "rank": 15,
+      "rank": 25,
       "skillUp": [
-        25,
-        35,
-        45
+        42,
+        58,
+        75
       ],
       "inputs": [
         {
@@ -688,11 +688,11 @@
     {
       "id": "turn_yew_wand",
       "skill": "woodcraft",
-      "rank": 20,
+      "rank": 33,
       "skillUp": [
-        30,
-        40,
-        50
+        50,
+        67,
+        83
       ],
       "inputs": [
         {
@@ -711,9 +711,9 @@
       "skill": "skinning",
       "rank": 1,
       "skillUp": [
-        15,
-        25,
-        35
+        30,
+        50,
+        70
       ],
       "inputs": [
         {
@@ -732,9 +732,9 @@
       "skill": "skinning",
       "rank": 1,
       "skillUp": [
-        15,
-        25,
-        35
+        30,
+        50,
+        70
       ],
       "inputs": [
         {
@@ -751,11 +751,11 @@
     {
       "id": "fillet_carp",
       "skill": "skinning",
-      "rank": 15,
+      "rank": 30,
       "skillUp": [
-        25,
-        35,
-        45
+        50,
+        70,
+        90
       ],
       "inputs": [
         {
@@ -772,11 +772,11 @@
     {
       "id": "fillet_eel",
       "skill": "skinning",
-      "rank": 25,
+      "rank": 50,
       "skillUp": [
-        35,
-        45,
-        55
+        70,
+        90,
+        110
       ],
       "inputs": [
         {
@@ -795,9 +795,9 @@
       "skill": "cooking",
       "rank": 1,
       "skillUp": [
-        15,
-        25,
-        35
+        30,
+        50,
+        70
       ],
       "inputs": [
         {
@@ -814,11 +814,11 @@
     {
       "id": "cook_carp_fillet_supper",
       "skill": "cooking",
-      "rank": 15,
+      "rank": 30,
       "skillUp": [
-        25,
-        35,
-        45
+        50,
+        70,
+        90
       ],
       "inputs": [
         {
@@ -835,11 +835,11 @@
     {
       "id": "cook_smoked_eel_fillet",
       "skill": "cooking",
-      "rank": 25,
+      "rank": 50,
       "skillUp": [
-        35,
-        45,
-        55
+        70,
+        90,
+        110
       ],
       "inputs": [
         {
@@ -856,11 +856,11 @@
     {
       "id": "cook_roast_loin",
       "skill": "cooking",
-      "rank": 10,
+      "rank": 20,
       "skillUp": [
-        20,
-        30,
-        40
+        40,
+        60,
+        80
       ],
       "inputs": [
         {
@@ -877,11 +877,11 @@
     {
       "id": "cook_slow_wolf_haunch",
       "skill": "cooking",
-      "rank": 12,
+      "rank": 24,
       "skillUp": [
-        22,
-        32,
-        42
+        44,
+        64,
+        84
       ],
       "inputs": [
         {

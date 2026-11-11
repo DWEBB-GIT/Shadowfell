@@ -33,7 +33,7 @@
       "name": "Angler",
       "renown": 20,
       "mock": 0.2,
-      "requires": [{ "skill": "fishing", "rank": 15 }],
+      "requires": [{ "skill": "fishing", "rank": 25 }],
       "desc": "You can tell a perch from a dace, and you've caught more of both than you've lost.",
       "mocks": ["Smells like an Angler, right enough.", "Hey, Angler! Caught anything bigger than a boot yet?"]
     },
@@ -42,7 +42,7 @@
       "name": "Master Angler",
       "renown": 120,
       "mock": 0.1,
-      "requires": [{ "skill": "fishing", "rank": 40 }],
+      "requires": [{ "skill": "fishing", "rank": 67 }],
       "desc": "The mere gives up its fish to you. Old Tam pretends not to mind.",
       "mocks": ["Master Angler. Master of standing about in the wet, more like."]
     },
@@ -51,7 +51,7 @@
       "name": "Cook",
       "renown": 20,
       "mock": 0.2,
-      "requires": [{ "skill": "cooking", "rank": 15 }],
+      "requires": [{ "skill": "cooking", "rank": 30 }],
       "desc": "Your stew has stopped making people ill. Mostly.",
       "mocks": ["The Cook! Is that what that smell was?"]
     },
@@ -60,7 +60,7 @@
       "name": "Lockpick",
       "renown": 60,
       "mock": 0.5,
-      "requires": [{ "skill": "lockpicking", "rank": 15 }],
+      "requires": [{ "skill": "lockpicking", "rank": 30 }],
       "desc": "No chest is safe. Neither, folk mutter, is anything else.",
       "mocks": ["Hide the silver, here's the Lockpick.", "Lockpick. Hands where I can see them."]
     },

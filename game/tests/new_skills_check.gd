@@ -62,9 +62,9 @@ func _skill_points() -> void:
 	var sk = game.skills
 	var c: Dictionary = DB.skill_ladder.pointChance
 	var total := 0
-	for l in range(1, 60):
+	for l in range(1, 100):
 		total += Skills.xp_needed(l)
-	check(total > 1000 and total < 2000, "1-60 takes %d skill points: a few thousand successes" % total)
+	check(total > 1000 and total < 2500, "1-100 takes %d skill points: a few thousand successes" % total)
 	check(is_equal_approx(c.orange, 0.8) and is_equal_approx(c.yellow, 0.5) and c.green > 0 and c.green < c.yellow and c.grey == 0, "orange 80%, yellow 50%, green low, grey nothing")
 	var roll: Callable = game.random
 	for id in ["mining", "woodcutting", "skinning"]:

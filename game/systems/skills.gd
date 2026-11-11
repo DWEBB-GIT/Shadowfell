@@ -9,7 +9,7 @@ extends RefCounted
 ## trainers in the big cities.
 
 var game
-var ranks := {} ## skill id -> rank (1 when learned); on the ladder, the skill level (1-60)
+var ranks := {} ## skill id -> rank (1 when learned); on the ladder, the skill level (1-100)
 var xp := {} ## laddered skill id -> skill experience towards the next level
 var tiers := {} ## laddered skill id -> trainer rank reached (0 Novice, 1 Apprentice, ...)
 var perks := {} ## laddered skill id -> { "10": perk id, ... }
@@ -279,7 +279,7 @@ func raise(id: String) -> bool:
 
 # ------------------------------------------------------------ the ladder
 ## The profession ladder (skills.json `ladder`, Dan 2026-10-27): a skill
-## with `train` runs from 1 to 60 like a character, capped by the trainer
+## with `train` runs from 1 to 100 (Dan 2026-11-11), capped by the trainer
 ## rank reached. Tasks pay skill experience by their colour; every level
 ## pays a share of a character level's experience; at the perk levels you
 ## choose one of two perks.
@@ -307,7 +307,7 @@ func rank_name(id: String) -> String:
 
 ## skill experience a level needs
 ## skill points a level needs (kept in `xp`): pointsBase + pointsPerLevel x
-## level, so 1-60 takes a few thousand successes (Dan 2026-11-11: between
+## level, so 1-100 takes a few thousand successes (Dan 2026-11-11: between
 ## WoW and RuneScape)
 static func xp_needed(level: int) -> int:
 	var l := ladder()

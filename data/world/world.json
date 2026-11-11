@@ -3158,7 +3158,7 @@
       ],
       "radius": 7,
       "fishTable": "blackpool_fish",
-      "fishLevel": 8
+      "fishLevel": 13
     }
   ],
   "obscured": [
@@ -3226,7 +3226,7 @@
         }
       ],
       "lock": {
-        "pick": 3
+        "pick": 6
       }
     }
   ],
