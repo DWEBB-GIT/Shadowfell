@@ -20,11 +20,13 @@ var recent := {} ## skill id -> [[msec, xp], ...] this session, for the tracker'
 var spells: Array = [] ## class spells learned from a trainer
 var pending_core_bar: Array = []
 var all_spells := false ## a test hook: every class spell
+var mastery := {} ## weapon type -> { level, xp } (skills.json `masteries`)
 
 
 func _init(g) -> void:
 	game = g
 	game.events.on("levelUp", func(e): _learn_core_at(int(e.level)))
+	game.events.on("enemyHit", func(e): if e.get("swing", false): mastery_hit(str(e.get("hand", "main"))))
 
 
 func reset() -> void:
@@ -37,6 +39,7 @@ func reset() -> void:
 	keep_fishing = false
 	recent = {}
 	spells = []
+	mastery = {}
 	pending_core_bar.clear()
 
 
@@ -466,7 +469,7 @@ func perk(id: String, key: String) -> float:
 
 
 func serialize_ladder() -> Dictionary:
-	return {"xp": xp.duplicate(), "tiers": tiers.duplicate(), "perks": perks.duplicate(true), "tracked": tracked, "keepFishing": keep_fishing}
+	return {"xp": xp.duplicate(), "tiers": tiers.duplicate(), "perks": perks.duplicate(true), "tracked": tracked, "keepFishing": keep_fishing, "mastery": mastery.duplicate(true)}
 
 
 ## After apply(): the ladder's state. An old save (ranks to 50, no tiers)
@@ -477,6 +480,12 @@ func apply_ladder(data) -> void:
 	var tr = d.get("tracked", "")
 	tracked = tr if typeof(tr) == TYPE_STRING and has(tr) else ""
 	keep_fishing = d.get("keepFishing", false) == true
+	mastery = {}
+	var ms = d.get("mastery", {})
+	if typeof(ms) == TYPE_DICTIONARY:
+		for t in ms:
+			if typeof(ms[t]) == TYPE_DICTIONARY and DB.masteries.get("types", {}).has(t):
+				mastery[t] = {"level": clampi(int(ms[t].get("level", 1)), 1, mastery_max()), "xp": maxi(0, int(ms[t].get("xp", 0)))}
 	for id in ranks.keys():
 		if not laddered(id):
 			continue
@@ -634,3 +643,53 @@ func unlocks(id: String) -> Array:
 		add.call(int(u.get("level", 1)), str(u.get("text", "")), "note")
 	out.sort_custom(func(a, b): return a.level < b.level if a.level != b.level else a.kind < b.kind)
 	return out
+
+
+# ------------------------------------------------------------ weapon masteries
+## Weapon masteries (skills.json `masteries`, Dan 2026-11-11): every landed
+## swing or shot trains the mastery of the weapon type in that hand. They
+## give no power, only cosmetics and titles (titles.json { mastery, level }).
+
+static func mastery_max() -> int:
+	return int(DB.masteries.get("maxLevel", 60))
+
+
+static func mastery_xp_needed(level: int) -> int:
+	return int(DB.masteries.get("xpBase", 20)) + int(DB.masteries.get("xpPerLevel", 4)) * level
+
+
+## the mastery a hand's weapon trains ("" for bare hands): main, off or ranged
+func mastery_type(hand: String) -> String:
+	var slot: String = {"main": "mainHand", "off": "offHand", "ranged": "ranged"}.get(hand, "mainHand")
+	var eq = game.inventory.equipment.get(slot)
+	if eq == null:
+		return ""
+	var def: Dictionary = Items.get_def(eq.id)
+	if def.get("kind") != "weapon":
+		return ""
+	var t: String = def.get("weaponType", "sword")
+	return t if DB.masteries.get("types", {}).has(t) else ""
+
+
+func mastery_level(t: String) -> int:
+	return int(mastery.get(t, {}).get("level", 1))
+
+
+func mastery_hit(hand: String) -> void:
+	var t := mastery_type(hand)
+	if t == "":
+		return
+	var m: Dictionary = mastery.get(t, {"level": 1, "xp": 0})
+	mastery[t] = m
+	if int(m.level) >= mastery_max():
+		return
+	m.xp = int(m.xp) + int(DB.masteries.get("xpPerHit", 1))
+	while int(m.level) < mastery_max() and int(m.xp) >= mastery_xp_needed(int(m.level)):
+		m.xp = int(m.xp) - mastery_xp_needed(int(m.level))
+		m.level = int(m.level) + 1
+		var name: String = DB.masteries.types[t]
+		game.events.emit("log", {"text": "Your %s mastery rises to %d." % [name, int(m.level)], "kind": "level"})
+		game.events.emit("masteryUp", {"type": t, "level": int(m.level)})
+		for ms in DB.masteries.get("milestones", []):
+			if int(ms.level) == int(m.level):
+				game.events.emit("log", {"text": "%s %d: %s." % [name, int(m.level), ms.text], "kind": "level"})

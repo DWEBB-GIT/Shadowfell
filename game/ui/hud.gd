@@ -1608,13 +1608,13 @@ func _refresh_spells() -> void:
 		tex = icons.profession("fishing")
 	elif game.loot.gather_bar != null:
 		c = game.loot.gather_bar
-		tex = icons.profession("skinning" if c.name.begins_with("Skinning") else "herbalism")
+		tex = icons.profession("skinning" if c.get("skin", false) else "herbalism")
 	elif game.mining.bar != null:
 		c = game.mining.bar
 		tex = icons.profession("mining")
 	elif game.gathering.bar != null:
 		c = game.gathering.bar
-		tex = icons.profession("herbalism")
+		tex = icons.profession(c.get("skill", "herbalism"))
 	_show_cast(cast, c, tex)
 	# the weapon swing timer: fills until the next blow lands, while auto
 	# attack is on (one per hand when dual wielding; the second is Auto Shot's
