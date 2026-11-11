@@ -106,6 +106,7 @@
       "vendorType": "outfitter",
       "stock": [
         "fishing_rod",
+        "hatchet",
         "yew_fishing_rod",
         "ash_fishing_rod",
         "cut_bait",
@@ -204,6 +205,7 @@
       "vendorType": "outfitter",
       "stock": [
         "fishing_rod",
+        "hatchet",
         "yew_fishing_rod",
         "ash_fishing_rod",
         "cut_bait",

@@ -27343,6 +27343,7 @@
 	}
   ],
   "stations": [
+	{"id":"tf_workbench","name":"Iren's workbench","kind":"workbench","model":"crate","position":[-430,-191],"radius":2.6},
 	{"id":"vr_morrow_bench","name":"Morrow's alchemy bench","kind":"alchemy","model":"crate","position":[-313,-380],"radius":2.6},
 	{
 	  "id": "tf_refining_altar",
@@ -31373,6 +31374,10 @@
 	]
   },
 	"nodeGroups": [
+		{"id": "briarwood_ash", "name": "the Briarwood ashes", "live": 4, "respawn": [90, 150], "kinds": [{"kind": "ash_tree", "weight": 1}], "spots": [[-553.1, -367.1], [-579.3, -252.9], [-512.9, -273.0], [-579.6, -312.8], [-552.9, -280.5], [-586.4, -282.7], [-575.2, -348.7], [-530.4, -353.1]]},
+		{"id": "thornford_ash", "name": "the copses round Thornford", "live": 3, "respawn": [90, 150], "kinds": [{"kind": "ash_tree", "weight": 1}], "spots": [[-423.1, -339.5], [-463.2, -152.1], [-494.1, -264.0], [-407.9, -251.3], [-407.4, -172.2], [-481.4, -207.0], [-473.6, -315.3], [-455.1, -375.2], [-453.2, -242.2]]},
+		{"id": "old_watch_oaks", "name": "the Old Watch oaks", "live": 3, "respawn": [120, 180], "kinds": [{"kind": "oak_tree", "weight": 3}, {"kind": "ash_tree", "weight": 1}], "spots": [[-456.3, -380.9], [-402.0, -499.2], [-389.8, -421.1], [-450.3, -446.5], [-404.4, -459.4], [-426.3, -407.0], [-471.7, -417.2], [-430.3, -480.8]]},
+		{"id": "mourning_yews", "name": "the yews of Mourning Hollow", "live": 2, "respawn": [150, 240], "kinds": [{"kind": "yew_tree", "weight": 1}], "spots": [[-322.0, -367.9], [-263.9, -517.5], [-399.7, -484.5], [-263.4, -432.6], [-400.5, -347.6], [-338.3, -442.6], [-326.4, -504.0], [-263.6, -344.6]]},
 		{"id": "holt_hedges", "name": "the Holt Fields hedges", "live": 5, "respawn": [45, 90], "kinds": [{"kind": "wild_garlic", "weight": 3}, {"kind": "ditchbell", "weight": 1}], "spots": [[-364.8, -277.5], [-286.9, -339.6], [-287.0, -248.1], [-400.5, -339.8], [-344.7, -334.5], [-314.6, -292.1], [-399.3, -244.4], [-330.6, -249.4], [-286.6, -307.7], [-344.7, -302.5], [-312.5, -323.5], [-286.6, -277.5]]},
 		{"id": "thornford_verges", "name": "the verges round Thornford", "live": 4, "respawn": [45, 90], "kinds": [{"kind": "ditchbell", "weight": 3}, {"kind": "wild_garlic", "weight": 1}], "spots": [[-427.6, -336.0], [-467.7, -148.6], [-498.6, -260.5], [-412.4, -247.8], [-411.9, -168.7], [-485.9, -203.5], [-478.1, -311.8], [-459.6, -371.7], [-457.7, -238.7], [-456.0, -277.8]]},
 		{"id": "briarwood_floor", "name": "the Briarwood", "live": 4, "respawn": [60, 110], "kinds": [{"kind": "woundwort", "weight": 2}, {"kind": "ditchbell", "weight": 1}], "spots": [[-557.1, -370.1], [-583.3, -255.9], [-516.9, -276.0], [-583.6, -315.8], [-517.1, -373.9], [-556.9, -283.5], [-549.4, -336.0], [-590.4, -285.7], [-579.2, -351.7], [-534.4, -356.1]]},

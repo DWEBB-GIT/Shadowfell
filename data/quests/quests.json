@@ -1725,7 +1725,8 @@
         }
       ],
       "acceptLearn": [
-        "mining"
+        "mining",
+        "smithing"
       ],
       "objectives": [
         {

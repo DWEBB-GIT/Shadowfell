@@ -17,6 +17,7 @@ const STATION_LOOK := {
 	"runeforge": {"cursor": "runeAnvil", "colour": "#b08cff", "letter": "R"},
 	"refining": {"cursor": "gem", "colour": "#ffd060", "letter": "A"},
 	"fire": {"cursor": "pot", "colour": "#ff9a50", "letter": "H"},
+	"workbench": {"cursor": "loot", "colour": "#c89a60", "letter": "W"},
 	"alchemy": {"cursor": "flask", "colour": "#8fe08a", "letter": "B"},
 }
 
@@ -86,7 +87,7 @@ func _fixed_points(list: Array, far: Callable) -> void:
 		if far.call(sh.position[0], sh.position[1]):
 			continue
 		list.append({"key": "shrine" if sh.id == "shrine_road" else "shrine:" + sh.id, "x": sh.position[0], "z": sh.position[1], "bias": 0.0, "reach": 2.6, "prompt": "Rest at the shrine", "name": "Shrine", "run": func(): game.rest_at_shrine(sh)})
-	# a hearth prompts Cooking, a forge Smelting, an alchemy bench Alchemy
+	# a hearth prompts Cooking, a forge Smithing, a workbench Woodcraft, an alchemy bench Alchemy
 	# (the skill whose `craft.kind` is the station's kind); without the
 	# skill the prompt still shows and says where to learn it
 	for st in Layout.stations:
@@ -116,7 +117,7 @@ func _fixed_points(list: Array, far: Callable) -> void:
 		if sk == "":
 			continue
 		var verb: String = DB.skills[sk].craft.get("button", "Use")
-		var win: String = "smelting" if sk == "mining" else "craft:" + sk
+		var win: String = "craft:" + sk
 		var known: bool = game.skills.has(sk)
 		var skill_name: String = DB.skills.get(sk, {}).get("name", sk.capitalize())
 		list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,

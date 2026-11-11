@@ -141,7 +141,19 @@ func block(v: Dictionary) -> String:
 		return "needs %s" % name
 	if game.skills.rank(sk) < v.level:
 		return "needs %s %d" % [name, v.level]
+	# a tree needs a hatchet on the tool belt (nodes.json `tool`: an item flag)
+	var tool: String = kind_def(v.n.kind).get("tool", "")
+	if tool != "" and not has_tool(tool):
+		return "needs %s" % kind_def(v.n.kind).get("toolName", "the right tool")
 	return ""
+
+
+## any item with this flag (woodcuttingAxe) on the tool belt
+func has_tool(flag: String) -> bool:
+	for id in DB.items:
+		if DB.items[id].get(flag, false) and game.inventory.on_belt(id):
+			return true
+	return false
 
 
 func interactions() -> Array:
@@ -149,7 +161,7 @@ func interactions() -> Array:
 	var reach: float = tuning().get("reach", 2.2)
 	for v in live():
 		var why := block(v)
-		out.append({"key": "node:%s:%d" % [v.n.group.id, v.n.i], "x": v.x, "z": v.z, "bias": -0.2, "reach": reach, "prompt": "Pick the %s%s" % [v.name.to_lower(), " (%s)" % why if why != "" else ""], "run": func(): start(v.n)})
+		out.append({"key": "node:%s:%d" % [v.n.group.id, v.n.i], "x": v.x, "z": v.z, "bias": -0.2, "reach": reach, "prompt": "%s the %s%s" % [kind_def(v.n.kind).get("verb", "Pick"), v.name.to_lower(), " (%s)" % why if why != "" else ""], "run": func(): start(v.n)})
 	return out
 
 
@@ -200,7 +212,7 @@ var bar:
 	get:
 		if picking == null:
 			return null
-		return {"t": picking.t, "total": picking.total, "name": "Picking %s (%d)" % [kind_def(picking.n.kind).get("name", "").to_lower(), maxi(1, int(picking.n.get("picks", 1)))]}
+		return {"t": picking.t, "total": picking.total, "skill": kind_def(picking.n.kind).get("skill", "herbalism"), "name": "%s %s (%d)" % ["Chopping" if kind_def(picking.n.kind).get("verb", "Pick") == "Chop" else "Picking", kind_def(picking.n.kind).get("name", "").to_lower(), maxi(1, int(picking.n.get("picks", 1)))]}
 
 
 func update(dt: float, time: float) -> void:

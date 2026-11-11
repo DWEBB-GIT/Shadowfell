@@ -192,7 +192,9 @@ func _passive(def: Dictionary) -> String:
 	if def.get("miningPick", false):
 		return "used by itself when you mine a vein"
 	if def.get("skinningKnife", false):
-		return "used by itself when you skin a kill"
+		return "used by itself when you butcher a kill or fillet a fish"
+	if def.get("woodcuttingAxe", false):
+		return "used by itself when you fell a tree"
 	if def.has("herbalismSkill"):
 		return "used by itself when you pick herbs"
 	if def.get("id") == "lockpicks":
