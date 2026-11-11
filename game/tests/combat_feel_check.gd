@@ -125,10 +125,11 @@ func _run() -> void:
 		check(game.shake > 0, "a kill kicks the camera")
 	# the blow lands on the clip's own contact frame (Dan 2026-11-11: swings
 	# felt soft): one slash of Sword_Attack, its contact on the impact
-	var sa: Array = ForgeRig.SWING_SEGMENTS["Sword_Attack"]
-	check(is_equal_approx(ForgeRig.swing_time("Sword_Attack", 1.53, 0.33, 0.33), sa[1]), "a sword blow lands on the clip's contact frame")
-	check(ForgeRig.swing_time("Sword_Attack", 1.53, 1.0, 0.33) < 1.53 * 0.5, "and only one slash of the two plays per blow")
-	check(is_equal_approx(ForgeRig.swing_time("Dagger_Stab", 0.65, 0.4, 0.4), 0.325), "a clip without a segment keeps its middle as the blow")
+	var sa: Array = ForgeRig.CLIP_WINDOWS["Sword_Attack"]
+	var fr = game.player.rig
+	check(is_equal_approx(fr.clip_time("Sword_Attack", 1.53, 0.33, 0.33), sa[1]), "a sword blow lands on the clip's contact frame")
+	check(fr.clip_time("Sword_Attack", 1.53, 1.0, 0.33) < 1.53 * 0.5, "and only one slash of the two plays per blow")
+	check(is_equal_approx(fr.clip_time("Dagger_Stab", 0.65, 0.4, 0.4), 0.325), "a clip without a window keeps its middle as the blow")
 	# a swing leaves a weapon trail that fades soon after
 	game.player.rig.held = 0.0
 	game.player.rig.play("strike", 0.5, 0.5)
