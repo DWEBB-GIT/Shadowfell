@@ -24,6 +24,8 @@ const SFX := {
 	# with their own sound; a blow turned by your shield or armour clanks
 	"hit_bow": ["bow_hit_1.ogg", "bow_hit_2.ogg", "bow_hit_3.ogg"],
 	"hit_dagger": ["dagger_stab.mp3"],
+	# your own grunt when a blow lands on you (Dan, 2026-11-11)
+	"hurt": ["hurt_1.mp3", "hurt_2.mp3", "hurt_3.mp3"],
 	"blocked": ["sword_blocked_1.ogg", "sword_blocked_2.ogg", "sword_blocked_3.ogg"],
 	"arrow_blocked": ["bow_blocked_1.ogg", "bow_blocked_2.ogg", "bow_blocked_3.ogg"],
 	"lunge": ["heavy_whoosh.mp3"],
@@ -467,16 +469,18 @@ func material_hit(mat: String, level := 1.0) -> void:
 			flesh(level)
 
 
-## An enemy's blow on you: a thud and its weapon, or a clank off your guard.
+## An enemy's blow on you: its recorded hit impact and your grunt, or a
+## clank off your guard. Each is pitched a little at random so repeats
+## do not sound identical.
 func hurt(e: Dictionary) -> void:
+	var foe = e.get("enemy")
+	var shot: bool = foe != null and foe.cfg.get("ranged") != null and game.player and foe.position.distance_to(game.player.position) > 3.0
 	if float(e.get("blocked", 0)) > 0:
-		var foe = e.get("enemy")
-		var shot: bool = foe != null and foe.cfg.get("ranged") != null and game.player and foe.position.distance_to(game.player.position) > 3.0
 		sfx("arrow_blocked" if shot else "blocked", 0.8)
 	if e.get("damage", 0) <= 0:
 		return
-	thud(110, 0.25)
-	sfx("hit", 0.45, 0.85)
+	sfx("hit_bow" if shot else "hit", 0.5, rng.randf_range(0.82, 0.92))
+	sfx("hurt", 0.7, rng.randf_range(0.94, 1.06))
 	if e.get("crit"):
 		crit_sting(0.7)
 
