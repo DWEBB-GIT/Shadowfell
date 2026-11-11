@@ -302,6 +302,55 @@ func _sample(name: String, at: float, weight: float, upper_only: bool) -> void:
 				if bone > 0:
 					_skel.set_bone_pose_position(bone, _skel.get_bone_pose_position(bone).lerp(a.position_track_interpolate(i, at), weight))
 
+## The off-hand blow is the main-hand swing played as its mirror image
+## (Dan, 2026-11-11: dual wield's off-hand swing looked worse than the main
+## hand's). Before, only the left arm copied the right arm's local turns,
+## which flung it out sideways while the body stood still. Now every bone
+## takes its mirror twin's pose from the clip, reflected across the body's
+## centre line in skeleton space: the torso twists the other way, the left
+## arm carries the full slash and the right arm takes the clip's free-arm
+## balance. Legs too when standing still, upper body only on the move, the
+## same as the main swing.
+var _mirror_twin := {} ## bone -> its left/right twin (itself on the centre line)
+var _mirror_order: Array = [] ## bones, parents before children
+var _mirror_normal := Vector3.RIGHT ## the skeleton-space left/right axis
+var _left_arm := {} ## the off hand's own chain: it always takes the blow
+
+func _mirror_setup() -> void:
+	if not _mirror_order.is_empty():
+		return
+	for b in _skel.get_bone_count():
+		var n := _skel.get_bone_name(b)
+		var twin := n
+		if n.ends_with("_l"): twin = n.substr(0, n.length() - 2) + "_r"
+		elif n.ends_with("_r"): twin = n.substr(0, n.length() - 2) + "_l"
+		var t := _skel.find_bone(twin)
+		_mirror_twin[b] = t if t >= 0 else b
+	var todo: Array = []
+	for b in _skel.get_bone_count():
+		if _skel.get_bone_parent(b) < 0: todo.append(b)
+	while not todo.is_empty():
+		var b: int = todo.pop_front()
+		_mirror_order.append(b)
+		todo.append_array(_skel.get_bone_children(b))
+	var l := _skel.find_bone("upperarm_l")
+	var r := _skel.find_bone("upperarm_r")
+	if l >= 0 and r >= 0:
+		_mirror_normal = (_skel.get_bone_global_rest(l).origin - _skel.get_bone_global_rest(r).origin).normalized()
+	var b := _skel.find_bone("clavicle_l")
+	while b >= 0:
+		_left_arm[b] = true
+		var kids := _skel.get_bone_children(b)
+		b = kids[0] if kids.size() == 1 else -1
+	for k in _skel.get_bone_children(_skel.find_bone("hand_l")):
+		_left_arm[k] = true
+
+## A rotation reflected across the plane through the body's centre line.
+func _mirror_quat(q: Quaternion) -> Quaternion:
+	var v := Vector3(q.x, q.y, q.z)
+	v = 2.0 * v.dot(_mirror_normal) * _mirror_normal - v
+	return Quaternion(v.x, v.y, v.z, q.w)
+
 func _mirror_off() -> void:
 	last_off_clip=resolve_action(off_action.get("type","strike"),"off")
 	var clip_name:= "Dagger_Stab_L" if last_off_clip=="Dagger_Stab" else last_off_clip
@@ -309,20 +358,67 @@ func _mirror_off() -> void:
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
 	var impact := clampf(off_action.impact, 0.01, 0.99)
 	var at := clip_time(last_off_clip if clip_name == "Dagger_Stab_L" else clip_name, a.length, k, impact)
-	var weight := minf(1, minf(k, 1-k) * 8)
+	# the same ease in and out as the main swing
+	var weight := minf(1, minf(k * 15, (1 - k) * 10))
 	if clip_name=="Dagger_Stab_L":
 		_sample(clip_name,at,weight,true)
 		return
-	for part in ["clavicle", "upperarm", "lowerarm", "hand"]:
-		var right := _skel.find_bone(part + "_r")
-		var left := _skel.find_bone(part + "_l")
-		var track := a.find_track(NodePath("%s:%s" % [_track_root(a), part + "_r"]), Animation.TYPE_ROTATION_3D)
-		if track < 0: continue
-		var rest_r := _skel.get_bone_rest(right).basis.get_rotation_quaternion()
-		var rest_l := _skel.get_bone_rest(left).basis.get_rotation_quaternion()
-		var delta := a.rotation_track_interpolate(track, at) * rest_r.inverse()
-		var mirrored := Quaternion(delta.x, -delta.y, -delta.z, delta.w) * rest_l
-		_skel.set_bone_pose_rotation(left, _skel.get_bone_pose_rotation(left).slerp(mirrored, weight))
+	_mirror_setup()
+	_find_upper()
+	var upper_only := _moving()
+	# A main-hand swing that started after this one owns the body: the off
+	# hand then moves only its own arm (a newer off swing owns it instead).
+	var body := weight
+	if action != null and action.t < off_action.t:
+		var mk := clampf(action.t / maxf(0.01, action.duration), 0, 1)
+		body *= 1.0 - minf(1, minf(mk * 15, (1 - mk) * 10))
+	# the clip's pose for every bone it keys, in skeleton space
+	var track_root := _track_root(a)
+	var clip_global := {}
+	var rest_global := {}
+	for b in _mirror_order:
+		var parent := _skel.get_bone_parent(b)
+		var local := _skel.get_bone_rest(b).basis.get_rotation_quaternion()
+		var tr := a.find_track(NodePath("%s:%s" % [track_root, _skel.get_bone_name(b)]), Animation.TYPE_ROTATION_3D)
+		if tr >= 0: local = a.rotation_track_interpolate(tr, at)
+		rest_global[b] = _skel.get_bone_global_rest(b).basis.get_rotation_quaternion()
+		clip_global[b] = (clip_global[parent] * local) if parent >= 0 else local
+	# Moving, the legs keep running: the arms and torso are mirrored about
+	# the waist, which stays where the run put it.
+	var anchor := -1
+	if upper_only:
+		for b in _mirror_order:
+			if _upper_bones.has(b):
+				anchor = _skel.get_bone_parent(b)
+				break
+	var now := {}
+	for b in _mirror_order:
+		var parent := _skel.get_bone_parent(b)
+		var current := _skel.get_bone_pose_rotation(b)
+		var w: float = weight if _left_arm.has(b) else body
+		if b == anchor or (upper_only and not _upper_bones.has(b)) or w <= 0.0:
+			now[b] = (now[parent] * current) if parent >= 0 else current
+			continue
+		var s: int = _mirror_twin[b]
+		# the twin's turn from rest in the clip, taken about the anchor
+		var delta: Quaternion = clip_global[s] * rest_global[s].inverse()
+		if anchor >= 0:
+			delta = rest_global[anchor] * clip_global[anchor].inverse() * delta
+		var target: Quaternion = _mirror_quat(delta) * rest_global[b]
+		if anchor >= 0:
+			target = now[anchor] * rest_global[anchor].inverse() * target
+		var parent_now: Quaternion = now[parent] if parent >= 0 else Quaternion.IDENTITY
+		var local: Quaternion = current.slerp((parent_now.inverse() * target).normalized(), w)
+		_skel.set_bone_pose_rotation(b, local)
+		now[b] = parent_now * local
+		# the pelvis sways to the other side, as the clip's sways
+		var pt := a.find_track(NodePath("%s:%s" % [track_root, _skel.get_bone_name(s)]), Animation.TYPE_POSITION_3D)
+		if pt >= 0 and b > 0 and s == b and not upper_only:
+			var rest_at := _skel.get_bone_rest(b).origin
+			var frame := (rest_global[parent] if parent >= 0 else Quaternion.IDENTITY) as Quaternion
+			var d := frame * (a.position_track_interpolate(pt, at) - rest_at)
+			d -= 2.0 * d.dot(_mirror_normal) * _mirror_normal
+			_skel.set_bone_pose_position(b, _skel.get_bone_pose_position(b).lerp(rest_at + frame.inverse() * d, w))
 
 
 ## Fits the run to a quick, upright stride (Dan, 2026-11-11: "more
