@@ -9,9 +9,10 @@
 global uniform vec3 sf_cut_cam;
 global uniform vec3 sf_cut_focus;
 
-const float SF_CUT_INNER = 1.5; // fully open this close to the line (m)
-const float SF_CUT_OUTER = 2.8; // solid again from here
+const float SF_CUT_INNER = 0.6; // most open this close to the line (m) (Dan 2026-11-11: was 1.5, hid whole trees)
+const float SF_CUT_OUTER = 1.5; // solid again from here (was 2.8)
 const float SF_CUT_BEHIND = 0.6; // this close in front of the player stays solid
+const float SF_CUT_MIN_KEEP = 0.25; // even the centre keeps this share of pixels, so the object still reads
 
 // 0 cuts the pixel, 1 keeps it. `world` is the pixel's world position.
 float sf_cut_keep(vec3 world, vec2 frag) {
@@ -26,7 +27,7 @@ float sf_cut_keep(vec3 world, vec2 frag) {
 		return 1.0;
 	}
 	float d = length(world - (sf_cut_cam + dir * along));
-	float solid = smoothstep(SF_CUT_INNER, SF_CUT_OUTER, d);
+	float solid = mix(SF_CUT_MIN_KEEP, 1.0, smoothstep(SF_CUT_INNER, SF_CUT_OUTER, d));
 	// 4x4 Bayer threshold: an even retro screen-door, not noise
 	ivec2 p = ivec2(mod(frag, 4.0));
 	int i = p.x + p.y * 4;
