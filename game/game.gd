@@ -1288,6 +1288,8 @@ func step(dt: float) -> void:
 	var controls = _handle_input(dt) # also runs on the title screen, for the pad
 	input.end_frame()
 	var paused: bool = not started or hud.blocks_gameplay
+	if started:
+		save.tick(dt) # level, skills and position save together, often (save.gd)
 	if not paused:
 		time += dt
 		world_state.advance_clock(dt)
