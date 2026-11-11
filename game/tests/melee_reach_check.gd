@@ -79,6 +79,26 @@ func _run() -> void:
 	var was: float = pl.position.x
 	pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {}})
 	check(pl.position.x < was, "walking on away from it moves you at once")
+	# left button held (mouse aim) walking past a foe at your side: the
+	# cursor turn and the pivot used to cancel out and stop you dead
+	pl.position = at + Vector3(1.4, 0, 0)
+	pl.facing = atan2(0.3, 1.0) # facing +z, the foe at your side and a bit behind
+	pl.pivoting = false
+	var walk := Vector2(-1.0, 0.6).normalized()
+	var cursor: Vector3 = pl.position + Vector3(walk.x, 0, walk.y) * 6.0
+	start = pl.position
+	for i in 30:
+		pl.update(dt, {"move": {"x": walk.x, "z": walk.y}, "actions": {}, "faceAim": cursor})
+	check(Vector2(pl.position.x - start.x, pl.position.z - start.z).length() > 1.0, "holding the left button you turn and walk on (%.2f m)" % Vector2(pl.position.x - start.x, pl.position.z - start.z).length())
+	# a right click on a foe behind you, standing: a quick turn, then swings
+	pl.position = at + Vector3(1.6, 0, 0)
+	pl.facing = atan2(1.0, 0.0)
+	pl.face_goal = foe
+	var turn_frames := 0
+	while pl.face_goal != null and turn_frames < 60:
+		pl.update(dt, {"move": {"x": 0.0, "z": 0.0}, "actions": {}})
+		turn_frames += 1
+	check(pl.facing_point(at.x, at.z, 5) and turn_frames <= 8, "a right click turns you to a foe behind you (%d frames)" % turn_frames)
 	# aim assist, no forced snap (Dan 2026-11-10)
 	pl.moving = false
 	pl.pending = null
