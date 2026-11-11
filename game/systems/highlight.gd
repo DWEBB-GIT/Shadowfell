@@ -28,13 +28,16 @@ static func _make(c: Color) -> StandardMaterial3D:
 
 ## the visible node of a picked thing ({kind, obj}), or null
 func visual(pick) -> Node3D:
-	if pick == null:
+	var n = _visual(pick)
+	return n if is_instance_valid(n) and n.is_inside_tree() else null
+
+
+func _visual(pick):
+	if pick == null or not is_instance_valid(pick.obj) and typeof(pick.obj) == TYPE_OBJECT:
 		return null
 	var o = pick.obj
 	match pick.kind:
-		"enemy", "npc":
-			return o.get("group")
-		"chest":
+		"enemy", "npc", "chest":
 			return o.get("group")
 		"vein", "herb":
 			return o.get("node")
@@ -42,7 +45,7 @@ func visual(pick) -> Node3D:
 			if o.kind == "item":
 				return o.entry.get("group")
 			var e = game.enemies.by_id(o.id)
-			return e.group if e else null
+			return e.get("group") if e != null else null
 	return null
 
 
@@ -56,7 +59,9 @@ func update(hover, selected) -> void:
 	if is_instance_valid(h):
 		want[h] = _mat_hover
 	for n in _lit.keys():
-		if not want.has(n) or want[n] != _lit[n]:
+		if not is_instance_valid(n):
+			_lit.erase(n)
+		elif not want.has(n) or want[n] != _lit[n]:
 			_unlight(n)
 	for n in want:
 		if not _lit.has(n):
@@ -87,11 +92,11 @@ func _light(root: Node3D, mat: Material) -> void:
 	var stack: Array = [root]
 	while not stack.is_empty():
 		var n: Node = stack.pop_back()
-		if n is GeometryInstance3D:
+		if n is MeshInstance3D and n.mesh != null:
 			if not _saved.has(n):
 				_saved[n] = n.material_overlay
 			var swapped := false
-			if full and n is MeshInstance3D and n.mesh != null:
+			if full:
 				var keep := []
 				for i in n.mesh.get_surface_count():
 					keep.append(n.get_surface_override_material(i))
