@@ -44,6 +44,7 @@ const SNAP_HOURS := 0.25 ## a clock jump bigger than this (a load, a night's sle
 const PATHS_PER_FRAME := 2
 const PRESENCE_EVERY := 15 ## frames between quest checks for whether someone is about
 const FAR_EVERY := 4 ## off-screen people update every 4th frame
+const BACKGROUND_EVERY := 30 ## background folk far out of view: put where their day says, twice a second
 
 
 class Npc:
@@ -61,6 +62,7 @@ class Npc:
 	var model: Node3D
 	var rig: Rig
 	var board := false ## a notice board: never turns or works
+	var ambient := false ## background town life: not walked while far out of view
 	var rest_timer := 0.0 ## a smith's break between bouts at the anvil
 	var bout := 6 ## blows left in this bout
 	var work_timer: float
@@ -98,6 +100,7 @@ class Npc:
 		group.position = position
 		# no collider: the player (and enemies) walk straight through townsfolk (Dan, 2026-11-04)
 		places.work = {"at": Vector2(post.x, post.z), "via": [], "inside": false, "facing": rest_facing}
+		ambient = d.get("ambient", false)
 		board = d.get("board", false)
 		work_timer = 1 + randf()
 		for q in d.get("path", []):
@@ -534,7 +537,25 @@ func update(dt: float) -> void:
 		# people out of view walk their day at a quarter of the rate
 		# (staggered), so a town full of folk costs little off screen
 		var step := dt
-		if n.group.get_parent() == null and not snap:
+		var hidden := n.group.get_parent() == null
+		# background folk (town life) far out of view are not walked at all,
+		# the way MMOs treat ambient crowds: every so often they are put
+		# where their day says, so they are there when you arrive. Road
+		# walkers keep going in big steps. Quest people, traders and enemies
+		# are not ambient and keep simulating.
+		if n.ambient and hidden and not snap \
+			and n.position.distance_squared_to(game.player.position) > WorldStream.VIEW_OUT * WorldStream.VIEW_OUT:
+			if (_frame + i) % BACKGROUND_EVERY != 0:
+				continue
+			if n.path.size() >= 2:
+				n.walk_road(dt * BACKGROUND_EVERY, hour)
+			elif not n.routine.is_empty():
+				var at: String = n.place_at(hour)
+				if at != n.place or n.walking or n.waiting:
+					n.snap_to(at)
+					_paths.erase(n)
+			continue
+		if hidden and not snap:
 			if (_frame + i) % FAR_EVERY != 0:
 				continue
 			step = dt * FAR_EVERY
@@ -592,9 +613,13 @@ func shown_count() -> int:
 
 ## what the interaction system offers for each NPC: a word, or a knock at
 ## the door of someone gone in for the night
-func interactions() -> Array:
+## `near`: only people within this box of the player (the prompt scan)
+func interactions(near := INF) -> Array:
 	var out := []
+	var pp: Vector3 = game.player.position
 	for n in here:
+		if absf(n.position.x - pp.x) > near or absf(n.position.z - pp.z) > near:
+			continue
 		var prompt := ("Knock for %s" if n.inside else "Talk to %s") % n.name
 		out.append({"key": "npc:" + n.id, "x": n.position.x, "z": n.position.z, "bias": -0.6, "reach": DB.CONFIG.shop.talkRange, "prompt": prompt, "run": func(): talk(n)})
 	return out

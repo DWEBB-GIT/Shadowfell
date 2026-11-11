@@ -469,6 +469,7 @@ const ANIMATE_RANGE := 45.0
 var _flash_shown := false
 
 
+var far_skip := 0 ## Enemies.update: frames left before an idle one far away is looked at again
 var idle_dt := 0.0 ## time saved up while idle out of sight (Enemies.update)
 
 

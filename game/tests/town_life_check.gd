@@ -121,17 +121,21 @@ func _walker() -> void:
 			break
 	check(reached and Vector2(n.position.x, n.position.z).distance_to(end) < 0.5, "they reach the end of the road and rest")
 	var rest_at: Vector3 = n.position
-	game.npcs.update(1.0)
+	# far out of view a background walker is stepped every BACKGROUND_EVERY frames
+	var every: int = game.npcs.BACKGROUND_EVERY
+	for i in every:
+		game.npcs.update(1.0 / every)
 	check(n.position.distance_to(rest_at) < 0.01, "standing still while they rest")
 	# a rest ending after dark waits for morning
 	ws.hour = 22.0
 	n.linger = 0.05
-	game.npcs.update(0.1)
+	for i in every:
+		game.npcs.update(0.1 / every)
 	check(n.linger > 0.0, "no setting out after dark")
 	ws.hour = 7.0
 	n.linger = 0.05
-	game.npcs.update(0.1)
-	game.npcs.update(0.5)
+	for i in every * 2:
+		game.npcs.update(0.3 / every)
 	check(n.position.distance_to(rest_at) > 0.2, "and back along the road in the morning")
 
 

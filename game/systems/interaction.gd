@@ -63,13 +63,13 @@ func _candidates(near := INF, fixed := false) -> Array:
 	for s in loot.skinnables():
 		var why: String = loot.skin_block(s)
 		list.append({"key": "skin:" + s.id, "x": s.x, "z": s.z, "bias": -0.3, "prompt": "Skin the %s%s" % [s.name, " (%s)" % why if why != "" else ""], "run": func(): loot.start_skin(s)})
-	list.append_array(game.npcs.interactions())
+	list.append_array(game.npcs.interactions(near))
 	list.append_array(game.chests.interactions())
 	list.append_array(game.grave.interactions())
 	_fixed_points(list, far)
 	# a glinting ore vein, for a miner
-	list.append_array(game.mining.interactions())
-	list.append_array(game.gathering.interactions())
+	list.append_array(game.mining.interactions(near))
+	list.append_array(game.gathering.interactions(near))
 	list.append_array(game.discovery.interactions())
 	list.append_array(game.puzzles.interactions())
 	for sp in Layout.signposts:

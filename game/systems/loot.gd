@@ -609,6 +609,9 @@ func _age_ground(dt: float) -> void:
 		active.remove_at(i)
 
 
+const GLINT_NEAR := 60.0
+
+
 func update(dt: float, time: float) -> void:
 	for i in range(regrow.size() - 1, -1, -1):
 		var r: Dictionary = regrow[i]
@@ -633,9 +636,14 @@ func update(dt: float, time: float) -> void:
 				else:
 					collect(g.entry)
 	_age_ground(dt)
+	# glints bob only near the player (the camera shows ~30 m): one far off
+	# keeps its last pose, nobody can see it
+	var pp: Vector3 = game.player.position
 	for l in active:
 		if l.def.get("quest"):
 			l.glint.visible = available(l)
+		if absf(l.x - pp.x) > GLINT_NEAR or absf(l.z - pp.z) > GLINT_NEAR:
+			continue
 		l.glint.material_override.albedo_color.a = 0.45 + sin(time * 2.2 + l.seed) * 0.2
 		l.glint.position.y = 0.3 + sin(time * 1.5 + l.seed) * 0.05
 		if l.get("beam"):
