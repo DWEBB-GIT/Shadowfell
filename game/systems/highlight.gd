@@ -63,15 +63,45 @@ func update(hover, selected) -> void:
 			_light(n, want[n])
 
 
+## lit: the thing is drawn unshaded (full brightness, no shadow or night),
+## each surface swapped for an unlit copy of its own material; shader
+## materials that can't be copied get the bright overlay instead
+var _unlit := {} ## original material -> its unlit copy
+var _saved_surf := {} ## GeometryInstance3D -> [surface overrides]
+
+
+func _unlit_of(m: Material) -> Material:
+	if not (m is BaseMaterial3D):
+		return null
+	if not _unlit.has(m):
+		var c: BaseMaterial3D = m.duplicate()
+		c.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		c.albedo_color = c.albedo_color.lightened(0.08)
+		_unlit[m] = c
+	return _unlit[m]
+
+
 func _light(root: Node3D, mat: Material) -> void:
 	_lit[root] = mat
+	var full := mat == _mat_hover
 	var stack: Array = [root]
 	while not stack.is_empty():
 		var n: Node = stack.pop_back()
 		if n is GeometryInstance3D:
 			if not _saved.has(n):
 				_saved[n] = n.material_overlay
-			n.material_overlay = mat
+			var swapped := false
+			if full and n is MeshInstance3D and n.mesh != null:
+				var keep := []
+				for i in n.mesh.get_surface_count():
+					keep.append(n.get_surface_override_material(i))
+					var u = _unlit_of(n.get_active_material(i))
+					if u != null:
+						n.set_surface_override_material(i, u)
+						swapped = true
+				_saved_surf[n] = keep
+			if not swapped:
+				n.material_overlay = mat
 		stack.append_array(n.get_children())
 
 
@@ -80,6 +110,12 @@ func _unlight(root) -> void:
 	for n in _saved.keys():
 		if not is_instance_valid(n):
 			_saved.erase(n)
+			_saved_surf.erase(n)
 		elif is_instance_valid(root) and (n == root or root.is_ancestor_of(n)):
 			n.material_overlay = _saved[n]
 			_saved.erase(n)
+			if _saved_surf.has(n):
+				var keep: Array = _saved_surf[n]
+				for i in mini(keep.size(), n.mesh.get_surface_count() if n.mesh else 0):
+					n.set_surface_override_material(i, keep[i])
+				_saved_surf.erase(n)
