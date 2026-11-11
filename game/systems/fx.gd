@@ -17,8 +17,8 @@ var dust_mat: StandardMaterial3D
 
 
 ## The soft round shadow under a character.
-static func blob_shadow(size: float) -> MeshInstance3D:
-	var m := Tex.fx_material(Tex.blob(), Color.WHITE, false)
+static func blob_shadow(size: float, tex: Texture2D = null) -> MeshInstance3D:
+	var m := Tex.fx_material(tex if tex else Tex.blob(), Color.WHITE, false)
 	var q := Tex.ground_quad(m)
 	q.scale = Vector3(size, 1, size)
 	q.position.y = 0.03

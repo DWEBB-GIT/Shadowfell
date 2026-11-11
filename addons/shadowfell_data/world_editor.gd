@@ -208,7 +208,10 @@ func _process(dt: float) -> void:
 	env.ambient_light_energy = Game.HEMI * Tex.LIGHT_SCALE * Game.AMBIENT_K * g.ambient
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = Game.EXPOSURE
-	env.tonemap_white = 1.6
+	env.tonemap_white = Game.TONEMAP_WHITE
+	g = g.duplicate()
+	g.contrast *= Game.STYLE.contrast
+	g.saturation *= Game.STYLE.saturation
 	ZoneGrade.apply_colour(env, g)
 
 

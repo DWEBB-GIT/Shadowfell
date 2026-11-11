@@ -43,7 +43,9 @@ func _run() -> void:
 	p.position.y += 1.0
 	p._sync()
 	var b: Basis = p.ground_shadow.global_transform.basis
-	check(absf(b.y.normalized().dot(Vector3.UP) - 1.0) < 0.001, "shadow does not turn with the flip")
+	# it lies along the slope under the feet, never turned by the flip
+	var n := Land.ground_normal(p.position.x, p.position.z)
+	check(absf(b.y.normalized().dot(n) - 1.0) < 0.001, "shadow does not turn with the flip")
 	check(absf(p.ground_shadow.global_position.y - (p.position.y - 1.0 + 0.03)) < 0.001, "shadow stays on the ground mid-jump")
 	print("quest mark check: %d failed" % failures)
 	quit(1 if failures else 0)
