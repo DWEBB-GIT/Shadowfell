@@ -906,6 +906,12 @@ const STALL_GAIN := 0.1 ## metres closer that count as headway
 
 ## Click to move: the way to walk this frame, or null. Arriving runs the
 ## action the walk was for; any movement key takes over and ends it.
+## A click walk whose mouse button is still held down.
+func _move_held() -> bool:
+	var m = move_to
+	return m != null and m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld)
+
+
 func _click_move(keys_move: Dictionary, dt: float):
 	var m = move_to
 	if m == null:
@@ -916,7 +922,7 @@ func _click_move(keys_move: Dictionary, dt: float):
 	if keys_move.x or keys_move.z:
 		# keys steer while held; a mouse button still held down picks the
 		# walk back up once they let go (Dan, 2026-11-03)
-		if m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld):
+		if _move_held():
 			return null
 		move_to = null
 		return null
@@ -1191,7 +1197,9 @@ func _handle_input(dt: float):
 		else:
 			_click("right")
 	# Manual movement also wins over a new click destination in this frame.
-	if keys_move.x or keys_move.z:
+	# A held mouse walk survives: it picks back up once the keys let go,
+	# in the air or not (Dan, 2026-11-11).
+	if (keys_move.x or keys_move.z) and not _move_held():
 		move_to = null
 	# Mouse aim: the left button held aims you at the cursor (or at your
 	# target, once you are swinging at it); so does the right stick
