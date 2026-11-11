@@ -72,6 +72,9 @@ func reset_engaged() -> void:
 ## it is fighting (WorldStream.VIEW_IN / VIEW_OUT). A multiplayer server
 ## would run update() for every enemy near any player and attach no bodies.
 var _tick := 0
+const CLOSE := 45.0 ## idle ones within this (Enemy.ANIMATE_RANGE) update every frame
+const FAR_SKIP := 20 ## idle ones past 180 m are measured again after this many frames
+const FAR_EVERY := 6 ## idle ones further out update every 6th frame
 
 
 func update(dt: float) -> void:
@@ -83,28 +86,39 @@ func update(dt: float) -> void:
 		_keep_hours()
 	_tick += 1
 	for e in list:
+		# idle ones far beyond the view are not even measured every frame:
+		# the player cannot cover the gap to VIEW_IN in FAR_SKIP frames
+		if e.far_skip > 0 and e.state == "idle":
+			e.far_skip -= 1
+			continue
 		var d2: float = e.position.distance_squared_to(player.position)
 		var near: bool = d2 < 180.0 * 180.0
+		if not near and e.state == "idle" and e.group.get_parent() == null:
+			e.far_skip = FAR_SKIP
 		_show(e, d2)
-		if e.state != "idle" or (near and e.group.get_parent() != null):
+		if e.state != "idle" or (d2 < CLOSE * CLOSE and e.group.get_parent() != null):
 			e.update(dt + e.idle_dt, player)
 			e.idle_dt = 0.0
 		elif near:
-			# idle and out of sight (far past any aggro reach): looked at a
-			# quarter as often, with the time saved up, so the browser's one
-			# thread is not spent on bodies nobody sees
+			# idle and past what the camera shows (and far past any aggro
+			# reach): looked at a few times a second, with the time saved up,
+			# the way MMO servers tick the mobs nobody is near. Staggered so
+			# they do not all wake on the same frame.
 			e.idle_dt += dt
-			if (_tick + e.get_instance_id()) % 4 == 0:
+			if (_tick + e.get_instance_id()) % FAR_EVERY == 0:
 				e.update(e.idle_dt, player)
 				e.idle_dt = 0.0
 	_separate()
 	# a body with loot stays down until looted; then it sinks away
-	for e in list.duplicate():
-		if e.dead and e.corpse and e.rig.death > 2.0:
+	for i in range(list.size() - 1, -1, -1):
+		var e = list[i]
+		if not e.dead:
+			continue
+		if e.corpse and e.rig.death > 2.0:
 			e.rig.death = 2.0
-		if e.dead and not e.corpse and e.rig.death > 5.5:
+		if not e.corpse and e.rig.death > 5.5:
 			e.group.queue_free()
-			list.erase(e)
+			list.remove_at(i)
 
 
 ## put an enemy's body in the scene, or take it out, by distance
@@ -175,8 +189,12 @@ func _respawn(dt: float) -> void:
 func _separate() -> void:
 	# only bodies in view can be seen to overlap; idle ones far off stand still
 	var pp: Vector3 = game.player.position
-	var view2 := WorldStream.VIEW_OUT * WorldStream.VIEW_OUT
-	var living := list.filter(func(e): return e.alive and (e.state != "idle" or e.position.distance_squared_to(pp) < view2))
+	# (idle ones past CLOSE are off camera and barely shuffle)
+	var view2 := CLOSE * CLOSE
+	var living := []
+	for e in list:
+		if e.alive and (e.state != "idle" or e.position.distance_squared_to(pp) < view2):
+			living.append(e)
 	# sweep along x: once the next enemy is further off in x than any two
 	# could reach, none after it can touch this one (was every pair: 5 ms
 	# a frame for 85 enemies)

@@ -67,6 +67,7 @@ static func use_map(map: String) -> void:
 	_tiles.clear()
 	_pad_level.clear()
 	_water_level.clear()
+	_dips_built = -1
 	_ground_img = null
 	_map_tex = null
 	_surface_paint.clear()
@@ -514,23 +515,74 @@ static func _lake_level(id: String, fallback: float) -> float:
 
 static func height_at(x: float, z: float) -> float:
 	var h := base_height(x, z)
-	for i in _pads.size():
-		var p: Array = _pads[i]
-		var d := Vector2(x - p[0], z - p[1]).length()
-		if d > p[2] + 3.0:
-			continue
-		if not _pad_level.has(i):
-			_pad_level[i] = base_height(p[0], p[1])
-		h = lerpf(_pad_level[i], h, smoothstep(p[2], p[2] + 3.0, d))
+	if _dips_built != _water.size() + _pads.size() * 1000:
+		_build_dips()
+	# only the pads and ponds that touch this 16 m cell are looked at: called
+	# for every moving body every frame (same shapes as before)
+	var found = _dip_cells.get(Vector2i(floori(x / DIP_CELL), floori(z / DIP_CELL)))
+	if found == null:
+		return h
+	var near: PackedInt32Array = found
+	for c in near:
+		if c < 0:
+			var j := -c - 1
+			var ox := x - _pad_xzr[j]
+			var oz := z - _pad_xzr[j + 1]
+			var d := sqrt(ox * ox + oz * oz)
+			var reach := _pad_xzr[j + 2] + 3.0
+			if d > reach:
+				continue
+			var i := j / 3
+			if not _pad_level.has(i):
+				_pad_level[i] = base_height(_pad_xzr[j], _pad_xzr[j + 1])
+			h = lerpf(_pad_level[i], h, smoothstep(_pad_xzr[j + 2], reach, d))
+	for j in near:
+		if j >= 0:
+			var ox := x - _dip_xzr[j]
+			var oz := z - _dip_xzr[j + 1]
+			var r := _dip_xzr[j + 2]
+			var d := sqrt(ox * ox + oz * oz)
+			if d > r + 1.0:
+				continue
+			var k := 1.0 - smoothstep(r - 1.6, r + 0.6, d)
+			h = lerpf(h, water_level(_dip_water[j / 3]) - 1.1, k)
+	return h
+
+
+const DIP_CELL := 16.0
+static var _dip_cells := {} ## Vector2i -> PackedInt32Array: pad starts as -(j+1), pond starts as j
+
+
+static func _add_dip(x: float, z: float, reach: float, code: int) -> void:
+	for cx in range(floori((x - reach) / DIP_CELL), floori((x + reach) / DIP_CELL) + 1):
+		for cz in range(floori((z - reach) / DIP_CELL), floori((z + reach) / DIP_CELL) + 1):
+			var k := Vector2i(cx, cz)
+			if not _dip_cells.has(k):
+				_dip_cells[k] = PackedInt32Array()
+			_dip_cells[k].append(code)
+
+
+static var _pad_xzr := PackedFloat32Array()
+static var _dip_xzr := PackedFloat32Array() ## uncarved ponds: x, z, radius
+static var _dip_water: Array = []
+static var _dips_built := -1
+
+
+static func _build_dips() -> void:
+	_dips_built = _water.size() + _pads.size() * 1000
+	_dip_cells = {}
+	_pad_xzr = PackedFloat32Array()
+	for p in _pads:
+		_add_dip(p[0], p[1], p[2] + 3.0, -(_pad_xzr.size() + 1))
+		_pad_xzr.append_array([p[0], p[1], p[2]])
+	_dip_xzr = PackedFloat32Array()
+	_dip_water = []
 	for w in _water:
 		if w.get("carved"):
 			continue # the land already dips under it
-		var d := Vector2(x - w.position[0], z - w.position[1]).length()
-		if d > w.radius + 1.0:
-			continue
-		var k := 1.0 - smoothstep(w.radius - 1.6, w.radius + 0.6, d)
-		h = lerpf(h, water_level(w) - 1.1, k)
-	return h
+		_add_dip(w.position[0], w.position[1], w.radius + 1.0, _dip_xzr.size())
+		_dip_xzr.append_array([w.position[0], w.position[1], w.radius])
+		_dip_water.append(w)
 
 
 ## The fishing water at a point, if any: a pond (a circle) or a lake (an

@@ -300,9 +300,14 @@ func _place_north() -> void:
 func markers() -> Array:
 	var quests = game.quests
 	var out := []
+	var off := _off_map_test()
 	for s in Layout.shrines:
+		if off.call(s.position[0], s.position[1]):
+			continue
 		out.append({"x": s.position[0], "z": s.position[1], "kind": "shrine"})
 	for st in Layout.stations:
+		if off.call(st.position[0], st.position[1]):
+			continue
 		out.append({"x": st.position[0], "z": st.position[1], "kind": "station", "station": st.kind, "label": Interaction.title(st.name)})
 	# where open objectives point
 	var areas := {}
@@ -333,6 +338,8 @@ func markers() -> Array:
 	for n in game.npcs.here:
 		if n.def.get("ambient"):
 			continue # background folk (town life) would bury the people you look for
+		if off.call(n.position.x, n.position.z):
+			continue
 		var status: String = quests.marker_for(n.id) if not _far(n.position.x, n.position.z) else ""
 		var quest: String = status if status != "" and not _far(n.position.x, n.position.z) else ""
 		# a trade (the inn's tankard) shows even while its keeper has a quest:
@@ -343,10 +350,14 @@ func markers() -> Array:
 			out.append({"x": n.position.x, "z": n.position.z, "kind": quest, "icon": n.def.get("mapIcon"), "label": n.name})
 	# a miner sees where the live veins glint (WoW's Find Minerals)
 	if game.skills.has("mining"):
-		for v in game.mining.veins():
-			out.append({"x": v.x, "z": v.z, "kind": "vein", "label": v.name})
+		for o in game.mining.outcrops:
+			if o.rock != "" and not off.call(o.x, o.z):
+				out.append({"x": o.x, "z": o.z, "kind": "vein", "label": game.mining.name_of(o)})
 	# a herbalist sees the herbs they can pick (WoW's Find Herbs)
-	for v in game.gathering.live():
+	for n in game.gathering.nodes:
+		if n.kind == "" or off.call(n.x, n.z):
+			continue
+		var v: Dictionary = Gathering.spot(n)
 		if game.skills.has(v.skill):
 			out.append({"x": v.x, "z": v.z, "kind": "herb", "label": v.name})
 	for e in game.enemies.list:
@@ -367,6 +378,15 @@ func markers() -> Array:
 
 
 ## is (x, z) beyond the range quest marks show at? (`r`: an area's radius)
+## a box test for things past the map's edge at this zoom (its corners
+## included, the map turns): shrines, people, veins and herbs out there are
+## not listed (quest goals and areas are, they point the way)
+func _off_map_test() -> Callable:
+	var p: Vector3 = game.player.position
+	var reach: float = SIZE * 0.75 / float(ZOOMS[zoom]) + 8.0
+	return func(x: float, z: float) -> bool: return absf(x - p.x) > reach or absf(z - p.z) > reach
+
+
 func _far(x: float, z: float, r := 0.0) -> bool:
 	var p: Vector3 = game.player.position
 	return U.hyp(x - p.x, z - p.z) - r > DB.CONFIG.minimap.questRange

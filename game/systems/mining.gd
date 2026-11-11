@@ -134,8 +134,13 @@ func veins() -> Array:
 	var out := []
 	for o in outcrops:
 		if o.rock != "":
-			out.append({"o": o, "x": o.x, "z": o.z, "name": name_of(o), "rank": int(rock_def(o.rock).get("rank", 1))})
+			out.append(vein(o))
 	return out
+
+
+## one live outcrop as veins() lists it
+func vein(o: Dictionary) -> Dictionary:
+	return {"o": o, "x": o.x, "z": o.z, "name": name_of(o), "rank": int(rock_def(o.rock).get("rank", 1))}
 
 
 # ------------------------------------------------------------ the miner
@@ -163,10 +168,14 @@ func block(v: Dictionary) -> String:
 
 
 ## what the interaction system offers: a glinting vein close by
-func interactions() -> Array:
+func interactions(near := INF) -> Array:
 	var out := []
 	var reach: float = tuning().get("reach", 2.6)
-	for v in veins():
+	var pp: Vector3 = game.player.position
+	for o in outcrops:
+		if o.rock == "" or absf(o.x - pp.x) > near or absf(o.z - pp.z) > near:
+			continue
+		var v := vein(o)
 		var why := block(v)
 		out.append({"key": "vein:%s:%d" % [v.o.group.id, v.o.i], "x": v.x, "z": v.z, "bias": -0.2, "reach": reach, "prompt": "Mine the %s%s" % [v.name.to_lower(), " (%s)" % why if why != "" else ""], "run": func(): start(v.o)})
 	return out

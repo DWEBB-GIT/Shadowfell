@@ -750,15 +750,18 @@ func _pick_under_cursor():
 		var d := _screen_dist(Vector3(l.x, Terrain.height_at(l.x, l.z) + 0.3, l.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["loot", l, d])
-	for v in mining.veins():
-		if not _near_cursor_view(v.x,v.z):
+	# veins and herbs: the box test first, so only nearby ones are looked up
+	for o in mining.outcrops:
+		if o.rock == "" or not _near_cursor_view(o.x, o.z):
 			continue
+		var v: Dictionary = mining.vein(o)
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.5, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["vein", v, d])
-	for v in gathering.live():
-		if not _near_cursor_view(v.x,v.z):
+	for n in gathering.nodes:
+		if n.kind == "" or not _near_cursor_view(n.x, n.z):
 			continue
+		var v: Dictionary = Gathering.spot(n)
 		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["herb", v, d])
@@ -1350,7 +1353,7 @@ func step(dt: float) -> void:
 	world.update_indoors(dt, player.position)
 	_update_camera(dt)
 	if started:
-		hud.update(dt)
+		hud.update(dt, true)
 
 
 ## Which region and named place the Warden is in, and the air there: the

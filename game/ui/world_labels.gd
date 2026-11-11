@@ -24,6 +24,7 @@ func _init(g) -> void:
 
 
 ## each entry: { text, sub?, colour, at: Vector3, loot? }
+## (box tests only here: update() measures the real distance)
 func _names() -> Array:
 	var out := []
 	var settings = game.settings
@@ -37,17 +38,19 @@ func _names() -> Array:
 		for st in Layout.stations:
 			var x: float = st.position[0]
 			var z: float = st.position[1]
+			if absf(x - player.position.x) > STATION_RANGE or absf(z - player.position.z) > STATION_RANGE:
+				continue
 			if Vector2(x - player.position.x, z - player.position.z).length_squared() > STATION_RANGE * STATION_RANGE:
 				continue
 			out.append({"text": Interaction.title(st.name), "colour": Color(Interaction.look(st.kind).colour), "at": Vector3(x, Terrain.height_at(x, z) + 2.0, z)})
 	if not settings.get_value("names"):
 		return out
 	for n in game.npcs.list:
-		if Vector2(n.position.x-player.position.x,n.position.z-player.position.z).length_squared() > RANGE * RANGE:
+		if absf(n.position.x - player.position.x) > RANGE or absf(n.position.z - player.position.z) > RANGE:
 			continue
 		out.append({"text": n.name, "sub": "<%s>" % n.def.title if n.def.get("title") else "", "colour": UI.NAME_FRIENDLY, "at": n.position + Vector3(0, 2.15, 0)})
 	for e in game.enemies.list:
-		if Vector2(e.position.x-player.position.x,e.position.z-player.position.z).length_squared() > RANGE * RANGE:
+		if absf(e.position.x - player.position.x) > RANGE or absf(e.position.z - player.position.z) > RANGE:
 			continue
 		if not e.alive or game.hud.enemy_bars.has(e.id):
 			continue
@@ -62,7 +65,7 @@ func _ground_items() -> Array:
 	if not game.settings.get_value("lootNames"):
 		return out
 	for l in game.loot.active:
-		if Vector2(l.x-game.player.position.x,l.z-game.player.position.z).length_squared() > RANGE * RANGE:
+		if absf(l.x - game.player.position.x) > RANGE or absf(l.z - game.player.position.z) > RANGE:
 			continue
 		var r = l.def.get("reward")
 		# quest pick-ups (firewood, ore...) carry no name: their sparkle and

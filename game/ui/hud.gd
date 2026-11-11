@@ -1822,10 +1822,18 @@ func layout() -> void:
 	main_menu.layout(vp)
 
 
-func update(dt := 0.0) -> void:
+## `throttle` (the game's own step): what moves with the world (damage
+## numbers, name plates, enemy bars, fades) updates every frame; the frames,
+## bars, slots and panels every second frame (30 a second, as MMO clients
+## throttle their UI), with the time saved up
+func update(dt := 0.0, throttle := false) -> void:
 	numbers.update(dt)
-	skill_tracker.update(dt)
-	main_menu.update(dt)
+	_slow_dt += dt
+	_frame += 1
+	var slow := not throttle or _frame % 2 == 0
+	if slow:
+		skill_tracker.update(_slow_dt)
+		main_menu.update(_slow_dt)
 	# fading messages
 	toast_left = maxf(0, toast_left - dt)
 	toast_label.modulate.a = minf(1, toast_left / 0.4)
@@ -1861,6 +1869,12 @@ func update(dt := 0.0) -> void:
 		if banner_time <= 0:
 			_next_banner()
 	recent_foe_time = maxf(0, recent_foe_time - dt)
+	if not slow:
+		_update_enemy_bars()
+		labels.update(dt)
+		items.update(dt) # the tooltip follows the pointer
+		return
+	_slow_dt = 0.0
 	_update_signpost()
 	refresh_stats()
 	_refresh_slots()
@@ -1895,6 +1909,10 @@ func update(dt := 0.0) -> void:
 	items.update(dt)
 	belt.refresh()
 	layout()
+
+
+var _slow_dt := 0.0
+var _frame := 0
 
 
 ## target frame: the selected enemy, else the one an ability would go to,
@@ -1990,9 +2008,10 @@ func _update_enemy_bars() -> void:
 	for e in game.enemies.list:
 		if not e.alive:
 			continue
-		var nemesis: bool = game.afterlife.is_nemesis(e)
-		if e.engaged <= 0 and e.health >= e.max_health and e != t and e != shown_target and not nemesis:
+		# the cheap tests first: nearly every enemy in the world stops here
+		if e.engaged <= 0 and e.health >= e.max_health and e != t and e != shown_target and not game.afterlife.is_nemesis(e):
 			continue
+		var nemesis: bool = game.afterlife.is_nemesis(e)
 		seen[e.id] = true
 		var bar = enemy_bars.get(e.id)
 		if bar == null:

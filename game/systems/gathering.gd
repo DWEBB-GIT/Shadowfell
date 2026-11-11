@@ -127,9 +127,14 @@ func live() -> Array:
 	var out := []
 	for n in nodes:
 		if n.kind != "":
-			var k := kind_def(n.kind)
-			out.append({"n": n, "x": n.x, "z": n.z, "name": k.name, "level": int(k.get("level", 1)), "skill": k.get("skill", "herbalism")})
+			out.append(spot(n))
 	return out
+
+
+## one live node as live() lists it
+static func spot(n: Dictionary) -> Dictionary:
+	var k := kind_def(n.kind)
+	return {"n": n, "x": n.x, "z": n.z, "name": k.name, "level": int(k.get("level", 1)), "skill": k.get("skill", "herbalism")}
 
 
 # ------------------------------------------------------------ the picker
@@ -156,10 +161,14 @@ func has_tool(flag: String) -> bool:
 	return false
 
 
-func interactions() -> Array:
+func interactions(near := INF) -> Array:
 	var out := []
 	var reach: float = tuning().get("reach", 2.2)
-	for v in live():
+	var pp: Vector3 = game.player.position
+	for n in nodes:
+		if n.kind == "" or absf(n.x - pp.x) > near or absf(n.z - pp.z) > near:
+			continue
+		var v := spot(n)
 		var why := block(v)
 		out.append({"key": "node:%s:%d" % [v.n.group.id, v.n.i], "x": v.x, "z": v.z, "bias": -0.2, "reach": reach, "prompt": "%s the %s%s" % [kind_def(v.n.kind).get("verb", "Pick"), v.name.to_lower(), " (%s)" % why if why != "" else ""], "run": func(): start(v.n)})
 	return out
