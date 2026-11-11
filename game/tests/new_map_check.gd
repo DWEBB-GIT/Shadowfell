@@ -26,9 +26,13 @@ func _initialize() -> void:
 	check(Sculpt.path() == "res://data/terrain/new_map/sculpt.json", "the brushes' layer is the new map's")
 	var placed = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "spawns.json"))
 	var scenery = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "scenery.json"))
-	check(Layout.npcs.size() == placed.get("npcSpawns", []).size() and Layout.props == scenery.props and Layout.houses == placed.get("houses", []), "only this map's authored placements are loaded")
-	check(Layout.enemies.size() == placed.enemySpawns.size(), "only the enemies in its spawns.json")
-	check(WorldMap.pois.size() == placed.get("pois", []).size() and Terrain.roads().size() == placed.get("roads", []).size(), "only this map's authored roads and places")
+	# plus the lists its map.json overlays add (the test hub city), nothing else
+	var ex := DB.overlay_lists("spawns")
+	var exs := DB.overlay_lists("scenery")
+	var plus := func(list: String) -> Array: return placed.get(list, []) + ex.get(list, [])
+	check(Layout.npcs.size() == plus.call("npcSpawns").size() and Layout.props == scenery.props + exs.get("props", []) and Layout.houses == plus.call("houses"), "only this map's authored placements are loaded")
+	check(Layout.enemies.size() == plus.call("enemySpawns").size(), "only the enemies in its spawns.json")
+	check(WorldMap.pois.size() == plus.call("pois").size() and Terrain.roads().size() == plus.call("roads").size(), "only this map's authored roads and places")
 	var st: Array = Layout.player_start.position
 	var p := Vector2(st[0], st[1])
 	check(Terrain.walkable(p.x, p.y), "the start (%s) is open ground" % p)

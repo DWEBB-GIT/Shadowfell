@@ -384,9 +384,18 @@ static func new_map_world(w: Dictionary, placements_path := "") -> Dictionary:
 ## whose lists are added to the map's own. Delete the file and its name to
 ## take it all away again.
 static func _add_overlays(out: Dictionary, part: String) -> void:
+	var extra := overlay_lists(part)
+	for key in extra:
+		out[key] = (out.get(key, []) as Array) + extra[key]
+
+
+## The lists the map's overlays add (`part` "spawns" or "scenery"), merged:
+## what the game shows beyond the hand-placed files (the editor shows only those).
+static func overlay_lists(part: String) -> Dictionary:
+	var lists := {}
 	var m = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "map.json")) if FileAccess.file_exists(Terrain.dir + "map.json") else null
 	if not m is Dictionary:
-		return
+		return lists
 	for f in m.get("overlays", []):
 		var path: String = Terrain.dir + str(f)
 		var o = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
@@ -394,7 +403,8 @@ static func _add_overlays(out: Dictionary, part: String) -> void:
 			continue
 		for key in o[part]:
 			if o[part][key] is Array:
-				out[key] = (out.get(key, []) as Array) + o[part][key]
+				lists[key] = (lists.get(key, []) as Array) + o[part][key]
+	return lists
 
 
 static func new_map_scenery(s: Dictionary, placements_path := "") -> Dictionary:
