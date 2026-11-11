@@ -51,6 +51,7 @@ func run() -> void:
 			for i in 30:player.rig.update(1.0/60,DB.CONFIG.player.runGait)
 			var max_arm_error:=0.0
 			var max_leg_error:=0.0
+			var min_knee:=180.0
 			var feet:=[]
 			for i in 60:
 				player.rig.update(1.0/60,DB.CONFIG.player.runGait)
@@ -60,11 +61,20 @@ func run() -> void:
 				for part in ["clavicle_l","clavicle_r","upperarm_l","upperarm_r","lowerarm_l","lowerarm_r"]:
 					var b:=ref_sk.find_bone(part)
 					max_arm_error=maxf(max_arm_error,ref_sk.get_bone_pose_rotation(b).angle_to(player.rig._skel.get_bone_pose_rotation(b)))
-				# Leg height still follows the authored gait (thighs swing,
-				# feet lift); only the reach forward/back is fitted.
+				# Feet lift by RUN_LIFT of the authored gait; the reach
+				# forward/back and the pelvis height are fitted.
+				var sole:float=ref_sk.get_bone_global_rest(ref_sk.find_bone("foot_l")).origin.y
 				for part in ["foot_l","foot_r"]:
 					var b:=ref_sk.find_bone(part)
-					max_leg_error=maxf(max_leg_error,absf(ref_sk.get_bone_global_pose(b).origin.y-player.rig._skel.get_bone_global_pose(b).origin.y))
+					var lift:float=(ref_sk.get_bone_global_pose(b).origin.y-sole)*ForgeRig.RUN_LIFT
+					max_leg_error=maxf(max_leg_error,absf(sole+maxf(0,lift)-player.rig._skel.get_bone_global_pose(b).origin.y))
+				# Upright: neither knee folds into a crouch (Dan, 2026-11-11).
+				var sk_:Skeleton3D=player.rig._skel
+				for s in ["l","r"]:
+					var h:=sk_.get_bone_global_pose(sk_.find_bone("thigh_"+s)).origin
+					var k:=sk_.get_bone_global_pose(sk_.find_bone("calf_"+s)).origin
+					var f:=sk_.get_bone_global_pose(sk_.find_bone("foot_"+s)).origin
+					min_knee=minf(min_knee,rad_to_deg((h-k).angle_to(f-k)))
 				var sk:Skeleton3D=player.rig._skel
 				var basis:=sk.global_basis
 				feet.append([basis*sk.get_bone_global_pose(sk.find_bone("foot_l")).origin,basis*sk.get_bone_global_pose(sk.find_bone("foot_r")).origin])
@@ -83,11 +93,12 @@ func run() -> void:
 						samples+=1
 			sweep/=maxf(1,samples)
 			var stride_time:float=player.rig.anim.get_animation("Jog_Fwd").length/player.rig.gait_rate
-			print("RUN ",sex," ",stance," arm_error=",max_arm_error," foot_height_error=",max_leg_error," planted_foot=",sweep," stride_s=",stride_time)
+			print("RUN ",sex," ",stance," arm_error=",max_arm_error," foot_height_error=",max_leg_error," planted_foot=",sweep," stride_s=",stride_time," min_knee_deg=",min_knee)
 			check(absf(sweep-DB.CONFIG.player.speed)<DB.CONFIG.player.speed*0.1,sex+" "+stance+" planted foot keeps pace with the ground")
-			check(stride_time>0.6 and stride_time<0.8,sex+" "+stance+" brisk stride, neither frantic nor loping")
+			check(stride_time>0.5 and stride_time<0.7,sex+" "+stance+" quick individual steps, neither frantic nor loping")
+			check(min_knee>75,sex+" "+stance+" knees stay off the floor, no deep crouch")
 			check(max_arm_error<0.01,sex+" "+stance+" arms follow the original run, without a held aiming pose")
-			check(max_leg_error<0.06,sex+" "+stance+" legs keep the authored lift")
+			check(max_leg_error<0.06,sex+" "+stance+" feet keep the (lowered) authored lift")
 		reference.queue_free()
 		for moving in [false,true]:
 			player.position=origin

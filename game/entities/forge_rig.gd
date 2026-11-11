@@ -25,7 +25,11 @@ const RUN_REFERENCE_SPEED := 4.1
 ## with the ground: ~0.73 s per full stride at full speed. Foot lift, pelvis
 ## and arms stay as authored.
 const JOG_GROUND_SPEED := 6.4
-const RUN_STRIDE := 0.6
+const RUN_STRIDE := 0.5
+## Dan, 2026-11-11: shorter, quicker steps with the body riding tall.
+const RUN_LIFT := 0.65 ## share of the authored foot lift kept
+const RUN_REACH := 0.95 ## stance leg reach, share of its full length
+const RUN_FLIGHT := 0.35 ## share of the lower foot's lift the body rises by
 ## Landing on the run: the legs carry straight on in the run (a planted
 ## landing crouch would slide along the ground), and the upper body takes
 ## a short dip from the landing clip instead.
@@ -321,11 +325,22 @@ func _mirror_off() -> void:
 		_skel.set_bone_pose_rotation(left, _skel.get_bone_pose_rotation(left).slerp(mirrored, weight))
 
 
-## Pulls each foot's forward/back offset from the pelvis in to `scale`,
-## bending the leg to reach it. Height and sideways spread are kept.
+## Fits the run to a quick, upright stride (Dan, 2026-11-11: "more
+## individual steps", the knees nearly hit the floor). Each foot's
+## forward/back offset from the pelvis is pulled in to `scale` and its lift
+## off the ground to RUN_LIFT. The pelvis is then set at the height where
+## the lower leg reaches its foot at RUN_REACH of its length, so the body
+## rides tall over a nearly straight stance leg instead of sinking into a
+## crouch; the rise and fall of the run comes from the feet. Both legs are
+## then bent to reach their spots (the lower foot, when both are up, a
+## little above where the leg would land it).
 func _fit_stride(scale: float) -> void:
 	var pelvis:=_skel.find_bone("pelvis")
 	var center:=_skel.get_bone_global_pose(pelvis).origin
+	var up:=(_skel.global_basis.inverse()*model.global_basis*Vector3.UP).normalized()
+	var sole:=_skel.get_bone_global_rest(_skel.find_bone("foot_l")).origin.dot(up)
+	var legs:=[]
+	var lowest:Dictionary
 	for side in ["l","r"]:
 		var thigh:=_skel.find_bone("thigh_"+side)
 		var calf:=_skel.find_bone("calf_"+side)
@@ -333,9 +348,30 @@ func _fit_stride(scale: float) -> void:
 		var foot_pose:=_skel.get_bone_global_pose(foot)
 		var target:=foot_pose.origin
 		target.z=center.z+(target.z-center.z)*scale
+		target-=up*maxf(0,target.dot(up)-sole)*(1-RUN_LIFT)
+		var hip:=_skel.get_bone_global_pose(thigh).origin
+		var length:=hip.distance_to(_skel.get_bone_global_pose(calf).origin)+_skel.get_bone_global_pose(calf).origin.distance_to(foot_pose.origin)
+		var leg:={"thigh":thigh,"calf":calf,"foot":foot,"basis":foot_pose.basis,"target":target,"hip":hip,"length":length}
+		legs.append(leg)
+		if lowest.is_empty() or target.dot(up)<lowest.target.dot(up):lowest=leg
+	var across:Vector3=lowest.target-lowest.hip
+	across-=up*across.dot(up)
+	var reach:float=lowest.length*RUN_REACH
+	# Between steps the body only rises by RUN_FLIGHT of the lower foot's
+	# lift, so the run keeps a light bounce without hanging in the air.
+	var ground:float=sole+(lowest.target.dot(up)-sole)*RUN_FLIGHT
+	var hip_height:float=ground+sqrt(maxf(0,reach*reach-across.length_squared()))
+	var rise:=clampf(hip_height-lowest.hip.dot(up),-0.15,0.3)
+	var to_parent:=_skel.get_bone_global_pose(_skel.get_bone_parent(pelvis)).basis.inverse()
+	_skel.set_bone_pose_position(pelvis,_skel.get_bone_pose_position(pelvis)+to_parent*(up*rise))
+	for leg in legs:
+		var thigh:int=leg.thigh
+		var calf:int=leg.calf
+		var foot:int=leg.foot
+		var target:Vector3=leg.target
 		var hip:=_skel.get_bone_global_pose(thigh).origin
 		var knee:=_skel.get_bone_global_pose(calf).origin
-		var ankle:=foot_pose.origin
+		var ankle:=_skel.get_bone_global_pose(foot).origin
 		var a:=hip.distance_to(knee)
 		var b:=knee.distance_to(ankle)
 		var direction:Vector3=(target-hip).normalized()
@@ -349,7 +385,7 @@ func _fit_stride(scale: float) -> void:
 		knee=_skel.get_bone_global_pose(calf).origin
 		ankle=_skel.get_bone_global_pose(foot).origin
 		_turn_bone(calf,ankle-knee,hip+direction*distance-knee)
-		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*foot_pose.basis).orthonormalized().get_rotation_quaternion())
+		_skel.set_bone_pose_rotation(foot,(_skel.get_bone_global_pose(calf).basis.inverse()*(leg.basis as Basis)).orthonormalized().get_rotation_quaternion())
 
 ## Sitting on the ground: seat on the ground, knees drawn up, feet flat in
 ## front and forearms resting on the knees. The supplied sitting clip is
