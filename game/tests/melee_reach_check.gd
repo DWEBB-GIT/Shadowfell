@@ -99,7 +99,7 @@ func _run() -> void:
 		pl.update(dt, {"move": {"x": 0.0, "z": 0.0}, "actions": {}})
 		turn_frames += 1
 	check(pl.facing_point(at.x, at.z, 5) and turn_frames <= 8, "a right click turns you to a foe behind you (%d frames)" % turn_frames)
-	# aim assist, no forced snap (Dan 2026-11-10)
+	# no aim assist, no forced snap (Dan 2026-11-11)
 	pl.moving = false
 	pl.pending = null
 	pl.cooldowns.attack = 0.0
@@ -109,11 +109,25 @@ func _run() -> void:
 	check(not pl.facing_point(at.x, at.z, 90), "and you are not snapped round to it")
 	pl.facing = atan2(-1.0, 0.0) + deg_to_rad(30)
 	check(pl.try_strike(at), "a foe roughly ahead is hit")
-	check(pl.facing_point(at.x, at.z, 2), "and aim assist nudges you onto it")
+	check(not pl.facing_point(at.x, at.z, 20), "and nothing nudges you onto it (no aim assist)")
 	pl.pending = null
 	pl.cooldowns.attack = 0.0
 	pl.facing = atan2(-1.0, 0.0) + deg_to_rad(70)
 	check(pl.try_strike(at) and not pl.facing_point(at.x, at.z, 45), "off to the side but in front: hit, not turned")
+	# running straight through a foe while swinging: facing holds, full speed
+	pl.pending = null
+	pl.cooldowns.attack = 0.0
+	pl.position = at + Vector3(3.0, 0, 0.3)
+	pl.facing = atan2(-1.0, 0.0)
+	tg.engage(foe)
+	var f0: float = pl.facing
+	var x0: float = pl.position.x
+	var wobble := 0.0
+	for i in 40:
+		pl.update(dt, {"move": {"x": -1.0, "z": 0.0}, "actions": {"strike": true}, "aim": {"x": at.x, "z": at.z}})
+		wobble = maxf(wobble, absf(angle_difference(pl.facing, f0)))
+	check(wobble < 0.01, "running through a foe while attacking, facing never flicks (%.3f rad)" % wobble)
+	check(x0 - pl.position.x > DB.CONFIG.player.speed * 40 * dt * 0.9, "and you keep full speed through it")
 	# turning is quick: left to right in a few frames
 	pl.pending = null
 	pl.position = at + Vector3(30, 0, 30)

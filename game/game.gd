@@ -868,8 +868,7 @@ func _click(button: String) -> bool:
 			# auto attack, the same for every class (Dan, 2026-11-09)
 			if acts:
 				targeting.engage(o)
-				# attacking (not selecting) nudges you onto it when it is
-				# roughly ahead (aim assist, no forced snap); standing still
+				# attacking (not selecting) never snaps you (no aim assist); standing still
 				# you turn to it quickly wherever it is (WoW)
 				if targeting.target_in_reach or targeting.target_in_shot:
 					if not player.square_up(o.position.x, o.position.z) and not player.moving:

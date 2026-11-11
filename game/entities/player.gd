@@ -923,17 +923,14 @@ func bow_muzzle() -> Vector3:
 	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
 
 
-## Aim assist, not a forced snap (Dan 2026-11-10): an attack at a foe in
-## your front half is allowed, and one within `assistDegrees` of where you
-## face is nudged straight onto it. A foe beside or behind you is not hit
-## until you turn yourself, so getting behind someone still pays off, and
-## nobody shoots back while running away (the anti-kite rule).
+## An attack at a foe needs it in your front half; nothing turns you to it.
+## A foe beside or behind you is not hit until you turn yourself, so getting
+## behind someone still pays off, and nobody shoots back while running away
+## (the anti-kite rule).
 func square_up(x: float, z: float) -> bool:
-	if not facing_point(x, z, DB.attack.coneDegrees / 2.0):
-		return false
-	if facing_point(x, z, DB.attack.get("assistDegrees", 45)):
-		face_towards(x, z)
-	return true
+	# no aim assist (Dan 2026-11-11): nudging you onto the target fought the
+	# run direction every frame when running through a foe, a stutter
+	return facing_point(x, z, DB.attack.coneDegrees / 2.0)
 
 
 ## Standing still after a right click on a foe: turn to it, quickly but not
