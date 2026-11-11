@@ -136,7 +136,7 @@ func _place_ground_shadow(at: Vector3) -> void:
 	var n := Land.ground_normal(at.x, at.z)
 	var x := n.cross(Vector3.FORWARD).normalized()
 	ground_shadow.basis = Basis(x * SHADOW_SIZE, n, x.cross(n) * SHADOW_SIZE)
-	ground_shadow.position = at + n * 0.03
+	ground_shadow.position = at + Vector3(0, 0.03, 0)
 
 
 func _part(name: String) -> Node3D:
