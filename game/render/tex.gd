@@ -59,6 +59,14 @@ static func blob() -> Texture2D:
 	return _cache.blob
 
 
+## the player's contact shadow: a dense dark core with a soft rim, so the
+## feet stay planted even under a lamp at night (Dan 2026-11-11)
+static func contact() -> Texture2D:
+	if not _cache.has("contact"):
+		_cache.contact = _radial([[0.0, Color(0, 0, 0, 0.88)], [0.45, Color(0, 0, 0, 0.7)], [0.75, Color(0, 0, 0, 0.3)], [1.0, Color(0, 0, 0, 0)]], 32)
+	return _cache.contact
+
+
 ## a soft white puff (dust kicked up by a jump or a landing); tinted per use
 static func puff() -> Texture2D:
 	if not _cache.has("puff"):

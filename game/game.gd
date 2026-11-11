@@ -15,11 +15,18 @@ const SUN_MATCH := 0.42
 ## the far side of things, and filmic tone mapping rolls the lit side off
 ## softly instead of washing it out. AMBIENT_K is how much of the three.js
 ## hemisphere light is kept as fill.
+## Stylized contrast (Dan 2026-11-11): a stronger warm key over a lower,
+## cooler fill, so lit faces pop and the shade falls deep blue-grey, the
+## painted retro-MMO look. STYLE scales every grade (base and colour zones)
+## so the zones keep their own balance on top of the harder curve.
 const GRADE := {"brightness": 1.0, "contrast": 1.08, "saturation": 0.96}
-const SUN_BOOST := 2.05
-const AMBIENT := Color("71869bff")
-const AMBIENT_K := 0.82
+const STYLE := {"contrast": 1.14, "saturation": 1.08}
+const SUN_BOOST := 2.4
+const AMBIENT := Color("6a80a8ff")
+const AMBIENT_K := 0.6
 const EXPOSURE := 1.15
+## the filmic white point: lower lets sunlit faces reach near-white sooner
+const TONEMAP_WHITE := 1.35
 
 var started := false
 var time := 0.0
@@ -257,7 +264,7 @@ func _init_renderer() -> void:
 	env.ambient_light_sky_contribution = 0.0 # there is no sky: all of it is this colour
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = EXPOSURE
-	env.tonemap_white = 1.6
+	env.tonemap_white = TONEMAP_WHITE
 	# The grade: contrast after the fact (Compatibility supports these
 	# adjustments and glow; both cost one cheap full-screen pass).
 	set_ghost_look(false)
@@ -267,9 +274,9 @@ func _init_renderer() -> void:
 	env.glow_normalized = true
 	for i in 7:
 		env.set_glow_level(i, 1.0 if i in [1, 2, 3] else 0.0)
-	env.glow_intensity = 0.28
+	env.glow_intensity = 0.36
 	env.glow_bloom = 0.0
-	env.glow_hdr_threshold = 1.4
+	env.glow_hdr_threshold = 1.3
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
@@ -282,7 +289,7 @@ func _init_renderer() -> void:
 	# Contact shading anchors the simple meshes without repainting the assets.
 	env.ssao_enabled = true
 	env.ssao_radius = 1.1
-	env.ssao_intensity = 1.15
+	env.ssao_intensity = 1.5
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -308,7 +315,7 @@ func _init_renderer() -> void:
 	# reach, so trees there no longer cast blocky shadows; the camera's view
 	# ends inside about 60 m at the default zoom
 	sun.directional_shadow_max_distance = 60.0 if OS.has_feature("web") else 72.0
-	sun.shadow_opacity = 0.78
+	sun.shadow_opacity = 0.9
 	sun.shadow_blur = 1.5
 	add_child(sun)
 	player_light = Tex.point_light(Color("e6ded0"), 9.0, 7.5, 1.6)
@@ -667,11 +674,11 @@ func set_ghost_look(on: bool) -> void:
 		env.adjustment_contrast = 1.1
 		env.adjustment_color_correction = null
 	elif not grade.is_empty():
-		ZoneGradeS.apply_colour(env, grade)
+		_apply_grade()
 	else:
-		env.adjustment_saturation = GRADE.saturation
+		env.adjustment_saturation = GRADE.saturation * STYLE.saturation
 		env.adjustment_brightness = GRADE.brightness
-		env.adjustment_contrast = GRADE.contrast
+		env.adjustment_contrast = GRADE.contrast * STYLE.contrast
 
 
 ## Pixels between a world point and the mouse, or INF behind the camera.
@@ -1375,12 +1382,18 @@ func _update_region(dt: float) -> void:
 		events.emit("subzoneChanged", {"name": sub, "announce": started})
 
 
+const AIR_TINT := Color("ffebc8")
+const AIR_SHADE := Color("7f92c4")
+const AIR_TONE := 0.14
+
+
 ## The world's own air at a gloom of `k` (0 open land, 1 deep Blackwood):
 ## the grade before any colour zone.
 static func air(k: float) -> Dictionary:
 	var bw: Dictionary = DB.CONFIG.blackwood
 	var fog: Dictionary = DB.CONFIG.fog
-	return {"tint": Color.WHITE, "shadowTint": Color.WHITE, "tintStrength": 0.0,
+	# a light split tone outside colour zones: warm lights, cool shade
+	return {"tint": AIR_TINT, "shadowTint": AIR_SHADE, "tintStrength": AIR_TONE,
 		"saturation": GRADE.saturation, "contrast": GRADE.contrast, "brightness": GRADE.brightness,
 		"fogColor": (fog.color as Color).lerp(bw.fogColor, k), "fogNear": lerpf(fog.near, bw.fogNear, k),
 		"fogFar": lerpf(fog.far, bw.fogFar, k), "fogAmount": 1.0, "mist": 1.0,
@@ -1427,13 +1440,10 @@ func _apply_grade() -> void:
 	env.ambient_light_color = (g.ambientColor as Color) * (day.ambientTint as Color)
 	sun.light_energy = SUN * Tex.LIGHT_SCALE * SUN_MATCH * SUN_BOOST * g.sunlight * day.light * (CLASSIC.sun if bright else 1.0)
 	if not _ghost:
-		if bright:
-			var cg := g.duplicate()
-			cg.saturation = g.saturation * CLASSIC.saturation
-			cg.contrast = g.contrast * CLASSIC.contrast
-			ZoneGradeS.apply_colour(env, cg)
-		else:
-			ZoneGradeS.apply_colour(env, g)
+		var cg := g.duplicate()
+		cg.saturation = g.saturation * STYLE.saturation * (CLASSIC.saturation if bright else 1.0)
+		cg.contrast = g.contrast * STYLE.contrast * (CLASSIC.contrast if bright else 1.0)
+		ZoneGradeS.apply_colour(env, cg)
 
 
 func _snap_camera() -> void:
@@ -1508,7 +1518,7 @@ func _place_sun(t: Vector3) -> void:
 
 ## Settings > Graphics "Classic bright lighting": the high-key retro
 ## isometric look (bright shade, short shadows, richer colour, clear air)
-const CLASSIC := {"ambient": 1.9, "sun": 1.1, "sunLift": 2.2, "saturation": 1.18, "contrast": 1.06, "fogBand": 12.0}
+const CLASSIC := {"ambient": 2.4, "sun": 1.1, "sunLift": 2.2, "saturation": 1.18, "contrast": 1.06, "fogBand": 12.0}
 
 
 func _classic_light() -> bool:

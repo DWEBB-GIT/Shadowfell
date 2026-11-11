@@ -82,7 +82,9 @@ func _init(g) -> void:
 	materials = Rig.isolate_materials(model)
 	weapon_part = model.find_child("Weapon", true, false)
 	default_weapon_mesh = weapon_part
-	ground_shadow = Fx.blob_shadow(1.3)
+	# always dark under the feet: unshaded, so no light (a lamp, the sun at
+	# noon) can wash it out and leave the player floating
+	ground_shadow = Fx.blob_shadow(SHADOW_SIZE, Tex.contact())
 	# top level: the group's jump and front flip never lift or turn it
 	ground_shadow.top_level = true
 	group.add_child(ground_shadow)
@@ -123,7 +125,18 @@ func _sync() -> void:
 		group.position += pivot - group.basis * pivot
 	# The contact shadow stays flat on the ground while the body leaves it
 	# (it is top level, so it ignores the group's hop and flip).
-	ground_shadow.position = Vector3(position.x, position.y - jump_h + 0.03, position.z)
+	_place_ground_shadow(Vector3(position.x, position.y - jump_h, position.z))
+
+
+const SHADOW_SIZE := 1.35
+
+## The contact shadow lies along the slope under the feet, so a hillside
+## does not swallow half of it.
+func _place_ground_shadow(at: Vector3) -> void:
+	var n := Land.ground_normal(at.x, at.z)
+	var x := n.cross(Vector3.FORWARD).normalized()
+	ground_shadow.basis = Basis(x * SHADOW_SIZE, n, x.cross(n) * SHADOW_SIZE)
+	ground_shadow.position = at + n * 0.03
 
 
 func _part(name: String) -> Node3D:
@@ -406,7 +419,7 @@ func _reset_jump() -> void:
 		rig.air_time = 0.0
 		rig.landing = 0.0
 	position.y = Terrain.height_at(position.x, position.z)
-	ground_shadow.position = position + Vector3(0, 0.03, 0)
+	_place_ground_shadow(position)
 
 
 ## Steering while airborne: the move you took off with carries on, keys
