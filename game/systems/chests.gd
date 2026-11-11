@@ -99,7 +99,7 @@ func open(c: Dictionary) -> bool:
 	var lock = c.def.get("lock")
 	if lock and not (lock.get("key") and inventory.count(lock.key) > 0):
 		events.emit("log", {"text": "You pick the lock of the %s." % c.def.name, "kind": "level"})
-		game.skills.raise("lockpicking")
+		game.skills.gain("lockpicking", game.skills.colour_for("lockpicking", int(lock.get("pick", 1))))
 	game.world_state.mark_collected("chest:" + c.def.id)
 	for it in c.def.get("items", []):
 		if not inventory.add_item(it.id, it.get("count", 1)):

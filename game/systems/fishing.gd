@@ -194,7 +194,6 @@ func _land(s: Dictionary, afk: bool) -> void:
 	var mult: float = cfg.xpMult if afk else 1.0
 	if game.random.call() * 100 >= chance * (cfg.landMult if afk else 1.0):
 		events.emit("log", {"text": "The fish slips the hook.", "kind": "muted"})
-		game.skills.gain("fishing", _colour(s), mult) # a real bite still teaches you something
 		_reel(s, false)
 		return
 	var table := _table(s.water)

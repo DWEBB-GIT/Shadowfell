@@ -58,12 +58,12 @@ func _data() -> void:
 func _ladder() -> void:
 	var sk = game.skills
 	check(sk.learn("fishing"), "Tam teaches Fishing")
-	check(sk.rank_name("fishing") == "Novice" and sk.cap("fishing") == 10, "a new angler is a Novice, capped at 10")
+	check(sk.rank_name("fishing") == "Novice" and sk.cap("fishing") == 20, "a new angler is a Novice, capped at 20")
 	var xp_was: int = game.progression.xp + game.progression.level * 100000
 	var levels := 0
-	for i in 200:
+	for i in 400:
 		levels += sk.gain("fishing", "orange")
-	check(sk.rank("fishing") == 10 and levels == 9, "orange tasks raise Fishing to the cap (%d)" % sk.rank("fishing"))
+	check(sk.rank("fishing") == 20 and levels == 19, "orange tasks raise Fishing to the cap (%d)" % sk.rank("fishing"))
 	check(game.progression.xp + game.progression.level * 100000 > xp_was, "skill levels pay character experience")
 	check(sk.gain("fishing", "orange") == 0, "no more past the cap")
 	check(sk.gain("fishing", "grey") == 0, "grey tasks teach nothing")
@@ -73,11 +73,11 @@ func _ladder() -> void:
 	game.quests.done["tam_blackpool"] = true
 	var renown: float = game.reputation.renown
 	check(sk.train_rank("fishing"), "Tam trains Apprentice Fishing")
-	check(sk.cap("fishing") == 20 and sk.rank_name("fishing") == "Apprentice", "now capped at 20")
+	check(sk.cap("fishing") == 35 and sk.rank_name("fishing") == "Apprentice", "now capped at 35")
 	check(game.reputation.renown > renown, "a rank earns renown")
-	check(sk.perk_choices("fishing").size() == 1, "a perk is waiting at level 10")
-	check(not sk.choose_perk("fishing", 20, "double_haul"), "no level 20 perk yet")
-	check(sk.choose_perk("fishing", 10, "steady_hands"), "Steady Hands chosen")
+	check(sk.perk_choices("fishing").size() == 1, "a perk is waiting at level 15")
+	check(not sk.choose_perk("fishing", 35, "double_haul"), "no level 35 perk yet")
+	check(sk.choose_perk("fishing", 15, "steady_hands"), "Steady Hands chosen")
 	check(sk.perk("fishing", "landChance") == 10.0 and sk.perk_choices("fishing").is_empty(), "its effect counts")
 
 
@@ -86,16 +86,17 @@ func _fishing() -> void:
 	var f = game.fishing
 	game.inventory.add_item("yew_fishing_rod")
 	game.inventory.add_item("ash_fishing_rod")
-	check(sk.tool_bonus("fishing") == 10, "the ash rod needs Fishing 12; the yew rod counts (%d)" % sk.tool_bonus("fishing"))
-	sk.ranks.fishing = 12
-	check(sk.tool_bonus("fishing") == 15, "at 12 the ash rod counts")
+	sk.ranks.fishing = 19
+	check(sk.tool_bonus("fishing") == 17, "the ash rod needs Fishing 20; the yew rod counts (%d)" % sk.tool_bonus("fishing"))
+	sk.ranks.fishing = 20
+	check(sk.tool_bonus("fishing") == 25, "at 20 the ash rod counts")
 	var pool: Dictionary = Layout.water.filter(func(w): return w.id == "blackpool")[0]
 	var t: Dictionary = f._table(pool)
-	check(not t.drops.items.rare.any(func(e): return e.item == "mirror_pike"), "mirror pike won't bite below Fishing 15")
-	sk.ranks.fishing = 15
-	check(f._table(pool).drops.items.rare.any(func(e): return e.item == "mirror_pike"), "at 15 it will")
-	check(sk.colour_for("fishing", 8) == "green", "the Blackpool is green at 15")
-	check(sk.colour_for("fishing", 16) == "red", "a level 16 water is beyond you")
+	check(not t.drops.items.rare.any(func(e): return e.item == "mirror_pike"), "mirror pike won't bite below Fishing 25")
+	sk.ranks.fishing = 25
+	check(f._table(pool).drops.items.rare.any(func(e): return e.item == "mirror_pike"), "at 25 it will")
+	check(sk.colour_for("fishing", 13) == "green", "the Blackpool is green at 25")
+	check(sk.colour_for("fishing", 27) == "red", "a level 27 water is beyond you")
 
 
 func _herbalism() -> void:
@@ -109,9 +110,9 @@ func _herbalism() -> void:
 	v = v[0]
 	check(g.block(v) == "needs Herbalism", "herbs need the skill")
 	check(sk.learn("herbalism"), "Briony teaches Herbalism")
-	var blood = live.filter(func(x): return x.level == 10)
+	var blood = live.filter(func(x): return x.level == 17)
 	if not blood.is_empty():
-		check(g.block(blood[0]) == "needs Herbalism 10", "bloodroot needs Herbalism 10")
+		check(g.block(blood[0]) == "needs Herbalism 17", "bloodroot needs Herbalism 17")
 	if v.level > 1:
 		sk.ranks.herbalism = v.level
 	var n: Dictionary = v.n
@@ -119,6 +120,8 @@ func _herbalism() -> void:
 	var had: int = game.inventory.count(item)
 	var xp_was: int = int(sk.xp.get("herbalism", 0)) + sk.rank("herbalism") * 1000
 	game.player.place_at(n.x + 1.0, n.z)
+	var roll: Callable = game.random
+	game.random = func() -> float: return 0.0 # every skill-up chance lands
 	check(g.start(n), "picking starts")
 	var time := 500.0
 	# a patch holds a few picks and one click takes them all (Dan 2026-11-10)
@@ -126,6 +129,7 @@ func _herbalism() -> void:
 		time += 1.0
 		g.update(1.0, time)
 	check(game.inventory.count(item) > had, "the herb is in the bags")
+	game.random = roll
 	check(int(sk.xp.get("herbalism", 0)) + sk.rank("herbalism") * 1000 > xp_was, "Herbalism learned from it")
 	check(n.kind == "" and g.regrow.size() == 1, "the patch is bare and will grow back elsewhere")
 	g.update(0.0, time + 1000.0)
@@ -143,11 +147,15 @@ func _alchemy() -> void:
 	var r: Dictionary = DB.recipes.brew_healing_draught
 	check(ck.blocked(r) == "", "a healing draught can be brewed here: %s" % ck.blocked(r))
 	var had: int = game.inventory.count("healing_draught")
+	var was: int = sk.rank("alchemy")
+	var roll: Callable = game.random
+	game.random = func() -> float: return 0.0 # every skill-up chance lands
 	check(ck.start(r.id), "brewing starts")
 	ck.update(10.0)
+	game.random = roll
 	check(game.inventory.count("healing_draught") > had, "a healing draught is brewed")
-	check(int(sk.xp.get("alchemy", 0)) > 0, "Alchemy learned from it")
-	check(ck.blocked(DB.recipes.brew_strong_draught) != "", "the strong draught waits for Briony and rank 10")
+	check(sk.rank("alchemy") > was or int(sk.xp.get("alchemy", 0)) > 0, "Alchemy learned from it")
+	check(ck.blocked(DB.recipes.brew_strong_draught) != "", "the strong draught waits for Briony and rank 17")
 	# an elixir raises its stat; a second replaces the first
 	var sta: float = game.stats.snapshot().stamina.v
 	game.player.cooldowns.draught = 0.0
@@ -172,11 +180,11 @@ func _save_round_trip() -> void:
 	var was: Dictionary = sk.serialize_ladder()
 	sk.apply(data.skills)
 	sk.apply_ladder(data.skillLadder)
-	check(sk.serialize_ladder() == was and sk.cap("fishing") == 20, "the ladder survives a save")
+	check(sk.serialize_ladder() == was and sk.cap("fishing") == 35, "the ladder survives a save")
 	# an old save: Fishing 35 and no ranks -> kept up to the Apprentice's cap
 	sk.apply({"fishing": 35})
 	sk.apply_ladder(null)
-	check(sk.rank("fishing") == 20 and sk.rank_name("fishing") == "Apprentice", "an old save keeps its skill to 20")
+	check(sk.rank("fishing") == 35 and sk.rank_name("fishing") == "Apprentice", "an old save keeps its skill to 35")
 
 
 func check(ok: bool, what: String) -> void:

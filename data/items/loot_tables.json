@@ -1,5 +1,5 @@
 {
-  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a hound's meat and pelt). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops. Like WoW, an enemy's own table holds only what is its own (a ghoul's bones, a boss's blade); the gear any mob of its level might carry comes from `worldDrops`: level bands, each a table of its own with `minLevel` and `maxLevel`. Every enemy rolls the band its level falls in as well as its own table, unless it is marked `worldDrops: false` (beasts drop no gear). `questDrops` (an enemy's own table only): [{ item, quest, chance }], an item that drops only while that quest is taken and still needs it (a collect objective), whatever else the table rolls. A fish table's entry may carry `reqSkill`: it only bites for anglers with that much Fishing.",
+  "_about": "What each enemy type drops. `always`: items dropped every time, min to max (a boar's tusks; boar and wolf meat come from Hunting, the skin_ tables). `drops`: `rolls` times, a `chance` of anything at all; if so, roll a rarity by its weight in `rarity`, then one item from that rarity's list in `items`. Common gear listed under enhanced drops with a suffix (its magical property). Items marked `reservedFor` in items.json (a boss's own weapon) may only appear in those tables. Gear rolls its stats as it drops. Like WoW, an enemy's own table holds only what is its own (a ghoul's bones, a boss's blade); the gear any mob of its level might carry comes from `worldDrops`: level bands, each a table of its own with `minLevel` and `maxLevel`. Every enemy rolls the band its level falls in as well as its own table, unless it is marked `worldDrops: false` (beasts drop no gear). `questDrops` (an enemy's own table only): [{ item, quest, chance }], an item that drops only while that quest is taken and still needs it (a collect objective), whatever else the table rolls. A fish table's entry may carry `reqSkill`: it only bites for anglers with that much Fishing.",
   "lootTables": [
     {
       "id": "ghoul",
@@ -223,7 +223,7 @@
             {
               "item": "ghostfin",
               "weight": 1,
-              "reqSkill": 5
+              "reqSkill": 8
             }
           ]
         }
@@ -233,35 +233,30 @@
       "id": "wild_boar",
       "always": [
         {
-          "item": "boar_meat",
-          "min": 1,
-          "max": 2
-        },
-        {
           "item": "boar_tusk",
           "min": 0,
           "max": 1
         }
-      ]
-    },
-    {
-      "id": "ridge_wolf",
-      "always": [
+      ],
+      "questDrops": [
         {
-          "item": "wolf_meat",
-          "min": 0,
-          "max": 1
+          "item": "boar_meat",
+          "quest": "ni_loose_boar",
+          "chance": 1
+        },
+        {
+          "item": "boar_meat",
+          "quest": "sf_a_meal_earned",
+          "chance": 1
         }
       ]
     },
     {
+      "id": "ridge_wolf"
+    },
+    {
       "id": "bristleback",
       "always": [
-        {
-          "item": "boar_meat",
-          "min": 2,
-          "max": 3
-        },
         {
           "item": "boar_tusk",
           "min": 1,
@@ -318,6 +313,11 @@
           "item": "boar_loin",
           "min": 1,
           "max": 1
+        },
+        {
+          "item": "boar_meat",
+          "min": 1,
+          "max": 2
         }
       ]
     },
@@ -343,6 +343,11 @@
           "item": "wolf_haunch",
           "min": 1,
           "max": 1
+        },
+        {
+          "item": "wolf_meat",
+          "min": 1,
+          "max": 1
         }
       ]
     },
@@ -363,6 +368,11 @@
           "item": "boar_loin",
           "min": 1,
           "max": 2
+        },
+        {
+          "item": "boar_meat",
+          "min": 2,
+          "max": 3
         }
       ]
     },
@@ -521,7 +531,7 @@
             {
               "item": "mirror_pike",
               "weight": 2,
-              "reqSkill": 15
+              "reqSkill": 25
             },
             {
               "item": "barrow_eel",

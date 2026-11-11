@@ -1570,10 +1570,8 @@ func _skill_tile(parent: Node, d: Dictionary) -> void:
 	name.clip_text = true
 	name.custom_minimum_size.x = SKILL_TILE.x - 14
 	var k := 1.0
-	if sk.laddered(id):
+	if sk.ranked(id):
 		k = 1.0 if sk.rank(id) >= sk.cap(id) else float(sk.xp.get(id, 0)) / Skills.xp_needed(sk.rank(id))
-	elif sk.ranked(id):
-		k = float(sk.rank(id)) / sk.cap(id)
 	_skill_bar(v, k, SKILL_TILE.x - 14, 0.0, 3)
 	_pick_on(tile, id)
 	tip_on(tile, d.get("desc", ""), d.name)
@@ -1596,16 +1594,17 @@ func _skill_detail(parent: Node, d: Dictionary) -> void:
 		_level_text(head, sk.rank(id), sk.cap(id), sk.tool_bonus(id), 24)
 	var lvl: int = sk.rank(id)
 	var capped: bool = sk.ranked(id) and lvl >= sk.cap(id)
-	if sk.laddered(id):
+	if sk.ranked(id):
+		# skill points (Dan 2026-11-11): every success has a chance at one,
+		# by the task's colour
 		_skill_bar(parent, 1.0 if capped else float(sk.xp.get(id, 0)) / Skills.xp_needed(lvl), SKILL_PANE, 0.0, 8)
 		var nums := UI.hbox(parent, 6)
-		var need := "At the %s's limit" % sk.rank_name(id) if capped else "%s / %s xp to level %d" % [U.n(int(sk.xp.get(id, 0))), U.n(Skills.xp_needed(lvl)), lvl + 1]
+		var need := ("At the %s's limit" % sk.rank_name(id) if sk.laddered(id) else "Mastered") if capped \
+			else "%d / %d points to level %d" % [int(sk.xp.get(id, 0)), Skills.xp_needed(lvl), lvl + 1]
 		UI.label(nums, need, 12, UI.TEXT_DIM).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var rate: float = sk.xp_rate(id)
 		if rate > 0 and not capped:
-			UI.label(nums, "%s xp/hr" % U.n(roundi(rate)), 12, UI.TEXT_DIM)
-	elif sk.ranked(id):
-		_skill_bar(parent, float(lvl) / sk.cap(id), SKILL_PANE, 0.0, 8)
+			UI.label(nums, "%s points/hr" % U.n(roundi(rate)), 12, UI.TEXT_DIM)
 	if capped:
 		var nxt: Dictionary = sk.next_rank(id)
 		if not nxt.is_empty():

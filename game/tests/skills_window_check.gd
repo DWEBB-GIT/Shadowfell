@@ -62,11 +62,15 @@ func _run() -> void:
 	# experience drops and the AFK share
 	var seen := []
 	game.events.on("skillXp", func(e): seen.append(e))
-	var before := int(sk.xp.get("fishing", 0))
-	sk.gain("fishing", "orange", 0.6)
-	var full := int(DB.skill_ladder.actionXp.orange)
-	check(seen.size() == 1 and int(seen[0].amount) == roundi(full * 0.6), "a semi-AFK catch earns %d of %d experience and shows a drop" % [int(seen[0].amount) if seen else -1, full])
-	check(int(sk.xp.get("fishing", 0)) == before + roundi(full * 0.6) or sk.rank("fishing") > 1, "the share is added")
+	sk.xp["fishing"] = 0
+	var roll: Callable = game.random
+	game.random = func() -> float: return 0.45
+	sk.gain("fishing", "orange", 0.6) # 80% x 0.6 = 48%: lands
+	check(seen.size() == 1 and int(seen[0].amount) == 1 and int(sk.xp.fishing) == 1, "a semi-AFK catch can still give a skill point and shows a drop")
+	game.random = func() -> float: return 0.5
+	sk.gain("fishing", "orange", 0.6) # 48%: misses
+	check(seen.size() == 1 and int(sk.xp.fishing) == 1, "the AFK share lowers the chance")
+	game.random = roll
 	sk.tracked = "fishing"
 	game.hud.skill_tracker.update(1.0)
 	check(game.hud.skill_tracker.visible and game.hud.skill_tracker.title.text.begins_with("Fishing"), "the tracked skill shows on the HUD")

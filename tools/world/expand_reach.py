@@ -77,7 +77,7 @@ PONDS = [dict(id='vr_willow_pond',name='Willow Pond',position=[-383,-171],radius
          dict(id='vr_willow_cove',name='Willow Pond',position=[-377,-174],radius=5,fishTable='mere_fish',fishLevel=1,color='#59868d'),
          dict(id='vr_mill_pool',name="Miller's Pool",position=[-535,-215],radius=7,fishTable='mere_fish',fishLevel=1,color='#456873'),
          dict(id='vr_mill_cove',name="Miller's Pool",position=[-539,-218],radius=4,fishTable='mere_fish',fishLevel=1,color='#456873'),
-         dict(id='vr_widow_pool',name="Widow's Mirror",position=[-289,-408],radius=6,fishTable='blackpool_fish',fishLevel=8,color='#343c58')]
+         dict(id='vr_widow_pool',name="Widow's Mirror",position=[-289,-408],radius=6,fishTable='blackpool_fish',fishLevel=13,color='#343c58')]
 
 
 def road_dist(x,z):
