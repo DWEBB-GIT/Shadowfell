@@ -28,6 +28,7 @@ var windup := 0.0 ## > 0 while an attack is being telegraphed
 var casting = null ## ground-telegraphed attack in progress: { kind, telegraph, label, interruptible }
 var special_timer := 3.0 ## first Grave Slam comes a few seconds into a fight
 var circle_timer := 2.5
+var slots := 99 ## attack slots since its last telegraphed attack (DB.CONFIG.autoBetween); a fight opens with one
 var stagger := 0.0
 var mods := {}
 var asleep := false
@@ -260,6 +261,7 @@ func reset() -> void:
 	_cancel_cast()
 	special_timer = 3.0
 	circle_timer = 2.5
+	slots = 99
 	stagger = 0.0
 	root_left = 0.0
 	search_left = 0.0
@@ -396,12 +398,13 @@ func _start_shot(player) -> void:
 			# the shot stops at the player if it hits, otherwise flies on
 			var to := Vector3(p.x, 0, p.z) if on_line else end
 			game.events.emit("projectile", {"kind": r.get("projectile"), "from": Vector3(position.x, position.y + 1.3, position.z), "to": to, "speed": r.speed})
-			game.combat.resolve_telegraph(self, shape, r.damage, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical"), "ranged":true}),
+			game.combat.resolve_telegraph(self, shape, r.damage * DB.CONFIG.autoBetween.telegraphScale, r.name, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical"), "ranged":true}),
 	})
 	if r.get("mana"):
 		mana -= r.mana
 	casting = {"kind": "shot", "telegraph": telegraph, "label": r.name, "interruptible": r.get("interruptible", true) != false}
 	attack_timer = r.interval
+	slots = 0
 	rig.play("cast" if bolt else "shoot", r.windup + 0.25, r.windup / (r.windup + 0.25))
 	game.events.emit("enemyWindup", {"enemy": self})
 
@@ -445,7 +448,7 @@ func _start_cast(kind: String, player) -> void:
 		"heavy": special,
 		"onComplete": func(shape):
 			casting = null
-			var hit = game.combat.resolve_telegraph(self, shape, sp.damage if special else cfg.damage, sp.name if special else null)
+			var hit = game.combat.resolve_telegraph(self, shape, sp.damage if special else cfg.damage * DB.CONFIG.autoBetween.telegraphScale, sp.name if special else null)
 			if special and sp.get("impactEvent", "graveSlam") != "":
 				game.events.emit(sp.get("impactEvent", "graveSlam"), {"enemy": self, "shape": shape, "hit": hit}),
 	})
@@ -457,6 +460,7 @@ func _start_cast(kind: String, player) -> void:
 		game.events.emit("log", {"text": sp.get("warning", "The %s raises its cleaver high. Get clear!" % cfg.name), "kind": "hurt", "throttle": "slam-warn"})
 	else:
 		attack_timer = cfg.attackInterval
+		slots = 0
 		rig.play("cleave", duration + 0.3, duration / (duration + 0.3))
 	game.events.emit("enemyWindup", {"enemy": self, "special": special})
 
@@ -604,9 +608,9 @@ func update(dt: float, player) -> void:
 				position.z -= (dz / dist) * move_speed * 0.75 * dt
 				speed01 = 0.7
 				if attack_timer <= 0:
-					_start_shot(player)
+					_ranged_attack(player)
 			elif attack_timer <= 0:
-				_start_shot(player)
+				_ranged_attack(player)
 		elif state == "chase":
 			var c: Dictionary = DB.CONFIG.chase
 			if charge < c.alertSeconds:
@@ -619,12 +623,16 @@ func update(dt: float, player) -> void:
 			if windup > 0:
 				windup = 0.0
 			# a fleeing player still within a stride gets hit on the run
-			if dist <= reach + DB.CONFIG.chase.reachGrace and attack_timer <= 0 and not cfg.get("telegraph"):
+			# (a telegraphing enemy saves its cleave until it stands)
+			if dist <= reach + DB.CONFIG.chase.reachGrace and attack_timer <= 0 and not (cfg.get("telegraph") and _telegraph_due("meleeEvery")):
 				_melee_swing()
 		elif state == "attack" and cfg.get("telegraph"):
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
-				_start_cast("normal", player)
+				if _telegraph_due("meleeEvery"):
+					_start_cast("normal", player)
+				else:
+					_melee_swing()
 		elif state == "attack":
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
@@ -666,7 +674,34 @@ func _melee_swing() -> void:
 	attack_timer = cfg.attackInterval
 	rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
 	game.events.emit("enemyWindup", {"enemy": self})
-	game.combat.resolve_enemy_strike(self)
+	if cfg.get("telegraph"):
+		slots += 1
+		game.combat.resolve_enemy_strike(self, DB.CONFIG.autoBetween.autoShare)
+	else:
+		game.combat.resolve_enemy_strike(self)
+
+
+## Is this attack slot the telegraphed one? (DB.CONFIG.autoBetween)
+func _telegraph_due(every_key: String) -> bool:
+	return slots >= int(DB.CONFIG.autoBetween[every_key]) - 1
+
+
+## At range: the aimed shot when its slot comes up (and there is mana for
+## it), else a quick auto shot that needs no dodging.
+func _ranged_attack(player) -> void:
+	var r: Dictionary = cfg.ranged
+	if _telegraph_due("rangedEvery"):
+		_start_shot(player)
+		return
+	var ab: Dictionary = DB.CONFIG.autoBetween
+	var bolt: bool = r.get("projectile") == "bolt"
+	facing = atan2(player.position.x - position.x, player.position.z - position.z)
+	attack_timer = r.interval
+	slots += 1
+	rig.play("cast" if bolt else "shoot", 0.45, 0.3)
+	game.events.emit("enemyWindup", {"enemy": self})
+	game.events.emit("projectile", {"kind": r.get("projectile"), "from": Vector3(position.x, position.y + 1.3, position.z), "to": Vector3(player.position.x, 0, player.position.z), "speed": r.speed})
+	game.combat.resolve_enemy_shot(self, r.damage * ab.autoShare, ab.boltName if bolt else ab.shotName)
 
 
 func _steer_towards(x: float, z: float, speed: float, dt: float, stop_at: float) -> void:

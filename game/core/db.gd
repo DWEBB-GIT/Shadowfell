@@ -45,6 +45,16 @@ const CONFIG := {
 		# wounded beasts and men break and run, slower than they chase (Dan, 2026-11-02);
 		# the dead never flee. An enemy can set `flees` true/false itself.
 		"flee": {"below": 0.2, "speed": 70, "seconds": 4.0, "types": ["fodder", "normal", "skirmisher", "pack_beast"], "noModels": ["ghoul", "skeleton"]}},
+	## Enemies whose attacks are telegraphed (a cleave you step out of, an
+	## aimed shot down a line) auto attack between them (Dan, 2026-11-11), so
+	## steady damage still comes in while the telegraph stays the moment to
+	## move, dodge or interrupt. Each attack slot (the enemy's attack interval)
+	## is an auto hit worth `autoShare` of its hit; every `meleeEvery` /
+	## `rangedEvery` slot (the first included) is the telegraph, worth
+	## `telegraphScale`. Standing in everything a brute deals 0.55+0.55+1.4 =
+	## 2.5 hits per three slots (was 3); dodging every cleave still takes 1.1.
+	## An archer: 0.55+1.4 per two slots (was 2), 0.55 if you dodge.
+	"autoBetween": {"meleeEvery": 3, "rangedEvery": 2, "autoShare": 0.55, "telegraphScale": 1.4, "shotName": "Quick Shot", "boltName": "Flick of Rot"},
 	"control": {"bossStaggerNeed": 6.0, "staggered": 4.0, "staggeredDamageTaken": 25.0, "staggerGrowth": 1.5, "eliteDr": [1.0, 0.5, 0.25], "eliteDrReset": 15.0},
 	"shop": {"sellFraction": 0.25, "buybackSlots": 6, "talkRange": 3.0, "leaveRange": 6.0},
 	# a banker npc (`banker`) opens your bank vault: `slots` places, kept per
