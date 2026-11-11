@@ -16,6 +16,17 @@ var game
 var autosave_enabled := true
 var key := SAVE_KEY ## each character saves under its own key (see characters.gd)
 
+## Autosave while playing (Dan 2026-11-11: a crash lost a level and the
+## skills learned since the last save). The whole character is one save, so
+## level, XP, skills, spells, quests, bags and position are always written
+## together: every AUTOSAVE_EVERY seconds, and soon after a milestone.
+const AUTOSAVE_EVERY := 15.0
+const MILESTONE_DELAY := 0.5 ## a short wait so a burst (quest hand-in: xp, level, item) saves once
+const MILESTONE_GAP := 3.0 ## no more than one milestone save in this many seconds (gathering xp is frequent)
+const MILESTONES := ["levelUp", "skillsChanged", "skillMilestone", "masteryUp", "questAccepted", "questComplete", "titlesChanged", "equipmentChanged", "barChanged", "bankChanged", "itemBought", "itemSold", "buildChanged", "reputationChanged"]
+var since_save := 0.0
+var milestone_in := -1.0 ## seconds until a milestone save; below 0 when none is due
+
 
 static func _is_num(v) -> bool:
 	return (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and is_finite(v)
@@ -398,6 +409,26 @@ static func validate_save(data) -> Array:
 
 func _init(g) -> void:
 	game = g
+	if game.get("events") != null:
+		for type in MILESTONES:
+			game.events.on(type, func(_e): soon())
+
+
+## Save shortly, for something worth keeping (a level, a skill, a quest).
+func soon() -> void:
+	if milestone_in < 0:
+		milestone_in = MILESTONE_DELAY
+
+
+## Called every frame while in the world (game.step), paused or not.
+func tick(dt: float) -> void:
+	since_save += dt
+	var due := since_save >= AUTOSAVE_EVERY
+	if milestone_in >= 0:
+		milestone_in = maxf(0.0, milestone_in - dt) # held at 0 until the gap has passed
+		due = due or (milestone_in <= 0 and since_save >= MILESTONE_GAP)
+	if due:
+		autosave()
 
 
 static func _round(n: float) -> float:
@@ -550,4 +581,9 @@ func apply(data: Dictionary) -> void:
 func autosave() -> void:
 	if not autosave_enabled or not game.started:
 		return
-	save()
+	# a refused save (defeated, storage full) is tried again on the next tick
+	if save().ok:
+		since_save = 0.0
+		milestone_in = -1.0
+	else:
+		since_save = AUTOSAVE_EVERY - 1.0
