@@ -75,6 +75,7 @@ var targeting: Targeting
 var npcs: Npcs
 var merchant: Merchant
 var bank: Bank
+var dummy_meter: DummyMeter
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
@@ -188,6 +189,7 @@ func _ready() -> void:
 	npcs = Npcs.new(self)
 	merchant = Merchant.new(self)
 	bank = Bank.new(self)
+	dummy_meter = DummyMeter.new(self)
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
@@ -635,6 +637,20 @@ func _arrive(text: String) -> void:
 	releasing = false
 
 
+## Step through a waystone to somewhere far (the test hub city's stones):
+## the loading screen covers the ground being built, as for the spirit.
+func travel_to(x: float, z: float, facing = null, text := "Travelling…") -> bool:
+	if player == null or player.dead or releasing or combat_blocks_logout():
+		return false
+	releasing = true
+	hud.show_loading()
+	hud.loading.show_progress(text, 0.0)
+	player.place_at(x, z, facing)
+	_snap_camera()
+	_arrive(text)
+	return true
+
+
 ## Release and return to life at once at the rest point, wounded.
 func respawn() -> void:
 	if release_spirit():
@@ -853,9 +869,11 @@ func _click(button: String) -> bool:
 			if acts:
 				targeting.engage(o)
 				# attacking (not selecting) nudges you onto it when it is
-				# roughly ahead (aim assist, no forced snap)
-				if targeting.target_in_reach:
-					player.square_up(o.position.x, o.position.z)
+				# roughly ahead (aim assist, no forced snap); standing still
+				# you turn to it quickly wherever it is (WoW)
+				if targeting.target_in_reach or targeting.target_in_shot:
+					if not player.square_up(o.position.x, o.position.z) and not player.moving:
+						player.face_goal = o
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}
@@ -1255,6 +1273,7 @@ func step(dt: float) -> void:
 		npcs.update(dt)
 		merchant.update()
 		bank.update()
+		dummy_meter.update()
 		dialogue.update()
 		telegraphs.update(dt)
 		targeting.update(dt, raw_aim, DB.abilities.strike.range + 1)
@@ -1484,6 +1503,12 @@ func _camera_offset(z: float) -> Vector3:
 		var flat := cos(pitch) * d
 		return Vector3(sin(yaw) * flat, sin(pitch) * d, cos(yaw) * flat) * z
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
+
+
+## the player's run in m/s: CONFIG.player.speed times the moveSpeed test setting
+func player_speed() -> float:
+	var pct = settings.get_value("moveSpeed") if settings != null else null
+	return DB.CONFIG.player.speed * (float(pct) / 100.0 if pct != null else 1.0)
 
 
 func _tuned_camera() -> bool:

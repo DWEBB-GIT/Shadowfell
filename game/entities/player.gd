@@ -30,6 +30,14 @@ var facing := 0.0 ## radians; 0 faces +z (south)
 ## while walking, so the blow is seen to go where it was aimed
 const AIM_HOLD := 0.45
 var aim_hold := 0.0
+## melee pivot (_melee_steer): turning on the spot towards a foe in reach,
+## kept on until you face it; and whether it held you this frame, so the
+## held left button (mouse aim) does not turn you straight back
+var pivoting := false
+var pivoted := false
+## a foe a right click engaged while you stood still: you turn to it at
+## turnSpeed (WoW: attacking squares you up, a quick turn, no snap)
+var face_goal = null
 var radius: float = DB.CONFIG.player.radius
 var max_health := 100
 var health := 100.0
@@ -632,6 +640,7 @@ func update(dt: float, controls) -> void:
 		# breaks a cast; walking goes the way you face, backing up slower
 		var tank = controls.get("tank")
 		var turning := false
+		pivoted = false
 		if tank != null:
 			turning = tank.x != 0
 			if turning:
@@ -647,10 +656,12 @@ func update(dt: float, controls) -> void:
 		mv = _air_steer(mv)
 		if not rig.airborne or U.hyp(look.x, look.z) < 0.2:
 			look = mv
+		if U.hyp(mv.x, mv.z) > 0 or turning:
+			face_goal = null
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
-			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
-			position.z += mv.z * DB.CONFIG.player.speed * game.spells.movement_scale * dt
+			position.x += mv.x * game.player_speed() * game.spells.movement_scale * dt
+			position.z += mv.z * game.player_speed() * game.spells.movement_scale * dt
 			if tank != null:
 				# you face where the keys turn you; the left button held
 				# (mouse aim) still turns you to the cursor
@@ -663,8 +674,10 @@ func update(dt: float, controls) -> void:
 				# stop (or turn) to face it. No shooting while kiting backwards.
 				facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
 			speed01 = mag
-		elif turning:
+		elif turning or pivoted:
 			pass
+		elif face_goal != null:
+			_turn_to_goal(dt)
 		elif game.mouse_aim and controls.get("faceAim") != null:
 			var fa = controls.faceAim
 			facing = U.turn_towards(facing, atan2(fa.x - position.x, fa.z - position.z), dt * DB.CONFIG.player.turnSpeed)
@@ -931,6 +944,18 @@ func square_up(x: float, z: float) -> bool:
 	return true
 
 
+## Standing still after a right click on a foe: turn to it, quickly but not
+## at once, then auto attack swings as it comes into your front half.
+func _turn_to_goal(dt: float) -> void:
+	var f = face_goal
+	if f == null or not is_instance_valid(f) or not f.alive or game.targeting.current != f:
+		face_goal = null
+		return
+	facing = U.turn_towards(facing, atan2(f.position.x - position.x, f.position.z - position.z), dt * DB.CONFIG.player.turnSpeed)
+	if facing_point(f.position.x, f.position.z, 3):
+		face_goal = null
+
+
 func _swing_facing(aim) -> bool:
 	return square_up(aim.x, aim.z)
 
@@ -950,9 +975,11 @@ func _melee_foe():
 ## (Dan, 2026-11-09): once turned you walk on, through it if you hold the
 ## key. Moving away is untouched, so kiting rules hold.
 func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
+	pivoted = false
 	var foe = _melee_foe()
 	var ml := U.hyp(mv.x, mv.z)
 	if foe == null or ml < 0.01:
+		pivoting = false
 		return mv
 	var fx: float = foe.position.x - position.x
 	var fz: float = foe.position.z - position.z
@@ -963,10 +990,20 @@ func _melee_steer(mv: Dictionary, dt: float) -> Dictionary:
 	fz /= d
 	var inward: float = (mv.x * fx + mv.z * fz) / ml
 	if inward < cos(deg_to_rad(DB.attack.get("pivotDegrees", 70))):
+		pivoting = false
 		return mv
-	if not facing_point(foe.position.x, foe.position.z, 30):
+	# a pivot starts only for a foe beside or behind you and runs until you
+	# face it. Once you do, walking on turns you the way you walk, so a foe
+	# still in your front half never starts another pivot: with the left
+	# button held that used to stop you dead, the pivot and the cursor
+	# turning you against each other every frame (2026-11-11).
+	if not pivoting and not facing_point(foe.position.x, foe.position.z, DB.attack.coneDegrees / 2.0):
+		pivoting = true
+	if pivoting and not facing_point(foe.position.x, foe.position.z, 30):
 		facing = U.turn_towards(facing, atan2(fx, fz), dt * DB.CONFIG.player.turnSpeed)
+		pivoted = true
 		return {"x": 0.0, "z": 0.0}
+	pivoting = false
 	return mv # facing it: walk on, straight through its body if you hold the key
 
 
