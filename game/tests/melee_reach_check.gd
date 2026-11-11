@@ -104,6 +104,18 @@ func _run() -> void:
 	game.input.mouse.y = off_foe.y
 	var go = game._click_move({"x": 0.0, "z": 0.0}, dt)
 	check(go != null and go.z > 0.8, "dragged off the foe: you walk to the cursor (%s)" % str(go))
+	game.input.mouse.x = on_foe.x
+	game.input.mouse.y = on_foe.y
+	check(game._click_move({"x": 0.0, "z": 0.0}, dt) != null and not game.move_to.has("follow"), "once dragged off, the cursor back over the foe does not plant you again")
+	# a blow landing on the move never freezes your stride (no hit-stop on you)
+	pl.rig.held = 0.0
+	pl.moving = true
+	game.events.emit("enemyHit", {"enemy": foe, "damage": 5, "kind": "strike", "swing": true})
+	check(pl.rig.held == 0.0, "a blow on the move does not hold your body still")
+	pl.moving = false
+	game.events.emit("enemyHit", {"enemy": foe, "damage": 5, "kind": "strike", "swing": true})
+	check(pl.rig.held > 0.0, "standing, a blow still holds you a moment")
+	pl.rig.held = 0.0
 	game.input.mouse.leftHeld = false
 	game.move_to = null
 	# a right click on a foe behind you, standing: a quick turn, then swings
