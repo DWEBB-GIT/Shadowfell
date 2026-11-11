@@ -853,9 +853,11 @@ func _click(button: String) -> bool:
 			if acts:
 				targeting.engage(o)
 				# attacking (not selecting) nudges you onto it when it is
-				# roughly ahead (aim assist, no forced snap)
-				if targeting.target_in_reach:
-					player.square_up(o.position.x, o.position.z)
+				# roughly ahead (aim assist, no forced snap); standing still
+				# you turn to it quickly wherever it is (WoW)
+				if targeting.target_in_reach or targeting.target_in_shot:
+					if not player.square_up(o.position.x, o.position.z) and not player.moving:
+						player.face_goal = o
 				if not targeting.target_in_reach and not targeting.target_in_shot:
 					if button == "right" or walk:
 						move_to = {"follow": o, "reach": 0.0}
