@@ -289,7 +289,8 @@ func _init_renderer() -> void:
 	# the haze glows warm towards the low sun
 	env.fog_sun_scatter = 0.12
 	# Contact shading anchors the simple meshes without repainting the assets.
-	env.ssao_enabled = true
+	# SSAO samples depth many times a pixel: too heavy for the browser
+	env.ssao_enabled = not OS.has_feature("web")
 	env.ssao_radius = 1.1
 	env.ssao_intensity = 1.5
 	var we := WorldEnvironment.new()

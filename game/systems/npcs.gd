@@ -42,6 +42,8 @@ extends RefCounted
 const INN_SEATS := [[0.0, 0.8], [-2.8, 2.6], [2.8, 0.6], [-3.6, -0.6], [0.6, -2.2], [-0.4, 3.0], [3.2, -1.4], [-1.8, -0.2]]
 const SNAP_HOURS := 0.25 ## a clock jump bigger than this (a load, a night's sleep) puts people straight where they would be
 const PATHS_PER_FRAME := 2
+const PRESENCE_EVERY := 15 ## frames between quest checks for whether someone is about
+const FAR_EVERY := 4 ## off-screen people update every 4th frame
 
 
 class Npc:
@@ -327,6 +329,7 @@ var game
 var all: Array = []
 var _paths := [] ## people waiting for a path, first come first served
 var _last_hour := -100.0
+var _frame := 0
 var services_keep_post: bool = DB.CONFIG.routine.get("servicesKeepPost", true)
 
 
@@ -520,12 +523,23 @@ func update(dt: float) -> void:
 	var jump := absf(hour - _last_hour)
 	var snap := minf(jump, 24.0 - jump) > SNAP_HOURS
 	_last_hour = hour
-	for n in all:
-		n.update_presence()
+	_frame += 1
+	for i in all.size():
+		var n: Npc = all[i]
+		# presence is a quest check: a few times a second is plenty
+		if snap or (_frame + i) % PRESENCE_EVERY == 0:
+			n.update_presence()
 		if not n.present:
 			continue
+		# people out of view walk their day at a quarter of the rate
+		# (staggered), so a town full of folk costs little off screen
+		var step := dt
+		if n.group.get_parent() == null and not snap:
+			if (_frame + i) % FAR_EVERY != 0:
+				continue
+			step = dt * FAR_EVERY
 		if n.path.size() >= 2:
-			n.walk_road(dt, hour)
+			n.walk_road(step, hour)
 			continue
 		if n.routine.is_empty():
 			continue
@@ -533,7 +547,7 @@ func update(dt: float) -> void:
 		if snap:
 			n.snap_to(want)
 			_paths.erase(n)
-		elif n.simulate(dt, want):
+		elif n.simulate(step, want):
 			_paths.append(n)
 	for i in mini(PATHS_PER_FRAME, _paths.size()):
 		_route(_paths.pop_front())

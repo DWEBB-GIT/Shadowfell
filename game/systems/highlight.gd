@@ -76,7 +76,9 @@ var _saved_surf := {} ## GeometryInstance3D -> [surface overrides]
 
 
 func _unlit_of(m: Material) -> Material:
-	if not (m is BaseMaterial3D):
+	# browser: every unlit copy is a new shader to compile mid-game (a frame
+	# hitch per new thing hovered), so the web keeps the overlay only
+	if OS.has_feature("web") or not (m is BaseMaterial3D):
 		return null
 	if not _unlit.has(m):
 		var c: BaseMaterial3D = m.duplicate()
