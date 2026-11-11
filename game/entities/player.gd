@@ -559,13 +559,16 @@ func update(dt: float, controls) -> void:
 
 	if ghost:
 		# a spirit walks fast, fights nothing and passes unseen
-		var mv: Dictionary = _air_steer(controls.move if controls else {"x": 0.0, "z": 0.0})
+		var look: Dictionary = controls.move if controls else {"x": 0.0, "z": 0.0}
+		var mv: Dictionary = _air_steer(look)
+		if not rig.airborne or U.hyp(look.x, look.z) < 0.2:
+			look = mv
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
 			var sp: float = DB.CONFIG.player.speed * DB.CONFIG.death.ghostSpeed
 			position.x += mv.x * sp * dt
 			position.z += mv.z * sp * dt
-			facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * DB.CONFIG.player.turnSpeed)
+			facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
 		position = game.collision.resolve(position, radius, jump_h)
 		_update_jump(dt, controls != null and controls.get("jump", false), controls)
 		moving = mag > 0 or rig.airborne
@@ -647,7 +650,12 @@ func update(dt: float, controls) -> void:
 			mv = {"x": sin(facing) * walk, "z": cos(facing) * walk}
 		else:
 			mv = _melee_steer(mv, dt)
+		# in the air your path is locked (one change), but you still turn
+		# and spin freely towards what you steer at (Dan, 2026-11-11)
+		var look: Dictionary = mv
 		mv = _air_steer(mv)
+		if not rig.airborne or U.hyp(look.x, look.z) < 0.2:
+			look = mv
 		if U.hyp(mv.x, mv.z) > 0 or turning:
 			face_goal = null
 		var mag := minf(1, U.hyp(mv.x, mv.z))
@@ -664,7 +672,7 @@ func update(dt: float, controls) -> void:
 				# Running, you face the way you run (WoW): nothing turns you
 				# back at your target, so to hit something behind you, you
 				# stop (or turn) to face it. No shooting while kiting backwards.
-				facing = U.turn_towards(facing, atan2(mv.x, mv.z), dt * DB.CONFIG.player.turnSpeed)
+				facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
 			speed01 = mag
 		elif turning or pivoted:
 			pass

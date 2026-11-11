@@ -112,6 +112,7 @@ func _run() -> void:
 	_key(KEY_A, true)
 	for i in 3: _tick()
 	check(game.player.air_mv == turned, "a second direction press in the air is ignored")
+	check(absf(wrapf(game.player.facing - atan2(-turned.x, -turned.y), -PI, PI)) < absf(wrapf(game.player.facing - atan2(turned.x, turned.y), -PI, PI)), "you still turn towards a later press while the path stays locked")
 	_key(KEY_A, false)
 	for i in 60: _tick()
 	check(not game.player.rig.airborne, "lands after steering")
