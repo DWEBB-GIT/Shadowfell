@@ -226,12 +226,19 @@
     },
     {
       "id": "skinning",
-      "name": "Skinning",
+      "name": "Hunting",
       "trainer": "agna",
       "cost": 10,
       "teaches": [],
       "maxRank": 50,
-      "desc": "Skin the beasts you kill for their hides and pelts (you need a skinning knife). Loot the body first, then skin it. Higher-level beasts need a higher rank (5 ranks a level); the skill rises with every skin that is not yet easy for you."
+      "desc": "Butcher the beasts you kill for their hides, pelts and the best of their meat, and fillet fish for the pot (you need a skinning knife). Loot the body first, then butcher it. Higher-level beasts need a higher rank (5 ranks a level), and better fish take more skill to fillet; the skill rises with every carcass and fish that is not yet easy for you. Small fish still cook whole: filleting gets more from them.",
+      "craft": {
+        "window": "Filleting",
+        "verb": "fillet",
+        "button": "Fillet",
+        "station": "a skinning knife on your tool belt",
+        "kind": "knife"
+      }
     },
     {
       "id": "mining",
@@ -240,14 +247,70 @@
       "cost": 10,
       "teaches": [],
       "maxRank": 50,
-      "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick), and smelt ore into bars at a forge. Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Harder rock needs a higher rank (5 ranks an ore level); the skill rises with every swing that is not yet easy for you, and as you smelt.",
+      "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick). Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Harder rock needs a higher rank (5 ranks an ore level); the skill rises with every swing that is not yet easy for you. Smelting the ore into bars is Smithing's work."
+    },
+    {
+      "id": "smithing",
+      "name": "Smithing",
+      "trainer": "orrin",
+      "cost": 10,
+      "teaches": [],
+      "desc": "Smelt ore into bars at a forge, then hammer the bars into nails, arrowheads and tool heads at the anvil. Each recipe has a level; it teaches you less once it is easy. Iren teaches it alongside Mining.",
       "craft": {
-        "window": "Smelting",
-        "verb": "smelt",
-        "button": "Smelt",
+        "window": "Smithing",
+        "verb": "make",
+        "button": "Make",
         "station": "a forge",
         "kind": "forge"
-      }
+      },
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "orrin",
+          "cost": 40,
+          "level": 8
+        }
+      ]
+    },
+    {
+      "id": "woodcutting",
+      "name": "Woodcutting",
+      "trainer": "tam",
+      "cost": 10,
+      "teaches": [],
+      "desc": "Fell trees for logs (you need a hatchet on your tool belt). Each kind of tree has a level: ash for anyone, oak and yew for the practised. A felled tree is gone, and another grows nearby. Logs feed Woodcraft and the forge's charcoal.",
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "tam",
+          "cost": 40,
+          "level": 8
+        }
+      ]
+    },
+    {
+      "id": "woodcraft",
+      "name": "Woodcraft",
+      "trainer": "tam",
+      "cost": 10,
+      "teaches": [],
+      "icon": "fletching",
+      "desc": "Shape logs at a workbench into everything wooden: arrow shafts, tool handles, staffs, wands and the shaped timber folk need for repairs. Each recipe has a level; it teaches you less once it is easy.",
+      "craft": {
+        "window": "Woodcraft",
+        "verb": "make",
+        "button": "Make",
+        "station": "a workbench",
+        "kind": "workbench"
+      },
+      "train": [
+        {
+          "rank": "apprentice",
+          "trainer": "tam",
+          "cost": 40,
+          "level": 8
+        }
+      ]
     }
   ],
   "ladder": {
@@ -294,5 +357,39 @@
     },
     "bands": [3, 6, 10],
     "charXpShare": 0.15
-  }
+  },
+    "masteries": {
+      "_about": "Weapon masteries (game/systems/skills.gd, shown under Combat in the Skills window; Dan 2026-11-11). Every landed swing or shot with a weapon type gives `xpPerHit` mastery experience to that type; a level needs xpBase + xpPerLevel x level, up to maxLevel. Masteries give NO power: their `milestones` are cosmetic (swing styles, weapon glows: names only for now) and titles (titles.json `requires` { mastery, level }). `types`: each weapon type's mastery name; an item's `weaponType` picks it, a main-hand weapon without one counts as `sword`.",
+      "xpPerHit": 1,
+      "xpBase": 20,
+      "xpPerLevel": 4,
+      "maxLevel": 60,
+      "types": {
+        "sword": "Swords",
+        "dagger": "Daggers",
+        "club": "Maces",
+        "twoHand": "Great weapons",
+        "bow": "Bows"
+      },
+      "milestones": [
+        {
+          "level": 10,
+          "text": "A title for your weapon"
+        },
+        {
+          "level": 20,
+          "text": "A new swing style (coming later)"
+        },
+        {
+          "level": 40,
+          "text": "A faint glow on your weapon (coming later)"
+        },
+        {
+          "level": 60,
+          "text": "Master's title and mantle"
+        }
+      ]
+    }
+ 
 }
+

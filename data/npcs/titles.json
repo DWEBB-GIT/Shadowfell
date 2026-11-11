@@ -1,5 +1,5 @@
 {
-  "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done), { level }, { infamy } (at least that much) or { crime } (seen committing it once). NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
+  "_about": "Renown and titles, Fable style. You start a nobody: townsfolk greet you with a plain line from `untitled`. Renown is one number earned by deeds (`renown`: points per quest completed, per level gained, and for the first kill of each elite enemy type). `tiers` name how known you are, lowest first, each from `min` renown. A title is chosen in the character window (Titles tab) once your renown reaches its `renown` and every condition in `requires` holds: { skill, rank }, { slain: enemy type }, { faction, standing }, { quest } (done), { level }, { mastery: weapon type, level } (weapon mastery), { infamy } (at least that much) or { crime } (seen committing it once). NPCs then address you by it in their greeting and farewell; with chance `mock` (default `mockChance`) they say it mockingly, from the title's own `mocks` lines when it has them, else the shared `mocking` lines. {title} in a line is replaced by the title's name.",
   "mockChance": 0.2,
   "greetings": {
     "untitled": ["Hello there.", "Hey you!", "You. Yes, you.", "Mm? What is it?", "Oh. Hello."],
@@ -157,6 +157,45 @@
         }
       ],
       "desc": "Briony asks your opinion now. Briony never asks anyone's opinion."
+    },
+    {
+      "id": "swordhand",
+      "name": "Swordhand",
+      "renown": 0,
+      "mock": 0.2,
+      "requires": [
+        {
+          "mastery": "sword",
+          "level": 10
+        }
+      ],
+      "desc": "You have swung a sword often enough that it swings back less."
+    },
+    {
+      "id": "knife_in_the_dark",
+      "name": "Knife in the Dark",
+      "renown": 0,
+      "mock": 0.2,
+      "requires": [
+        {
+          "mastery": "dagger",
+          "level": 10
+        }
+      ],
+      "desc": "Ten levels of Dagger mastery. People check their purses when you pass."
+    },
+    {
+      "id": "true_shot",
+      "name": "True Shot",
+      "renown": 0,
+      "mock": 0.2,
+      "requires": [
+        {
+          "mastery": "bow",
+          "level": 10
+        }
+      ],
+      "desc": "Ten levels of Bow mastery. Crows give you a wide berth."
     }
   ]
 }

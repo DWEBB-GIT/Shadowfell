@@ -94,6 +94,7 @@ func run() -> void:
 		check(game.inventory.use(bag("healing_draught")) and game.player.health>health,"a crafted draught restores health")
 		await picture("alchemy-loop")
 	check(game.skills.learn("mining"),"Iren's Mining skill can be learned")
+	game.skills.grant("smithing")
 	game.inventory.add_item("mining_pick",1,true)
 	var veins:Array=game.mining.veins().filter(func(v):return v.rank==1)
 	check(veins.size()>0,"novice copper veins are live")

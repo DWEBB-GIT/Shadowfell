@@ -201,6 +201,7 @@ static var builds: Dictionary = {} ## data/abilities/builds.json (Builds)
 static var mining: Dictionary = {} ## data/professions/mining.json (Mining)
 static var nodes: Dictionary = {} ## data/professions/nodes.json (Gathering): herb patches and the like
 static var skill_ladder: Dictionary = {} ## skills.json `ladder` (Skills): trainer ranks, skill experience, perks
+static var masteries: Dictionary = {} ## skills.json `masteries`: weapon masteries (cosmetic and titles only)
 static var forge: Dictionary = {} ## data/professions/forge.json (Forge)
 static var enchanting: Dictionary = {} ## data/professions/enchanting.json (Forge: enchant, scrap)
 static var runes: Dictionary = {} ## data/professions/runes.json (Runes)
@@ -288,6 +289,7 @@ static func setup(data) -> void:
 	mining = f.get("mining", {})
 	nodes = f.get("nodes", {})
 	skill_ladder = f.skills.get("ladder", {})
+	masteries = f.skills.get("masteries", {})
 	infamy = f.get("infamy", {})
 	boons = f.get("boons", {})
 	leash_distance = f.enemies.get("leashDistance", 18)

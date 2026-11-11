@@ -49,7 +49,7 @@ var gather_bar:
 		var g = gathering
 		if g == null:
 			return null
-		return {"t": g.t, "total": g.total, "name": "Skinning %s" % g.name if g.has("skin") else "Gathering %s" % describe(g.entry)}
+		return {"t": g.t, "total": g.total, "skin": g.has("skin"), "name": "Butchering %s" % g.name if g.has("skin") else "Gathering %s" % describe(g.entry)}
 
 
 ## Start gathering a quest node; it is taken when the bar fills.
@@ -716,7 +716,7 @@ func skin_block(s: Dictionary) -> String:
 	if knife == null:
 		return "needs a skinning knife"
 	if skinning_skill < s.rank:
-		return "needs Skinning %d" % s.rank
+		return "needs %s %d" % [DB.skills.get("skinning", {}).get("name", "Hunting"), s.rank]
 	return ""
 
 

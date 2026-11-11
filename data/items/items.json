@@ -7564,6 +7564,312 @@
       "model": "manifest",
       "icon": "manifest",
       "description": "A carrier's note, folded round a grain tally. The writing leans as if the cart was moving. It begins “Elsie, before you shout”, and someone has squeezed in a last line at the bottom."
+    },
+    {
+      "id": "hatchet",
+      "name": "Woodsman's hatchet",
+      "kind": "tool",
+      "rarity": "common",
+      "woodcuttingAxe": true,
+      "stack": 1,
+      "price": 8,
+      "model": "worn_sword",
+      "icon": "worn_sword",
+      "description": "A short iron axe with a grip worn to the shape of someone else's hand. Carry it (it rides in the tool pack) and, once someone has shown you how, you can fell trees for logs."
+    },
+    {
+      "id": "ash_log",
+      "name": "Ash log",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 2,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Pale, straight-grained and light. Good for shafts and handles."
+    },
+    {
+      "id": "oak_log",
+      "name": "Oak log",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 4,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Heavy and close-grained. Staffs and beams are cut from it."
+    },
+    {
+      "id": "yew_log",
+      "name": "Yew log",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 7,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Red heart, white sap, and a spring in it. Wandmakers pay for good yew."
+    },
+    {
+      "id": "ironbark_log",
+      "name": "Ironbark log",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 14,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Black wood that turns an axe edge. Grows only where the land is wrong."
+    },
+    {
+      "id": "arrow_shaft",
+      "name": "Arrow shafts",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 200,
+      "price": 1,
+      "model": "arrow_bundle",
+      "icon": "arrow_bundle",
+      "description": "Straight ash shafts, waiting for heads and feathers."
+    },
+    {
+      "id": "tool_handle",
+      "name": "Tool handle",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 2,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "An ash haft, smoothed and shaped for a hand. Picks, hatchets and hammers all need one."
+    },
+    {
+      "id": "shaped_timber",
+      "name": "Shaped timber",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 5,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "Oak squared and planed, ready to patch a roof, a fence or a door."
+    },
+    {
+      "id": "oak_staff_blank",
+      "name": "Oak staff blank",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 8,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "A staff in all but name: it wants runes, a cap and someone who knows what they are doing."
+    },
+    {
+      "id": "yew_wand_blank",
+      "name": "Yew wand blank",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 12,
+      "model": "crate_broken",
+      "icon": "crate_broken",
+      "description": "A slim length of yew, turned and sanded. Not yet a wand."
+    },
+    {
+      "id": "charcoal",
+      "name": "Charcoal",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 2,
+      "model": "rock0",
+      "icon": "rock0",
+      "description": "Wood burned slow and starved of air. A smith's fire runs hotter on it."
+    },
+    {
+      "id": "steel_bar",
+      "name": "Steel bar",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 14,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "Iron and charcoal, folded until it rings. The best a village forge can make."
+    },
+    {
+      "id": "iron_nails",
+      "name": "Iron nails",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 50,
+      "price": 1,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A fistful of square nails, still warm from the header."
+    },
+    {
+      "id": "bronze_arrowheads",
+      "name": "Bronze arrowheads",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 200,
+      "price": 1,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "Little leaf-shaped heads, waiting for shafts."
+    },
+    {
+      "id": "iron_tool_head",
+      "name": "Iron tool head",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 6,
+      "model": "grave_iron",
+      "icon": "grave_iron",
+      "description": "A pick or hatchet head with no handle. Half a tool."
+    },
+    {
+      "id": "boar_loin",
+      "name": "Boar loin",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 6,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "The best cut of a boar, if you know where to look. Only a hunter's knife finds it."
+    },
+    {
+      "id": "wolf_haunch",
+      "name": "Wolf haunch",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 6,
+      "model": "hound_meat",
+      "icon": "hound_meat",
+      "description": "Lean, dark meat from a ridge wolf. Tough unless it is cooked slow."
+    },
+    {
+      "id": "fish_fillet",
+      "name": "Fish fillet",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 2,
+      "model": "perch",
+      "icon": "perch",
+      "description": "A clean fillet off a small fish. Two from every perch or dace."
+    },
+    {
+      "id": "carp_fillet",
+      "name": "Carp fillet",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 5,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Thick white fillet, the mud and bones taken out."
+    },
+    {
+      "id": "eel_fillet",
+      "name": "Eel fillet",
+      "kind": "material",
+      "rarity": "common",
+      "stack": 10,
+      "price": 12,
+      "model": "perch",
+      "icon": "perch",
+      "description": "Dark, oily and still twitching, a little."
+    },
+    {
+      "id": "seared_fillet",
+      "name": "Seared fillet",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 45,
+          "seconds": 12
+        }
+      },
+      "stack": 10,
+      "price": 4,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Crisp skin, flaky middle, done in a minute. Restores 45 health over 12 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "carp_fillet_supper",
+      "name": "Carp fillet supper",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 80,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 8,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Two thick fillets fried in their own fat. Restores 80 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "smoked_eel_fillet",
+      "name": "Smoked eel fillet",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 130,
+          "seconds": 15
+        }
+      },
+      "stack": 10,
+      "price": 20,
+      "model": "cooked_fish",
+      "icon": "cooked_fish",
+      "description": "Thin slices of smoked eel, black at the edges. Restores 130 health over 15 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "roast_loin",
+      "name": "Roast boar loin",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 150,
+          "seconds": 18
+        }
+      },
+      "stack": 10,
+      "price": 14,
+      "model": "steak",
+      "icon": "steak",
+      "description": "The cut the hunters keep for themselves. Restores 150 health over 18 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
+    },
+    {
+      "id": "slow_wolf_haunch",
+      "name": "Slow-cooked wolf haunch",
+      "kind": "consumable",
+      "rarity": "common",
+      "use": {
+        "food": {
+          "heal": 130,
+          "seconds": 18
+        }
+      },
+      "stack": 10,
+      "price": 12,
+      "model": "steak",
+      "icon": "steak",
+      "description": "Falls off the bone after an hour by the fire. Restores 130 health over 18 seconds while you sit and eat. Eat for 10 seconds to become Well Fed (+2 Stamina for 15 minutes)."
     }
   ]
 }

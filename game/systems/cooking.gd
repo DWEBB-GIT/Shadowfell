@@ -93,8 +93,12 @@ var near_fire: String:
 
 
 ## The station of this kind you stand at (its name), or "": `fire` (your
-## camp or a hearth), `forge` (a forge, for smelting).
+## camp or a hearth), `forge` (a forge, for Smithing), `workbench`
+## (Woodcraft), `knife` (Hunting's filleting: anywhere, with a skinning
+## knife on the tool belt).
 func near_station(kind: String) -> String:
+	if kind == "knife":
+		return "your knife" if game.loot.knife != null else ""
 	var p: Vector3 = game.player.position
 	if kind == "fire":
 		var range_: float = ability.tuning.fireRange

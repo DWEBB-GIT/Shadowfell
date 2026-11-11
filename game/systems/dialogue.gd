@@ -237,8 +237,8 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 		if game.progression.level >= 10:
 			pg.options.append({"id": "smith:reforge", "text": "Reforge gear", "icon": "shop", "group": "service"})
 			pg.options.append({"id": "smith:punch", "text": "Punch a socket", "icon": "shop", "group": "service"})
-		if game.skills.has("mining"):
-			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smelting)", "icon": "train", "group": "service"})
+		if game.skills.has("smithing"):
+			pg.options.append({"id": "smith:smelt", "text": "Use the forge (Smithing)", "icon": "train", "group": "service"})
 	if def.get("refiner") and game.progression.level >= 10:
 		pg.options.append({"id": "ench:enchant", "text": "Refine gear", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "ench:scrap", "text": "Scrap gear (stones and gems)", "icon": "shop", "group": "service"})

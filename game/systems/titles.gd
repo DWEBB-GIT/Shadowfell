@@ -18,7 +18,7 @@ func _init(g) -> void:
 	var ev: Events = game.events
 	ev.on("enemyDefeated", func(e): _slay(e.enemy.type, e.enemy.cfg))
 	ev.on("dummyBeaten", func(e): _slay(e.enemy.type, e.enemy.cfg))
-	for e in ["skillsChanged", "reputationChanged", "lawChanged"]:
+	for e in ["skillsChanged", "reputationChanged", "lawChanged", "masteryUp"]:
 		ev.on(e, func(_e): _check_new())
 
 
@@ -53,6 +53,8 @@ func locked_because(id: String) -> String:
 	for r in t.get("requires", []):
 		if r.get("skill") and game.skills.rank(r.skill) < r.rank:
 			return "Requires %s %s" % [DB.skills[r.skill].name, U.n(r.rank)]
+		if r.get("mastery") and game.skills.mastery_level(r.mastery) < int(r.level):
+			return "Requires %s mastery %s" % [DB.masteries.get("types", {}).get(r.mastery, r.mastery), U.n(r.level)]
 		if r.get("slain") and not slain.has(r.slain):
 			return "Defeat %s" % DB.enemies[r.slain].name
 		if r.get("faction"):

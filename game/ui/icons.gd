@@ -178,7 +178,7 @@ func aura(a: Dictionary) -> Texture2D:
 ## a profession's icon (Dan's, assets/icons/professions/<skill id>.png),
 ## Camping's tent spell, or null
 func profession(id: String) -> Texture2D:
-	var path := PROFESSIONS % id
+	var path := PROFESSIONS % str(DB.skills.get(id, {}).get("icon", id))
 	if ResourceLoader.exists(path):
 		return load(path)
 	return abilities.get("setCamp") if id == "camping" else null

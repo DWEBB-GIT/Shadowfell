@@ -413,7 +413,7 @@ func show_window(which: String) -> void:
 	# one crafting window, for whichever skill's recipes (Cooking, Smelting,
 	# Alchemy: "craft:<skill>")
 	if which == "cooking" or which == "smelting" or which.begins_with("craft:"):
-		craft_skill = "mining" if which == "smelting" else which.substr(6) if which.begins_with("craft:") else "cooking"
+		craft_skill = "smithing" if which == "smelting" else which.substr(6) if which.begins_with("craft:") else "cooking"
 		which = "cooking"
 		_cook_last = ""
 	if which == "bags":
@@ -1323,7 +1323,7 @@ func _render_cooking() -> void:
 	UI.label(w.body, "%s %d / %d" % [DB.skills[sk].name, rank, mx], 13, Color("f0d070"))
 	_skill_bar(w.body, float(rank) / mx, 0)
 	var list: Array = ck.known(sk)
-	var station: String = list[0].get("station", "fire") if not list.is_empty() else ("forge" if sk == "mining" else "fire")
+	var station: String = list[0].get("station", "fire") if not list.is_empty() else str(craft.get("kind", "fire"))
 	var here: String = ck.near_station(station)
 	UI.label(w.body, "At %s." % here if here != "" else "You need %s." % craft.get("station", "a fire"), 12, UI.TEXT_DIM if here != "" else Color("d06a50"))
 	var busy = ck.crafting
@@ -1627,8 +1627,6 @@ func _skill_detail(parent: Node, d: Dictionary) -> void:
 			_spell_slot(row, a, 34)
 	if id == "cooking":
 		UI.button(row, "Cookbook", func(): show_window("cooking"))
-	elif id == "mining":
-		UI.button(row, "Smelting", func(): show_window("smelting"))
 	elif d.has("craft"):
 		UI.button(row, d.craft.get("window", "Craft"), func(): show_window("craft:" + id))
 	if sk.ranked(id):
@@ -1716,6 +1714,19 @@ func _combat_detail(parent: Node) -> void:
 	_skill_bar(parent, float(pr.xp) / maxf(1, pr.xp_to_next), SKILL_PANE, 0.0, 8)
 	UI.label(parent, "%s / %s experience to level %d" % [U.n(pr.xp), U.n(pr.xp_to_next), pr.level + 1], 12, UI.TEXT_DIM)
 	UI.wrapped(UI.label(parent, "Your level is your power in a fight. Kills, quests and every skill's level-ups all add to it.", 13, UI.TEXT_DIM))
+	# weapon masteries: one per weapon type, trained by landing blows with
+	# it; cosmetics and titles only (Dan, 2026-11-11)
+	_pane_head(parent, "WEAPON MASTERY")
+	var sk = game.skills
+	var types: Dictionary = DB.masteries.get("types", {})
+	for t in types:
+		var lv: int = sk.mastery_level(t)
+		var row := UI.hbox(parent, 6)
+		UI.label(row, str(types[t]), 13, Color("f0e4c8")).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI.label(row, "%d / %d" % [lv, Skills.mastery_max()], 13, UI.GOLD)
+		var x: int = int(sk.mastery.get(t, {}).get("xp", 0))
+		_skill_bar(parent, float(x) / maxf(1, Skills.mastery_xp_needed(lv)), SKILL_PANE, 0.0, 4)
+	UI.wrapped(UI.label(parent, "Land blows with a weapon to master it. Masteries bring titles and looks, never power.", 12, UI.TEXT_DIM))
 
 
 ## A laddered skill's perks: those chosen, and a row of buttons for each
