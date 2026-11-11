@@ -67,10 +67,10 @@
       ],
       "bar": [
         "heavyStrike",
-        "crushingBlow",
+        "cleave",
         "rend",
         "lunge",
-        "cleave",
+        "crushingBlow",
         "berserk"
       ],
       "trained": [
@@ -130,10 +130,10 @@
       ],
       "coreLevels": {
         "heavyStrike": 1,
-        "crushingBlow": 2,
+        "crushingBlow": 5,
         "rend": 3,
         "lunge": 4,
-        "cleave": 5,
+        "cleave": 2,
         "berserk": 8
       }
     },
