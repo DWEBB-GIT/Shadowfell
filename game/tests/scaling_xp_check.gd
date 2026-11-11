@@ -54,10 +54,16 @@ func _initialize() -> void:
 		var p := Scaling.par(lv, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
 		var e := Scaling.scaled_enemy({"type": "normal", "level": lv}, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
 		var cost: float = e.damage / e.attackInterval * S.fightSeconds / p.health
-		var want: float = Scaling.fight_cost(lv)
+		var want: float = Scaling.fight_cost(lv) * S.enemyDamage
 		check(absf(cost - want) < 0.03, "level %d normal fight costs %.0f%% of par health (%.2f)" % [lv, want * 100, cost])
 		check(absf(e.health / p.dps - S.fightSeconds) < 0.5, "level %d normal enemy lasts %d s" % [lv, S.fightSeconds])
 	check(Scaling.fight_cost(1) <= 0.2 and Scaling.fight_cost(8) >= 0.4 and Scaling.fight_cost(50) < Scaling.fight_cost(8), "fights cost 10-20% at level 1, about 45% at 6-10, less later")
+	# the level gap: a much higher foe one-shots you, never softer than x1
+	check(Scaling.level_gap(7, 44) == 1.0 and absf(Scaling.level_gap(12, 7) - pow(1.2, 5)) < 0.001, "level gap is 1.2^levels above, x1 below")
+	var big := Scaling.scaled_enemy({"type": "normal", "level": 44}, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
+	var p7 := Scaling.par(7, DB.CONFIG.stats, DB.attack.abilityWeaponSeconds)
+	var blow: float = big.damage * 0.65 * Scaling.level_gap(44, 7) * (1 - Stats.mitigation(1000, 7) / 100.0)
+	check(blow > p7.health * 3, "a level 44 normal's softest blow kills a well-armoured level 7 outright (%d vs %d health)" % [blow, p7.health])
 	# every quest: XP from its size, none typed
 	for id in DB.quests:
 		var r: Dictionary = DB.quests[id].get("reward", {})

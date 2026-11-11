@@ -254,7 +254,7 @@ func update_arrows(dt: float) -> void:
 			on_enemy_defeated(e)
 
 
-func resolve_enemy_strike(enemy) -> bool:
+func resolve_enemy_strike(enemy, scale := 1.0) -> bool:
 	var player = game.player
 	var events: Events = game.events
 	if enemy.dead or player.dead:
@@ -272,9 +272,38 @@ func resolve_enemy_strike(enemy) -> bool:
 		var text := "The %s's blow misses you." % who if guard == "miss" else "You parry the %s's blow." % who if guard == "parry" else "Your shield takes the %s's blow." % who
 		events.emit("log", {"text": text, "kind": "hit"})
 		return false
-	var hit := _enemy_hit(enemy, enemy.cfg.damage)
+	var hit := _enemy_hit(enemy, enemy.cfg.damage * scale)
 	events.emit("playerHurt", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "blocked": hit.blocked})
 	events.emit("log", {"text": _hurt_text("The %s" % enemy.cfg.name, hit), "kind": "hurt"})
+	if player.dead:
+		game.on_player_death(enemy)
+	return true
+
+
+## A ranged enemy's quick auto shot between its aimed shots: no line to step
+## off, it lands unless a wall or smoke is in the way or you are out of range.
+func resolve_enemy_shot(enemy, damage: float, label: String) -> bool:
+	var player = game.player
+	var events: Events = game.events
+	if enemy.dead or player.dead:
+		return false
+	var r: Dictionary = enemy.cfg.ranged
+	var d := U.hyp(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
+	if game.spells.smoke_blocks(enemy.position, player.position):
+		events.emit("log", {"text":"Smoke swallows the shot.","kind":"muted","throttle":"smoke"})
+		return false
+	if d > r.range + 1 or game.collision.wall_between(enemy.position.x, enemy.position.z, player.position.x, player.position.z):
+		events.emit("enemyWhiff", {"enemy": enemy})
+		return false
+	var guard: String = player.consume_brace()
+	if guard != "":
+		events.emit("braceBlock", {"enemy": enemy})
+		events.emit("damageNumber", {"target": player, "kind": "taken", "text": GUARD_WORD[guard]})
+		events.emit("log", {"text": "The %s's %s misses you." % [enemy.cfg.name, label] if guard == "miss" else "You turn aside the %s's %s." % [enemy.cfg.name, label], "kind": "hit"})
+		return false
+	var hit := _enemy_hit(enemy, damage, {"canCrit": true, "canBlock": true, "school": r.get("school", "physical")})
+	events.emit("playerHurt", {"enemy": enemy, "damage": hit.amount, "crit": hit.crit, "blocked": hit.blocked})
+	events.emit("log", {"text": _hurt_text("The %s's %s" % [enemy.cfg.name, label], hit), "kind": "hurt"})
 	if player.dead:
 		game.on_player_death(enemy)
 	return true

@@ -79,6 +79,7 @@ var cooking: Cooking
 var telegraphs: Telegraphs
 var enemies: Enemies
 var targeting: Targeting
+var highlight: Highlight
 var npcs: Npcs
 var merchant: Merchant
 var bank: Bank
@@ -175,6 +176,7 @@ func _ready() -> void:
 	builds = Builds.new(self)
 	resources = Resources.new(self)
 	afterlife = Afterlife.new(self)
+	highlight = Highlight.new(self)
 	grave = Grave.new(self)
 	skills = Skills.new(self)
 	settings = Settings.new(self)
@@ -842,7 +844,13 @@ func _click(button: String) -> bool:
 	# also acts: it walks you up to whoever you clicked (into your attack's
 	# reach for an enemy, talking range for a townsperson), then attacks or
 	# talks, the same for every class (Dan, 2026-11-04).
-	var acts: bool = button == "right" or walk or settings.get_value("leftInteract")
+	# Settings "Left click only selects" (Dan, 2026-11-11): with click to
+	# move a left click on someone selects them and does not run you there.
+	var run_to: bool = walk and not settings.get_value("leftSelectOnly")
+	var acts: bool = button == "right" or run_to or settings.get_value("leftInteract")
+	# right click acts on anything: out of reach it runs you up first, the
+	# same for townsfolk and objects as for enemies (Dan, 2026-11-11)
+	var go: bool = walk or button == "right"
 	# a left click on the ground lets go of the target (unless it walks you
 	# there: a caster keeps their target while repositioning); a right click
 	# does not. With mouse aim a left click there attacks whoever is near.
@@ -861,15 +869,15 @@ func _click(button: String) -> bool:
 		"sign":
 			hud.show_signpost(o)
 		"chest":
-			_reach_or(o.x, o.z, 2.4, func(): chests.open(o), closer, walk)
+			_reach_or(o.x, o.z, 2.4, func(): chests.open(o), closer, go)
 		"loot":
-			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), walk)
+			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), go)
 		"vein":
-			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, walk)
+			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, go)
 		"herb":
-			_reach_or(o.x, o.z, Gathering.tuning().get("reach", 2.2), func(): gathering.start(o.n), closer, walk)
+			_reach_or(o.x, o.z, Gathering.tuning().get("reach", 2.2), func(): gathering.start(o.n), closer, go)
 		"point":
-			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, walk)
+			_reach_or(o.x, o.z, o.get("reach", DB.CONFIG.interaction.radius), func(): o.run.call(), closer, go)
 		"enemy":
 			# left click selects; right click walks you into reach and starts
 			# auto attack, the same for every class (Dan, 2026-11-09)
@@ -880,7 +888,7 @@ func _click(button: String) -> bool:
 				if targeting.target_in_reach or targeting.target_in_shot:
 					if not player.square_up(o.position.x, o.position.z) and not player.moving:
 						player.face_goal = o
-				if walk:
+				if run_to:
 					# click to move (Diablo 3): the held button keeps acting.
 					# Held on your foe you close in and fight; drag the cursor
 					# off it and you walk there, swinging as you pass in reach
@@ -897,7 +905,7 @@ func _click(button: String) -> bool:
 			# click is on); right click talks to them
 			targeting.select_friendly(o)
 			if acts:
-				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, walk)
+				_reach_or(o.position.x, o.position.z, DB.CONFIG.shop.talkRange + 0.5, func(): npcs.talk(o), closer, go if button == "right" else run_to)
 	return true
 
 
@@ -1220,6 +1228,9 @@ func _handle_input(dt: float):
 		var hover = _hover_pick() if input.mouse.onCanvas else null
 		hud.world_tip(hover)
 		_cursor_for(hover)
+		highlight.update(hover, targeting.current)
+	else:
+		highlight.update(null, targeting.current)
 	# classic: left click selects, right click attacks, talks or loots.
 	# Mouse aim: left click selects, right click attacks, talks or loots
 	# (slot 1 on open ground). LMB never starts a fight (Dan, 2026-11-09).
