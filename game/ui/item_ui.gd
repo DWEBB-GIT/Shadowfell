@@ -2113,14 +2113,15 @@ func _place_tip() -> void:
 func _cost_line(a: Dictionary) -> String:
 	var r = game.resources
 	var parts := []
-	for k in a.get("cost", {}):
+	for k in (a.get("cost") if a.get("cost") is Dictionary else {}):
 		parts.append("%s %s" % [U.n(a.cost[k]), r.name_of(k)])
 	if a.get("spendsAll"):
-		var cap: float = a.get("tuning", {}).get("spendCap", INF)
+		var tun = a.get("tuning")
+		var cap: float = tun.get("spendCap", INF) if tun is Dictionary else INF
 		parts.append("Spends up to %s %s" % [U.n(cap), r.name_of(a.spendsAll)] if is_finite(cap) else "Spends all %s" % r.name_of(a.spendsAll))
-	for k in a.get("hitGain", {}):
+	for k in (a.get("hitGain") if a.get("hitGain") is Dictionary else {}):
 		parts.append("On hit, gives %s %s" % [U.n(a.hitGain[k]), r.name_of(k)])
-	for k in a.get("gain", {}):
+	for k in (a.get("gain") if a.get("gain") is Dictionary else {}):
 		parts.append("Gives %s %s" % [U.n(a.gain[k]), r.name_of(k)])
 	return _l(" · ".join(parts), "#8fb4f0", 12) if not parts.is_empty() else ""
 
