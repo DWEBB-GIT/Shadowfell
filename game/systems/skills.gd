@@ -254,18 +254,25 @@ func _add_skill(id: String) -> bool:
 	return true
 
 
-## One step up a skill that rises with use (up to its maxRank).
-## A laddered skill takes this as a yellow task.
+## One sure skill point (a trainer, a quest, a test), up to the skill's cap.
 func raise(id: String) -> bool:
-	if laddered(id):
-		return gain(id, "yellow") > 0
 	var s = DB.skills.get(id)
-	if s == null or not s.get("maxRank") or not has(id) or rank(id) >= s.maxRank:
+	if s == null or not has(id) or not ranked(id):
+		return false
+	if rank(id) >= cap(id):
+		if laddered(id):
+			_tell_capped(id)
 		return false
 	ranks[id] = rank(id) + 1
-	game.events.emit("log", {"text": "Your skill in %s rises to %d." % [s.name, rank(id)], "kind": "level"})
-	game.events.emit("skillXp", {"id": id, "amount": 0, "level": rank(id), "levels": 1})
-	_milestone(id)
+	xp[id] = 0
+	_note_xp(id, 1)
+	if laddered(id):
+		_levelled(id)
+	else:
+		game.events.emit("log", {"text": "Your skill in %s rises to %d." % [s.name, rank(id)], "kind": "level"})
+		_milestone(id)
+	# the "+1 Fishing" drop over your head and the HUD tracker (hud.gd)
+	game.events.emit("skillXp", {"id": id, "amount": 1, "level": rank(id), "levels": 1})
 	game.events.emit("skillsChanged", {"id": id})
 	return true
 
@@ -310,39 +317,34 @@ func colour_for(id: String, need: int) -> String:
 	var over := rank(id) - need
 	if over < 0:
 		return "red"
-	var b: Array = ladder().get("bands", [3, 6, 10])
+	var b: Array = DB.skills.get(id, {}).get("bands", ladder().get("bands", [3, 6, 10]))
 	return "orange" if over < b[0] else "yellow" if over < b[1] else "green" if over < b[2] else "grey"
 
 
-## Skill experience for a task of this colour, times `mult` (a semi-AFK
-## catch earns CONFIG.afk.xpMult of it). Returns the levels gained.
+## Skill points by colour (Dan 2026-11-11): every successful skilling
+## action (an ore mined, a fish landed, a carcass butchered, a potion
+## brewed) has ladder.pointChance[colour] of giving one skill point, the
+## same in every skill: orange ~80%, yellow ~50%, green low, grey nothing.
+## `mult` scales the chance (a semi-AFK catch: CONFIG.afk.xpMult).
+## Returns the points gained (0 or 1).
 func gain(id: String, colour: String, mult := 1.0) -> int:
-	var s = DB.skills.get(id)
-	if s == null or not has(id):
+	if not has(id) or not ranked(id):
 		return 0
-	if not laddered(id):
-		return 1 if colour != "grey" and colour != "red" and raise(id) else 0
-	var amount := int(ladder().get("actionXp", {}).get(colour, 0))
-	if amount <= 0:
+	var chance := point_chance(colour) * mult
+	if chance <= 0.0:
 		return 0
-	amount = maxi(1, int(round(amount * mult)))
 	if rank(id) >= cap(id):
-		_tell_capped(id)
+		if laddered(id):
+			_tell_capped(id)
 		return 0
-	xp[id] = int(xp.get(id, 0)) + amount
-	var levels := 0
-	while xp[id] >= xp_needed(rank(id)) and rank(id) < cap(id):
-		xp[id] -= xp_needed(rank(id))
-		ranks[id] = rank(id) + 1
-		levels += 1
-		_levelled(id)
-	if rank(id) >= cap(id):
-		xp[id] = 0
-	_note_xp(id, amount)
-	# the "+15 Fishing" drop over your head and the HUD tracker (hud.gd)
-	game.events.emit("skillXp", {"id": id, "amount": amount, "level": rank(id), "levels": levels})
-	game.events.emit("skillsChanged", {"id": id})
-	return levels
+	if game.random.call() >= chance:
+		return 0
+	return 1 if raise(id) else 0
+
+
+## the chance a task of this colour gives a skill point
+static func point_chance(colour: String) -> float:
+	return float(ladder().get("pointChance", {}).get(colour, 0.0))
 
 
 func _levelled(id: String) -> void:

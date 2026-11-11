@@ -291,10 +291,8 @@ func _yield(o: Dictionary) -> void:
 	for id in got:
 		if not game.inventory.add_item(id, 1):
 			game.loot.drop_at({"id": id, "count": 1}, Vector3(o.x, 0, o.z))
-	var t := tuning()
-	var over: int = game.skills.rank("mining") - int(def.get("rank", 1))
-	if over < t.get("easyAfter", 10) or (over < t.get("trivialAfter", 20) and rand.call() < t.get("easyChance", 0.5)):
-		game.skills.raise("mining")
+	# a chance at a skill point by the vein's colour (skills.gd gain)
+	game.skills.gain("mining", game.skills.colour_for("mining", int(def.get("rank", 1))))
 	game.events.emit("mined", {"rock": o.rock, "items": got})
 
 

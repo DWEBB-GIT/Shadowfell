@@ -74,20 +74,12 @@ func _fill(id: String) -> void:
 	title.text = "%s %d" % [d.name, lvl]
 	var capped: bool = lvl >= sk.cap(id)
 	var per_hour: float = sk.xp_rate(id)
-	rate.text = "%s xp/hr" % U.n(roundi(per_hour)) if per_hour > 0 and not capped else ""
-	if not sk.laddered(id):
-		fill.anchor_right = clampf(float(lvl) / maxf(1, sk.cap(id)), 0, 1)
-		left.text = "Rises as you use it"
-		return
-	var need: int = Skills.xp_needed(lvl)
-	var have := int(sk.xp.get(id, 0))
-	fill.anchor_right = 1.0 if capped else clampf(float(have) / need, 0, 1)
-	if capped:
+	# skill points (Dan 2026-11-11): each success has a chance at one
+	rate.text = "%s points/hr" % U.n(roundi(per_hour)) if per_hour > 0 and not capped else ""
+	fill.anchor_right = clampf(float(lvl) / maxf(1, sk.cap(id)), 0, 1)
+	if capped and sk.laddered(id):
 		left.text = "At the %s's limit" % sk.rank_name(id)
+	elif capped:
+		left.text = "Mastered"
 	else:
-		var to_go := need - have
-		var eta := ""
-		if per_hour > 0:
-			var mins := ceili(to_go / per_hour * 60.0)
-			eta = "  ~%d min" % mins if mins < 120 else "  ~%d h" % ceili(mins / 60.0)
-		left.text = "%s xp to level %d%s" % [U.n(to_go), lvl + 1, eta]
+		left.text = "Each success may raise it"

@@ -1,6 +1,6 @@
 {
   "_about": "Mining (Godot build: game/systems/mining.gd). `rocks` are the kinds of vein, lowest first: `rank` is the Mining rank needed (5 ranks an ore level, like Skinning), `swings` how many swings a vein holds (min, max), and each swing yields `stone` and `ore` at their chance and a gem shard at `gems.chance` (a shard picked by weight). `tint` colours a live vein's rock. `veinGroups` place outcrops in the world: only `live` of a group's `outcrops` hold ore at once; a mined-out vein goes bare and, after `respawn` seconds (min, max), a different random bare outcrop in the group starts to glint, holding a rock picked by weight from `rocks`. Now and then (`rich.chance`) a vein is rich: `rich.extraSwings` more swings and `rich.gemChance` times the gem chance. Rocks above rank 50 are for later acts and are placed nowhere yet.",
-  "tuning": { "swingTime": 2.4, "reach": 2.6, "easyAfter": 10, "trivialAfter": 20, "easyChance": 0.5, "model": "rock1", "scale": 0.5, "bareTint": "#6a665e" },
+  "tuning": { "swingTime": 2.4, "reach": 2.6, "model": "rock1", "scale": 0.5, "bareTint": "#6a665e" },
   "rich": { "chance": 0.12, "extraSwings": 3, "gemChance": 3 },
   "rocks": [
     {

@@ -754,10 +754,8 @@ func skin(id: String) -> bool:
 	for drop in Items.roll_loot(DB.loot_tables.get(table, {}), game.random):
 		if not game.inventory.add_item(drop.id, drop.count):
 			drop_at({"id": drop.id, "count": drop.count}, Vector3(c.x, 0, c.z))
-	var over: int = game.skills.rank("skinning") - rank
-	var t: Dictionary = DB.CONFIG.skinning
-	if over < t.easyAfter or (over < t.trivialAfter and game.random.call() < t.easyChance):
-		game.skills.raise("skinning")
+	# a chance at a Hunting point by the beast's colour (skills.gd gain)
+	game.skills.gain("skinning", game.skills.colour_for("skinning", rank))
 	game.events.emit("skinned", {"id": id, "enemy": e.type})
 	return true
 

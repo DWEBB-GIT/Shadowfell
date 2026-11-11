@@ -56,7 +56,36 @@ func _craft(id: String, label: String) -> void:
 	check(game.inventory.count(r.output.item) == before + int(r.output.count), "%s: makes %s" % [label, r.output.item])
 
 
+## Dan 2026-11-11: every success has a chance at one skill point by its
+## colour, the same in every skill; regular meat comes from Hunting.
+func _skill_points() -> void:
+	var sk = game.skills
+	var c: Dictionary = DB.skill_ladder.pointChance
+	check(is_equal_approx(c.orange, 0.8) and is_equal_approx(c.yellow, 0.5) and c.green > 0 and c.green < c.yellow and c.grey == 0, "orange 80%, yellow 50%, green low, grey nothing")
+	var roll: Callable = game.random
+	for id in ["mining", "woodcutting", "skinning"]:
+		sk.grant(id)
+		sk.ranks[id] = 5
+		var orange: String = sk.colour_for(id, 5)
+		var green: String = sk.colour_for(id, 5 - int(DB.skills[id].get("bands", DB.skill_ladder.bands)[1]))
+		check(orange == "orange" and green == "green", "%s: a task at your level is orange, well under it green (%s, %s)" % [id, orange, green])
+		game.random = func() -> float: return 0.7
+		check(sk.gain(id, "orange") == 1 and sk.rank(id) == 6, "%s: a 70 roll lands on orange (80%%)" % id)
+		check(sk.gain(id, "yellow") == 0 and sk.rank(id) == 6, "%s: but misses on yellow (50%%)" % id)
+		game.random = func() -> float: return 0.0
+		check(sk.gain(id, "grey") == 0, "%s: grey never teaches" % id)
+		check(sk.gain(id, "red") == 0, "%s: nor does a task beyond you" % id)
+	game.random = roll
+	# meat: butchered with Hunting, not dropped by the beast
+	for t in ["wild_boar", "bristleback", "ridge_wolf"]:
+		var s := JSON.stringify(DB.loot_tables[t].get("always", [])) + JSON.stringify(DB.loot_tables[t].get("drops", {}))
+		check(not s.contains("_meat"), "%s no longer drops meat" % t)
+	for t in ["skin_boar", "skin_bristleback", "skin_wolf"]:
+		check(JSON.stringify(DB.loot_tables[t].always).contains("_meat"), "%s gives meat" % t)
+
+
 func _run() -> void:
+	_skill_points()
 	var sk = game.skills
 	var inv = game.inventory
 	check(DB.skills.skinning.name == "Hunting", "Skinning is now called Hunting")
@@ -75,12 +104,15 @@ func _run() -> void:
 		check(game.gathering.block(v) == "", "with the skill and a hatchet the tree can be felled")
 		place(v.x + 1.0, v.z)
 		var before: int = inv.count("ash_log")
+		var roll: Callable = game.random
+		game.random = func() -> float: return 0.0 # every skill-up chance lands
 		check(game.gathering.start(v.n), "chopping starts")
 		check(game.gathering.bar.name.begins_with("Chopping"), "the bar says Chopping")
 		for i in 12:
 			game.gathering.update(3.0, game.time + i * 3.0)
 		check(inv.count("ash_log") > before, "chopping yields ash logs")
-		check(sk.rank("woodcutting") > 1 or int(sk.xp.get("woodcutting", 0)) > 0, "chopping trains Woodcutting")
+		game.random = roll
+		check(sk.rank("woodcutting") > 1, "chopping trains Woodcutting")
 	# Woodcraft at the workbench
 	sk.grant("woodcraft")
 	inv.add_item("ash_log", 4, true)

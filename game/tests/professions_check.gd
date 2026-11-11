@@ -119,6 +119,8 @@ func _herbalism() -> void:
 	var had: int = game.inventory.count(item)
 	var xp_was: int = int(sk.xp.get("herbalism", 0)) + sk.rank("herbalism") * 1000
 	game.player.place_at(n.x + 1.0, n.z)
+	var roll: Callable = game.random
+	game.random = func() -> float: return 0.0 # every skill-up chance lands
 	check(g.start(n), "picking starts")
 	var time := 500.0
 	# a patch holds a few picks and one click takes them all (Dan 2026-11-10)
@@ -126,6 +128,7 @@ func _herbalism() -> void:
 		time += 1.0
 		g.update(1.0, time)
 	check(game.inventory.count(item) > had, "the herb is in the bags")
+	game.random = roll
 	check(int(sk.xp.get("herbalism", 0)) + sk.rank("herbalism") * 1000 > xp_was, "Herbalism learned from it")
 	check(n.kind == "" and g.regrow.size() == 1, "the patch is bare and will grow back elsewhere")
 	g.update(0.0, time + 1000.0)
@@ -143,10 +146,14 @@ func _alchemy() -> void:
 	var r: Dictionary = DB.recipes.brew_healing_draught
 	check(ck.blocked(r) == "", "a healing draught can be brewed here: %s" % ck.blocked(r))
 	var had: int = game.inventory.count("healing_draught")
+	var was: int = sk.rank("alchemy")
+	var roll: Callable = game.random
+	game.random = func() -> float: return 0.0 # every skill-up chance lands
 	check(ck.start(r.id), "brewing starts")
 	ck.update(10.0)
+	game.random = roll
 	check(game.inventory.count("healing_draught") > had, "a healing draught is brewed")
-	check(int(sk.xp.get("alchemy", 0)) > 0, "Alchemy learned from it")
+	check(sk.rank("alchemy") > was, "Alchemy learned from it")
 	check(ck.blocked(DB.recipes.brew_strong_draught) != "", "the strong draught waits for Briony and rank 10")
 	# an elixir raises its stat; a second replaces the first
 	var sta: float = game.stats.snapshot().stamina.v

@@ -8,7 +8,6 @@ extends RefCounted
 ## sitting down: it restores health over its time while you stay still and
 ## out of the fight. Eating for `wellFedAfter` seconds makes you Well Fed.
 
-const SKILL_UP_CHANCE := {"orange": 1.0, "yellow": 0.75, "green": 0.25, "grey": 0.0}
 
 var game
 var learned := {} ## taught recipes (the starters need no learning)
@@ -216,13 +215,8 @@ func _finish(r: Dictionary) -> void:
 	inventory.add_item(r.output.item, made, true)
 	var name: String = Items.get_def(r.output.item).name
 	game.events.emit("log", {"text": "You %s %s%s." % [craft_of(r.skill).get("verb", "make"), "%d " % made if made > 1 else "", name], "kind": "loot"})
-	# a skill on the ladder learns by the recipe's colour; the others by chance
-	if game.skills.laddered(r.skill):
-		game.skills.gain(r.skill, colour(r))
-		return
-	var c: float = SKILL_UP_CHANCE.get(colour(r), 0.0)
-	if c > 0 and game.random.call() < c:
-		game.skills.raise(r.skill)
+	# a chance at a skill point by the recipe's colour, as in every skill
+	game.skills.gain(r.skill, colour(r))
 
 
 func update(dt: float) -> void:
