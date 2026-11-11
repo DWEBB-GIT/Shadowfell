@@ -3,7 +3,9 @@ extends RefCounted
 ## Towns and the gates of the opening, from data/world/world.json: `houses` (kit
 ## built from a few boxes under a gabled roof whose colour says what it is
 ## at a glance from the iso camera: thatch, slate or tile; you cannot go
-## in), `townWalls` (palisades along lines) and `gates`. A gate shuts its
+## in), `townWalls` (palisades along lines, or stone curtain walls with
+## `style: "stone"`) and `gates` (`kind` town_gate, city_gate, barricade,
+## felled_oak). A gate shuts its
 ## ring of the opening (the lane and town, then Bracken Vale) until any of
 ## its `opensWhen` conditions holds (Quests.condition_holds), then opens for
 ## good; `shut` ones never open in this act. Everything is drawn with the
@@ -47,7 +49,10 @@ func build() -> Town:
 		_build_house(h)
 	for tw in Layout.town_walls:
 		for line in tw.lines:
-			_build_palisade(line)
+			if tw.get("style") == "stone":
+				_build_stone_wall(line)
+			else:
+				_build_palisade(line)
 	for gt in Layout.gates:
 		_build_gate(gt)
 	return self
@@ -206,6 +211,40 @@ func _build_palisade(line: Array) -> void:
 	group.add_child(mi)
 
 
+## A city's curtain wall: dressed stone with a walkway lip and merlons,
+## squat towers at every corner of the line. One mesh per line.
+func _build_stone_wall(line: Array) -> void:
+	var m := Mesher.new()
+	var tall := 5.2
+	var thick := 1.4
+	for i in line.size() - 1:
+		var a := Vector2(line[i][0], line[i][1])
+		var b := Vector2(line[i + 1][0], line[i + 1][1])
+		var dir := (b - a).normalized()
+		var basis := Basis(Vector3.UP, -atan2(dir.y, dir.x))
+		var length := a.distance_to(b)
+		var mid := (a + b) / 2.0
+		var y := Terrain.height_at(mid.x, mid.y)
+		m.box(Vector3(mid.x, y + tall / 2.0 - 0.8, mid.y), Vector3(length, tall + 1.6, thick), STONE.lightened(0.12), basis)
+		m.box(Vector3(mid.x, y + tall + 0.05, mid.y), Vector3(length, 0.3, thick + 0.3), STONE, basis)
+		var n := maxi(1, floori(length / 1.6))
+		for k in n:
+			var p := a + dir * (length * (k + 0.5) / n)
+			var side := Vector2(-dir.y, dir.x) * (thick / 2.0)
+			m.box(Vector3(p.x + side.x, y + tall + 0.6, p.y + side.y), Vector3(0.8, 0.8, 0.35), STONE.lightened(0.05), basis)
+		world._wall_colliders(0, 0, 0, [[a.x, a.y, b.x, b.y]], thick / 2.0 + 0.1)
+	for p in line:
+		var y := Terrain.height_at(p[0], p[1])
+		m.box(Vector3(p[0], y + tall / 2.0 + 0.4, p[1]), Vector3(3.4, tall + 2.4, 3.4), STONE.lightened(0.08))
+		m.pyramid(Vector3(p[0], y + tall + 1.6, p[1]), 2.2, 2.6, ROOF.slate)
+		game.collision.add(p[0], p[1], 1.8)
+	var mi := MeshInstance3D.new()
+	mi.name = "CityWall"
+	mi.mesh = m.mesh()
+	mi.material_override = _mat
+	group.add_child(mi)
+
+
 # ------------------------------------------------------------- gates
 func _build_gate(def: Dictionary) -> void:
 	var a := Vector2(def.line[0][0], def.line[0][1])
@@ -238,6 +277,26 @@ func _build_gate(def: Dictionary) -> void:
 			leaf.box(Vector3(-s * hl / 2.0, 2.9, 0.14), Vector3(hl - 0.3, 0.25, 0.08), BEAM)
 			hinge.add_child(_instance(leaf))
 			gate.leaves.append([hinge, 0.0, s * deg_to_rad(105.0)])
+	elif kind == "city_gate":
+		# a gatehouse: two stone towers under a crenellated arch, oak leaves between
+		for s in [-1, 1]:
+			solid.box(Vector3(s * (hl + 2.0), 3.6, 0), Vector3(4.0, 9.0, 4.4), STONE.lightened(0.12))
+			solid.pyramid(Vector3(s * (hl + 2.0), 8.1, 0), 2.6, 3.4, ROOF.slate)
+			game.collision.add(mid.x + cos(-ang) * s * (hl + 2.0), mid.y + sin(-ang) * s * (hl + 2.0), 2.2)
+		solid.box(Vector3(0, 7.0, 0), Vector3(length + 0.4, 2.2, 4.4), STONE.lightened(0.12))
+		for k in 5:
+			solid.box(Vector3(-hl + length * (k + 0.5) / 5.0, 8.5, 2.0), Vector3(0.8, 0.8, 0.4), STONE)
+		solid.box(Vector3(0, 6.0, 2.25), Vector3(length * 0.5, 1.4, 0.1), Color("7a1f1f"))
+		for s in [-1, 1]:
+			var hinge := Node3D.new()
+			hinge.position = Vector3(s * hl, 0, 0)
+			root.add_child(hinge)
+			var leaf := Mesher.new()
+			leaf.box(Vector3(-s * hl / 2.0, 2.6, 0), Vector3(hl - 0.1, 5.0, 0.3), BEAM)
+			for yy in [1.2, 2.6, 4.0]:
+				leaf.box(Vector3(-s * hl / 2.0, yy, 0.18), Vector3(hl - 0.3, 0.22, 0.08), STONE.darkened(0.4))
+			hinge.add_child(_instance(leaf))
+			gate.leaves.append([hinge, 0.0, s * deg_to_rad(100.0)])
 	elif kind == "barricade":
 		# a wardens' barricade: spiked logs across the way, dragged aside when it opens
 		var slide := Node3D.new()

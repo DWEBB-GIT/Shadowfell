@@ -3714,6 +3714,82 @@
           ]
         }
       ]
+    },
+    {
+      "id": "hub_smith",
+      "greetings": [
+        {
+          "text": "“Reforging, sockets, smelting. Bring me gear worth the coal.”"
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "hub_jeweller",
+      "greetings": [
+        {
+          "text": "“Gems cut, set and taken out. Mind the tray.”"
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "hub_refiner",
+      "greetings": [
+        {
+          "text": "“The altar refines, the rune forge binds. I keep both honest.”"
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "hub_innkeeper",
+      "greetings": [
+        {
+          "text": "“Welcome to the Gilded Stag. Beds upstairs, ale down here, trouble outside.”"
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "hub_guard",
+      "greetings": [
+        {
+          "text": "“Keep your blade sheathed inside the walls.”"
+        }
+      ],
+      "topics": [],
+      "nodes": []
+    },
+    {
+      "id": "hub_captain",
+      "greetings": [
+        {
+          "text": "“The yard's open to anyone. Hit the dummies all you like: they don't bleed and they don't pay.”"
+        }
+      ],
+      "topics": [
+        {
+          "id": "hub_yard",
+          "prompt": "What are the dummies for?",
+          "node": "hub_yard"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "hub_yard",
+          "text": "“Each row stands at a different level: 1, 10, 20 and 40. The big armoured one takes a beating like a boss. Hit one and watch the board over its head: damage each second, hits, crits and misses. Stop for a few breaths and it mends. No coin, no experience. Just practice.”",
+          "replies": [
+            {
+              "text": "Thank you."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -1646,6 +1646,88 @@
       "rig": "warden",
       "tint": "#8a7458",
       "dialogue": "ni_abel"
+    },
+    {
+      "id": "hub_smith",
+      "mapIcon": "blacksmith",
+      "name": "Garrick Thane",
+      "title": "City Smith",
+      "level": 30,
+      "model": "mara",
+      "rig": "warden",
+      "tint": "#8a6a4a",
+      "shop": "tf_forge",
+      "forge": true,
+      "dialogue": "hub_smith"
+    },
+    {
+      "id": "hub_jeweller",
+      "mapIcon": "vendor",
+      "name": "Odile Fenn",
+      "title": "Gem Cutter",
+      "level": 30,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#9a7ac8",
+      "jeweller": true,
+      "dialogue": "hub_jeweller"
+    },
+    {
+      "id": "hub_refiner",
+      "mapIcon": "vendor",
+      "name": "Master Corvin",
+      "title": "Refiner and Runewright",
+      "level": 30,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#c8a24a",
+      "refiner": true,
+      "dialogue": "hub_refiner"
+    },
+    {
+      "id": "hub_innkeeper",
+      "mapIcon": "innkeeper",
+      "name": "Bryony Stagg",
+      "title": "The Gilded Stag",
+      "level": 30,
+      "model": "innkeeper",
+      "rig": "warden",
+      "tint": "#c9b4a1",
+      "shop": "tf_inn",
+      "innkeeper": true,
+      "bedPrice": 5,
+      "dialogue": "hub_innkeeper"
+    },
+    {
+      "id": "hub_gate_guard",
+      "name": "City Guard",
+      "title": "Grand Gate",
+      "level": 35,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#6a7a8a",
+      "dialogue": "hub_guard"
+    },
+    {
+      "id": "hub_gate_guard_2",
+      "name": "City Guard",
+      "title": "Grand Gate",
+      "level": 35,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#6a7a8a",
+      "dialogue": "hub_guard"
+    },
+    {
+      "id": "hub_captain",
+      "mapIcon": "trainer",
+      "name": "Captain Maud Ferrow",
+      "title": "Garrison Captain",
+      "level": 40,
+      "model": "warden",
+      "rig": "warden",
+      "tint": "#a4bdc2",
+      "dialogue": "hub_captain"
     }
   ]
 }

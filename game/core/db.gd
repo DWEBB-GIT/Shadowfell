@@ -373,7 +373,28 @@ static func new_map_world(w: Dictionary, placements_path := "") -> Dictionary:
 		for key in placed:
 			if key != "_about":
 				out[key] = placed[key]
+	if placements_path == "":
+		_add_overlays(out, "spawns")
 	return out
+
+
+## Generated placements kept out of the hand-placed files: map.json
+## `overlays` names files in the map's folder (the test hub city,
+## tools/world/new_map/hub_city.py), each {spawns: {...}, scenery: {...}}
+## whose lists are added to the map's own. Delete the file and its name to
+## take it all away again.
+static func _add_overlays(out: Dictionary, part: String) -> void:
+	var m = JSON.parse_string(FileAccess.get_file_as_string(Terrain.dir + "map.json")) if FileAccess.file_exists(Terrain.dir + "map.json") else null
+	if not m is Dictionary:
+		return
+	for f in m.get("overlays", []):
+		var path: String = Terrain.dir + str(f)
+		var o = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		if not o is Dictionary or not o.get(part) is Dictionary:
+			continue
+		for key in o[part]:
+			if o[part][key] is Array:
+				out[key] = (out.get(key, []) as Array) + o[part][key]
 
 
 static func new_map_scenery(s: Dictionary, placements_path := "") -> Dictionary:
@@ -386,6 +407,8 @@ static func new_map_scenery(s: Dictionary, placements_path := "") -> Dictionary:
 		for key in placed:
 			if key != "_about":
 				out[key] = placed[key]
+	if placements_path == "":
+		_add_overlays(out, "scenery")
 	return out
 
 
