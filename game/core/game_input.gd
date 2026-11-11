@@ -11,6 +11,7 @@ var mouse := {"x": 0.0, "y": 0.0, "ndcX": 0.0, "ndcY": 0.0, "clicked": false, "r
 var wheel := 0
 var capture := Callable() ## set while Settings waits for a key to bind
 var is_bound := func(_code): return false ## key bindings say which other keys the game uses
+var last_active_ms := Time.get_ticks_msec() ## the last key, click or pad press (semi-AFK loops stop after a long idle)
 
 
 ## the browser's KeyboardEvent.code for a Godot key
@@ -52,7 +53,16 @@ static func code_of(k: int) -> String:
 	return OS.get_keycode_string(k)
 
 
+## seconds since the player last pressed anything
+func idle_seconds() -> float:
+	return (Time.get_ticks_msec() - last_active_ms) / 1000.0
+
+
 func _input(e: InputEvent) -> void:
+	if (e is InputEventKey or e is InputEventMouseButton or e is InputEventJoypadButton) and e.pressed:
+		last_active_ms = Time.get_ticks_msec()
+	elif e is InputEventJoypadMotion and absf(e.axis_value) > 0.5:
+		last_active_ms = Time.get_ticks_msec()
 	if e is InputEventKey:
 		var code := code_of(e.physical_keycode if e.physical_keycode else e.keycode)
 		if e.pressed:

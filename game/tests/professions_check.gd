@@ -121,7 +121,8 @@ func _herbalism() -> void:
 	game.player.place_at(n.x + 1.0, n.z)
 	check(g.start(n), "picking starts")
 	var time := 500.0
-	for i in 4:
+	# a patch holds a few picks and one click takes them all (Dan 2026-11-10)
+	for i in 12:
 		time += 1.0
 		g.update(1.0, time)
 	check(game.inventory.count(item) > had, "the herb is in the bags")

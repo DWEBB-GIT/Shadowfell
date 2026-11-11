@@ -28,7 +28,7 @@ const EDGE := 12.0 ## the gap between the HUD and the screen edge
 const MICRO := [
 	["character", "⚔", "Character", "character", "View", "menu_character"],
 	["spellbook", "✦", "Spells", "spellbook", "↑", "menu_spellbook"],
-	["skills", "⚒", "Professions", "skills", "", "menu_professions"],
+	["skills", "⚒", "Skills", "skills", "", "menu_professions"],
 	["talents", "❀", "Talents", "talents", "", "menu_talents"],
 	["quests", "!", "Quest Log", "quests", "→", "menu_quests"],
 	# opens the Main Menu, as Escape and O do (Dan, 2026-11-02)
@@ -58,6 +58,7 @@ var shown_target = null
 var portrait_of = null
 
 var icons: Icons
+var skill_tracker: SkillTracker ## the skill pinned in the Skills window
 var belt ## the tool belt, folded up out of the tray
 var menus: HBoxContainer ## the menu buttons, top left
 var hud_edit ## edit mode: the player moves the HUD's pieces
@@ -190,6 +191,10 @@ func _init(g) -> void:
 			show_zone(e.name, game.region.get("name", "") if game.region is Dictionary else "", 2.6))
 	ev.on("levelUp", show_level_up)
 	ev.on("questComplete", _quest_done)
+	# every tenth skill level is a moment, like a character level
+	ev.on("skillMilestone", func(e):
+		var d: Dictionary = DB.skills.get(e.id, {})
+		show_banner("%s %d" % [str(d.get("name", e.id)).to_upper(), int(e.level)], "Your skill has reached", "", Color("e8d090")))
 	ev.on("barChanged", func(_e): render_bar())
 	ev.on("enemyHit", _fought)
 	ev.on("enemyMissed", _fought)
@@ -465,6 +470,9 @@ func _build() -> void:
 		s.on_hover = items.slot_hover
 	quests = QuestUI.new(game, self)
 	root.add_child(quests)
+	skill_tracker = SkillTracker.new(game, self)
+	root.add_child(skill_tracker)
+	root.move_child(skill_tracker, quests.get_index())
 	root.move_child(quests, items.get_index()) # windows under the item tooltip
 	items.tip_on(minimap.zoom_buttons[0], "Zoom in")
 	items.tip_on(minimap.zoom_buttons[1], "Zoom out")
@@ -1807,6 +1815,7 @@ func layout() -> void:
 
 func update(dt := 0.0) -> void:
 	numbers.update(dt)
+	skill_tracker.update(dt)
 	main_menu.update(dt)
 	# fading messages
 	toast_left = maxf(0, toast_left - dt)

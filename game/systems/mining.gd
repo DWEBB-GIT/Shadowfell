@@ -256,6 +256,9 @@ func update(dt: float, time: float) -> void:
 	elif bags_full(o):
 		mining = null
 		game.hud.error("Your bags are full.")
+	elif game.input != null and game.input.idle_seconds() >= float(DB.CONFIG.afk.idleStop):
+		mining = null
+		game.events.emit("log", {"text": "You have been idle a long while and lower your pick.", "kind": "muted"})
 	elif block({"rank": int(rock_def(o.rock).get("rank", 1))}) == "":
 		_swing(o) # keep swinging until it is bare, as long as you stand there
 	else:

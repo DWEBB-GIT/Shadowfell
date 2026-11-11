@@ -16,13 +16,36 @@ extends RefCounted
 ## Haul, Deep Lure.
 ##
 ## Phases: 'cast' (the bob flies) -> 'wait' -> 'bite' (strike now) -> done.
+##
+## Keep fishing (Skills window, Dan 2026-11-10, RuneScape style): after each
+## cast the angler casts again at the same spot by itself. A bite nobody
+## strikes is hooked anyway at CONFIG.afk.landMult of the chance, for
+## afk.xpMult of the experience, and rare fish only take a real strike.
+## Moving, a hit, full bags, a failed cast or afk.idleStop seconds with no
+## key or click end the loop.
 
 var game
 var state = null ## { phase, t, elapsed, wait, skill, x, z, water, bob, line, from }
+var again = null ## Keep fishing's next cast: { t, aim, from }
 
 
 func _init(g) -> void:
 	game = g
+	game.events.on("playerHurt", func(_e):
+		if state != null or again != null:
+			stop()
+			_end_loop("You are struck and stop fishing."))
+
+
+var keep: bool:
+	get:
+		return game.skills.keep_fishing
+
+
+func _end_loop(text := "") -> void:
+	again = null
+	if text != "":
+		game.events.emit("log", {"text": text, "kind": "muted", "throttle": "fish-loop"})
 
 
 var active: bool:
@@ -52,6 +75,7 @@ func cast(aim) -> bool:
 	stop(true)
 	if game.gathering:
 		game.gathering.stop()
+	game.mining.stop()
 	var range_: float = DB.abilities.fish.range
 	var p: Vector3 = player.position
 	var spot = null
@@ -157,12 +181,30 @@ func strike() -> bool:
 		events.emit("log", {"text": "You strike too soon. Whatever was there is gone.", "kind": "muted"})
 		_reel(s, false)
 		return true
-	if game.random.call() * 100 >= chance:
+	_land(s, false)
+	return true
+
+
+## A bite hooked: struck by you, or (Keep fishing, `afk`) left to the line,
+## at a lower chance, for less experience and never a rare fish.
+func _land(s: Dictionary, afk: bool) -> void:
+	var events: Events = game.events
+	var inventory = game.inventory
+	var cfg: Dictionary = DB.CONFIG.afk
+	var mult: float = cfg.xpMult if afk else 1.0
+	if game.random.call() * 100 >= chance * (cfg.landMult if afk else 1.0):
 		events.emit("log", {"text": "The fish slips the hook.", "kind": "muted"})
-		game.skills.gain("fishing", _colour(s)) # a real bite still teaches you something
+		game.skills.gain("fishing", _colour(s), mult) # a real bite still teaches you something
 		_reel(s, false)
-		return true
-	var caught := Items.roll_loot(_table(s.water), game.random)
+		return
+	var table := _table(s.water)
+	if afk and not cfg.get("rareFish", false):
+		var drops = table.get("drops")
+		if drops != null:
+			for tier in ["rare", "epic", "legendary"]:
+				drops.get("items", {}).erase(tier)
+				drops.get("rarity", {}).erase(tier)
+	var caught := Items.roll_loot(table, game.random)
 	if _first_lesson():
 		caught = [{"id": "gloomwater_perch", "count": 1, "rarity": "common"}]
 	# Double Haul (perk): now and then two at once
@@ -172,14 +214,14 @@ func strike() -> bool:
 		if inventory.room_for(c.id) < c.count:
 			events.emit("log", {"text": "Your bags are full. You let it go.", "kind": "muted"})
 			game.hud.error("Your bags are full.")
+			s["full"] = true
 			continue
 		inventory.add_item(c.id, c.count)
 		var name: String = Items.get_def(c.id).name
 		events.emit("log", {"text": "You catch %s %s." % [U.article(name), name], "kind": "loot", "rarity": c.rarity})
 	events.emit("fishCaught", {"items": caught})
-	game.skills.gain("fishing", _colour(s))
+	game.skills.gain("fishing", _colour(s), mult)
 	_reel(s, not caught.is_empty())
-	return true
 
 
 ## how easy the water is for you now (Skills.colour_for)
@@ -247,24 +289,57 @@ func _update_reel(s: Dictionary, dt: float) -> void:
 		f.rotation = Vector3(sin(s.t * 40) * 0.5, 0, sin(s.t * 31) * 0.4) # it thrashes
 	_draw_line(s, 0.0)
 	if k >= 1:
-		stop()
+		stop(false, true)
 
 
-## Reel in (moving, fighting or a new cast ends it).
-func stop(quiet := false) -> void:
+## Reel in (moving, fighting or a new cast ends it). `go_on`: the cast has
+## run its course, so Keep fishing casts again.
+func stop(quiet := false, go_on := false) -> void:
 	if state == null:
+		if not go_on:
+			again = null
 		return
-	state.bob.queue_free()
-	state.line.queue_free()
+	var s: Dictionary = state
+	s.bob.queue_free()
+	s.line.queue_free()
 	state = null
 	game.player.hold_rod(false)
 	if not quiet:
 		game.events.emit("fishEnd", {})
+	if go_on and keep and not s.get("full", false):
+		again = {"t": float(DB.CONFIG.afk.recast), "aim": Vector3(s.x, 0, s.z), "from": s.from}
+	elif go_on and keep and s.get("full", false):
+		_end_loop("Your bags are full. You stop fishing.")
+	else:
+		again = null
+
+
+## Keep fishing: wait a moment, then cast at the same spot, unless you
+## have moved, are busy or have been idle too long.
+func _update_again(dt: float) -> void:
+	var a = again
+	var player = game.player
+	if player.dead or player.position.distance_to(a.from) > 0.6 or not keep:
+		again = null
+		return
+	if game.input != null and game.input.idle_seconds() >= float(DB.CONFIG.afk.idleStop):
+		_end_loop("You have been idle a long while and stop fishing.")
+		return
+	if player.casting != null or player.pending != null:
+		return
+	a.t -= dt
+	if a.t > 0:
+		return
+	again = null
+	if not cast(a.aim):
+		_end_loop("You stop fishing.")
 
 
 func update(dt: float) -> void:
 	var s = state
 	if s == null:
+		if again != null:
+			_update_again(dt)
 		return
 	var player = game.player
 	var events: Events = game.events
@@ -281,9 +356,10 @@ func update(dt: float) -> void:
 	# will take to is given up sooner, so it is never a full wait for nothing)
 	var give_up: float = cfg.duration if s.wait < INF else cfg.noBiteAfter
 	if s.elapsed >= give_up and s.phase != "bite":
-		events.emit("log", {"text": "Nothing is biting. You reel in your line.", "kind": "muted"})
-		game.hud.error("Nothing is biting")
-		stop()
+		events.emit("log", {"text": "Nothing is biting. You reel in your line.", "kind": "muted", "throttle": "fish-none"})
+		if not keep:
+			game.hud.error("Nothing is biting")
+		stop(false, true)
 		return
 	var level := Terrain.water_level(s.water)
 	var bob: Node3D = s.bob
@@ -305,6 +381,9 @@ func update(dt: float) -> void:
 	elif s.phase == "bite":
 		bob.position = Vector3(s.x, level - 0.06 + sin(s.t * 28) * 0.05, s.z)
 		if s.t >= cfg.biteWindow:
+			if keep:
+				_land(s, true) # nobody struck: the line hooks it, or not
+				return
 			events.emit("log", {"text": "The bob rises again. It got away.", "kind": "muted"})
 			stop()
 			return
