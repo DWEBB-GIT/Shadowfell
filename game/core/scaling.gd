@@ -61,6 +61,13 @@ const S := {
 	"fightCost": [[1, 0.15], [3, 0.3], [6, 0.45], [10, 0.45], [20, 0.35], [35, 0.25], [50, 0.2]],
 	## kill XP of a level 1 normal enemy; grows with growth(level) like gear
 	"killXp1": 28,
+	## every enemy blow hits this much harder than the fight-cost line alone
+	## (Dan, 2026-11-11: "the game is far too easy")
+	"enemyDamage": 1.25,
+	## every hit is worth levelGap^(attacker level - target level), never less
+	## than x1 (approved 2026-10-15, lost in the Godot port; restored
+	## 2026-11-11): a foe 5 levels up hits x2.5, 10 up x6, 37 up one-shots you
+	"levelGap": 1.2,
 	"enemyHealthRoll": 0.1,
 	"enemyTypes": {
 		## an ordinary mob swings every 2.0 s (Dan 2026-11-02); `danger` is
@@ -204,7 +211,7 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 	var level: float = e.get("level", 1)
 	var p := par(level, stats, weapon_seconds)
 	var health: float = S.fightSeconds * p.dps * t.health
-	var hit = null if not t.has("danger") else snappedf(fight_cost(level) * p.health / S.fightSeconds * t.danger * t.interval, 0.1)
+	var hit = null if not t.has("danger") else snappedf(fight_cost(level) * p.health / S.fightSeconds * t.danger * t.interval * S.enemyDamage, 0.1)
 	# foes of levels 1-3 hit softer, tapering to full at 4, so a new
 	# character finds their feet (Dan, 2026-10-28/29)
 	var out := {
@@ -228,6 +235,12 @@ static func scaled_enemy(e: Dictionary, stats: Dictionary, weapon_seconds: float
 			r[k] = e.ranged[k]
 		out.ranged = r
 	return out
+
+
+## How much harder a blow lands for each level the attacker stands above
+## its target: levelGap^gap, never below x1.
+static func level_gap(attacker_level: float, defender_level: float) -> float:
+	return pow(S.levelGap, maxf(0.0, attacker_level - defender_level))
 
 
 ## The share of par health an even normal fight costs at a level (fightCost).
