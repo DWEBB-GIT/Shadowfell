@@ -79,6 +79,7 @@ var cooking: Cooking
 var telegraphs: Telegraphs
 var enemies: Enemies
 var targeting: Targeting
+var highlight: Highlight
 var npcs: Npcs
 var merchant: Merchant
 var bank: Bank
@@ -175,6 +176,7 @@ func _ready() -> void:
 	builds = Builds.new(self)
 	resources = Resources.new(self)
 	afterlife = Afterlife.new(self)
+	highlight = Highlight.new(self)
 	grave = Grave.new(self)
 	skills = Skills.new(self)
 	settings = Settings.new(self)
@@ -1226,6 +1228,9 @@ func _handle_input(dt: float):
 		var hover = _hover_pick() if input.mouse.onCanvas else null
 		hud.world_tip(hover)
 		_cursor_for(hover)
+		highlight.update(hover, targeting.current)
+	else:
+		highlight.update(null, targeting.current)
 	# classic: left click selects, right click attacks, talks or loots.
 	# Mouse aim: left click selects, right click attacks, talks or loots
 	# (slot 1 on open ground). LMB never starts a fight (Dan, 2026-11-09).
