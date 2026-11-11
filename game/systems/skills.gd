@@ -306,9 +306,12 @@ func rank_name(id: String) -> String:
 
 
 ## skill experience a level needs
+## skill points a level needs (kept in `xp`): pointsBase + pointsPerLevel x
+## level, so 1-60 takes a few thousand successes (Dan 2026-11-11: between
+## WoW and RuneScape)
 static func xp_needed(level: int) -> int:
 	var l := ladder()
-	return int(l.get("xpBase", 30)) + int(l.get("xpPerLevel", 10)) * level
+	return maxi(1, roundi(float(l.get("pointsBase", 4)) + float(l.get("pointsPerLevel", 0.6)) * level))
 
 
 ## 'red' (beyond you), 'orange', 'yellow', 'green' or 'grey' for a task that
@@ -325,8 +328,8 @@ func colour_for(id: String, need: int) -> String:
 ## action (an ore mined, a fish landed, a carcass butchered, a potion
 ## brewed) has ladder.pointChance[colour] of giving one skill point, the
 ## same in every skill: orange ~80%, yellow ~50%, green low, grey nothing.
-## `mult` scales the chance (a semi-AFK catch: CONFIG.afk.xpMult).
-## Returns the points gained (0 or 1).
+## A level takes xp_needed(level) points. `mult` scales the chance (a
+## semi-AFK catch: CONFIG.afk.xpMult). Returns the levels gained (0 or 1).
 func gain(id: String, colour: String, mult := 1.0) -> int:
 	if not has(id) or not ranked(id):
 		return 0
@@ -339,7 +342,14 @@ func gain(id: String, colour: String, mult := 1.0) -> int:
 		return 0
 	if game.random.call() >= chance:
 		return 0
-	return 1 if raise(id) else 0
+	xp[id] = int(xp.get(id, 0)) + 1
+	if xp[id] >= xp_needed(rank(id)):
+		return 1 if raise(id) else 0
+	_note_xp(id, 1)
+	# the "+1 Fishing" drop over your head and the HUD tracker (hud.gd)
+	game.events.emit("skillXp", {"id": id, "amount": 1, "level": rank(id), "levels": 0})
+	game.events.emit("skillsChanged", {"id": id})
+	return 0
 
 
 ## the chance a task of this colour gives a skill point
@@ -490,6 +500,8 @@ func apply_ladder(data) -> void:
 				mastery[t] = {"level": clampi(int(ms[t].get("level", 1)), 1, mastery_max()), "xp": maxi(0, int(ms[t].get("xp", 0)))}
 	for id in ranks.keys():
 		if not laddered(id):
+			var px = d.get("xp", {}).get(id, 0) if ranked(id) else 0
+			xp[id] = clampi(int(px), 0, xp_needed(ranks[id])) if typeof(px) == TYPE_INT or typeof(px) == TYPE_FLOAT else 0
 			continue
 		var t = d.get("tiers", {}).get(id)
 		if typeof(t) == TYPE_INT or typeof(t) == TYPE_FLOAT:

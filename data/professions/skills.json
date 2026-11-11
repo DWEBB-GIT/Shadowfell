@@ -1,5 +1,5 @@
 {
-  "_about": "Skills the Warden can learn from a trainer for coins. `craft`: a skill with recipes (recipes.json) names its crafting window, the verb in the log, its button and where you must stand. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (each mined ore, butchered carcass or cooked dish that is not yet easy for you has a chance to raise them). `train` (a skill on the profession ladder): the trainer ranks past Novice, each { rank, trainer, cost, level (skill level needed), quest? (must be done) }. A laddered skill runs from 1 to 60 and its trainer rank caps it (`ladder.ranks`); it rises a point at a time, each successful task having a chance by its colour (`ladder.pointChance`, the same for every skill), and each level-up pays `ladder.charXpShare` of a character level's experience. `perks`: at each listed skill level you choose one of two; `effect` keys are read by the profession's system.",
+  "_about": "Skills the Warden can learn from a trainer for coins. `craft`: a skill with recipes (recipes.json) names its crafting window, the verb in the log, its button and where you must stand. `teaches`: abilities that appear in the spellbook once learned. `maxRank`: skills that improve with use (each mined ore, butchered carcass or cooked dish that is not yet easy for you has a chance to raise them). `train` (a skill on the profession ladder): the trainer ranks past Novice, each { rank, trainer, cost, level (skill level needed), quest? (must be done) }. A laddered skill runs from 1 to 60 and its trainer rank caps it (`ladder.ranks`); it rises by skill points (`ladder.pointsBase`/`pointsPerLevel` a level), each successful task having a chance at one by its colour (`ladder.pointChance`, the same for every skill), and each level-up pays `ladder.charXpShare` of a character level's experience. `perks`: at each listed skill level you choose one of two; `effect` keys are read by the profession's system.",
   "skills": [
     {
       "id": "camping",
@@ -316,7 +316,7 @@
     }
   ],
   "ladder": {
-    "_about": "The profession ladder (game/systems/skills.gd). Ranks cap the skill. Every successful skilling action, in every skill, has pointChance[colour] of giving one skill point (Dan 2026-11-11). A task's colour comes from how far your skill is over the level it needs: under bands[0] orange, under bands[1] yellow, under bands[2] green, past that grey (nothing to learn); a skill's own `bands` overrides these. Each skill level-up gives charXpShare of a character level's experience at that level.",
+    "_about": "The profession ladder (game/systems/skills.gd). Ranks cap the skill. Every successful skilling action, in every skill, has pointChance[colour] of giving one skill point (Dan 2026-11-11); a level needs pointsBase + pointsPerLevel x level points. A task's colour comes from how far your skill is over the level it needs: under bands[0] orange, under bands[1] yellow, under bands[2] green, past that grey (nothing to learn); a skill's own `bands` overrides these. Each skill level-up gives charXpShare of a character level's experience at that level.",
     "ranks": [
       {
         "id": "novice",
@@ -349,6 +349,8 @@
         "cap": 60
       }
     ],
+    "pointsBase": 4,
+    "pointsPerLevel": 0.6,
     "pointChance": {
       "orange": 0.8,
       "yellow": 0.5,

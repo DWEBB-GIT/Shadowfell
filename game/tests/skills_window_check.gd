@@ -62,14 +62,14 @@ func _run() -> void:
 	# experience drops and the AFK share
 	var seen := []
 	game.events.on("skillXp", func(e): seen.append(e))
-	var before: int = sk.rank("fishing")
+	sk.xp["fishing"] = 0
 	var roll: Callable = game.random
 	game.random = func() -> float: return 0.45
 	sk.gain("fishing", "orange", 0.6) # 80% x 0.6 = 48%: lands
-	check(seen.size() == 1 and int(seen[0].amount) == 1 and sk.rank("fishing") == before + 1, "a semi-AFK catch can still give a skill point and shows a drop")
+	check(seen.size() == 1 and int(seen[0].amount) == 1 and int(sk.xp.fishing) == 1, "a semi-AFK catch can still give a skill point and shows a drop")
 	game.random = func() -> float: return 0.5
 	sk.gain("fishing", "orange", 0.6) # 48%: misses
-	check(seen.size() == 1 and sk.rank("fishing") == before + 1, "the AFK share lowers the chance")
+	check(seen.size() == 1 and int(sk.xp.fishing) == 1, "the AFK share lowers the chance")
 	game.random = roll
 	sk.tracked = "fishing"
 	game.hud.skill_tracker.update(1.0)

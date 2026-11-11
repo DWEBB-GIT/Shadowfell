@@ -153,7 +153,7 @@ func _alchemy() -> void:
 	ck.update(10.0)
 	game.random = roll
 	check(game.inventory.count("healing_draught") > had, "a healing draught is brewed")
-	check(sk.rank("alchemy") > was, "Alchemy learned from it")
+	check(sk.rank("alchemy") > was or int(sk.xp.get("alchemy", 0)) > 0, "Alchemy learned from it")
 	check(ck.blocked(DB.recipes.brew_strong_draught) != "", "the strong draught waits for Briony and rank 10")
 	# an elixir raises its stat; a second replaces the first
 	var sta: float = game.stats.snapshot().stamina.v

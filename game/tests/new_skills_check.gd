@@ -61,6 +61,10 @@ func _craft(id: String, label: String) -> void:
 func _skill_points() -> void:
 	var sk = game.skills
 	var c: Dictionary = DB.skill_ladder.pointChance
+	var total := 0
+	for l in range(1, 60):
+		total += Skills.xp_needed(l)
+	check(total > 1000 and total < 2000, "1-60 takes %d skill points: a few thousand successes" % total)
 	check(is_equal_approx(c.orange, 0.8) and is_equal_approx(c.yellow, 0.5) and c.green > 0 and c.green < c.yellow and c.grey == 0, "orange 80%, yellow 50%, green low, grey nothing")
 	var roll: Callable = game.random
 	for id in ["mining", "woodcutting", "skinning"]:
@@ -69,9 +73,14 @@ func _skill_points() -> void:
 		var orange: String = sk.colour_for(id, 5)
 		var green: String = sk.colour_for(id, 5 - int(DB.skills[id].get("bands", DB.skill_ladder.bands)[1]))
 		check(orange == "orange" and green == "green", "%s: a task at your level is orange, well under it green (%s, %s)" % [id, orange, green])
+		sk.xp[id] = 0
 		game.random = func() -> float: return 0.7
-		check(sk.gain(id, "orange") == 1 and sk.rank(id) == 6, "%s: a 70 roll lands on orange (80%%)" % id)
-		check(sk.gain(id, "yellow") == 0 and sk.rank(id) == 6, "%s: but misses on yellow (50%%)" % id)
+		sk.gain(id, "orange")
+		check(int(sk.xp[id]) == 1, "%s: a 70 roll lands on orange (80%%)" % id)
+		sk.gain(id, "yellow")
+		check(int(sk.xp[id]) == 1, "%s: but misses on yellow (50%%)" % id)
+		sk.xp[id] = Skills.xp_needed(5) - 1
+		check(sk.gain(id, "orange") == 1 and sk.rank(id) == 6 and int(sk.xp[id]) == 0, "%s: the level's last point raises it" % id)
 		game.random = func() -> float: return 0.0
 		check(sk.gain(id, "grey") == 0, "%s: grey never teaches" % id)
 		check(sk.gain(id, "red") == 0, "%s: nor does a task beyond you" % id)
@@ -112,7 +121,7 @@ func _run() -> void:
 			game.gathering.update(3.0, game.time + i * 3.0)
 		check(inv.count("ash_log") > before, "chopping yields ash logs")
 		game.random = roll
-		check(sk.rank("woodcutting") > 1, "chopping trains Woodcutting")
+		check(sk.rank("woodcutting") > 1 or int(sk.xp.get("woodcutting", 0)) > 0, "chopping trains Woodcutting")
 	# Woodcraft at the workbench
 	sk.grant("woodcraft")
 	inv.add_item("ash_log", 4, true)
