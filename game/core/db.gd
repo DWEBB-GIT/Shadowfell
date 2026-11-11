@@ -21,10 +21,12 @@ const CONFIG := {
 		# carry: speed while airborne x run speed; cooldown: seconds between hops.
 		"hop": {"carry": 1.8, "cooldown": 1.6, "combatOnly": true},
 		# dodge roll (experiment, Dan 2026-11-10): the other Combat move. In a
-		# fight, Space tumbles you `distance` m over `duration` s the way you
-		# move (backwards standing still). No invulnerability: it only gets
-		# you out of a telegraph or out of reach. Can't attack or cast mid-roll.
-		"roll": {"distance": 4.0, "duration": 0.45, "cooldown": 6.0, "combatOnly": true}},
+		# fight, Space always rolls (never jumps; on cooldown it does nothing):
+		# a burst of `speed` x your run for `duration` s the way you move
+		# (backwards standing still), fastest at the start (Dan 2026-11-11: it
+		# must clearly beat running). No invulnerability: it only gets you out
+		# of a telegraph or out of reach. Can't attack or cast mid-roll.
+		"roll": {"speed": 2.4, "duration": 0.4, "cooldown": 6.0, "combatOnly": true}},
 	## Move speed (Dan, 2026-11-02): the player's run, CONFIG.player.speed
 	## (7 yards a second = 6.4 m/s; a world unit is a metre), is the game's
 	## base move speed (Dan, 2026-11-02).

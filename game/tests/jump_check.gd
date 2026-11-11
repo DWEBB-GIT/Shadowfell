@@ -173,13 +173,15 @@ func _run() -> void:
 	for i in 40: _tick()
 	var rm := Vector2(game.player.position.x-rs.x, game.player.position.z-rs.z).length()
 	check(game.player.roll == null, "the roll ends")
-	check(rm > roll.distance - 0.3, "the roll carries about %.1f m (moved %.2f)" % [roll.distance, rm])
+	var run_m: float = game.player_speed() * roll.duration
+	var want: float = roll.speed * run_m
+	check(rm > want - 0.3 and rm > run_m * 2.0, "the roll carries about %.1f m, over twice a run's %.1f m (moved %.2f)" % [want, run_m, rm])
 	_key(KEY_D, false)
 	_key(KEY_SPACE, false)
 	_tick()
 	_key(KEY_SPACE, true)
 	_tick()
-	check(game.player.roll == null and game.player.rig.airborne, "a roll inside its cooldown is a plain jump")
+	check(game.player.roll == null and not game.player.rig.airborne, "in a fight Space never jumps, even with the roll on cooldown")
 	_reset()
 	for i in 50: _tick()
 	game.player.roll_cd = 0.0
@@ -190,7 +192,7 @@ func _run() -> void:
 	_key(KEY_SPACE, false)
 	for i in 40: _tick()
 	var back := Vector3(-sin(f0), 0, -cos(f0))
-	check((game.player.position - rs).dot(back) > roll.distance - 0.3, "standing still you roll backwards")
+	check((game.player.position - rs).dot(back) > roll.speed * game.player_speed() * roll.duration - 0.3, "standing still you roll backwards")
 	game.targeting.attacking = false
 	_reset()
 	for i in 50: _tick()
