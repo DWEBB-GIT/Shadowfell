@@ -108,12 +108,13 @@ const CONFIG := {
 	"fog": {"color": Color("64777b"), "near": 58.0, "far": 122.0},
 	"blackwood": {"fogColor": Color("34404f"), "fogNear": 42.0, "fogFar": 86.0, "light": 0.70, "ambient": 1.10, "ambientColor": Color("657c96")},
 	"camera": {
-		# Stable north-up view: 30 degrees down by default, 42 degrees with the lower-angle preference off.
+		# Stable north-up view. Dan's pick from the camera tuning sliders
+		# (2026-11-10): 35 degrees down, 35 m, lens 25, the Diablo 2 framing.
+		# "Lower camera angle" keeps the 30 degree view at 31 m.
 		# Zoom changes distance, never pitch or player-facing direction.
-		# Wider perspective preserves lateral ground coverage while showing taller silhouettes and more distant ground.
-		"offset": Vector3(0, 20.743, 23.037), "lowerOffset": Vector3(0, 15.5, 26.847),
+		"offset": Vector3(0, 20.075, 28.670), "lowerOffset": Vector3(0, 15.5, 26.847),
 		"lookAhead": 0.0, "zoomMin": 0.5, "zoomMax": 1.3, "zoomStep": 0.06, "zoomDefault": 0.94,
-		"indoorZoom": 0.14, "fov": 39.0,
+		"indoorZoom": 0.14, "fov": 25.0,
 		"followSharpness": 12.0, "renderScale": 1.0, "frame": 0.0,
 		"showcase": {"distance": 5.2, "side": 1.3, "height": 1.7, "lookHeight": 1.0},
 	},
