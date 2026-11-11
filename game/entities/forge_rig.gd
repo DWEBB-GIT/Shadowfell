@@ -39,6 +39,14 @@ const TAKEOFF_FROM := 0.067 ## Jump_Start's push-off, after its ground crouch
 ## the tuck peaks at the top, and the legs reach for the ground as you fall;
 ## only a longer drop (off a ledge) goes on into the Jump hover loop.
 const TUCK_AT := 0.4 ## Jump_Start time of the highest knee tuck
+## The combo clips hold three blows and spin the body round over 3-4 s.
+## Squeezed into one 0.6 s ability they flailed and twisted the whole
+## model, so an ability plays one blow from each: [start, hit, end] in
+## clip seconds (measured from the hand and chest in the clips).
+const CLIP_WINDOWS := {
+	"Sword_Heavy_Combo": [2.15, 2.65, 3.9], # the closing overhead slam
+	"Sword_Regular_Combo": [1.4, 1.62, 2.6], # the closing diagonal sweep
+}
 var land_dip := 0.0
 var air_fall_from := -1.0 ## air_time when a long drop went into the hover loop
 var last_off_clip := ""
@@ -114,6 +122,14 @@ func resolve_action(type: String, hand: String="main") -> String:
 	if anim.has_animation(type) and type != "A_TPose":
 		return type
 	return "Sword_Attack"
+
+## Where in a clip an action stands: the hit lands at the game's impact
+## moment, wind-up before it and recovery after (CLIP_WINDOWS for combos).
+func clip_time(name: String, length: float, k: float, impact: float) -> float:
+	var w: Array = CLIP_WINDOWS.get(name, [0.0, length * 0.5, length])
+	if k < impact:
+		return lerpf(w[0], w[1], k / impact)
+	return lerpf(w[1], w[2], (k - impact) / (1 - impact))
 
 ## How far through the hop's arc: 0 at take-off, 0.5 at the top, 1 back at
 ## take-off height. Read from the actor's vertical speed when it has one.
@@ -218,7 +234,7 @@ func _update_anim(dt: float, speed01: float) -> void:
 		var k := clampf(action.t / maxf(0.01, action.duration), 0, 1)
 		var impact := clampf(action.impact, 0.01, 0.99)
 		# Keep both the strike and the recovery aligned to the game's clock.
-		var at := (k / impact * 0.5 if k < impact else 0.5 + (k - impact) / (1 - impact) * 0.5) * a.length
+		var at := clip_time(name, a.length, k, impact)
 		var casting_now = actor.casting if actor != null else null
 		if casting_now != null:
 			name = "Spell_Simple_Idle"
@@ -280,7 +296,7 @@ func _mirror_off() -> void:
 	var a := anim.get_animation(clip_name)
 	var k := clampf(off_action.t / maxf(0.01, off_action.duration), 0, 1)
 	var impact := clampf(off_action.impact, 0.01, 0.99)
-	var at := (k / impact * 0.5 if k < impact else 0.5 + (k - impact) / (1 - impact) * 0.5) * a.length
+	var at := clip_time(clip_name, a.length, k, impact)
 	var weight := minf(1, minf(k, 1-k) * 8)
 	if clip_name=="Dagger_Stab_L":
 		_sample(clip_name,at,weight,true)
