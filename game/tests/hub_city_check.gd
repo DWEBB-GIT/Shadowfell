@@ -75,7 +75,7 @@ func _process(_delta: float) -> bool:
 			check(m != null and m.hits == 1 and m.crits == 1 and m.misses == 1 and m.total == 40.0, "the dummy's meter counts hits, crits and misses")
 		if out == "":
 			return _finish()
-		shots = [["square", _w(0, 10)], ["gate", _w(0, 66)], ["yard", _w(50, 50)], ["artisans", _w(-55, 0)], ["cathedral", _w(-55, -40)], ["guilds", _w(0, -55)], ["market", _w(50, 3)], ["docks", _w(62, -55)], ["lane", _w(-55, 55)]]
+		shots = [["square", _w(0, 10)], ["wall", _w(-60, 76)], ["gate", _w(0, 66)], ["yard", _w(50, 50)], ["artisans", _w(-55, 0)], ["cathedral", _w(-55, -40)], ["guilds", _w(0, -55)], ["market", _w(50, 3)], ["docks", _w(62, -55)], ["lane", _w(-55, 55)]]
 	if out != "" and frames > 120:
 		var k := frames - 121
 		if shot < shots.size():

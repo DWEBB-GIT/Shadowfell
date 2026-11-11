@@ -12,6 +12,7 @@ extends RefCounted
 ## woodland's cutaway, so nothing here can hide the player; houses too use
 ## the see-through circle around the player (SeeThrough).
 
+const PAVING := preload("res://game/render/paving.gdshader")
 const ROOF := {"thatch": Color("8c7748"), "slate": Color("4c5866"), "tile": Color("9a4a30")}
 const WALL := {"plaster": Color("d2c39c"), "timber": Color("9a7a52"), "stone": Color("8f897c")}
 const BEAM := Color("4a3322")
@@ -55,6 +56,8 @@ func build() -> Town:
 				_build_palisade(line)
 	for gt in Layout.gates:
 		_build_gate(gt)
+	for pv in Layout.pavings:
+		_build_paving(pv)
 	return self
 
 
@@ -211,37 +214,105 @@ func _build_palisade(line: Array) -> void:
 	group.add_child(mi)
 
 
-## A city's curtain wall: dressed stone with a walkway lip and merlons,
-## squat towers at every corner of the line. One mesh per line.
+## A city's curtain wall: tall dressed stone on a dark plinth, a walkway
+## with merlons on both lips, a string course, and square towers squared to
+## the wall at every corner and about every 26 m along it. One mesh per line.
 func _build_stone_wall(line: Array) -> void:
 	var m := Mesher.new()
-	var tall := 5.2
-	var thick := 1.4
+	var tall := 8.0
+	var thick := 2.6
+	var face := STONE.lightened(0.16)
+	var basis := Basis()
+	var towers := []
 	for i in line.size() - 1:
 		var a := Vector2(line[i][0], line[i][1])
 		var b := Vector2(line[i + 1][0], line[i + 1][1])
 		var dir := (b - a).normalized()
-		var basis := Basis(Vector3.UP, -atan2(dir.y, dir.x))
+		basis = Basis(Vector3.UP, -atan2(dir.y, dir.x))
 		var length := a.distance_to(b)
 		var mid := (a + b) / 2.0
 		var y := Terrain.height_at(mid.x, mid.y)
-		m.box(Vector3(mid.x, y + tall / 2.0 - 0.8, mid.y), Vector3(length, tall + 1.6, thick), STONE.lightened(0.12), basis)
-		m.box(Vector3(mid.x, y + tall + 0.05, mid.y), Vector3(length, 0.3, thick + 0.3), STONE, basis)
-		var n := maxi(1, floori(length / 1.6))
+		m.box(Vector3(mid.x, y + 0.2, mid.y), Vector3(length, 2.0, thick + 0.8), STONE.darkened(0.15), basis)
+		m.box(Vector3(mid.x, y + tall / 2.0, mid.y), Vector3(length, tall, thick), face, basis)
+		m.box(Vector3(mid.x, y + tall * 0.62, mid.y), Vector3(length, 0.3, thick + 0.25), STONE, basis)
+		var side := Vector2(-dir.y, dir.x)
+		var n := maxi(1, floori(length / 1.5))
 		for k in n:
 			var p := a + dir * (length * (k + 0.5) / n)
-			var side := Vector2(-dir.y, dir.x) * (thick / 2.0)
-			m.box(Vector3(p.x + side.x, y + tall + 0.6, p.y + side.y), Vector3(0.8, 0.8, 0.35), STONE.lightened(0.05), basis)
+			for s in [-1.0, 1.0]:
+				var q: Vector2 = p + side * s * (thick / 2.0 - 0.2)
+				m.box(Vector3(q.x, y + tall + 0.5, q.y), Vector3(0.8, 1.0, 0.4), face.lightened(0.04), basis)
 		world._wall_colliders(0, 0, 0, [[a.x, a.y, b.x, b.y]], thick / 2.0 + 0.1)
-	for p in line:
-		var y := Terrain.height_at(p[0], p[1])
-		m.box(Vector3(p[0], y + tall / 2.0 + 0.4, p[1]), Vector3(3.4, tall + 2.4, 3.4), STONE.lightened(0.08))
-		m.pyramid(Vector3(p[0], y + tall + 1.6, p[1]), 2.2, 2.6, ROOF.slate)
-		game.collision.add(p[0], p[1], 1.8)
+		towers.append([a, basis])
+		var every := maxi(1, roundi(length / 26.0))
+		for k in range(1, every):
+			towers.append([a + dir * (length * k / every), basis])
+	towers.append([Vector2(line[-1][0], line[-1][1]), basis])
+	for tw in towers:
+		var p: Vector2 = tw[0]
+		var tb: Basis = tw[1]
+		var y := Terrain.height_at(p.x, p.y)
+		var top := tall + 3.0
+		m.box(Vector3(p.x, y + top / 2.0 - 0.5, p.y), Vector3(4.6, top + 1.0, 4.6), face.lightened(0.04), tb)
+		m.box(Vector3(p.x, y + top, p.y), Vector3(5.2, 0.4, 5.2), STONE, tb)
+		m.pyramid(Vector3(p.x, y + top + 0.2, p.y), 2.7, 3.2, ROOF.slate, tb)
+		for k in 2:
+			var slit := tb * Vector3(0, 0, 2.32)
+			m.box(Vector3(p.x, y + 4.0 + k * 3.0, p.y) + slit, Vector3(0.3, 1.1, 0.06), DOOR, tb)
+		game.collision.add(p.x, p.y, 2.6)
 	var mi := MeshInstance3D.new()
 	mi.name = "CityWall"
 	mi.mesh = m.mesh()
 	mi.material_override = _mat
+	group.add_child(mi)
+
+
+## A paved town floor (`pavings`: centre, half, turn, cell): flagstones on a
+## grid turned with the town, a finer darker set on its streets, cut round
+## water, holes ([u0, v0, u1, v1] in the paving's own metres) left as ground.
+func _build_paving(pv: Dictionary) -> void:
+	var c := Vector2(pv.centre[0], pv.centre[1])
+	var half: float = pv.half
+	var cell: float = pv.get("cell", 2.0)
+	var turn := deg_to_rad(float(pv.get("turn", 45)))
+	var eu := Vector2(cos(turn), sin(turn))
+	var ev := Vector2(-sin(turn), cos(turn))
+	var holes: Array = pv.get("holes", [])
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n := ceili(half * 2.0 / cell)
+	for i in n:
+		for j in n:
+			var u0 := -half + i * cell
+			var v0 := -half + j * cell
+			var cu := u0 + cell / 2.0
+			var cv := v0 + cell / 2.0
+			var skip := false
+			for h in holes:
+				if cu > h[0] and cu < h[2] and cv > h[1] and cv < h[3]:
+					skip = true
+			var mid := c + eu * cu + ev * cv
+			if skip or Terrain.water_at(mid.x, mid.y, -0.6) != null:
+				continue
+			var street := 1.0 if Terrain.road_edge(mid.x, mid.y) < 0.0 else 0.0
+			var corners := [[u0, v0], [u0 + cell, v0], [u0 + cell, v0 + cell], [u0, v0 + cell]]
+			var pts := []
+			for k in corners:
+				var w: Vector2 = c + eu * k[0] + ev * k[1]
+				pts.append([Vector3(w.x, Terrain.height_at(w.x, w.y) + 0.06, w.y), Vector2(k[0], k[1])])
+			for idx in [0, 1, 2, 0, 2, 3]:
+				st.set_color(Color(street, 0, 0))
+				st.set_normal(Vector3.UP)
+				st.set_uv(pts[idx][1])
+				st.add_vertex(pts[idx][0])
+	var mi := MeshInstance3D.new()
+	mi.name = "Paving"
+	mi.mesh = st.commit()
+	var mat := ShaderMaterial.new()
+	mat.shader = PAVING
+	mat.set_shader_parameter("stone", Color(pv.get("colour", "#9a9284")))
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	group.add_child(mi)
 
 
@@ -280,20 +351,23 @@ func _build_gate(def: Dictionary) -> void:
 	elif kind == "city_gate":
 		# a gatehouse: two stone towers under a crenellated arch, oak leaves between
 		for s in [-1, 1]:
-			solid.box(Vector3(s * (hl + 2.0), 3.6, 0), Vector3(4.0, 9.0, 4.4), STONE.lightened(0.12))
-			solid.pyramid(Vector3(s * (hl + 2.0), 8.1, 0), 2.6, 3.4, ROOF.slate)
-			game.collision.add(mid.x + cos(-ang) * s * (hl + 2.0), mid.y + sin(-ang) * s * (hl + 2.0), 2.2)
-		solid.box(Vector3(0, 7.0, 0), Vector3(length + 0.4, 2.2, 4.4), STONE.lightened(0.12))
+			solid.box(Vector3(s * (hl + 2.6), 5.5, 0), Vector3(5.2, 13.0, 5.6), STONE.lightened(0.2))
+			solid.box(Vector3(s * (hl + 2.6), 12.1, 0), Vector3(5.8, 0.4, 6.2), STONE)
+			solid.pyramid(Vector3(s * (hl + 2.6), 12.3, 0), 3.0, 3.8, ROOF.slate)
+			game.collision.add(mid.x + cos(-ang) * s * (hl + 2.6), mid.y + sin(-ang) * s * (hl + 2.6), 2.8)
+		solid.box(Vector3(0, 8.6, 0), Vector3(length + 0.4, 4.0, 5.0), STONE.lightened(0.2))
 		for k in 5:
-			solid.box(Vector3(-hl + length * (k + 0.5) / 5.0, 8.5, 2.0), Vector3(0.8, 0.8, 0.4), STONE)
-		solid.box(Vector3(0, 6.0, 2.25), Vector3(length * 0.5, 1.4, 0.1), Color("7a1f1f"))
+			for z2 in [-2.3, 2.3]:
+				solid.box(Vector3(-hl + length * (k + 0.5) / 5.0, 11.1, z2), Vector3(0.8, 1.0, 0.4), STONE.lightened(0.2))
+		for z2 in [-2.55, 2.55]:
+			solid.box(Vector3(0, 8.4, z2), Vector3(length * 0.45, 2.6, 0.1), Color("7a1f1f"))
 		for s in [-1, 1]:
 			var hinge := Node3D.new()
 			hinge.position = Vector3(s * hl, 0, 0)
 			root.add_child(hinge)
 			var leaf := Mesher.new()
-			leaf.box(Vector3(-s * hl / 2.0, 2.6, 0), Vector3(hl - 0.1, 5.0, 0.3), BEAM)
-			for yy in [1.2, 2.6, 4.0]:
+			leaf.box(Vector3(-s * hl / 2.0, 3.3, 0), Vector3(hl - 0.1, 6.4, 0.3), BEAM)
+			for yy in [1.2, 2.8, 4.4, 6.0]:
 				leaf.box(Vector3(-s * hl / 2.0, yy, 0.18), Vector3(hl - 0.3, 0.22, 0.08), STONE.darkened(0.4))
 			hinge.add_child(_instance(leaf))
 			gate.leaves.append([hinge, 0.0, s * deg_to_rad(100.0)])
@@ -445,9 +519,9 @@ class Mesher:
 		tri(a, b, c, col, out)
 		tri(a, b, c, col.darkened(0.2), -out)
 
-	func pyramid(base: Vector3, r: float, h: float, col: Color) -> void:
+	func pyramid(base: Vector3, r: float, h: float, col: Color, basis := Basis()) -> void:
 		var top := base + Vector3(0, h, 0)
-		var c := [base + Vector3(-r, 0, -r), base + Vector3(r, 0, -r), base + Vector3(r, 0, r), base + Vector3(-r, 0, r)]
+		var c := [base + basis * Vector3(-r, 0, -r), base + basis * Vector3(r, 0, -r), base + basis * Vector3(r, 0, r), base + basis * Vector3(-r, 0, r)]
 		for i in 4:
 			var a: Vector3 = c[i]
 			var b: Vector3 = c[(i + 1) % 4]

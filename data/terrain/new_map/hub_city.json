@@ -1378,7 +1378,7 @@
     "name": "the waystone",
     "kind": "waystone",
     "position": [
-     -600.0,
+     -614.0,
      -172.0
     ],
     "radius": 2.4,
@@ -1399,8 +1399,8 @@
     ],
     "radius": 2.4,
     "to": [
-     -597.0,
-     -170.0
+     -611.0,
+     -176.0
     ],
     "toName": "Abel's broken cart",
     "toFacing": 100
@@ -1559,6 +1559,27 @@
      -656.0
     ],
     "radius": 115
+   }
+  ],
+  "pavings": [
+   {
+    "id": "hub_paving",
+    "centre": [
+     -180.0,
+     -656.0
+    ],
+    "half": 82.5,
+    "turn": 45,
+    "cell": 2.0,
+    "colour": "#8f877a",
+    "holes": [
+     [
+      -80,
+      -80,
+      -32,
+      -60
+     ]
+    ]
    }
   ],
   "pads": [

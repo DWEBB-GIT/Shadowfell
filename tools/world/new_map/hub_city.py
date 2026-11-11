@@ -30,7 +30,7 @@ HALF = 82.5               # half the wall's side
 CELL = 55.0
 TURN = -45                # house rotation: its length along u
 K = math.sqrt(0.5)
-START_STONE = (-600.0, -172.0)  # by the new-character start (-617, -182)
+START_STONE = (-614.0, -172.0)  # by the new-character start (-617, -182), on open ground
 
 
 def w(u, v):
@@ -39,7 +39,7 @@ def w(u, v):
 
 
 out = {k: [] for k in ["houses", "townWalls", "gates", "roads", "water", "stations", "npcSpawns",
-                       "enemySpawns", "signposts", "pois", "subzones"]}
+                       "enemySpawns", "signposts", "pois", "subzones", "pavings"]}
 props, lights = [], []
 n = 0
 _rects, _segs = [], []  # in local (u, v): house footprints, street capsules (for overlap()))
@@ -213,8 +213,11 @@ def build():
         {"id": "hub_waystone_start", "name": "the waystone", "kind": "waystone", "position": [sx, sz], "radius": 2.4,
          "to": w(0, 70), "toName": "the hub city", "toFacing": 315},
         {"id": "hub_waystone_city", "name": "the city waystone", "kind": "waystone", "position": w(-9, 74), "radius": 2.4,
-         "to": [sx + 3, sz + 2], "toName": "Abel's broken cart", "toFacing": 100},
+         "to": [sx + 3, sz - 4], "toName": "Abel's broken cart", "toFacing": 100},
     ]
+    # --- the floor: flagstones over the whole city, the cemetery left as grass
+    out["pavings"].append({"id": "hub_paving", "centre": [CX, CZ], "half": H, "turn": 45, "cell": 2.0,
+                           "colour": "#8f877a", "holes": [[-80, -80, -32, -60]]})
     out["pois"].append({"id": "hub_city", "name": "The Hub City (test)", "kind": "town", "at": w(0, 0),
                         "note": "A test hub: walled river city with guild halls, market, artisans, cathedral and garrison."})
     out["subzones"].append({"id": "hub_city", "name": "The Hub City", "at": w(0, 0), "radius": 115})

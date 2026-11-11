@@ -358,7 +358,7 @@ static func setup(data) -> void:
 static func new_map_world(w: Dictionary, placements_path := "") -> Dictionary:
 	var out := w.duplicate()
 	for k in ["npcSpawns", "enemySpawns", "placedLoot", "chests", "shrines", "signposts", "gates", "townWalls",
-			"houses", "stations", "buildings", "pads", "water", "obscured", "dangerZones", "roads"]:
+			"houses", "stations", "buildings", "pads", "water", "obscured", "dangerZones", "roads", "pavings"]:
 		out[k] = []
 	# one region for the lot until Dan marks the zones on the map
 	out.regions = [{"id": "new_map", "name": "Unmarked land", "levels": "1"}]
