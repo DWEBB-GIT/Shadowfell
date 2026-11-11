@@ -937,7 +937,7 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	]
 	rows.append("General")
 	rows.append(["Wears", ", ".join(wears) + (", shields" if arch.get("shields") else "")])
-	rows.append(["Speed", "%s yd/s" % U.fixed(DB.CONFIG.player.speed / 0.9144, 1), "Movement speed"])
+	rows.append(["Speed", "%s yd/s" % U.fixed((game.player_speed() if game != null else DB.CONFIG.player.speed) / 0.9144, 1), "Movement speed"])
 	for r in rows:
 		if r == null:
 			continue

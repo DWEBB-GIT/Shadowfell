@@ -27,6 +27,8 @@ const SETTINGS := [
 	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 35, "min": 12, "max": 70, "unit": " m"},
 	{"id": "camFov", "label": "Lens (field of view)", "tab": "controls", "group": "Camera tuning", "default": 25, "min": 15, "max": 75, "unit": "°"},
 	{"id": "camOrtho", "label": "Flat lens (true isometric: nothing shrinks with distance)", "tab": "controls", "group": "Camera tuning", "default": false},
+	# test (Dan, 2026-11-11): scales only YOUR run; enemies chase at their own runSpeed % of the base 7 yd/s
+	{"id": "moveSpeed", "label": "Your movement speed (test; 100% = 7 yd/s base, enemies keep their own speed)", "tab": "controls", "group": "Movement", "default": 100, "min": 50, "max": 300},
 	{"id": "openingCinematic", "label": "Cinematic arrival for new characters", "tab": "controls", "group": "Arrival", "default": true},
 	{"id": "reducedOpeningMotion", "label": "Reduced opening motion (simple fade instead of a camera flight)", "tab": "controls", "default": false},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},

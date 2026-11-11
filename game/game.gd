@@ -1486,6 +1486,12 @@ func _camera_offset(z: float) -> Vector3:
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
 
 
+## the player's run in m/s: CONFIG.player.speed times the moveSpeed test setting
+func player_speed() -> float:
+	var pct = settings.get_value("moveSpeed") if settings != null else null
+	return DB.CONFIG.player.speed * (float(pct) / 100.0 if pct != null else 1.0)
+
+
 func _tuned_camera() -> bool:
 	return settings != null and settings.get_value("camTune")
 

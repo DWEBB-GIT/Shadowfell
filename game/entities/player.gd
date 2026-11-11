@@ -641,8 +641,8 @@ func update(dt: float, controls) -> void:
 		mv = _air_steer(mv)
 		var mag := minf(1, U.hyp(mv.x, mv.z))
 		if mag > 0:
-			position.x += mv.x * DB.CONFIG.player.speed * game.spells.movement_scale * dt
-			position.z += mv.z * DB.CONFIG.player.speed * game.spells.movement_scale * dt
+			position.x += mv.x * game.player_speed() * game.spells.movement_scale * dt
+			position.z += mv.z * game.player_speed() * game.spells.movement_scale * dt
 			if tank != null:
 				# you face where the keys turn you; the left button held
 				# (mouse aim) still turns you to the cursor
