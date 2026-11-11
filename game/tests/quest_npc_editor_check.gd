@@ -130,7 +130,7 @@ func _initialize() -> void:
 	sk.desc = "Work iron."
 	var tool: Dictionary = abil.create("buff", "Temper Blade")
 	tool.desc = "Sharper for a while."
-	tool.skill = "smithing"
+	tool.skill = sk.id # "smithing" is taken since #248, so the new skill may be smithing_2
 	sk.teaches.append(tool.id)
 	_ok(tool.id == "temperBlade" and tool.tuning.has("duration") and tool.target == "self", "a new buff spell starts with the numbers its kind needs: %s" % tool)
 	var spell: Dictionary = abil.create("instant", "Searing Brand")

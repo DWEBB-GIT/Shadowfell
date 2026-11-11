@@ -24,6 +24,11 @@ Each person is a spawn of a shared npcs.json entry with its own `person` id
 and name (Layout), so nothing here needs a hand-made npcs.json entry.
 
     python3 tools/world/new_map/town_life.py [--remove]
+
+Then move anyone left on blocked ground (inside a wall, on a cliff) onto
+open ground, which needs the game's terrain (run_tests checks it):
+
+    godot --headless --path . --script res://tools/world/new_map/town_life_ground.gd
 """
 import json, math, sys, heapq
 from pathlib import Path
