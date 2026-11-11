@@ -96,7 +96,9 @@ func _run() -> void:
 	root.add_child(world)
 	world.rebuild()
 	check(world.get_node_or_null("Props") != null and world.get_node_or_null("NPCs") != null, "new map has editable groups")
-	check(world.get_node("Houses").get_child_count() == DB.world.houses.size() and world.get_node("Buildings").get_child_count() == DB.world.buildings.size() and world.get_node("Ponds").get_child_count() == DB.world.water.size(), "houses, enterable buildings and fishing water are visible in the world editor")
+	# the map's generated overlays (the test hub city) are shown in the game, not edited here
+	var extra := DB.overlay_lists("spawns")
+	check(world.get_node("Houses").get_child_count() == DB.world.houses.size() - extra.get("houses", []).size() and world.get_node("Buildings").get_child_count() == DB.world.buildings.size() - extra.get("buildings", []).size() and world.get_node("Ponds").get_child_count() == DB.world.water.size() - extra.get("water", []).size(), "houses, enterable buildings and fishing water are visible in the world editor")
 	check(not world.has_unsaved_changes(), "opening the map creates no pending placement changes")
 	var precise := {"model": model, "position": DB.world.playerStart.position.duplicate(), "scale": 0.3456789, "rotation": 0, "rotation3": [0, 90, 90]}
 	var precise_marker := world.make_marker("Props", precise)

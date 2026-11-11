@@ -251,8 +251,39 @@ var rune_forges := {} ## station id -> {gem, glow, gem_mat, colour, flare, work}
 const RUNE_FORGE_COLOUR := Color("9a6aff")
 const REFINING_COLOUR := Color("ffc860")
 
+## A waystone: a standing stone with a pale blue light hovering over it.
+func _build_waystone(st: Dictionary) -> void:
+	var x: float = st.position[0]
+	var z: float = st.position[1]
+	var root := Node3D.new()
+	root.name = "Waystone"
+	root.position = Vector3(x, Terrain.height_at(x, z), z)
+	var stone := Assets.instance("standing_stone")
+	if stone:
+		stone.scale = Vector3.ONE * 1.3
+		root.add_child(stone)
+	var orb := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.3
+	sm.height = 0.6
+	orb.mesh = sm
+	var om := StandardMaterial3D.new()
+	om.albedo_color = Color("9fd8ff")
+	om.emission_enabled = true
+	om.emission = Color("9fd8ff")
+	om.emission_energy_multiplier = 2.2
+	orb.material_override = om
+	orb.position.y = 3.6
+	root.add_child(orb)
+	group.add_child(root)
+	game.collision.add(x, z, 0.9)
+
+
 func _build_rune_forges() -> void:
 	for st in Layout.stations:
+		if st.kind == "waystone":
+			_build_waystone(st)
+			continue
 		if st.kind != RuneForge.KIND and st.kind != Refinery.KIND:
 			continue
 		# the refining altar's crystal is gold, the rune forge's violet

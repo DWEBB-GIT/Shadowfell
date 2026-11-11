@@ -84,9 +84,14 @@ def main():
     shutil.copyfile(os.path.join(HERE, "ground.png"), os.path.join(OUT, "ground.png"))
     Image.open(os.path.join(HERE, "source", "build-map.png")).convert("RGB").save(os.path.join(OUT, "map.jpg"), quality=88)
     start = [round(g.x0 + (START_PX[0] + 0.5) * px, 1), round(g.z0 + (START_PX[1] + 0.5) * px, 1)]
+    # keep the generated overlays (the test hub city) named across a re-bake
+    old = json.load(open(os.path.join(OUT, "map.json"))) if os.path.exists(os.path.join(OUT, "map.json")) else {}
+    meta = {"_about": "The new map (Dan, 2026-10-28), baked by tools/world/new_map/bake_new_map.py. x0/z0: the north-west corner in metres; sizeX/sizeZ: its size; start: where the player starts [x, z]; overlays: generated placement files added in the game.",
+            "x0": g.x0, "z0": g.z0, "sizeX": sx, "sizeZ": sz, "start": start}
+    if old.get("overlays"):
+        meta["overlays"] = old["overlays"]
     with open(os.path.join(OUT, "map.json"), "w") as f:
-        json.dump({"_about": "The new map (Dan, 2026-10-28), baked by tools/world/new_map/bake_new_map.py. x0/z0: the north-west corner in metres; sizeX/sizeZ: its size; start: where the player starts [x, z].",
-                   "x0": g.x0, "z0": g.z0, "sizeX": sx, "sizeZ": sz, "start": start}, f, indent=2)
+        json.dump(meta, f, indent=2)
     land = height > 0.25
     print("new map %.0f x %.0f m: tiles %d x %d, %d with land, %.2f MB; walkable %.0f%% of land; start %s"
           % (sx, sz, tx, tz, n, size / 1e6, 100 * (walk > 0.5).sum() / max(1, land.sum()), start))

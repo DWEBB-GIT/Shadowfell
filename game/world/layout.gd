@@ -20,6 +20,7 @@ static var obscured: Array
 static var buildings: Array
 static var houses: Array ## kit-built houses you cannot enter (see Town)
 static var town_walls: Array
+static var pavings: Array ## paved town floors (Town._build_paving)
 static var gates: Array
 static var stations: Array
 static var signposts: Array
@@ -63,6 +64,7 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	buildings = w.get("buildings", [])
 	houses = w.get("houses", [])
 	town_walls = w.get("townWalls", [])
+	pavings = w.get("pavings", [])
 	gates = w.get("gates", [])
 	stations = w.get("stations", [])
 	signposts = w.get("signposts", [])

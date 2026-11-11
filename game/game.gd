@@ -75,6 +75,7 @@ var targeting: Targeting
 var npcs: Npcs
 var merchant: Merchant
 var bank: Bank
+var dummy_meter: DummyMeter
 var dialogue: Dialogue
 var loot: Loot
 var chests: Chests
@@ -188,6 +189,7 @@ func _ready() -> void:
 	npcs = Npcs.new(self)
 	merchant = Merchant.new(self)
 	bank = Bank.new(self)
+	dummy_meter = DummyMeter.new(self)
 	dialogue = Dialogue.new(self)
 	loot = Loot.new(self)
 	chests = Chests.new(self)
@@ -633,6 +635,20 @@ func _arrive(text: String) -> void:
 	await tree.process_frame
 	hud.hide_loading()
 	releasing = false
+
+
+## Step through a waystone to somewhere far (the test hub city's stones):
+## the loading screen covers the ground being built, as for the spirit.
+func travel_to(x: float, z: float, facing = null, text := "Travelling…") -> bool:
+	if player == null or player.dead or releasing or combat_blocks_logout():
+		return false
+	releasing = true
+	hud.show_loading()
+	hud.loading.show_progress(text, 0.0)
+	player.place_at(x, z, facing)
+	_snap_camera()
+	_arrive(text)
+	return true
 
 
 ## Release and return to life at once at the rest point, wounded.
@@ -1255,6 +1271,7 @@ func step(dt: float) -> void:
 		npcs.update(dt)
 		merchant.update()
 		bank.update()
+		dummy_meter.update()
 		dialogue.update()
 		telegraphs.update(dt)
 		targeting.update(dt, raw_aim, DB.abilities.strike.range + 1)

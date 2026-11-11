@@ -97,6 +97,14 @@ func _fixed_points(list: Array, far: Callable) -> void:
 			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
 				"prompt": "Use %s" % st.name, "run": func(): game.rune_forge.open_at(st)})
 			continue
+		# a waystone (`to`: [x, z]): step through to the other stone
+		if st.kind == "waystone":
+			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
+				"prompt": "Travel to %s" % st.get("toName", "the other stone"), "name": title(st.name),
+				"run": func():
+					if not game.travel_to(st.to[0], st.to[1], st.get("toFacing"), "Travelling to %s…" % st.get("toName", "the other stone")):
+						game.hud.error("You can't travel while fighting.")})
+			continue
 		if st.kind == Refinery.KIND:
 			list.append({"key": "station:" + st.id, "x": st.position[0], "z": st.position[1], "bias": 0.3, "reach": st.radius,
 				"prompt": "Refine gear at %s" % st.name, "run": func(): game.refinery.open_at(st)})
