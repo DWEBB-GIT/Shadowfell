@@ -22,7 +22,7 @@ extends RefCounted
 const CHUNK := 32.0
 const RADIUS := 100.0 ## cells within this of the focus are loaded (the view reaches ~70 m)
 const KEEP := 132.0 ## loaded cells further than this are unloaded
-const BUDGET_MS := 3.0 ## cell loading per frame, once playing
+const BUDGET_MS := 2.0 ## cell loading per frame, once playing (sliced, so it holds)
 const VIEW_IN := 110.0 ## an enemy's body joins the scene within this of the player
 const VIEW_OUT := 140.0 ## and leaves it past this (unless it is fighting)
 
@@ -32,6 +32,7 @@ var loaded := {} ## Vector2i -> true
 var gentle := false ## a loading screen is up: build a slice each frame, never all at once
 var focus := Vector3.ZERO
 var _view_key := {} ## node instance id -> its cell
+var _jobs := {} ## Vector2i -> a cell whose props are being built (_start_props)
 
 
 func _init(parent: Node3D) -> void:
@@ -109,14 +110,18 @@ func update(at: Vector3, all := false, budget_ms := BUDGET_MS) -> void:
 	# unless a loading screen is up and loads it a little each frame
 	all = all or (not gentle and not loaded.has(c))
 	var want := _wanted(at)
-	var t0 := Time.get_ticks_usec()
+	# a cell's props are built a slice at a time (a town cell holds ~1,000)
+	var deadline := INF if all else Time.get_ticks_usec() + budget_ms * 1000.0
 	for w in want:
-		_load(w[1])
-		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > budget_ms:
+		if not _load(w[1], deadline) or Time.get_ticks_usec() > deadline:
 			break
 	for k in loaded.keys():
 		if cell_distance(k, at) > KEEP:
 			_unload(k)
+	for k in _jobs.keys():
+		if cell_distance(k, at) > KEEP:
+			_jobs[k].node.free()
+			_jobs.erase(k)
 
 
 ## cells within reach of `at` not loaded yet
@@ -140,16 +145,23 @@ func _wanted(at: Vector3) -> Array:
 	return want
 
 
-func _load(k: Vector2i) -> void:
-	loaded[k] = true
+## load a cell, or work on it until the deadline (usec): true when loaded
+func _load(k: Vector2i, deadline := INF) -> bool:
 	var c = cells.get(k)
+	if c != null and not c.props.is_empty() and c.node == null:
+		if not _jobs.has(k):
+			_jobs[k] = _start_props(k)
+		if not _step_props(_jobs[k], c.props, deadline):
+			return false
+		c.node = _finish_props(_jobs[k])
+		_jobs.erase(k)
+	loaded[k] = true
 	if c == null:
-		return
-	if not c.props.is_empty() and c.node == null:
-		c.node = _build_props(k, c.props)
+		return true
 	for v in c.views:
 		if is_instance_valid(v[0]) and v[0].get_parent() == null:
 			v[1].add_child(v[0])
+	return true
 
 
 func _unload(k: Vector2i) -> void:
@@ -185,27 +197,42 @@ func stats() -> Dictionary:
 
 
 # ------------------------------------------------------------ batching
-func _build_props(k: Vector2i, props: Array) -> Node3D:
+func _start_props(k: Vector2i) -> Dictionary:
 	var node := Node3D.new()
 	node.name = "Props_%d_%d" % [k.x, k.y]
-	var groups := {} ## kit id # part -> {part, xfs}
-	var order := []
-	for p in props:
+	return {"node": node, "i": 0, "groups": {}, "order": []}
+
+
+## sort a cell's props into batches (kit id # part -> transforms) and make
+## the ones that stay nodes, until done (true) or the deadline passes
+func _step_props(job: Dictionary, props: Array, deadline: float) -> bool:
+	var node: Node3D = job.node
+	var groups: Dictionary = job.groups
+	while job.i < props.size():
+		var p: Dictionary = props[job.i]
+		job.i += 1
 		var kt := kit(p)
 		if not kt.batch:
 			var obj := World.prop_instance(p)
 			World.budget_prop(obj, str(p.model))
 			node.add_child(obj)
-			continue
-		var xf := placed(p, kt.base)
-		for i in kt.parts.size():
-			var gid: String = kt.id + "#" + str(i)
-			if not groups.has(gid):
-				groups[gid] = {"part": kt.parts[i], "xfs": []}
-				order.append(gid)
-			groups[gid].xfs.append(xf * kt.parts[i].xf)
-	for gid in order:
-		var g: Dictionary = groups[gid]
+		else:
+			var xf := placed(p, kt.base)
+			for i in kt.parts.size():
+				var gid: String = kt.id + "#" + str(i)
+				if not groups.has(gid):
+					groups[gid] = {"part": kt.parts[i], "xfs": []}
+					job.order.append(gid)
+				groups[gid].xfs.append(xf * kt.parts[i].xf)
+		if job.i % 16 == 0 and Time.get_ticks_usec() > deadline:
+			return job.i >= props.size()
+	return true
+
+
+func _finish_props(job: Dictionary) -> Node3D:
+	var node: Node3D = job.node
+	for gid in job.order:
+		var g: Dictionary = job.groups[gid]
 		var part: Dictionary = g.part
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -217,13 +244,24 @@ func _build_props(k: Vector2i, props: Array) -> Node3D:
 		mmi.name = "Batch"
 		mmi.multimesh = mm
 		mmi.cast_shadow = part.shadow
-		mmi.visibility_range_end = part.range
+		mmi.visibility_range_end = batch_range(part.range, mm.get_aabb())
 		mmi.layers = part.layers
 		if part.mat != null:
 			mmi.material_override = part.mat
 		node.add_child(mmi)
 	root.add_child(node)
 	return node
+
+
+## A visibility range is measured to the middle of what is drawn, and a
+## batch spreads over its whole cell: as is, every tree in a cell (and its
+## leaves apart from its trunks, whose middles sit lower) popped in at once
+## well inside the view (Dan 2026-11-12). Push it out by the batch's reach
+## so nothing in it is cut nearer than the model's own range.
+static func batch_range(model_range: float, aabb: AABB) -> float:
+	if model_range <= 0.0:
+		return model_range
+	return model_range + aabb.size.length() * 0.5
 
 
 ## One model (with its tint) taken apart once: its meshes with their final
