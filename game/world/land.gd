@@ -18,7 +18,7 @@ const GRASS_FAR := 46.0 ## and has sunk away by here (game/render/grass.gdshader
 const CHUNK := 64.0
 const RADIUS := 112.0 ## metres around the camera's focus that are drawn
 const KEEP := 176.0 ## chunks further than this are freed
-const BUDGET_MS := 5.0 ## chunk building per frame, once playing
+const BUDGET_MS := 3.0 ## chunk building per frame, once playing (sliced, so it holds)
 
 ## ground colours by surface (sRGB), [open ground, high ground]
 const GROUND := {
@@ -58,6 +58,7 @@ var _grass_mat: ShaderMaterial
 var _cover := {} ## Vector2i -> the chunk's grass (shown only when some of it is in reach)
 var _blade: ArrayMesh
 var _models := {} ## model -> [mesh, cutaway material]
+var _jobs := {} ## Vector2i -> a chunk being built (_start_chunk)
 static var _clear_cells := {} ## 32 m cell -> [[x, z, r]]: ground kept free of trees
 
 
@@ -93,12 +94,25 @@ static func ground_material() -> ShaderMaterial:
 ## A padded world-space colour/road field, not vertex paint. Neighbour chunks
 ## sample identical positions, including after paint/undo or a terrain reload.
 static func surface_control(k: Vector2i) -> Image:
+	var st := {"k": k}
+	surface_control_rows(st, INF)
+	return st.img
+
+
+## surface_control a row at a time into st.img: true when done
+static func surface_control_rows(st: Dictionary, deadline: float) -> bool:
+	var k: Vector2i = st.k
 	var count := int((CHUNK + CONTROL_BORDER * 2.0) / CONTROL_STEP) + 1
-	var img := Image.create(count, count, false, Image.FORMAT_RGBA8)
+	if not st.has("img"):
+		st.img = Image.create(count, count, false, Image.FORMAT_RGBA8)
+		st.img_row = 0
+		st.grid_cache = {}
+	var img: Image = st.img
 	var origin := Vector2(k.x * CHUNK - CONTROL_BORDER, k.y * CHUNK - CONTROL_BORDER)
 	var grid_origin := Terrain.grid_origin()
-	var grid_cache := {}
-	for j in count:
+	var grid_cache: Dictionary = st.grid_cache
+	while st.img_row < count:
+		var j: int = st.img_row
 		for i in count:
 			var x := origin.x + i * CONTROL_STEP
 			var z := origin.y + j * CONTROL_STEP
@@ -115,7 +129,10 @@ static func surface_control(k: Vector2i) -> Image:
 				c = Color(palette[0]).lightened(0.07).lerp(Color(palette[1]).darkened(0.3), clampf(1.4 - g[1] * 2.0, 0.0, 1.0))
 			c.a = 1.0 - smoothstep(-0.8, 1.0, Terrain.road_edge(x, z))
 			img.set_pixel(i, j, c)
-	return img
+		st.img_row += 1
+		if Time.get_ticks_usec() > deadline:
+			return false
+	return true
 
 
 static func _ground_height(x: float, z: float, cache: Dictionary) -> float:
@@ -150,11 +167,23 @@ func update(at: Vector3, all := false, budget_ms := BUDGET_MS) -> void:
 			if d <= RADIUS:
 				want.append([d, k])
 	want.sort_custom(func(a, b): return a[0] < b[0])
-	var t0 := Time.get_ticks_usec()
+	# each chunk is built a slice at a time (Dan 2026-11-12: a whole chunk at
+	# once was a 50-80 ms hitch on walking into a new area)
+	var deadline := INF if all else Time.get_ticks_usec() + budget_ms * 1000.0
 	for w in want:
-		chunks[w[1]] = _build_chunk(w[1])
-		if not all and (Time.get_ticks_usec() - t0) / 1000.0 > budget_ms:
+		var k: Vector2i = w[1]
+		if not _jobs.has(k):
+			_jobs[k] = _start_chunk(k)
+		if not _step_chunk(_jobs[k], deadline):
 			break
+		chunks[k] = _finish_chunk(_jobs[k])
+		_jobs.erase(k)
+		if Time.get_ticks_usec() > deadline:
+			break
+	for k in _jobs.keys():
+		if _chunk_distance(k, at) > KEEP:
+			_jobs[k].node.free()
+			_jobs.erase(k)
 	for k in chunks.keys():
 		var d := _chunk_distance(k, at)
 		if d > KEEP:
@@ -186,31 +215,76 @@ static func _chunk_distance(k: Vector2i, at: Vector3) -> float:
 
 
 func _build_chunk(k: Vector2i) -> Node3D:
+	var job := _start_chunk(k)
+	_step_chunk(job, INF)
+	return _finish_chunk(job)
+
+
+## A chunk being built: ground rows, then woodland, then grass in slices.
+## Its node joins the scene only when it is whole.
+func _start_chunk(k: Vector2i) -> Dictionary:
 	var n := Node3D.new()
 	n.name = "Chunk_%d_%d" % [k.x, k.y]
-	group.add_child(n)
-	var ground := chunk_ground(k, _ground_mat)
-	n.add_child(ground)
-	if ground.get_meta("sea", false):
-		var sea := MeshInstance3D.new()
-		var pm := PlaneMesh.new()
-		pm.size = Vector2(CHUNK, CHUNK)
-		sea.mesh = pm
-		sea.material_override = _sea_mat
-		sea.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		sea.position = Vector3((k.x + 0.5) * CHUNK, DB.water.get("sea", 0.0), (k.y + 0.5) * CHUNK)
-		n.add_child(sea)
-	var trees := chunk_trees(k)
-	_plant(n, trees + chunk_rocks(k))
-	_grass(n, k)
+	return {"k": k, "node": n, "stage": 0, "ground": ground_begin(k), "grass": null}
+
+
+## Work on a chunk until it is done (true) or the deadline (usec) passes.
+func _step_chunk(job: Dictionary, deadline: float) -> bool:
+	var k: Vector2i = job.k
+	var n: Node3D = job.node
+	while true:
+		match job.stage:
+			0:
+				if not ground_rows(job.ground, deadline):
+					return false
+				job.stage = 1
+			1:
+				var ground := ground_finish(job.ground, _ground_mat)
+				n.add_child(ground)
+				if ground.get_meta("sea", false):
+					var sea := MeshInstance3D.new()
+					var pm := PlaneMesh.new()
+					pm.size = Vector2(CHUNK, CHUNK)
+					sea.mesh = pm
+					sea.material_override = _sea_mat
+					sea.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					sea.position = Vector3((k.x + 0.5) * CHUNK, DB.water.get("sea", 0.0), (k.y + 0.5) * CHUNK)
+					n.add_child(sea)
+				job.ground = null
+				job.stage = 2
+			2:
+				_plant(n, chunk_trees(k) + chunk_rocks(k))
+				job.grass = _grass_begin(k)
+				job.stage = 3
+			3:
+				if not _grass_samples(job.grass, deadline):
+					return false
+				_grass_finish(n, k, job.grass)
+				job.stage = 4
+			_:
+				return true
+		if Time.get_ticks_usec() > deadline:
+			return job.stage >= 4
+	return true
+
+
+func _finish_chunk(job: Dictionary) -> Node3D:
+	group.add_child(job.node)
 	built += 1
-	return n
+	return job.node
 
 
 # ------------------------------------------------------------- the ground
 ## One chunk of ground: 4 m squares (2 m where buildings or ponds need the
 ## detail). Smooth lighting and world-space surface controls are independent of triangles.
 static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
+	var st := ground_begin(k)
+	ground_rows(st, INF)
+	return ground_finish(st, mat)
+
+
+## chunk_ground in pieces, so a chunk can be built across frames
+static func ground_begin(k: Vector2i) -> Dictionary:
 	var x0 := k.x * CHUNK
 	var z0 := k.y * CHUNK
 	var step := 2.0 if _needs_detail(x0, z0) else Terrain.cell()
@@ -219,9 +293,21 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 	var vertex_normals := PackedVector3Array()
 	pos.resize((n + 1) * (n + 1))
 	vertex_normals.resize((n + 1) * (n + 1))
-	var height_cache := {}
-	var sea := false
-	for j in n + 1:
+	return {"k": k, "step": step, "n": n, "pos": pos, "normals": vertex_normals, "cache": {}, "sea": false, "row": 0, "control": null, "surface": {"k": k}}
+
+
+## ground heights a row at a time, then its surface colours: true when done
+static func ground_rows(st: Dictionary, deadline: float) -> bool:
+	var k: Vector2i = st.k
+	var x0 := k.x * CHUNK
+	var z0 := k.y * CHUNK
+	var n: int = st.n
+	var step: float = st.step
+	var pos: PackedVector3Array = st.pos
+	var vertex_normals: PackedVector3Array = st.normals
+	var height_cache: Dictionary = st.cache
+	while st.row <= n:
+		var j: int = st.row
 		for i in n + 1:
 			var x := x0 + i * step
 			var z := z0 + j * step
@@ -229,7 +315,25 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 			pos[j * (n + 1) + i] = Vector3(x, h, z)
 			vertex_normals[j * (n + 1) + i] = ground_normal(x, z, height_cache)
 			if h < 0.3:
-				sea = true
+				st.sea = true
+		st.row += 1
+		if Time.get_ticks_usec() > deadline:
+			return false
+	var sc: Dictionary = st.surface
+	if not surface_control_rows(sc, deadline):
+		return false
+	st.control = sc.img
+	return true
+
+
+static func ground_finish(st: Dictionary, mat: Material) -> MeshInstance3D:
+	var k: Vector2i = st.k
+	var x0 := k.x * CHUNK
+	var z0 := k.y * CHUNK
+	var n: int = st.n
+	var pos: PackedVector3Array = st.pos
+	var vertex_normals: PackedVector3Array = st.normals
+	var sea: bool = st.sea
 	var verts := PackedVector3Array()
 	var vcols := PackedColorArray()
 	var norms := PackedVector3Array()
@@ -266,7 +370,7 @@ static func chunk_ground(k: Vector2i, mat: Material) -> MeshInstance3D:
 	mi.name = "Ground"
 	mi.mesh = mesh
 	var surface: ShaderMaterial = mat.duplicate() if mat is ShaderMaterial else ground_material()
-	var control := surface_control(k)
+	var control: Image = st.control
 	surface.set_shader_parameter("surface_control", ImageTexture.create_from_image(control))
 	surface.set_shader_parameter("control_origin", Vector2(x0 - CONTROL_BORDER, z0 - CONTROL_BORDER))
 	surface.set_shader_parameter("control_world_size", Vector2.ONE * control.get_width() * CONTROL_STEP)
@@ -478,12 +582,31 @@ static func _grass_blade() -> ArrayMesh:
 
 ## low-poly grass tufts on open grassy ground, only drawn close by
 func _grass(n: Node3D, k: Vector2i) -> void:
+	var st := _grass_begin(k)
+	_grass_samples(st, INF)
+	_grass_finish(n, k, st)
+
+
+const GRASS_TRIES := 1200
+
+func _grass_begin(k: Vector2i) -> Dictionary:
 	var rand := RandomNumberGenerator.new()
 	rand.seed = hash(Vector3i(k.x, k.y, 3))
-	var xfs := []
-	var cols := []
 	var near := World._town_near(k.x * CHUNK, k.y * CHUNK, (k.x + 1) * CHUNK, (k.y + 1) * CHUNK)
-	for i in 1200:
+	return {"k": k, "rand": rand, "near": near, "i": 0, "xfs": [], "cols": []}
+
+
+## try grass tufts until all are tried (true) or the deadline passes
+func _grass_samples(st: Dictionary, deadline: float) -> bool:
+	var k: Vector2i = st.k
+	var rand: RandomNumberGenerator = st.rand
+	var near: Array = st.near
+	var xfs: Array = st.xfs
+	var cols: Array = st.cols
+	while st.i < GRASS_TRIES:
+		st.i += 1
+		if st.i % 32 == 0 and Time.get_ticks_usec() > deadline:
+			return false
 		var x := k.x * CHUNK + rand.randf() * CHUNK
 		var z := k.y * CHUNK + rand.randf() * CHUNK
 		var rot := rand.randf() * PI
@@ -507,6 +630,12 @@ func _grass(n: Node3D, k: Vector2i) -> void:
 		xfs.append(Transform3D(Basis(Vector3.UP, rot).scaled(Vector3(s, sy, s)), Vector3(x, y - 0.02, z)))
 		var dark := 0.4 if surf == Terrain.BLACKWOOD else 0.0
 		cols.append(World._hsl(hue, sat, lig * (1 - dark)))
+	return true
+
+
+func _grass_finish(n: Node3D, k: Vector2i, st: Dictionary) -> void:
+	var xfs: Array = st.xfs
+	var cols: Array = st.cols
 	if xfs.is_empty():
 		return
 	var mm := MultiMesh.new()
