@@ -129,6 +129,7 @@ func _show(e, d2: float) -> void:
 	if want == shown:
 		return
 	if want:
+		e.prepare_visuals()
 		game.scene.add_child(e.group)
 	else:
 		e.group.get_parent().remove_child(e.group)
@@ -182,7 +183,7 @@ func _respawn(dt: float) -> void:
 		# back from a respawn, it lets you be for a moment (Dan, 2026-11-04)
 		e.calm = DB.CONFIG.chase.spawnGrace
 		list.append(e)
-		game.scene.add_child(e.group)
+		_show(e, e.position.distance_squared_to(game.player.position))
 		game.events.emit("enemyRespawned", {"enemy": e})
 
 

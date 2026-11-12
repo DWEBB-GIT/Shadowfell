@@ -224,10 +224,13 @@ func update(dt: float) -> void:
 		# a tracking line (an archer's aim) follows its mark until the last
 		# `lock` seconds, so it has to be stepped out of late, not early
 		if t.track and t.shape is LineShape and t.t < t.duration - t.lock:
-			t.shape.x = t.owner.position.x
-			t.shape.z = t.owner.position.z
-			t.shape.angle = t.track.call()
-			t.mesh.mesh = line_mesh(t.shape)
+			var origin: Vector3 = t.owner.position
+			var angle: float = t.track.call()
+			if t.shape.x != origin.x or t.shape.z != origin.z or t.shape.angle != angle:
+				t.shape.x = origin.x
+				t.shape.z = origin.z
+				t.shape.angle = angle
+				t.mesh.mesh = line_mesh(t.shape)
 		t.mesh.material_override.set_shader_parameter("uProgress", k)
 		if k >= 1 and not t.done:
 			t.done = true

@@ -55,8 +55,16 @@ var path := [] ## waypoints (Vector2, x/z) round obstacles to where it is going
 var path_timer := 0.0
 var path_goal := Vector2(INF, INF)
 var group: Node3D
-var model: Node3D
-var rig: Rig
+var _model: Node3D
+var _rig: Rig
+var model: Node3D:
+	get:
+		prepare_visuals()
+		return _model
+var rig: Rig:
+	get:
+		prepare_visuals()
+		return _rig
 var materials: Array
 
 
@@ -81,16 +89,22 @@ func _init(g, spawn: Dictionary) -> void:
 	group = Node3D.new()
 	group.name = "Enemy_" + id
 	group.add_to_group(World.MOVING_GROUP)
-	model = Assets.instance(cfg.model)
-	group.add_child(model)
-	rig = Rig.new(model, cfg.model)
-	materials = Rig.isolate_materials(model)
+	_sync()
+
+
+## The spawn exists in world state before it needs a model or animation rig.
+func prepare_visuals() -> void:
+	if _model != null:
+		return
+	_model = Assets.instance(cfg.model)
+	group.add_child(_model)
+	_rig = Rig.new(_model, cfg.model)
+	materials = Rig.isolate_materials(_model)
 	# a rare elite reuses its kin's model, sized and tinted
 	if cfg.get("scale"):
-		model.scale *= cfg.scale
+		_model.scale *= cfg.scale
 	if cfg.get("tint"):
 		Rig.tint(materials, Color(cfg.tint))
-	_sync()
 
 
 ## the hours it is abroad ([from, to], e.g. [21, 5] for night only), or null
@@ -269,7 +283,8 @@ func reset() -> void:
 	engaged = 0.0
 	since_struck = INF
 	returning = 0.0
-	rig.action = null
+	if _rig != null:
+		_rig.action = null
 	_sync()
 
 
@@ -500,7 +515,8 @@ func update(dt: float, player) -> void:
 			position += knock * ((1 - fade) / 9)
 			position.y = Terrain.height_at(position.x, position.z)
 			knock *= fade
-		rig.update(dt, 0)
+		if _rig != null:
+			_rig.update(dt, 0)
 		_sync()
 		return
 
