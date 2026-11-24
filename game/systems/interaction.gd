@@ -45,10 +45,15 @@ func _candidates(near := INF, fixed := false) -> Array:
 	var list := []
 	var pp: Vector3 = game.player.position
 	var far := func(x: float, z: float) -> bool: return absf(x - pp.x) > near or absf(z - pp.z) > near
+	if game.blackpick != null:
+		list.append_array(game.blackpick.interactions().filter(func(c): return not far.call(c.x, c.z)))
+		if game.blackpick.active():
+			return list
 	if fixed:
 		list.append_array(game.grave.interactions())
 		_fixed_points(list, far)
 		list.append_array(game.puzzles.interactions())
+		list.append_array(game.discovery.interactions().filter(func(c): return not far.call(c.x, c.z)))
 		_examine_points(list, far)
 		return list
 	# bodies and loot: using one loots everything close by
@@ -62,7 +67,8 @@ func _candidates(near := INF, fixed := false) -> Array:
 	# a beast's empty body, for a skinner
 	for s in loot.skinnables():
 		var why: String = loot.skin_block(s)
-		list.append({"key": "skin:" + s.id, "x": s.x, "z": s.z, "bias": -0.3, "prompt": "Skin the %s%s" % [s.name, " (%s)" % why if why != "" else ""], "run": func(): loot.start_skin(s)})
+		list.append({"key": "skin:" + s.id, "x": s.x, "z": s.z, "bias": -0.3, "reach": DB.CONFIG.loot.reach,
+			"prompt": "Skin the %s%s" % [s.name, " (%s)" % why if why != "" else ""], "run": func(): loot.start_skin(s)})
 	list.append_array(game.npcs.interactions())
 	list.append_array(game.chests.interactions())
 	list.append_array(game.grave.interactions())
@@ -142,7 +148,13 @@ func _examine_points(list: Array, far: Callable) -> void:
 		if far.call(p.x, p.z):
 			continue
 		var seen: bool = game.world_state.examined.has(p.id)
-		var c := {"key": "examine:" + p.id, "x": p.x, "z": p.z, "bias": 0.6 if seen else 0.2, "prompt": "Examine the cart" if p.id == "cart" else "Look around %s" % WorldMap.poi(p.id.substr(4)).get("name", "") if p.id.begins_with("poi:") else "Examine", "run": func(): examine(p.id)}
+		var name: String = WorldMap.poi(p.id.substr(4)).get("name", "") if p.id.begins_with("poi:") else p.id.replace("_", " ").capitalize()
+		var c := {"key": "examine:" + p.id, "x": p.x, "z": p.z, "bias": 0.6 if seen else 0.2,
+			"name": name, "examine": p.id, "prompt": "Examine", "run": func(): examine(p.id)}
+		if p.id == "cart":
+			c.prompt = "Examine the cart"
+		elif p.id.begins_with("poi:") and name != "":
+			c.prompt = "Look around %s" % name
 		if p.id == "watch_post":
 			c.reach = 3.2
 		list.append(c)
@@ -161,7 +173,7 @@ func click_points() -> Array:
 	var now := Time.get_ticks_msec()
 	if now - _click_at > CLICK_CACHE_MS:
 		_click_at = now
-		_click_cache = _candidates(CLICK_NEAR, true).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:"))
+		_click_cache = _candidates(CLICK_NEAR, true).filter(func(c): return c.key.begins_with("shrine") or c.key == "grave" or c.key.begins_with("station:") or c.key.begins_with("examine:") or c.key.begins_with("puzzle:") or c.key.begins_with("dungeon:") or c.key.begins_with("boat:"))
 	return _click_cache
 
 

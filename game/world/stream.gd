@@ -1,3 +1,4 @@
+@tool
 class_name WorldStream
 extends RefCounted
 ## The world in 32 m cells, drawn only near the camera (foundations step 2,
@@ -31,6 +32,7 @@ var cells := {} ## Vector2i -> {props: Array, views: Array of [node, parent], no
 var loaded := {} ## Vector2i -> true
 var gentle := false ## a loading screen is up: build a slice each frame, never all at once
 var focus := Vector3.ZERO
+var hidden_props := {}
 var _view_key := {} ## node instance id -> its cell
 
 
@@ -78,6 +80,50 @@ func add_prop(p: Dictionary) -> void:
 	_cell(key(p.position[0], p.position[1])).props.append(p)
 
 
+func rebuild_prop_cell(at: Vector3) -> void:
+	var k := key(at.x, at.z)
+	if not loaded.has(k) or not cells.has(k):
+		return
+	var c: Dictionary = cells[k]
+	if c.node != null:
+		root.remove_child(c.node)
+		c.node.queue_free()
+	c.node = _build_props(k, c.props)
+
+
+func pick_generated_prop(origin: Vector3, end: Vector3) -> Dictionary:
+	var best := origin.distance_squared_to(end)
+	var hit := {}
+	for k in loaded:
+		if not cells.has(k):
+			continue
+		for prop in cells[k].props:
+			var id: String = prop.get("scenery_id", "")
+			if id.is_empty() or hidden_props.has(id):
+				continue
+			var centre := Vector3(prop.position[0], prop.worldY, prop.position[1])
+			if Geometry3D.get_closest_point_to_segment(centre, origin, end).distance_squared_to(centre) > 320.0:
+				continue
+			var kt := kit(prop)
+			var pose := placed(prop, kt.base)
+			for part in kt.parts:
+				var distance := mesh_hit_squared(part.mesh, pose * part.xf, origin, end)
+				if distance < best:
+					best = distance
+					hit = {"id": id, "record": prop, "distance": distance}
+	return hit
+
+
+static func mesh_hit_squared(mesh: Mesh, pose: Transform3D, origin: Vector3, end: Vector3) -> float:
+	var inverse := pose.affine_inverse()
+	var box := mesh.get_aabb()
+	# Thin grass cards and sign panels still have a usable pick area.
+	if box.size.x < .05 or box.size.y < .05 or box.size.z < .05:
+		box = box.grow(.07)
+	var hit = box.intersects_segment(inverse * origin, inverse * end)
+	return origin.distance_squared_to(pose * hit) if hit != null else INF
+
+
 ## A node that stands still at x/z: in `parent` while its cell is loaded,
 ## out of the tree otherwise.
 func add_view(node: Node3D, parent: Node, x: float, z: float) -> void:
@@ -99,6 +145,17 @@ func remove_view(node: Node3D) -> void:
 		if c.views[i][0] == node:
 			c.views.remove_at(i)
 			break
+
+
+func free_parked_views() -> void:
+	for cell in cells.values():
+		for entry in cell.views:
+			var node = entry[0]
+			if is_instance_valid(node) and node.get_parent() == null and not node.is_queued_for_deletion():
+				RenderCleanup.detach(node)
+				node.free()
+		cell.views.clear()
+	_view_key.clear()
 
 
 # ------------------------------------------------------------ streaming
@@ -191,6 +248,8 @@ func _build_props(k: Vector2i, props: Array) -> Node3D:
 	var groups := {} ## kit id # part -> {part, xfs}
 	var order := []
 	for p in props:
+		if hidden_props.has(p.get("scenery_id", "")):
+			continue
 		var kt := kit(p)
 		if not kt.batch:
 			var obj := World.prop_instance(p)
@@ -235,14 +294,21 @@ static var _kits := {}
 static func kit(p: Dictionary) -> Dictionary:
 	var model := str(p.model)
 	var tint := str(p.get("tint", ""))
+	var snow_cover := int(p.get("snow_cover", 0))
 	var id := model + "|" + tint
+	var finish := str(p.get("finish", ""))
+	if not finish.is_empty():
+		id += "|" + finish
+	if snow_cover > 0:
+		id += "|snow" + str(snow_cover)
 	if _kits.has(id):
 		return _kits[id]
 	var obj := Assets.instance(model)
+	World.COAST_KIT.finish(obj, finish)
 	if tint != "":
 		Assets.tint_instance(obj, Color(tint))
 	if model.contains("/environment/nature/"):
-		Assets.use_cutaway(obj)
+		Assets.use_cutaway(obj, snow_cover)
 	World.budget_prop(obj, model)
 	var batch := not World.is_light_fixture(model)
 	var parts := []

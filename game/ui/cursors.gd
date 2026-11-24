@@ -30,6 +30,14 @@ static func _pick(head: String) -> String:
 	return "<path d='M6 26 L18 14' stroke='#000' stroke-width='5' stroke-linecap='round'/><path d='M6 26 L18 14' stroke='#a07040' stroke-width='3' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='#000' stroke-width='5.5' stroke-linecap='round'/><path d='M8 6 Q20 6 26 18' fill='none' stroke='%s' stroke-width='3.2' stroke-linecap='round'/>" % head
 
 
+static func _knife(blade: String, grip: String) -> String:
+	return "<path d='M3 3 C8 2 14 5 20 13 L15 18 C9 15 4 10 3 3 Z' fill='%s' stroke='#211810' stroke-width='1.5'/><path d='M6 6 Q9 12 15 15' fill='none' stroke='#f0ead3' stroke-opacity='.6'/><path d='M15 18 L20 13 L25 21 Q26 24 22 25 Z' fill='%s' stroke='#211810' stroke-width='1.5'/><path d='M17 17 L20 20' stroke='#e2b56e' stroke-width='1.5'/>" % [blade, grip]
+
+
+static func _hatchet(blade: String, grip: String) -> String:
+	return "<path d='M13 10 L24 24 Q24 26 21 26 L10 13 Z' fill='%s' stroke='#211810' stroke-width='1.5'/><path d='M3 4 Q6 5 9 2 L17 9 L11 14 Q7 17 4 17 Q1 11 3 4 Z' fill='%s' stroke='#211810' stroke-width='1.5'/><path d='M4 6 Q3 11 5 15' fill='none' stroke='#fff6db' stroke-opacity='.7'/>" % [grip, blade]
+
+
 ## a station's cursor (Dan, 2026-11-03): an anvil for a forge or the rune
 ## forge, a pot for a hearth, a flask for an alchemy bench, a cut gem for the
 ## refining altar; `fill` is grey when out of reach
@@ -82,6 +90,10 @@ static func _base_defs() -> Dictionary:
 		"lootFar": [_hand("#7a7a7a"), Vector2(2, 2)],
 		"mine": [_pick("#c8ccd4"), Vector2(8, 6)],
 		"mineFar": [_pick("#7a7a7a"), Vector2(8, 6)],
+		"skin": [_knife("#dce6ee", "#9b623b"), Vector2(3, 3)],
+		"skinFar": [_knife("#858582", "#625d56"), Vector2(3, 3)],
+		"chop": [_hatchet("#dce6ee", "#a67845"), Vector2(3, 4)],
+		"chopFar": [_hatchet("#858582", "#625d56"), Vector2(3, 4)],
 	}
 
 

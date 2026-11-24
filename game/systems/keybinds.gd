@@ -2,8 +2,8 @@ class_name Keybinds
 extends RefCounted
 ## Key bindings (Settings, O; src/systems/keybinds.js). Every action has one
 ## or more keys; players can change them in the Settings window, or use Quick
-## bind: hover a bar slot and press a key. Movement stays on WASD and the
-## arrow keys. A key held with Shift is its own binding, 'Shift+Digit1'.
+## bind: hover a bar slot and press a key. Movement and pointer walking
+## share the same editable bindings. Shift combinations have their own binding.
 ##
 ## Character specific (Settings) gives each character its own set.
 ##
@@ -17,8 +17,16 @@ const KEY_AIM := "shadowfall.keys.aim"
 ## mouse aim's defaults, where they differ from the classic ones
 const AIM_KEYS := {"bar0": ["Digit1", "MouseRight"], "bar4": ["KeyR"], "bar5": ["KeyF"], "interact": ["KeyG"]}
 ## mouse buttons: shown on the bar, but never taken by a key press
-const MOUSE := ["MouseRight"]
+const MOUSE := ["MouseLeft", "MouseRight", "MouseMiddle", "Mouse4", "Mouse5"]
+const DIRECTIONS := ["moveUp", "moveDown", "moveLeft", "moveRight"]
 const KEY_ACTIONS := [
+	{"id": "moveUp", "label": "Move up / walk forward", "group": "Movement", "keys": ["KeyW", "ArrowUp"]},
+	{"id": "moveDown", "label": "Move down / walk backward", "group": "Movement", "keys": ["KeyS", "ArrowDown"]},
+	{"id": "moveLeft", "label": "Move left / turn left", "group": "Movement", "keys": ["KeyA", "ArrowLeft"]},
+	{"id": "moveRight", "label": "Move right / turn right", "group": "Movement", "keys": ["KeyD", "ArrowRight"]},
+	{"id": "clickMove", "label": "Move to cursor (click / hold)", "group": "Movement", "keys": ["MouseLeft"]},
+	{"id": "jump", "label": "Jump", "group": "Movement", "keys": ["Space"]},
+	{"id": "toggleStrafing", "label": "Toggle combat strafing", "group": "Movement", "keys": []},
 	{"id": "bar0", "label": "Spell bar 1", "group": "Spell bar", "keys": ["Digit1"]},
 	{"id": "bar1", "label": "Spell bar 2", "group": "Spell bar", "keys": ["Digit2"]},
 	{"id": "bar2", "label": "Spell bar 3", "group": "Spell bar", "keys": ["Digit3"]},
@@ -30,7 +38,6 @@ const KEY_ACTIONS := [
 	{"id": "bar8", "label": "Utility 3", "group": "Utility bar", "keys": ["Shift+Digit3"]},
 	{"id": "bar9", "label": "Utility 4", "group": "Utility bar", "keys": ["Shift+Digit4"]},
 	{"id": "interact", "label": "Interact", "group": "Actions", "keys": ["KeyF"]},
-	{"id": "jump", "label": "Jump", "group": "Actions", "keys": ["Space"]},
 	{"id": "cycleTarget", "label": "Next target", "group": "Actions", "keys": ["Tab"]},
 	{"id": "crime", "label": "Hold to attack townsfolk", "group": "Actions", "keys": ["AltLeft"]},
 	{"id": "sheathe", "label": "Sheathe / draw weapons", "group": "Actions", "keys": ["KeyZ"]},
@@ -46,9 +53,9 @@ const KEY_ACTIONS := [
 	{"id": "skills", "label": "Skills", "group": "Menus", "keys": ["KeyU"]},
 	{"id": "save", "label": "Save the game", "group": "Menus", "keys": ["KeyK"]},
 ]
-## keys nobody may take: movement, Escape and the mouse
-const RESERVED := ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Escape"]
-const NAMES := {"MouseRight": "RMB", "Space": "Space", "Backquote": "`", "Minus": "-", "Equal": "=", "BracketLeft": "[", "BracketRight": "]", "Semicolon": ";", "Quote": "'", "Comma": ",", "Period": ".", "Slash": "/", "Backslash": "\\", "ShiftLeft": "Shift", "ShiftRight": "RShift", "ControlLeft": "Ctrl", "AltLeft": "Alt", "Tab": "Tab", "CapsLock": "Caps", "Enter": "Enter"}
+## Escape remains available to cancel a binding or leave a menu.
+const RESERVED := ["Escape"]
+const NAMES := {"MouseLeft":"LMB", "MouseRight":"RMB", "MouseMiddle":"MMB", "Mouse4":"Mouse 4", "Mouse5":"Mouse 5", "Space": "Space", "Backquote": "`", "Minus": "-", "Equal": "=", "BracketLeft": "[", "BracketRight": "]", "Semicolon": ";", "Quote": "'", "Comma": ",", "Period": ".", "Slash": "/", "Backslash": "\\", "ShiftLeft": "Shift", "ShiftRight": "RShift", "ControlLeft": "Ctrl", "AltLeft": "Alt", "Tab": "Tab", "CapsLock": "Caps", "Enter": "Enter"}
 
 var game
 var map := {}
@@ -122,7 +129,7 @@ func load_scheme(for_aim: bool) -> void:
 
 
 func keys(id: String) -> Array:
-	return map.get(id, [])
+	return map.get(id, []).filter(func(code): return not code.is_empty())
 
 
 func label(id: String) -> String:
@@ -150,23 +157,53 @@ func pressed(id: String) -> bool:
 	return hit
 
 
+func consume_code(id: String) -> String:
+	var first := ""
+	for code in keys(id):
+		if game.input.consume(code) and first.is_empty():
+			first = code
+	return first
+
+
+func movement_button(code: String) -> bool:
+	for id in DIRECTIONS + ["jump", "toggleStrafing"]:
+		for binding in keys(id):
+			if binding.ends_with(code) and game.input.is_held(binding):
+				return true
+	return false
+
+
 ## Bind a key to an action, taking it from anything else that had it.
 ## Returns false for keys that cannot be bound.
-func bind(id: String, code: String) -> bool:
-	if RESERVED.has(code.replace("Shift+", "")) or not map.has(id):
+func bind(id: String, code: String, slot := -1) -> bool:
+	if code.is_empty() or RESERVED.has(code.replace("Shift+", "")) or not map.has(id):
 		return false
 	for k in map:
-		map[k] = map[k].filter(func(c): return c != code)
-	# a key replaces the slot's key; the mouse button stays with it
-	map[id] = [code] + map[id].filter(func(c): return MOUSE.has(c))
+		if k != id:
+			map[k] = map[k].filter(func(c): return c != code)
+	if slot >= 0:
+		var bindings: Array = map[id].duplicate()
+		for i in bindings.size():
+			if bindings[i] == code:
+				bindings[i] = ""
+		while bindings.size() <= slot:
+			bindings.append("")
+		bindings[slot] = code
+		map[id] = bindings
+	else:
+		var mouse: Array = map[id].filter(func(c): return MOUSE.has(c) and c != code) if id.begins_with("bar") else []
+		map[id] = [code] + mouse
 	_save()
 	return true
 
 
-func unbind(id: String) -> void:
+func unbind(id: String, slot := -1) -> void:
 	if not map.has(id):
 		return
-	map[id] = []
+	if slot < 0:
+		map[id] = []
+	elif slot < map[id].size():
+		map[id][slot] = ""
 	_save()
 
 

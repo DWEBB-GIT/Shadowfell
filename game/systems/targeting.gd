@@ -19,6 +19,7 @@ extends RefCounted
 
 var game
 var current = null ## the selected enemy, or null
+var corpse = null ## a defeated enemy whose profile is still selected
 var friendly = null ## a selected townsperson (Npc), or null
 var attacking := false ## auto attack on the selected enemy
 var soft = null ## who an ability would go to with nothing selected
@@ -134,6 +135,7 @@ func aim_for(raw_aim, range_: float, kind := "enemy"):
 ## Make an enemy the target. Picking a different one stops auto attack.
 func select(enemy):
 	var next = enemy if enemy != null and enemy.alive else null
+	corpse = null
 	if next != null:
 		friendly = null
 	if next == current:
@@ -142,6 +144,14 @@ func select(enemy):
 	attacking = false
 	game.events.emit("targetChanged", {"target": current})
 	return current
+
+
+func inspect_corpse(enemy) -> void:
+	if corpse == enemy:
+		return
+	clear()
+	corpse = enemy
+	game.events.emit("targetChanged", {"target": null, "corpse": enemy})
 
 
 func select_friendly(npc) -> void:
@@ -270,15 +280,21 @@ func update(dt: float, raw_aim = null, soft_range := 0.0) -> void:
 		target_moving = false
 	_last_for = t
 	_last = Vector2(t.position.x, t.position.z) if t != null else null
-	if t != null and (not t.alive or _dist(t) > DB.CONFIG.targeting.dropRange or game.player.dead):
-		select(null)
+	if t != null:
+		if _dist(t) > DB.CONFIG.targeting.dropRange or game.player.dead:
+			select(null)
+		elif not t.alive:
+			inspect_corpse(t)
+	if corpse != null and (game.player.dead or _dist(corpse) > DB.CONFIG.targeting.dropRange
+			or not is_instance_valid(corpse.group) or corpse.group.is_queued_for_deletion()):
+		clear()
 	var f = friendly
 	if f != null and U.hyp(f.position.x - game.player.position.x, f.position.z - game.player.position.z) > DB.CONFIG.targeting.dropRange:
 		friendly = null
 	soft = soft_target(raw_aim, soft_range) if current == null and soft_range > 0 else null
 	var c := Color("ff4a30") if current != null and attacking else Color("ffd040")
 	marker.material_override.albedo_color = c
-	_place(marker, current if current != null else friendly, dt)
+	_place(marker, current if current != null else corpse if corpse != null else friendly, dt)
 	_place(soft_marker, soft, dt)
 
 

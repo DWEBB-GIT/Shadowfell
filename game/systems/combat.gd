@@ -49,7 +49,7 @@ func _player_hit(enemy, mult: float, hurt_opts: Dictionary, o := {}) -> Dictiona
 	var visuals := func():
 		if hit.get("holy"):
 			events.emit("spellFlash", {"position": enemy.position, "school": "holy"})
-		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": "ranged" if hand == "ranged" else "main", "ability": not swing})
+		events.emit("damageNumber", {"target": enemy, "amount": hit.amount, "crit": hit.crit, "blocked": hit.blocked, "kind": "dealt", "hand": hand, "ability": not swing})
 		events.emit("hitImpact", {"enemy": enemy, "crit": hit.crit, "heavy": hurt_opts.get("heavy", false) or (swing and hand == "main" and stats.hand_speed(hand) >= 2.7)})
 	if show > 0:
 		enemy.hurt(hit.amount, {"stagger": 0.0, "quiet": true})
@@ -254,13 +254,13 @@ func update_arrows(dt: float) -> void:
 			on_enemy_defeated(e)
 
 
-func resolve_enemy_strike(enemy, scale := 1.0) -> bool:
+func resolve_enemy_strike(enemy, scale := 1.0, extra_reach := 0.0) -> bool:
 	var player = game.player
 	var events: Events = game.events
 	if enemy.dead or player.dead:
 		return false
 	var d := U.hyp(enemy.position.x - player.position.x, enemy.position.z - player.position.z)
-	var reach: float = enemy.cfg.meleeRange + player.radius + enemy.radius * 0.5 + 0.35 # small grace for the swing
+	var reach: float = enemy.melee_reach_to(player.radius) + extra_reach
 	if d > reach or game.collision.wall_between(enemy.position.x, enemy.position.z, player.position.x, player.position.z):
 		events.emit("enemyWhiff", {"enemy": enemy})
 		return false
@@ -323,6 +323,8 @@ func _hurt_text(who: String, hit: Dictionary) -> String:
 
 ## Rewards are granted exactly once: the world state is the record.
 func on_enemy_defeated(enemy) -> void:
+	if game.blackpick != null and game.blackpick.defeated(enemy):
+		return
 	var ws = game.world_state
 	var loot = game.loot
 	if ws.is_defeated(enemy.id):

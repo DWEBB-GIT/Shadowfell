@@ -1,0 +1,123 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/wall_window_lower.glb" id="Kit_Window"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/wall_entry.glb" id="Kit_Entry"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/wall_service.glb" id="Kit_Service"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/wall_braced.glb" id="Kit_Braced"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/wall_window_upper.glb" id="Kit_Upper"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/roof_wide.glb" id="Kit_Roof"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/gable_wide.glb" id="Kit_Gable"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/chimney.glb" id="Kit_Chimney"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/lantern.glb" id="Kit_Lantern"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/ivy_strip.glb" id="Kit_Ivy"]
+[ext_resource type="PackedScene" path="res://assets/models/environment/buildings/mythkeep_kit/inn_parts/corner_post.glb" id="Kit_Corner"]
+
+[node name="CountingHouse" type="Node3D"]
+
+[node name="StreetLower1" parent="." instance=ExtResource("Kit_Window")]
+position = Vector3(-1.6, 0, 3.2)
+
+[node name="StreetUpper1" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(-1.6, 3.08, 3.2)
+
+[node name="RearLower1" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(-1.6, 0, -3.2)
+rotation = Vector3(0, 3.141592654, 0)
+
+[node name="RearUpper1" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(-1.6, 3.08, -3.2)
+rotation = Vector3(0, 3.141592654, 0)
+
+[node name="RoofBay1" parent="." instance=ExtResource("Kit_Roof")]
+position = Vector3(-1.6, 6.16, 0)
+
+[node name="WestLower1" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(-3.2, 0, -1.6)
+rotation = Vector3(0, -1.570796327, 0)
+
+[node name="WestUpper1" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(-3.2, 3.08, -1.6)
+rotation = Vector3(0, -1.570796327, 0)
+
+[node name="EastLower1" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(3.2, 0, -1.6)
+rotation = Vector3(0, 1.570796327, 0)
+
+[node name="EastUpper1" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(3.2, 3.08, -1.6)
+rotation = Vector3(0, 1.570796327, 0)
+
+[node name="StreetLower2" parent="." instance=ExtResource("Kit_Entry")]
+position = Vector3(1.6, 0, 3.2)
+
+[node name="StreetUpper2" parent="." instance=ExtResource("Kit_Upper")]
+position = Vector3(1.6, 3.08, 3.2)
+
+[node name="RearLower2" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(1.6, 0, -3.2)
+rotation = Vector3(0, 3.141592654, 0)
+
+[node name="RearUpper2" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(1.6, 3.08, -3.2)
+rotation = Vector3(0, 3.141592654, 0)
+
+[node name="RoofBay2" parent="." instance=ExtResource("Kit_Roof")]
+position = Vector3(1.6, 6.16, 0)
+
+[node name="WestLower2" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(-3.2, 0, 1.6)
+rotation = Vector3(0, -1.570796327, 0)
+
+[node name="WestUpper2" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(-3.2, 3.08, 1.6)
+rotation = Vector3(0, -1.570796327, 0)
+
+[node name="EastLower2" parent="." instance=ExtResource("Kit_Service")]
+position = Vector3(3.2, 0, 1.6)
+rotation = Vector3(0, 1.570796327, 0)
+
+[node name="EastUpper2" parent="." instance=ExtResource("Kit_Braced")]
+position = Vector3(3.2, 3.08, 1.6)
+rotation = Vector3(0, 1.570796327, 0)
+
+[node name="WestGable" parent="." instance=ExtResource("Kit_Gable")]
+position = Vector3(-3.2, 6.16, 0)
+rotation = Vector3(0, -1.570796327, 0)
+
+[node name="WestRearLowerPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(-3.2, 0, -3.2)
+
+[node name="WestRearUpperPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(-3.2, 3.08, -3.2)
+
+[node name="WestStreetLowerPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(-3.2, 0, 3.2)
+
+[node name="WestStreetUpperPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(-3.2, 3.08, 3.2)
+
+[node name="EastGable" parent="." instance=ExtResource("Kit_Gable")]
+position = Vector3(3.2, 6.16, 0)
+rotation = Vector3(0, 1.570796327, 0)
+
+[node name="EastRearLowerPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(3.2, 0, -3.2)
+
+[node name="EastRearUpperPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(3.2, 3.08, -3.2)
+
+[node name="EastStreetLowerPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(3.2, 0, 3.2)
+
+[node name="EastStreetUpperPost" parent="." instance=ExtResource("Kit_Corner")]
+position = Vector3(3.2, 3.08, 3.2)
+
+[node name="Chimney" parent="." instance=ExtResource("Kit_Chimney")]
+position = Vector3(-1.82, 8.1, -0.31)
+
+[node name="EntryLantern" parent="." instance=ExtResource("Kit_Lantern")]
+position = Vector3(0.16, 2.4, 3.31)
+
+[node name="StreetIvy" parent="." instance=ExtResource("Kit_Ivy")]
+position = Vector3(-2.81, 0.05, 3.42)
+

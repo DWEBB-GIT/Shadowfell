@@ -36,6 +36,26 @@ static var logo_font: Font
 static var icons
 
 
+static func enemy_difficulty(enemy_level: int, player_level: int) -> String:
+	if DB.trivial_enemy(player_level, enemy_level):
+		return "Trivial"
+	if enemy_level >= player_level + 5:
+		return "Very difficult"
+	if enemy_level >= player_level + 3:
+		return "Difficult"
+	return "Normal"
+
+
+static func enemy_name_colour(enemy, player_level: int) -> Color:
+	if enemy.protected and enemy.cfg.get("lawful", "") != "":
+		return NAME_FRIENDLY
+	match enemy_difficulty(int(enemy.cfg.get("level", 1)), player_level):
+		"Trivial": return Color("9a9a9a")
+		"Very difficult": return Color("ff5045")
+		"Difficult": return Color("ffa54a")
+	return Color("ffe052")
+
+
 static func setup_fonts() -> void:
 	if font:
 		return

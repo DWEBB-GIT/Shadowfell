@@ -25,6 +25,7 @@ var _marks_at := -100000
 var _marks_sig := Vector2i(-1, -1)
 var _by_npc := {} ## npcId -> the quests they give or take in
 var _by_npc_size := -1
+var _goals := {} ## quest id -> [sample time, destination]
 
 
 ## Conditions in dialogue and gate data: { quest, status } | { flag } | { examined } | { level } (at least).
@@ -56,7 +57,7 @@ func _init(g) -> void:
 	for ev in ["inventoryChanged", "examined", "levelUp", "skillsChanged", "puzzleSolved"]:
 		game.events.on(ev, func(_e): refresh())
 	game.events.on("enemyDefeated", func(e):
-		count_kill(e.enemy.type)
+		count_kill(e.enemy.type, e.enemy.id)
 		refresh())
 
 
@@ -68,13 +69,16 @@ func reset() -> void:
 	kills = {}
 	_last = {}
 	_marks = {}
+	_goals.clear()
 
 
 ## An enemy of this type fell: every active quest that wants it counts one.
-func count_kill(type: String) -> void:
+func count_kill(type: String, spawn_id := "") -> void:
 	for id in active:
 		for o in DB.quests[id].objectives:
-			if o.type != "kill" or o.get("target") != type:
+			if o.type != "kill":
+				continue
+			if not _matches_kill(o, type, spawn_id):
 				continue
 			# a quest kept to certain hours (a night's watch) counts only then
 			if not DayNight.in_hours(game.world_state.hour, DB.quests[id].get("hours")):
@@ -83,6 +87,10 @@ func count_kill(type: String) -> void:
 				kills[id] = {}
 			var k: Dictionary = kills[id]
 			k[o.id] = mini(int(o.get("count", 1)), int(k.get(o.id, 0)) + 1)
+
+
+static func _matches_kill(o: Dictionary, type: String, spawn_id: String) -> bool:
+	return o.spawnIds.has(spawn_id) if o.has("spawnIds") else o.get("target") == type
 
 
 ## You used an ability: every active quest with a `use` objective for it
@@ -132,10 +140,14 @@ func _standing_in(location: String, radius: float) -> bool:
 ## A brand-new game takes the opening quest (the intro sets it).
 func start_new() -> void:
 	reset()
+	ensure_opening()
+	_snapshot()
+
+
+func ensure_opening() -> void:
 	for q in DB.quests.values():
 		if q.get("autoAccept") and status(q.id) == "available":
 			accept(q.id, true)
-	_snapshot()
 
 
 ## Quest instructions use the player's current bindings, including mouse-aim
@@ -149,7 +161,7 @@ func wording(text: String) -> String:
 
 
 # ------------------------------------------------------------ state
-func status(id: String) -> String:
+func status(id: String, examining_starter := false) -> String:
 	var q = DB.quests.get(id)
 	if q == null:
 		return "locked"
@@ -170,6 +182,8 @@ func status(id: String) -> String:
 	# Alternative regional chapters share an outcome without requiring both routes.
 	if q.has("minLevel") and game.progression.level < int(q.minLevel):
 		return "locked"
+	if q.has("maxLevel") and game.progression.level > int(q.maxLevel):
+		return "locked"
 	# a class quest is offered only to its classes (`classes`: archetype ids)
 	if q.has("classes") and game.stats and not q.classes.has(game.stats.archetype.get("id", "")):
 		return "locked"
@@ -179,6 +193,8 @@ func status(id: String) -> String:
 	# a profession's rank quest waits for the skill (`skillReq`)
 	var sr = q.get("skillReq")
 	if sr != null and game.skills.rank(sr.skill) < int(sr.level):
+		return "locked"
+	if q.has("starterItem") and not examining_starter and game.inventory.count(q.starterItem) == 0:
 		return "locked"
 	return "available"
 
@@ -223,6 +239,59 @@ func needs_item(id: String, item: String) -> bool:
 		var o: Dictionary = DB.quests[id].objectives[i]
 		if not objs[i].done and o.type == "collect" and o.target == item:
 			return true
+	return false
+
+
+## The current quest and objective lines for the existing world tooltip.
+func related_objectives(pick: Dictionary) -> Array:
+	var rows := []
+	if pick.kind in ["sign", "chest"]:
+		return rows
+	var o = pick.obj
+	var item: String = ""
+	if pick.kind == "loot" and o.kind == "item":
+		item = o.entry.def.get("reward", {}).get("item", "")
+	elif pick.kind == "herb":
+		item = Gathering.kind_def(o.n.kind).get("yields", {}).get("item", "")
+	elif pick.kind == "vein":
+		item = Mining.rock_def(o.o.rock).get("yields", {}).get("item", "")
+	for id in active:
+		var quest: Dictionary = DB.quests[id]
+		if quest.get("map", "act1") != Terrain.chosen_map():
+			continue
+		var progress := objectives(id)
+		if pick.kind == "npc" and quest.turnIn == o.id and progress.all(func(p): return p.done):
+			rows.append({"name": quest.name, "line": "Ready to turn in"})
+			continue
+		for i in progress.size():
+			if progress[i].done:
+				continue
+			var def: Dictionary = quest.objectives[i]
+			if _matches_hover(pick, def, id, item):
+				rows.append({"name": quest.name, "line": line(progress[i])})
+	return rows
+
+
+func _matches_hover(pick: Dictionary, def: Dictionary, id: String, item: String) -> bool:
+	var o = pick.obj
+	var target: String = def.get("target", "")
+	match def.type:
+		"kill":
+			return pick.kind == "enemy" and _matches_kill(def, o.type, o.id)
+		"talk":
+			return pick.kind == "npc" and o.id == target
+		"examine", "puzzle":
+			return pick.kind == "point" and o.get(def.type) == target
+		"collect":
+			if not item.is_empty() and item == target:
+				return true
+			if pick.kind == "enemy":
+				return Loot.drops_quest_item(o.cfg, o.id, id, target, game.skills.has("skinning"))
+			if pick.kind == "corpse" and pick.action.get("kind") == "skin":
+				return Loot.skin_yields(o.cfg, target)
+		"use":
+			return not str(def.get("on", "")).is_empty() and (
+				(pick.kind == "enemy" and o.type == def.on) or (pick.kind == "npc" and o.id == def.on))
 	return false
 
 
@@ -327,7 +396,7 @@ func followups(completed: String) -> Array:
 				if quest_id != completed and status(quest_id) in ["available", "active", "ready"]:
 					main.append(quest_id)
 					break
-	return main + local.filter(func(id): return not main.has(id))
+	return main.filter(func(id): return DB.quests[id].get("handoff", false)) + main.filter(func(id): return not DB.quests[id].get("handoff", false)) + local
 
 
 # ---------------------------------------------------------- actions
@@ -408,7 +477,10 @@ func complete(id: String) -> bool:
 	for o in q.objectives:
 		if o.type == "collect" and not o.get("keep"):
 			inventory.remove_count(o.target, o.get("count", 1))
-	done[id] = true
+	if q.get("repeatable", false):
+		accepted.erase(id)
+	else:
+		done[id] = true
 	tracked.erase(id)
 	if focus == id:
 		focus = ""
@@ -482,43 +554,158 @@ func set_focus(id: String) -> void:
 
 
 # ------------------------------------------------- where and how hard
-## Where a quest sends you next: the turn-in npc once it is ready, else the
-## first unmet objective's place (its `location`, the nearest spawn of what
-## it wants killed, or whom it wants spoken to). { x, z, r, label } or {}.
+## Where a quest sends you next. Both maps and the tracker share this destination.
 func goal(id: String) -> Dictionary:
-	if status(id) == "available":
+	var now := Time.get_ticks_msec()
+	var previous: Array = _goals.get(id, [])
+	if not previous.is_empty() and now - int(previous[0]) < MARK_TTL_MS:
+		return previous[1]
+	var result := _resolve_goal(id)
+	_goals[id] = [now, result]
+	return result
+
+
+func _resolve_goal(id: String) -> Dictionary:
+	var state := status(id)
+	if state == "available":
 		return npc_goal(DB.quests[id].giver)
-	if status(id) == "ready":
+	if state == "ready":
 		return npc_goal(DB.quests[id].turnIn)
-	for o in objectives(id):
-		if o.done:
+	if state != "active":
+		return {}
+	var progress := objectives(id)
+	for i in progress.size():
+		if progress[i].done:
 			continue
+		var o: Dictionary = DB.quests[id].objectives[i]
+		var scope: Dictionary = DB.locations.get(o.get("location", ""), {})
 		if o.type == "talk":
 			return npc_goal(o.target)
-		# Known interactions point to the actual object, rather than a broad zone centre.
-		if o.type == "examine" and game.world:
+		var result := _objective_goal(id, o, scope)
+		if not result.is_empty():
+			return result
+		if not scope.is_empty():
+			var fallback := _pin(scope.position[0], scope.position[1], str(scope.name))
+			if float(scope.get("radius", 0)) > 3.0:
+				fallback.approximate = true
+			return fallback
+	return {}
+
+
+func _objective_goal(id: String, o: Dictionary, scope: Dictionary) -> Dictionary:
+	match o.type:
+		"examine":
 			for point in game.world.examine_points:
 				if point.id == o.target:
-					return {"x": point.x, "z": point.z, "r": 1.2, "label": o.label}
-		if o.location and DB.locations.has(o.location):
-			var l: Dictionary = DB.locations[o.location]
-			return {"x": l.position[0], "z": l.position[1], "r": l.get("radius", 0), "label": l.name}
-		if o.type == "puzzle":
+					return _pin(point.x, point.z, o.label)
+		"puzzle":
 			var p := WorldPuzzles.definition(o.target)
 			if not p.is_empty():
-				return {"x": p.position[0], "z": p.position[1], "r": 5, "label": p.name}
-		if o.type == "kill":
-			var p: Vector3 = game.player.position if game.player else Vector3.ZERO
+				return _pin(p.position[0], p.position[1], p.name)
+		"kill":
+			return _enemy_goal(id, o, scope)
+		"collect":
+			for water in DB.world.get("water", []):
+				if water.get("id") == o.get("location") and water.has("bank"):
+					return _pin(water.bank[0], water.bank[1], water.name + " fishing bank")
 			var best := {}
-			for e in Layout.enemies:
-				if e.type != o.target or game.world_state.defeated.has(e.id):
+			for entry in game.loot.active:
+				var def: Dictionary = entry.def
+				if def.get("reward", {}).get("item") != o.target or not game.loot.available(entry):
 					continue
-				var d := U.hyp(e.position[0] - p.x, e.position[1] - p.z)
-				if best.is_empty() or d < best.d:
-					best = {"x": e.position[0], "z": e.position[1], "r": 0, "label": DB.enemies[o.target].name, "d": d}
+				var name: String = def.get("name", Items.get_def(o.target).get("name", o.label))
+				best = _nearer_pin(best, entry.x, entry.z, name, scope)
 			if not best.is_empty():
 				return best
+			if not scope.is_empty():
+				for node in game.gathering.live():
+					if Gathering.kind_def(node.n.kind).get("yields", {}).get("item") == o.target:
+						best = _nearer_pin(best, node.x, node.z, node.name, scope)
+				for node in game.mining.veins():
+					if Mining.rock_def(node.o.rock).get("yields", {}).get("item") == o.target:
+						best = _nearer_pin(best, node.x, node.z, node.name, scope)
+				if not best.is_empty() and best.score < 1000000.0:
+					return best
+			return _enemy_goal(id, o, scope)
 	return {}
+
+
+func _enemy_goal(id: String, o: Dictionary, scope: Dictionary) -> Dictionary:
+	var best := {}
+	var live := {}
+	var hunting: bool = o.type == "kill"
+	var skinner: bool = game.skills.has("skinning")
+	for e in game.enemies.list:
+		var matches := _matches_kill(o, e.type, e.id) if hunting else Loot.drops_quest_item(e.cfg, e.id, id, o.target, skinner)
+		if not matches or (not e.alive and (hunting or not skinner or game.loot.corpse_action(e).get("kind") != "skin" or not Loot.skin_yields(e.cfg, o.target))):
+			continue
+		live[e.id] = true
+		best = _nearer_pin(best, e.position.x, e.position.z, e.cfg.name, scope, 0.0, Vector2(e.home.x, e.home.z))
+	if not best.is_empty() and best.score < 1000000.0:
+		return best
+	for sp in Layout.enemies:
+		if live.has(sp.id) or (game.world_state.is_defeated(sp.id) and not game.world_state.respawn_at.has(sp.id)):
+			continue
+		var cfg: Dictionary = DB.enemies[sp.type]
+		if hunting and not _matches_kill(o, sp.type, sp.id):
+			continue
+		if not hunting and not Loot.drops_quest_item(cfg, sp.id, id, o.target, skinner):
+			continue
+		var name: String = sp.get("coastEncounter", {}).get("name", cfg.name)
+		best = _nearer_pin(best, sp.position[0], sp.position[1], name + " spawn", scope, 10000.0)
+	return best
+
+
+static func _pin(x: float, z: float, label: String) -> Dictionary:
+	return {"x": x, "z": z, "r": 0.0, "label": label}
+
+
+func _nearer_pin(best: Dictionary, x: float, z: float, label: String, scope: Dictionary,
+		penalty := 0.0, home := Vector2.INF) -> Dictionary:
+	var player: Vector3 = game.player.position
+	var at := Vector2(x, z)
+	var score := at.distance_to(Vector2(player.x, player.z)) + penalty
+	if not scope.is_empty():
+		var centre := Vector2(scope.position[0], scope.position[1])
+		var source := home if home.is_finite() else at
+		if source.distance_to(centre) > maxf(float(scope.get("radius", 0)), 8.0) + 4.0:
+			score += 1000000.0
+	if not best.is_empty() and best.score <= score:
+		return best
+	var result := _pin(x, z, label)
+	result.score = score
+	return result
+
+
+## Put the focused quest first and stack destinations closer than a pin's
+## width at the current zoom. The shared pin retains every quest name.
+func map_goals(spacing: float, local_range := INF) -> Array:
+	var ids := active.filter(func(id): return id != focus and tracked.has(id))
+	if focus != "":
+		ids.push_front(focus)
+	var player: Vector3 = game.player.position
+	var result := []
+	for id in ids:
+		var at := goal(id)
+		if at.is_empty():
+			continue
+		var pos := Vector2(at.x, at.z)
+		if id != focus and not result.is_empty() and pos.distance_to(Vector2(player.x, player.z)) > local_range:
+			continue
+		var grouped := false
+		for pin in result:
+			if pos.distance_to(Vector2(pin.x, pin.z)) <= spacing:
+				pin.quest_names.append(DB.quests[id].name)
+				grouped = true
+				break
+		if grouped:
+			continue
+		var pin := at.duplicate()
+		pin.kind = "goal"
+		pin.focus = id == focus
+		pin.quest_names = [DB.quests[id].name]
+		result.append(pin)
+	return result
 
 
 ## Where a townsperson is: where they stand now, else where they spawn.
@@ -699,6 +886,7 @@ func _changed() -> void:
 				focus = quest_id
 				break
 	_marks = {}
+	_goals.clear()
 	game.events.emit("questsChanged", {})
 	game.events.emit("objectiveChanged", {})
 

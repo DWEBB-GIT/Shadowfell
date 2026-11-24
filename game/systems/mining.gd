@@ -2,7 +2,7 @@ class_name Mining
 extends RefCounted
 ## Mining (data/professions/mining.json), a gathering profession like Skinning: a
 ## trainer, a pick in the tool pack, and a rank that rises with every swing
-## that is not yet easy for you (5 ranks an ore level).
+## that is not yet easy for you. Vein requirements use the skill's 1–100 range.
 ##
 ## Veins move. Rock outcrops stand in groups all over the map, and only a few
 ## of a group hold ore at once. A mined-out vein goes bare, and after a while

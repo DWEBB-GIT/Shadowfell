@@ -48,7 +48,14 @@ func rest_point() -> Dictionary:
 
 
 ## by the inn's hearth, as { x, z, label }, or {} if there is no inn
-func inn_point() -> Dictionary:
+func inn_point(npc_id := "") -> Dictionary:
+	if Terrain.is_lantern_coast():
+		var keeper: String = npc_id if not npc_id.is_empty() else str(game.world_state.rest_point).get_slice(":", 1)
+		var def: Dictionary = DB.npcs.get(keeper, {})
+		var arrival: Array = def.get("innArrival", [])
+		if not arrival.is_empty():
+			return {"x":arrival[0], "z":arrival[1], "label":def.innLabel}
+		return {}
 	for b in Layout.buildings:
 		if b.get("rest"):
 			return {"x": b.position[0] + b.light[0] + 1.2, "z": b.position[1] + b.light[1] + 1.4, "label": b.name}

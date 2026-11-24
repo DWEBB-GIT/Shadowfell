@@ -27,6 +27,9 @@ var enemies_near: bool:
 
 
 func pitch(x: float, z: float) -> void:
+	if game.blackpick != null and game.blackpick.active():
+		game.hud.error("The mine is no place to camp.")
+		return
 	var ws = game.world_state
 	ws.camp = {"x": snappedf(x, 0.01), "z": snappedf(z, 0.01)}
 	ws.rest_point = "camp"
@@ -150,7 +153,7 @@ func portal_point(dest: String) -> Dictionary:
 	if dest == "camp" and ws.camp != null:
 		return {"x": ws.camp.x + 1.4, "z": ws.camp.z, "label": "your camp"}
 	if dest == "home" and ws.home != "":
-		var p: Dictionary = game.afterlife.inn_point()
+		var p: Dictionary = game.afterlife.inn_point(str(ws.home).get_slice(":", 1))
 		if not p.is_empty():
 			return p
 	return {}

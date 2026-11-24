@@ -1,0 +1,3117 @@
+{
+  "hubs": [
+    {
+      "hub": "oat",
+      "contact": "lc_heda",
+      "story": "Who keeps the farm",
+      "quests": [
+        {
+          "id": "barley",
+          "level": 1,
+          "name": "Paying in Barley",
+          "offer": "The mill keeps its share. The rats appear to have negotiated a share as well. Clear three from Barley Hedge before we lose the seed sacks.",
+          "finish": "Good. I'll write them a receipt if any of them comes back with a solicitor.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "oat_burrows",
+              "count": 3,
+              "label": "Clear the rats from Barley Hedge"
+            }
+          ],
+          "xp": 0.55
+        },
+        {
+          "id": "gatepin",
+          "level": 2,
+          "name": "A Gate on One Hinge",
+          "offer": "Briar Pasture's gate is hanging by a nail. Get the spare iron pin from the crate by the pasture wall.",
+          "finish": "My father fixed that gate with a nail. My son says the nail is now listed as part of the farm.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Spare gate pin",
+              "label": "Recover the spare gate pin",
+              "offset": [
+                7,
+                -3
+              ],
+              "hunt": "oat_pigs"
+            }
+          ],
+          "after": [
+            "lc_base_barley"
+          ]
+        },
+        {
+          "id": "hide_loan",
+          "level": 3,
+          "name": "A Knife and a Promise",
+          "offer": "Agna has a knife you can keep. She'll show you how to take a clean hide from a wild boar. The orchard needs leather for the broken gate straps.",
+          "finish": "Keep it sharp. A blunt knife is exactly like a bad neighbour. It always makes you do the work twice.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_agna",
+              "label": "Speak to Agna about skinning"
+            }
+          ],
+          "giver": "lc_agna",
+          "skill": "skinning",
+          "items": [
+            {
+              "item": "skinning_knife",
+              "count": 1
+            }
+          ],
+          "xp": 0.6
+        },
+        {
+          "id": "strap",
+          "level": 3,
+          "name": "Leather for the Gate",
+          "offer": "With the knife on your tool belt, kill and skin two wild boars in Briar Pasture. Bring me the hides. Heda's own pigs stay out of this.",
+          "finish": "These will do. Heda's youngest says he can mend the gate now. He has said it very loudly in front of witnesses.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "boar_hide",
+              "count": 2,
+              "location": "lc_hunt_oat_pigs",
+              "label": "Skin two wild boars for Agna"
+            }
+          ],
+          "giver": "lc_agna",
+          "after": [
+            "lc_base_hide_loan"
+          ],
+          "xp": 0.7
+        },
+        {
+          "id": "perch_for_hobb",
+          "level": 4,
+          "name": "Supper for the Night Crew",
+          "offer": "When Nell has taught you to fish, bring Hobb two more perch for the mill hands. Fish from the millpond bank. They have a long watch tonight.",
+          "finish": "One fish each and the rest is gravy. Good gravy can cover a surprising number of local disputes.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "gloomwater_perch",
+              "count": 2,
+              "location": "lc_millpond",
+              "label": "Catch two perch in Oatwick Millpond"
+            }
+          ],
+          "giver": "lc_cook",
+          "after": [
+            "lc_the_spare_rod"
+          ],
+          "items": [
+            {
+              "item": "cut_bait",
+              "count": 1
+            }
+          ],
+          "xp": 0.63
+        },
+        {
+          "id": "return_notch",
+          "level": 4,
+          "name": "The Notch in the Handle",
+          "offer": "A knife with a carved sow was tucked behind the old knoll marker. Heda might recognise the carving.",
+          "finish": "That was Dad's. He always claimed he lost it fighting off a wolf. I expect the wolf was a nap.",
+          "goals": [],
+          "starter": {
+            "trail": "watchers_knoll",
+            "name": "Knife with a carved sow"
+          },
+          "xp": 0.52
+        },
+        {
+          "id": "orchard_night",
+          "level": 5,
+          "name": "The Orchard After Dark",
+          "offer": "There are fresh tracks at Splitrail Wood. Cull four of the wolves before they drive the boars back through the gate.",
+          "finish": "We can leave the far hedge to the deer now. Tell the cook to start the ovens.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "oat_wolves",
+              "count": 4,
+              "label": "Cull the wolves at Splitrail Wood"
+            }
+          ],
+          "after": [
+            "lc_base_gatepin"
+          ],
+          "xp": 0.73
+        }
+      ]
+    },
+    {
+      "hub": "bell",
+      "contact": "lc_bell_keeper",
+      "story": "The harbour keeps two books",
+      "quests": [
+        {
+          "id": "bell_boards",
+          "level": 4,
+          "name": "Rent for a Patch of Roof",
+          "offer": "Reeve Harl has a list of people displaced by the levy. Fetch his tenancy roll from the bench by the watch yard. Bring it to Ledra, who is holding their deposits.",
+          "finish": "These aren't late rent payments. The book lists a second deposit for the same roof. I'll call a few names today.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Tenancy roll",
+              "label": "Find the tenancy roll by the watch yard",
+              "offset": [
+                -12,
+                7
+              ]
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_bank",
+              "label": "Speak to Ledra at the bank"
+            }
+          ],
+          "turnIn": "lc_bank"
+        },
+        {
+          "id": "bell_tallow",
+          "level": 5,
+          "name": "A Lantern for the Watch",
+          "offer": "Pick up tallow near the Bellharbor hearth and give it to Sister Lyra. She's lending lamps to families who search the fields after work.",
+          "finish": "One lamp costs less than looking for someone in the dark. Please tell the merchants I said that.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Wrapped tallow",
+              "label": "Fetch tallow from the hearth",
+              "offset": [
+                9,
+                3
+              ]
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_lyra",
+              "label": "Bring the tallow to Sister Lyra"
+            }
+          ],
+          "turnIn": "lc_lyra"
+        },
+        {
+          "id": "bell_seal_test",
+          "level": 6,
+          "name": "The Impression",
+          "offer": "Iren says the relief seal was recut. Ask him to show you the mark left by the old die, then bring that impression to the reeve.",
+          "finish": "Same stamp, old die. Someone carried this from the old watch into an office with a lock on it.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_iren",
+              "label": "Ask Iren about the old stamp"
+            },
+            {
+              "kind": "find",
+              "item": "Wax impression",
+              "label": "Take the wax impression from the forge table",
+              "offset": [
+                -7,
+                10
+              ]
+            }
+          ],
+          "turnIn": "lc_reeve",
+          "after": [
+            "lc_base_bell_boards"
+          ]
+        },
+        {
+          "id": "bell_silver",
+          "level": 7,
+          "name": "In Arrears by Morning",
+          "offer": "The name of one widow was crossed out of both lists. Read the poor-box list at the chapel meeting place and see whom they charged in her place.",
+          "finish": "They charged her daughter. Good. Now that we know who took her money, we can stop calling it a mistake.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Chapel poor-box list",
+              "label": "Check the list of arrears",
+              "note": "A second assessment was entered for the same household.",
+              "offset": [
+                -4,
+                8
+              ]
+            }
+          ],
+          "after": [
+            "lc_base_bell_tallow"
+          ]
+        },
+        {
+          "id": "to_gloam",
+          "level": 5,
+          "name": "The Chapel Keeps the Names",
+          "offer": "Take the names from Bellharbor to Morrow in Gloamwood. Leave through Lantern Bridge. The chapel stands near the village trail.",
+          "finish": "Give me the list. There's a name here that was rubbed off three graves.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_gloam_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_bell_receipt"
+          ],
+          "turnIn": "lc_gloam_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "gloam",
+      "contact": "lc_gloam_warden",
+      "story": "The names of the dead",
+      "quests": [
+        {
+          "id": "gloam_watch",
+          "level": 6,
+          "name": "An Unquiet Fence",
+          "offer": "Widows' Fence still marks the edge of the cemetery. Put down the four walkers and bowmen who now guard the wrong side of it. The wall makes decent cover.",
+          "finish": "I'll ask the aunties to bring flowers while they can. They'll find something to say about the fence too.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "gloam_arrows",
+              "count": 4,
+              "label": "Clear Widows' Fence"
+            }
+          ],
+          "xp": 0.68
+        },
+        {
+          "id": "gloam_herbs",
+          "level": 7,
+          "name": "Before the Fever",
+          "offer": "Ditchbell grows on the sheltered chapel bank. I'll teach you to pick it cleanly. Bring three sprigs to the sickroom bench.",
+          "finish": "Ditchbell for fever, honey for the taste. Some patients claim the honey is the expensive part.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "ditchbell",
+              "count": 3,
+              "location": "lc_gloam_warden",
+              "label": "Gather ditchbell near Morrow's chapel"
+            }
+          ],
+          "skill": "herbalism",
+          "xp": 0.61,
+          "giver": "lc_base_resident_wren"
+        },
+        {
+          "id": "gloam_buttons",
+          "level": 8,
+          "name": "Buttons from the Watch",
+          "offer": "Retrieve three old watch buttons from the bowmen and walkers at Widows' Fence. The wear on the backs can tell me who they were.",
+          "finish": "This one was sewn on with horsehair. My brother did that whenever he ran out of thread.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "gloam_arrows",
+              "count": 3,
+              "item": "Old watch button",
+              "label": "Recover three watch buttons from the undead"
+            }
+          ],
+          "after": [
+            "lc_base_gloam_watch"
+          ],
+          "xp": 0.7
+        },
+        {
+          "id": "gloam_prowlers",
+          "level": 9,
+          "name": "The Walk Home",
+          "offer": "The barrow mourners have to walk home through Blackwood. Thin out the prowlers near Spindlewood before the lanterns go out.",
+          "finish": "I'll set the last lamp out myself. Walking alone should be a choice.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "gloam_wolves",
+              "count": 4,
+              "label": "Thin out the Blackwood prowlers"
+            }
+          ],
+          "xp": 0.71
+        },
+        {
+          "id": "gloam_halfname",
+          "level": 8,
+          "name": "Only Half a Name",
+          "offer": "Someone folded a torn burial slip and tucked it beside the Bell Barrows. The address on it is Morrow's chapel.",
+          "finish": "This is the missing half. I can carve her full name again in the morning.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Barrow with a missing name",
+              "label": "Match the slip to the damaged grave",
+              "note": "The carved half ends in '–ett'. The pinholes match the slip.",
+              "offset": [
+                5,
+                2
+              ],
+              "trail": "bell_barrows"
+            }
+          ],
+          "starter": {
+            "trail": "bell_barrows",
+            "name": "Torn burial slip"
+          },
+          "xp": 0.56
+        },
+        {
+          "id": "gloam_lantern",
+          "level": 10,
+          "name": "A Light Left Burning",
+          "offer": "Someone left lamp oil up by the barrow path as a promise to come back. Fetch the tin and read the initials on the empty marker.",
+          "finish": "I'll leave a light on that stone. People should have a place to look for a face they miss.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "A barrow lantern's oil tin",
+              "label": "Recover the oil tin",
+              "offset": [
+                7,
+                4
+              ],
+              "trail": "bell_barrows"
+            },
+            {
+              "kind": "inspect",
+              "item": "Empty barrow marker",
+              "label": "Read the marker's initials",
+              "note": "B. H. The final date was left blank.",
+              "offset": [
+                -4,
+                4
+              ],
+              "trail": "bell_barrows"
+            }
+          ],
+          "xp": 0.71
+        },
+        {
+          "id": "to_flint",
+          "level": 10,
+          "name": "Ask Where the Wages Went",
+          "offer": "Take the chapel's copy east through Quarry Cut to the Flintcut shift office. Edda has names that may match our missing families.",
+          "finish": "The names match the shift list. I'd like to see how the clerk explains that.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_flint_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_gloam_evidence"
+          ],
+          "turnIn": "lc_flint_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_westward"
+        },
+        {
+          "id": "to_reed",
+          "level": 10,
+          "name": "The Ferry Ledger",
+          "offer": "Take the chapel's copy across the Sluice Causeway to Reedmire. The landing clerk remembers who paid to cross.",
+          "finish": "One crossing and two sets of receipts. I'll show you which one we were told to burn.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_reed_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_gloam_evidence"
+          ],
+          "turnIn": "lc_reed_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_westward"
+        }
+      ]
+    },
+    {
+      "hub": "flint",
+      "contact": "lc_flint_warden",
+      "story": "A debt on every hammer",
+      "quests": [
+        {
+          "id": "flint_pick",
+          "level": 10,
+          "name": "A Pick of Your Own",
+          "offer": "Iren left a spare mining pick for the shift crew. Fetch it from the Coppervein tool chest. I'll show you where the green copper appears along the cut.",
+          "finish": "Take the spare from me. The pick in the chest belonged to a man who still wants it back.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Coppervein tool-room tag",
+              "label": "Recover the tool-room tag",
+              "offset": [
+                2,
+                1
+              ],
+              "trail": "coppervein"
+            }
+          ],
+          "skill": "mining",
+          "items": [
+            {
+              "item": "mining_pick",
+              "count": 1
+            }
+          ],
+          "giver": "lc_base_resident_garet"
+        },
+        {
+          "id": "flint_copper",
+          "level": 11,
+          "name": "First Claim on Copper",
+          "offer": "Mine three lumps of copper from the green veins near the Flintcut track. The tinsmith can mend the shift crew's lamps with them.",
+          "finish": "That'll do. I don't charge a lamp tax. Try to look surprised.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "copper_ore",
+              "count": 3,
+              "location": "lc_flint_warden",
+              "label": "Mine copper from the green veins near Flintcut"
+            }
+          ],
+          "after": [
+            "lc_base_flint_pick"
+          ],
+          "xp": 0.73,
+          "giver": "lc_base_resident_garet"
+        },
+        {
+          "id": "flint_rigging",
+          "level": 12,
+          "name": "Something to Stand On",
+          "offer": "The quarry foreman is still missing the bolts from the hoist. Clear the bowmen and netmen at Hammerfall Stockade so we can reach their stores.",
+          "finish": "We can drop a line from the top now. Nobody should have to climb back up the wall.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "flint_stockade",
+              "count": 4,
+              "label": "Clear the Hammerfall Stockade"
+            }
+          ],
+          "xp": 0.72
+        },
+        {
+          "id": "flint_chits",
+          "level": 13,
+          "name": "Payable in Tokens",
+          "offer": "Recover four hammered wage tokens from the robbers at Coppervein Spoil. The pay office tried to pass them off as the miners' silver.",
+          "finish": "Those won't buy an onion in Bellharbor. I'll put four honest coins into the right hands.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "flint_robbers",
+              "count": 4,
+              "item": "Hammered wage token",
+              "label": "Recover wage tokens at Coppervein Spoil"
+            }
+          ],
+          "xp": 0.72
+        },
+        {
+          "id": "flint_cap",
+          "level": 14,
+          "name": "Look Down Before You Jump",
+          "offer": "Read the survey peg on Old Quarry Road. If the cut is as wide as the new plan says, they counted a whole shelf of workers' huts as waste rock.",
+          "finish": "The old peg is honest. I'll show the council where it stands before the contractor moves it too.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Old quarry survey peg",
+              "label": "Inspect the peg above the quarry",
+              "note": "The original grade ends well short of the workers' huts.",
+              "offset": [
+                3,
+                1
+              ],
+              "trail": "flint_overlook"
+            }
+          ],
+          "xp": 0.68
+        },
+        {
+          "id": "flint_marks",
+          "level": 15,
+          "name": "Marks under the Shelf",
+          "offer": "A slate tally dropped near Stonecutters' Way. The initials are scratched over fresh chisel marks.",
+          "finish": "These are tool rentals. The men paid the same charge for thirty winters. That is quite a business.",
+          "goals": [],
+          "starter": {
+            "trail": "flint_cave",
+            "name": "Slate tool tally"
+          },
+          "xp": 0.59
+        },
+        {
+          "id": "flint_fittings",
+          "level": 16,
+          "name": "A Hoist With a Brake",
+          "offer": "Bring back the rigging pins from the stockade and the brake handle from the lower copper shelf. The ramp crew's first load will be bringing people home.",
+          "finish": "Pull the red one if it slips. The contractor painted them all red, so we'll have another word with him tomorrow.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "flint_stockade",
+              "count": 3,
+              "item": "Hoist rigging pin",
+              "label": "Find three rigging pins on Hammerfall guards"
+            },
+            {
+              "kind": "find",
+              "item": "Haulage brake handle",
+              "label": "Recover the brake handle",
+              "offset": [
+                3,
+                -3
+              ],
+              "trail": "coppervein"
+            }
+          ],
+          "after": [
+            "lc_base_flint_rigging"
+          ],
+          "xp": 0.82
+        },
+        {
+          "id": "flint_to_iron",
+          "level": 16,
+          "name": "A Toll on Empty Wagons",
+          "offer": "Take the payroll copy southeast to Sella in Ironstep. Drivers are waiting there to find out whether their wages cover a second toll.",
+          "finish": "No toll until the drivers hear what was charged. Pull up a bench.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_iron_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_flint_evidence"
+          ],
+          "turnIn": "lc_iron_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "reed",
+      "contact": "lc_reed_warden",
+      "story": "Water for three neighbours",
+      "quests": [
+        {
+          "id": "reed_planks",
+          "level": 10,
+          "name": "Three Feet of Bridge",
+          "offer": "Find the missing bundle of plank ends by Sluicekeeper's Walk. They were cut to fit a hole at the landing, and that hole currently fits my left boot.",
+          "finish": "Good. The ferryman can stop claiming the hole is there for drainage.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Bundle of bridge planks",
+              "label": "Fetch the bridge planks",
+              "offset": [
+                4,
+                -4
+              ],
+              "trail": "sluice_keeper"
+            }
+          ],
+          "xp": 0.62,
+          "giver": "lc_base_resident_nymm"
+        },
+        {
+          "id": "reed_footbridge",
+          "level": 11,
+          "name": "The Gap in the Landing",
+          "offer": "Clear the drowned and mud scavengers at Drowned Footbridge. Let the lone ones come to you before crossing into the deeper part.",
+          "finish": "The children can use the landing again. They will find a different place to give their parents a fright.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "reed_flood",
+              "count": 4,
+              "label": "Clear the Drowned Footbridge"
+            }
+          ],
+          "xp": 0.73
+        },
+        {
+          "id": "reed_rings",
+          "level": 12,
+          "name": "Tied with Blue Twine",
+          "offer": "The old ferry rings were tied with blue rope. Recover three from the drowned crofters. I want the new ferry to keep the old marks.",
+          "finish": "It's funny what people remember. My father forgot my birthday, but he knew what colour each ferry line was.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "reed_haunts",
+              "count": 3,
+              "item": "Blue ferry ring",
+              "label": "Recover ferry rings from the drowned crofters"
+            }
+          ],
+          "xp": 0.72
+        },
+        {
+          "id": "reed_fish",
+          "level": 13,
+          "name": "A Basket at the Falls",
+          "offer": "If you have Fishing 8, catch a pair of silver dace at Bracken Falls Pool. The council meets after work and nobody votes well on an empty stomach.",
+          "finish": "They'll still argue, but perhaps they'll stop at chewing.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "silver_dace",
+              "count": 2,
+              "location": "lc_fallpool",
+              "label": "Catch two silver dace at Bracken Falls Pool"
+            }
+          ],
+          "skillReq": {
+            "skill": "fishing",
+            "level": 8
+          },
+          "items": [
+            {
+              "item": "cut_bait",
+              "count": 1
+            }
+          ],
+          "xp": 0.69,
+          "giver": "lc_base_resident_nymm"
+        },
+        {
+          "id": "reed_pole",
+          "level": 14,
+          "name": "Marks Above the Flood",
+          "offer": "Read the old flood pole by Heron Oxbow. The oldest cut should show how deep the flooded fields used to get before the new gate went in.",
+          "finish": "A foot of extra water for the same storm. I'll make the clerk stand waist-deep in it while I explain.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Heron flood pole",
+              "label": "Read the flood marks",
+              "note": "The deepest old cut is still below the new silt line.",
+              "offset": [
+                4,
+                2
+              ],
+              "trail": "heron_oxbow"
+            }
+          ],
+          "xp": 0.66,
+          "giver": "lc_base_resident_nymm"
+        },
+        {
+          "id": "reed_ferry_coin",
+          "level": 15,
+          "name": "Paid for in Advance",
+          "offer": "A ferryman's purse is wedged in the reeds by the sluice. The last coin is tied through a hole in the leather.",
+          "finish": "My mother tied the coin there so my father would never miss his way home for want of the fare.",
+          "goals": [],
+          "starter": {
+            "trail": "sluice_keeper",
+            "name": "Ferryman's purse"
+          },
+          "xp": 0.61
+        },
+        {
+          "id": "reed_sluice",
+          "level": 16,
+          "name": "The Lower Gate",
+          "offer": "Retrieve the lower sluice key at Drowned Footbridge and read the sluicekeeper's account. The water shares are easier to defend if we can measure them.",
+          "finish": "Now we can see how much was diverted. I was hoping it was only a muddy ditch worth of money.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "reed_flood",
+              "count": 3,
+              "item": "Lower gate key tooth",
+              "label": "Recover the parts of the lower gate key"
+            },
+            {
+              "kind": "inspect",
+              "item": "Keeper's water account",
+              "label": "Read the keeper's notes",
+              "note": "Three extra turns went to the levy orchard during the dry month.",
+              "offset": [
+                -6,
+                1
+              ],
+              "trail": "sluice_keeper"
+            }
+          ],
+          "after": [
+            "lc_base_reed_footbridge"
+          ],
+          "xp": 0.81
+        },
+        {
+          "id": "reed_to_iron",
+          "level": 16,
+          "name": "Fares to the Tollhouse",
+          "offer": "Follow the northeast road to Sella in Ironstep. Take the blue ledger so they can see the difference between ferry fare and a toll that was already paid.",
+          "finish": "We shall ask for one fee, from one traveller, once. Imagine being the first person to think of that.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_iron_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_reed_evidence"
+          ],
+          "turnIn": "lc_iron_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "iron",
+      "contact": "lc_iron_warden",
+      "story": "The cost of the crossing",
+      "quests": [
+        {
+          "id": "iron_nails",
+          "level": 16,
+          "name": "Nails for the Chain",
+          "offer": "The west gate's chain guide has come loose. Pick up the iron nail bundle near the gate. It's under a tarp a little clear of the patrols.",
+          "finish": "These will do. He advertised the repair as 'indefinite'. It's a useful word for a man who never turns up.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Chain guide nails",
+              "label": "Fetch the chain guide nails",
+              "offset": [
+                6,
+                -3
+              ],
+              "trail": "iron_shelf"
+            }
+          ],
+          "xp": 0.67,
+          "giver": "lc_base_resident_bess"
+        },
+        {
+          "id": "iron_pickets",
+          "level": 17,
+          "name": "Bowmen Above the Road",
+          "offer": "Four of the old road pickets have been holding travellers between the bends. Clear the high toll and keep a stone between you and the archers.",
+          "finish": "The next wagon has children aboard. I'll tell the driver the bows are gone.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "iron_picketers",
+              "count": 4,
+              "label": "Clear pickets at the High Toll"
+            }
+          ],
+          "xp": 0.79
+        },
+        {
+          "id": "iron_labels",
+          "level": 18,
+          "name": "Reckoned by the Axle",
+          "offer": "Recover four levy tags from Broken Toll. The stamp should show whether they charged for wagons, people, or both.",
+          "finish": "By the axle going uphill and by the head coming down. Some of them must have paid twice in the same breath.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "iron_raiders",
+              "count": 4,
+              "item": "Stamped axle tag",
+              "label": "Recover levy tags from Broken Toll raiders"
+            }
+          ],
+          "xp": 0.77
+        },
+        {
+          "id": "iron_lookout",
+          "level": 19,
+          "name": "Four Short, One Long",
+          "offer": "Climb the path to Signalman's Shelf and read how the old bell code worked. Then recover the missing striker tucked under the marker.",
+          "finish": "Four short for fog, one long for danger. When it was my father's shift, they rang both on payday.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Signalman's code board",
+              "label": "Read the old bell code",
+              "note": "Four short rings mark fog. One long ring means the road is closed.",
+              "offset": [
+                3,
+                1
+              ],
+              "trail": "iron_shelf"
+            },
+            {
+              "kind": "find",
+              "item": "Bell striker",
+              "label": "Recover the bell striker",
+              "offset": [
+                -6,
+                4
+              ],
+              "trail": "iron_shelf"
+            }
+          ],
+          "xp": 0.77
+        },
+        {
+          "id": "iron_spare_bar",
+          "level": 20,
+          "name": "Solid Through the Middle",
+          "offer": "The watch needs two copper bars for a replacement bush. Smelt them at our forge if you know Smithing. A trader's bars will fit too.",
+          "finish": "Good copper. The last bush came with an illustrated warranty and went green in the first rain.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "copper_bar",
+              "count": 2,
+              "location": "lc_iron_forge",
+              "label": "Smelt or source two copper bars"
+            }
+          ],
+          "skill": "smithing",
+          "xp": 0.62,
+          "after": [
+            "lc_base_iron_nails"
+          ],
+          "giver": "lc_base_resident_bess"
+        },
+        {
+          "id": "iron_captain",
+          "level": 20,
+          "name": "The Wrong End of the Hoist",
+          "offer": "Break the High Toll's escort and take its orders. The runner and the bows hold the approaches. Wait for a gap instead of charging both ways at once.",
+          "finish": "The orders say to lower the gate if the drivers complain. It fails to say who pays for the gate.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "iron_picketers",
+              "count": 5,
+              "label": "Break the High Toll escort"
+            },
+            {
+              "kind": "salvage",
+              "hunt": "iron_picketers",
+              "count": 3,
+              "item": "High Toll order strip",
+              "label": "Recover three pieces of the toll orders"
+            }
+          ],
+          "after": [
+            "lc_base_iron_pickets"
+          ],
+          "xp": 0.93
+        },
+        {
+          "id": "iron_badge",
+          "level": 21,
+          "name": "The Old Route Badge",
+          "offer": "A road badge is pinned inside a rotten satchel at Webbed Deep. The worn inscription gives Sella's initials.",
+          "finish": "I lost that before my first night on the road. It spent longer wearing a uniform than I did.",
+          "goals": [],
+          "starter": {
+            "trail": "webbed_deep",
+            "name": "Battered route badge"
+          },
+          "xp": 0.66
+        },
+        {
+          "id": "to_ash",
+          "level": 22,
+          "name": "Through Ironstep Gate",
+          "offer": "Follow the ridge road through Ironstep Gate to Ashcourt. Take the orders to the keeper who tends the knight graves.",
+          "finish": "The toll was levied in our order's name. I would like a word with the man who found our seal.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_ash_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_iron_evidence"
+          ],
+          "turnIn": "lc_ash_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_eastward"
+        },
+        {
+          "id": "to_tide",
+          "level": 22,
+          "name": "Down the Cliff Stair",
+          "offer": "Take the Cliff Stair south to Tidemark. Tell the dock keeper which wagons the levy sent down into the wrecking cove.",
+          "finish": "So it was the gate that sent them down here. I can put people to work on the beach today.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_tide_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_iron_evidence"
+          ],
+          "turnIn": "lc_tide_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_eastward"
+        }
+      ]
+    },
+    {
+      "hub": "ash",
+      "contact": "lc_ash_warden",
+      "story": "The last honest oath",
+      "quests": [
+        {
+          "id": "ash_guard",
+          "level": 22,
+          "name": "Marching without a Bell",
+          "offer": "The Unlit Procession has started marching past the graves. Lay four of its guards to rest before they reach the chapel. Fall back from the glow under their feet.",
+          "finish": "They stood with people once. I hope somebody tells that part of the story.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "ash_procession",
+              "count": 4,
+              "label": "Lay the Procession's guards to rest"
+            }
+          ],
+          "xp": 0.84
+        },
+        {
+          "id": "ash_wax",
+          "level": 23,
+          "name": "The Bees Don't Owe Tithes",
+          "offer": "Fetch the votive wax stored at Veilwood Hollow. The beekeeper left it above the path when the wolves came out.",
+          "finish": "He wanted the brightest candles for the poorest names. That was all he ever asked.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Beekeeper's votive wax",
+              "label": "Fetch the votive wax",
+              "offset": [
+                -6,
+                2
+              ],
+              "trail": "veilwood"
+            }
+          ],
+          "giver": "lc_base_resident_verra"
+        },
+        {
+          "id": "ash_bloodroot",
+          "level": 24,
+          "name": "A Red Stain Comes Out",
+          "offer": "Bring three sprigs of bloodroot for the stone wash. If you already grow it in Reedmire, that will do. Otherwise search the higher bank behind the chapel.",
+          "finish": "The whole stone will be red for a day. Then we'll scrape off the chalk somebody sold us as a fake inscription.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "bloodroot",
+              "count": 3,
+              "location": "lc_ash_warden",
+              "label": "Gather or supply three bloodroot"
+            }
+          ],
+          "skillReq": {
+            "skill": "herbalism",
+            "level": 17
+          },
+          "xp": 0.68
+        },
+        {
+          "id": "ash_pins",
+          "level": 24,
+          "name": "The Names on the Pins",
+          "offer": "Take back the oath pins from the Procession. The old wardens carved their home names along the inside edge, so we should be able to bury them properly.",
+          "finish": "A baker, a weaver, two people from the same family. That's more than the old register gave them.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "ash_procession",
+              "count": 4,
+              "item": "Inscribed oath pin",
+              "label": "Recover the Procession's oath pins"
+            }
+          ],
+          "after": [
+            "lc_base_ash_guard"
+          ],
+          "xp": 0.8
+        },
+        {
+          "id": "ash_wolves",
+          "level": 25,
+          "name": "Keep Off the Ribbons",
+          "offer": "The prowlers behind Veilwood Hollow have been pulling grave ribbons down. Thin the pack so the weavers can rehang them.",
+          "finish": "There will be white ribbons before morning. We haven't had a white road in years.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "ash_veil",
+              "count": 4,
+              "label": "Clear the Veilwood prowlers"
+            }
+          ],
+          "xp": 0.79,
+          "giver": "lc_base_resident_verra"
+        },
+        {
+          "id": "ash_tablet",
+          "level": 26,
+          "name": "With Their Own Hands",
+          "offer": "Read the names carved on Vigil Crypt's founding stone. Check the broken shield set against it for the older maker's stamp.",
+          "finish": "Not one of the seven founders signed as a lord. I will have that put into the new record at the top.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Crypt founding stone",
+              "label": "Read the founders' names",
+              "note": "The inscription lists seven trades beside seven names.",
+              "offset": [
+                3,
+                3
+              ],
+              "trail": "vigil_crypt"
+            },
+            {
+              "kind": "find",
+              "item": "Founder's split shield",
+              "label": "Recover the split shield",
+              "offset": [
+                -5,
+                3
+              ],
+              "trail": "vigil_crypt"
+            }
+          ],
+          "after": [
+            "lc_base_ash_pins"
+          ],
+          "xp": 0.78
+        },
+        {
+          "id": "ash_rubbing",
+          "level": 27,
+          "name": "Ink on the Back",
+          "offer": "You found a charcoal rubbing hidden by the crypt approach. Its reverse shows a burial payment in a different hand.",
+          "finish": "Thank you. We can show historians what actually happened before the bark dries on their fine new ink.",
+          "goals": [],
+          "starter": {
+            "trail": "vigil_crypt",
+            "name": "Hidden charcoal rubbing"
+          },
+          "xp": 0.7
+        },
+        {
+          "id": "ash_day_work",
+          "level": 26,
+          "name": "The Living Need a Road Too",
+          "offer": "Take the lamplighters' timber wedge to the hollow and clear the path for the stonemasons. The procession keeps following anyone who carries a light.",
+          "finish": "The stonemasons can work in daylight now. A person can get a surprising amount done before the bells if the dead give them peace.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Lamplighters' timber wedge",
+              "label": "Recover the timber wedge",
+              "offset": [
+                4,
+                -5
+              ],
+              "trail": "veilwood"
+            },
+            {
+              "kind": "kill",
+              "hunt": "ash_veil",
+              "count": 3,
+              "label": "Clear the path at Veilwood Hollow"
+            }
+          ],
+          "xp": 0.86,
+          "giver": "lc_base_resident_verra"
+        },
+        {
+          "id": "ash_mourning",
+          "level": 27,
+          "name": "A Place by the Road",
+          "offer": "Find the bundle of clean grave ribbons at the chapel and carry them to the marker outside the village. The new graves are for the people we're still waiting for.",
+          "finish": "We'll hang a ribbon for each person until a family comes back to take it down.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Parcel of clean grave ribbons",
+              "label": "Pick up the grave ribbons",
+              "offset": [
+                -10,
+                8
+              ]
+            },
+            {
+              "kind": "inspect",
+              "item": "Roadside family marker",
+              "label": "Find the marker for missing families",
+              "note": "Each hanging ribbon marks someone whose family has yet to find them.",
+              "offset": [
+                4,
+                12
+              ]
+            }
+          ],
+          "after": [
+            "lc_base_ash_day_work"
+          ],
+          "xp": 0.72,
+          "giver": "lc_base_resident_verra"
+        },
+        {
+          "id": "ash_to_gate",
+          "level": 28,
+          "name": "Copies for Redgate",
+          "offer": "Take a copy to Pell's table in Redgate. The road runs southeast from Ashcourt. Let him keep the one with the witness's signature.",
+          "finish": "I'll give it a file and an entry in both books, so I cannot accidentally lose it even if asked.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_pell",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_ash_evidence"
+          ],
+          "turnIn": "lc_pell",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_after_ash"
+        },
+        {
+          "id": "ash_to_red",
+          "level": 28,
+          "name": "Names at the Caravan Stop",
+          "offer": "Take the copy to the caravan keeper at Redwash. Pass through Redgate, then follow the southern road. He may know which of our people left the downs and never came home.",
+          "finish": "Some of these names are in my missing wagons list. Let's find the wagons before we start carving more stones.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_red_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_ash_evidence"
+          ],
+          "turnIn": "lc_red_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_after_ash"
+        }
+      ]
+    },
+    {
+      "hub": "tide",
+      "contact": "lc_tide_warden",
+      "story": "The lights that called ships in",
+      "quests": [
+        {
+          "id": "tide_shoals",
+          "level": 22,
+          "name": "Lowwater Pickers",
+          "offer": "The first salvage crew is pulling people out of the wreck. Clear the wreck pickers at Lowwater Strand before they take the stretchers for timber.",
+          "finish": "All the living are up on the quay now. We'll try to keep it that way.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "tide_scavengers",
+              "count": 4,
+              "label": "Clear the wreck pickers on Lowwater Strand"
+            }
+          ],
+          "xp": 0.83,
+          "giver": "lc_base_resident_maris"
+        },
+        {
+          "id": "tide_lading",
+          "level": 23,
+          "name": "Cargo That Can Talk",
+          "offer": "Three cargo tallies were taken by the wreck pickers. Bring them back. They list the people working passage, who aren't on the passenger roll.",
+          "finish": "There are seven more families to write to. I'd rather be writing to people than closing the count.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "tide_scavengers",
+              "count": 3,
+              "item": "Salt-stained cargo tally",
+              "label": "Recover tallies from the wreck pickers"
+            }
+          ],
+          "after": [
+            "lc_base_tide_shoals"
+          ],
+          "xp": 0.76,
+          "giver": "lc_base_resident_maris"
+        },
+        {
+          "id": "tide_signal_test",
+          "level": 24,
+          "name": "Read the False Light",
+          "offer": "Read the wick marks on the wreckers' spare lantern. It stands just uphill from the signal bluff. Three short flashes are meant to call in a pilot.",
+          "finish": "Their long flash came from uneven oil. There should never have been a long flash at all.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Wreckers' spare lantern",
+              "label": "Inspect the lantern and its wick marks",
+              "note": "Three cuts at the same height. A fault in the shutter added a fourth.",
+              "offset": [
+                -8,
+                7
+              ],
+              "hunt": "tide_signal"
+            }
+          ],
+          "xp": 0.67
+        },
+        {
+          "id": "tide_harbor_rope",
+          "level": 25,
+          "name": "A Line in the Night",
+          "offer": "Bring back the signal crew's new guide ropes. They used our own rope to moor the fake pilot boats.",
+          "finish": "This is quay rope. I know because it came out of my pay until the charges were settled.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "tide_signal",
+              "count": 4,
+              "item": "Marked guide rope",
+              "label": "Recover guide ropes from the signal crew"
+            }
+          ],
+          "xp": 0.84,
+          "giver": "lc_base_resident_maris"
+        },
+        {
+          "id": "tide_bluff",
+          "level": 26,
+          "name": "The Second Beacon",
+          "offer": "Defeat five of the crew guarding the second beacon. Start at the edge. The archers can make the bluff a bad place to stand still.",
+          "finish": "The light is ours again. It will stay dark until the real pilot is on duty.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "tide_signal",
+              "count": 5,
+              "label": "Break up the beacon crew"
+            }
+          ],
+          "after": [
+            "lc_base_tide_signal_test"
+          ],
+          "xp": 0.88
+        },
+        {
+          "id": "tide_bell",
+          "level": 28,
+          "name": "The Bell on Dry Ground",
+          "offer": "Find the bell the wreckers dragged up from the third hull. Return it with one of the signal flags. The family can give the ship a proper farewell.",
+          "finish": "The family can decide what goes home and what goes into the sea with her.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Bruised ship's bell",
+              "label": "Recover the ship's bell",
+              "offset": [
+                7,
+                -2
+              ],
+              "hunt": "tide_camp"
+            },
+            {
+              "kind": "salvage",
+              "hunt": "tide_signal",
+              "count": 2,
+              "item": "Faulty pilot flag",
+              "label": "Recover two false pilot flags"
+            }
+          ],
+          "after": [
+            "lc_base_tide_bluff"
+          ],
+          "xp": 0.9
+        },
+        {
+          "id": "tide_to_red",
+          "level": 28,
+          "name": "Up the Salt Road",
+          "offer": "Follow the road inland to the Redwash caravan stop. Give them the list of crates lost to the wreckers. Cart drivers have been paid in the same goods.",
+          "finish": "That explains why the men arriving from the coast have paid tax twice and still don't own their coats.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_red_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_tide_evidence"
+          ],
+          "turnIn": "lc_red_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "gate",
+      "contact": "lc_pell",
+      "story": "A capital with a short memory",
+      "quests": [
+        {
+          "id": "gate_bread",
+          "level": 28,
+          "name": "Bread before Petitions",
+          "offer": "Before I can hear another petition, bring a loaf to Ysolde and speak to her about the kitchen. The Redgate inn sells it. The people queuing outside are here for more than paper.",
+          "finish": "There are nineteen names on the petition. Twenty if you count the little girl who signed with a drawing of a dog.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "trail_bread",
+              "count": 1,
+              "location": "lc_ysolde",
+              "label": "Bring a loaf of trail bread"
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_ysolde",
+              "label": "Speak to Ysolde about the kitchen"
+            }
+          ],
+          "min": 25,
+          "xp": 0.57
+        },
+        {
+          "id": "gate_seal",
+          "level": 29,
+          "name": "One Stamp Short",
+          "offer": "A brass die is locked away by the refinery court. Take the storage ticket, then ask Sabeth who was authorised to use it.",
+          "finish": "Two names are on the ticket and only one is still alive. That's useful. The dead man is very hard to bribe.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Brass die storage ticket",
+              "label": "Pick up the die's storage ticket",
+              "offset": [
+                -6,
+                18
+              ]
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_sabeth",
+              "label": "Ask Sabeth who signed out the die"
+            }
+          ],
+          "xp": 0.67
+        },
+        {
+          "id": "gate_carriage",
+          "level": 30,
+          "name": "Return of the Handcart",
+          "offer": "A worker's handcart was left near the east gate. Bring the permit back to the bank clerk's bench and have the loan struck off the record.",
+          "finish": "He owed more for parking it than he did for buying it. I'll put that in the margin for anyone keeping score.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Handcart loan receipt",
+              "label": "Recover the cart's loan receipt",
+              "offset": [
+                13,
+                11
+              ]
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_jeweller",
+              "label": "Ask Corvin to witness the return"
+            }
+          ],
+          "after": [
+            "lc_base_gate_bread"
+          ]
+        },
+        {
+          "id": "gate_alter",
+          "level": 31,
+          "name": "Behind the Amendments",
+          "offer": "Read the list of old charters next to the market and check which of the six original relief clauses is still being honoured.",
+          "finish": "One out of six. I'll write the other five in bigger letters when I copy them down.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Redgate charter list",
+              "label": "Read the amendments on the charter list",
+              "note": "Only the authority to levy a fee was kept unchanged.",
+              "offset": [
+                5,
+                -10
+              ]
+            }
+          ],
+          "after": [
+            "lc_base_gate_seal"
+          ],
+          "xp": 0.7
+        },
+        {
+          "id": "gate_to_cinder",
+          "level": 32,
+          "name": "An Account from the Furnace",
+          "offer": "Take the charter copy east to the workers at Cinder March. They should know what the furnace was meant to be producing before they were made to burn the relief stores.",
+          "finish": "Good thing you came out in person. There aren't many people left here who can ask Redgate for a straight answer.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_cinder_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_base_gate_alter"
+          ],
+          "turnIn": "lc_cinder_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "min": 29
+        }
+      ]
+    },
+    {
+      "hub": "red",
+      "contact": "lc_red_warden",
+      "story": "What the caravan can carry",
+      "quests": [
+        {
+          "id": "red_outside",
+          "level": 28,
+          "name": "The Dry Camps",
+          "offer": "Clear the pickets outside the Siltjack Supply Loop. Keep to the outer path so the bowmen at the stacked crates stay out of reach until you are ready.",
+          "finish": "The mules can make it past the fork. I'd shake your hand if I could get them to stand still.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "red_supply",
+              "count": 4,
+              "label": "Remove the Siltjack pickets"
+            }
+          ],
+          "xp": 0.79
+        },
+        {
+          "id": "red_get_wheel",
+          "level": 29,
+          "name": "The Wheel That Came Back",
+          "offer": "Recover the spare wheel pin by Siltjack Camp. Someone put it through the flap of a sack to stop the wind getting in.",
+          "finish": "That stops the wheel getting off. Turned out we needed that more.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Caravan wheel pin",
+              "label": "Retrieve the spare wheel pin",
+              "offset": [
+                3,
+                5
+              ],
+              "trail": "redwash_robbers"
+            }
+          ],
+          "xp": 0.68,
+          "giver": "lc_base_resident_jessa"
+        },
+        {
+          "id": "red_rations",
+          "level": 30,
+          "name": "Three Sacks to a Family",
+          "offer": "Bring back the Siltjacks' stolen ration seals and compare them with the stamped crate. The salt shed is turning away families whose wares were taken.",
+          "finish": "A seal can open the storehouse, but a sack still has to arrive inside it. I'll have people count both.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "red_camp",
+              "count": 4,
+              "item": "Redwash ration seal",
+              "label": "Recover ration seals from the Siltjacks"
+            },
+            {
+              "kind": "inspect",
+              "item": "Stamped ration crate",
+              "label": "Inspect the ration crate's marks",
+              "note": "The same batch stamp was used for two deliveries.",
+              "offset": [
+                8,
+                -3
+              ],
+              "hunt": "red_camp"
+            }
+          ],
+          "xp": 0.84
+        },
+        {
+          "id": "red_ashwood",
+          "level": 31,
+          "name": "Wood on a Dry Road",
+          "offer": "Bring three ash logs to replace the spare cart braces. You can cut the short stand above Redwash or buy logs from a woodcutter.",
+          "finish": "Good. We can cut this to fit. The quartermaster's instructions advised making the cart wider instead.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "ash_log",
+              "count": 3,
+              "location": "lc_red_warden",
+              "label": "Supply three ash logs"
+            }
+          ],
+          "skill": "woodcutting",
+          "loan": "hatchet",
+          "items": [
+            {
+              "item": "hatchet",
+              "count": 1
+            }
+          ],
+          "xp": 0.68,
+          "giver": "lc_base_resident_jessa"
+        },
+        {
+          "id": "red_spare_list",
+          "level": 32,
+          "name": "The List under the Saddle",
+          "offer": "Drive the quartermaster's guard off the supply loop and take the list of drivers who still have a wagon missing.",
+          "finish": "Three came forward this week. I'll see the other four get the same offer when they get in.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "red_supply",
+              "count": 5,
+              "label": "Disperse the quartermaster's guards"
+            },
+            {
+              "kind": "find",
+              "item": "List of missing wagons",
+              "label": "Recover the quartermaster's wagon list",
+              "offset": [
+                8,
+                4
+              ],
+              "hunt": "red_supply"
+            }
+          ],
+          "after": [
+            "lc_base_red_outside"
+          ],
+          "xp": 0.93
+        },
+        {
+          "id": "red_promised",
+          "level": 34,
+          "name": "A Place on the Wagon",
+          "offer": "A passenger token sits tucked behind a camp post. The holder had a paid seat to Redgate.",
+          "finish": "There's a vacancy on our next wagon. I'll ask if he's still willing to use it.",
+          "goals": [],
+          "starter": {
+            "trail": "redwash_robbers",
+            "name": "Passenger token"
+          },
+          "xp": 0.67
+        },
+        {
+          "id": "red_to_cinder",
+          "level": 34,
+          "name": "Where the Relief Timber Went",
+          "offer": "Carry the Siltjack bill up the eastern road to Cinder March. The missing timber was signed out to a furnace warden.",
+          "finish": "A timber load on my signature. I'll tell you where I was while somebody borrowed it.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_cinder_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_red_evidence"
+          ],
+          "turnIn": "lc_cinder_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "min": 30
+        }
+      ]
+    },
+    {
+      "hub": "cinder",
+      "contact": "lc_cinder_warden",
+      "story": "The workers who kept the fire",
+      "quests": [
+        {
+          "id": "cinder_canisters",
+          "level": 30,
+          "name": "Cold Water for Hot Hands",
+          "offer": "Take clean canisters from the relief camp. Bring them to the boiler lane before the workers come off shift. There's a low shelf by the lane you can reach from the yard.",
+          "finish": "There might not be another water break. Nobody will be too proud to take a drink, I hope.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Clean water canisters",
+              "label": "Fetch the clean canisters",
+              "offset": [
+                -8,
+                7
+              ]
+            },
+            {
+              "kind": "inspect",
+              "item": "Boiler-lane water shelf",
+              "label": "Find the workers' water shelf",
+              "note": "The workers left a cold ladle so the next shift could drink.",
+              "offset": [
+                -8,
+                8
+              ],
+              "hunt": "cinder_road"
+            }
+          ],
+          "xp": 0.68,
+          "giver": "lc_base_resident_devan"
+        },
+        {
+          "id": "cinder_road",
+          "level": 31,
+          "name": "Leave the Boiler Lane Clear",
+          "offer": "Clear four of the bandits at Boiler Run. Their overseer sleeps at the far shelf. You can reach the workers without waking him if you're careful.",
+          "finish": "That room was never built for fighting. It'll be nice to see someone use it as a road again.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "cinder_road",
+              "count": 4,
+              "label": "Clear the Boiler Run"
+            }
+          ],
+          "xp": 0.8
+        },
+        {
+          "id": "cinder_wedges",
+          "level": 32,
+          "name": "Wedges for the Door",
+          "offer": "Retrieve four iron wedges from the ogres near the fuel yard. They keep taking them out from under the store doors and using them as dice.",
+          "finish": "These have one dot and they're all bent. Mind you, that explains how they kept winning.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "cinder_ogres",
+              "count": 4,
+              "item": "Boiler door wedge",
+              "label": "Recover wedges from the fuel-yard ogres"
+            }
+          ],
+          "xp": 0.82
+        },
+        {
+          "id": "cinder_marks",
+          "level": 33,
+          "name": "Fourteen Men to a Shift",
+          "offer": "Read the brass tally under the clock, then talk to the relay keeper. Their schedule only shows thirteen times people clocked out.",
+          "finish": "The fourteenth had a family. I will put his name in ink and look the next inspector in the eye.",
+          "goals": [
+            {
+              "kind": "inspect",
+              "item": "Boiler shift tally",
+              "label": "Read the tally under the lane clock",
+              "note": "Fourteen names entered. The last space for clocking out was left empty.",
+              "offset": [
+                -7,
+                -5
+              ],
+              "hunt": "cinder_road"
+            },
+            {
+              "kind": "talk",
+              "npc": "lc_cinder_watch_warden",
+              "label": "Speak to the relay keeper"
+            }
+          ],
+          "turnIn": "lc_cinder_watch_warden",
+          "xp": 0.74
+        },
+        {
+          "id": "cinder_gaskets",
+          "level": 34,
+          "name": "Thick Enough to Last",
+          "offer": "The stores need two copper bars for pressure-safe valve seats. A smith at the Cinder forge can smelt them, or trade for them before coming in.",
+          "finish": "Copper. Good. The overseer always sent us painted lead and asked why the valves leaked.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "copper_bar",
+              "count": 2,
+              "location": "lc_cinder_forge",
+              "label": "Supply two copper bars for the valves"
+            }
+          ],
+          "xp": 0.6,
+          "giver": "lc_base_resident_devan"
+        },
+        {
+          "id": "cinder_chips",
+          "level": 35,
+          "name": "Proof in the Clinker",
+          "offer": "Ogres are digging out burnt relief stamps from the coal tips. Bring back four pieces with the stamped ends intact.",
+          "finish": "So they burned the relief stock while people asked for firewood. Keep one marked piece for the inquiry.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "cinder_ogres",
+              "count": 4,
+              "item": "Charred relief stamp",
+              "label": "Recover charred relief stamps from the ogres"
+            }
+          ],
+          "after": [
+            "lc_base_cinder_wedges"
+          ],
+          "xp": 0.88
+        },
+        {
+          "id": "cinder_furnace",
+          "level": 36,
+          "name": "Quiet the Cold Boilers",
+          "offer": "The dead shift is still holding the cold boilers. Break up the pressure crew before trying to reach the emergency valves. The grave-caller stays near the rear.",
+          "finish": "I heard all those men complain about working late. They deserved to stop when the bell went.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "cinder_furnace",
+              "count": 4,
+              "label": "Lay the boiler crew to rest"
+            }
+          ],
+          "xp": 0.85
+        },
+        {
+          "id": "cinder_wave",
+          "level": 37,
+          "name": "Turn Off the Feed",
+          "offer": "Find the handwheel behind the guard and read the valve plate. The old copper feed needs to be closed before the other furnaces can come down safely.",
+          "finish": "Half a turn. That's all the night supervisor would have had to do before he left.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Feed valve handwheel",
+              "label": "Recover the feed valve handwheel",
+              "offset": [
+                9,
+                3
+              ],
+              "hunt": "cinder_furnace"
+            },
+            {
+              "kind": "inspect",
+              "item": "Cold boiler valve plate",
+              "label": "Read the valve instructions",
+              "note": "In an emergency, close the copper feed first.",
+              "offset": [
+                -6,
+                -2
+              ],
+              "hunt": "cinder_furnace"
+            }
+          ],
+          "after": [
+            "lc_base_cinder_furnace"
+          ],
+          "xp": 0.75
+        },
+        {
+          "id": "cinder_muster",
+          "level": 38,
+          "name": "Last Call at the Relay",
+          "offer": "Get the relay keeper four brass shift tabs. The dead crew still wears them and the names will match those missing from the roll.",
+          "finish": "Now I can tell their families who was here, and who left carrying a perfectly clean coat.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "cinder_furnace",
+              "count": 4,
+              "item": "Brass shift tab",
+              "label": "Recover the cold boiler crew's shift tabs"
+            }
+          ],
+          "giver": "lc_cinder_watch_warden",
+          "xp": 0.78
+        },
+        {
+          "id": "cinder_sacks",
+          "level": 39,
+          "name": "The Relief Road Opens",
+          "offer": "The relief road can carry supplies again. Read the posted loads and help clear the remaining crew from the upper boilers so Whitehorn's flour can go through.",
+          "finish": "Four sacks for each family. No special rate for those who can afford to pay.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "cinder_furnace",
+              "count": 5,
+              "label": "Clear the upper boiler approach"
+            },
+            {
+              "kind": "inspect",
+              "item": "Relief wagon loads",
+              "label": "Read the reopened road's cargo list",
+              "note": "Flour for Whitehorn. Spare canvas for Saltglass. The space for a toll has been crossed out.",
+              "offset": [
+                6,
+                10
+              ]
+            }
+          ],
+          "after": [
+            "lc_base_cinder_wave"
+          ],
+          "xp": 0.7
+        },
+        {
+          "id": "to_white",
+          "level": 39,
+          "name": "Flour for Whitehorn",
+          "offer": "Follow the Snowline Gate up to Whitehorn. Tell the keeper the flour wagons are ready as soon as she can get the road marked.",
+          "finish": "Good. I have men and women ready to dig. Now there is something worth digging for.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_white_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_cinder_watch_evidence"
+          ],
+          "turnIn": "lc_white_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_march_out"
+        },
+        {
+          "id": "to_salt",
+          "level": 44,
+          "name": "A Well That Anybody Can Use",
+          "offer": "Follow the southern track to Saltglass and give the wellkeeper the charter. A person should be able to drink without promising their cart.",
+          "finish": "I'll post this where the first bucket comes up. People can read it while they wait.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_salt_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_cinder_watch_evidence"
+          ],
+          "turnIn": "lc_salt_warden",
+          "handoff": true,
+          "xp": 0.27,
+          "choice": "lc_base_march_out"
+        }
+      ]
+    },
+    {
+      "hub": "white",
+      "contact": "lc_white_warden",
+      "story": "The road out in winter",
+      "quests": [
+        {
+          "id": "white_braces",
+          "level": 41,
+          "name": "The Shelter Line",
+          "offer": "Take the spare shelter braces to the top of Goat Stair. Find the last route post before the windbreak and read the notch put there by the winter crews.",
+          "finish": "We'll add another post at the bend. I'd rather the children have one more thing to see through snow.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Packed shelter braces",
+              "label": "Recover the shelter braces",
+              "offset": [
+                -4,
+                2
+              ]
+            },
+            {
+              "kind": "inspect",
+              "item": "Goat Stair route post",
+              "label": "Read the route post",
+              "note": "The carved hook points towards the nearest shelter.",
+              "offset": [
+                3,
+                3
+              ],
+              "trail": "whitehorn_cirque"
+            }
+          ],
+          "xp": 0.68,
+          "giver": "lc_base_resident_runa"
+        },
+        {
+          "id": "white_watchfire",
+          "level": 43,
+          "name": "A Fire for the Late Watch",
+          "offer": "Break up the oath-keepers at Snowblind Watch. They haven't left a straight way to the braziers in days.",
+          "finish": "The next watch can go outside with a lamp instead of a prayer.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "white_beacons",
+              "count": 5,
+              "label": "Clear the Snowblind Watch braziers"
+            }
+          ],
+          "xp": 0.77
+        },
+        {
+          "id": "white_badge",
+          "level": 45,
+          "name": "A Name in the Last Cairn",
+          "offer": "An old winter badge has fallen out of a cairn at the summit. Its initials match the lower watch clerk's records.",
+          "finish": "My uncle was meant to come back in spring. His name can go on the lower shelf where we can reach it.",
+          "goals": [],
+          "starter": {
+            "trail": "white_cairns",
+            "name": "Frozen watch badge"
+          },
+          "xp": 0.57
+        },
+        {
+          "id": "white_to_salt",
+          "level": 45,
+          "name": "Over the Salt Stair",
+          "offer": "Take the winter account down the Salt Stair. The wellkeeper has had the same names coming up from the desert without their provisions.",
+          "finish": "We have been paying the same charge in heat as you've been paying in snow.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_salt_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_white_evidence"
+          ],
+          "turnIn": "lc_salt_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "salt",
+      "contact": "lc_salt_warden",
+      "story": "Water without a receipt",
+      "quests": [
+        {
+          "id": "salt_bucket",
+          "level": 45,
+          "name": "First Bucket at Dawn",
+          "offer": "Get the guards off the Bucket Road. Families are waiting to draw water from the low well. The captain's quarry is deeper in the sand, away from the first patrols.",
+          "finish": "The first bucket goes to the people who have been standing in line since before dawn.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "salt_watch",
+              "count": 4,
+              "label": "Clear the Bucket Road"
+            }
+          ],
+          "xp": 0.79
+        },
+        {
+          "id": "salt_mullet",
+          "level": 47,
+          "name": "Salt Fish for the Road",
+          "offer": "If you have Fishing 32, catch two mullet at Cutlass Cove. They salt well, and the mule crews can carry them to the wells without a fire.",
+          "finish": "Good choice. Hungry people don't need a ceremonial meal. They'll be pleased to eat one they can carry.",
+          "goals": [
+            {
+              "kind": "collect",
+              "item": "lc_saltglass_mullet",
+              "count": 2,
+              "location": "lc_pirate_cove",
+              "label": "Catch two mullet at Cutlass Cove"
+            }
+          ],
+          "skillReq": {
+            "skill": "fishing",
+            "level": 32
+          },
+          "xp": 0.6,
+          "giver": "lc_base_resident_nalin"
+        },
+        {
+          "id": "salt_sail",
+          "level": 48,
+          "name": "A Sail without a Boat",
+          "offer": "A ship's strip of sailcloth is tied to a ridge above Smuggler's Cut. The faded letter is the wellkeeper's family mark.",
+          "finish": "They signalled my mother with a piece like that. If the ship still has a name, we can put it on the well.",
+          "goals": [],
+          "starter": {
+            "trail": "smugglers_cut",
+            "name": "Painted sailcloth strip"
+          },
+          "xp": 0.62
+        },
+        {
+          "id": "salt_to_star",
+          "level": 48,
+          "name": "Across to Starfall",
+          "offer": "Take the ferry from Saltglass to Starfall. Give the keeper the witness seal. It is the copy the merchants can't claim fell overboard.",
+          "finish": "Put it on the dry table, please. This island knows what happened to the last copy somebody threw out a window.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_star_warden",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_salt_evidence"
+          ],
+          "turnIn": "lc_star_warden",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "star",
+      "contact": "lc_star_warden",
+      "story": "The families waiting at the landing",
+      "quests": [
+        {
+          "id": "star_ghostlight",
+          "level": 48,
+          "name": "Ghostlight at the Landing",
+          "offer": "Lay five drowned crew to rest on Ghostlight Shore. The lights are leading returning boats into the rocks again.",
+          "finish": "We can sail in at low tide with the windows open now. I missed that more than I expected.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "star_signal",
+              "count": 5,
+              "label": "Clear the false signals on Ghostlight Shore"
+            }
+          ],
+          "xp": 0.7
+        },
+        {
+          "id": "star_papers",
+          "level": 49,
+          "name": "Papers for the Living",
+          "offer": "Recover four fare papers from the drowned signal crew. Passes still marked valid belong to people we might be able to help leave.",
+          "finish": "I'll write in what they were promised. It should be the sort of thing a person can show at a dock.",
+          "goals": [
+            {
+              "kind": "salvage",
+              "hunt": "star_signal",
+              "count": 4,
+              "item": "Wet fare paper",
+              "label": "Recover fare papers on Ghostlight Shore"
+            }
+          ],
+          "after": [
+            "lc_base_star_ghostlight"
+          ],
+          "xp": 0.72
+        },
+        {
+          "id": "star_to_crown",
+          "level": 50,
+          "name": "The Last Witness",
+          "offer": "Take the ferry back to Saltglass, then the north road to the Crown of Ash. Sera needs our landing deed before the levy puts its last stamp on the decree.",
+          "finish": "We've got a living witness at last. I will ask the court to remember what one looks like.",
+          "goals": [
+            {
+              "kind": "talk",
+              "npc": "lc_crown_witness",
+              "label": "Deliver the message"
+            }
+          ],
+          "after": [
+            "lc_star_evidence"
+          ],
+          "turnIn": "lc_crown_witness",
+          "handoff": true,
+          "xp": 0.27
+        }
+      ]
+    },
+    {
+      "hub": "crown",
+      "contact": "lc_crown_witness",
+      "story": "People worth defending",
+      "quests": [
+        {
+          "id": "crown_rally",
+          "level": 50,
+          "name": "Under the Broken Standard",
+          "offer": "The last guards still hold formation at the Broken Standard. Clear them away so the witnesses can come up the old road in daylight.",
+          "finish": "I'll send for the witnesses. There is a place for them to sit now.",
+          "goals": [
+            {
+              "kind": "kill",
+              "hunt": "crown_remnant",
+              "count": 4,
+              "label": "Clear the Broken Standard"
+            }
+          ],
+          "min": 50,
+          "items": [
+            {
+              "item": "fellstone",
+              "count": 1
+            }
+          ],
+          "xp": 0
+        },
+        {
+          "id": "crown_names",
+          "level": 50,
+          "name": "The Names in the Margin",
+          "offer": "Find the pay packet by the signal fire and read the new witness roll. The names of the workers killed in the taking of the crown should go on the same page as the money.",
+          "finish": "The money would have had a place in the record either way. Thank you for making room for everything else.",
+          "goals": [
+            {
+              "kind": "find",
+              "item": "Undelivered guard pay packet",
+              "label": "Recover the guard pay packet",
+              "offset": [
+                5,
+                2
+              ],
+              "hunt": "crown_remnant"
+            },
+            {
+              "kind": "inspect",
+              "item": "Witness roll",
+              "label": "Read the new witness roll",
+              "note": "The clerks were given a whole page to list the relatives of each dead worker.",
+              "offset": [
+                -7,
+                9
+              ]
+            }
+          ],
+          "after": [
+            "lc_base_crown_rally"
+          ],
+          "min": 50,
+          "items": [
+            {
+              "item": "fellstone",
+              "count": 1
+            }
+          ],
+          "xp": 0
+        }
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": "oat_burrows",
+      "name": "Barley Hedge",
+      "near": "oat_green",
+      "offset": [
+        12,
+        9
+      ],
+      "note": "Scattered vermin beside the barley. A safe first hunt.",
+      "enemies": [
+        [
+          "granary_rat",
+          1,
+          0,
+          0
+        ],
+        [
+          "granary_rat",
+          1,
+          10,
+          6
+        ],
+        [
+          "granary_rat",
+          2,
+          19,
+          -2
+        ]
+      ],
+      "respawn": 35
+    },
+    {
+      "id": "gloam_arrows",
+      "name": "Widows' Fence",
+      "near": "gloam_dead",
+      "offset": [
+        -12,
+        7
+      ],
+      "note": "Loose bone archers cover the corners of a broken fence.",
+      "enemies": [
+        [
+          "vr_hollow_archer",
+          6,
+          0,
+          0
+        ],
+        [
+          "tf_barrow_gnawer",
+          6,
+          -8,
+          8
+        ],
+        [
+          "vr_hollow_archer",
+          7,
+          9,
+          9
+        ],
+        [
+          "tf_shambler",
+          7,
+          -7,
+          -8
+        ]
+      ]
+    },
+    {
+      "id": "flint_stockade",
+      "name": "Hammerfall Stockade",
+      "near": "flint_robbers",
+      "offset": [
+        20,
+        3
+      ],
+      "note": "Shielded foreman and a short line of quarry bowmen. Pull from the ramp.",
+      "enemies": [
+        [
+          "blackhedge_archer",
+          12,
+          -9,
+          8
+        ],
+        [
+          "blackhedge_netman",
+          13,
+          -11,
+          -2
+        ],
+        [
+          "in_mine_warden",
+          14,
+          0,
+          0,
+          "Hammerfall Hoist Guard"
+        ],
+        [
+          "blackhedge_cutthroat",
+          14,
+          5,
+          2
+        ],
+        [
+          "blackhedge_archer",
+          14,
+          -2,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": "reed_flood",
+      "name": "Drowned Footbridge",
+      "near": "reed_haunts",
+      "offset": [
+        -15,
+        -13
+      ],
+      "note": "Mud runners roam separately. A caster and two drowned watch the landing.",
+      "enemies": [
+        [
+          "grave_scavenger",
+          10,
+          -11,
+          7
+        ],
+        [
+          "tf_shambler",
+          11,
+          -5,
+          -7
+        ],
+        [
+          "tf_revenant",
+          12,
+          2,
+          4
+        ],
+        [
+          "seer",
+          13,
+          8,
+          -2
+        ],
+        [
+          "tf_revenant",
+          13,
+          11,
+          2
+        ]
+      ]
+    },
+    {
+      "id": "iron_picketers",
+      "name": "The High Toll",
+      "near": "iron_raiders",
+      "offset": [
+        -29,
+        42
+      ],
+      "note": "Road pickets surround the levy captain. Ranged cover and close escorts guard the hoist.",
+      "enemies": [
+        [
+          "in_toll_runner",
+          16,
+          -10,
+          7
+        ],
+        [
+          "blackhedge_netman",
+          17,
+          -7,
+          -7
+        ],
+        [
+          "blackhedge_archer",
+          18,
+          1,
+          0
+        ],
+        [
+          "blackhedge_cutthroat",
+          19,
+          5,
+          1
+        ],
+        [
+          "blackhedge_archer",
+          19,
+          7,
+          -4
+        ],
+        [
+          "blackhedge_captain",
+          21,
+          10,
+          2,
+          "High Toll Captain"
+        ]
+      ],
+      "respawn": 100
+    },
+    {
+      "id": "ash_procession",
+      "name": "The Unlit Procession",
+      "near": "ash_crypt",
+      "offset": [
+        15,
+        -12
+      ],
+      "note": "The old guard marches with a grave-caller and its attendants. Expect overlapping casts.",
+      "enemies": [
+        [
+          "tf_shambler",
+          22,
+          -9,
+          5
+        ],
+        [
+          "vr_hollow_archer",
+          23,
+          -4,
+          -7
+        ],
+        [
+          "wm_lantern_pass_threat",
+          24,
+          1,
+          3
+        ],
+        [
+          "seer",
+          25,
+          6,
+          2,
+          "Ashcourt Grave-Caller"
+        ],
+        [
+          "wm_lantern_pass_threat",
+          25,
+          7,
+          -3,
+          "Knight of the Unlit Bell"
+        ],
+        [
+          "brute",
+          27,
+          13,
+          2,
+          "The Unlit Standard-Bearer"
+        ]
+      ],
+      "respawn": 95
+    },
+    {
+      "id": "tide_scavengers",
+      "name": "Lowwater Strand",
+      "near": "tide_camp",
+      "offset": [
+        -19,
+        9
+      ],
+      "note": "Scavengers and wreck pickers are spread along the strand, with stronger crews inland.",
+      "enemies": [
+        [
+          "grave_scavenger",
+          22,
+          -9,
+          0
+        ],
+        [
+          "blackhedge_poacher",
+          23,
+          -11,
+          9
+        ],
+        [
+          "blackhedge_cutthroat",
+          23,
+          -3,
+          -7
+        ],
+        [
+          "blackhedge_archer",
+          24,
+          5,
+          7
+        ],
+        [
+          "blackhedge_cutthroat",
+          24,
+          10,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": "tide_signal",
+      "name": "Wreckers' Signal Bluff",
+      "near": "tide_camp",
+      "offset": [
+        12,
+        -11
+      ],
+      "note": "The beacon crew fights in pairs. The boatswain signals from the rear.",
+      "enemies": [
+        [
+          "blackhedge_archer",
+          26,
+          -6,
+          -5
+        ],
+        [
+          "blackhedge_cutthroat",
+          26,
+          -4,
+          1
+        ],
+        [
+          "blackhedge_netman",
+          27,
+          1,
+          2
+        ],
+        [
+          "blackhedge_archer",
+          28,
+          6,
+          -3
+        ],
+        [
+          "blackhedge_captain",
+          29,
+          8,
+          4,
+          "Boatswain Rook"
+        ]
+      ],
+      "respawn": 100
+    },
+    {
+      "id": "red_supply",
+      "name": "The Siltjack Supply Loop",
+      "near": "red_camp",
+      "offset": [
+        16,
+        12
+      ],
+      "note": "Two pickets patrol the outside. The quartermaster has bows covering the stores.",
+      "enemies": [
+        [
+          "blackhedge_poacher",
+          28,
+          -14,
+          3
+        ],
+        [
+          "blackhedge_cutthroat",
+          29,
+          -8,
+          -6
+        ],
+        [
+          "blackhedge_netman",
+          30,
+          0,
+          0
+        ],
+        [
+          "blackhedge_archer",
+          31,
+          5,
+          -2
+        ],
+        [
+          "blackhedge_archer",
+          32,
+          4,
+          7
+        ],
+        [
+          "blackhedge_captain",
+          34,
+          10,
+          2,
+          "Siltjack Quartermaster"
+        ]
+      ],
+      "respawn": 100
+    },
+    {
+      "id": "cinder_road",
+      "name": "Boiler Run",
+      "near": "cinder_ogres",
+      "offset": [
+        -15,
+        8
+      ],
+      "note": "Scattered workers turned bandits, with an ogre overseer far off the main lane.",
+      "enemies": [
+        [
+          "blackhedge_cutthroat",
+          30,
+          -11,
+          1
+        ],
+        [
+          "blackhedge_archer",
+          31,
+          -5,
+          8
+        ],
+        [
+          "blackhedge_cutthroat",
+          32,
+          0,
+          -6
+        ],
+        [
+          "deadfall_ogre",
+          34,
+          9,
+          -5
+        ],
+        [
+          "blackhedge_netman",
+          34,
+          13,
+          1
+        ]
+      ]
+    },
+    {
+      "id": "cinder_furnace",
+      "name": "The Cold Boilers",
+      "near": "cinder_dead",
+      "offset": [
+        -12,
+        7
+      ],
+      "note": "Ash spirits and a furnace keeper guard the old stop valves. Bring room for the sweeps.",
+      "enemies": [
+        [
+          "vr_gravewalker",
+          35,
+          -9,
+          -6
+        ],
+        [
+          "vr_hollow_archer",
+          36,
+          -3,
+          6
+        ],
+        [
+          "tf_revenant",
+          37,
+          3,
+          1
+        ],
+        [
+          "seer",
+          38,
+          9,
+          4,
+          "Boiler Grave-Caller"
+        ],
+        [
+          "wm_return_deep_crucible_threat",
+          39,
+          12,
+          -3,
+          "The Cold Foreman"
+        ],
+        [
+          "tf_revenant",
+          39,
+          8,
+          -6
+        ]
+      ]
+    },
+    {
+      "id": "white_beacons",
+      "name": "Snowblind Watch",
+      "near": "white_dead",
+      "offset": [
+        10,
+        -12
+      ],
+      "note": "Wolves outside the braziers, oath-keepers and ice archers within.",
+      "enemies": [
+        [
+          "ridge_wolf",
+          41,
+          -13,
+          4
+        ],
+        [
+          "blackwood_prowler",
+          42,
+          -6,
+          -8
+        ],
+        [
+          "vr_hollow_archer",
+          44,
+          1,
+          4
+        ],
+        [
+          "wm_frostgate_threat",
+          45,
+          6,
+          6
+        ],
+        [
+          "wm_lantern_pass_threat",
+          46,
+          11,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "salt_watch",
+      "name": "The Bucket Road",
+      "near": "salt_bandits",
+      "offset": [
+        -15,
+        8
+      ],
+      "note": "Well guards make small, tight groups, with open sand between patrols.",
+      "enemies": [
+        [
+          "blackhedge_netman",
+          45,
+          -8,
+          3
+        ],
+        [
+          "blackhedge_archer",
+          46,
+          -2,
+          -5
+        ],
+        [
+          "wm_saltroad_threat",
+          47,
+          4,
+          4
+        ],
+        [
+          "blackhedge_archer",
+          48,
+          8,
+          2
+        ],
+        [
+          "wm_return_sunken_cistern_elite",
+          49,
+          11,
+          -4
+        ]
+      ]
+    },
+    {
+      "id": "star_signal",
+      "name": "Ghostlight Shore",
+      "near": "star_dead",
+      "offset": [
+        -15,
+        6
+      ],
+      "note": "Drowned crews bunch around the signal lamps. Spectral marksmen hold the outer beach.",
+      "enemies": [
+        [
+          "tf_shambler",
+          48,
+          -3,
+          -5
+        ],
+        [
+          "vr_hollow_archer",
+          49,
+          -3,
+          6
+        ],
+        [
+          "tf_revenant",
+          49,
+          3,
+          0
+        ],
+        [
+          "seer",
+          50,
+          7,
+          4
+        ],
+        [
+          "tf_revenant",
+          50,
+          11,
+          -2
+        ]
+      ]
+    },
+    {
+      "id": "crown_remnant",
+      "name": "The Broken Standard",
+      "near": "crown_knights",
+      "offset": [
+        -12,
+        15
+      ],
+      "note": "Veteran guards still keep formation around an abandoned signal fire.",
+      "enemies": [
+        [
+          "wm_north_ledger_gate_threat",
+          50,
+          -7,
+          4
+        ],
+        [
+          "blackhedge_archer",
+          50,
+          -1,
+          -4
+        ],
+        [
+          "wm_north_ledger_gate_threat",
+          50,
+          4,
+          2
+        ],
+        [
+          "wm_sunseal_court_threat",
+          50,
+          8,
+          -1
+        ]
+      ]
+    }
+  ],
+  "links": {
+    "lc_bell_message": [
+      "lc_road_in",
+      "lc_base_strap",
+      "lc_base_gatepin"
+    ],
+    "lc_gloam_work": [
+      "lc_base_to_gloam"
+    ],
+    "lc_flint_work": [
+      "lc_base_to_flint"
+    ],
+    "lc_reed_work": [
+      "lc_base_to_reed"
+    ],
+    "lc_iron_work": [
+      "lc_base_flint_to_iron",
+      "lc_base_reed_to_iron"
+    ],
+    "lc_ash_work": [
+      "lc_base_to_ash"
+    ],
+    "lc_tide_work": [
+      "lc_base_to_tide"
+    ],
+    "lc_red_work": [
+      "lc_base_tide_to_red",
+      "lc_base_ash_to_red"
+    ],
+    "lc_cinder_work": [
+      "lc_base_gate_to_cinder",
+      "lc_base_red_to_cinder"
+    ],
+    "lc_white_work": [
+      "lc_base_to_white"
+    ],
+    "lc_salt_work": [
+      "lc_base_to_salt",
+      "lc_base_white_to_salt"
+    ],
+    "lc_star_work": [
+      "lc_base_salt_to_star"
+    ],
+    "lc_crown_finale": [
+      "lc_base_star_to_crown"
+    ]
+  },
+  "residents": [
+    {
+      "hub": "gloam",
+      "id": "lc_base_resident_wren",
+      "model": "edda",
+      "name": "Yara Wren",
+      "trade": "Chapel herbalist",
+      "offset": [
+        -13,
+        7
+      ]
+    },
+    {
+      "hub": "flint",
+      "id": "lc_base_resident_garet",
+      "model": "tam",
+      "name": "Garet Flint",
+      "trade": "Lamp smith",
+      "offset": [
+        -11,
+        7
+      ]
+    },
+    {
+      "hub": "reed",
+      "id": "lc_base_resident_nymm",
+      "model": "agna",
+      "name": "Nymm Lark",
+      "trade": "Ferry carpenter",
+      "offset": [
+        -8,
+        9
+      ]
+    },
+    {
+      "hub": "iron",
+      "id": "lc_base_resident_bess",
+      "model": "edda",
+      "name": "Bess Trunnion",
+      "trade": "Gate fitter",
+      "offset": [
+        -10,
+        7
+      ]
+    },
+    {
+      "hub": "ash",
+      "id": "lc_base_resident_verra",
+      "model": "edda",
+      "name": "Verra Wick",
+      "trade": "Lamplighter",
+      "offset": [
+        9,
+        -8
+      ]
+    },
+    {
+      "hub": "tide",
+      "id": "lc_base_resident_maris",
+      "model": "edda",
+      "name": "Maris Lowtide",
+      "trade": "Salvage hand",
+      "offset": [
+        -8,
+        -10
+      ]
+    },
+    {
+      "hub": "red",
+      "id": "lc_base_resident_jessa",
+      "model": "edda",
+      "name": "Jessa Bentwheel",
+      "trade": "Wagonwright",
+      "offset": [
+        -9,
+        9
+      ]
+    },
+    {
+      "hub": "cinder",
+      "id": "lc_base_resident_devan",
+      "model": "tam",
+      "name": "Devan Kettle",
+      "trade": "Boiler fitter",
+      "offset": [
+        -6,
+        11
+      ]
+    },
+    {
+      "hub": "white",
+      "id": "lc_base_resident_runa",
+      "model": "edda",
+      "name": "Runa Hail",
+      "trade": "Winter pathkeeper",
+      "offset": [
+        -8,
+        9
+      ]
+    },
+    {
+      "hub": "salt",
+      "id": "lc_base_resident_nalin",
+      "model": "tam",
+      "name": "Nalin Sedge",
+      "trade": "Muleteer",
+      "offset": [
+        -10,
+        8
+      ]
+    }
+  ],
+  "supplies": {
+    "gloam": [
+      "ditchbell",
+      "healing_draught"
+    ],
+    "flint": [
+      "copper_ore",
+      "healing_draught",
+      "rough_arrow"
+    ],
+    "reed": [
+      "cut_bait",
+      "woundwort",
+      "trail_bread"
+    ],
+    "iron": [
+      "rough_arrow",
+      "copper_bar",
+      "trail_bread"
+    ],
+    "ash": [
+      "cracked_bone",
+      "woundwort",
+      "healing_draught"
+    ],
+    "tide": [
+      "cut_bait",
+      "rough_arrow",
+      "trail_bread"
+    ],
+    "red": [
+      "trail_bread",
+      "rough_arrow",
+      "strong_healing_draught"
+    ],
+    "cinder": [
+      "copper_bar",
+      "silver_ore",
+      "strong_healing_draught"
+    ],
+    "white": [
+      "trail_bread",
+      "fortifying_tonic"
+    ],
+    "salt": [
+      "rough_arrow",
+      "strong_healing_draught"
+    ],
+    "star": [
+      "fortifying_tonic",
+      "cut_bait"
+    ],
+    "crown": [
+      "strong_healing_draught",
+      "fortifying_tonic"
+    ]
+  }
+}

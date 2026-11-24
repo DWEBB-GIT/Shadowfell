@@ -48,6 +48,9 @@ func _look(c: Dictionary) -> void:
 
 ## what stops this chest opening: "", or the error
 func _lock_state(c: Dictionary) -> String:
+	var flag: String = c.def.get("requiresFlag", "")
+	if not flag.is_empty() and not game.world_state.flags.get(flag, false):
+		return "The chest is sealed until the Coast’s witnesses give their testimony."
 	var puzzle: String = c.def.get("puzzle", "")
 	if puzzle != "" and not game.puzzles.solved(puzzle):
 		return c.def.get("puzzleHint", "A nearby mechanism holds the latch shut.")

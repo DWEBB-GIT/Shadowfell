@@ -7,6 +7,8 @@ extends Control
 
 const SEA := Color("1c3440")
 const LAND := Color("50603a")
+const COAST_ATLAS := preload("res://game/world/lantern_coast/atlas.tres")
+const TRAIL_COLOUR := Color("f2cf79")
 const BIOME := {
 	"temperate": Color("50603a"), "shore": Color("7a7458"), "farmland": Color("6a6a3c"), "forest": Color("34482c"),
 	"marsh": Color("4a5640"), "swamp": Color("3a4632"), "moor": Color("5a4a4e"), "haunted": Color("3c3644"),
@@ -74,14 +76,15 @@ static func _circle(at: Array, r: float) -> PackedVector2Array:
 func open() -> void:
 	var p: Vector3 = game.player.position
 	center = Vector2(p.x, p.z)
-	if Terrain.is_new_map():
+	var has_survey := Terrain.is_new_map() or Terrain.is_lantern_coast()
+	if has_survey:
 		layout()
 		var rect := Terrain.map_rect()
 		center = rect.get_center()
 		scale_px = minf(size.x / rect.size.x, (size.y - 100) / rect.size.y)
 	else:
 		scale_px = 0.35
-	if Terrain.is_new_map() and _survey == null:
+	if has_survey and _survey == null:
 		_build_survey()
 	visible = true
 	layout()
@@ -141,8 +144,11 @@ func _text(at: Vector2, text: String, size_px: int, c: Color) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), SEA)
+	var coast := Terrain.is_lantern_coast()
 	var art := Terrain.map_picture()
-	if Terrain.is_new_map() and _survey != null:
+	if coast and _survey != null:
+		_draw_coast_survey()
+	elif Terrain.is_new_map() and _survey != null:
 		var r := Terrain.map_rect()
 		draw_texture_rect(_survey, Rect2(_to_screen(r.position), r.size * scale_px), false)
 		for road in Terrain.roads():
@@ -174,24 +180,24 @@ func _draw() -> void:
 		draw_texture_rect(art, Rect2(tl, r.size * scale_px), false)
 	elif not DB.world_map.is_empty():
 		_draw_design_map()
-	var ql = game.quests
-	var followed: Array = ql.active.duplicate()
-	if ql.focus != "" and ql.status(ql.focus) == "available":
-		followed.append(ql.focus)
-	for id in followed:
-		if not ql.tracked.has(id) and id != ql.focus:
-			continue
-		var at: Dictionary = ql.goal(id)
-		if at.is_empty():
-			continue
+	var hover := {}
+	var mouse := get_local_mouse_position()
+	for at in game.quests.map_goals(13.0 / scale_px):
 		var gs := _to_screen(Vector2(at.x, at.z))
-		var gc := Color("fff0a0") if id == ql.focus else Color("d8b058")
-		var k := 7.0 if id == ql.focus else 5.0
+		var gc := Color("fff0a0") if at.focus else Color("d8b058")
+		var k := 7.0 if at.focus else 5.0
 		var diamond := PackedVector2Array([gs + Vector2(0, -k), gs + Vector2(k, 0), gs + Vector2(0, k), gs + Vector2(-k, 0)])
 		draw_colored_polygon(diamond, Color.BLACK)
-		draw_colored_polygon(PackedVector2Array(Array(diamond).map(func(v): return gs + (v - gs) * 0.7)), gc)
-		if id == ql.focus:
-			_text(gs + Vector2(0, -14), DB.quests[id].name, 11, gc)
+		var inner := PackedVector2Array(Array(diamond).map(func(v): return gs + (v - gs) * 0.7))
+		if at.get("approximate", false):
+			inner.append(inner[0])
+			draw_polyline(inner, gc, 1.25, true)
+		else:
+			draw_colored_polygon(inner, gc)
+		if at.focus:
+			_text(gs + Vector2(0, -14), at.quest_names[0], 12, gc)
+		if gs.distance_to(mouse) < 9.0:
+			hover = at
 	# you
 	var me: Vector3 = game.player.position
 	var s := _to_screen(Vector2(me.x, me.z))
@@ -205,17 +211,95 @@ func _draw() -> void:
 	dir *= 1.4
 	side *= 1.4
 	draw_colored_polygon(PackedVector2Array([s + dir * 10, s - dir * 6 + side * 6, s - dir * 3, s - dir * 6 - side * 6]), Color("ffe080"))
+	if not hover.is_empty():
+		var lines: Array = hover.quest_names.duplicate()
+		lines.append(("Search near " if hover.get("approximate", false) else "") + hover.label)
+		var tip := mouse + Vector2(0, 18)
+		tip.x = clampf(tip.x, 145.0, size.x - 145.0)
+		tip.y = minf(tip.y, size.y - 55.0 - lines.size() * 16.0)
+		for line in lines:
+			_text(tip, line, 12, UI.GOLD)
+			tip.y += 16.0
 	# frame and help
 	draw_rect(Rect2(Vector2.ZERO, size), UI.BORDER, false, 2.0)
-	_text(Vector2(105, 26), "REGION MAP" if Terrain.is_new_map() else "THE WORLD", 18, UI.GOLD)
+	var heading := "LANTERN COAST" if coast else ("REGION MAP" if Terrain.is_new_map() else "THE WORLD")
+	_text(Vector2(105, 26), heading, 18, UI.GOLD)
 	_text(Vector2(size.x / 2, size.y - 14), "Scroll to zoom  ·  drag to move  ·  M or Esc to close", 11, UI.TEXT_DIM)
 	var here := DB.region_at(me.x, me.z)
 	_text(Vector2(size.x / 2, size.y - 34), "%s%s" % [here.get("name", ""), ("  ·  " + game.subzone) if game.subzone != "" else ""], 12, UI.TEXT)
 
 
+func _draw_coast_survey() -> void:
+	var r := Terrain.map_rect()
+	draw_texture_rect(_survey, Rect2(_to_screen(r.position), r.size * scale_px), false)
+	for boat in WorldMap.boats:
+		var pts := PackedVector2Array()
+		for p in boat.line:
+			pts.append(_to_screen(Vector2(p[0], p[1])))
+		for i in pts.size() - 1:
+			draw_dashed_line(pts[i], pts[i + 1], Color("9fd0ff", 0.75), 1.2, 5.0)
+		for dock in [boat.from, boat.to]:
+			var point := _to_screen(Vector2(dock[0], dock[1]))
+			draw_circle(point, 5.0, Color("213943"))
+			draw_circle(point, 3.3, Color("9fd0ff"))
+			if point.distance_to(get_local_mouse_position()) < 10.0 or scale_px >= 0.53:
+				_text(point + Vector2(0, 12), boat.name, 12, Color("a7dcff"))
+	var small_map := scale_px < 0.35
+	for trail in COAST_ATLAS.get_meta("footpaths"):
+		if not trail.has("trailhead"):
+			continue
+		if scale_px >= 0.48:
+			_line(trail.points, Color("382d23"), 4.0)
+			_line(trail.points, TRAIL_COLOUR, 1.4)
+		var post: Array = trail.points[0]
+		var at := _to_screen(Vector2(post[0], post[1]))
+		var marker := PackedVector2Array([at + Vector2(0, -7), at + Vector2(6, 4), at + Vector2(-6, 4)])
+		draw_colored_polygon(marker, Color("293239"))
+		marker = PackedVector2Array([at + Vector2(0, -4), at + Vector2(3, 2), at + Vector2(-3, 2)])
+		draw_colored_polygon(marker, TRAIL_COLOUR)
+		if at.distance_to(get_local_mouse_position()) < 13.0 or scale_px >= 0.95:
+			_text(at + Vector2(0, 14), trail.trailhead.label, 12, TRAIL_COLOUR)
+	_text(Vector2(size.x - 76, 26), "▲ Uphill trail", 12, TRAIL_COLOUR)
+	for p in WorldMap.pois:
+		if p.kind == "secret" and not game.discovery.is_discovered(p.id):
+			continue
+		if p.id == "lc_blackpick":
+			var shaft := _to_screen(Vector2(p.at[0], p.at[1]))
+			var icon := Icons.art("map", "place_dungeon")
+			if icon != null:
+				draw_texture_rect(icon, Rect2(shaft - Vector2.ONE * 9, Vector2.ONE * 18), false)
+			else:
+				draw_circle(shaft, 6.0, Color("f0927c"))
+			_text(shaft + Vector2(15, -17), "Blackpick Mine · 8–10", 12, Color("f7ad98"))
+			continue
+		if p.get("huntingGround", false) and scale_px >= 0.30:
+			var hunt := _to_screen(Vector2(p.at[0], p.at[1]))
+			draw_circle(hunt, 4.0, Color("2a2118"))
+			draw_circle(hunt, 2.5, Color("e0a965"))
+			if scale_px >= 0.7:
+				_text(hunt + Vector2(0, -10), p.name + "  " + str(p.levels), 11, UI.TEXT)
+			continue
+		var hub := not str(p.get("hub", "")).is_empty()
+		if not hub and scale_px < 0.7:
+			continue
+		var at := _to_screen(Vector2(p.at[0], p.at[1]))
+		var colour: Color = KIND_COLOUR.get(p.kind, Color("e8d8b0"))
+		draw_circle(at, 3.5, Color("19232b"))
+		draw_circle(at, 2.5, colour)
+		if small_map and p.kind not in ["town", "village", "fort"]:
+			continue
+		var levels := str(p.get("levels", ""))
+		var label: String = p.name + ("  " + levels if scale_px >= 0.53 and not levels.is_empty() else "")
+		_text(at + Vector2(0, -10), label, 11, UI.TEXT)
+
+
 ## Survey the actual saved terrain; the illustrated atlas is concept art,
 ## so it cannot guide somebody through newly sculpted roads and hills.
 func _build_survey() -> void:
+	if Terrain.is_lantern_coast():
+		_survey = load("res://game/world/lantern_coast/overview.png")
+		if _survey != null:
+			return
 	var r := Terrain.map_rect()
 	var step := 8.0
 	var img := Image.create(ceili(r.size.x / step), ceili(r.size.y / step), false, Image.FORMAT_RGB8)

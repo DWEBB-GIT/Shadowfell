@@ -11,6 +11,9 @@ var mouse := {"x": 0.0, "y": 0.0, "ndcX": 0.0, "ndcY": 0.0, "clicked": false, "r
 var wheel := 0
 var capture := Callable() ## set while Settings waits for a key to bind
 var is_bound := func(_code): return false ## key bindings say which other keys the game uses
+var action_held := Callable()
+const MOUSE_CODES := {MOUSE_BUTTON_LEFT:"MouseLeft", MOUSE_BUTTON_RIGHT:"MouseRight",
+	MOUSE_BUTTON_MIDDLE:"MouseMiddle", MOUSE_BUTTON_XBUTTON1:"Mouse4", MOUSE_BUTTON_XBUTTON2:"Mouse5"}
 var last_active_ms := Time.get_ticks_msec() ## the last key, click or pad press (semi-AFK loops stop after a long idle)
 
 
@@ -92,6 +95,13 @@ func _input(e: InputEvent) -> void:
 			mouse.rightHeld = false
 	elif e is InputEventMouseButton:
 		_mouse(e.position)
+		var code: String = MOUSE_CODES.get(e.button_index, "")
+		if e.pressed and not code.is_empty() and capture.is_valid():
+			capture.call(code, e.shift_pressed)
+			get_viewport().set_input_as_handled()
+			return
+		if not e.pressed:
+			held.erase(code)
 		# a held left button (mouse aim) lets go wherever the mouse is
 		if e.button_index == MOUSE_BUTTON_LEFT and not e.pressed:
 			mouse.leftHeld = false
@@ -104,6 +114,11 @@ func _input(e: InputEvent) -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if not (e is InputEventMouseButton) or not e.pressed:
 		return
+	var code: String = MOUSE_CODES.get(e.button_index, "")
+	if not code.is_empty():
+		held[code] = true
+		var shifted := "Shift+" + code
+		pressed[shifted if e.shift_pressed and is_bound.call(shifted) else code] = true
 	match e.button_index:
 		MOUSE_BUTTON_LEFT:
 			mouse.clicked = true
@@ -130,6 +145,8 @@ func _notification(what: int) -> void:
 func release_mouse() -> void:
 	mouse.leftHeld = false
 	mouse.rightHeld = false
+	for code in MOUSE_CODES.values():
+		held.erase(code)
 
 
 ## A held button the engine no longer sees as down has been let go somewhere
@@ -139,6 +156,9 @@ func _process(_dt: float) -> void:
 		mouse.leftHeld = false
 	if mouse.rightHeld and not Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		mouse.rightHeld = false
+	for button in MOUSE_CODES:
+		if held.has(MOUSE_CODES[button]) and not Input.is_mouse_button_pressed(button):
+			held.erase(MOUSE_CODES[button])
 
 
 func _mouse(p: Vector2) -> void:
@@ -151,7 +171,23 @@ func _mouse(p: Vector2) -> void:
 
 
 func is_held(code: String) -> bool:
+	if code.begins_with("Shift+"):
+		return held.has("ShiftLeft") and _held_base(code.substr(6))
+	if held.has("ShiftLeft") and not code.begins_with("Shift") and is_bound.call("Shift+" + code):
+		return false
+	return _held_base(code)
+
+
+func _held_base(code: String) -> bool:
+	if code == "MouseLeft":
+		return mouse.leftHeld
+	if code == "MouseRight":
+		return mouse.rightHeld
 	return held.has(code)
+
+
+func walk_button_held(code: String) -> bool:
+	return is_held("MouseLeft" if code == "left" else "MouseRight" if code == "right" else code)
 
 
 func consume(code: String) -> bool:
@@ -189,23 +225,21 @@ func end_frame() -> void:
 ## Keyboard turning: x is the turn (D/right arrow +1, turns clockwise), y the
 ## walk (W/up arrow +1 forward, S/down arrow -1 back)
 func tank_axis() -> Vector2:
-	var turn := 0.0
-	var walk := 0.0
-	if is_held("KeyW") or is_held("ArrowUp"):
-		walk += 1
-	if is_held("KeyS") or is_held("ArrowDown"):
-		walk -= 1
-	if is_held("KeyA") or is_held("ArrowLeft"):
-		turn -= 1
-	if is_held("KeyD") or is_held("ArrowRight"):
-		turn += 1
-	return Vector2(turn, walk)
+	var axis := _movement_axis()
+	return Vector2(axis.x, -axis.y)
 
 
 ## Screen-relative movement intent: W/up is negative y, D/right positive x.
 ## Game converts it to world space once, using the gameplay camera yaw.
 ## Diagonal input is normalised.
 func move_axis() -> Vector2:
+	return _movement_axis().limit_length(1.0)
+
+
+func _movement_axis() -> Vector2:
+	if action_held.is_valid():
+		return Vector2(float(action_held.call("moveRight")) - float(action_held.call("moveLeft")),
+			float(action_held.call("moveDown")) - float(action_held.call("moveUp")))
 	var x := 0.0
 	var z := 0.0
 	if is_held("KeyW") or is_held("ArrowUp"):
@@ -216,8 +250,7 @@ func move_axis() -> Vector2:
 		x -= 1
 	if is_held("KeyD") or is_held("ArrowRight"):
 		x += 1
-	var v := Vector2(x, z)
-	return v.normalized() if v.length() > 0 else v
+	return Vector2(x, z)
 
 
 ## Project screen directions onto level ground. Pitch and zoom do not affect

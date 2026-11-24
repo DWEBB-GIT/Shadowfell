@@ -32,6 +32,7 @@ func spawn_all() -> void:
 			e.health = 0
 			e.state = "dead"
 			e.corpse = true
+			e.build_body()
 			e.rig.die()
 			e.rig.death = 2.0
 			e._sync()
@@ -44,6 +45,13 @@ func clear() -> void:
 		e.group.queue_free()
 	list = []
 	dormant = []
+
+
+func free_parked_models() -> void:
+	for e in list + dormant:
+		if is_instance_valid(e.group) and e.group.get_parent() == null and not e.group.is_queued_for_deletion():
+			RenderCleanup.detach(e.group)
+			e.group.free()
 
 
 func by_id(id: String):
@@ -89,7 +97,7 @@ func update(dt: float) -> void:
 		if e.state != "idle" or (near and e.group.get_parent() != null):
 			e.update(dt + e.idle_dt, player)
 			e.idle_dt = 0.0
-		elif near:
+		elif near and e.rig != null:
 			# idle and out of sight (far past any aggro reach): looked at a
 			# quarter as often, with the time saved up, so the browser's one
 			# thread is not spent on bodies nobody sees
@@ -115,6 +123,7 @@ func _show(e, d2: float) -> void:
 	if want == shown:
 		return
 	if want:
+		e.build_body()
 		game.scene.add_child(e.group)
 	else:
 		e.group.get_parent().remove_child(e.group)
@@ -168,7 +177,7 @@ func _respawn(dt: float) -> void:
 		# back from a respawn, it lets you be for a moment (Dan, 2026-11-04)
 		e.calm = DB.CONFIG.chase.spawnGrace
 		list.append(e)
-		game.scene.add_child(e.group)
+		_show(e, e.position.distance_squared_to(game.player.position))
 		game.events.emit("enemyRespawned", {"enemy": e})
 
 

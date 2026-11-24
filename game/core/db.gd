@@ -146,7 +146,7 @@ const CONFIG := {
 		"tabCloseRange": 3.5, "tabBehindWeight": 3.0},
 	"minimap": {"questRange": 90.0},
 	"loot": {"areaRadius": 5.0, "clickRadius": 40.0, "reach": 3.2, "gatherTime": 2.0},
-	"skinning": {"time": 2.2, "freeLevel": 2, "rankPerLevel": 10},
+	"skinning": {"time": 2.2, "levelsPerBand": 5, "ranksPerBand": 10},
 	"draught": {"cooldown": 120.0},
 }
 
@@ -481,11 +481,15 @@ static func quest_xp_base(reward: Dictionary, quest_level: int) -> int:
 static func kill_xp(xp: float, player_level: int, enemy_level: int) -> int:
 	var pr: Dictionary = CONFIG.progression
 	var gap := player_level - enemy_level
-	if gap >= pr.greyGap:
+	if trivial_enemy(player_level, enemy_level):
 		return 0
 	if gap > 0:
 		return U.jround(xp * (1.0 - float(gap) / pr.greyGap))
 	return U.jround(xp * (1.0 + pr.aboveBonus / 100.0 * mini(-gap, pr.aboveCap)))
+
+
+static func trivial_enemy(player_level: int, enemy_level: int) -> bool:
+	return player_level - enemy_level >= int(CONFIG.progression.greyGap)
 
 
 ## Does an item with this `slot` go in that character slot?

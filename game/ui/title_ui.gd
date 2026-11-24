@@ -9,6 +9,9 @@ extends Control
 
 const CLASSES_KEY := "classes"
 const CLASS_COLOURS := {"warden":"#c79c6e","rogue":"#fff273","ranger":"#86c77a","occultist":"#b694ed","paladin":"#ed99bb","wizard":"#83d3f1"}
+const COAST_PROFILE := preload("res://game/world/lantern_coast/coast_character.gd")
+const COAST_ATLAS := preload("res://game/world/lantern_coast/atlas.tres")
+const COAST_BOUNDS := {"minX": -960.0, "maxX": 960.0, "minZ": -544.0, "maxZ": 576.0}
 
 var game
 var view = null ## 'main' | 'select' | 'create' | null when closed
@@ -166,7 +169,7 @@ func _build_main() -> void:
 		main[b[0]] = btn
 	main["continue"].pressed.connect(func():
 		if game.roster.last != null:
-			game.enter_world(game.roster.last))
+			game.enter_world(game.roster.last, str(game.roster.by_id(game.roster.last).get("lastWorld", ""))))
 	main.chars.pressed.connect(func(): show_view("select"))
 	main.new.pressed.connect(func(): show_view("create"))
 	main.controls.pressed.connect(func(): main.table.visible = not main.table.visible)
@@ -215,9 +218,9 @@ func _controls_table(parent: Node) -> Control:
 	var row := UI.hbox(parent, 22)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	# the mouse rows follow the control scheme (Settings: Classic controls)
-	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot (Click to move: walk up, then attack or talk)"], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
+	var mouse_rows := [["Left click", "Attack the enemy at the cursor; select a person; loot"], ["Hold left click", "Aim at the cursor as you walk"], ["Right click", "Spell slot 1, at the cursor; talk to a person"], ["1 · 2 · 3 · 4 · R · F", "The six spell slots (F: Brace)"]] if game.mouse_aim else [["Left click", "Select an enemy or person; loot. NPC selection is configurable in Settings."], ["Right click", "Auto attack an enemy; talk; loot"], ["1 · 2 · 3 · 4 · Q · E", "The six spell slots (E: Brace)"]]
 	var tables := [
-		["Keyboard and mouse", [["WASD / arrow keys", "Move"]] + mouse_rows + [["Shift-1 to Shift-4", "The four utility slots (draught, torch, fishing...)"], ["F (G with mouse aim)", "Interact / loot everything nearby"], ["Space", "Jump"], ["Tab", "Next target"], ["Mouse wheel", "Zoom the camera"], ["B · C · P · L", "Bags · Character · Spellbook · Quest log"], ["K · O · Esc", "Save · Settings (keys, sound, click to move) · Close / clear target"]]],
+		["Keyboard and mouse", [["WASD / arrow keys", "Move (change keyboard and mouse bindings in Settings)"]] + mouse_rows + [["Shift-1 to Shift-4", "The four utility slots (draught, torch, fishing...)"], ["F (G with mouse aim)", "Interact / loot everything nearby"], ["Space", "Jump"], ["Tab", "Next target"], ["Mouse wheel", "Zoom the camera"], ["B · C · P · L", "Bags · Character · Spellbook · Quest log"], ["K · O · Esc", "Save · Settings (keys, sound, click to move) · Close / clear target"]]],
 		["Gamepad", [["Left stick", "Move"], ["Right stick", "Aim"], ["RT", "Auto attack the target (or who is ahead)"], ["R3 (stick click)", "Next target"], ["X · Y · RB", "Lunge · Shield Break · Healing draught"], ["LB · LT", "Spell-bar slots 4 and 5"], ["B", "Brace"], ["A", "Interact / loot / confirm"], ["Start · View", "Bags · Character"], ["D-pad up · down · right", "Spellbook · Save · Quest log"]]],
 	]
 	for t in tables:
@@ -329,6 +332,7 @@ func _build_select() -> void:
 	_nav(rotate,"Front",func(): sel.preview.turn=0,13)
 	_nav(rotate,"Rotate ↷",func(): sel.preview.turn+=PI/4,13)
 	sel.line.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	_build_world_choice(sel.footer)
 	sel.enter=_nav(sel.footer,"ENTER WORLD",enter_selected,18)
 	sel.hint=_hint(sel.footer,"Drag the character to rotate · Select a slot to inspect", "Right stick rotates · A selects · Enter World to play")
 	sel.hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -343,6 +347,32 @@ func _build_select() -> void:
 		button.add_theme_stylebox_override("normal",UI.box(Color("542329"),Color("ad5961"),3,1,Vector4(12,7,12,7)))
 		button.add_theme_stylebox_override("hover",UI.box(Color("7d3038"),Color("e59094"),3,1,Vector4(12,7,12,7)))
 		button.add_theme_color_override("font_color",Color("ffd1ca"))
+
+
+func _build_world_choice(parent: Node) -> void:
+	var row := UI.hbox(parent, 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var label := UI.label(row, "World", 13, UI.TEXT_DIM, 3)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var choices := ButtonGroup.new()
+	for option in [
+		["campaign", "Campaign", "Resume this character's saved adventure."],
+		["lantern", "Lantern Coast", "Play the Coast adventure and continue its own saved progress."],
+	]:
+		var button := _nav(row, option[1], Callable(), 13)
+		button.toggle_mode = true
+		button.button_group = choices
+		# Title navigation emits pressed directly for keyboard and gamepad.
+		button.pressed.connect(func():
+			button.button_pressed = true
+			if view == "select":
+				_render_select())
+		button.tooltip_text = option[2]
+		var active := UI.box(Color("4b3924"), UI.GOLD, 4, 1, Vector4(18, 7, 18, 7))
+		button.add_theme_stylebox_override("pressed", active)
+		button.add_theme_stylebox_override("hover_pressed", active)
+		sel[option[0]] = button
+	sel.campaign.button_pressed = true
 
 
 func _build_create() -> void:
@@ -423,6 +453,13 @@ func _build_create() -> void:
 	var acts := UI.hbox(c, 8)
 	acts.alignment = BoxContainer.ALIGNMENT_CENTER
 	create.back = _nav(acts, "Back", back, 13)
+	var world_select := OptionButton.new()
+	world_select.set_meta("nav", true)
+	world_select.add_item("Lantern Coast")
+	world_select.add_item("Campaign")
+	world_select.tooltip_text = "Choose where this character starts. The character screen can open either world."
+	acts.add_child(world_select)
+	create.world = world_select
 	create.confirm = _nav(acts, "Create and enter", do_create, 18)
 	create.confirm.custom_minimum_size = Vector2(220, 0)
 	_hint(c, "Type a name · Enter create · Esc back", "D-pad choose · A select · Y random name · B back")
@@ -502,13 +539,32 @@ func _render_main() -> void:
 
 # ------------------------------------------------------------ select
 func info(c: Dictionary) -> Dictionary:
-	var r: Dictionary = game.save.read(c.key)
+	var r := _selected_save(c)
 	if r.status == "ok":
 		var d: Dictionary = r.data
+		if d.get("worldId") == "lantern_coast":
+			var pos := Vector2(d.player.position.x, d.player.position.z)
+			var distance := INF
+			var place := "Lantern Coast"
+			for hub in COAST_ATLAS.get_meta("hubs"):
+				var next := pos.distance_squared_to(Vector2(hub.point[0], hub.point[1]))
+				if next < distance:
+					place = str(hub.name).get_slice(" · ", 0)
+					distance = next
+			return {"ok": true, "level": U.n(d.progression.level), "where": place}
 		return {"ok": true, "level": U.n(d.progression.level), "where": (DB.region_at(d.player.position[0], d.player.position[1]) if d.player.position is Array else DB.region_at(d.player.position.x, d.player.position.z)).get("name", "")}
 	if r.status == "none":
 		return {"ok": true, "level": "1", "where": "Not yet set out"}
 	return {"ok": false, "level": "?", "where": "Save unreadable"}
+
+
+func _selected_save(c: Dictionary) -> Dictionary:
+	var coast: bool = sel.has("lantern") and sel.lantern.button_pressed if view == "select" else c.get("lastWorld", "") == "lantern_coast"
+	if coast:
+		var result: Dictionary = game.save.read(COAST_PROFILE.journey_key(c), COAST_BOUNDS)
+		if result.status != "none":
+			return result
+	return game.save.read(c.key)
 
 
 func class_name_of(c: Dictionary) -> String:
@@ -625,7 +681,8 @@ func select(id) -> void:
 func enter_selected() -> void:
 	var c = game.roster.by_id(selected) if selected != null else null
 	if c != null and info(c).ok:
-		game.enter_world(c.id)
+		var world_key := "lantern_coast" if sel.lantern.button_pressed else ""
+		game.enter_world(c.id, world_key)
 
 
 func ask_delete() -> void:
@@ -746,7 +803,7 @@ func do_create() -> void:
 		return
 	create.name.text = ""
 	create.name.release_focus()
-	game.enter_world(r.character.id)
+	game.enter_world(r.character.id, "lantern_coast" if create.world.selected == 0 else "")
 
 
 # ------------------------------------------------------------ focus and input
@@ -859,8 +916,9 @@ func layout() -> void:
 				var words: RichTextLabel=slot.get_meta("details")
 				words.custom_minimum_size.x=maxf(120,width-108)
 				words.size.x=maxf(120,width-108)
-		sel.footer.position=Vector2(width+40,vp.y-184)
-		sel.footer.size=Vector2(maxf(1,vp.x-width-60),172)
+		var footer_height := maxf(172, sel.footer.get_combined_minimum_size().y)
+		sel.footer.position = Vector2(width+40, vp.y-footer_height-12)
+		sel.footer.size = Vector2(maxf(1,vp.x-width-60), footer_height)
 		sel.brand.position=Vector2(width+40,24)
 		sel.brand.size=Vector2(maxf(1,vp.x-width-60),42)
 
@@ -928,7 +986,7 @@ func update(dt: float) -> void:
 
 
 func _preview_selected(c: Dictionary) -> void:
-	var saved: Dictionary=game.save.read(c.key)
+	var saved := _selected_save(c)
 	var gear := {}
 	if saved.status=="ok":
 		gear=saved.data.inventory.equipment.duplicate(true)

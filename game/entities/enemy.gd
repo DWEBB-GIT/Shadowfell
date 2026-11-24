@@ -65,6 +65,14 @@ func _init(g, spawn: Dictionary) -> void:
 	id = spawn.id
 	type = spawn.type
 	cfg = DB.enemy_cfg_at(type, id, int(spawn.get("level", 0)))
+	if spawn.has("coastEncounter"):
+		var encounter: Dictionary = spawn.coastEncounter
+		cfg = cfg.duplicate()
+		cfg.name = encounter.get("name", cfg.name)
+		cfg.respawn = encounter.respawn
+		cfg.erase("uniqueDrop")
+		if cfg.get("elite", false):
+			cfg.erase("reputation")
 	active_hours = spawn.get("activeHours", DB.enemies.get(type, {}).get("activeHours"))
 	home = Vector3(spawn.position[0], 0, spawn.position[1])
 	position = home
@@ -81,6 +89,14 @@ func _init(g, spawn: Dictionary) -> void:
 	group = Node3D.new()
 	group.name = "Enemy_" + id
 	group.add_to_group(World.MOVING_GROUP)
+	_sync()
+	if not Terrain.is_lantern_coast():
+		build_body()
+
+
+func build_body() -> void:
+	if rig != null:
+		return
 	model = Assets.instance(cfg.model)
 	group.add_child(model)
 	rig = Rig.new(model, cfg.model)
@@ -90,7 +106,6 @@ func _init(g, spawn: Dictionary) -> void:
 		model.scale *= cfg.scale
 	if cfg.get("tint"):
 		Rig.tint(materials, Color(cfg.tint))
-	_sync()
 
 
 ## the hours it is abroad ([from, to], e.g. [21, 5] for night only), or null
@@ -177,6 +192,10 @@ var damage_dealt_scale: float:
 		return mods.dealt
 
 
+func melee_reach_to(player_radius: float) -> float:
+	return cfg.meleeRange + player_radius + radius * 0.5 + 0.35
+
+
 ## A stun or sleep of `seconds`: returns how long it holds (0 if it does
 ## not). A boss takes none and staggers; an elite wears it off.
 func control(kind: String, seconds: float) -> float:
@@ -213,6 +232,7 @@ func control(kind: String, seconds: float) -> float:
 func _hold(seconds: float) -> void:
 	stagger = maxf(stagger, seconds)
 	windup = 0.0
+	build_body()
 	rig.action = null
 	_cancel_cast()
 
@@ -269,7 +289,8 @@ func reset() -> void:
 	engaged = 0.0
 	since_struck = INF
 	returning = 0.0
-	rig.action = null
+	if rig != null:
+		rig.action = null
 	_sync()
 
 
@@ -278,6 +299,7 @@ func reset() -> void:
 func hurt(amount: float, opts := {}) -> float:
 	if dead or protected:
 		return 0.0
+	build_body()
 	var stag: float = opts.get("stagger", 0.15)
 	var heavy: bool = opts.get("heavy", false)
 	var dealt := minf(health, amount)
@@ -473,6 +495,7 @@ var idle_dt := 0.0 ## time saved up while idle out of sight (Enemies.update)
 
 
 func update(dt: float, player) -> void:
+	var previous := position
 	# the hit flash: materials are only touched while it shows (and once
 	# more to clear it), not every frame for every enemy in the world
 	if flash > 0 or _flash_shown:
@@ -499,6 +522,10 @@ func update(dt: float, player) -> void:
 			position += knock * ((1 - fade) / 9)
 			position.y = Terrain.height_at(position.x, position.z)
 			knock *= fade
+			var body = game.world_state.corpses.get(id)
+			if body != null:
+				body.x = snappedf(position.x, 0.01)
+				body.z = snappedf(position.z, 0.01)
 		rig.update(dt, 0)
 		_sync()
 		return
@@ -507,11 +534,8 @@ func update(dt: float, player) -> void:
 	var dz: float = player.position.z - position.z
 	var dist := U.hyp(dx, dz)
 	var from_home := U.hyp(position.x - home.x, position.z - home.z)
-	# same allowance the player's blows get (Targeting.melee_reach): both
-	# bodies plus `lagGrace`, so a mob swings from arm's length instead of
-	# walking inside you (Dan, 2026-11-10)
-	var grace: float = DB.attack.get("lagGrace", 0.0)
-	var reach: float = cfg.meleeRange + player.radius + radius + grace
+	# Stop where the ordinary hit resolver can actually land the swing.
+	var reach := melee_reach_to(player.radius)
 	var speed01 := 0.0
 
 	# knockback slides, easing out exponentially so the distance is the same
@@ -618,14 +642,14 @@ func update(dt: float, player) -> void:
 				facing = atan2(dx, dz)
 			else:
 				var k := clampf((charge - c.alertSeconds) / maxf(0.01, c.rampSeconds), 0.0, 1.0)
-				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach - grace - 0.2)
+				_steer_towards(player.position.x, player.position.z, (0.0 if root_left > 0 else lerpf(minf(move_speed, chase_speed), chase_speed, k)), dt, reach - 0.2)
 				speed01 = 1.0
 			if windup > 0:
 				windup = 0.0
 			# a fleeing player still within a stride gets hit on the run
 			# (a telegraphing enemy saves its cleave until it stands)
 			if dist <= reach + DB.CONFIG.chase.reachGrace and attack_timer <= 0 and not (cfg.get("telegraph") and _telegraph_due("meleeEvery")):
-				_melee_swing()
+				_melee_swing(c.reachGrace)
 		elif state == "attack" and cfg.get("telegraph"):
 			facing = atan2(dx, dz)
 			if attack_timer <= 0:
@@ -656,6 +680,8 @@ func update(dt: float, player) -> void:
 	elif state == "idle":
 		speed01 = _idle_shuffle(dt)
 
+	if Terrain.is_lantern_coast():
+		position = Terrain.coast.block_step(previous, position, radius)
 	position = game.collision.resolve(position, radius)
 	position.y = Terrain.height_at(position.x, position.z)
 	# limbs only move where someone could see them (the camera shows about
@@ -670,15 +696,15 @@ func update(dt: float, player) -> void:
 ## looked for again every so often or when the goal moves.
 ## the blow lands the moment its swing timer is ready (no wind-up to step
 ## out of); telegraphed attacks are the `telegraph` and `special` casts
-func _melee_swing() -> void:
+func _melee_swing(extra_reach := 0.0) -> void:
 	attack_timer = cfg.attackInterval
 	rig.play(cfg.get("meleeAnim", "cleave" if type == "brute" else "claw"), 0.4, 0.1)
 	game.events.emit("enemyWindup", {"enemy": self})
 	if cfg.get("telegraph"):
 		slots += 1
-		game.combat.resolve_enemy_strike(self, DB.CONFIG.autoBetween.autoShare)
+		game.combat.resolve_enemy_strike(self, DB.CONFIG.autoBetween.autoShare, extra_reach)
 	else:
-		game.combat.resolve_enemy_strike(self)
+		game.combat.resolve_enemy_strike(self, 1.0, extra_reach)
 
 
 ## Is this attack slot the telegraphed one? (DB.CONFIG.autoBetween)

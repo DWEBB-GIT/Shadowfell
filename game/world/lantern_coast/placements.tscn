@@ -1,0 +1,1428 @@
+[gd_scene format=3 uid="uid://u1y0scxtb2f4"]
+
+[ext_resource type="Script" uid="uid://ml7aqpkk112g" path="res://addons/shadowfell_world/coast_editor.gd" id="1"]
+
+[node name="LanternCoastPlacements" type="Node3D" unique_id=564193320]
+script = ExtResource("1")
+metadata/path_paint = {
+Vector2i(-12, 2): "eJzt209olEccxvFn310TCCloQGWDtiQRqhe9SG3toYuE+ieoh56KCB4UVJDQHBQ9SG/etIViWyF4CCaHeqh69WBKRQlIsPVvbfUQEhERaXRBTfNuh1mybEyMb7Kb/N7d/X6YQ5KF7Mzvycy87+wbCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFVmk3ReeiDdkX6QPrbuTy3bLWWlXFH7U2q17lVtapBuTs4i37617lht+kj6d7o4eqw7Vps+kO5NF8dR647VrEPS2OQsnktPpH+kk1Launs16GvpsvTIX1m9LMollF5L/dKXUsK6kzXox+kWLtfGpRHplLTKuoc15bd3xFFoblm77u9TsADOvC+OwmS5LW2z7m31CaT6om9bpGfREsnvLH9IW836Xm32SFekW9JZac3ED9f5vTvrqx0xlAfSTrtRVIe90puiqt6Qlhe9Gixe/FVr61AQ/BctFLen7DcbSsVL+R35rZLuK7zc3d0degMDYUdH2NgYRpgsQ9IywyFVMncz/nBKPY/nX1u/fsOxY2Fz89RFaeZQ3Dz6xHZUlezXKRdLO/zPL/qvI+7mb93Lcw48Z59Kfxf+8tvarpw+3e+DiLiDT23fW4+osi1d+lln53BXV9jXF169OucU8uvYeCr1i7Q6kUi0t7dnMhl/qJKUFlmPsjI0NDSMjo7mJpSQxaTNpa4u3LgxLNpo8u2ltMJ6xLHW09PjLpxcENlsrr6+LHG8JynpgvWg42t4eNhlcf9+pGLW1eWWLMk1NZUeynfW446pkZGRsbHZ1bOlJbd9e27LllIScZcKB/1Bpbt++8K6BjHS29ubycz3GvWuVavQshx55aXTzUFQytVUGQMikby53e6Vvb22rkNMPC1XSZPJEifIh9aliIP2Eu7By9hcH3ZZlyIW0umfY5CI68Bm60rExYkTg8mkbSKhdQ3i5cCBn1Ipq0Tc+16zLkAMLU8kXi34wuXebtB64LEV+CP3hUkk9M8G77Uecvwd9p/rzV8o7pf/JX3jPyBGFG6aXJJeRfhAdlbTwQVxTlprPbrKlZQa/ZM/c0sknEjhrn9wMWk9nOoQ+DPYWSWSD+Kx9Ll156vVEX+4FCWU0D/GwFyYb4F/iD0744YS+n8txEJa6XNxF0gv/KOMb/y+72bE76xOAACgKv0PHKEX/A=="
+}
+
+[node name="Regions" type="Node3D" parent="." unique_id=790647238]
+
+[node name="Oatwick" type="Node3D" parent="Regions" unique_id=1442225935]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -748, 4, 184)
+
+[node name="Bellharbor" type="Node3D" parent="Regions" unique_id=767248280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -560, 5, 96)
+
+[node name="Gloamwood" type="Node3D" parent="Regions" unique_id=281313425]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -646, 8.01, -160)
+
+[node name="Flintcut" type="Node3D" parent="Regions" unique_id=1494082258]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -360, 18.99, -192)
+
+[node name="Reedmire" type="Node3D" parent="Regions" unique_id=1182773363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -324, 4, 168)
+
+[node name="Ironstep Pass" type="Node3D" parent="Regions" unique_id=1882554700]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -102, 31, -8)
+
+[node name="Ashcourt Downs" type="Node3D" parent="Regions" unique_id=1857734729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 104, 15, -212)
+
+[node name="Tidemark Coast" type="Node3D" parent="Regions" unique_id=2071577622]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 108, 5, 230)
+
+[node name="Redgate" type="Node3D" parent="Regions" unique_id=452931456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 298, 12, 16)
+
+[node name="Redwash" type="Node3D" parent="Regions" unique_id=1918454650]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 360, 8, 186)
+
+[node name="Cinder March" type="Node3D" parent="Regions" unique_id=1395627387]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 576, 23.8, -26)
+
+[node name="Whitehorn" type="Node3D" parent="Regions" unique_id=1578302196]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 456, 58, -320)
+
+[node name="Saltglass Basin" type="Node3D" parent="Regions" unique_id=1474963853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 724, 5.98, 244)
+
+[node name="Starfall Isles" type="Node3D" parent="Regions" unique_id=1919034951]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 636, 5.15, 470)
+
+[node name="Crown of Ash" type="Node3D" parent="Regions" unique_id=1091873982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 806, 44, -192)
+
+[node name="Props" type="Node3D" parent="." unique_id=818803130]
+
+[node name="Oatwick Foresters Hut" type="Node3D" parent="Props" unique_id=2064084710]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, -770, 3.81, 190)
+metadata/record = {
+"finish": "Original",
+"label": "Oatwick Foresters Hut",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="The Brass Bell Inn" type="Node3D" parent="Props" unique_id=146256353]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, -583, 5.01, 85)
+metadata/record = {
+"finish": "Original",
+"label": "The Brass Bell Inn",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/bellharbor_inn.glb"
+}
+
+[node name="Bellharbor Chapel" type="Node3D" parent="Props" unique_id=877910490]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -548, 4.875, 77)
+metadata/record = {
+"finish": "Original",
+"label": "Bellharbor Chapel",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/chapel.glb"
+}
+
+[node name="Bellharbor Counting House" type="Node3D" parent="Props" unique_id=259414660]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, -594, 4.97, 107)
+metadata/record = {
+"finish": "Ochre",
+"label": "Bellharbor Counting House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Gloamwood Chapel" type="Node3D" parent="Props" unique_id=194516479]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, -663, 7.735, -182)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Gloamwood Chapel",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/chapel.glb"
+}
+
+[node name="Gloamwood Watch" type="Node3D" parent="Props" unique_id=644098254]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, -669, 7.935, -150)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Gloamwood Watch",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/round_watchtower.glb"
+}
+
+[node name="Flintcut Tool Hut" type="Node3D" parent="Props" unique_id=1659157896]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -348, 18.99, -203)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Flintcut Tool Hut",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Reedmire Net Menders Hut" type="Node3D" parent="Props" unique_id=1577986017]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, -342, 4.04, 152)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Reedmire Net Menders Hut",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Ironstep Watchtower" type="Node3D" parent="Props" unique_id=298685291]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, -116, 31.0, -22)
+metadata/record = {
+"finish": "Original",
+"label": "Ironstep Watchtower",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/round_watchtower.glb"
+}
+
+[node name="Tidemark Storehouse" type="Node3D" parent="Props" unique_id=1927876533]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 88, 5.27, 224)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Tidemark Storehouse",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Redgate Customs House" type="Node3D" parent="Props" unique_id=360598378]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 281, 11.95, -3)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redgate Customs House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Redgate Warden Hut" type="Node3D" parent="Props" unique_id=1792204774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 316, 12.005, 1)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redgate Warden Hut",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Eastwatch Gate" type="Node3D" parent="Props" unique_id=2053463256]
+transform = Transform3D(0.98, 0, 0, 0, 0.98, 0, 0, 0, 0.98, 297.5, 12.0545, 0.2)
+metadata/record = {
+"finish": "Ochre",
+"label": "Eastwatch Gate",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/stone_gate.glb"
+}
+
+[node name="Eastwatch Left Wall" type="Node3D" parent="Props" unique_id=954173123]
+transform = Transform3D(0.98, 0, 0, 0, 0.98, 0, 0, 0, 0.98, 292.8, 11.981, 0.2)
+metadata/record = {
+"finish": "Ochre",
+"label": "Eastwatch Left Wall",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/stone_wall_half.glb"
+}
+
+[node name="Eastwatch Right Wall" type="Node3D" parent="Props" unique_id=2066151040]
+transform = Transform3D(0.98, 0, 0, 0, 0.98, 0, 0, 0, 0.98, 302.2, 12.112, 0.2)
+metadata/record = {
+"finish": "Ochre",
+"label": "Eastwatch Right Wall",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/stone_wall_half.glb"
+}
+
+[node name="Siltjack Captains Tent" type="Node3D" parent="Props" unique_id=1738697519]
+transform = Transform3D(0.906308, 0, -0.422618, 0, 1, 0, 0.422618, 0, 0.906308, 378.2, 8.228, 127)
+metadata/record = {
+"finish": "Original",
+"label": "Siltjack Captains Tent",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/large_tent.glb"
+}
+
+[node name="Siltjack Lookouts Tent" type="Node3D" parent="Props" unique_id=1764641702]
+transform = Transform3D(0.819152, 0, 0.573576, 0, 1, 0, -0.573576, 0, 0.819152, 385.3, 8.0015, 128.8)
+metadata/record = {
+"finish": "Forest Canvas",
+"label": "Siltjack Lookouts Tent",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/trail_tent.glb"
+}
+
+[node name="Siltjack Campfire" type="Node3D" parent="Props" unique_id=1217471994]
+transform = Transform3D(0.77, 0, 0, 0, 0.77, 0, 0, 0, 0.77, 380, 9.065, 132.4)
+metadata/record = {
+"finish": "Original",
+"label": "Siltjack Campfire",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/campfire.glb"
+}
+
+[node name="Siltjack Supply Stack" type="Node3D" parent="Props" unique_id=1346605520]
+transform = Transform3D(0.860992, 0, -0.401487, 0, 0.95, 0, 0.401487, 0, 0.860992, 375.9, 8.93, 129.8)
+metadata/record = {
+"finish": "Original",
+"label": "Siltjack Supply Stack",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/camp_supplies.glb"
+}
+
+[node name="Siltjack Palisade" type="Node3D" parent="Props" unique_id=1998625157]
+transform = Transform3D(0.984808, 0, 0.173648, 0, 1, 0, -0.173648, 0, 0.984808, 381.9, 8.148, 125)
+metadata/record = {
+"finish": "Original",
+"label": "Siltjack Palisade",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/palisade.glb"
+}
+
+[node name="Siltjack Flag" type="Node3D" parent="Props" unique_id=2056479691]
+transform = Transform3D(0.898311, 0, -0.240702, 0, 0.93, 0, 0.240702, 0, 0.898311, 382.4, 9.023, 132.3)
+metadata/record = {
+"finish": "Original",
+"label": "Siltjack Flag",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/camp_flag.glb"
+}
+
+[node name="Cinder March Watch" type="Node3D" parent="Props" unique_id=1202276640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 590, 24.23, -38)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Cinder March Watch",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/round_watchtower.glb"
+}
+
+[node name="Whitehorn Shelter" type="Node3D" parent="Props" unique_id=964663001]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 433, 58.395, -338)
+metadata/record = {
+"finish": "Winter Slate",
+"label": "Whitehorn Shelter",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Whitehorn Watch" type="Node3D" parent="Props" unique_id=1509953273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 462, 57.98, -340)
+metadata/record = {
+"finish": "Winter Slate",
+"label": "Whitehorn Watch",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/round_watchtower.glb"
+}
+
+[node name="Saltglass Caravan Office" type="Node3D" parent="Props" unique_id=1259040633]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 725, 6.3, 216)
+metadata/record = {
+"finish": "Ochre",
+"label": "Saltglass Caravan Office",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Starfall Harbour Lookout" type="Node3D" parent="Props" unique_id=300131174]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 619, 5.02, 458)
+metadata/record = {
+"finish": "Original",
+"label": "Starfall Harbour Lookout",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/round_watchtower.glb"
+}
+
+[node name="Oatwick Millhouse" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -729, 4.02, 182)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Oatwick Millhouse",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Oatwick Cookhouse" type="Node3D" parent="Props"]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, -752, 4.05, 199)
+metadata/record = {
+"finish": "Original",
+"label": "Oatwick Cookhouse",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Bellharbor Rope House" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -543, 5.0, 96)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Bellharbor Rope House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Bellharbor Chandlery" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -527, 5.065, 92)
+metadata/record = {
+"finish": "Original",
+"label": "Bellharbor Chandlery",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Gloamwood Lamp Cottage" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -638, 8.13, -180)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Gloamwood Lamp Cottage",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Coppervein Lamp House" type="Node3D" parent="Props"]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, -376, 18.855, -175)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Coppervein Lamp House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Reedmire Ferry Lodge" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -322, 4.14, 147)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Reedmire Ferry Lodge",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Ironstep Tollkeepers Lodge" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -100, 30.93, -22)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Ironstep Tollkeepers Lodge",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Ashcourt Vigil Hall" type="Node3D" parent="Props"]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 94, 14.81, -232)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Ashcourt Vigil Hall",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Ashcourt Lamplighters House" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 114, 15.245, -233)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Ashcourt Lamplighters House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Tidemark Salvage House" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 127, 5.13, 214)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Tidemark Salvage House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Redgate Commons Inn" type="Node3D" parent="Props"]
+transform = Transform3D(6.123234e-17, 0, 1, 0, 1, 0, -1, 0, 6.123234e-17, 284, 11.91, 38)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redgate Commons Inn",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/bellharbor_inn.glb"
+}
+
+[node name="Redgate Dyers Yard" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 324, 11.96, 24)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redgate Dyers Yard",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Redwash Wagonwrights Yard" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 374, 8.265, 171)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redwash Wagonwrights Yard",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="Redwash Caravan House" type="Node3D" parent="Props"]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 336, 8.18, 173)
+metadata/record = {
+"finish": "Ochre",
+"label": "Redwash Caravan House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Cinder March Shift House" type="Node3D" parent="Props"]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 559, 24.01, -41)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Cinder March Shift House",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Saltglass Wellkeepers Hall" type="Node3D" parent="Props"]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 705, 6.27, 228)
+metadata/record = {
+"finish": "Ochre",
+"label": "Saltglass Wellkeepers Hall",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/counting_house.tscn"
+}
+
+[node name="Starfall Sailors Bunkhouse" type="Node3D" parent="Props"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, 646, 5.065, 455)
+metadata/record = {
+"finish": "Weathered Oak",
+"label": "Starfall Sailors Bunkhouse",
+"model": "res://assets/models/environment/buildings/mythkeep_kit/parts/wooden_hut.glb"
+}
+
+[node name="NPCs" type="Node3D" parent="." unique_id=2123163840]
+
+[node name="Nell Tallow" type="Node3D" parent="NPCs" unique_id=1813856496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -754, 2.72, 173)
+metadata/record = {
+"npc": "lc_mill_angler"
+}
+
+[node name="Enemies" type="Node3D" parent="." unique_id=1309521087]
+
+[node name="Vr Young Boar 01" type="Node3D" parent="Enemies" unique_id=2093500277]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -786, 3.92, 200)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_pigs_1",
+"level": 1,
+"position": [-786, 200]
+}
+
+[node name="Vr Young Boar 02" type="Node3D" parent="Enemies" unique_id=1318233674]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -786, 3.85, 192)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_pigs_2",
+"level": 2,
+"position": [-786, 192]
+}
+
+[node name="Vr Young Boar 03" type="Node3D" parent="Enemies" unique_id=419845009]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -774, 4.01, 216)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_pigs_3",
+"level": 2,
+"position": [-774, 216]
+}
+
+[node name="Vr Young Boar 04" type="Node3D" parent="Enemies" unique_id=203185275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -778, 3.85, 204)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_pigs_4",
+"level": 2,
+"position": [-778, 204]
+}
+
+[node name="Vr Young Boar 05" type="Node3D" parent="Enemies" unique_id=1683493480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -770, 3.82, 200)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_pigs_5",
+"level": 3,
+"position": [-770, 200]
+}
+
+[node name="Ridge Wolf 01" type="Node3D" parent="Enemies" unique_id=1867292423]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -718, 3.63, 224)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_oat_wolves_1",
+"level": 3,
+"position": [-718, 224]
+}
+
+[node name="Ridge Wolf 02" type="Node3D" parent="Enemies" unique_id=376820096]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -726, 3.87, 208)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_oat_wolves_2",
+"level": 4,
+"position": [-726, 208]
+}
+
+[node name="Ridge Wolf 03" type="Node3D" parent="Enemies" unique_id=339721094]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -734, 3.96, 218)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_oat_wolves_3",
+"level": 4,
+"position": [-734, 218]
+}
+
+[node name="Ridge Wolf 04" type="Node3D" parent="Enemies" unique_id=705661020]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -704, 4.14, 210)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_oat_wolves_4",
+"level": 4,
+"position": [-704, 210]
+}
+
+[node name="Ridge Wolf 05" type="Node3D" parent="Enemies" unique_id=2260137]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -714, 3.81, 216)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_oat_wolves_5",
+"level": 5,
+"position": [-714, 216]
+}
+
+[node name="Vr Gravewalker 01" type="Node3D" parent="Enemies" unique_id=1380547407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -662, 8.66, -138)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_1",
+"level": 5,
+"position": [-662, -138]
+}
+
+[node name="Vr Gravewalker 02" type="Node3D" parent="Enemies" unique_id=1640925791]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -690, 8.59, -144)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_2",
+"level": 6,
+"position": [-690, -144]
+}
+
+[node name="Vr Gravewalker 03" type="Node3D" parent="Enemies" unique_id=1975832469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -684, 7.67, -154)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_3",
+"level": 6,
+"position": [-684, -154]
+}
+
+[node name="Vr Gravewalker 04" type="Node3D" parent="Enemies" unique_id=1479769358]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -668, 8.35, -146)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_4",
+"level": 7,
+"position": [-668, -146]
+}
+
+[node name="Vr Gravewalker 05" type="Node3D" parent="Enemies" unique_id=1348407833]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -672, 7.35, -164)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_5",
+"level": 7,
+"position": [-672, -164]
+}
+
+[node name="Vr Gravewalker 06" type="Node3D" parent="Enemies" unique_id=1542856042]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -684, 8.38, -144)
+metadata/record = {
+"enemy": "vr_gravewalker",
+"id": "lc_gloam_dead_6",
+"level": 8,
+"position": [-684, -144]
+}
+
+[node name="Blackwood Prowler 01" type="Node3D" parent="Enemies" unique_id=501248000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -682, 7.07, -164)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_gloam_wolves_1",
+"level": 8,
+"position": [-682, -164]
+}
+
+[node name="Blackwood Prowler 02" type="Node3D" parent="Enemies" unique_id=1088380912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -698, 8.37, -184)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_gloam_wolves_2",
+"level": 8,
+"position": [-698, -184]
+}
+
+[node name="Blackwood Prowler 03" type="Node3D" parent="Enemies" unique_id=1133433445]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -704, 8.89, -166)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_gloam_wolves_3",
+"level": 9,
+"position": [-704, -166]
+}
+
+[node name="Blackwood Prowler 04" type="Node3D" parent="Enemies" unique_id=456406931]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -688, 7.52, -164)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_gloam_wolves_4",
+"level": 10,
+"position": [-688, -164]
+}
+
+[node name="Blackwood Prowler 05" type="Node3D" parent="Enemies" unique_id=850473107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -698, 8.49, -174)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_gloam_wolves_5",
+"level": 10,
+"position": [-698, -174]
+}
+
+[node name="Blackhedge Cutthroat 01" type="Node3D" parent="Enemies" unique_id=2051063881]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -406, 19.44, -152)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_1",
+"level": 10,
+"position": [-406, -152]
+}
+
+[node name="Blackhedge Cutthroat 02" type="Node3D" parent="Enemies" unique_id=1868798307]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -384, 18.67, -170)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_2",
+"level": 11,
+"position": [-384, -170]
+}
+
+[node name="Blackhedge Cutthroat 03" type="Node3D" parent="Enemies" unique_id=1215859257]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -400, 18.7, -162)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_3",
+"level": 12,
+"position": [-400, -162]
+}
+
+[node name="Blackhedge Cutthroat 04" type="Node3D" parent="Enemies" unique_id=1155228270]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -410, 18.43, -164)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_4",
+"level": 13,
+"position": [-410, -164]
+}
+
+[node name="Blackhedge Cutthroat 05" type="Node3D" parent="Enemies" unique_id=103772055]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -416, 19.35, -156)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_5",
+"level": 14,
+"position": [-416, -156]
+}
+
+[node name="Blackhedge Cutthroat 06" type="Node3D" parent="Enemies" unique_id=292798532]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -398, 19.28, -148)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_flint_robbers_6",
+"level": 15,
+"position": [-398, -148]
+}
+
+[node name="Tf Revenant 01" type="Node3D" parent="Enemies" unique_id=1969993013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -298, 3.33, 114)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_1",
+"level": 11,
+"position": [-298, 114]
+}
+
+[node name="Tf Revenant 02" type="Node3D" parent="Enemies" unique_id=129838548]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -302, 3.69, 94)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_2",
+"level": 12,
+"position": [-302, 94]
+}
+
+[node name="Tf Revenant 03" type="Node3D" parent="Enemies" unique_id=1383672003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 3.84, 120)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_3",
+"level": 13,
+"position": [-300, 120]
+}
+
+[node name="Tf Revenant 04" type="Node3D" parent="Enemies" unique_id=706925518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 3.29, 106)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_4",
+"level": 14,
+"position": [-300, 106]
+}
+
+[node name="Tf Revenant 05" type="Node3D" parent="Enemies" unique_id=1098062145]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -324, 3.9, 110)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_5",
+"level": 15,
+"position": [-324, 110]
+}
+
+[node name="Tf Revenant 06" type="Node3D" parent="Enemies" unique_id=910455529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -318, 3.81, 116)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_reed_haunts_6",
+"level": 16,
+"position": [-318, 116]
+}
+
+[node name="Blackhedge Archer 01" type="Node3D" parent="Enemies" unique_id=1220037264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -148.000, 30.830, -24.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_1",
+"level": 16,
+"position": [-150, -72]
+}
+
+[node name="Blackhedge Archer 02" type="Node3D" parent="Enemies" unique_id=577516379]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -141.000, 31.070, -20.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_2",
+"level": 17,
+"position": [-164, -76]
+}
+
+[node name="Blackhedge Archer 03" type="Node3D" parent="Enemies" unique_id=947181260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -135.000, 31.450, -25.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_3",
+"level": 18,
+"position": [-172, -70]
+}
+
+[node name="Blackhedge Archer 04" type="Node3D" parent="Enemies" unique_id=672546796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -129.000, 31.000, -20.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_4",
+"level": 20,
+"position": [-124, -62]
+}
+
+[node name="Blackhedge Archer 05" type="Node3D" parent="Enemies" unique_id=719325234]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -122.000, 30.980, -25.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_5",
+"level": 21,
+"position": [-156, -82]
+}
+
+[node name="Blackhedge Archer 06" type="Node3D" parent="Enemies" unique_id=725250681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -116.000, 31.000, -20.000)
+metadata/record = {
+"enemy": "blackhedge_archer",
+"id": "lc_iron_raiders_6",
+"level": 22,
+"position": [-124, -70]
+}
+
+[node name="Wm Lantern Pass Threat 01" type="Node3D" parent="Enemies" unique_id=1990766004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, 14.73, -240)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_1",
+"level": 22,
+"position": [98, -240]
+}
+
+[node name="Wm Lantern Pass Threat 02" type="Node3D" parent="Enemies" unique_id=2000512396]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102, 14.89, -254)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_2",
+"level": 23,
+"position": [102, -254]
+}
+
+[node name="Wm Lantern Pass Threat 03" type="Node3D" parent="Enemies" unique_id=486764091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 116, 15.05, -272)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_3",
+"level": 24,
+"position": [116, -272]
+}
+
+[node name="Wm Lantern Pass Threat 04" type="Node3D" parent="Enemies" unique_id=1349986703]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 86, 14.82, -256)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_4",
+"level": 26,
+"position": [86, -256]
+}
+
+[node name="Wm Lantern Pass Threat 05" type="Node3D" parent="Enemies" unique_id=782001548]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 124, 15.17, -258)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_5",
+"level": 27,
+"position": [124, -258]
+}
+
+[node name="Wm Lantern Pass Threat 06" type="Node3D" parent="Enemies" unique_id=1530717615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 96, 14.86, -260)
+metadata/record = {
+"enemy": "wm_lantern_pass_threat",
+"id": "lc_ash_crypt_6",
+"level": 28,
+"position": [96, -260]
+}
+
+[node name="Blackwood Prowler 06" type="Node3D" parent="Enemies" unique_id=376389735]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170, 14.94, -156)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_ash_veil_1",
+"level": 24,
+"position": [170, -156]
+}
+
+[node name="Blackwood Prowler 07" type="Node3D" parent="Enemies" unique_id=1529478999]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190, 15.55, -136)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_ash_veil_2",
+"level": 25,
+"position": [190, -136]
+}
+
+[node name="Blackwood Prowler 08" type="Node3D" parent="Enemies" unique_id=1473310389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 168, 15.44, -164)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_ash_veil_3",
+"level": 26,
+"position": [168, -164]
+}
+
+[node name="Blackwood Prowler 09" type="Node3D" parent="Enemies" unique_id=2063482403]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 182, 15.19, -144)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_ash_veil_4",
+"level": 27,
+"position": [182, -144]
+}
+
+[node name="Blackwood Prowler 10" type="Node3D" parent="Enemies" unique_id=921132324]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 194, 14.59, -154)
+metadata/record = {
+"enemy": "blackwood_prowler",
+"id": "lc_ash_veil_5",
+"level": 28,
+"position": [194, -154]
+}
+
+[node name="Blackhedge Cutthroat 07" type="Node3D" parent="Enemies" unique_id=1891198956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 138, 4.98, 218)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_1",
+"level": 25,
+"position": [138, 218]
+}
+
+[node name="Blackhedge Cutthroat 08" type="Node3D" parent="Enemies" unique_id=571049305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 146, 4.7, 202)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_2",
+"level": 26,
+"position": [146, 202]
+}
+
+[node name="Blackhedge Cutthroat 09" type="Node3D" parent="Enemies" unique_id=310890532]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 148, 5.17, 194)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_3",
+"level": 27,
+"position": [148, 194]
+}
+
+[node name="Blackhedge Cutthroat 10" type="Node3D" parent="Enemies" unique_id=1206297466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135.000, 5.100, 212.000)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_4",
+"level": 28,
+"position": [132, 212]
+}
+
+[node name="Blackhedge Cutthroat 11" type="Node3D" parent="Enemies" unique_id=1377989049]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136, 5.23, 202)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_5",
+"level": 29,
+"position": [136, 202]
+}
+
+[node name="Blackhedge Cutthroat 12" type="Node3D" parent="Enemies" unique_id=937189871]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 112, 5.23, 194)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_tide_camp_6",
+"level": 30,
+"position": [112, 194]
+}
+
+[node name="Blackhedge Cutthroat 13" type="Node3D" parent="Enemies" unique_id=1417291773]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 378.550, 8.370, 124.150)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_1",
+"level": 28,
+"position": [388, 110]
+}
+
+[node name="Blackhedge Cutthroat 14" type="Node3D" parent="Enemies" unique_id=2010183361]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 372, 8.65, 142)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_2",
+"level": 29,
+"position": [372, 142]
+}
+
+[node name="Blackhedge Cutthroat 15" type="Node3D" parent="Enemies" unique_id=493202255]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 376.300, 8.740, 128.650)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_3",
+"level": 31,
+"position": [380, 110]
+}
+
+[node name="Blackhedge Cutthroat 16" type="Node3D" parent="Enemies" unique_id=64563552]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 367.100, 9.470, 126.650)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_4",
+"level": 32,
+"position": [374, 110]
+}
+
+[node name="Blackhedge Cutthroat 17" type="Node3D" parent="Enemies" unique_id=978031033]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 372, 8.8, 128)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_5",
+"level": 34,
+"position": [372, 128]
+}
+
+[node name="Blackhedge Cutthroat 18" type="Node3D" parent="Enemies" unique_id=1138765409]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 386, 7.71, 128)
+metadata/record = {
+"enemy": "blackhedge_cutthroat",
+"id": "lc_red_camp_6",
+"level": 35,
+"position": [386, 128]
+}
+
+[node name="Deadfall Ogre 01" type="Node3D" parent="Enemies" unique_id=2059200340]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 594, 24.97, -76)
+metadata/record = {
+"enemy": "deadfall_ogre",
+"id": "lc_cinder_ogres_1",
+"level": 30,
+"position": [594, -76]
+}
+
+[node name="Deadfall Ogre 02" type="Node3D" parent="Enemies" unique_id=625277086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 606, 24.28, -60)
+metadata/record = {
+"enemy": "deadfall_ogre",
+"id": "lc_cinder_ogres_2",
+"level": 32,
+"position": [606, -60]
+}
+
+[node name="Deadfall Ogre 03" type="Node3D" parent="Enemies" unique_id=1163956294]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 606, 24.23, -68)
+metadata/record = {
+"enemy": "deadfall_ogre",
+"id": "lc_cinder_ogres_3",
+"level": 33,
+"position": [606, -68]
+}
+
+[node name="Deadfall Ogre 04" type="Node3D" parent="Enemies" unique_id=611674175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 616, 24.16, -28)
+metadata/record = {
+"enemy": "deadfall_ogre",
+"id": "lc_cinder_ogres_4",
+"level": 34,
+"position": [616, -28]
+}
+
+[node name="Deadfall Ogre 05" type="Node3D" parent="Enemies" unique_id=1621395979]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 596, 24.24, -50)
+metadata/record = {
+"enemy": "deadfall_ogre",
+"id": "lc_cinder_ogres_5",
+"level": 36,
+"position": [596, -50]
+}
+
+[node name="Tf Revenant 07" type="Node3D" parent="Enemies" unique_id=1875035911]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 621.350, 32.120, 2.900)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_1",
+"level": 35,
+"position": [638, -4]
+}
+
+[node name="Tf Revenant 08" type="Node3D" parent="Enemies" unique_id=653292533]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 614, 24.06, -26)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_2",
+"level": 36,
+"position": [614, -26]
+}
+
+[node name="Tf Revenant 09" type="Node3D" parent="Enemies" unique_id=196045933]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 610, 24.02, -12)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_3",
+"level": 37,
+"position": [610, -12]
+}
+
+[node name="Tf Revenant 10" type="Node3D" parent="Enemies" unique_id=501487877]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 606, 24.08, 0)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_4",
+"level": 38,
+"position": [606, 0]
+}
+
+[node name="Tf Revenant 11" type="Node3D" parent="Enemies" unique_id=492168855]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 623.950, 31.660, -3.800)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_5",
+"level": 39,
+"position": [622, 6]
+}
+
+[node name="Tf Revenant 12" type="Node3D" parent="Enemies" unique_id=1215468260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 614, 24.07, -20)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_cinder_dead_6",
+"level": 40,
+"position": [614, -20]
+}
+
+[node name="Ridge Wolf 06" type="Node3D" parent="Enemies" unique_id=485385948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 388.400, 70.000, -366.400)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_1",
+"level": 40,
+"position": [370, -348]
+}
+
+[node name="Ridge Wolf 07" type="Node3D" parent="Enemies" unique_id=1305338606]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 391.550, 68.540, -363.250)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_2",
+"level": 41,
+"position": [374, -356]
+}
+
+[node name="Ridge Wolf 08" type="Node3D" parent="Enemies" unique_id=1457717664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 396.750, 63.460, -354.550)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_3",
+"level": 41,
+"position": [384, -352]
+}
+
+[node name="Ridge Wolf 09" type="Node3D" parent="Enemies" unique_id=1276823627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 396.900, 66.080, -359.300)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_4",
+"level": 42,
+"position": [388, -346]
+}
+
+[node name="Ridge Wolf 10" type="Node3D" parent="Enemies" unique_id=1326211061]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 392.650, 66.590, -359.100)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_5",
+"level": 42,
+"position": [376, -348]
+}
+
+[node name="Ridge Wolf 11" type="Node3D" parent="Enemies" unique_id=1329473503]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 364.000, 51.240, -320.000)
+metadata/record = {
+"enemy": "ridge_wolf",
+"id": "lc_white_wolves_6",
+"level": 43,
+"position": [364, -334]
+}
+
+[node name="Wm Frostgate Threat 01" type="Node3D" parent="Enemies" unique_id=1365578551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 536, 119.76, -374)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_1",
+"level": 43,
+"position": [536, -374]
+}
+
+[node name="Wm Frostgate Threat 02" type="Node3D" parent="Enemies" unique_id=1518436167]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 530, 118.62, -366)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_2",
+"level": 44,
+"position": [530, -366]
+}
+
+[node name="Wm Frostgate Threat 03" type="Node3D" parent="Enemies" unique_id=1205604660]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 530, 119.2, -374)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_3",
+"level": 44,
+"position": [530, -374]
+}
+
+[node name="Wm Frostgate Threat 04" type="Node3D" parent="Enemies" unique_id=1821890898]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 522, 58.18, -332)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_4",
+"level": 45,
+"position": [522, -332]
+}
+
+[node name="Wm Frostgate Threat 05" type="Node3D" parent="Enemies" unique_id=1386434496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 558, 114.62, -346)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_5",
+"level": 45,
+"position": [558, -346]
+}
+
+[node name="Wm Frostgate Threat 06" type="Node3D" parent="Enemies" unique_id=1277764294]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 544, 117.54, -360)
+metadata/record = {
+"enemy": "wm_frostgate_threat",
+"id": "lc_white_dead_6",
+"level": 46,
+"position": [544, -360]
+}
+
+[node name="Wm Saltroad Threat 01" type="Node3D" parent="Enemies" unique_id=1073421771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 650, 4.86, 236)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_1",
+"level": 45,
+"position": [650, 236]
+}
+
+[node name="Wm Saltroad Threat 02" type="Node3D" parent="Enemies" unique_id=441550395]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 638, 6.12, 254)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_2",
+"level": 46,
+"position": [638, 254]
+}
+
+[node name="Wm Saltroad Threat 03" type="Node3D" parent="Enemies" unique_id=1618207203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 656, 5.12, 254)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_3",
+"level": 46,
+"position": [656, 254]
+}
+
+[node name="Wm Saltroad Threat 04" type="Node3D" parent="Enemies" unique_id=248983477]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 668, 6.05, 256)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_4",
+"level": 47,
+"position": [668, 256]
+}
+
+[node name="Wm Saltroad Threat 05" type="Node3D" parent="Enemies" unique_id=1797889210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 658, 5.58, 234)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_5",
+"level": 47,
+"position": [658, 234]
+}
+
+[node name="Wm Saltroad Threat 06" type="Node3D" parent="Enemies" unique_id=778511329]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 646, 5.14, 250)
+metadata/record = {
+"enemy": "wm_saltroad_threat",
+"id": "lc_salt_bandits_6",
+"level": 48,
+"position": [646, 250]
+}
+
+[node name="Wm Glass Road Threat 01" type="Node3D" parent="Enemies" unique_id=2121948387]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 776, 6.72, 206)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_1",
+"level": 47,
+"position": [776, 206]
+}
+
+[node name="Wm Glass Road Threat 02" type="Node3D" parent="Enemies" unique_id=211587337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 816, 5.72, 204)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_2",
+"level": 48,
+"position": [816, 204]
+}
+
+[node name="Wm Glass Road Threat 03" type="Node3D" parent="Enemies" unique_id=781774211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 804, 5.86, 198)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_3",
+"level": 48,
+"position": [804, 198]
+}
+
+[node name="Wm Glass Road Threat 04" type="Node3D" parent="Enemies" unique_id=1085972428]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 808, 6.07, 204)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_4",
+"level": 49,
+"position": [808, 204]
+}
+
+[node name="Wm Glass Road Threat 05" type="Node3D" parent="Enemies" unique_id=1426886004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 772, 7.57, 218)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_5",
+"level": 49,
+"position": [772, 218]
+}
+
+[node name="Wm Glass Road Threat 06" type="Node3D" parent="Enemies" unique_id=1994045365]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 782, 5.79, 210)
+metadata/record = {
+"enemy": "wm_glass_road_threat",
+"id": "lc_salt_dunes_6",
+"level": 50,
+"position": [782, 210]
+}
+
+[node name="Tf Revenant 13" type="Node3D" parent="Enemies" unique_id=540843639]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 660, 4.66, 442)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_star_dead_1",
+"level": 48,
+"position": [660, 442]
+}
+
+[node name="Tf Revenant 14" type="Node3D" parent="Enemies" unique_id=1109955191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 658, 4.54, 450)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_star_dead_2",
+"level": 48,
+"position": [658, 450]
+}
+
+[node name="Tf Revenant 15" type="Node3D" parent="Enemies" unique_id=147662529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 612, 4.81, 450)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_star_dead_3",
+"level": 49,
+"position": [612, 450]
+}
+
+[node name="Tf Revenant 16" type="Node3D" parent="Enemies" unique_id=550010500]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 618, 4.68, 450)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_star_dead_4",
+"level": 50,
+"position": [618, 450]
+}
+
+[node name="Tf Revenant 17" type="Node3D" parent="Enemies" unique_id=329087328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 650, 4.9, 448)
+metadata/record = {
+"enemy": "tf_revenant",
+"id": "lc_star_dead_5",
+"level": 50,
+"position": [650, 448]
+}
+
+[node name="Wm North Ledger Gate Threat 01" type="Node3D" parent="Enemies" unique_id=2008177866]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 798, 43.89, -220)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_1",
+"level": 50,
+"position": [798, -220]
+}
+
+[node name="Wm North Ledger Gate Threat 02" type="Node3D" parent="Enemies" unique_id=1968616658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 784, 42.79, -234)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_2",
+"level": 50,
+"position": [784, -234]
+}
+
+[node name="Wm North Ledger Gate Threat 03" type="Node3D" parent="Enemies" unique_id=187760591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 778, 44.07, -222)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_3",
+"level": 50,
+"position": [778, -222]
+}
+
+[node name="Wm North Ledger Gate Threat 04" type="Node3D" parent="Enemies" unique_id=86475858]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 788, 43.22, -226)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_4",
+"level": 50,
+"position": [788, -226]
+}
+
+[node name="Wm North Ledger Gate Threat 05" type="Node3D" parent="Enemies" unique_id=2007392348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 786, 44.01, -218)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_5",
+"level": 50,
+"position": [786, -218]
+}
+
+[node name="Wm North Ledger Gate Threat 06" type="Node3D" parent="Enemies" unique_id=1933113317]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 762, 43.75, -238)
+metadata/record = {
+"enemy": "wm_north_ledger_gate_threat",
+"id": "lc_crown_knights_6",
+"level": 50,
+"position": [762, -238]
+}
+
+[node name="Wm Return Whitefall Vaults Elite 01" type="Node3D" parent="Enemies" unique_id=466304189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 821.650, 44.460, -209.050)
+metadata/record = {
+"enemy": "wm_return_whitefall_vaults_elite",
+"id": "lc_crown_elite_1",
+"level": 50,
+"position": [832, -234]
+}
+
+[node name="Vr Young Boar 06" type="Node3D" parent="Enemies" unique_id=1405433689]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -758, 4, 188)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_green_1",
+"level": 1,
+"position": [-758, 188]
+}
+
+[node name="Vr Young Boar 07" type="Node3D" parent="Enemies" unique_id=1096136790]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -744, 4, 190)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_green_2",
+"level": 2,
+"position": [-744, 190]
+}
+
+[node name="Vr Young Boar 08" type="Node3D" parent="Enemies" unique_id=290858189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -739, 4.04, 198)
+metadata/record = {
+"enemy": "vr_young_boar",
+"id": "lc_oat_green_3",
+"level": 2,
+"position": [-739, 198]
+}

@@ -2,6 +2,8 @@
 extends EditorInspectorPlugin
 ## Friendly controls for placed records; metadata remains available for advanced fields.
 const UI := preload("res://addons/shadowfell_data/ui.gd")
+const CoastData := preload("res://game/world/lantern_coast/placement_records.gd")
+const CoastKit := preload("res://game/world/lantern_coast/building_kit.gd")
 var plugin: EditorPlugin
 
 
@@ -15,6 +17,7 @@ func _parse_begin(object: Object) -> void:
 	var box := VBoxContainer.new()
 	UI.heading(box, "Shadowfell placement")
 	var category := str(node.get_parent().name) if node.get_parent() else ""
+	var coast := node.owner != null and node.owner.scene_file_path == CoastData.PATH
 	if category == "Houses":
 		UI.note(box, "Move and turn with the 3D gizmos. Set the width and depth below. Ctrl+D copies a house; save the world to apply changes.")
 	elif category in ["Buildings", "Ponds", "Puzzles"]:
@@ -44,12 +47,18 @@ func _parse_begin(object: Object) -> void:
 			var definitions: Dictionary = DB.enemies if key == "enemy" else DB.npcs
 			for id in definitions:
 				choices.append([id, "%s (%s)" % [definitions[id].get("name", id), id]])
+			if coast and key == "npc" and not definitions.has(CoastData.ANGLER):
+				choices.append([CoastData.ANGLER, CoastData.ANGLER_DEF.name])
 			UI.row(grid, "Definition", UI.choice(choices, record[key], func(value): _change(node, key, value)))
 	if str(node.get_parent().name) == "Props":
+		if coast and record.get("legacy_scene") is PackedScene:
+			UI.note(box, "Existing landmark. Move, rotate, scale or delete it like any other placement.")
+			add_custom_control(box)
+			return
 		UI.row(grid, "Model / scene", UI.line(str(record.get("model", "")), func(value):
 			if Assets.has(value):
 				_change(node, "model", value)), "A model ID or res:// path to a glTF or a Godot scene.")
-		UI.row(grid, "Height offset", UI.spin(record.get("heightOffset", 0), -1000, 1000, 0.05, func(value): _change(node, "heightOffset", value), " m"))
+		UI.row(grid, "Height offset", UI.spin(World.height_offset(record), -1000, 1000, 0.05, func(value): _change(node, "heightOffset", value), " m"))
 		var tint := ColorPickerButton.new()
 		tint.color = Color(record.get("tint", "ffffff"))
 		tint.edit_alpha = false
@@ -60,6 +69,17 @@ func _parse_begin(object: Object) -> void:
 			UI.row(grid, "Collision radius", UI.spin(collider, 0, 100, 0.1, func(value): _change(node, "collider", value), " m"), "Before scaling; zero lets you walk through grass and plants.")
 		else:
 			UI.note(box, "This prop uses compound collision. Edit it under Metadata > record.")
+		if coast:
+			var finishes := []
+			for finish in CoastKit.FINISHES:
+				finishes.append([finish, finish])
+			if not CoastKit.key(Assets.model_path(str(record.get("model", "")))).is_empty():
+				UI.row(grid, "Finish", UI.choice(finishes, record.get("finish", "Original"),
+					func(value): _change(node, "finish", value)))
+			var passthrough := CheckBox.new()
+			passthrough.button_pressed = record.get("noCollision", false)
+			passthrough.toggled.connect(func(value): _change(node, "noCollision", value))
+			UI.row(grid, "Walk through", passthrough, "Ignore this prop's footprint.")
 	UI.note(box, "More settings: Metadata > record. NPC dialogue, quests and enemy definitions: Game Data.")
 	add_custom_control(box)
 
@@ -100,10 +120,11 @@ func _change(node: Node3D, key: String, value) -> void:
 func _apply_record(node: Node3D, record: Dictionary) -> void:
 	if not is_instance_valid(node):
 		return
-	var old_height: float = node.get_meta("record", {}).get("heightOffset", 0.0)
+	var old_height: float = World.height_offset(node.get_meta("record", {}))
 	node.set_meta("record", record.duplicate(true))
-	if str(node.get_parent().name) == "Props" and not is_equal_approx(old_height, float(record.get("heightOffset", 0.0))):
-		node.position.y = Terrain.height_at(node.position.x, node.position.z) + record.get("heightOffset", 0.0)
 	var world := node.get_parent().get_parent()
+	if str(node.get_parent().name) == "Props" and not is_equal_approx(old_height, World.height_offset(record)):
+		var floor_y: float = world.elevation(node.position.x, node.position.z) if world.has_method("elevation") else Terrain.height_at(node.position.x, node.position.z)
+		node.position.y = floor_y + World.height_offset(record)
 	if world.has_method("refresh_marker"):
 		world.refresh_marker(node)

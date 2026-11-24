@@ -515,6 +515,13 @@ func by_id(id: String):
 	return null
 
 
+func free_parked_models() -> void:
+	for n in all:
+		if is_instance_valid(n.group) and n.group.get_parent() == null and not n.group.is_queued_for_deletion():
+			RenderCleanup.detach(n.group)
+			n.group.free()
+
+
 func update(dt: float) -> void:
 	var hour: float = game.world_state.hour
 	var jump := absf(hour - _last_hour)

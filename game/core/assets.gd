@@ -134,7 +134,7 @@ static func tint_instance(root: Node3D, tint: Color) -> void:
 const NATURE_CUTAWAY := preload("res://game/render/nature_cutaway.gdshader")
 static var _cutaway_for := {}
 
-static func use_cutaway(root: Node3D) -> void:
+static func use_cutaway(root: Node3D, snow_cover := 0) -> void:
 	var meshes: Array = root.find_children("*", "MeshInstance3D", true, false)
 	if root is MeshInstance3D:
 		meshes.append(root)
@@ -144,12 +144,15 @@ static func use_cutaway(root: Node3D) -> void:
 		for i in mi.mesh.get_surface_count():
 			var original := mi.get_active_material(i)
 			if original is BaseMaterial3D:
-				mi.set_surface_override_material(i, cutaway_material(original))
+				var foliage: bool = (snow_cover > 0 and original.albedo_texture != null
+					and original.albedo_texture.resource_path.get_file().begins_with("Leaf_"))
+				mi.set_surface_override_material(i, cutaway_material(original, snow_cover if foliage else 0))
 
 
-static func cutaway_material(src: BaseMaterial3D) -> ShaderMaterial:
-	if _cutaway_for.has(src):
-		return _cutaway_for[src]
+static func cutaway_material(src: BaseMaterial3D, snow_cover := 0) -> ShaderMaterial:
+	var key := Vector2i(src.get_instance_id(), snow_cover)
+	if _cutaway_for.has(key):
+		return _cutaway_for[key].material
 	var m := ShaderMaterial.new()
 	m.shader = NATURE_CUTAWAY
 	m.set_shader_parameter("albedo", src.albedo_color)
@@ -163,7 +166,8 @@ static func cutaway_material(src: BaseMaterial3D) -> ShaderMaterial:
 	if src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
 		m.set_shader_parameter("alpha_scissor", src.alpha_scissor_threshold)
 	m.set_shader_parameter("roughness", src.roughness)
-	_cutaway_for[src] = m
+	m.set_shader_parameter("snow_cover", [0.0, .62, 1.0][clampi(snow_cover, 0, 2)])
+	_cutaway_for[key] = {"source": src, "material": m}
 	return m
 
 

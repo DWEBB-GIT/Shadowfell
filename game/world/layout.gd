@@ -29,6 +29,7 @@ static var danger_zones: Array
 static var road: Array
 static var road_half_width: float
 static var track: Array
+static var coast_roads: Array
 
 
 static func setup(w: Dictionary, s: Dictionary) -> void:
@@ -50,9 +51,17 @@ static func setup(w: Dictionary, s: Dictionary) -> void:
 	enemies = []
 	for sp in w.enemySpawns:
 		var e := {"id": sp.id, "type": sp.enemy, "position": sp.position}
+		if sp.has("level"):
+			e.level = int(sp.level)
 		if sp.has("activeHours"):
 			e.activeHours = sp.activeHours
+		if sp.has("coastEncounter"):
+			e.coastEncounter = sp.coastEncounter
 		enemies.append(e)
+	road = []
+	track = []
+	road_half_width = 0.0
+	coast_roads = w.roads if w.get("id", "") == "lantern_coast" else []
 	for r in w.roads:
 		if r.id == "fallen_road":
 			road = r.points

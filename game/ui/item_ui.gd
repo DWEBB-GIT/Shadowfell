@@ -69,6 +69,9 @@ func _init(g, h) -> void:
 	var ev = game.events
 	for e in ["inventoryChanged", "equipmentChanged", "levelUp", "barChanged", "skillsChanged", "reputationChanged", "titlesChanged"]:
 		ev.on(e, func(_e): render())
+	ev.on("targetChanged", func(_e):
+		if open.character:
+			_render_character(game.inventory))
 	ev.on("runeForgeChanged", func(_e):
 		if open.runeforge:
 			render())
@@ -173,7 +176,7 @@ func _build() -> void:
 		w.inner = UI.vbox(sc, 6)
 		w.inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		w.foot = UI.hint(w.body)
-	settings_win = UI.window(self, "Settings", 400, func(): close("settings"))
+	settings_win = UI.window(self, "Settings", 560, func(): close("settings"))
 	talents = UI.window(self, "Talents", 470, func(): close("talents"))
 	talents.sub = UI.label(null, "", 13, UI.TEXT_DIM)
 	talents.head.add_child(talents.sub)
@@ -307,7 +310,7 @@ func _build_settings() -> void:
 			page.add_child(cb)
 			settings_win.inputs[id] = [cb]
 	var keys: VBoxContainer = settings_win.pages.keys
-	UI.wrapped(UI.label(keys, "Click a key to change it, then press the new key. Backspace unbinds it, Escape keeps it.", 12, UI.TEXT_DIM))
+	UI.wrapped(UI.label(keys, "Choose a primary or alternate binding, then press a key or mouse button. Backspace clears that binding. Escape cancels. Click-to-move is enabled under Controls.", 12, UI.TEXT_DIM))
 	var btns := UI.hbox(keys, 6)
 	hud.keybind_ui.quick_button = UI.button(btns, "Quick bind", func(): hud.keybind_ui.set_quick(not hud.keybind_ui.quick))
 	UI.button(btns, "Reset to defaults", func(): game.keys.reset_all())
@@ -838,6 +841,18 @@ const STATS_W := 180 ## the scrolling numbers beside the paper doll
 var _stats_scroll := 0
 
 
+static func _damage_span(values: Array) -> String:
+	return "%s–%s" % [U.n(values[0]), U.n(values[1])]
+
+
+func _attribute_tip(stat: String, total: float, description: String) -> String:
+	var parts: Dictionary = game.stats.attribute_sources(stat, total)
+	var text := "%s starting · %s from levels · %s from gear" % [U.n(parts.base), U.n(parts.levels), U.n(parts.gear)]
+	if parts.temporary != 0.0:
+		text += "\n%s from temporary effects" % U.n(parts.temporary)
+	return text + ("\n" + description if not description.is_empty() else "")
+
+
 func _equip_col(parent: Node, inv, where: String, px := SLOT_PX) -> void:
 	for s in DB.EQUIP_SLOTS:
 		if s.col == where:
@@ -898,13 +913,17 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 	var arch: Dictionary = st.archetype
 	var wears: Array = arch.get("armourTypes", []).map(func(k): return DB.armour_types[k].name)
 	var conf: Dictionary = DB.CONFIG.stats
+	var full_health := int(conf.healthBase + t.stamina * conf.healthPerStamina)
+	var health_tip := "%s base health + %s Stamina × %s health = %s" % [U.n(conf.healthBase), U.n(t.stamina), U.n(conf.healthPerStamina), U.n(full_health)]
+	if p.max_health < full_health:
+		health_tip += "\nCurrent wounds reduce maximum health to %s." % U.n(p.max_health)
 	# the level sits by the name, at the top
 	character.level.text = "Level %d %s" % [lvl, arch.name]
 	# grouped under headings, as most RPGs do (Dan, 2026-10-28)
 	var rows := [
 		"Character",
 		["Trait", arch.trait.name, arch.trait.desc] if arch.get("trait") else null,
-		["Health", "%d / %d" % [ceili(p.health), p.max_health], "", "health"],
+		["Health", "%d / %d" % [ceili(p.health), p.max_health], health_tip, "health"],
 	]
 	# the class's resources, as applicable: mana, then its own bar(s)
 	var res = game.resources
@@ -915,19 +934,25 @@ func _render_paper_doll(inv, main: VBoxContainer) -> void:
 			rows.append([b.name, "%d / %d" % [floori(res.amount(b.id)), roundi(b.get("max", 0))], b.get("desc", "")])
 	rows += [
 		"Attributes",
-		["Stamina", U.n(t.stamina), "+%s health per point" % U.n(conf.healthPerStamina), "stamina"],
-		["Strength", U.n(t.strength), "Adds to every swing and weapon ability" if st.power_stat == "strength" else "", "strength"],
-		["Agility", U.n(t.agility), "+%.2f%% crit chance per point at level %d%s" % [1.0 / st.agility_per_crit, lvl, "; adds to every swing and weapon ability" if st.power_stat == "agility" else ""], "agility"],
-		["Intellect", U.n(t.intellect), "Spell power, and mana for casters", "intellect"],
+		["Stamina", U.n(t.stamina), _attribute_tip("stamina", t.stamina, "+%s health per point" % U.n(conf.healthPerStamina)), "stamina"],
+		["Strength", U.n(t.strength), _attribute_tip("strength", t.strength, "Adds to swings and weapon abilities." if st.power_stat == "strength" else ""), "strength"],
+		["Agility", U.n(t.agility), _attribute_tip("agility", t.agility, "+%.2f%% crit chance per point at level %d.%s" % [1.0 / st.agility_per_crit, lvl, " Adds to swings and weapon abilities." if st.power_stat == "agility" else ""]), "agility"],
+		["Intellect", U.n(t.intellect), _attribute_tip("intellect", t.intellect, "Adds spell power, and mana for casters."), "intellect"],
 		"Offence",
 		["Crit", "%.1f%%" % st.crit_chance, "Critical hits do %s%% damage" % U.n(conf.critMultiplier * 100), "crit"],
 		["Haste", "%s%%" % U.n(st.haste), "Shortens the time between swings, ability windups, casts and the global cooldown (swing %.2fs, GCD %.2fs)" % [st.attack_cooldown, st.global_cooldown], "haste"],
-		["Damage", "–".join(st.swing_range.map(func(x): return U.n(x))), "Your hit with %s: its own %s damage, plus %s from your %s on every swing" % [inv.weapon.name, "–".join(st.weapon_range.map(func(x): return U.n(x))), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+		["Main hand hit", _damage_span(st.swing_range), "%s weapon damage + %s from %s, per swing. Enemy level and armour, critical hits, blocks and combat effects change the hit." % [_damage_span(st.weapon_range), U.fixed(st.swing_power, 1), st.power_stat.capitalize()]],
+	]
+	var target = game.targeting.current
+	if target != null and target.alive:
+		rows.append(["Against target", _damage_span(st.swing_range_for("main", Stats.enemy_block(target.cfg))),
+			"Main-hand hit against a level %d %s. Includes level difference and armour. Critical hits, blocks and combat effects are separate." % [int(target.cfg.level), target.cfg.name]])
+	rows += [
 		["Attack speed", "%.2fs" % st.attack_cooldown, "Time between swings: weapon speed %.1f, shortened by haste" % st.weapon_speed],
 		["Spell power", U.n(st.spell_power), "Added to your spells: from Intellect, and from a caster's weapon"],
 	]
 	if st.dual_wielding:
-		rows.append(["Off hand", "%s / %.2fs" % ["–".join(st.swing_range_for("off").map(func(x): return U.n(x))), st.attack_cooldown_for("off")], "%s: its own swing timer; off-hand blows do %d%% damage" % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
+		rows.append(["Off hand", "%s / %.2fs" % [_damage_span(st.swing_range_for("off")), st.attack_cooldown_for("off")], "%s swings on its own timer at %d%% damage." % [inv.off_weapon.name, roundi(conf.offHandDamage * 100)]])
 	rows.append(["DPS", "%.1f" % st.dps, "From auto attack alone, both hands" if st.dual_wielding else "From auto attack alone", "dps"])
 	rows.append(["Miss", "%s%%" % U.fixed(Stats.miss_chance(lvl, lvl, st.accuracy), 1), "Chance to miss a foe of your own level: %s%% less for each level below you, %s%% more for each level above. Accuracy from gear (%s%%) takes it down." % [U.n(conf.missPerLevelBelow), U.n(conf.missPerLevelAbove), U.n(st.accuracy)]])
 	rows += [
@@ -1401,7 +1426,7 @@ func _render_settings() -> void:
 			var ob: OptionButton = parts[0]
 			ob.clear()
 			var src = Settings._def(id).get("options")
-			var opts: Array = Settings.CAMERA_PRESETS.keys() if src == "CAMERA_PRESETS" else Settings.COMBAT_MOVES if src == "COMBAT_MOVES" else game.audio.output_devices()
+			var opts: Array = Settings.CAMERA_PRESETS.keys() if src == "CAMERA_PRESETS" else Settings.COMBAT_MOVES if src == "COMBAT_MOVES" else Settings.STRAFE_FACING if src == "STRAFE_FACING" else game.audio.output_devices()
 			for d in opts:
 				ob.add_item(d)
 				if d == v:
@@ -2258,7 +2283,7 @@ func _stack_lines(stack: Dictionary, loc: String, shop_price, compare := false) 
 		var mine: float = (def.damage[0] + def.damage[1]) / 2.0 / speed
 		var diff: float = roundf((mine - (st.weapon_range[0] + st.weapon_range[1]) / 2.0 / st.weapon_speed) * 10) / 10
 		var cmp := "" if loc.begins_with("e:") or diff == 0 else " [color=%s](%s%s)[/color]" % [UI.hex(UI.UP if diff > 0 else UI.DOWN), "+" if diff > 0 else "", U.n(diff)]
-		lines.append("[table=2][cell expand=1]%s–%s damage[/cell][cell]Speed %.2f[/cell][/table]\n" % [U.n(def.damage[0]), U.n(def.damage[1]), speed])
+		lines.append("[table=2][cell expand=1]%s weapon damage[/cell][cell]Speed %.2f[/cell][/table]\n" % [_damage_span(def.damage), speed])
 		lines.append(_l("(%.1f damage per second%s)" % [mine, cmp]))
 	for k in def.get("stats", {}):
 		lines.append(_l("+%s %s" % [U.n(def.stats[k]), STAT_LABEL.get(k, k)], UI.hex(UI.UP)))
@@ -2386,12 +2411,16 @@ func _fill(lines: Array, def: Dictionary, loc: String) -> void:
 	_set_tip(lines, boxes)
 
 
+var _world_tip_pick = null
+var _world_quest_lines := ""
+
+
 ## Whoever is under the cursor in the world: called every frame with the
 ## pick (or null). Item and button tooltips come first.
 func world_tip(pick) -> void:
 	if tip_from == "ui" and tooltip.visible:
 		return
-	var key = pick.obj if pick != null and (pick.kind == "enemy" or pick.kind == "npc" or pick.kind == "sign") else null
+	var key = pick.obj if pick != null and pick.kind in ["enemy", "corpse", "npc", "sign"] else null
 	# a station, shrine, vein or herb: its name by the cursor, and what a
 	# click does under it (Dan, 2026-11-03: tell the rune forge from the
 	# refining altar without clicking)
@@ -2410,10 +2439,31 @@ func world_tip(pick) -> void:
 		text = _name_line("Signpost", "")
 		for l in Layout.signpost_lines(key):
 			text += "[color=#c9a45c]%s[/color] %s [color=#9a8f78][font_size=12]%s m %s[/font_size][/color]\n" % [l.arrow, _esc(l.label), U.n(l.metres), l.dir]
-	elif pick.kind == "enemy":
-		text = _name_line(key.cfg.name, "#" + (UI.NAME_PASSIVE if key.passive else UI.NAME_HOSTILE).to_html(false)) + _l("Level %s%s" % [U.n(key.cfg.get("level", 1)), " Elite" if key.cfg.get("elite") else ""]) + _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
+	elif pick.kind in ["enemy", "corpse"]:
+		var level := int(key.cfg.get("level", 1))
+		var player_level: int = game.progression.level
+		text = _name_line(key.cfg.name, "#" + UI.enemy_name_colour(key, player_level).to_html(false))
+		text += _l("Level %s%s" % [U.n(level), " Elite" if key.cfg.get("elite") else ""])
+		if pick.kind == "corpse":
+			text += _l("Dead", "#9a8f78", 12)
+			if pick.action.get("kind") == "skin":
+				text += _l("Skin corpse" if pick.blocked == "" else "Skinning " + _esc(pick.blocked), "#d8b67d", 12)
+		else:
+			var difficulty := UI.enemy_difficulty(level, player_level)
+			if difficulty == "Trivial":
+				difficulty += " · No XP"
+			text += _l(difficulty, "#" + UI.enemy_name_colour(key, player_level).to_html(false), 12)
+			text += _l("%d / %d health" % [ceili(key.health), key.max_health], "#9a8f78", 12)
 	else:
 		text = _name_line(key.name, "#a8e08c") + (_l("<%s>" % _esc(key.def.title), "#9a8f78", 12) if key.def.get("title") else "") + _l("Level %s" % U.n(key.def.get("level", 1)))
+	if not is_same(_world_tip_pick, pick):
+		_world_tip_pick = pick
+		_world_quest_lines = ""
+		for row in game.quests.related_objectives(pick):
+			_world_quest_lines += _l("[b]%s[/b]" % _esc(row.name), "#ffd269", 13)
+			_world_quest_lines += _l(_esc(row.line), "#ddd0b5", 12)
+	if not _world_quest_lines.is_empty():
+		text += "\n" + _world_quest_lines
 	if not is_same(tip_key, key) or tip_text != text:
 		tip_key = key
 		tip_text = text
@@ -2440,6 +2490,14 @@ func _thing_tip(pick) -> Dictionary:
 			return {"key": "vein:%s" % o.name + str(o.x), "name": o.name, "colour": "#f0d890", "sub": "Mining"}
 		"herb":
 			return {"key": "herb:%s" % o.name + str(o.x), "name": o.name, "colour": "#9fe07a", "sub": DB.skills.get(o.skill, {}).get("name", "")}
+		"loot":
+			if o.kind == "item":
+				var d: Dictionary = o.entry.def
+				var label: String = d.get("name", game.loot.describe(o.entry))
+				if label.is_empty():
+					return {}
+				var item: Dictionary = Items.get_def(d.get("reward", {}).get("item", ""))
+				return {"key": "loot:" + d.id, "name": label, "colour": "#" + Items.rarity_colour(item.get("rarity", "common")).to_html(false), "sub": d.get("prompt", "")}
 	return {}
 
 

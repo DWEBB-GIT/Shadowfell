@@ -83,7 +83,7 @@ static func number_scale(amount: float, usual: float) -> float:
 
 ## your usual white hit with that hand, before armour
 func usual_hit(hand := "main") -> float:
-	var h := "ranged" if hand == "ranged" and game.inventory.ranged_weapon != null else "main"
+	var h := hand if game.stats.hand_weapon(hand) != null else "main"
 	var r: Array = game.stats.swing_range_for(h)
 	return (r[0] + r[1]) / 2.0
 

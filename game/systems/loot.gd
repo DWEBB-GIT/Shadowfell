@@ -31,10 +31,11 @@ var _auto_t := 0.0
 const GROUND_LIFE := 300.0
 
 
-## The Skinning rank a beast of this level needs (by level, not by kind).
+## Five-level creature bands share one requirement across the Hunting skill's 1–100 range.
 static func skin_rank(level: float) -> int:
 	var t: Dictionary = DB.CONFIG.skinning
-	return maxi(1, int((level - t.freeLevel) * t.rankPerLevel))
+	var band := maxi(0, ceili(level / float(t.levelsPerBand)) - 1)
+	return 1 + band * int(t.ranksPerBand)
 
 
 func _init(g) -> void:
@@ -230,8 +231,11 @@ func drop_from_enemy(enemy) -> Array:
 	var out := []
 	var drops := Items.roll_loot(DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}), rand)
 	drops.append_array(Items.roll_loot(DB.world_drop_band(enemy.cfg), rand))
+	var local: Dictionary = DB.world.get("lootBySpawn", {}).get(enemy.id, {})
+	drops.append_array(Items.roll_loot(local, rand))
+	drops.append_array(Items.roll_loot(local.get("supplies", {}), rand))
 	# quest drops: only while one of the player's quests still needs the item
-	for qd in DB.loot_tables.get(enemy.cfg.get("lootTable", ""), {}).get("questDrops", []):
+	for qd in quest_drops(enemy.cfg, enemy.id):
 		if game.quests.needs_item(qd.quest, qd.item) and rand.call() < qd.chance:
 			drops.append({"id": qd.item, "count": 1, "rarity": Items.get_def(qd.item).get("rarity")})
 	for drop in drops:
@@ -253,6 +257,43 @@ func drop_from_enemy(enemy) -> Array:
 	return out
 
 
+static func quest_drops(cfg: Dictionary, spawn_id: String) -> Array:
+	var local: Dictionary = DB.world.get("lootBySpawn", {}).get(spawn_id, {})
+	return DB.loot_tables.get(cfg.get("lootTable", ""), {}).get("questDrops", []) + local.get("questDrops", [])
+
+
+static func drops_quest_item(cfg: Dictionary, spawn_id: String, quest: String, item: String, include_skin := false) -> bool:
+	for drop in quest_drops(cfg, spawn_id):
+		if drop.quest == quest and drop.item == item and float(drop.chance) > 0.0:
+			return true
+	if cfg.get("uniqueDrop") == item:
+		return true
+	var local: Dictionary = DB.world.get("lootBySpawn", {}).get(spawn_id, {})
+	var tables := [DB.loot_tables.get(cfg.get("lootTable", ""), {}), local, local.get("supplies", {})]
+	if include_skin:
+		tables.append(DB.loot_tables.get(cfg.get("skin", ""), {}))
+	for table in tables:
+		if _table_yields(table, item):
+			return true
+	return false
+
+
+static func skin_yields(cfg: Dictionary, item: String) -> bool:
+	return _table_yields(DB.loot_tables.get(cfg.get("skin", ""), {}), item)
+
+
+static func _table_yields(table: Dictionary, item: String) -> bool:
+	if table.get("always", []).any(func(drop): return drop.item == item and drop.max > 0):
+		return true
+	var drops: Dictionary = table.get("drops", {})
+	if drops.get("chance", 0.0) <= 0.0 or drops.get("rolls", 0) <= 0:
+		return false
+	for rarity in drops.get("items", {}):
+		if drops.rarity.get(rarity, 0) > 0 and drops.items[rarity].any(func(drop): return drop.item == item and drop.weight > 0):
+			return true
+	return false
+
+
 func clear() -> void:
 	for l in active:
 		l.group.queue_free()
@@ -264,7 +305,8 @@ func clear() -> void:
 func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	var group := Node3D.new()
 	var coins: int = int(def.get("reward", {}).get("coins", 0))
-	var model: Node3D = _coin_piles(coins) if coins > 0 else Assets.instance(def.get("model", ""))
+	var model_id: String = def.get("model", "")
+	var model: Node3D = _coin_piles(coins) if coins > 0 else Assets.instance("satchel" if model_id.is_empty() else model_id)
 	if def.get("scale"):
 		model.scale *= def.scale
 	if def.get("kind") == "weapon":
@@ -298,6 +340,20 @@ func _spawn(def: Dictionary, x: float, z: float) -> Dictionary:
 	group.rotation.y = fmod(x * 13.7 + z * 7.1, TAU)
 	game.scene.add_child(group)
 	var entry := {"def": def, "x": x, "z": z, "group": group, "glint": glint, "beam": beam, "base_y": base_y, "seed": randf() * 6, "depleted": false}
+	if def.has("startsQuest"):
+		var marker := Label3D.new()
+		marker.text = "!"
+		marker.font_size = 52
+		marker.outline_size = 13
+		marker.pixel_size = 0.012
+		marker.modulate = Color("f4ce70")
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.position.y = 1.05
+		marker.visibility_range_end = 18.0
+		marker.visible = gatherable(def)
+		glint.visible = marker.visible
+		group.add_child(marker)
+		entry.quest_marker = marker
 	active.append(entry)
 	return entry
 
@@ -460,6 +516,8 @@ func add_corpse(enemy, coins: float) -> void:
 ## A gathering node tied to a quest (`quest`) can only be taken, and only
 ## sparkles, while that quest is active and still needs its item.
 func gatherable(def: Dictionary) -> bool:
+	if def.has("startsQuest"):
+		return game.quests.status(def.startsQuest, true) == "available"
 	if not def.get("quest"):
 		return true
 	var q = game.quests
@@ -587,6 +645,8 @@ func collect(entry: Dictionary) -> bool:
 		ws.mark_collected(def.id)
 	entry.group.queue_free()
 	active.erase(entry)
+	if def.has("startsQuest"):
+		game.quests.accept(def.startsQuest)
 	events.emit("lootCollected", {"id": def.id, "item": r.get("item", "")})
 	if def.get("opensDocument") and not def.has("ground"):
 		game.hud.open_document(def.opensDocument)
@@ -634,6 +694,9 @@ func update(dt: float, time: float) -> void:
 					collect(g.entry)
 	_age_ground(dt)
 	for l in active:
+		if l.has("quest_marker"):
+			l.quest_marker.visible = gatherable(l.def)
+			l.glint.visible = l.quest_marker.visible
 		if l.def.get("quest"):
 			l.glint.visible = available(l)
 		l.glint.material_override.albedo_color.a = 0.45 + sin(time * 2.2 + l.seed) * 0.2
@@ -679,18 +742,32 @@ func _skinnable(id: String) -> bool:
 	return c != null and not (c.coins > 0) and e != null and e.cfg.get("skin", "") != ""
 
 
+## Use the body's current position for both clicking and the interaction key.
+func corpse_action(enemy) -> Dictionary:
+	var c = game.world_state.corpses.get(enemy.id)
+	if c == null:
+		return {}
+	var view := {"id": enemy.id, "x": enemy.position.x, "z": enemy.position.z, "name": enemy.cfg.name}
+	if c.coins > 0:
+		view.merge({"kind": "corpse", "coins": c.coins})
+	elif keep_for_skinning(enemy):
+		view.merge({"kind": "skin", "rank": skin_rank(enemy.cfg.level)})
+	else:
+		return {}
+	return view
+
+
 ## Bodies that can be skinned now: [{ kind: 'skin', id, x, z, name, rank }]
 func skinnables() -> Array:
 	if not game.skills.has("skinning"):
 		return []
 	var out := []
-	var ws = game.world_state
-	for id in ws.corpses:
-		if not _skinnable(id):
-			continue
-		var c: Dictionary = ws.corpses[id]
+	for id in game.world_state.corpses:
 		var e = game.enemies.by_id(id)
-		out.append({"kind": "skin", "id": id, "x": c.x, "z": c.z, "name": e.cfg.name, "rank": skin_rank(e.cfg.level)})
+		if e != null:
+			var view := corpse_action(e)
+			if view.get("kind") == "skin":
+				out.append(view)
 	return out
 
 
@@ -722,9 +799,13 @@ func skin_block(s: Dictionary) -> String:
 
 func start_skin(s: Dictionary) -> bool:
 	var player = game.player
-	if (gathering != null and gathering.get("skin") == s.id) or not _skinnable(s.id):
+	if (gathering != null and gathering.get("skin") == s.id) or not game.skills.has("skinning") or not _skinnable(s.id):
 		return false
 	if player.casting != null or player.dead:
+		return false
+	s = corpse_action(game.enemies.by_id(s.id))
+	if game._far(s.x, s.z, DB.CONFIG.loot.reach):
+		game.hud.error("You need to be closer to skin that.")
 		return false
 	var why := skin_block(s)
 	if why != "":

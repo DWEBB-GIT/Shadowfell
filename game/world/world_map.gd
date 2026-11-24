@@ -86,6 +86,16 @@ static func region_at(x: float, z: float) -> Dictionary:
 	var regions: Array = DB.world.regions
 	if regions.is_empty():
 		return {}
+	if Terrain.is_lantern_coast():
+		var at := Vector2(x, z)
+		var nearest: Dictionary = regions[0]
+		var distance := INF
+		for r in regions:
+			var centre := Vector2(r.coastCenter[0], r.coastCenter[1])
+			if at.distance_squared_to(centre) < distance:
+				distance = at.distance_squared_to(centre)
+				nearest = r
+		return nearest
 	if Terrain.is_new_map():
 		for r in regions:
 			if r.has("rect") and Rect2(r.rect[0], r.rect[1], r.rect[2], r.rect[3]).has_point(Vector2(x, z)):

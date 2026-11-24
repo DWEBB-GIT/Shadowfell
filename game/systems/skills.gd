@@ -542,7 +542,7 @@ func apply(data) -> void:
 	for id in data:
 		var r = data[id]
 		if DB.skills.has(id) and (typeof(r) == TYPE_INT or (typeof(r) == TYPE_FLOAT and r == floor(r))) and r >= 1:
-			ranks[id] = mini(int(r), int(DB.skills[id].get("maxRank", 60 if DB.skills[id].has("train") else 1)))
+			ranks[id] = mini(int(r), top(id))
 
 
 # ------------------------------------------------------------ the Skills window
@@ -625,6 +625,11 @@ func unlocks(id: String) -> Array:
 	if id == "mining":
 		for r in DB.mining.get("rocks", []):
 			add.call(int(r.get("rank", 1)), r.name, "gather", str(r.get("ore", {}).get("item", "")) if r.get("ore") is Dictionary else "")
+	if id == "skinning":
+		var band: int = DB.CONFIG.skinning.levelsPerBand
+		var cap_level: int = DB.CONFIG.progression.maxLevel
+		for level in range(1, cap_level + 1, band):
+			add.call(Loot.skin_rank(level), "Butcher level %d–%d beasts" % [level, mini(level + band - 1, cap_level)], "gather")
 	if id == "fishing":
 		var seen := {}
 		var deep := {}

@@ -52,8 +52,7 @@ func _names() -> Array:
 		if not e.alive or game.hud.enemy_bars.has(e.id):
 			continue
 		var h: float = e.cfg.get("barHeight", 3.0 if e.cfg.get("elite") else 2.1)
-		var lawful: bool = e.cfg.get("lawful", "") != "" and e.protected
-		out.append({"text": e.cfg.name, "colour": UI.NAME_FRIENDLY if lawful else UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE, "at": e.position + Vector3(0, h, 0)})
+		out.append({"text": e.cfg.name, "colour": UI.enemy_name_colour(e, game.progression.level), "at": e.position + Vector3(0, h, 0)})
 	return out
 
 

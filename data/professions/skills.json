@@ -232,7 +232,7 @@
       "cost": 10,
       "teaches": [],
       "maxRank": 100,
-      "desc": "Butcher the beasts you kill for their hides, pelts and meat, and fillet fish for the pot (you need a skinning knife). Loot the body first, then butcher it. Higher-level beasts need a higher rank (10 ranks a level), and better fish take more skill to fillet; every carcass and fish not yet easy for you has a chance to raise the skill. Small fish still cook whole: filleting gets more from them.",
+      "desc": "Butcher the beasts you kill for their hides, pelts and meat, and fillet fish for the pot (you need a skinning knife). Loot the body first, then butcher it. Beasts in the same five-level band need the same Hunting rank: levels 1–5 need rank 1, levels 6–10 need rank 11, and each band adds 10 ranks, up to rank 91 for levels 46–50. Better fish take more skill to fillet; every carcass and fish that still challenges you can raise the skill. Small fish still cook whole: filleting gets more from them.",
       "craft": {
         "window": "Filleting",
         "verb": "fillet",
@@ -249,7 +249,7 @@
       "cost": 10,
       "teaches": [],
       "maxRank": 100,
-      "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick). Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Harder rock needs a higher rank (5 ranks an ore level); the skill rises with every swing that is not yet easy for you. Smelting the ore into bars is Smithing's work."
+      "desc": "Mine the ore veins that glint in rock outcrops (you need a mining pick). Veins move: a mined-out outcrop goes bare and another in the same group starts to glint. Copper and fieldstone need Mining 1, tin needs 4, and iron needs 8. Rarer deposits gradually need more skill, up to Mining 96 for fallen stars. The skill rises with every swing that still challenges you. Smelting the ore into bars is Smithing's work."
     },
     {
       "id": "smithing",

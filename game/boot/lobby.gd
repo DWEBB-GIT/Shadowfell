@@ -35,6 +35,7 @@ var status: Label
 var http: HTTPRequest
 var pack_ready := false
 var waiting_id := "" ## the character to play once the pack is in
+var waiting_world_key := ""
 var retry_in := 0.0
 var failures := 0
 
@@ -199,10 +200,11 @@ func _process(dt: float) -> void:
 
 ## The title screen's Enter World and Create: the game scene plays them
 ## once the world's pack is in.
-func enter_world(id: String) -> void:
+func enter_world(id: String, world_key := "") -> void:
 	if roster.by_id(id) == null or waiting_id != "":
 		return
 	waiting_id = id
+	waiting_world_key = world_key
 	roster.touch(id)
 	hud.modal = "loading"
 	title.close()
@@ -216,4 +218,5 @@ func enter_world(id: String) -> void:
 func _go() -> void:
 	loading.show_progress("Raising the world…", 1.0)
 	Game.enter_id = waiting_id
+	Game.enter_world_key = waiting_world_key
 	get_tree().change_scene_to_file.call_deferred(GAME_SCENE)

@@ -7,6 +7,7 @@ extends RefCounted
 var game
 var hud
 var waiting = null ## action id waiting for a key
+var waiting_slot := -1
 var quick := false
 var hovered = null ## bar slot index under the mouse during Quick bind
 var list: VBoxContainer ## filled by render, inside the Settings window
@@ -35,20 +36,27 @@ func render() -> void:
 		var row := UI.hbox(list, 6)
 		var l := UI.label(row, a.label, 12)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var text: String = "Press a key…" if waiting == a.id else (keys.label(a.id) if keys.label(a.id) != "" else "Not bound")
-		var id: String = a.id
-		var b := UI.button(row, text, func(): listen(id))
-		b.custom_minimum_size = Vector2(80, 0)
-		if waiting == a.id:
-			b.add_theme_color_override("font_color", UI.GOLD)
-			b.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), UI.GOLD, 0, 1, Vector4(8, 2, 8, 2)))
+		for slot in 2:
+			var bindings: Array = keys.map.get(a.id, [])
+			var current: String = bindings[slot] if slot < bindings.size() else ""
+			var listening: bool = waiting == a.id and waiting_slot == slot
+			var text := "Key / mouse…" if listening else (Keybinds.key_label(current) if current != "" else "Not bound")
+			var id: String = a.id
+			var index: int = slot
+			var b := UI.button(row, text, func(): listen(id, index))
+			b.tooltip_text = "Primary binding" if slot == 0 else "Alternate binding"
+			b.custom_minimum_size = Vector2(94, 0)
+			if listening:
+				b.add_theme_color_override("font_color", UI.GOLD)
+				b.add_theme_stylebox_override("normal", UI.box(Color("1d1812"), UI.GOLD, 0, 1, Vector4(8, 2, 8, 2)))
 	if quick_button:
 		quick_button.add_theme_color_override("font_color", UI.GOLD if quick else UI.TEXT)
 
 
 ## wait for the next key and bind it (Escape cancels, Backspace unbinds)
-func listen(id: String) -> void:
+func listen(id: String, slot := 0) -> void:
 	waiting = id
+	waiting_slot = slot
 	render()
 	game.input.capture = func(code: String, shift: bool):
 		if code.begins_with("Shift"):
@@ -57,8 +65,8 @@ func listen(id: String) -> void:
 		waiting = null
 		var combo := Keybinds.combo_of(code, shift)
 		if code == "Backspace":
-			game.keys.unbind(id)
-		elif code != "Escape" and not game.keys.bind(id, combo):
+			game.keys.unbind(id, slot)
+		elif code != "Escape" and not game.keys.bind(id, combo, slot):
 			hud.error("%s cannot be bound" % Keybinds.key_label(combo))
 		render()
 

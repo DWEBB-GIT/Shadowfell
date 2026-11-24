@@ -37,10 +37,12 @@ func _visual(pick):
 		return null
 	var o = pick.obj
 	match pick.kind:
-		"enemy", "npc", "chest":
+		"enemy", "corpse", "npc", "chest":
 			return o.get("group")
-		"vein", "herb":
-			return o.get("node")
+		"vein":
+			return o.o.get("node")
+		"herb":
+			return o.n.get("node")
 		"loot":
 			if o.kind == "item":
 				return o.entry.get("group")

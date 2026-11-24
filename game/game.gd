@@ -100,6 +100,7 @@ var sparkles: Sparkles
 var xp_orbs ## render/xp_orbs.gd
 var interaction: Interaction
 var puzzles: WorldPuzzles
+var blackpick
 var action_bar: ActionBar
 var hud: Hud
 var audio: AudioSystem
@@ -109,6 +110,19 @@ static var to_select := false
 ## the character the lobby (game/boot/lobby.gd) chose before the world's
 ## pack was in: the game goes straight in as them, without its title screen
 static var enter_id := ""
+static var enter_world_key := ""
+const COAST_DATA := preload("res://game/world/lantern_coast/lantern_world_data.gd")
+const COAST_SURFACE := preload("res://game/world/lantern_coast/coast_surface.gd")
+const COAST_PITCH := 40.0
+const COAST_CHARACTER := preload("res://game/world/lantern_coast/coast_character.gd")
+var world_key := ""
+var _campaign_data := {}
+var _coast_position_key := ""
+var _coast_save_key := ""
+var _coast_save_unreadable := false
+var _coast_surface
+var _coast_grades: Array = []
+var _pending_coast_entry := false
 var fx: Fx
 var save: SaveManager
 var roster := Roster.new()
@@ -148,6 +162,9 @@ var _region_from := Vector2.ZERO
 
 func _ready() -> void:
 	DB.ensure()
+	if enter_world_key == COAST_DATA.WORLD_ID and not enter_id.is_empty():
+		_prepare_coast_entry()
+	enter_world_key = ""
 	scene = self
 	# the player-facing name (window title, browser tab); the Godot project
 	# keeps its old name so user:// and existing saves stay where they are
@@ -160,8 +177,12 @@ func _ready() -> void:
 	collision = Collision.new()
 	world = World.new(self).build()
 	add_child(world.group)
+	if _coast_surface != null:
+		COAST_DATA.place_gathering(_coast_surface)
 	atmosphere = Atmosphere.new(self)
 	add_child(atmosphere)
+	if world.coast_scene != null:
+		world.coast_scene.atmosphere = atmosphere
 	water_and_dark = WaterAndDark.new(self).build()
 
 	world_state = WorldState.new(self)
@@ -183,9 +204,12 @@ func _ready() -> void:
 	events.on("settingsChanged", func(e):
 		if e.id == "classicLight" and not grade.is_empty():
 			_place_sun(camera_target)
-			_apply_grade())
+			_apply_grade()
+		if started and (e.id.begins_with("cam") or e.id == "classicCamera"):
+			_place_camera())
 	keys = Keybinds.new(self)
 	input.is_bound = func(code): return keys.is_bound(code)
+	input.action_held = func(id): return keys.held(id)
 	reputation = Reputation.new(self)
 	titles = Titles.new(self)
 	camp = Camp.new(self)
@@ -204,6 +228,8 @@ func _ready() -> void:
 	chests = Chests.new(self)
 	discovery = Discovery.new(self).build()
 	puzzles = WorldPuzzles.new(self).build()
+	if DB.world.has("blackpick"):
+		blackpick = preload("res://game/world/lantern_coast/blackpick_mine.gd").new(self, DB.world.blackpick)
 	mining = Mining.new(self)
 	gathering = Gathering.new(self)
 	forge = Forge.new(self)
@@ -229,7 +255,34 @@ func _ready() -> void:
 	arrival.bind(self)
 
 	_snap_camera()
-	_show_title()
+	if world_key == COAST_DATA.WORLD_ID:
+		var id := enter_id
+		enter_id = ""
+		enter_world(id)
+	else:
+		_show_title()
+
+
+func _prepare_coast_entry() -> void:
+	# The campaign validator needs its own coordinates and quest definitions.
+	var reader := SaveManager.new(self)
+	roster.load_roster(func(key): return reader.read(key))
+	var selected = roster.by_id(enter_id)
+	if selected == null:
+		return
+	var original := reader.read(selected.key)
+	world_key = COAST_DATA.WORLD_ID
+	_coast_position_key = COAST_CHARACTER.position_identity(selected)
+	_coast_save_key = COAST_CHARACTER.journey_key(selected)
+	_coast_surface = COAST_SURFACE.new()
+	_campaign_data = COAST_DATA.activate(_coast_surface)
+	_coast_grades = COAST_DATA.grades()
+	Terrain.coast = _coast_surface
+	var journey := reader.read(_coast_save_key, COAST_DATA.BOUNDS)
+	_coast_save_unreadable = journey.status == "invalid"
+	if _coast_save_unreadable:
+		reader.quarantine(journey.get("raw"), _coast_save_key)
+	boot_save = journey if journey.status == "ok" else original if original.status == "ok" else {"status": "none"}
 
 
 ## How finely the 3D world is drawn. A browser on a high-density screen
@@ -355,13 +408,23 @@ func _show_title() -> void:
 
 
 ## Play as a character from the roster: their own save, or a fresh start.
-func enter_world(id: String) -> void:
+func enter_world(id: String, destination := "") -> void:
 	var c = roster.by_id(id)
-	if c == null or started:
+	if c == null or started or _pending_coast_entry:
 		return
-	save.key = c.key
-	save.autosave_enabled = true
-	boot_save = save.read()
+	if destination == COAST_DATA.WORLD_ID and world_key.is_empty():
+		_pending_coast_entry = true
+		enter_id = id
+		enter_world_key = destination
+		hud.show_loading()
+		hud.loading.show_progress("Entering the Lantern Coast…", 0.0)
+		get_tree().change_scene_to_file.call_deferred("res://game/main.tscn")
+		return
+	save.key = _coast_save_key if not _coast_save_key.is_empty() else c.key
+	save.autosave_enabled = not _coast_save_unreadable
+	save.write_blocked_reason = "This Coast save is unreadable. A copy was kept and this session cannot overwrite it." if _coast_save_unreadable else ""
+	if world_key.is_empty():
+		boot_save = save.read()
 	if boot_save.status == "invalid":
 		return # the select screen does not offer it
 	character = c
@@ -370,7 +433,7 @@ func enter_world(id: String) -> void:
 	for k in DB.text.title.classes:
 		if k.id == c.classId:
 			archetype_id = k.archetype
-	roster.touch(id)
+	roster.touch(id, world_key)
 	keys.load_scheme(keys.aim) # this character's own bindings, if they keep them
 	hud.set_character(c)
 	start_game(boot_save.status == "ok")
@@ -385,6 +448,13 @@ func enter_world(id: String) -> void:
 func load_world() -> void:
 	hud.show_loading()
 	var tree := get_tree()
+	if _coast_surface != null:
+		hud.loading.show_progress("Entering the Lantern Coast…", 1.0)
+		world.coast_scene.stream_for_player(player.position, true)
+		await tree.process_frame
+		await tree.process_frame
+		hud.hide_loading()
+		return
 	# the sounds still to make (begun on the title screen)
 	var total := maxi(1, audio.warm.size())
 	while not audio.warm.is_empty():
@@ -556,9 +626,17 @@ func start_game(resume: bool) -> void:
 	player.facing = PI
 
 	var resumed := false
+	var coast_position := _saved_coast_position() if _coast_surface != null else {}
 	if resume and boot_save.status == "ok":
-		save.apply(boot_save.data)
+		var data: Dictionary = boot_save.data
+		if _coast_surface != null and data.get("worldId", "") != world_key:
+			data = COAST_CHARACTER.project_snapshot(data, coast_position, world_key)
+		save.apply(data)
+		if _coast_surface != null:
+			quests.ensure_opening()
 		resumed = true
+	elif not coast_position.is_empty():
+		player.place_at(coast_position.x, coast_position.z, coast_position.facing)
 	# the model wears what the class starts with (or the save has on), not
 	# the warden's sword it was built with
 	player.reset_weapon_stance(archetype_id=="ranger")
@@ -580,10 +658,22 @@ func start_game(resume: bool) -> void:
 		hud.log_line("You take up the road again.", "lore")
 	else:
 		hud.log_line(DB.world.get("openingText", "The Fallen Road. Somewhere ahead lies the old watch post."), "lore")
+	if _coast_save_unreadable:
+		hud.log_line(save.write_blocked_reason, "hurt")
+
+
+func _saved_coast_position() -> Dictionary:
+	var p := COAST_CHARACTER.read_position(_coast_position_key)
+	if not p.is_empty() and collision.is_inside(p.x, p.z) and Terrain.walk_at(p.x, p.z) >= 0.5:
+		return p
+	return {}
 
 
 # ----------------------------------------------------------- game events
 func on_player_death(killer = null) -> void:
+	if blackpick != null and blackpick.active():
+		blackpick.on_death()
+		return
 	var loss := 0 # your coins go to your grave instead (grave.gd)
 	pending_death = {"loss": loss, "timer": DB.CONFIG.death.screenDelay}
 	afterlife.on_death(killer, loss)
@@ -616,6 +706,13 @@ func release_spirit() -> bool:
 ## screen covers the ground being built around you, a slice each frame,
 ## instead of a long stall in plain view (Dan, 2026-11-02).
 func _arrive(text: String) -> void:
+	if _coast_surface != null:
+		if blackpick == null or not blackpick.active():
+			world.coast_scene.stream_for_player(player.position, true)
+		await get_tree().process_frame
+		hud.hide_loading()
+		releasing = false
+		return
 	var land = world.land
 	var stream = world.stream
 	var tree := get_tree()
@@ -691,6 +788,14 @@ func _screen_dist(p: Vector3) -> float:
 	return U.hyp(s.x - input.mouse.x, s.y - input.mouse.y)
 
 
+func _screen_segment_dist(a: Vector3, b: Vector3) -> float:
+	if camera.is_position_behind(a) or camera.is_position_behind(b):
+		return INF
+	var mouse := Vector2(input.mouse.x, input.mouse.y)
+	return mouse.distance_to(Geometry2D.get_closest_point_to_segment(
+		mouse, camera.unproject_position(a), camera.unproject_position(b)))
+
+
 ## The hover tooltip and cursor look again 15 times a second, not every
 ## frame (a pick unprojects everything near: ~1.5 ms); a click still picks
 ## afresh (_click)
@@ -727,6 +832,12 @@ func _pick_under_cursor():
 		# the body and the feet both count, so tall and short foes are easy to click
 		if e.alive:
 			cands.append(["enemy", e, minf(_screen_dist(e.position + Vector3(0, 1, 0)), _screen_dist(e.position + Vector3(0, 0.3, 0))) - 6])
+		elif is_instance_valid(e.group) and e.group.is_inside_tree() and not e.group.is_queued_for_deletion():
+			var base: Vector3 = e.position + Vector3.UP * 0.22
+			var back := Vector3(sin(e.facing), 0, cos(e.facing)) * minf(e.radius * 2.4, 1.55)
+			var d := minf(_screen_dist(base), _screen_segment_dist(base, base - back) + 4.0)
+			if d < 25.0:
+				cands.append(["corpse", e, d - 2.0])
 	for n in npcs.list:
 		if not _near_cursor_view(n.position.x,n.position.z):
 			continue
@@ -743,9 +854,11 @@ func _pick_under_cursor():
 		var z: float = sp.position[1]
 		var y := Terrain.height_at(x, z)
 		cands.append(["sign", sp, minf(_screen_dist(Vector3(x, y + 1.0, z)), _screen_dist(Vector3(x, y + 1.9, z)))])
-	for l in loot.lootables() + loot.skinnables():
+	for l in loot.lootables():
 		if not _near_cursor_view(l.x,l.z):
 			continue
+		if l.kind == "corpse" and enemies.by_id(l.id) != null:
+			continue # the fallen actor owns this interaction
 		var d := _screen_dist(Vector3(l.x, Terrain.height_at(l.x, l.z) + 0.3, l.z))
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["loot", l, d])
@@ -758,7 +871,8 @@ func _pick_under_cursor():
 	for v in gathering.live():
 		if not _near_cursor_view(v.x,v.z):
 			continue
-		var d := _screen_dist(Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z))
+		var base := Vector3(v.x, Terrain.height_at(v.x, v.z) + 0.3, v.z)
+		var d := _screen_segment_dist(base, base + Vector3.UP * 3.2) if v.skill == "woodcutting" else _screen_dist(base)
 		if d < DB.CONFIG.loot.clickRadius:
 			cands.append(["herb", v, d])
 	for c in interaction.click_points():
@@ -769,6 +883,12 @@ func _pick_under_cursor():
 		if c[2] < best_d:
 			best_d = c[2]
 			best = {"kind": c[0], "obj": c[1]}
+	if best != null:
+		if best.kind == "corpse":
+			best.action = loot.corpse_action(best.obj)
+			best.blocked = loot.skin_block(best.action) if best.action.get("kind") == "skin" else ""
+		elif best.kind == "herb" and best.obj.skill == "woodcutting":
+			best.blocked = gathering.block(best.obj)
 	return best
 
 
@@ -793,6 +913,13 @@ func _cursor_for(pick) -> void:
 		match pick.kind:
 			"enemy":
 				c = "attack"
+			"corpse":
+				var action: Dictionary = pick.action
+				if not action.is_empty():
+					var near := not _far(action.x, action.z, DB.CONFIG.loot.reach)
+					c = "skin" if action.kind == "skin" else "loot"
+					if not near or pick.blocked != "":
+						c += "Far"
 			"npc":
 				var near := U.hyp(o.position.x - p.x, o.position.z - p.z) <= DB.CONFIG.shop.talkRange + 0.5 and not collision.wall_between(p.x, p.z, o.position.x, o.position.z)
 				c = "talk" if near else "talkFar"
@@ -801,6 +928,10 @@ func _cursor_for(pick) -> void:
 				c = "loot" if U.hyp(o.x - p.x, o.z - p.z) <= reach else "lootFar"
 			"vein":
 				c = "mineFar" if _far(o.x, o.z, Mining.tuning().get("reach", 2.6)) else "mine"
+			"herb":
+				if o.skill == "woodcutting":
+					var near := not _far(o.x, o.z, Gathering.tuning().get("reach", 2.2))
+					c = "chop" if near and pick.blocked == "" else "chopFar"
 			"point":
 				# a station shows what it is for: an anvil, a pot, a flask, a gem
 				var base: String = o.get("cursor", "loot")
@@ -826,18 +957,23 @@ func _reach_or(x: float, z: float, reach: float, act: Callable, too_far: Callabl
 
 ## Left click selects, right click acts (WoW): right on an enemy starts
 ## auto attack, on a townsperson talks, and either button loots.
-func _click(button: String) -> bool:
+func _click(button: String, movement_key := "") -> bool:
 	# a click on (or near) the fishing bob strikes
 	if _over_bob():
 		return fishing.strike()
 	var pick = _pick_under_cursor()
-	# With click to move (Settings, off by default) the left button walks, as
-	# in Diablo 4, in both control schemes (Dan, 2026-11-04: a right click to
-	# attack must never run a caster into the enemy). It walks to the ground
-	# clicked, or up to whatever was clicked and then acts. Without it nothing
-	# walks you.
-	var walk: bool = settings.get_value("clickToMove") and button == "left"
+	# The chosen click-to-move binding walks to the cursor in either scheme.
+	var code: String = "MouseLeft" if button == "left" else "MouseRight" if button == "right" else ""
+	var walk: bool = settings.get_value("clickToMove") and (movement_key != "" or keys.keys("clickMove").has(code))
 	move_to = null
+	if pick != null and button == "left":
+		if pick.kind == "npc" and (settings.get_value("leftNpcSelectOnly") or settings.get_value("leftSelectOnly")):
+			targeting.select_friendly(pick.obj)
+			return true
+		if pick.kind == "enemy" and settings.get_value("leftSelectOnly"):
+			targeting.select(pick.obj)
+			return true
+	var hold: String = movement_key if movement_key != "" else button
 	# Settings "Interact on left click" (Dan, 2026-10-28): a left click acts
 	# on enemies and townsfolk as a right click does; right click still acts
 	# right click acts and never moves you. With click to move a left click
@@ -846,7 +982,7 @@ func _click(button: String) -> bool:
 	# talks, the same for every class (Dan, 2026-11-04).
 	# Settings "Left click only selects" (Dan, 2026-11-11): with click to
 	# move a left click on someone selects them and does not run you there.
-	var run_to: bool = walk and not settings.get_value("leftSelectOnly")
+	var run_to: bool = walk and (button != "left" or not settings.get_value("leftSelectOnly"))
 	var acts: bool = button == "right" or run_to or settings.get_value("leftInteract")
 	# right click acts on anything: out of reach it runs you up first, the
 	# same for townsfolk and objects as for enemies (Dan, 2026-11-11)
@@ -857,10 +993,10 @@ func _click(button: String) -> bool:
 	if pick == null:
 		if button == "left" and not walk:
 			targeting.clear()
-		var at = _aim_point() if walk and input.mouse.onCanvas else null
+		var at = _aim_point(true) if walk and input.mouse.onCanvas else null
 		if at != null:
 			# holding the button keeps walking towards the cursor (Diablo / WoW)
-			move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": button}
+			move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": hold}
 			fx.move_marker(at.x, at.z)
 		return false
 	var closer := func(): hud.error("You need to be closer to interact with that target.")
@@ -870,8 +1006,14 @@ func _click(button: String) -> bool:
 			hud.show_signpost(o)
 		"chest":
 			_reach_or(o.x, o.z, 2.4, func(): chests.open(o), closer, go)
+		"corpse":
+			targeting.inspect_corpse(o)
+			var action: Dictionary = pick.action
+			if not action.is_empty():
+				var use := func(): loot.start_skin(action) if action.kind == "skin" else loot.loot_area(action)
+				_reach_or(action.x, action.z, DB.CONFIG.loot.reach, use, closer, go)
 		"loot":
-			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.start_skin(o) if o.kind == "skin" else loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), go)
+			_reach_or(o.x, o.z, DB.CONFIG.loot.reach, func(): loot.loot_area(o), func(): events.emit("log", {"text": "Too far away to loot that.", "kind": "muted", "throttle": "loot-far"}), go)
 		"vein":
 			_reach_or(o.x, o.z, Mining.tuning().get("reach", 2.6), func(): mining.start(o.o), closer, go)
 		"herb":
@@ -892,7 +1034,7 @@ func _click(button: String) -> bool:
 					# click to move (Diablo 3): the held button keeps acting.
 					# Held on your foe you close in and fight; drag the cursor
 					# off it and you walk there, swinging as you pass in reach
-					move_to = {"follow": o, "reach": 0.0, "hold": button}
+					move_to = {"follow": o, "reach": 0.0, "hold": hold}
 				elif not targeting.target_in_reach and not targeting.target_in_shot:
 					if button == "right":
 						move_to = {"follow": o, "reach": 0.0}
@@ -920,6 +1062,29 @@ func _right_click_aim() -> void:
 	_click("right")
 
 
+func _world_clicks() -> void:
+	var movement_key: String = keys.consume_code("clickMove") if settings.get_value("clickToMove") else ""
+	var left := input.consume_click()
+	var right := input.consume_right_click()
+	if movement_key != "":
+		var raw := movement_key.replace("Shift+", "")
+		var button := "left" if raw == "MouseLeft" else "right" if raw == "MouseRight" else "binding"
+		_click(button, movement_key)
+		left = left and raw != "MouseLeft"
+		right = right and raw != "MouseRight"
+	if left and not keys.movement_button("MouseLeft"):
+		_click("left")
+	if right:
+		input.consume("MouseRight")
+		input.consume("Shift+MouseRight")
+		if keys.movement_button("MouseRight"):
+			return
+		if mouse_aim and not player.ghost:
+			_right_click_aim()
+		else:
+			_click("right")
+
+
 const STALL_TIME := 0.35 ## seconds a click-walk may make no headway before it stops
 const STALL_GAIN := 0.1 ## metres closer that count as headway
 
@@ -933,7 +1098,7 @@ const FOE_CURSOR_SLACK := 0.4 ## small, so a cursor just past the foe walks you 
 ## A click walk whose mouse button is still held down.
 func _move_held() -> bool:
 	var m = move_to
-	return m != null and m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld)
+	return m != null and m.has("hold") and input.walk_button_held(m.hold)
 
 
 func _click_move(keys_move: Dictionary, dt: float):
@@ -958,8 +1123,8 @@ func _click_move(keys_move: Dictionary, dt: float):
 		var stop: float = Targeting.melee_reach(f) - DB.attack.get("lagGrace", 0.0) - 0.4
 		var in_shot: bool = targeting.target_in_shot
 		var gone: bool = not f.alive or targeting.current != f
-		var holding: bool = m.has("hold") and (input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld)
-		var cursor = _aim_point() if holding else null
+		var holding: bool = m.has("hold") and input.walk_button_held(m.hold)
+		var cursor = _aim_point(true) if holding else null
 		if holding and cursor != null and (gone or U.hyp(cursor.x - f.position.x, cursor.z - f.position.z) > f.radius + FOE_CURSOR_SLACK):
 			# the held button dragged off the foe (or it fell): walk to the
 			# cursor, never stuck in place because a fight began (Dan, 2026-11-11).
@@ -981,10 +1146,10 @@ func _click_move(keys_move: Dictionary, dt: float):
 		m.x = m.follow.position.x
 		m.z = m.follow.position.z
 	elif m.has("hold"):
-		var held: bool = input.mouse.leftHeld if m.hold == "left" else input.mouse.rightHeld
+		var held: bool = input.walk_button_held(m.hold)
 		# the cursor may cross the HUD (chat, objectives, portraits) while held:
 		# keep following it; the release is seen anywhere (GameInput._input)
-		var at = _aim_point() if held else null
+		var at = _aim_point(true) if held else null
 		if at != null:
 			m.x = at.x
 			m.z = at.z
@@ -1003,6 +1168,10 @@ func _click_move(keys_move: Dictionary, dt: float):
 		if m.has("then"):
 			m.then.call()
 		return null
+	if _coast_surface != null and not m.has("follow"):
+		var step := _coast_walk_step(m, p, dt)
+		if step != Vector2.ZERO:
+			return {"x": step.x, "z": step.y}
 	# blocked (a wall, a fence): if the walk has got no closer for a moment,
 	# stop rather than run on into it (Dan, 2026-10-28)
 	if not m.has("hold"):
@@ -1015,6 +1184,41 @@ func _click_move(keys_move: Dictionary, dt: float):
 				move_to = null
 				return null
 	return {"x": dx / d, "z": dz / d}
+
+
+func _coast_walk_step(move: Dictionary, p: Vector3, dt: float) -> Vector2:
+	var at := Vector2(p.x, p.z)
+	var goal := Vector2(move.x, move.z)
+	move.route_wait = maxf(0.0, move.get("route_wait", 0.0) - dt)
+	if not move.has("route_goal") or goal.distance_squared_to(move.route_goal) > 4.0:
+		move.erase("route")
+		move.erase("path_best")
+		move.route_goal = goal
+	if not move.has("route") and move.route_wait <= 0.0:
+		move.route_wait = 0.30
+		if (_coast_surface.walk_at(goal) >= 0.5 and at.distance_to(goal) <= 62.0
+				and collision.blocked_between(at.x, at.y, goal.x, goal.y, player.radius)):
+			var route := collision.find_path(at.x, at.y, goal.x, goal.y, player.radius)
+			if not route.is_empty():
+				move.route = route
+	var path: Array = move.get("route", [])
+	while not path.is_empty() and at.distance_to(path[0]) < 0.55:
+		path.pop_front()
+		move.erase("path_best")
+	if path.is_empty():
+		move.erase("route")
+		return Vector2.ZERO
+	var distance := at.distance_to(path[0])
+	if distance < move.get("path_best", INF) - 0.05:
+		move.path_best = distance
+		move.path_stall = 0.0
+	else:
+		move.path_stall = move.get("path_stall", 0.0) + dt
+		if move.path_stall > 0.45:
+			move.erase("route")
+			move.erase("path_best")
+			return Vector2.ZERO
+	return at.direction_to(path[0])
 
 
 ## Maximum health comes from level plus worn gear (the helm).
@@ -1039,7 +1243,8 @@ func rest_at_shrine(shrine = null) -> void:
 	world_state.examined["shrine"] = true
 	player.health = player.max_health
 	# respawn just in front of the shrine, on the road side
-	world_state.respawn = {"x": shrine.position[0] - 1.8, "z": shrine.position[1]}
+	var arrival: Array = shrine.get("arrival", [shrine.position[0] - 1.8, shrine.position[1]])
+	world_state.respawn = {"x": arrival[0], "z": arrival[1]}
 	world_state.shrine_activated = shrine.id
 	world_state.rest_point = "shrine"
 	events.emit("shrineRest", {})
@@ -1052,8 +1257,9 @@ func rest_at_shrine(shrine = null) -> void:
 func manual_save() -> Dictionary:
 	var result := save.save(true)
 	if result.ok:
-		hud.toast("Game saved")
-		hud.log_line("Game saved.", "muted")
+		var message := "Game saved" if world_key.is_empty() else "Lantern Coast progress saved"
+		hud.toast(message)
+		hud.log_line(message + ".", "muted")
 	else:
 		hud.toast(result.reason, "bad")
 		hud.log_line(result.reason, "hurt")
@@ -1061,8 +1267,24 @@ func manual_save() -> Dictionary:
 
 
 # -------------------------------------------------------------- the loop
-func _aim_point():
+func _aim_point(walking := false):
 	var m := Vector2(input.mouse.x, input.mouse.y)
+	if blackpick != null and blackpick.active():
+		var floor := Plane(Vector3.UP, blackpick.FLOOR)
+		return floor.intersects_ray(camera.project_ray_origin(m), camera.project_ray_normal(m))
+	if _coast_surface != null:
+		var origin := camera.project_ray_origin(m)
+		var ray := camera.project_ray_normal(m)
+		var query := PhysicsRayQueryParameters3D.create(origin, origin + ray * camera.far, 1)
+		var hit := get_world_3d().direct_space_state.intersect_ray(query)
+		if walking:
+			return _coast_surface.move_pick(origin, ray, player.position, hit.get("position"), player.radius)
+		if hit.is_empty() or hit.position.y < 0.0:
+			var water_point = Plane(Vector3.UP, 0.0).intersects_ray(origin, ray)
+			if water_point != null and Terrain.water_at(water_point.x, water_point.z) != null:
+				return water_point
+		if hit.has("position"):
+			return hit.position
 	var plane := Plane(Vector3.UP, player.position.y - player.jump_h + 0.5)
 	return plane.intersects_ray(camera.project_ray_origin(m), camera.project_ray_normal(m))
 
@@ -1104,7 +1326,7 @@ func _handle_input(dt: float):
 		return null
 	# Escape closes what is open, then drops the target, then opens the menu
 	if input.consume("Escape") and not hud.close_modal():
-		if targeting.current != null or targeting.friendly != null:
+		if targeting.current != null or targeting.friendly != null or targeting.corpse != null:
 			targeting.clear()
 		elif hud.modal in [null,"death"]:
 			hud.main_menu.open()
@@ -1165,6 +1387,10 @@ func _handle_input(dt: float):
 		manual_save()
 	if hud.blocks_gameplay:
 		return null
+	if not player.dead and not player.ghost and keys.pressed("toggleStrafing"):
+		var enabled: bool = not settings.get_value("combatStrafing")
+		settings.set_value("combatStrafing", enabled)
+		hud.toast("Strafing on: " + str(settings.get_value("strafeFacing")) if enabled else "Strafing off")
 	if keys.pressed("interact") or (not pad_menu and not pad.held(B.LEFT) and pad.pressed(B.A)):
 		if fishing.active:
 			fishing.strike()
@@ -1176,20 +1402,7 @@ func _handle_input(dt: float):
 		# a click on your body or the rest point acts, as Interact does
 		var hover = _pick_under_cursor() if input.mouse.onCanvas else null
 		_cursor_for(hover)
-		var clicked := input.consume_click()
-		var right := input.consume_right_click()
-		if right or clicked:
-			# click to move works for a spirit too: the walk button walks
-			# there, or up to your body and then acts
-			var walk: bool = settings.get_value("clickToMove") and clicked
-			move_to = null
-			if hover != null:
-				_reach_or(hover.obj.x, hover.obj.z, hover.obj.get("reach", DB.CONFIG.interaction.radius), func(): hover.obj.run.call(), func(): hud.error("You need to be closer to interact with that target."), walk)
-			elif walk and input.mouse.onCanvas:
-				var at = _aim_point()
-				if at != null:
-					move_to = {"x": at.x, "z": at.z, "reach": 0.25, "hold": "left"}
-					fx.move_marker(at.x, at.z)
+		_world_clicks()
 		var gm := input.move_axis()
 		var gkeys := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else gm)
 		var gcm = _click_move(gkeys, dt)
@@ -1204,7 +1417,12 @@ func _handle_input(dt: float):
 		player.set_sitting(not player.sitting)
 
 	var km := input.move_axis()
-	var keys_move := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_on and pad.left.z > 0 else km)
+	var pad_move: bool = pad_on and pad.left.z > 0
+	var keys_move := _screen_move(Vector2(pad.left.x, pad.left.y) if pad_move else km)
+	if _coast_surface != null and not pad_move and not km.is_zero_approx():
+		var at := Vector2(player.position.x, player.position.z)
+		var direction: Vector2 = _coast_surface.bridge_direction(at, Vector2(keys_move.x, keys_move.z), player.radius)
+		keys_move = {"x": direction.x, "z": direction.y}
 	var cm = _click_move(keys_move, dt)
 	var move: Dictionary = cm if cm != null else keys_move
 	# keyboard turning: the keys turn and walk you, relative to your facing
@@ -1234,13 +1452,9 @@ func _handle_input(dt: float):
 	# classic: left click selects, right click attacks, talks or loots.
 	# Mouse aim: left click selects, right click attacks, talks or loots
 	# (slot 1 on open ground). LMB never starts a fight (Dan, 2026-11-09).
-	if input.consume_click():
-		_click("left")
-	if input.consume_right_click():
-		if mouse_aim:
-			_right_click_aim()
-		else:
-			_click("right")
+	_world_clicks()
+	if cm != null and move_to == null:
+		move = keys_move
 	# Manual movement also wins over a new click destination in this frame.
 	# A held mouse walk survives: it picks back up once the keys let go,
 	# in the air or not (Dan, 2026-11-11).
@@ -1254,6 +1468,16 @@ func _handle_input(dt: float):
 			face_aim = aim_now if pad_on and pad.right.z > 0.3 else null
 		elif input.mouse.leftHeld and aim_now != null:
 			face_aim = aim_now
+	# Only direct movement strafes. Click routes keep their travel-facing,
+	# and keyboard turning remains character-relative. Losing a target or
+	# moving the pointer onto UI immediately returns to travel-facing.
+	var strafe_aim = null
+	if settings.get_value("combatStrafing") and tank == null and cm == null and (pad_move or not km.is_zero_approx()):
+		if settings.get_value("strafeFacing") == "Selected enemy":
+			if is_instance_valid(tg.current) and tg.current.alive:
+				strafe_aim = tg.current.position
+		elif (using_pad and pad_on and pad.right.z > 0.3) or (not using_pad and input.mouse.onCanvas):
+			strafe_aim = aim_now
 	# each spell-bar slot has a fixed key; whatever ability sits there fires
 	var util := pad_on and pad.held(B.LEFT)
 	var slots := [
@@ -1280,6 +1504,7 @@ func _handle_input(dt: float):
 		"aim": tg.current.position if actions.strike or actions.shoot else tg.aim_for(aim_now, DB.abilities.strike.range),
 		"rawAim": aim_now,
 		"faceAim": face_aim,
+		"strafeAim": strafe_aim,
 		"tank": tank,
 		"jump": keys.pressed("jump") or (pad_on and pad.pressed(B.LS)),
 		"actions": actions,
@@ -1296,13 +1521,24 @@ func step(dt: float) -> void:
 		arrival.advance(dt)
 		input.end_frame()
 		return
-	var controls = _handle_input(dt) # also runs on the title screen, for the pad
+	var ferry = discovery.ferry if discovery != null else null
+	var controls = null
+	if ferry == null or not ferry.active():
+		controls = _handle_input(dt) # also runs on the title screen, for the pad
+	elif keys.pressed("map"):
+		hud.toggle_world_map()
 	input.end_frame()
 	var paused: bool = not started or hud.blocks_gameplay
-	if not paused:
+	if ferry != null and ferry.active():
+		time += dt
+		world_state.advance_clock(dt)
+		ferry.advance(dt)
+	elif not paused:
 		time += dt
 		world_state.advance_clock(dt)
 		player.update(dt, controls)
+		if blackpick != null:
+			blackpick.update()
 		spells.update(dt)
 		runes.update(dt)
 		combat.update_arrows(dt)
@@ -1368,7 +1604,8 @@ func _update_region(dt: float) -> void:
 		_grade_check = 1.0
 		if ZoneGradeS.changed_on_disk():
 			ZoneGradeS.reload()
-	var target := ZoneGradeS.target_at(p.x, p.z, air(k), ZoneGradeS.list())
+	var zones := _coast_grades if _coast_surface != null else ZoneGradeS.list()
+	var target := ZoneGradeS.target_at(p.x, p.z, air(k), zones)
 	if snap or grade.is_empty():
 		grade = target
 		_apply_grade()
@@ -1409,7 +1646,8 @@ static func air(k: float) -> Dictionary:
 	return {"tint": AIR_TINT, "shadowTint": AIR_SHADE, "tintStrength": AIR_TONE,
 		"saturation": GRADE.saturation, "contrast": GRADE.contrast, "brightness": GRADE.brightness,
 		"fogColor": (fog.color as Color).lerp(bw.fogColor, k), "fogNear": lerpf(fog.near, bw.fogNear, k),
-		"fogFar": lerpf(fog.far, bw.fogFar, k), "fogAmount": 1.0, "mist": 1.0,
+		"fogFar": lerpf(fog.far, bw.fogFar, k), "fogAmount": 1.0, "mist": 1.0, "snow": 0.0,
+		"dust": 0.0, "motes": 0.0,
 		"ambientColor": AMBIENT.lerp(bw.ambientColor, k), "ambient": lerpf(1, bw.ambient, k),
 		"sunlight": lerpf(1, bw.light, k)}
 
@@ -1557,6 +1795,10 @@ func _camera_offset(z: float) -> Vector3:
 		var d := float(settings.get_value("camDistance"))
 		var flat := cos(pitch) * d
 		return Vector3(sin(yaw) * flat, sin(pitch) * d, cos(yaw) * flat) * z
+	if _coast_surface != null:
+		var pitch := deg_to_rad(30.0 if _classic_camera() else COAST_PITCH)
+		var diagonal := cos(pitch) / sqrt(2.0)
+		return Vector3(diagonal, sin(pitch), diagonal) * (c.offset as Vector3).length() * z
 	return (c.lowerOffset if _classic_camera() else c.offset) * z
 
 
@@ -1591,10 +1833,12 @@ func _place_camera(dt := 0.0) -> void:
 	var o := _camera_offset(z)
 	# Camera tuning "Flat lens": orthographic, sized to show what the lens
 	# would show at the player, so zoom and distance still work the same
-	var flat: bool = _tuned_camera() and settings.get_value("camOrtho")
+	var flat: bool = settings.get_value("camOrtho") if _tuned_camera() else _coast_surface != null
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL if flat else Camera3D.PROJECTION_PERSPECTIVE
 	if flat:
 		camera.size = 2.0 * o.length() * tan(deg_to_rad(camera.fov) * 0.5)
+		if _coast_surface != null and not _tuned_camera():
+			camera.size *= 1.19
 	var t := camera_target + Vector3(0, 1.0, 0)
 	var sx := 0.0
 	var sy := 0.0
@@ -1624,12 +1868,23 @@ func _exit_tree() -> void:
 	events._handlers.clear()
 	if input:
 		input.is_bound = Callable()
+		input.action_held = Callable()
+	if world and world.stream:
+		world.stream.free_parked_views()
+	if enemies:
+		enemies.free_parked_models()
+	if npcs:
+		npcs.free_parked_models()
 	RenderCleanup.detach(self)
 	# World owns Town, and Town points back to World. Break the reference
 	# cycle on exit so streamed materials and shaders can actually be released.
 	if world and world.town:
 		world.town.world = null
 	UI.icons = null
+	if _coast_surface != null:
+		_coast_surface.dungeon = null
+		Terrain.coast = null
+		COAST_DATA.restore(_campaign_data)
 
 
 ## The fixed camera cannot show targets beyond this local square. Reject them

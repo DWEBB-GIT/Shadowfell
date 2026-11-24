@@ -86,6 +86,9 @@ func load_roster(read_save: Callable) -> Dictionary:
 	for c in deleted.duplicate():
 		if Time.get_unix_time_from_system()-float(c.deletedAt)>30*86400:
 			Store.remove_item(c.key)
+			var survey := preload("res://game/world/lantern_coast/coast_character.gd")
+			Store.remove_item(survey.journey_key(c))
+			Store.remove_item(survey.position_identity(c) + survey.POSITION_SUFFIX)
 			deleted.erase(c)
 	last = data.get("last") if ok and by_id(data.get("last", "")) != null else (list[0].id if not list.is_empty() else null)
 	# adopt a save made before the roster existed
@@ -174,11 +177,13 @@ func remove(id: String) -> bool:
 	return true
 
 
-func touch(id: String) -> void:
+func touch(id: String, destination = null) -> void:
 	var c = by_id(id)
 	if c == null:
 		return
 	c.lastPlayed = Time.get_unix_time_from_system() * 1000
+	if destination is String:
+		c.lastWorld = destination
 	last = id
 	_write()
 

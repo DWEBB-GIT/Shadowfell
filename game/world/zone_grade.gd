@@ -17,7 +17,7 @@ const FILE := "grades.json"
 
 ## The grade fields, by group, and what "no change" is for each.
 const COLOUR := ["tint", "shadowTint", "tintStrength", "saturation", "contrast", "brightness"]
-const FOG := ["fogColor", "fogNear", "fogFar", "fogAmount", "mist"]
+const FOG := ["fogColor", "fogNear", "fogFar", "fogAmount", "mist", "snow", "dust", "motes"]
 const LIGHT := ["ambientColor", "ambient", "sunlight"]
 const COLOR_FIELDS := ["tint", "shadowTint", "fogColor", "ambientColor"]
 

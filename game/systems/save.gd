@@ -14,6 +14,7 @@ const MAP_VERSION := 2
 
 var game
 var autosave_enabled := true
+var write_blocked_reason := ""
 var key := SAVE_KEY ## each character saves under its own key (see characters.gd)
 
 
@@ -29,8 +30,7 @@ static func _is_str_array(v) -> bool:
 	return typeof(v) == TYPE_ARRAY and v.all(func(s): return typeof(s) == TYPE_STRING)
 
 
-static func _in_bounds(p) -> bool:
-	var b: Dictionary = Layout.bounds
+static func _in_bounds(p, b: Dictionary) -> bool:
 	return typeof(p) == TYPE_DICTIONARY and _is_num(p.get("x")) and _is_num(p.get("z")) and p.x >= b.minX - 1 and p.x <= b.maxX + 1 and p.z >= b.minZ - 1 and p.z <= b.maxZ + 1
 
 
@@ -309,7 +309,8 @@ static func _validate_inventory(inv: Dictionary, check: Callable) -> void:
 			check.call(st == null or (_is_stack(st) and DB.slot_fits(slot, DB.items[st.id].get("slot"))), "equipment in %s" % slot)
 
 
-static func validate_save(data) -> Array:
+static func validate_save(data, bounds: Dictionary = {}) -> Array:
+	var b := Layout.bounds if bounds.is_empty() else bounds
 	var errors := []
 	var check := func(cond, msg):
 		if not cond:
@@ -320,7 +321,7 @@ static func validate_save(data) -> Array:
 	var p = data.get("player")
 	check.call(typeof(p) == TYPE_DICTIONARY, "missing player")
 	if typeof(p) == TYPE_DICTIONARY:
-		check.call(_in_bounds(p.get("position")), "player position")
+		check.call(_in_bounds(p.get("position"), b), "player position")
 		check.call(_is_num(p.get("facing")), "player facing")
 		check.call(typeof(p.get("dead",false))==TYPE_BOOL,"player death state")
 		check.call(_is_num(p.get("health")) and (p.health==0 if p.get("dead",false) else p.health>0), "player health")
@@ -333,7 +334,7 @@ static func validate_save(data) -> Array:
 			check.call(typeof(a.get("ghost",false))==TYPE_BOOL,"spirit state")
 			if a.get("ghost",false):
 				var corpse=a.get("corpse")
-				check.call(corpse is Dictionary and _in_bounds(corpse) and _is_num(corpse.get("facing",0)),"corpse position")
+				check.call(corpse is Dictionary and _in_bounds(corpse, b) and _is_num(corpse.get("facing",0)),"corpse position")
 	# Accept the previous cap's valid characters before Progression.apply
 	# clamps them to the new cap. Their inventory/quests remain intact.
 	check.call(typeof(pr) == TYPE_DICTIONARY and _is_int(pr.get("level")) and pr.level >= 1 and pr.level <= maxi(100, DB.CONFIG.progression.maxLevel) and _is_num(pr.get("xp")) and pr.xp >= 0, "progression")
@@ -375,12 +376,12 @@ static func validate_save(data) -> Array:
 	if typeof(w) == TYPE_DICTIONARY:
 		check.call(_is_str_array(w.get("defeated")) and _is_str_array(w.get("collected")) and _is_str_array(w.get("examined")), "world lists")
 		check.call(WorldPuzzles.valid_saved_states(w.get("puzzles", {})), "world puzzle state")
-		check.call(typeof(w.get("drops")) == TYPE_DICTIONARY and w.drops.values().all(func(d): return _in_bounds(d)), "world drops")
+		check.call(typeof(w.get("drops")) == TYPE_DICTIONARY and w.drops.values().all(func(d): return _in_bounds(d, b)), "world drops")
 		check.call(w.get("shrineActivated") == null or typeof(w.get("shrineActivated")) == TYPE_STRING, "shrine state")
-		check.call(w.get("respawn") == null or _in_bounds(w.respawn), "respawn position")
-		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return (_is_stack(g) or Loot.is_coins(g)) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g)), "items on the ground")
+		check.call(w.get("respawn") == null or _in_bounds(w.respawn, b), "respawn position")
+		check.call(typeof(w.get("ground")) == TYPE_ARRAY and w.ground.all(func(g): return (_is_stack(g) or Loot.is_coins(g)) and _is_int(g.get("uid")) and g.uid >= 1 and _in_bounds(g, b)), "items on the ground")
 		if w.has("camp"):
-			check.call(w.camp == null or _in_bounds(w.camp), "camp position")
+			check.call(w.camp == null or _in_bounds(w.camp, b), "camp position")
 		if w.has("clock"):
 			var ck = w.clock
 			check.call(typeof(ck) == TYPE_DICTIONARY and _is_num(ck.get("hour", 0)) and _is_num(ck.get("day", 1)), "world clock")
@@ -392,7 +393,7 @@ static func validate_save(data) -> Array:
 		if w.has("respawnAt"):
 			check.call(typeof(w.respawnAt) == TYPE_DICTIONARY and w.respawnAt.values().all(func(t): return _is_num(t)), "respawn timers")
 		if w.has("corpses"):
-			check.call(typeof(w.corpses) == TYPE_DICTIONARY and w.corpses.values().all(func(c): return _in_bounds(c) and _is_int(c.get("coins")) and c.coins >= 0), "bodies to loot")
+			check.call(typeof(w.corpses) == TYPE_DICTIONARY and w.corpses.values().all(func(c): return _in_bounds(c, b) and _is_int(c.get("coins")) and c.coins >= 0), "bodies to loot")
 	return errors
 
 
@@ -406,6 +407,12 @@ static func _round(n: float) -> float:
 
 func serialize() -> Dictionary:
 	var player = game.player
+	var position := Vector2(player.position.x, player.position.z)
+	if game.blackpick != null and game.blackpick.active():
+		position = game.blackpick.outside()
+	elif game.discovery != null and game.discovery.ferry != null and game.discovery.ferry.active():
+		var dock: Vector2 = game.discovery.ferry.voyage.dock.at
+		position = dock
 	return {
 		"version": SAVE_VERSION,
 		"map": MAP_VERSION,
@@ -414,7 +421,7 @@ func serialize() -> Dictionary:
 		"player": {
 			"dead": player.dead,
 			"appearance": player.appearance.duplicate(true),
-			"position": {"x": _round(player.position.x), "z": _round(player.position.z)},
+			"position": {"x": _round(position.x), "z": _round(position.y)},
 			"facing": _round(player.facing),
 			"health": player.health,
 			"maxHealth": player.max_health,
@@ -442,6 +449,8 @@ func serialize() -> Dictionary:
 
 ## Returns { ok, reason }. Only reports success once the data reads back.
 func save(manual := false, allow_defeated := false) -> Dictionary:
+	if not write_blocked_reason.is_empty():
+		return {"ok": false, "reason": write_blocked_reason}
 	if game.player.dead and not game.player.ghost and not allow_defeated:
 		return {"ok": false, "reason": "You cannot save while defeated."}
 	var text := JSON.stringify(serialize())
@@ -458,7 +467,7 @@ func has_save() -> bool:
 
 
 ## Returns { status: 'none' | 'ok' | 'invalid', data?, errors?, raw? }
-func read(k = null) -> Dictionary:
+func read(k = null, bounds: Dictionary = {}) -> Dictionary:
 	if k == null:
 		k = key
 	var text = Store.get_item(k)
@@ -472,7 +481,7 @@ func read(k = null) -> Dictionary:
 	if not dropped.is_empty():
 		push_warning("Save %s: dropped content that no longer exists: %s" % [k, ", ".join(dropped)])
 	data = fit_bags(data)
-	var errors := validate_save(data)
+	var errors := validate_save(data, bounds)
 	if not errors.is_empty():
 		return {"status": "invalid", "errors": errors, "raw": text}
 	return {"status": "ok", "data": data}

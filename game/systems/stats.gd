@@ -48,13 +48,26 @@ var totals: Dictionary:
 		for k in ATTRS:
 			t[k] = t.get(k, 0)
 		t["accuracy"] = t.get("accuracy", 0)
-		if game.cooking:
-			t.stamina += game.cooking.well_fed_stamina
+		t.stamina += _well_fed_stamina()
 		if game.boons:
 			var ex = game.boons.elixir
 			if ex != null and t.has(ex.stat):
 				t[ex.stat] += ex.amount
 		return t
+
+
+func _well_fed_stamina() -> float:
+	return game.cooking.well_fed_stamina if game.cooking else 0.0
+
+
+func attribute_sources(stat: String, total: float) -> Dictionary:
+	var base: float = archetype.base.get(stat, 0.0)
+	var levels: float = archetype.perLevel.get(stat, 0.0) * (game.progression.level - 1)
+	var temporary: float = _well_fed_stamina() if stat == "stamina" else 0.0
+	var elixir = game.boons.elixir if game.boons else null
+	if elixir != null and elixir.stat == stat:
+		temporary += elixir.amount
+	return {"base": base, "levels": levels, "gear": total - base - levels - temporary, "temporary": temporary}
 
 
 var max_health: int:
@@ -200,11 +213,15 @@ func swing_power_for(hand: String) -> float:
 	return ((ranged_power if hand == "ranged" else power) * hand_speed(hand)) / DB.attack.abilityWeaponSeconds
 
 
-## what one swing of that hand does before crits and armour
-func swing_range_for(hand: String) -> Array:
+## Normal auto attacks before crits, blocks and temporary combat modifiers.
+## Pass a target's stat block to account for level and armour.
+func swing_range_for(hand: String, defender := {}) -> Array:
 	var r := weapon_range_for(hand)
 	var p := swing_power_for(hand)
 	var k: float = S().offHandDamage if hand == "off" else 1.0
+	if not defender.is_empty():
+		k *= hit_factor(game.progression.level, defender, "physical")
+		return [maxi(1, U.jround((r[0] + p) * k)), maxi(1, U.jround((r[1] + p) * k))]
 	return [U.jround((r[0] + p) * k), U.jround((r[1] + p) * k)]
 
 
@@ -229,8 +246,7 @@ var swing_power: float:
 
 var swing_range: Array:
 	get:
-		var r := weapon_range
-		return [U.jround(r[0] + swing_power), U.jround(r[1] + swing_power)]
+		return swing_range_for("main")
 
 ## damage per second from auto attack, haste and the off hand included
 var dps: float:
@@ -297,16 +313,20 @@ static func enemy_block(cfg: Dictionary) -> Dictionary:
 	}
 
 
+static func hit_factor(level: int, defender: Dictionary, school: String) -> float:
+	var defence: float = defender.armour if school == "physical" else defender.resistance
+	return Scaling.level_gap(level, defender.level) * (1.0 - mitigation(defence, defender.level) / 100.0)
+
+
 ## The damage formula: base x mult x level gap -> crit? -> armour or
 ## resistance -> block? -> round, at least 1.
 ## opts: base, mult, school, canCrit, canBlock, critBonus, forceCrit, carry
 static func compute_hit(rand: Callable, attacker: Dictionary, defender: Dictionary, opts: Dictionary) -> Dictionary:
 	var school: String = opts.get("school", "physical")
-	var dmg: float = opts.base * opts.get("mult", 1.0) * Scaling.level_gap(attacker.get("level", 1), defender.get("level", 1))
+	var dmg: float = opts.base * opts.get("mult", 1.0) * hit_factor(attacker.get("level", 1), defender, school)
 	var crit: bool = opts.get("canCrit", true) and (opts.get("forceCrit", false) or rand.call() * 100 < attacker.crit + opts.get("critBonus", 0))
 	if crit:
 		dmg *= attacker.critMultiplier
-	dmg *= 1 - mitigation(defender.armour if school == "physical" else defender.resistance, defender.level) / 100.0
 	var blocked := 0
 	if opts.get("canBlock", false) and defender.block > 0 and rand.call() * 100 < defender.block:
 		blocked = U.jround(dmg * S().blockReduction / 100.0)

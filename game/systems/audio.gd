@@ -69,7 +69,10 @@ const SFX := {
 }
 ## region id -> ambience loop; anywhere else is forest and open country,
 ## which plays the day or the night forest (Dan, 2026-11-02)
-const AMB_LOOPS := {"brackenford": "amb_town.mp3"}
+const AMB_LOOPS := {
+	"brackenford": "amb_town.mp3", "lc_bell": "amb_town.mp3",
+	"lc_gate": "amb_town.mp3", "lc_gloam": "amb_forest_night.ogg",
+}
 const FOREST_DAY := "amb_forest_day.ogg" ## Pixabay "Morning Forest Ambiance", made to loop
 const FOREST_NIGHT := "amb_forest_night.ogg" ## Pixabay "Sounds of the Forest (Night)"
 ## Night by the player's own clock, as WoW follows the realm's clock: from
@@ -688,7 +691,7 @@ func click() -> void:
 
 
 func _click(frame: int) -> void:
-	if last_sfx_frame == frame:
+	if not is_inside_tree() or last_sfx_frame == frame:
 		return
 	if click_player == null:
 		click_player = AudioStreamPlayer.new()
@@ -707,7 +710,9 @@ func prepare_list() -> Array:
 	var out: Array = []
 	for files in SFX.values():
 		out.append_array(files)
-	out.append_array(AMB_LOOPS.values())
+	for loop in AMB_LOOPS.values():
+		if loop not in out:
+			out.append(loop)
 	out.append_array([FOREST_DAY, FOREST_NIGHT, DEATH_LOOP])
 	return out
 

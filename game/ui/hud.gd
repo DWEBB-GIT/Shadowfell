@@ -1904,7 +1904,7 @@ func _update_target() -> void:
 	var t = tg.current
 	var recent = recent_foe if recent_foe_time > 0 and recent_foe != null and recent_foe.alive else null
 	var friend = tg.friendly if t == null else null
-	var shown = null if friend != null else (t if t != null else tg.soft if tg.soft != null else recent)
+	var shown = null if friend != null else (t if t != null else tg.corpse if tg.corpse != null else tg.soft if tg.soft != null else recent)
 	shown_target = shown
 	target.visible = shown != null or friend != null
 	var who = friend if friend != null else shown
@@ -1933,7 +1933,7 @@ func _update_target() -> void:
 		return
 	var cfg: Dictionary = shown.cfg
 	target_name.text = cfg.name
-	UI.set_colour(target_name, UI.NAME_PASSIVE if shown.passive else UI.NAME_HOSTILE)
+	UI.set_colour(target_name, UI.enemy_name_colour(shown, game.progression.level))
 	target_badge.text = U.n(cfg.get("level", 1))
 	var kind := combat_kind(cfg)
 	target_kind.text = KIND_GLYPH[kind][0]
@@ -1941,19 +1941,20 @@ func _update_target() -> void:
 	var kind_art := Icons.art("ui", "foe_" + kind)
 	target_kind.set_meta("tip", "%s[b]%s[/b]\nLevel %s · %s" % ["[img=16]%s[/img] " % kind_art.resource_path if kind_art else "", kind.capitalize(), U.n(cfg.get("level", 1)), KIND_GLYPH[kind][2]])
 	var attacking: bool = t != null and tg.attacking
-	target_label.text = ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else ""
+	var difficulty := UI.enemy_difficulty(int(cfg.get("level", 1)), game.progression.level)
+	target_label.text = "Dead" if not shown.alive else ("Attacking" if tg.target_in_reach or tg.target_in_shot else "Out of reach") if attacking else "Elite" if elite else difficulty
 	UI.set_colour(target_label, Color("ff8a60") if attacking else UI.TEXT_DIM)
 	target_hp.root.visible = true
 	set_fill(target_hp, shown.health / shown.max_health)
 	target_hp.text.text = "%d / %d" % [ceili(shown.health), shown.max_health]
-	target_mp.root.visible = cfg.get("mana", 0) > 0
-	if cfg.get("mana", 0) > 0:
+	target_mp.root.visible = shown.alive and cfg.get("mana", 0) > 0
+	if target_mp.root.visible:
 		set_fill(target_mp, shown.mana / cfg.mana)
 		target_mp.text.text = "%d / %d" % [ceili(shown.mana), cfg.mana]
 	# a boss's stagger bar: control fills it, full means Staggered
 	var sb = shown.stagger_bar
-	target_stagger.root.visible = sb != null
-	if sb != null:
+	target_stagger.root.visible = shown.alive and sb != null
+	if target_stagger.root.visible:
 		var full: bool = shown.staggered > 0
 		set_fill(target_stagger, 1.0 if full else sb.value / sb.need)
 		target_stagger.text.text = "Staggered %d" % ceili(shown.staggered) if full else "Stagger"
@@ -2008,12 +2009,12 @@ func _update_enemy_bars() -> void:
 		var targeted: bool = e == t
 		var w := 96.0 if targeted else 130.0 if elite else 70.0
 		var h := 12.0 if targeted else 8.0 if elite else 6.0
-		bar.name_row.visible = elite or targeted or nemesis
+		bar.name_row.visible = elite or targeted or nemesis or game.settings.get_value("names")
 		bar.skull.visible = nemesis and bar.skull.texture != null
 		bar.name.text = ("☠ " if nemesis and bar.skull.texture == null else "") + e.cfg.name
 		# theme overrides and stylebox colours are set only when they change:
 		# either one makes Godot lay the bar out and draw it again
-		UI.set_colour(bar.name, UI.NAME_PASSIVE if e.passive else UI.NAME_HOSTILE)
+		UI.set_colour(bar.name, UI.enemy_name_colour(e, game.progression.level))
 		bar.track.custom_minimum_size = Vector2(w, h)
 		var st: StyleBoxFlat = bar.track.get_theme_stylebox("panel")
 		var winding: bool = e.casting != null

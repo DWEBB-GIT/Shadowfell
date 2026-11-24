@@ -742,11 +742,15 @@ func _apply_death(dt: float) -> void:
 static func isolate_materials(root: Node) -> Array:
 	var out := []
 	var cache := {}
-	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+	var meshes := root.find_children("*", "MeshInstance3D", true, false)
+	if root is MeshInstance3D:
+		meshes.push_front(root)
+	for mi: MeshInstance3D in meshes:
 		if mi.mesh == null:
 			continue
-		for i in mi.mesh.get_surface_count():
-			var m := mi.get_active_material(i)
+		var has_override := mi.material_override != null
+		for i in (1 if has_override else mi.mesh.get_surface_count()):
+			var m := mi.material_override if has_override else mi.get_active_material(i)
 			if m == null:
 				continue
 			if not cache.has(m):
@@ -758,7 +762,10 @@ static func isolate_materials(root: Node) -> Array:
 					cache[m].emission_enabled = true
 					cache[m].emission = Color.BLACK
 				out.append(cache[m])
-			mi.set_surface_override_material(i, cache[m])
+			if has_override:
+				mi.material_override = cache[m]
+			else:
+				mi.set_surface_override_material(i, cache[m])
 	return out
 
 

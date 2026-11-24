@@ -1,0 +1,27 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="crossing.tscn" id="1_bridge"]
+[node name="Crossings" type="Node3D"]
+[node name="LanternBridge" parent="." instance=ExtResource("1_bridge")]
+position = Vector3(-582.5848, 5.6858, 35.8206)
+rotation = Vector3(0, 3.141593, 0)
+length = 33.000
+clear_width = 8.000
+variant = 0
+[node name="SluiceCauseway" parent="." instance=ExtResource("1_bridge")]
+position = Vector3(-485.7572, 6.2783, -18.1389)
+rotation = Vector3(0, 0.785398, 0)
+length = 32.000
+clear_width = 8.000
+variant = 1
+[node name="SluiceCauseway2" parent="." instance=ExtResource("1_bridge")]
+position = Vector3(-395.7315, 4.8044, 120.3374)
+rotation = Vector3(0, 0.785398, 0)
+length = 32.000
+clear_width = 8.000
+variant = 1
+[node name="TowpathFootbridge" parent="." instance=ExtResource("1_bridge")]
+position = Vector3(-394.7543, 4.2948, 172.2694)
+rotation = Vector3(0, 1.570796, 0)
+length = 53.000
+clear_width = 8.000
+variant = 1

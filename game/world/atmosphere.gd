@@ -12,6 +12,7 @@ const MIST_DENSITY := 0.004
 const SHADOW_HOLD := 4.0
 var game
 var sources: Array = []
+var _coast_lamps := {}
 ## The first SHADOW_BUDGET lamps always have shadows on; the rest never do.
 ## Switching a light's shadow (or its range) re-renders its shadow map and
 ## re-pairs everything it lights, which froze the game near lamps, so the
@@ -33,6 +34,9 @@ var _time := 0.0
 var _volumetric := false
 var _window_groups := {}
 var _glow: StandardMaterial3D
+var _snow: CPUParticles3D
+var _dust: CPUParticles3D
+var _motes: CPUParticles3D
 
 func _init(g) -> void:
 	game = g
@@ -55,12 +59,21 @@ func _init(g) -> void:
 		if fixtures.any(func(l): return Vector2(l.position[0]-at[0], l.position[1]-at[1]).length_squared() < 0.25):
 			continue
 		var size: float = float(prop.get("scale", 1.0))
-		fixtures.append({"position":at, "height":(2.15 if model_id=="lamp_post" else 1.3)*size, "intensity":6.0, "distance":8.5, "color":"#ffd198", "flicker":true, "lamp":true})
+		var flame_y := 2.15 if model_id == "lamp_post" else 1.3
+		var fixture := {"position": at, "height": flame_y * size, "intensity": 6.0,
+			"distance": 8.5, "color": "#ffd198", "flicker": true, "lamp": true}
+		if prop.has("worldY"):
+			var flame := WorldStream.placed(prop, Transform3D.IDENTITY) * Vector3(0, flame_y, 0)
+			fixture.position = [flame.x, flame.z]
+			fixture.worldY = flame.y
+		fixtures.append(fixture)
 	for l in fixtures:
 		if l.get("noLight", false):
 			continue
 		var p: Array = l.position
-		_source(Vector3(p[0], Terrain.height_at(p[0], p[1]) + l.get("height", 1.6), p[1]), Color(l.get("color", "#ffc581")), float(l.get("intensity", 2.0)) * Tex.OMNI_SCALE * 3.0, float(l.get("distance", 8.0)), l.get("flicker", false), "fixture", l.get("shadows", l.get("brazier", false) or l.get("lamp", false)))
+		var ground := Terrain.height_at(p[0], p[1])
+		var y: float = l.worldY if l.has("worldY") else ground + l.get("height", 1.6)
+		_source(Vector3(p[0], y, p[1]), Color(l.get("color", "#ffc581")), float(l.get("intensity", 2.0)) * Tex.OMNI_SCALE * 3.0, float(l.get("distance", 8.0)), l.get("flicker", false), "fixture", l.get("shadows", l.get("brazier", false) or l.get("lamp", false)))
 		if l.get("lamp", false):
 			var glow := MeshInstance3D.new()
 			var sphere := SphereMesh.new()
@@ -70,7 +83,8 @@ func _init(g) -> void:
 			glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			glow.layers = World.LIGHT_FIXTURE_LAYER
 			glow.material_override = _glow
-			glow.position = Vector3(p[0], Terrain.height_at(p[0], p[1]) + l.get("height", 2.2), p[1])
+			var glow_y: float = l.worldY if l.has("worldY") else ground + l.get("height", 2.2)
+			glow.position = Vector3(p[0], glow_y, p[1])
 			glow.visibility_range_end = 65.0
 			add_child(glow)
 	for b in Layout.buildings:
@@ -196,6 +210,16 @@ func _source(p: Vector3, colour: Color, energy: float, radius: float, flicker: b
 		"attenuation":0.75 if fixture else 1.0, "shadows":shadows,
 		"flicker":flicker, "seed":p.x * 0.1 + p.z * 0.05})
 
+func add_coast_lamp(at: Vector3, style := "amber") -> void:
+	var key := Vector3i(at * 10.0)
+	if _coast_lamps.has(key):
+		return
+	_coast_lamps[key] = true
+	var colours := {"amber": "ffc58d", "reed": "cfe6a1", "veil": "9bffcf", "grave": "9ddbec"}
+	_source(at, Color(colours.get(style, "ffc58d")), 0.72 if style == "amber" else 0.52,
+		7.0 if style == "amber" else 5.7, true, "fixture")
+
+
 func _windows(b: Dictionary, enterable: bool) -> void:
 	var group_id: String = b.get("id", "")
 	_window_groups[group_id] = []
@@ -240,10 +264,14 @@ func _process(dt: float) -> void:
 				window.visible = house.fade > 0.98
 		_apply_shadow_level()
 		_assign_lamps(focus)
+		_update_snow(focus)
+		_update_coast_weather(focus)
 		if _volumetric:
 			var deep := Terrain.gloom(focus.x, focus.z)
-			var colour := Color("8c9da5").lerp(Color("72938f"), deep)
-			game.env.volumetric_fog_density = lerpf(MIST_DENSITY, 0.007, deep) * float(game.grade.get("mist", 1.0))
+			var mist := float(game.grade.get("mist", 1.0))
+			var zone_colour: Color = game.grade.get("fogColor", Color("8c9da5"))
+			var colour := Color("8c9da5").lerp(Color("72938f"), deep).lerp(zone_colour, 0.58)
+			game.env.volumetric_fog_density = lerpf(MIST_DENSITY, 0.007, deep) * mist
 			game.env.volumetric_fog_albedo = colour
 			for i in volumes.size():
 				var a := float(i) * TAU / VOLUME_BUDGET
@@ -258,7 +286,7 @@ func _process(dt: float) -> void:
 					volumes[i].position = at
 					volumes[i].visible = at.y > 0.5 and Terrain.water_at(at.x, at.z) == null
 				var mat: FogMaterial = volumes[i].material
-				var density := lerpf(0.026, 0.046, maxf(deep, 0.3))
+				var density := lerpf(0.026, 0.046, maxf(deep, 0.3)) * clampf(mist, 0.5, 1.8)
 				if not mat.albedo.is_equal_approx(colour) or not is_equal_approx(mat.density, density):
 					mat.albedo = colour
 					mat.density = density
@@ -272,6 +300,125 @@ func _process(dt: float) -> void:
 			_twins[i].light_energy = light.light_energy
 	for clear in wisps:
 		clear.position = focus + Vector3(0, 2.5, 0)
+
+
+func _update_snow(focus: Vector3) -> void:
+	var snow := float(game.grade.get("snow", 0.0))
+	if _snow == null and snow <= 0.07:
+		return
+	if _snow == null:
+		_snow = CPUParticles3D.new()
+		_snow.name = "WindblownSnow"
+		_snow.amount = 180
+		_snow.lifetime = 5.0
+		_snow.preprocess = 4.0
+		_snow.local_coords = false
+		_snow.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		_snow.emission_box_extents = Vector3(18, 5, 18)
+		_snow.direction = Vector3(0.65, -1.0, 0.25)
+		_snow.spread = 24.0
+		_snow.gravity = Vector3(0.35, -0.19, 0.19)
+		_snow.initial_velocity_min = 1.1
+		_snow.initial_velocity_max = 3.0
+		_snow.scale_amount_min = 0.45
+		_snow.scale_amount_max = 1.30
+		_snow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var fleck := QuadMesh.new()
+		fleck.size = Vector2(0.095, 0.095)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.84, 0.92, 1.0, 0.60)
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var feather := Gradient.new()
+		feather.set_color(0, Color.WHITE)
+		feather.set_color(1, Color(1, 1, 1, 0))
+		var mask := GradientTexture2D.new()
+		mask.width = 24
+		mask.height = 24
+		mask.fill = GradientTexture2D.FILL_RADIAL
+		mask.fill_from = Vector2(0.5, 0.5)
+		mask.fill_to = Vector2(1.0, 0.5)
+		mask.gradient = feather
+		mat.albedo_texture = mask
+		_snow.material_override = mat
+		_snow.mesh = fleck
+		add_child(_snow)
+	_snow.visible = snow > 0.07
+	_snow.emitting = _snow.visible
+	if not _snow.emitting:
+		return
+	_snow.position = focus + Vector3(-2, 7, -1)
+	var colour: Color = _snow.material_override.albedo_color
+	colour.a = clampf(snow, 0.0, 1.0) * 0.70
+	_snow.material_override.albedo_color = colour
+
+
+func _update_coast_weather(focus: Vector3) -> void:
+	var dust := float(game.grade.get("dust", 0.0))
+	var motes := float(game.grade.get("motes", 0.0))
+	if _dust == null and dust > 0.07:
+		_dust = _weather_flecks("WindblownDust", 56, Color("e9c497"), Vector2(0.28, 0.08))
+		_dust.emission_box_extents = Vector3(19, 1.5, 17)
+		_dust.direction = Vector3(1, 0.02, -0.45)
+		_dust.initial_velocity_min = 2.2
+		_dust.initial_velocity_max = 5.1
+	if _motes == null and motes > 0.07:
+		_motes = _weather_flecks("ForestMotes", 38, Color("d5ffb5"), Vector2(0.14, 0.14))
+		_motes.emission_box_extents = Vector3(14, 2.0, 13)
+		_motes.direction = Vector3(0.28, 0.94, -0.2)
+		_motes.initial_velocity_min = 0.12
+		_motes.initial_velocity_max = 0.42
+	_weather_strength(_dust, focus + Vector3(-6, 1.65, 2), dust, 0.45)
+	_weather_strength(_motes, focus + Vector3(0, 2.2, 0), motes, 0.73)
+
+
+func _weather_flecks(label: String, amount: int, tint: Color, size: Vector2) -> CPUParticles3D:
+	var emitter := CPUParticles3D.new()
+	emitter.name = label
+	emitter.amount = amount
+	emitter.lifetime = 5.0
+	emitter.preprocess = 3.0
+	emitter.gravity = Vector3.ZERO
+	emitter.spread = 15.0
+	emitter.scale_amount_min = 0.40
+	emitter.scale_amount_max = 1.40
+	emitter.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	emitter.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var quad := QuadMesh.new()
+	quad.size = size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = tint
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var feather := Gradient.new()
+	feather.set_color(0, Color.WHITE)
+	feather.set_color(1, Color(1, 1, 1, 0))
+	var mask := GradientTexture2D.new()
+	mask.width = 24
+	mask.height = 24
+	mask.fill = GradientTexture2D.FILL_RADIAL
+	mask.fill_from = Vector2(0.5, 0.5)
+	mask.fill_to = Vector2(1.0, 0.5)
+	mask.gradient = feather
+	mat.albedo_texture = mask
+	emitter.material_override = mat
+	emitter.mesh = quad
+	add_child(emitter)
+	return emitter
+
+
+func _weather_strength(emitter: CPUParticles3D, at: Vector3, strength: float, opacity: float) -> void:
+	if emitter == null:
+		return
+	emitter.visible = strength > 0.07
+	emitter.emitting = emitter.visible
+	if emitter.visible:
+		emitter.position = at
+		var tint: Color = emitter.material_override.albedo_color
+		tint.a = clampf(strength, 0.0, 1.0) * opacity
+		emitter.material_override.albedo_color = tint
 
 
 ## Nearest sources to the pool: shadowed fixtures within reach to the shadow

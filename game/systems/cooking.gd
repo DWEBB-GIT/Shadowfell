@@ -106,6 +106,9 @@ func near_station(kind: String) -> String:
 			return "your camp"
 	for st in Layout.stations:
 		if st.kind == kind and U.hyp(p.x - st.position[0], p.z - st.position[1]) <= st.radius:
+			if st.get("indoors", false) and Terrain.coast != null and \
+					Terrain.coast.building_at(Vector2(p.x, p.z)).is_empty():
+				continue
 			return st.name
 	return ""
 

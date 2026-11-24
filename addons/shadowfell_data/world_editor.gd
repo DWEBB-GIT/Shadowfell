@@ -265,7 +265,7 @@ func redraw(chunks: Dictionary) -> void:
 		for n in holder.get_children():
 			if n is Node3D and chunks.has(Vector2i(floori(n.position.x / Land.CHUNK), floori(n.position.z / Land.CHUNK))):
 				var record: Dictionary = n.get_meta("record", {})
-				n.position.y = Terrain.water_level(record) if g.list == "water" else Terrain.height_at(n.position.x, n.position.z) + float(record.get("heightOffset", 0.0))
+				n.position.y = Terrain.water_level(record) if g.list == "water" else Terrain.height_at(n.position.x, n.position.z) + World.height_offset(record)
 
 
 func capture_height_offsets() -> void:
@@ -337,7 +337,7 @@ func _marker(g: Dictionary, r: Dictionary, i: int) -> Node3D:
 	n.set_meta("record", r.duplicate(true))
 	var x: float = r.x if g.list == "trees" else r.position[0]
 	var z: float = r.z if g.list == "trees" else r.position[1]
-	n.position = Vector3(x, Terrain.height_at(x, z) + r.get("heightOffset", 0.0), z)
+	n.position = Vector3(x, Terrain.height_at(x, z) + World.height_offset(r), z)
 	if g.has("turn"):
 		var t: float = r.get(g.turn, 0.0)
 		n.rotation.y = t if g.get("radians") else deg_to_rad(t)

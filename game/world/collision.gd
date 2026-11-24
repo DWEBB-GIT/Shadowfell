@@ -35,7 +35,8 @@ func add(x: float, z: float, r: float, wall := false, h := INF) -> Dictionary:
 
 
 func _nearby(x: float, z: float, r: float) -> Array:
-	_ensure_trees(x - r, z - r, x + r, z + r)
+	if not Terrain.is_lantern_coast():
+		_ensure_trees(x - r, z - r, x + r, z + r)
 	var out := []
 	var seen := {}
 	for i in range(floori((x - r) / cell_size), floori((x + r) / cell_size) + 1):
@@ -86,7 +87,11 @@ const CLEAR_AT := 0.5
 
 ## Push a moving circle (a Vector3, x/z used) out of obstacles and off
 ## blocked ground, and keep it in the world. Returns the corrected position.
-func resolve(pos: Vector3, radius: float, lift := 0.0) -> Vector3:
+func resolve(pos: Vector3, radius: float, lift := 0.0, from = null) -> Vector3:
+	var coast := Terrain.is_lantern_coast()
+	if coast and from is Vector3:
+		pos = Terrain.coast.block_step(from, pos, radius, lift > 0.0, true)
+	var swept := pos
 	for pass_ in 2:
 		for c in _nearby(pos.x, pos.z, radius + 2):
 			if lift > 0.0 and lift >= c.h * CLEAR_AT:
@@ -101,11 +106,23 @@ func resolve(pos: Vector3, radius: float, lift := 0.0) -> Vector3:
 					d = 0.0001
 				pos.x = c.x + dx / d * mn
 				pos.z = c.z + dz / d * mn
+	if coast:
+		# An obstacle's push must not put a walker past the checked bank.
+		if from is Vector3 and not pos.is_equal_approx(swept):
+			pos = Terrain.coast.block_step(swept, pos, radius, lift > 0.0, true)
+		return clamp_to_bounds(pos, radius)
 	return clamp_to_bounds(off_blocked_ground(pos), radius)
 
 
 ## Is there a wall between two points? (a door is a gap in the wall's circles)
 func wall_between(ax: float, az: float, bx: float, bz: float) -> bool:
+	if Terrain.is_lantern_coast() and Terrain.coast.building_wall_between(Vector2(ax, az), Vector2(bx, bz)):
+		return true
+	if Terrain.is_lantern_coast() and Terrain.coast.dungeon != null:
+		var a := Vector2(ax, az)
+		var b := Vector2(bx, bz)
+		if Terrain.coast.dungeon.occupies(a) and Terrain.coast.dungeon.occupies(b):
+			return not Terrain.coast.direct_walk(a, b, 0.0)
 	var dx := bx - ax
 	var dz := bz - az
 	var len2 := dx * dx + dz * dz
@@ -137,16 +154,20 @@ func is_inside(x: float, z: float) -> bool:
 ## an obstacle? Obstacles the mover already stands in are ignored, so it can
 ## always walk out of one.
 func blocked_between(ax: float, az: float, bx: float, bz: float, radius: float) -> bool:
+	var coast := Terrain.is_lantern_coast()
+	if coast and not Terrain.coast.direct_walk(Vector2(ax, az), Vector2(bx, bz), radius):
+		return true
 	var dx := bx - ax
 	var dz := bz - az
 	var len2 := dx * dx + dz * dz
 	if len2 < 1e-6:
 		return false
-	var steps := int(sqrt(len2) / 1.5)
-	for k in range(1, steps + 1):
-		var t := float(k) / (steps + 1)
-		if Terrain.walk_at(ax + dx * t, az + dz * t) < 0.5:
-			return true
+	if not coast:
+		var steps := int(sqrt(len2) / 1.5)
+		for k in range(1, steps + 1):
+			var t := float(k) / (steps + 1)
+			if Terrain.walk_at(ax + dx * t, az + dz * t) < 0.5:
+				return true
 	for c in _nearby((ax + bx) / 2, (az + bz) / 2, sqrt(len2) / 2 + radius + 2):
 		var mn: float = c.r + radius - 0.05
 		if pow(ax - c.x, 2) + pow(az - c.z, 2) < mn * mn:
@@ -168,6 +189,7 @@ const STEPS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1),
 ## circle of `radius`, then pulled tight. Returns the waypoints (Vector2,
 ## x/z) after the start, ending at the goal, or [] if there is no way round.
 func find_path(ax: float, az: float, bx: float, bz: float, radius: float) -> Array:
+	var coast = Terrain.coast
 	var x0 := minf(ax, bx) - PATH_PAD
 	var z0 := minf(az, bz) - PATH_PAD
 	var w := int(ceil((maxf(ax, bx) + PATH_PAD - x0) / PATH_CELL))
@@ -187,14 +209,16 @@ func find_path(ax: float, az: float, bx: float, bz: float, radius: float) -> Arr
 				var pz := z0 + (j + 0.5) * PATH_CELL
 				if pow(px - c.x, 2) + pow(pz - c.z, 2) < rr * rr:
 					blocked[j * w + i] = 1
-	# and the ground that cannot be walked on (sampled per 1.5 m)
-	for j in range(0, h, 2):
-		for i in range(0, w, 2):
-			if Terrain.walk_at(x0 + (i + 1) * PATH_CELL, z0 + (j + 1) * PATH_CELL) < 0.5:
-				for dj in 2:
-					for di in 2:
-						if i + di < w and j + dj < h:
-							blocked[(j + dj) * w + i + di] = 1
+	# Older maps have coarse walkability data. Coast edges are checked
+	# against actual terrain and collisions when A* tries to cross them.
+	if coast == null:
+		for j in range(0, h, 2):
+			for i in range(0, w, 2):
+				if Terrain.walk_at(x0 + (i + 1) * PATH_CELL, z0 + (j + 1) * PATH_CELL) < 0.5:
+					for dj in 2:
+						for di in 2:
+							if i + di < w and j + dj < h:
+								blocked[(j + dj) * w + i + di] = 1
 	var start := Vector2i(clampi(floori((ax - x0) / PATH_CELL), 0, w - 1), clampi(floori((az - z0) / PATH_CELL), 0, h - 1))
 	var goal := Vector2i(clampi(floori((bx - x0) / PATH_CELL), 0, w - 1), clampi(floori((bz - z0) / PATH_CELL), 0, h - 1))
 	var s_id := start.y * w + start.x
@@ -218,6 +242,7 @@ func find_path(ax: float, az: float, bx: float, bz: float, radius: float) -> Arr
 		expanded += 1
 		var ci := cur % w
 		var cj := cur / w
+		var here := Vector2(ax, az) if cur == s_id else Vector2(x0 + (ci + 0.5) * PATH_CELL, z0 + (cj + 0.5) * PATH_CELL)
 		for d: Vector2i in STEPS:
 			var ni: int = ci + d.x
 			var nj: int = cj + d.y
@@ -231,6 +256,10 @@ func find_path(ax: float, az: float, bx: float, bz: float, radius: float) -> Arr
 				continue
 			var g: float = cost[cur] + (1.4142 if d.x != 0 and d.y != 0 else 1.0)
 			if g < cost.get(n, INF):
+				if coast != null:
+					var there := Vector2(bx, bz) if n == g_id else Vector2(x0 + (ni + 0.5) * PATH_CELL, z0 + (nj + 0.5) * PATH_CELL)
+					if not coast.direct_walk(here, there, radius):
+						continue
 				cost[n] = g
 				came[n] = cur
 				_heap_push(heap, [g + _octile(Vector2i(ni, nj), goal), n])

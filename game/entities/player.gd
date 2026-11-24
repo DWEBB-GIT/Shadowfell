@@ -6,6 +6,7 @@ extends RefCounted
 
 var game
 var group := Node3D.new()
+var _visual_pivot := Node3D.new()
 var model: Node3D
 var appearance: Dictionary = ForgeCharacter.defaults()
 var rig: Rig
@@ -76,7 +77,9 @@ func _init(g) -> void:
 	# A readability scale on the body and attached gear. World distances,
 	# collision, attack ranges and movement stay in the same units.
 	model.scale *= DB.CONFIG.player.visualScale
-	group.add_child(model)
+	_visual_pivot.name = "CharacterVisual"
+	group.add_child(_visual_pivot)
+	_visual_pivot.add_child(model)
 	rig = ForgeRig.new(model, self)
 	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
@@ -85,7 +88,7 @@ func _init(g) -> void:
 	# always dark under the feet: unshaded, so no light (a lamp, the sun at
 	# noon) can wash it out and leave the player floating
 	ground_shadow = Fx.blob_shadow(SHADOW_SIZE, Tex.contact())
-	# top level: the group's jump and front flip never lift or turn it
+	# Top level so the contact shadow stays on the ground during a jump.
 	ground_shadow.top_level = true
 	group.add_child(ground_shadow)
 	torch_light.light_color = Color("ffa860")
@@ -98,7 +101,15 @@ func _init(g) -> void:
 	place_at(start.position[0], start.position[1], deg_to_rad(start.get("facing", 0)))
 
 
+var _coast_footing := Vector2.INF
+
+
 func place_at(x: float, z: float, f = null) -> void:
+	_coast_footing = Vector2.INF
+	if Terrain.is_lantern_coast():
+		var safe: Vector2 = Terrain.coast.safe_arrival(Vector2(x, z), radius)
+		x = safe.x
+		z = safe.y
 	position = Vector3(x, Terrain.height_at(x, z), z)
 	_reset_jump()
 	if f != null:
@@ -117,14 +128,15 @@ func _sync() -> void:
 		# a spirit floats a hand above the ground, bobbing
 		group.position.y += 0.15 + sin(game.time * 2) * 0.06
 	group.rotation.y = facing
-	group.rotation.x = 0.0
+	var visual := Transform3D.IDENTITY
 	if flip >= 0.0:
-		# a front flip, turned about the waist rather than the feet
-		group.rotation.x = TAU * clampf(flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY), 0.0, 1.0)
+		# Turn the body and its attached gear together around the waist.
+		# Take-off and landing stay upright.
+		var phase := flip / (2.0 * JUMP_SPEED / JUMP_GRAVITY)
+		var turn := Basis(Vector3.RIGHT, TAU * smoothstep(0.11, 0.87, phase))
 		var pivot := Vector3(0, 0.9 * DB.CONFIG.player.visualScale, 0)
-		group.position += pivot - group.basis * pivot
-	# The contact shadow stays flat on the ground while the body leaves it
-	# (it is top level, so it ignores the group's hop and flip).
+		visual = Transform3D(turn, pivot - turn * pivot)
+	_visual_pivot.transform = visual
 	_place_ground_shadow(Vector3(position.x, position.y - jump_h, position.z))
 
 
@@ -151,7 +163,7 @@ func set_appearance(value = null) -> void:
 	var previous := model
 	model = ForgeCharacter.build(appearance)
 	model.scale *= DB.CONFIG.player.visualScale
-	group.add_child(model)
+	_visual_pivot.add_child(model)
 	rig = ForgeRig.new(model, self)
 	rig.track_steps = true
 	materials = Rig.isolate_materials(model)
@@ -166,7 +178,7 @@ func set_appearance(value = null) -> void:
 	bow_id = null
 	bow_in_hand = false
 	sheath_parts.clear()
-	group.remove_child(previous)
+	_visual_pivot.remove_child(previous)
 	previous.queue_free()
 	show_equipment(game.inventory.equipment)
 
@@ -498,9 +510,12 @@ func start_roll(d: Vector3) -> void:
 	game.events.emit("playerRolled", {"position": position})
 
 
-func _update_jump(dt: float, requested: bool, controls = null) -> void:
+func _update_jump(dt: float, requested: bool, controls = null, previous = null) -> void:
 	hop_cd = maxf(0.0, hop_cd - dt)
 	roll_cd = maxf(0.0, roll_cd - dt)
+	if (previous is Vector3 and Terrain.is_lantern_coast() and jump_v == 0.0 and jump_h == 0.0
+			and Terrain.coast.stepping_off(previous, position)):
+		jump_h = maxf(0.001, position.y - Terrain.height_at(position.x, position.z))
 	jump_buffer = JUMP_BUFFER_TIME if requested else maxf(0.0, jump_buffer - dt)
 	if roll != null:
 		jump_buffer = 0.0 # no jumping out of a tumble
@@ -520,9 +535,7 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 		hop_dir = _hop_direction(controls)
 		if hop_dir != Vector3.ZERO:
 			hop_cd = DB.CONFIG.player.hop.get("cooldown", 1.6)
-		# The v6 rig owns its take-off/air/landing poses; whole-body random
-		# flips would rotate that pose and the attached weapons a second time.
-		flip = 0.0 if not rig is ForgeRig and not ghost and randf() < FLIP_CHANCE else -1.0
+		flip = 0.0 if not ghost and randf() < FLIP_CHANCE else -1.0
 		game.events.emit("playerJumped", {"position": position})
 		# A buffered second hop needs a fresh animation even without an idle frame.
 		if rig.clip == "Jump":
@@ -531,9 +544,10 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 		# a combat hop carries you on, the way you leapt, on top of your
 		# steering: committed, so a foe can read and punish it
 		var extra: float = (DB.CONFIG.player.hop.get("carry", 1.8) - 1.0) * DB.CONFIG.player.speed
+		var from := position
 		position.x += hop_dir.x * extra * dt
 		position.z += hop_dir.z * extra * dt
-		position = game.collision.resolve(position, radius, jump_h)
+		position = game.collision.resolve(position, radius, jump_h, from)
 	var ground := Terrain.height_at(position.x, position.z)
 	if jump_v != 0.0 or jump_h > 0.0:
 		# Integrate world height, so a slope cannot drag an airborne player up
@@ -542,7 +556,12 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 		jump_v -= JUMP_GRAVITY * dt
 		if position.y <= ground:
 			position.y = ground
-			game.events.emit("playerLanded", {"position": position, "speed": -jump_v})
+			var landing_speed := -jump_v
+			if Terrain.is_lantern_coast():
+				position = Terrain.coast.landing_at(position, radius, air_mv, _coast_footing)
+				if not ghost:
+					_fall_damage(landing_speed)
+			game.events.emit("playerLanded", {"position": position, "speed": landing_speed})
 			jump_v = 0.0
 			jump_h = 0.0
 			flip = -1.0
@@ -554,9 +573,26 @@ func _update_jump(dt: float, requested: bool, controls = null) -> void:
 	else:
 		position.y = ground
 		jump_h = 0.0
+	if Terrain.is_lantern_coast() and jump_h == 0.0 and jump_v == 0.0:
+		var floor := Vector2(position.x, position.z)
+		if floor.distance_squared_to(_coast_footing) > 0.49 and Terrain.coast.stable_footing(floor, radius):
+			_coast_footing = floor
 	rig.airborne = jump_h > 0.0 or jump_v > 0.0
 	if "combat" in rig:
 		rig.combat = game.resources.in_combat or game.targeting.attacking
+
+
+func _fall_damage(speed: float) -> void:
+	# Use landing speed so a short jump or step off a low ledge is free.
+	var drop := speed * speed / (2.0 * JUMP_GRAVITY)
+	var damage := floorf(max_health * clampf((drop - 4.5) * 0.055, 0.0, 1.0))
+	if damage <= 0.0:
+		return
+	take_damage(damage)
+	game.events.emit("damageNumber", {"target": self, "amount": damage, "kind": "taken"})
+	game.events.emit("log", {"text": "You take %d damage from the fall." % int(damage), "kind": "hurt"})
+	if dead:
+		game.on_player_death()
 
 
 ## a red flash on the body as a blow lands, so a hit reads from the
@@ -566,6 +602,7 @@ var _hit_flash_shown := false
 
 
 func update(dt: float, controls) -> void:
+	var from := position
 	if (hit_flash > 0 or _hit_flash_shown) and not dead:
 		hit_flash = maxf(0, hit_flash - dt * 4)
 		Rig.set_emissive(materials, Rig.FLASH_RED, hit_flash * 0.55)
@@ -587,8 +624,8 @@ func update(dt: float, controls) -> void:
 			position.x += mv.x * sp * dt
 			position.z += mv.z * sp * dt
 			facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
-		position = game.collision.resolve(position, radius, jump_h)
-		_update_jump(dt, controls != null and controls.get("jump", false), controls)
+		position = game.collision.resolve(position, radius, jump_h, from)
+		_update_jump(dt, controls != null and controls.get("jump", false), controls, from)
 		moving = mag > 0 or rig.airborne
 		rig.update(dt, mag)
 		_sync()
@@ -687,10 +724,13 @@ func update(dt: float, controls) -> void:
 				if face_aim != null and not turning:
 					facing = U.turn_towards(facing, atan2(face_aim.x - position.x, face_aim.z - position.z), dt * DB.CONFIG.player.turnSpeed)
 			else:
-				# Running, you face the way you run (WoW): nothing turns you
-				# back at your target, so to hit something behind you, you
-				# stop (or turn) to face it. No shooting while kiting backwards.
-				facing = U.turn_towards(facing, atan2(look.x, look.z), dt * DB.CONFIG.player.turnSpeed)
+				var strafe_aim = controls.get("strafeAim")
+				var direction := Vector2(look.x, look.z)
+				if strafe_aim != null:
+					var to_aim := Vector2(strafe_aim.x - position.x, strafe_aim.z - position.z)
+					if to_aim.length_squared() > 0.01:
+						direction = to_aim
+				facing = U.turn_towards(facing, atan2(direction.x, direction.y), dt * DB.CONFIG.player.turnSpeed)
 			speed01 = mag
 		elif turning:
 			pass
@@ -730,8 +770,8 @@ func update(dt: float, controls) -> void:
 	if sitting and (speed01 > 0 or casting != null or pending != null or pending_off != null or pending_shot != null):
 		set_sitting(false)
 	# high in a hop you pass over low things (a fence, Collision `h`)
-	position = game.collision.resolve(position, radius, jump_h)
-	_update_jump(dt, controls != null and controls.get("jump", false), controls)
+	position = game.collision.resolve(position, radius, jump_h, from)
+	_update_jump(dt, controls != null and controls.get("jump", false), controls, from)
 	# Stationary activities (fishing, eating, gathering and casting) also
 	# see a standing jump as movement, rather than continuing in mid-air.
 	moving = speed01 > 0 or rig.airborne
@@ -951,10 +991,9 @@ func bow_muzzle() -> Vector3:
 	return position+Vector3(0,1.35,0)+Vector3(sin(facing),0,cos(facing))*0.4
 
 
-## An attack at a foe needs it in your front half; nothing turns you to it.
-## A foe beside or behind you is not hit until you turn yourself, so getting
-## behind someone still pays off, and nobody shoots back while running away
-## (the anti-kite rule).
+## Attacks still need the foe in your front half. Optional strafing changes
+## how direct movement faces; it never bypasses this check. Auto Shot and
+## stationary casts keep their separate movement restrictions.
 func square_up(x: float, z: float) -> bool:
 	# no aim assist (Dan 2026-11-11): nudging you onto the target fought the
 	# run direction every frame when running through a foe, a stutter

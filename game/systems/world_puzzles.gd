@@ -83,12 +83,13 @@ func interactions() -> Array:
 			else:
 				text = "Ring %s (%d/%d)" % [n.name, s.progress, p.answer.size()]
 			out.append({"key": "puzzle:%s:%d" % [p.id, i], "x": p.position[0] + n.offset[0], "z": p.position[1] + n.offset[1], "bias": 0.0, "reach": 1.65,
-				"prompt": text, "run": func(): operate(p.id, i)})
+				"puzzle": p.id, "name": n.name, "prompt": text, "run": func(): operate(p.id, i)})
 		for action in ["check", "reset"]:
 			if action == "check" and p.kind != "dials":
 				continue
 			var off: Array = p.get(action + "Offset", [0, 2])
 			out.append({"key": "puzzle:%s:%s" % [p.id, action], "x": p.position[0] + off[0], "z": p.position[1] + off[1], "bias": 0.0, "reach": 1.5,
+				"puzzle": p.id, "name": p.name,
 				"prompt": ("Read %s" % p.name if s.solved else "Test the flow" if action == "check" else "Reset %s" % p.name), "run": func(): operate(p.id, action)})
 	return out
 

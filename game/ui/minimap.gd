@@ -13,6 +13,7 @@ extends Control
 const SIZE := 168.0 ## pixels across
 const ZOOMS := [0.9, 1.5, 2.4] ## screen pixels per metre; visible radius stays within Land.RADIUS
 const SEGMENTS := 72 ## sides of the round window the map is shown through
+const COAST_ATLAS := preload("res://game/world/lantern_coast/atlas.tres")
 
 var game
 var zoom := 1
@@ -72,7 +73,6 @@ func _init(g) -> void:
 	# the N badge and the zoom buttons
 	# a small orb at the top of the rim, styled like the menu orbs round it
 	var north := orb(270.0, NORTH_R, ON_RIM)
-	_north = north
 	north.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# a plain gold N, so north reads at a glance (Dan, 2026-11-04); the arrow
 	# art is kept for the player marker and the tracker's way pointer
@@ -174,6 +174,8 @@ func set_zoom(z: int) -> void:
 ## slides those stills under the markers as the player moves (Dan,
 ## 2026-11-04: capture once, no live re-rendering). Moving bodies are left
 ## out of the photo so nobody is frozen into the ground.
+const COAST_OVERVIEW := preload("res://game/world/lantern_coast/overview.png")
+
 const TILE_M := 64.0 ## metres per still (matches Land.CHUNK, so a built chunk is a finished tile)
 const TILE_PX := 192 ## pixels per still: 3 px/m, as sharp as the closest zoom
 const KEEP_TILES := 4 ## stills further than this many tiles away are dropped (memory)
@@ -261,37 +263,29 @@ func _capture(k: Vector2i) -> void:
 	overhead_camera.far = maxf(1024.0, peak + 320.0)
 	terrain_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
-	if is_instance_valid(terrain_view):
-		_tiles[k] = ImageTexture.create_from_image(terrain_view.get_texture().get_image())
-		map.queue_redraw()
+	if is_instance_valid(terrain_view) and is_inside_tree():
+		var shot := terrain_view.get_texture().get_image()
+		if not shot.is_empty() and (not Terrain.is_lantern_coast() or _valid_coast_tile(shot)):
+			_tiles[k] = ImageTexture.create_from_image(shot)
+			map.queue_redraw()
 	_capturing = false
+
+
+func _valid_coast_tile(shot: Image) -> bool:
+	var origin := shot.get_pixel(0, 0)
+	for y in [16, 60, 108, 160]:
+		for x in [16, 60, 108, 160]:
+			if not shot.get_pixel(x, y).is_equal_approx(origin):
+				return true
+	return false
 
 
 ## Shared coordinates for overlay markers: east right, north up.
 func world_to_map(at: Vector2) -> Vector2:
 	var p: Vector3 = game.player.position
-	return Vector2.ONE * SIZE * 0.5 + ((at - Vector2(p.x, p.z)) * float(ZOOMS[zoom])).rotated(_yaw)
+	return Vector2.ONE * SIZE * 0.5 + ((at - Vector2(p.x, p.z)) * float(ZOOMS[zoom]))
 
 
-## The map turns with the camera, so the screen's up (W) is the map's up
-## (Dan, 2026-11-10: with the 45° camera, map-north needed W+D). _yaw is the
-## camera's turn; the N badge slides round the rim to where north now is.
-var _yaw := 0.0
-var _north: Button
-
-
-func _camera_yaw() -> float:
-	var o: Vector3 = game._camera_offset(1.0)
-	return atan2(o.x, o.z)
-
-
-func _place_north() -> void:
-	if _north == null:
-		return
-	var a := deg_to_rad(270.0) + _yaw
-	var r := SIZE / 2
-	var half := _north.size / 2
-	_north.position = Vector2(r, r) + Vector2(cos(a), sin(a)) * (r + ON_RIM) - half
 
 
 # ------------------------------------------------------------ markers
@@ -300,36 +294,33 @@ func _place_north() -> void:
 func markers() -> Array:
 	var quests = game.quests
 	var out := []
+	if game.blackpick != null and game.blackpick.active():
+		var foe = game.blackpick.actor
+		if foe != null and foe.alive:
+			out.append({"x":foe.position.x, "z":foe.position.z, "kind":"foe", "label":foe.cfg.name})
+		return out
 	for s in Layout.shrines:
 		out.append({"x": s.position[0], "z": s.position[1], "kind": "shrine"})
 	for st in Layout.stations:
 		out.append({"x": st.position[0], "z": st.position[1], "kind": "station", "station": st.kind, "label": Interaction.title(st.name)})
-	# where open objectives point
-	var areas := {}
-	for id in quests.active:
-		if quests.status(id) != "active":
-			continue
-		for o in quests.objectives(id):
-			if o.done or not o.get("location") or areas.has(o.location):
-				continue
-			var l: Dictionary = DB.locations[o.location]
-			# tracked quests show however far off they are
-			if not quests.tracked.has(id) and _far(l.position[0], l.position[1], l.radius):
-				continue
-			areas[o.location] = {"x": l.position[0], "z": l.position[1], "r": l.radius, "kind": "area", "label": l.name, "tracked": quests.tracked.has(id)}
-	out.append_array(areas.values())
-	# the next step of each tracked quest, at any distance; the followed one
-	# brightest
-	for id in quests.active:
-		if not quests.tracked.has(id):
-			continue
-		var at: Dictionary = quests.goal(id)
-		if not at.is_empty():
-			out.append({"x": at.x, "z": at.z, "r": at.r, "kind": "goal", "label": at.label, "npc": at.has("npc"), "focus": id == quests.focus})
-	if quests.focus != "" and quests.status(quests.focus) == "available":
-		var at: Dictionary = quests.goal(quests.focus)
-		if not at.is_empty():
-			out.append({"x": at.x, "z": at.z, "r": 0, "kind": "goal", "label": at.label, "npc": true, "focus": true})
+	if Terrain.is_lantern_coast():
+		var reach := SIZE * .5 / float(ZOOMS[zoom]) - 4.0
+		var p: Vector3 = game.player.position
+		var player := Vector2(p.x, p.z)
+		for dock in game.discovery.docks:
+			if player.distance_squared_to(dock.at) <= reach * reach:
+				out.append({"x":dock.at.x, "z":dock.at.y, "kind":"ferry", "label":"Ferry to " + dock.to_name})
+		if game.blackpick != null:
+			var shaft: Vector2 = game.blackpick.outside()
+			if player.distance_squared_to(shaft) <= reach * reach:
+				out.append({"x":shaft.x, "z":shaft.y, "kind":"dungeon", "label":"Blackpick Mine · Levels 8–10"})
+		for trail in COAST_ATLAS.get_meta("footpaths"):
+			if trail.has("trailhead"):
+				var at: Array = trail.points[0]
+				if Vector2(p.x - at[0], p.z - at[1]).length_squared() <= reach * reach:
+					out.append({"x": at[0], "z": at[1], "kind": "trailhead", "label": trail.trailhead.label})
+	var metres_per_pixel := 1.0 / float(ZOOMS[zoom])
+	out.append_array(quests.map_goals(13.0 * metres_per_pixel, (SIZE * 0.5 - 5.0) * metres_per_pixel))
 	for n in game.npcs.here:
 		if n.def.get("ambient"):
 			continue # background folk (town life) would bury the people you look for
@@ -398,11 +389,6 @@ func _process(dt: float) -> void:
 	_hover_tip()
 	_since += dt
 	var p: Vector3 = game.player.position
-	var yaw := _camera_yaw()
-	if not is_equal_approx(yaw, _yaw):
-		_yaw = yaw
-		_place_north()
-		_drawn_at = Vector4(INF, 0, 0, 0)
 	var now := Vector4(p.x, p.z, game.player.facing, zoom)
 	if _since >= 0.2 or _moved(now):
 		_since = 0.0
@@ -438,7 +424,7 @@ func _hover_tip() -> void:
 				s = c + (s - c).normalized() * (R - 9)
 				reach = 0.0
 			var d := maxf(0.0, mp.distance_to(s) - reach)
-			if d <= near:
+			if d < near or (d <= near and m.kind == "goal"):
 				near = d
 				best = m
 	if best == null:
@@ -447,7 +433,10 @@ func _hover_tip() -> void:
 	var pl: Vector3 = game.player.position
 	var metres := maxi(0, roundi(U.hyp(best.x - pl.x, best.z - pl.z) - best.get("r", 0.0)))
 	var label: String = best.get("label", "")
-	_tip.text = ("%s\n%d m" % [label, metres]) if label != "" else "%d m" % metres
+	if best.get("approximate", false):
+		label = "Search near " + label
+	var names := "\n".join(best.get("quest_names", []))
+	_tip.text = (names + "\n" if not names.is_empty() else "") + ("%s\n%d m" % [label, metres] if label != "" else "%d m" % metres)
 	_tip.size = _tip.get_combined_minimum_size()
 	var at := get_global_mouse_position() + Vector2(14, 10)
 	if at.x + _tip.size.x > get_viewport_rect().size.x - 4:
@@ -458,6 +447,8 @@ func _hover_tip() -> void:
 
 ## The name of where you stand: the building you are in, else the region.
 func place_name() -> String:
+	if game.blackpick != null and game.blackpick.active():
+		return "Blackpick Mine"
 	var inside = game.world.indoors if game.world else null
 	if inside is Dictionary and inside.get("def", {}).get("name"):
 		return inside.def.name
@@ -478,17 +469,30 @@ func _draw_map() -> void:
 		map.draw_circle(Vector2(SIZE, SIZE) / 2, SIZE / 2, Color.BLACK)
 		return
 	var p: Vector3 = game.player.position
-	_refresh_overhead()
+	var mine: bool = game.blackpick != null and game.blackpick.active()
+	if not mine:
+		_refresh_overhead()
 	var g := Canvas2D.new(map)
 	var scale: float = ZOOMS[zoom]
 	var R := SIZE / 2
 	g.fill_style = "#15242b"
 	g.fill_rect(0, 0, SIZE, SIZE)
+	if mine:
+		map.draw_rect(Rect2(0, 0, SIZE, SIZE), Color("1b1714"))
+		for room in game.blackpick.ROOMS:
+			var corner := world_to_map(game.blackpick.ORIGIN + room.position)
+			map.draw_rect(Rect2(corner, room.size * scale), Color("675440"))
+	elif Terrain.is_lantern_coast():
+		# Keep a coarse terrain backdrop while the overhead camera catches up
+		# after a ferry or a long move.
+		var rect := Terrain.map_rect()
+		var position := Vector2(R, R) + (rect.position - Vector2(p.x, p.z)) * scale
+		map.draw_texture_rect(COAST_OVERVIEW, Rect2(position, rect.size * scale), false)
 	var tile_px := TILE_M * scale
-	# the stills are drawn turned with the camera, about the map's centre
-	map.draw_set_transform(Vector2(R, R), _yaw)
+	# Draw the north-up terrain tiles around the centre.
+	map.draw_set_transform(Vector2(R, R))
 	var reach := R * 1.42 + tile_px
-	for k in _tiles:
+	for k in ([] if mine else _tiles.keys()):
 		var at := (Vector2(k) * TILE_M - Vector2(p.x, p.z)) * scale
 		if (at + Vector2.ONE * tile_px / 2).length() > reach:
 			continue
@@ -504,24 +508,18 @@ func _draw_map() -> void:
 		_marks_at = now_ms
 		_marks = markers()
 	var all: Array = _marks
-	# objective areas first, under everything else
-	for m in all:
-		if m.kind != "area":
-			continue
-		var s: Vector2 = to_map.call(m.x, m.z)
-		g.begin_path()
-		g.arc(s.x, s.y, maxf(5, m.r * scale), 0, TAU)
-		g.fill_style = "rgba(240, 200, 80, 0.16)"
-		g.fill()
-		g.stroke_style = "rgba(240, 200, 80, 0.7)"
-		g.line_width = 1
-		g.set_line_dash([3, 3])
-		g.stroke()
-		g.set_line_dash([])
 	for m in all:
 		var s: Vector2 = to_map.call(m.x, m.z)
 		var inside := s.distance_to(Vector2(R, R)) <= R - 4
-		if m.kind == "shrine" and inside:
+		if m.kind == "trailhead" and inside:
+			map.draw_colored_polygon(PackedVector2Array([s + Vector2(0,-6), s + Vector2(5,4), s + Vector2(-5,4)]), Color("35291f"))
+			map.draw_colored_polygon(PackedVector2Array([s + Vector2(0,-3), s + Vector2(3,2), s + Vector2(-3,2)]), Color("f2cf79"))
+		elif m.kind == "ferry" and inside:
+			_glyph(g, s.x, s.y, "⚓", "#a0d8f5", 16)
+		elif m.kind == "dungeon" and inside:
+			if not _art(g, "place_dungeon", s.x, s.y, 18):
+				_glyph(g, s.x, s.y, "◆", "#f0927c", 15)
+		elif m.kind == "shrine" and inside:
 			if _art(g, "shrine", s.x, s.y, 14):
 				continue
 			g.fill_style = "#9fd0ff"
@@ -596,8 +594,11 @@ func _draw_map() -> void:
 			var colour := "#fff0a0" if m.focus else "#d8b058"
 			if s.distance_to(Vector2(R, R)) > R - 4 - m.r * scale:
 				_rim(g, s, R, colour, "", m.r * scale, 1.5 if m.focus else 1.0)
-			elif not m.npc and not _art(g, "quest_goal", s.x, s.y, 15 if m.focus else 12):
-				_glyph(g, s.x, s.y, "◆", colour, 13 if m.focus else 10)
+			elif not m.has("npc") or game.quests.marker_for(m.npc) == "":
+				if m.get("approximate", false):
+					_glyph(g, s.x, s.y, "◇", colour, 14 if m.focus else 12)
+				elif not _art(g, "quest_goal", s.x, s.y, 15 if m.focus else 12):
+					_glyph(g, s.x, s.y, "◆", colour, 13 if m.focus else 10)
 	# quest marks last, so they sit on top; out of range ones on the rim
 	for m in all:
 		if m.kind != "ready" and m.kind != "available" and m.kind != "active":
@@ -638,7 +639,7 @@ func _draw_map() -> void:
 	g.arc(0, 0, 10, 0, TAU)
 	g.fill_style = "rgba(0, 0, 0, 0.55)"
 	g.fill()
-	g.rotate(PI - game.player.facing + _yaw)
+	g.rotate(PI - game.player.facing)
 	var arrow := Icons.art("map", "player")
 	if arrow:
 		g.draw_image(arrow, -8, -8, 16, 16)

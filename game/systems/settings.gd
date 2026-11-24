@@ -12,7 +12,8 @@ const TABS := [["controls", "Controls"], ["keys", "Key binding"], ["audio", "Aud
 const SETTINGS := [
 	{"id": "leftInteract", "label": "Interact on left click (talk, attack and use as right click does; right click still works)", "tab": "controls", "default": false},
 	{"id": "autoLoot", "label": "Auto loot (walking up to a body you can loot takes what it holds)", "tab": "controls", "default": false},
-	{"id": "clickToMove", "label": "Click to move (left click)", "tab": "controls", "default": false},
+	{"id": "clickToMove", "label": "Enable click-to-move (choose the button under Key binding)", "tab": "controls", "default": false},
+	{"id": "leftNpcSelectOnly", "label": "Left click selects NPCs only (right click or Interact to talk)", "tab": "controls", "default": true},
 	{"id": "leftSelectOnly", "label": "Left click only selects (with Click to move, a left click on an enemy or townsperson selects it instead of running you up to it; right click runs up and acts)", "tab": "controls", "default": false},
 	{"id": "targetLock", "label": "Target lock (with nothing selected, abilities lock on to the enemy you face)", "tab": "controls", "default": true},
 	{"id": "combatMove", "label": "Combat move (experiment: in a fight, Space always does a Roll, a ~6 m burst on a 6 s cooldown, or a Hop that leaps you further)", "tab": "controls", "default": "Roll", "choice": true, "options": "COMBAT_MOVES"},
@@ -22,7 +23,7 @@ const SETTINGS := [
 	# Camera tuning (Dan, 2026-11-09): try angles in the game, then lock the
 	# chosen numbers into CONFIG.camera. Off, the fixed view is used.
 	{"id": "camPreset", "label": "Camera preset (sets the sliders below)", "tab": "controls", "group": "Camera tuning", "default": "Default (Dan's pick)", "choice": true, "options": "CAMERA_PRESETS"},
-	{"id": "camTune", "label": "Tune the camera myself (test: find the view, then send Claude the numbers)", "tab": "controls", "group": "Camera tuning", "default": false},
+	{"id": "camTune", "label": "Use my camera settings in every world", "tab": "controls", "group": "Camera tuning", "default": false},
 	{"id": "camPitch", "label": "Angle down", "tab": "controls", "group": "Camera tuning", "default": 35, "min": 15, "max": 80, "unit": "°"},
 	{"id": "camYaw", "label": "Turn", "tab": "controls", "group": "Camera tuning", "default": 0, "min": -60, "max": 60, "unit": "°"},
 	{"id": "camDistance", "label": "Distance", "tab": "controls", "group": "Camera tuning", "default": 35, "min": 12, "max": 70, "unit": " m"},
@@ -30,6 +31,8 @@ const SETTINGS := [
 	{"id": "camOrtho", "label": "Flat lens (true isometric: nothing shrinks with distance)", "tab": "controls", "group": "Camera tuning", "default": false},
 	# test (Dan, 2026-11-11): scales only YOUR run; enemies chase at their own runSpeed % of the base 7 yd/s
 	{"id": "moveSpeed", "label": "Your movement speed (test; 100% = 7 yd/s base, enemies keep their own speed)", "tab": "controls", "group": "Movement", "default": 100, "min": 50, "max": 300},
+	{"id": "combatStrafing", "label": "Optional combat strafing (screen-relative WASD / left stick)", "tab": "controls", "group": "Movement", "default": false},
+	{"id": "strafeFacing", "label": "Face while strafing", "tab": "controls", "group": "Movement", "default": "Selected enemy", "choice": true, "options": "STRAFE_FACING"},
 	{"id": "openingCinematic", "label": "Cinematic arrival for new characters", "tab": "controls", "group": "Arrival", "default": true},
 	{"id": "reducedOpeningMotion", "label": "Reduced opening motion (simple fade instead of a camera flight)", "tab": "controls", "default": false},
 	{"id": "keysPerCharacter", "label": "Character specific (each character keeps its own key bindings)", "tab": "keys", "default": false},
@@ -56,6 +59,7 @@ const SETTINGS := [
 ## one turns camera tuning on and sets the four sliders.
 ## the Combat move setting (Player._update_jump)
 const COMBAT_MOVES := ["Roll", "Hop", "Off"]
+const STRAFE_FACING := ["Selected enemy", "Mouse cursor"]
 const CAMERA_PRESETS := {
 	"Default (Dan's pick)": [35, 0, 35, 25],
 	"Default, flat lens": [35, 0, 35, 25, true],
@@ -94,6 +98,8 @@ static func default_of(s: Dictionary):
 ## a stored value made safe: the right type, and inside a slider's range
 static func _clean(s: Dictionary, v):
 	if s.get("choice"):
+		if s.id == "strafeFacing":
+			return v if v in STRAFE_FACING else default_of(s)
 		return v if typeof(v) == TYPE_STRING and v != "" else default_of(s)
 	if s.has("min"):
 		if typeof(v) == TYPE_BOOL and s.has("names"):

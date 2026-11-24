@@ -16,10 +16,12 @@ const MARKERS := {
 	"tale": ["waymarker", 1.0], "hunt": ["bone_pile", 1.4], "story": ["waymarker", 1.0],
 	"dungeon": ["rock1", 3.0], "place": ["waymarker", 1.0],
 }
+const STARFALL_FERRY := preload("res://game/world/lantern_coast/starfall_ferry.gd")
 
 var game
 var markers := {} ## poi id -> Node3D
 var docks: Array = [] ## {name, at: Vector2, to: Vector2, to_name}
+var ferry
 var _check := 0.0
 
 
@@ -49,6 +51,10 @@ func build() -> Discovery:
 		game.world.group.add_child(obj)
 		markers[p.id] = obj
 		game.collision.add(x, z, 0.6 * m[1])
+	if Terrain.is_lantern_coast():
+		ferry = STARFALL_FERRY.new(game, WorldMap.boats)
+		docks = ferry.docks
+		return self
 	for b in WorldMap.boats:
 		var a := _shore(b.from, b.line)
 		var c := _shore(b.to, b.line.duplicate())
@@ -96,6 +102,8 @@ static func _place_name(at: Vector2) -> String:
 
 # ------------------------------------------------------------- discovering
 func update(dt: float) -> void:
+	if ferry != null:
+		ferry.idle(dt)
 	_check -= dt
 	if _check > 0 or game.player == null or game.player.dead:
 		return
@@ -136,12 +144,15 @@ func is_discovered(id: String) -> bool:
 func interactions() -> Array:
 	var out := []
 	for d in docks:
-		out.append({"key": "boat:%s:%d:%d" % [d.name, int(d.at.x), int(d.at.y)], "x": d.at.x, "z": d.at.y, "bias": 0.2, "reach": 3.0,
-			"prompt": "Take the boat to %s (%s)" % [d.to_name, d.name], "run": func(): sail(d)})
+		out.append({"key": "boat:%s:%d:%d" % [d.name, int(d.at.x), int(d.at.y)], "x": d.at.x, "z": d.at.y, "bias": -0.2, "reach": 3.0,
+			"name": d.name, "big": ferry != null, "prompt": "Board ferry to %s" % d.to_name, "run": func(): sail(d)})
 	return out
 
 
 func sail(d: Dictionary) -> void:
+	if ferry != null:
+		ferry.board(d)
+		return
 	if game.resources.in_combat or game.targeting.attacking:
 		game.hud.error("You can't do that while fighting")
 		return

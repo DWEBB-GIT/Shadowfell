@@ -6,6 +6,7 @@ extends RefCounted
 ## examine points with the interaction system.
 
 const Entrance := preload("res://game/world/building_entrance.gd")
+const COAST_KIT := preload("res://game/world/lantern_coast/building_kit.gd")
 const LIGHT_FIXTURE_LAYER := 1 << 19
 ## Other bodies that move or animate every frame (enemies, NPCs). The
 ## shadow-casting lamps leave this layer out, so an idling or fighting body
@@ -23,9 +24,10 @@ var mist: Array = []
 var examine_points: Array = []
 var buildings: Array = []
 var indoors = null
-var land: Land ## the ground, woodland, grass and water near the camera
+var land ## the ground, woodland, grass and water near the camera
 var town: Town ## houses, palisades and the gates of the opening
 var see_through: SeeThrough ## houses with the see-through circle
+var coast_scene: Node3D
 var stream: WorldStream ## placed props and still things, drawn by the cell near the camera
 
 
@@ -36,6 +38,21 @@ func _init(g) -> void:
 
 
 func build() -> World:
+	if Terrain.is_lantern_coast():
+		coast_scene = load("res://game/world/lantern_coast/lantern_coast.tscn").instantiate()
+		coast_scene.embedded_surface = Terrain.coast
+		for child in coast_scene.get_children():
+			if child is WorldEnvironment or child is DirectionalLight3D:
+				coast_scene.remove_child(child)
+				child.free()
+		group.add_child(coast_scene)
+		land = Terrain.coast.land
+		stream = WorldStream.new(group)
+		for prop in DB.world.get("journeyProps", []):
+			stream.add_prop(prop)
+		see_through = SeeThrough.new(game)
+		_build_rune_forges()
+		return self
 	land = Land.new(game, group)
 	stream = WorldStream.new(group)
 	# props are data for the whole world (colliders, examine points); their
@@ -127,6 +144,7 @@ static func budget_prop(obj: Node3D, model: String) -> void:
 static func prop_instance(p: Dictionary) -> Node3D:
 	var obj := Assets.instance(p.model)
 	place(obj, p)
+	COAST_KIT.finish(obj, str(p.get("finish", "")))
 	if p.has("tint"):
 		Assets.tint_instance(obj, Color(p.tint))
 	if is_light_fixture(str(p.model)):
@@ -134,7 +152,7 @@ static func prop_instance(p: Dictionary) -> Node3D:
 	# the nature pack: trees, rocks and plants open a see-through circle
 	# around the player instead of hiding them
 	if str(p.model).contains("/environment/nature/"):
-		Assets.use_cutaway(obj)
+		Assets.use_cutaway(obj, int(p.get("snow_cover", 0)))
 	return obj
 
 
@@ -142,11 +160,18 @@ static func is_light_fixture(model: String) -> bool:
 	return model.get_file().get_basename() in ["lamp_post", "torch"]
 
 
+## Optional offsets from older or incomplete editor records may be null.
+static func height_offset(record: Dictionary) -> float:
+	var value = record.get("heightOffset")
+	return float(value) if (value is int or value is float) and is_finite(value) else 0.0
+
+
 ## put a prop's node where its placement says (also used for batched props)
 static func place(obj: Node3D, p: Dictionary) -> void:
 	var x: float = p.position[0]
 	var z: float = p.position[1]
-	obj.position = Vector3(x, Terrain.height_at(x, z) + p.get("heightOffset", 0.0), z)
+	var y := float(p.worldY) if p.has("worldY") else Terrain.height_at(x, z) + height_offset(p)
+	obj.position = Vector3(x, y, z)
 	obj.rotation.y = deg_to_rad(p.get("rotation", 0))
 	if p.get("tilt"):
 		obj.rotation.z = -deg_to_rad(p.tilt)
@@ -419,6 +444,9 @@ func _build_buildings() -> void:
 ## Which building (if any) the player stands in; fade its front wall and
 ## roof towards hidden while inside, back again outside.
 func update_indoors(dt: float, pos: Vector3):
+	if coast_scene != null:
+		indoors = coast_scene.update_buildings(pos, game.camera.position, dt)
+		return indoors
 	indoors = null
 	for b in buildings:
 		var inside: bool = pos.x > b.minX + 0.1 and pos.x < b.maxX - 0.1 and pos.z > b.minZ + 0.1 and pos.z < b.maxZ - 0.1
@@ -428,15 +456,29 @@ func update_indoors(dt: float, pos: Vector3):
 		b.inside += ((1.0 if inside else 0.0) - b.inside) * (k if dt > 0 else 1.0)
 		for i in b.fade.size():
 			var f: Dictionary = b.fade[i]
-			var o: float = 1 - b.inside * (1.0 if i == 1 else 0.85)
-			Rig.set_alpha(f.mats, o if o <= 0.95 else 1.0)
-			f.obj.visible = o > 0.02
+			var target := (0.0 if i == 1 else 0.15) if inside else 1.0
+			fade_building_part(f, target, dt)
 	return indoors
+
+
+## The modular buildings use the same easing and retained wall opacity as the campaign interiors.
+static func fade_building_part(part: Dictionary, target: float, dt: float) -> void:
+	var blend := 1.0 - exp(-8.0 * dt) if dt > 0.0 else 1.0
+	var opacity: float = lerpf(part.get("opacity", 1.0), target, blend)
+	if absf(opacity - target) < 0.005:
+		opacity = target
+	if is_equal_approx(opacity, part.get("opacity", 1.0)) and part.has("opacity"):
+		return
+	part.opacity = opacity
+	Rig.set_alpha(part.mats, opacity if opacity <= 0.95 else 1.0)
+	part.obj.visible = opacity > 0.02
 
 
 ## true if (x, z) is inside a building whose roof is still showing (you are
 ## not in there), so its labels stay hidden under it
 func roof_over(x: float, z: float) -> bool:
+	if coast_scene != null:
+		return coast_scene.roof_over(Vector2(x, z))
 	for b in buildings:
 		if x > b.minX and x < b.maxX and z > b.minZ and z < b.maxZ:
 			return b.inside < 0.5
@@ -446,6 +488,8 @@ func roof_over(x: float, z: float) -> bool:
 ## 0 outside, rising to 1 inside a building (the camera closes in)
 var indoor_blend: float:
 	get:
+		if coast_scene != null:
+			return coast_scene._indoor_blend
 		var m := 0.0
 		for b in buildings:
 			m = maxf(m, b.inside)
@@ -524,7 +568,7 @@ static func _crowded(list: Array, x: float, z: float, gap: float) -> bool:
 func set_cutaway(camera_pos: Vector3, focus: Vector3) -> void:
 	if indoors != null:
 		camera_pos = focus
-	land.set_cutaway(camera_pos, focus)
+	Land.set_cutaway(camera_pos, focus)
 
 
 static func _hsl(h: float, s: float, l: float) -> Color:
@@ -767,6 +811,13 @@ func _add_mist() -> void:
 
 func update(dt: float, time: float) -> void:
 	var focus: Vector3 = game.camera_target
+	if coast_scene != null:
+		if game.blackpick != null and game.blackpick.active():
+			return
+		coast_scene.stream_for_player(game.player.position)
+		stream.update(focus)
+		_update_rune_forges(dt, time)
+		return
 	land.update(focus)
 	stream.update(focus)
 	town.update(dt)

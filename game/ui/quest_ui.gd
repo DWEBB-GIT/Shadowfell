@@ -686,13 +686,14 @@ func _update_way() -> void:
 		var dx: float = at.x - p.x
 		var dz: float = at.z - p.z
 		var d := maxf(0, U.hyp(dx, dz) - at.r)
+		var label: String = ("Search near " if at.get("approximate", false) else "") + at.label
 		if d < 4:
-			text = "[color=#fff0a0]%s · here[/color]" % UI.esc(at.label)
+			text = "[color=#fff0a0]%s · here[/color]" % UI.esc(label)
 		else:
 			# north is up the map, which is -z
 			var ang := atan2(dx, -dz)
 			var i := posmod(roundi(ang / (TAU / 8)), 8)
-			text = "[color=#fff0a0]%s · %d m %s[/color]" % [UI.esc(at.label), roundi(d), COMPASS[i]]
+			text = "[color=#fff0a0]%s · %d m %s[/color]" % [UI.esc(label), roundi(d), COMPASS[i]]
 			if _way_arrow and is_instance_valid(_way_arrow) and (absf(angle_difference(ang, _way_angle)) > 0.02 or _way_here):
 				_way_angle = ang
 				_way_here = false

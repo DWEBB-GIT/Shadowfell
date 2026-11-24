@@ -14,6 +14,7 @@ extends RefCounted
 ## shadowfell/world/map picks it; the World dock's Map picker sets it.
 const MAPS := {"act1": "res://data/terrain/", "new": "res://data/terrain/new_map/"}
 const MAP_SETTING := "shadowfell/world/map"
+static var coast
 static var dir := "res://data/terrain/" ## the map's folder: world.bin, water.json, sculpt.json
 static var _ground_img: Image ## new map: the ground's colours (ground.png), or null
 static var _ground_scale := 2.0 ## metres per ground.png pixel
@@ -49,12 +50,18 @@ static var tiles_unpacked := 0
 
 ## The map Project Settings picks ("act1" unless set).
 static func chosen_map() -> String:
+	if coast != null:
+		return "lantern_coast"
 	var m := str(ProjectSettings.get_setting(MAP_SETTING, "act1"))
 	return m if MAPS.has(m) else "act1"
 
 
 static func is_new_map() -> bool:
-	return dir == MAPS.new
+	return coast == null and dir == MAPS.new
+
+
+static func is_lantern_coast() -> bool:
+	return coast != null
 
 
 ## Switch to a map's folder (drops what was loaded from the other one).
@@ -93,11 +100,15 @@ static func map_picture() -> Texture2D:
 
 ## The ground the map covers, in metres (x, z, width, depth).
 static func map_rect() -> Rect2:
+	if coast != null:
+		return Rect2(-960, -544, 1920, 1120)
 	return Rect2(_x0, _z0, _tx * _tile * _cell, _tz * _tile * _cell)
 
 
 ## The new map's painted ground colour at a point, or null on the old map.
 static func ground_colour(x: float, z: float):
+	if coast != null:
+		return coast.land.colour_at(Vector2(x, z))
 	if _ground_img == null:
 		return null
 	var sample_key := Vector2i(roundi((x - _x0) / _cell), roundi((z - _z0) / _cell))
@@ -201,6 +212,8 @@ static func _index_roads(world: Dictionary) -> void:
 
 
 static func roads() -> Array:
+	if coast != null:
+		return Layout.coast_roads
 	return _roads
 
 
@@ -288,6 +301,8 @@ static func base_height(x: float, z: float) -> float:
 ## 1 on open ground, 0 deep in high ground, the sea or a river; below 0.5
 ## cannot be walked on. Smooth, so its slope points back to open ground.
 static func walk_at(x: float, z: float) -> float:
+	if coast != null:
+		return coast.walk_at(Vector2(x, z))
 	var fx := (x - _x0) / _cell
 	var fz := (z - _z0) / _cell
 	var a := floori(fx)
@@ -339,6 +354,8 @@ static func cell() -> float:
 ## How dark and close the woods are here: 1 in the Blackwood and haunted
 ## places, 0 in the open (eases over a few metres).
 static func gloom(x: float, z: float) -> float:
+	if coast != null:
+		return 0.35 if DB.region_at(x, z).id in ["lc_gloam", "lc_cinder", "lc_crown"] else 0.0
 	var k := 0.0
 	for o in [Vector2(0, 0), Vector2(6, 0), Vector2(-6, 0), Vector2(0, 6), Vector2(0, -6)]:
 		var s := surface_at(x + o.x, z + o.y)
@@ -513,6 +530,8 @@ static func _lake_level(id: String, fallback: float) -> float:
 
 
 static func height_at(x: float, z: float) -> float:
+	if coast != null:
+		return coast.height_at(Vector2(x, z))
 	var h := base_height(x, z)
 	for i in _pads.size():
 		var p: Array = _pads[i]
@@ -536,6 +555,8 @@ static func height_at(x: float, z: float) -> float:
 ## The fishing water at a point, if any: a pond (a circle) or a lake (an
 ## ellipse, `rx` by `rz`).
 static func water_at(x: float, z: float, margin := 0.0):
+	if coast != null:
+		return coast.water_at(Vector2(x, z), margin)
 	for w in _water:
 		var dx: float = x - w.position[0]
 		var dz: float = z - w.position[1]

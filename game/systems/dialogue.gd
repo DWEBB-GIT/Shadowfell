@@ -247,7 +247,7 @@ func _service_options(def: Dictionary, pg: Dictionary) -> void:
 		pg.options.append({"id": "jw:make", "text": "Make gems from shards", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:set", "text": "Set a gem", "icon": "shop", "group": "service"})
 		pg.options.append({"id": "jw:remove", "text": "Take gems out (free)", "icon": "shop", "group": "service"})
-	if DB.CONFIG.death.healers.has(npc.id) and game.afterlife.wounds > 0:
+	if DB.world.get("healers", DB.CONFIG.death.healers).has(npc.id) and game.afterlife.wounds > 0:
 		var cost := _heal_price()
 		pg.options.append({"id": "heal", "text": "Have your wounds tended (%s)" % U.money(cost), "icon": "accept", "group": "service", "disabled": game.inventory.coins < cost})
 	if Boons.bard().get("npc") == npc.id:
